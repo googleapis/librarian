@@ -1,0 +1,37 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The parent to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          name: parent
+          plural_name: revisions
+          collection: methodcustom.projects.locations.resources.revisions
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+            - parameter_name: resourcesId
+              attribute_name: resource
+              help: The resource id of the {resource} resource.
+            - parameter_name: revisionsId
+              attribute_name: revision
+              help: The revision id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+  request:
+    api_version: v1
+    collection:
+      - methodcustom.projects.locations.resources.revisions
+    method: search

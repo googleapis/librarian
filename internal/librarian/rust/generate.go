@@ -25,24 +25,38 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickrust "github.com/googleapis/librarian/internal/sidekick/rust"
 	"github.com/googleapis/librarian/internal/sidekick/rust_prost"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 // IsVeneer reports whether the library has handwritten code wrapping generated
-// code. A library is a veneer when it has Rust module configuration, or when
-// it has no APIs and an explicit output path.
+// code.
+//
+// A library is a veneer when it has Rust module configuration. A library with
+// no APIs and an explicit output is a veneer if its derived API path is not
+// listed in sdk.yaml; libraries whose derived path appears in sdk.yaml are
+// generated libraries whose APIs have not been populated yet (e.g.
+// google-cloud-oslogin-common), not veneers.
 func IsVeneer(lib *config.Library) bool {
 	if lib.Rust != nil && len(lib.Rust.Modules) > 0 {
 		return true
 	}
-	return len(lib.APIs) == 0 && lib.Output != ""
+	if len(lib.APIs) == 0 && lib.Output != "" {
+		// If the derived API path is in sdk.yaml, this is a generated
+		// library whose APIs have not been populated yet, not a veneer.
+		if serviceconfig.HasAPIPath(DeriveAPIPath(lib.Name), config.LanguageRust) {
+			return false
+		}
+		return true
+	}
+	return false
 }
 
 // Generate generates a Rust client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {
 	if IsVeneer(library) {
 		return generateVeneer(ctx, library, sources)
 	}
@@ -88,8 +102,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sidekickconfig.Sources) (*repometadata.RepoMetadata, error) {
-	metadata, err := repometadata.FromLibrary(cfg, library, sources)
+func createRepoMetadata(cfg *config.Config, library *config.Library, sources *sources.Sources) (*repometadata.RepoMetadata, error) {
+	googleapisDir := sources.Googleapis
+	if len(library.APIs) > 0 && library.APIs[0].Path == "schema/google/showcase/v1beta1" {
+		googleapisDir = sources.Showcase
+	}
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return nil, err
 	}
@@ -119,7 +137,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-func generateVeneer(ctx context.Context, library *config.Library, sources *sidekickconfig.Sources) error {
+func generateVeneer(ctx context.Context, library *config.Library, sources *sources.Sources) error {
 	if library.Rust == nil || len(library.Rust.Modules) == 0 {
 		return nil
 	}
@@ -209,7 +227,7 @@ func DefaultOutput(api, defaultOutput string) string {
 //
 // The StorageControl client depends on multiple specification sources.
 // We load them both here, and pass them along to `rust.GenerateStorage` which will merge them appropriately.
-func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *sidekickconfig.Sources) error {
+func generateRustStorage(ctx context.Context, library *config.Library, moduleOutput string, sources *sources.Sources) error {
 	output := "src/storage/src/generated/gapic"
 	storageModule := findModuleByOutput(library, output)
 	if storageModule == nil {

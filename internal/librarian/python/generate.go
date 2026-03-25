@@ -17,6 +17,7 @@ package python
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -28,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -35,8 +37,11 @@ const (
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
 )
 
+var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
+
 // Generate generates a Python client library.
-func Generate(ctx context.Context, config *config.Config, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	googleapisDir := srcs.Googleapis
 	// Convert library.Output to absolute path since protoc runs from a
 	// different directory.
 	outdir, err := filepath.Abs(library.Output)
@@ -50,10 +55,21 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
-	// Some aspects of generation currently require the repo root. Compute it once here
-	// and pass it down.
+	// Some aspects of generation currently require the repo root. Compute it
+	// once here and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-	for _, api := range library.APIs {
+
+	// In order to make sure we generate google/cloud/firestore/v1 *after*
+	// google/cloud/firestore/admin/v1 (etc), sort the APIs in descending path
+	// length order before generation. This is pretty ghastly, but it works to
+	// minimize the diff during generation. (And it's deterministic.)
+	// TODO(https://github.com/googleapis/librarian/issues/4740): remove this
+	// sorting and just use library.APIs.
+	apisSortedByPathLength := slices.Clone(library.APIs)
+	slices.SortFunc(apisSortedByPathLength, func(a, b *config.API) int {
+		return len(b.Path) - len(a.Path)
+	})
+	for _, api := range apisSortedByPathLength {
 		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
@@ -62,7 +78,7 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 	// Construct the repo metadata in memory, then write it to disk. This has
 	// to be before post-processing, as the data in .repo-metadata.json is used
 	// by the post-processor, primarily for documentation.
-	repoMetadata, err := createRepoMetadata(config, library, googleapisDir)
+	repoMetadata, err := createRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -78,9 +94,10 @@ func Generate(ctx context.Context, config *config.Config, library *config.Librar
 		}
 	}
 
-	// Copy README.rst to docs/README.rst
-	if err := copyReadmeToDocsDir(outdir); err != nil {
-		return fmt.Errorf("failed to copy README to docs: %w", err)
+	if library.Python == nil || !library.Python.SkipReadmeCopy {
+		if err := copyReadmeToDocsDir(outdir); err != nil {
+			return fmt.Errorf("failed to copy README to docs: %w", err)
+		}
 	}
 
 	// Clean up files that shouldn't be in the final output.
@@ -101,34 +118,42 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	}
 	var repoMetadata *repometadata.RepoMetadata
 	if len(library.APIs) > 0 {
-		// TODO(https://github.com/googleapis/librarian/issues/4428): once
-		// repometadata exposes a FromLibrary function or similar that we can use,
-		// we should call that again, so that repometadata.FromAPI can be hidden.
-		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+		var err error
+		repoMetadata, err = repometadata.FromLibrary(cfg, library, googleapisDir)
 		if err != nil {
 			return nil, err
 		}
-		repoMetadata = repometadata.FromAPI(cfg, api, library)
-		// Use the version of the first-listed API path as the default version,
-		// unless it's overridden later.
-		repoMetadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+		// Require the DefaultVersion field, even if we could have inferred
+		// it. The default version affects the final code, and changes to it
+		// should be explicit - if adding a new version of an API changes the
+		// inferred default version, that would cause compatibility issues. This
+		// in itself is far from ideal; keeping the default version is "safe"
+		// but toilsome operationally.
+		// TODO(https://github.com/googleapis/librarian/issues/4772): design away
+		// from default versions.
+		if packageOptions.DefaultVersion == "" {
+			return nil, fmt.Errorf("error creating metadata for %s: %w", library.Name, errNoDefaultVersion)
+		}
+		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	} else {
 		// Handwritten library: populate from scratch (and then apply overrides
 		// as normal).
 		repoMetadata = &repometadata.RepoMetadata{
 			Name:             library.Name,
 			DistributionName: library.Name,
+			Language:         cfg.Language,
 			Repo:             cfg.Repo,
 			ReleaseLevel:     library.ReleaseLevel,
+			// Allow even handwritten libraries to specify a default value in
+			// the package options if they want to. This would be unusual, but
+			// if it's specified, we should honor it.
+			DefaultVersion: packageOptions.DefaultVersion,
 		}
 	}
 	if packageOptions.MetadataNameOverride != "" {
 		repoMetadata.Name = packageOptions.MetadataNameOverride
 	} else {
 		repoMetadata.Name = library.Name
-	}
-	if packageOptions.DefaultVersion != "" {
-		repoMetadata.DefaultVersion = packageOptions.DefaultVersion
 	}
 	repoMetadata.LibraryType = packageOptions.LibraryType
 	repoMetadata.ClientDocumentation = BuildClientDocumentationURI(library.Name, repoMetadata.Name)

@@ -102,6 +102,26 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		if err != nil {
 			return nil, err
 		}
+		if library.Name == "google-cloud-firestore" {
+			// Hard-coded list of additional files to keep for
+			// Firestore; it's not worth writing tricky logic to
+			// detect these.
+			firestoreDocs := []string{
+				"docs/firestore_admin_v1/admin_client.rst",
+				"docs/firestore_v1/aggregation.rst",
+				"docs/firestore_v1/batch.rst",
+				"docs/firestore_v1/bulk_writer.rst",
+				"docs/firestore_v1/client.rst",
+				"docs/firestore_v1/collection.rst",
+				"docs/firestore_v1/document.rst",
+				"docs/firestore_v1/field_path.rst",
+				"docs/firestore_v1/query.rst",
+				"docs/firestore_v1/transaction.rst",
+				"docs/firestore_v1/transforms.rst",
+				"docs/firestore_v1/types.rst",
+			}
+			keep = append(keep, firestoreDocs...)
+		}
 		slices.Sort(keep)
 		library.Keep = keep
 
@@ -114,15 +134,19 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		}
 
 		// Apply any information from the BUILD.bazel files in the various API
-		// directories. This also detects if there are any non-GAPIC APIs (e.g
-		// pure proto "type" packages) as they cannot currently be migrated.
+		// directories.
 		library, err = applyBuildBazelConfig(library, googleapisDir)
 		if err != nil {
 			return nil, err
 		}
-		// Skip anything that can't be migrated yet.
-		if library == nil {
-			continue
+		// Skip copying the readme file if it doesn't already exist.
+		_, err = os.Stat(filepath.Join(input.repoPath, "packages", library.Name, "docs", "README.rst"))
+		if err != nil {
+			if os.IsNotExist(err) {
+				library.Python.SkipReadmeCopy = true
+			} else {
+				return nil, err
+			}
 		}
 
 		// Canonicalize to avoid odd empty collections etc.
@@ -138,10 +162,7 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 
 // applyBuildBazelConfig applies the information from BUILD.bazel files
 // associated with the APIs in the library, adding GAPIC generator arguments,
-// discovering non-default transports etc. If any APIs within the library are
-// not GAPIC APIs (e.g. they're just protos), applyBuildBazelConfig returns nil
-// instead of returning the a pointer to the library config; the caller should
-// then skip this library as it cannot yet be migrated.
+// discovering non-default transports etc.
 func applyBuildBazelConfig(library *config.Library, googleapisDir string) (*config.Library, error) {
 	pythonConfig := library.Python
 	pythonConfig.OptArgsByAPI = make(map[string][]string)
@@ -296,7 +317,6 @@ func filterPathsByRegex(paths []string, regexps []*regexp.Regexp) []string {
 func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Library) (*config.Library, error) {
 	defaultTitle := ""
 	defaultDocumentationURI := ""
-	defaultDefaultVersion := ""
 	defaultIssueTracker := ""
 	defaultAPIShortname := ""
 	defaultAPIID := ""
@@ -310,7 +330,6 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 		}
 		defaultTitle = strings.TrimSuffix(strings.TrimSpace(apiInfo.Title), " API")
 		defaultDocumentationURI = apiInfo.DocumentationURI
-		defaultDefaultVersion = filepath.Base(library.APIs[0].Path)
 		defaultIssueTracker = apiInfo.NewIssueURI
 		defaultAPIShortname = apiInfo.ShortName
 		defaultAPIID = apiInfo.ServiceName
@@ -344,9 +363,6 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.Name != library.Name {
 		library.Python.MetadataNameOverride = repoMetadata.Name
 	}
-	if repoMetadata.DefaultVersion != defaultDefaultVersion {
-		library.Python.DefaultVersion = repoMetadata.DefaultVersion
-	}
 	if repoMetadata.LibraryType != pythonDefaultLibraryType {
 		library.Python.LibraryType = repoMetadata.LibraryType
 	}
@@ -362,6 +378,15 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if repoMetadata.APIID != defaultAPIID {
 		library.Python.APIIDOverride = repoMetadata.APIID
 	}
+	// Always populate the DefaultVersion field, even if we could have inferred
+	// it. The default version affects the final code, and changes to it should
+	// be explicit - if adding a new version of an API changes the inferred
+	// default version, that would cause compatibility issues. This in itself is
+	// far from ideal; keeping the default version is "safe" but toilsome
+	// operationally.
+	// TODO(https://github.com/googleapis/librarian/issues/4772): design away
+	// from default versions.
+	library.Python.DefaultVersion = repoMetadata.DefaultVersion
 
 	return library, nil
 }

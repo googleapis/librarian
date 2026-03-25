@@ -1,0 +1,68 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package multi_service.v1;
+
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+
+option go_package = "google.golang.org/genproto/googleapis/multi_service/v1;multi_service";
+
+// Resource message shared between multiple service interfaces.
+message Resource {
+  option (google.api.resource) = {
+    type: "multiservice.googleapis.com/Resource"
+    pattern: "projects/{project}/locations/{location}/resources/{resource}"
+    plural: "resources"
+    singular: "resource"
+  };
+
+  // Identifier. Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Shared resource field.
+  string shared_resource_field = 2;
+}
+
+message FirstResource {
+  option (google.api.resource) = {
+    type: "multiservice.googleapis.com/FirstResource"
+    pattern: "projects/{project}/locations/{location}/firsts/{first}/resources/{resource}"
+    plural: "firstResources"
+    singular: "firstResource"
+  };
+
+  // Identifier. Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Resource one field.
+  string resource_one_field = 2;
+}
+
+message SecondResource {
+  option (google.api.resource) = {
+    type: "multiservice.googleapis.com/SecondResource"
+    pattern: "projects/{project}/locations/{location}/seconds/{second}/resources/{resource}"
+    plural: "secondResources"
+    singular: "secondResource"
+  };
+
+  // Identifier. Resource name.
+  string name = 1 [(google.api.field_behavior) = IDENTIFIER];
+
+  // Resource two field.
+  string resource_two_field = 2;
+}

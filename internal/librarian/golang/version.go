@@ -60,16 +60,13 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 	})
 }
 
-func generateClientVersionFile(library *config.Library, apiPath string) (err error) {
-	goAPI := findGoAPI(library, apiPath)
-	// goAPI should not be nil in production because they are filled with defaults
-	// for each API path of the library.
-	if goAPI == nil || goAPI.ProtoOnly {
+func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (err error) {
+	if goAPI.ProtoOnly {
 		// In proto-only client, no GAPIC client files are generated, only .pb.go files.
 		// Therefore, version.go does not need to be generated.
 		return nil
 	}
-	dir := filepath.Join(library.Output, clientPathFromLibraryRoot(library, goAPI))
+	dir := filepath.Join(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI))
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return err
 	}

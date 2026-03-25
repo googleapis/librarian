@@ -196,12 +196,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			Version:      v,
 			SkipGenerate: true,
 		})
-		// Hardcode jar-parent as it follows the same version.
-		libs = append(libs, &config.Library{
-			Name:         "google-cloud-jar-parent",
-			Version:      v,
-			SkipGenerate: true,
-		})
 	}
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
@@ -239,7 +233,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			Name:         name,
 			Version:      version,
 			Keep:         parseOwlBotKeep(repoPath, output),
-			Output:       output,
 			APIs:         apis,
 			ReleaseLevel: l.ReleaseLevel,
 			Java: &config.JavaModule{
@@ -272,7 +265,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 	}
 	return &config.Config{
 		Language: "java",
-		Default:  &config.Default{},
+		Default: &config.Default{
+			ReleaseLevel: "preview",
+		},
 		Sources: &config.Sources{
 			Googleapis: src,
 		},

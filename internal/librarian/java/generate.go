@@ -17,6 +17,7 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -35,32 +37,40 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+var (
+	// errExtractVersion is returned when an API version cannot be extracted from its path.
+	errExtractVersion = errors.New("failed to extract version")
+	// errNoProtos is returned when no proto files are found in an API directory.
+	errNoProtos = errors.New("no protos found")
+)
+
 // Generate generates a Java client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 	// Ensure googleapisDir is absolute to avoid issues with relative paths in protoc.
-	googleapisDir, err = filepath.Abs(googleapisDir)
+	var googleapisDir string
+	googleapisDir, err = filepath.Abs(srcs.Googleapis)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
 	if err := os.MkdirAll(outdir, 0755); err != nil {
-		return fmt.Errorf("failed to create output directory: %w", err)
+		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, api, library, googleapisDir, outdir); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return postProcessLibrary(cfg, library, outdir, googleapisDir)
 }
 
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, outdir string) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
-		return fmt.Errorf("failed to generate api: failed to extract version from api path %q", api.Path)
+		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
 	javaAPI := resolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -75,7 +85,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	}
 	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
+			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
 	}
 
@@ -89,7 +99,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
 	if len(apiProtos) == 0 {
-		return fmt.Errorf("failed to generate api: no protos found in api %q", api.Path)
+		return fmt.Errorf("%s: %w", api.Path, errNoProtos)
 	}
 	p.apiProtos = apiProtos
 
@@ -112,7 +122,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(api, javaAPI, googleapisDir, apiCfg)
+	gapicOpts, err := resolveGAPICOptions(cfg, library, api, javaAPI, googleapisDir, apiCfg)
 	if err != nil {
 		return fmt.Errorf("failed to resolve gapic options: %w", err)
 	}
@@ -128,6 +138,18 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+func deriveDistributionName(library *config.Library) string {
+	groupID := "com.google.cloud"
+	if library.Java != nil && library.Java.GroupID != "" {
+		groupID = library.Java.GroupID
+	}
+	artifactID := library.Name
+	if !strings.HasPrefix(artifactID, cloudPrefix) {
+		artifactID = cloudPrefix + artifactID
+	}
+	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {
@@ -164,10 +186,14 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicD
 	return args
 }
 
-func resolveGAPICOptions(api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
+func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, javaAPI *config.JavaAPI, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
+
+	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
+	gapicOpts = append(gapicOpts, gapicOpt("artifact", deriveDistributionName(library)))
+
 	if apiCfgs != nil && apiCfgs.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
@@ -228,7 +254,7 @@ func Format(ctx context.Context, library *config.Library) error {
 
 	args := append([]string{"--replace"}, files...)
 	if err := command.Run(ctx, "google-java-format", args...); err != nil {
-		return fmt.Errorf("formatting failed: %w", err)
+		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil
 }

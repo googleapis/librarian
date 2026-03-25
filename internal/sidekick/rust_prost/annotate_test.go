@@ -21,15 +21,15 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestModelAnnotations(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
-		Source: sidekickconfig.SourceConfig{
+		Source: &sources.SourceConfig{
 			IncludeList: []string{"f1.proto", "f2.proto"},
 		},
 		Codec: map[string]string{
@@ -60,7 +60,7 @@ func TestServiceAnnotations(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
-		Source: sidekickconfig.SourceConfig{
+		Source: &sources.SourceConfig{
 			IncludeList: []string{"unused.proto"},
 		},
 		Codec: map[string]string{
@@ -96,7 +96,7 @@ func TestMethodAnnotations(t *testing.T) {
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		SpecificationSource: "../../testdata/googleapis/google/type",
-		Source: sidekickconfig.SourceConfig{
+		Source: &sources.SourceConfig{
 			IncludeList: []string{"unused.proto"},
 		},
 		Codec: map[string]string{

@@ -47,9 +47,7 @@ type API struct {
 
 	// RootIsHidden applies the gcloud 'hidden' flag to the root command group
 	// of the generated surface.  When true, the top-level command group for
-	// this API will not appear in `--help` output by default.  See
-	// go/gcloud-advanced-topics#hiding-commands-and-command-groups for more
-	// details.
+	// this API will not appear in `--help` output by default.
 	RootIsHidden bool `yaml:"root_is_hidden"`
 
 	// ReleaseTracks are the gcloud release tracks this surface should appear
@@ -108,7 +106,7 @@ type HelpTextRule struct {
 	// gcloud data elements expect a singular selector, if a comma separated
 	// selector string is passed, a 'InvalidSelectorList' error will be thrown.
 	//
-	// See http://google3/google/api/documentation.proto;l=253;rcl=525006895
+	// See the API documentation
 	// for API selector details.
 	Selector string `yaml:"selector,omitempty"`
 
@@ -150,7 +148,7 @@ type OutputFormatting struct {
 	// gcloud data elements expect a singular selector, if a comma separated
 	// selector string is passed, a 'InvalidSelectorList' error will be thrown.
 	//
-	// See http://google3/google/api/documentation.proto;l=253;rcl=525006895
+	// See the API documentation
 	// for API selector details.  Must point to a single RPC/command. Wildcards
 	// ('*') not allowed for output formatting.
 	Selector string `yaml:"selector"`
@@ -176,14 +174,14 @@ type CommandOperationsConfig struct {
 	// gcloud data elements expect a singular selector, if a comma separated
 	// selector string is passed, a 'InvalidSelectorList' error will be thrown.
 	//
-	// See http://google3/google/api/documentation.proto;l=253;rcl=525006895
+	// See the API documentation
 	// for API selector details.
 	Selector string `yaml:"selector"`
 
 	// DisplayOperationResult determines whether to display the resource result
 	// in the output of the command by default.  Set to `true` to display the
 	// operation result instead of the final resource.  See
-	// http://go/gcloud-creating-commands#async for more details.
+	// the gcloud documentation on async operations for more details.
 	DisplayOperationResult bool `yaml:"display_operation_result"`
 }
 

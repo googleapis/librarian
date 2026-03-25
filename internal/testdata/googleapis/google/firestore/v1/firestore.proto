@@ -1,0 +1,58 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package google.firestore.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/routing.proto";
+import "google/protobuf/empty.proto";
+import "google/protobuf/timestamp.proto";
+import "google/protobuf/wrappers.proto";
+import "google/rpc/status.proto";
+
+option csharp_namespace = "Google.Cloud.Firestore.V1";
+option go_package = "cloud.google.com/go/firestore/apiv1/firestorepb;firestorepb";
+option java_multiple_files = true;
+option java_outer_classname = "FirestoreProto";
+option java_package = "com.google.firestore.v1";
+option php_namespace = "Google\\Cloud\\Firestore\\V1";
+option ruby_package = "Google::Cloud::Firestore::V1";
+
+service Firestore {
+  option (google.api.default_host) = "firestore.googleapis.com";
+  option (google.api.oauth_scopes) =
+  "https://www.googleapis.com/auth/cloud-platform,"
+      "https://www.googleapis.com/auth/datastore";
+
+  // Gets a single document.
+  rpc GetDocument(GetDocumentRequest) returns (Document) {
+    option (google.api.http) = {
+      get: "/v1/{name=projects/*/databases/*/documents/*/**}"
+    };
+  }
+}
+
+// The request for
+// [Firestore.GetDocument][google.firestore.v1.Firestore.GetDocument].
+message GetDocumentRequest {
+  string name = 1 [(google.api.field_behavior) = REQUIRED];
+}
+
+message Document {
+  string name = 1;
+}

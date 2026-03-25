@@ -19,6 +19,8 @@ package serviceconfig
 import (
 	_ "embed"
 	"fmt"
+	"slices"
+	"sync"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -39,6 +41,15 @@ const (
 
 // API describes an API path and its availability across languages.
 type API struct {
+	// Note: Properties should typically be added in alphabetical order, but
+	// because this order impacts YAML serialization, we keep Path at the top
+	// for ease of consumption in file-form.
+
+	// Path is the proto directory path in github.com/googleapis/googleapis.
+	// If ServiceConfig is empty, the service config is assumed to live at this
+	// path.
+	Path string `yaml:"path,omitempty"`
+
 	// Description provides the information for describing an API.
 	Description string `yaml:"description,omitempty"`
 
@@ -75,10 +86,6 @@ type API struct {
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
 	OpenAPI string `yaml:"open_api,omitempty"`
-
-	// Path is the proto directory path in github.com/googleapis/googleapis.
-	// If ServiceConfig is empty, the service config is assumed to live at this path.
-	Path string `yaml:"path,omitempty"`
 
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").
@@ -137,6 +144,27 @@ var (
 	//    the file as per repository conventions.
 	APIs = unmarshalAPIsOrPanic()
 )
+
+var (
+	apisByPath     map[string]*API
+	apisByPathOnce sync.Once
+)
+
+// HasAPIPath reports whether path matches the Path field of any API in
+// sdk.yaml that is available for the given language.
+func HasAPIPath(path, language string) bool {
+	apisByPathOnce.Do(func() {
+		apisByPath = make(map[string]*API, len(APIs))
+		for i := range APIs {
+			apisByPath[APIs[i].Path] = &APIs[i]
+		}
+	})
+	api, ok := apisByPath[path]
+	if !ok {
+		return false
+	}
+	return len(api.Languages) == 0 || slices.Contains(api.Languages, language)
+}
 
 func unmarshalAPIsOrPanic() []API {
 	apis, err := yaml.Unmarshal[[]API](sdkYaml)

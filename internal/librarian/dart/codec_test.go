@@ -16,13 +16,15 @@ package dart
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestBuildCodec(t *testing.T) {
@@ -278,11 +280,25 @@ func TestBuildCodec(t *testing.T) {
 
 func TestToModelConfig(t *testing.T) {
 	googleapisDir := t.TempDir()
+	showcaseDir := t.TempDir()
+
+	// Create a minimal service config for the showcase API so that
+	// serviceconfig.Find can read it successfully.
+	showcaseConfigDir := filepath.Join(showcaseDir, "schema", "google", "showcase", "v1beta1")
+	if err := os.MkdirAll(showcaseConfigDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	showcaseConfig := "type: google.api.Service\nname: showcase.googleapis.com\ntitle: Showcase API\n"
+	if err := os.WriteFile(filepath.Join(showcaseConfigDir, "showcase_v1beta1.yaml"), []byte(showcaseConfig), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
 		name          string
 		library       *config.Library
 		channel       *config.API
 		googleapisDir string
+		showcaseDir   string
 		want          *parser.ModelConfig
 		wantErr       error
 	}{
@@ -296,8 +312,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -318,8 +334,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -344,8 +360,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -390,8 +406,8 @@ func TestToModelConfig(t *testing.T) {
 			want: &parser.ModelConfig{
 				SpecificationFormat: config.SpecProtobuf,
 				SpecificationSource: "google/cloud/functions/v2",
-				Source: sidekickconfig.SourceConfig{
-					Sources: sidekickconfig.Sources{
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
 						Googleapis: googleapisDir,
 					},
 					ActiveRoots: []string{"googleapis"},
@@ -418,6 +434,100 @@ func TestToModelConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "explicit protobuf specification format",
+			library: &config.Library{
+				SpecificationFormat: config.SpecProtobuf,
+			},
+			channel: &config.API{
+				Path: "google/cloud/functions/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/functions/v2",
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+					},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
+			},
+		},
+		{
+			name: "with include list",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					IncludeList: []string{"date.proto", "expr.proto"},
+				},
+			},
+			channel: &config.API{
+				Path: "google/cloud/functions/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/functions/v2",
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+					},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"date.proto", "expr.proto"},
+				},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
+			},
+		},
+		{
+			name:    "showcase path",
+			library: &config.Library{},
+			channel: &config.API{
+				Path: "schema/google/showcase/v1beta1",
+			},
+			googleapisDir: googleapisDir,
+			showcaseDir:   showcaseDir,
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "schema/google/showcase/v1beta1",
+				ServiceConfig:       "schema/google/showcase/v1beta1/showcase_v1beta1.yaml",
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+						Showcase:   showcaseDir,
+					},
+					ActiveRoots: []string{"googleapis", "showcase"},
+				},
+				Codec: map[string]string{},
+				Override: api.ModelOverride{
+					Title: "Showcase API",
+				},
+			},
+		},
+		{
+			name: "custom roots",
+			library: &config.Library{
+				Roots: []string{"googleapis", "extra-root"},
+			},
+			channel: &config.API{
+				Path: "google/cloud/functions/v2",
+			},
+			googleapisDir: googleapisDir,
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/functions/v2",
+				Source: &sources.SourceConfig{
+					Sources: &sources.Sources{
+						Googleapis: googleapisDir,
+					},
+					ActiveRoots: []string{"googleapis", "extra-root"},
+				},
+				Codec:    map[string]string{},
+				Override: api.ModelOverride{},
+			},
+		},
+		{
 			name: "unsupported specification format",
 			library: &config.Library{
 				SpecificationFormat: "openapi",
@@ -430,8 +540,11 @@ func TestToModelConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			sources := &sidekickconfig.Sources{
+			sources := &sources.Sources{
 				Googleapis: test.googleapisDir,
+			}
+			if test.showcaseDir != "" {
+				sources.Showcase = test.showcaseDir
 			}
 			got, err := toModelConfig(test.library, test.channel, sources)
 			if test.wantErr != nil {

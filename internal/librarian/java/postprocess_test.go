@@ -314,7 +314,8 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	googleapis := "internal/testdata/googleapis"
 
 	cfg := &config.Config{
-		Repo: "googleapis/google-cloud-java",
+		Language: config.LanguageJava,
+		Repo:     "googleapis/google-cloud-java",
 	}
 	library := &config.Library{
 		Name: "secretmanager",

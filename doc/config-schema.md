@@ -8,7 +8,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `language` | string | Is the language for this workspace (go, python, rust). |
 | `version` | string | Is the librarian tool version to use. |
-| `repo` | string | Is the repository name, such as "googleapis/google-cloud-python".<br><br>TODO(https://github.com/googleapis/librarian/issues/3003): Remove this field when .repo-metadata.json generation is removed. |
+| `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
@@ -82,7 +82,6 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `veneer` | bool | Indicates this library has handwritten code. A veneer may contain generated libraries. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
@@ -273,13 +272,14 @@ This document describes the schema for the librarian.yaml.
 | `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
+| `skip_readme_copy` | bool | Prevents generation from copying README.rst from the root directory to the docs directory. TODO(https://github.com/googleapis/librarian/issues/4738): revisit whether or not this field should exist after migration. |
 
 ## RustCrate Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [RustDefault](#rustdefault-configuration) |  |
-| `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. This is only used when the library has veneer: true. |
+| `modules` | list of [RustModule](#rustmodule-configuration) (optional) | Specifies generation targets for veneer crates. Each module defines a source proto path, output location, and template to use. |
 | `per_service_features` | bool | Enables per-service feature flags. |
 | `module_path` | string | Is the module path for the crate. |
 | `template_override` | string | Overrides the default template. |

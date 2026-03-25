@@ -320,34 +320,49 @@ func parseHeader(headerLine string) (*parsedHeader, bool) {
 }
 
 // separateBodyAndFooters splits the lines after the header into body and footer sections.
-// It identifies the footer section by looking for a blank line followed by a
-// line that matches the conventional commit footer format.
+// It parses lines from the bottom up to identify the true footer section at the end
+// of the message, preventing body content (like Renovate release notes) from being
+// misidentified as footers. It walks up the last blank line boundary to support
+// correctly identifying footers while avoiding consuming nested commit headers.
 func separateBodyAndFooters(lines []string) (bodyLines, footerLines []string) {
-	inFooterSection := false
-	for i, line := range lines {
-		if inFooterSection {
-			footerLines = append(footerLines, line)
-			continue
+	lastBlankLine := -1
+	for i := len(lines) - 1; i >= 0; i-- {
+		if strings.TrimSpace(lines[i]) == "" {
+			lastBlankLine = i
+			break
 		}
-		if strings.TrimSpace(line) == "" {
-			isSeparator := false
-			// Look ahead at the next non-blank line.
-			for j := i + 1; j < len(lines); j++ {
-				if strings.TrimSpace(lines[j]) != "" {
-					if footerRegex.MatchString(lines[j]) {
-						isSeparator = true
-					}
+	}
+
+	if lastBlankLine == -1 {
+		return lines, nil
+	}
+
+	potentialFooters := lines[lastBlankLine+1:]
+	if len(potentialFooters) == 0 {
+		return lines, nil
+	}
+
+	if !footerRegex.MatchString(potentialFooters[0]) {
+		return lines, nil
+	}
+
+	// Walk up past blank lines to include preceding footers, stopping if we hit a nested commit header.
+	boundaryIndex := lastBlankLine
+	for i := lastBlankLine; i >= 0; i-- {
+		if strings.TrimSpace(lines[i]) == "" {
+			if i > 0 && footerRegex.MatchString(lines[i-1]) {
+				if commitRegex.MatchString(lines[i-1]) {
+					boundaryIndex = i
 					break
 				}
+				continue
 			}
-			if isSeparator {
-				inFooterSection = true
-				continue // Skip the blank separator line.
-			}
+			boundaryIndex = i
+			break
 		}
-		bodyLines = append(bodyLines, line)
 	}
-	return bodyLines, footerLines
+
+	return lines[:boundaryIndex], lines[boundaryIndex+1:]
 }
 
 // parseFooters parses footer lines from a conventional commit message into a map

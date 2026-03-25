@@ -24,6 +24,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -95,6 +96,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
+	if cfg.Default != nil && lib.ReleaseLevel != "" && lib.ReleaseLevel == cfg.Default.ReleaseLevel {
+		lib.ReleaseLevel = ""
+	}
 	return tidyLanguageConfig(lib, cfg.Language)
 }
 
@@ -139,6 +143,7 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
 	config.LanguageGo:   golang.Tidy,
+	config.LanguageJava: java.Tidy,
 	config.LanguageRust: tidyRustConfig,
 }
 
@@ -169,8 +174,6 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
 	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/4276): Remove veneer field
-	lib.Veneer = false
 	return lib
 }
 

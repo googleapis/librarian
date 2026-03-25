@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: fieldcomplextypes.googleapis.com
+title: Standard Resource API
+apis:
+  - name: field_complex_types.v1.FieldComplexTypes
+documentation:
+  summary: An API with documentation.

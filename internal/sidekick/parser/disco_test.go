@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	sidekickconfig "github.com/googleapis/librarian/internal/sidekick/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestDisco_Parse(t *testing.T) {
@@ -54,8 +54,8 @@ func TestDisco_Parse(t *testing.T) {
 func TestDisco_FindSources(t *testing.T) {
 	cfg := ModelConfig{
 		SpecificationSource: discoSourceFileRelative,
-		Source: sidekickconfig.SourceConfig{
-			Sources: sidekickconfig.Sources{
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
 				Googleapis: mainTestdataDir,
 			},
 			ActiveRoots: []string{"undefined", "googleapis"},

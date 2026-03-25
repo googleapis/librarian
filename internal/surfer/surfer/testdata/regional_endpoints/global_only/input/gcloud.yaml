@@ -1,0 +1,9 @@
+config_version: v2.0
+service_name: regionalendpoints.googleapis.com
+generate_operations: false
+regional_endpoint_compatibility: NOT_SUPPORTED
+apis:
+  - name: RegionalEndpoints
+    api_version: v1
+    release_tracks:
+      - GA

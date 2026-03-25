@@ -91,14 +91,15 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "language-v1",
-						Output: "java-language-v1",
+						Name: "language-v1",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -122,14 +123,15 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "language",
-						Output: "java-language",
+						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -159,22 +161,22 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name:   "vision",
-						Output: "java-vision",
+						Name: "vision",
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
 						Java: &config.JavaModule{},
 					},
 					{
-						Name:   "language",
-						Output: "java-language",
+						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
@@ -221,14 +223,15 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
 						Name:         "pubsub",
-						Output:       "java-pubsub",
 						ReleaseLevel: "stable",
 						APIs: []*config.API{
 							{Path: "google/pubsub/v1"},
@@ -286,7 +289,9 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default:  &config.Default{},
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -297,13 +302,7 @@ func TestBuildConfig(t *testing.T) {
 						SkipGenerate: true,
 					},
 					{
-						Name:         "google-cloud-jar-parent",
-						Version:      "1.79.0",
-						SkipGenerate: true,
-					},
-					{
 						Name:    "accessapproval",
-						Output:  "java-accessapproval",
 						Version: "2.86.0",
 						APIs: []*config.API{
 							{Path: "google/cloud/accessapproval/v1"},
@@ -314,7 +313,6 @@ func TestBuildConfig(t *testing.T) {
 					},
 					{
 						Name:    "aiplatform",
-						Output:  "java-aiplatform",
 						Version: "3.86.0",
 						APIs: []*config.API{
 							{Path: "google/cloud/aiplatform/v1"},

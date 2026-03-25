@@ -21,6 +21,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 )
 
@@ -163,10 +164,14 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 // isVeneer reports whether the library has handwritten code wrapping generated
 // code.
 func isVeneer(language string, lib *config.Library) bool {
-	if language == config.LanguageRust {
+	switch language {
+	case config.LanguageRust:
 		return rust.IsVeneer(lib)
+	case config.LanguageNodejs:
+		return lib.Output != "" && len(lib.APIs) == 0
+	default:
+		return false
 	}
-	return lib.Veneer
 }
 
 // libraryOutput returns the output path for a library. If the library has an
@@ -246,6 +251,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 	switch language {
 	case config.LanguageGo:
 		return golang.Fill(lib)
+	case config.LanguageJava:
+		return java.Fill(lib)
 	default:
 		return lib, nil
 	}

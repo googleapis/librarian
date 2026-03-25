@@ -217,6 +217,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 		wantNumLibs             int
 		wantNumAPIs             int
 		wantSpecificationFormat string
+		wantReleaseLevel        string
 	}{
 		{
 			name: "derivable fields removed",
@@ -297,6 +298,23 @@ func TestTidy_DerivableFields(t *testing.T) {
 			wantNumLibs: 1,
 			wantNumAPIs: 1,
 		},
+		{
+			name: "release level removed if same as default",
+			config: &config.Config{
+				Default: &config.Default{
+					ReleaseLevel: "preview",
+				},
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
+					{
+						Name:         "google-cloud-secretmanager-v1",
+						ReleaseLevel: "preview",
+					},
+				},
+			},
+			wantNumLibs:      1,
+			wantReleaseLevel: "",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -323,6 +341,9 @@ func TestTidy_DerivableFields(t *testing.T) {
 			}
 			if lib.SpecificationFormat != test.wantSpecificationFormat {
 				t.Errorf("specification_format = %q, want %q", lib.SpecificationFormat, test.wantSpecificationFormat)
+			}
+			if lib.ReleaseLevel != test.wantReleaseLevel {
+				t.Errorf("release_level = %q, want %q", lib.ReleaseLevel, test.wantReleaseLevel)
 			}
 		})
 	}
@@ -360,43 +381,66 @@ func TestTidy_DuplicateError(t *testing.T) {
 }
 
 func TestTidy_DerivableOutput(t *testing.T) {
-	tempDir := t.TempDir()
-	cfg := &config.Config{
-		Language: config.LanguageRust,
-		Default: &config.Default{
-			Output: "generated/",
+	googleapisSource := &config.Sources{
+		Googleapis: &config.Source{
+			Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+			SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
 		},
-		Sources: &config.Sources{
-			Googleapis: &config.Source{
-				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
-				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
-			},
+	}
+	for _, test := range []struct {
+		name     string
+		language string
+		libName  string
+		output   string
+	}{
+		{
+			name:     "rust derivable output",
+			language: config.LanguageRust,
+			libName:  "google-cloud-secretmanager-v1",
+			output:   "generated/cloud/secretmanager/v1",
 		},
-		Libraries: []*config.Library{
-			{
-				Name:   "google-cloud-secretmanager-v1",
-				Output: "generated/cloud/secretmanager/v1",
-				Roots:  []string{"googleapis"},
-				APIs: []*config.API{
+		{
+			name:     "java derivable output",
+			language: config.LanguageJava,
+			libName:  "secretmanager",
+			output:   "java-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			cfg := &config.Config{
+				Language: test.language,
+				Default: &config.Default{
+					Output: "generated/",
+				},
+				Sources: googleapisSource,
+				Libraries: []*config.Library{
 					{
-						Path: "google/cloud/secretmanager/v1",
+						Name:   test.libName,
+						Output: test.output,
+						Roots:  []string{"googleapis"},
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
 					},
 				},
-			},
-		},
-	}
-	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
-		t.Fatal(err)
-	}
-	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(got.Libraries) != 1 {
-		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
-	}
-	if got.Libraries[0].Output != "" {
-		t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
+			}
+			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
+				t.Fatal(err)
+			}
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got.Libraries) != 1 {
+				t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+			}
+			if got.Libraries[0].Output != "" {
+				t.Errorf("expected output to be empty, got %q", got.Libraries[0].Output)
+			}
+		})
 	}
 }
 
@@ -612,7 +656,6 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 		Libraries: []*config.Library{
 			{
 				Name:         "google-cloud-storage",
-				Veneer:       true,
 				SkipGenerate: true,
 				Output:       "src/storage",
 			},

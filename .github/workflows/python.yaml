@@ -21,7 +21,7 @@ jobs:
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
@@ -45,7 +45,7 @@ jobs:
         run: pip install gapic-generator==1.30.9
       - name: Install synthtool
         run: |
-          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
+          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@afd7725f32d522a95e964884e0fba6d0d6b4cb6a
       - name: Install nox
         run: |
           python -m pip install --upgrade setuptools pip wheel
@@ -54,4 +54,8 @@ jobs:
       - name: Verify git is available
         run: git --version
       - name: Run internal/librarian/python tests
-        run: go test -race ./internal/librarian/python
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/python
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

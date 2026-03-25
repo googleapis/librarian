@@ -1,0 +1,40 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The project and location for which to retrieve locations information.
+        is_positional: false
+        is_primary_resource: true
+        resource_spec:
+          name: location
+          plural_name: locations
+          collection: methodminimallist.projects.locations
+          attributes:
+            - parameter_name: projectsId
+              attribute_name: project
+              help: The project id of the {resource} resource.
+              property: core/project
+            - parameter_name: locationsId
+              attribute_name: location
+              help: The location id of the {resource} resource.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+  request:
+    api_version: v1
+    collection:
+      - methodminimallist.projects.locations.resources
+  response:
+    id_field: name
+  output:
+    format: |-
+      table(
+      name,
+      uid,
+      etag,
+      createTime,
+      updateTime)

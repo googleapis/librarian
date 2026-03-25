@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: updatemask.googleapis.com
+title: Standard Resource API
+apis:
+  - name: update_mask.v1.UpdateMask
+documentation:
+  summary: An API with documentation.

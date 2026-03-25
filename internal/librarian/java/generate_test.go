@@ -16,9 +16,11 @@ package java
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"sort"
 
@@ -27,6 +29,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -35,6 +38,8 @@ const googleapisDir = "../../testdata/googleapis"
 func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
 		name     string
+		cfg      *config.Config
+		library  *config.Library
 		api      *config.API
 		javaAPI  *config.JavaAPI
 		apiCfgs  *serviceconfig.API
@@ -42,6 +47,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 	}{
 		{
 			name:    "basic case",
+			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
@@ -49,6 +56,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"repo=googleapis/google-cloud-java",
+				"artifact=com.google.cloud:google-cloud-secretmanager",
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
@@ -57,6 +66,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 		},
 		{
 			name:    "rest transport",
+			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1"},
 
@@ -65,6 +76,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"repo=googleapis/google-cloud-java",
+				"artifact=com.google.cloud:google-cloud-secretmanager",
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
@@ -73,6 +86,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 		},
 		{
 			name:    "no rest numeric enum case",
+			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			javaAPI: &config.JavaAPI{Path: "google/cloud/secretmanager/v1", NoRestNumericEnums: true},
 
@@ -81,6 +96,8 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}},
 			expected: []string{
 				"metadata",
+				"repo=googleapis/google-cloud-java",
+				"artifact=com.google.cloud:google-cloud-secretmanager",
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
@@ -89,12 +106,46 @@ func TestResolveGAPICOptions(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := resolveGAPICOptions(test.api, test.javaAPI, googleapisDir, test.apiCfgs)
+			got, err := resolveGAPICOptions(test.cfg, test.library, test.api, test.javaAPI, googleapisDir, test.apiCfgs)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveDistributionName(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name:    "default case",
+			library: &config.Library{Name: "secretmanager"},
+			want:    "com.google.cloud:google-cloud-secretmanager",
+		},
+		{
+			name: "groupID override",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{GroupID: "com.custom"},
+			},
+			want: "com.custom:google-cloud-secretmanager",
+		},
+		{
+			name:    "library name already has prefix",
+			library: &config.Library{Name: "google-cloud-secretmanager"},
+			want:    "com.google.cloud:google-cloud-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveDistributionName(test.library)
+			if got != test.want {
+				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
 			}
 		})
 	}
@@ -141,7 +192,7 @@ func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPC,
 			}}
-			_, err := resolveGAPICOptions(&config.API{Path: tc.apiPath}, &config.JavaAPI{Path: tc.apiPath}, tmpDir, apiCfgs)
+			_, err := resolveGAPICOptions(&config.Config{Repo: "test-repo"}, &config.Library{Name: "test"}, &config.API{Path: tc.apiPath}, &config.JavaAPI{Path: tc.apiPath}, tmpDir, apiCfgs)
 			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
 				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, tc.wantErr)
 			}
@@ -297,10 +348,13 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
+	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
+	library := &config.Library{Name: "secretmanager", Output: outdir}
 	err := generateAPI(
 		t.Context(),
+		cfg,
 		&config.API{Path: "google/cloud/secretmanager/v1"},
-		&config.Library{Name: "secretmanager", Output: outdir},
+		library,
 		googleapisDir,
 		outdir,
 	)
@@ -326,9 +380,10 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	outdir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
 
-	err := generateAPI(t.Context(), api, library, googleapisDir, outdir)
+	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -356,7 +411,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		name    string
 		library *config.Library
 		setup   func(t *testing.T, library *config.Library)
-		wantErr string
+		wantErr error
 	}{
 		{
 			name: "invalid version",
@@ -367,7 +422,18 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			wantErr: "failed to extract version from api path",
+			wantErr: errExtractVersion,
+		},
+		{
+			name: "no protos found",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			wantErr: errNoProtos,
 		},
 		{
 			name: "mkdir failure for output dir",
@@ -384,7 +450,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "failed to create output directory",
+			wantErr: syscall.ENOTDIR,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -392,8 +458,8 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{Language: "java"}
-			err := Generate(t.Context(), cfg, test.library, googleapisDir)
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
+			if !errors.Is(err, test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})

@@ -1,0 +1,20 @@
+type: google.api.Service
+config_version: 3
+name: methodoperations.googleapis.com
+title: Operation Methods API
+apis:
+  - name: google.longrunning.Operations
+  - name: method_operations.v1.MethodOperations
+documentation:
+  summary: An API with documentation.
+http:
+  rules:
+    - selector: google.longrunning.Operations.CancelOperation
+      post: '/v1/{name=projects/*/locations/*/operations/*}:cancel'
+      body: '*'
+    - selector: google.longrunning.Operations.DeleteOperation
+      delete: '/v1/{name=projects/*/locations/*/operations/*}'
+    - selector: google.longrunning.Operations.GetOperation
+      get: '/v1/{name=projects/*/locations/*/operations/*}'
+    - selector: google.longrunning.Operations.ListOperations
+      get: '/v1/{name=projects/*/locations/*}/operations'

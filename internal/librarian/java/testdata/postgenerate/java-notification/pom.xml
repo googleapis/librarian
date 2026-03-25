@@ -1,0 +1,5 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>com.google.cloud</groupId>
+  <artifactId>google-cloud-notification</artifactId>
+  <version>0.206.0</version>
+</project>

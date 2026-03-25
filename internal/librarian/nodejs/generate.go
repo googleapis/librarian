@@ -16,6 +16,7 @@
 package nodejs
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -23,16 +24,21 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Generate generates a Node.js client library.
-func Generate(ctx context.Context, library *config.Library, googleapisDir string) error {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	googleapisDir := srcs.Googleapis
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
@@ -46,7 +52,7 @@ func Generate(ctx context.Context, library *config.Library, googleapisDir string
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	if err := runPostProcessor(ctx, library, googleapisDir, repoRoot, outdir); err != nil {
+	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
 	return nil
@@ -150,7 +156,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
-func runPostProcessor(ctx context.Context, library *config.Library, googleapisDir, repoRoot, outDir string) error {
+func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err == nil {
 		// Old way: use synthtool
@@ -168,20 +174,23 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 	// Librarian CLI tool).
 
 	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the non-generated files it would delete, then
-	// restore them afterward.
-	preserveFiles := []string{"librarian.js", ".readme-partials.yaml", "README.md"}
+	// files (src/, protos/). Save the keep files it would delete, then restore
+	// them afterward.
 	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
 	if err != nil {
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}
 	defer os.RemoveAll(backupDir)
-	for _, name := range preserveFiles {
+	for _, name := range library.Keep {
 		src := filepath.Join(outDir, name)
 		if _, err := os.Stat(src); err != nil {
 			continue // file doesn't exist, nothing to save
 		}
-		if err := os.Rename(src, filepath.Join(backupDir, name)); err != nil {
+		dst := filepath.Join(backupDir, name)
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf("failed to create backup subdir for %s: %w", name, err)
+		}
+		if err := os.Rename(src, dst); err != nil {
 			return fmt.Errorf("failed to save %s: %w", name, err)
 		}
 	}
@@ -195,23 +204,47 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
-	// Restore non-generated files.
-	for _, name := range preserveFiles {
+	// Restore keep files.
+	for _, name := range library.Keep {
 		src := filepath.Join(backupDir, name)
 		if _, err := os.Stat(src); err != nil {
 			continue
 		}
-		if err := os.Rename(src, filepath.Join(outDir, name)); err != nil {
+		dst := filepath.Join(outDir, name)
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf("failed to create output subdir for %s: %w", name, err)
+		}
+		if err := os.Rename(src, dst); err != nil {
 			return fmt.Errorf("failed to restore %s: %w", name, err)
 		}
 	}
 
-	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
-		return fmt.Errorf("copyMissingProtos: %w", err)
+	// Copy generated samples from staging into the output directory.
+	// combine-library only handles src/ and protos/; samples are generated
+	// by gapic-generator-typescript but left in staging.
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy samples from staging: %w", err)
 	}
 
+	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
+	// OwlBot so this file is no longer needed.
+	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("failed to remove .OwlBot.yaml: %w", err)
+	}
+
+	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
+		return fmt.Errorf("failed to restore copyright year: %w", err)
+	}
+	if !slices.Contains(library.Keep, ".repo-metadata.json") {
+		if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to write repo metadata: %w", err)
+		}
+	}
+	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy missing protos: %w", err)
+	}
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
-		return fmt.Errorf("compileProtos: %w", err)
+		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 
 	// librarian.js is a custom script some libraries use for post-processing.
@@ -254,6 +287,70 @@ func runPostProcessor(ctx context.Context, library *config.Library, googleapisDi
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
 	return nil
+}
+
+// restoreCopyrightYear replaces the copyright year in generated source files
+// with the original year from the library configuration.
+func restoreCopyrightYear(outDir, year string) error {
+	if year == "" {
+		return nil
+	}
+	re := regexp.MustCompile(`Copyright \d{4} Google`)
+	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	for _, dir := range []string{"src", "test"} {
+		d := filepath.Join(outDir, dir)
+		if _, err := os.Stat(d); err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return err
+		}
+		if err := replaceCopyrightInDir(d, re, replacement); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// replaceCopyrightInDir walks dir and replaces copyright years in .ts and .js
+// files using the provided regex and replacement.
+func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) error {
+	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		if ext != ".ts" && ext != ".js" {
+			return nil
+		}
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("reading %s: %w", path, err)
+		}
+		updated := re.ReplaceAll(content, replacement)
+		if bytes.Equal(updated, content) {
+			return nil
+		}
+		return os.WriteFile(path, updated, 0644)
+	})
+}
+
+// writeRepoMetadata generates .repo-metadata.json for the library.
+func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
+	if len(library.APIs) == 0 {
+		return nil
+	}
+	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	if err != nil {
+		return err
+	}
+	metadata.DistributionName = DerivePackageName(library)
+	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	metadata.LibraryType = repometadata.GAPICAutoLibraryType
+	return metadata.Write(outDir)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
@@ -313,31 +410,59 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 	return nil
 }
 
-// Format runs gts (npm run fix) on the library directory.
-func Format(ctx context.Context, library *config.Library) error {
-	if err := ctx.Err(); err != nil {
+// copySamplesFromStaging copies generated sample files from the staging
+// directory into the output directory. The generator writes samples to
+// owl-bot-staging/<lib>/<version>/samples/generated/<version>/ but
+// combine-library does not move them.
+func copySamplesFromStaging(stagingDir, outDir string) error {
+	versions, err := os.ReadDir(stagingDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil // staging dir may not exist
+		}
 		return err
 	}
-
-	// ESLint exit codes:
-	//   0: No issues found.
-	//   1: Lint issues found (warnings or unfixable errors).
-	//   2: Configuration or fatal error.
-	//
-	// Exit code 1 is tolerated because generated code may contain expected,
-	// unfixable warnings (e.g., @typescript-eslint/no-explicit-any).
-	err := command.RunInDir(ctx, library.Output, "eslint",
-		"--fix",
-		"--ignore-pattern", "node_modules/",
-		"--no-error-on-unmatched-pattern",
-		"src/**/*.ts", "src/**/*.js")
-
-	if err != nil {
-		var exitErr *exec.ExitError
-		if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
-			return nil
+	for _, v := range versions {
+		if !v.IsDir() {
+			continue
 		}
-		return fmt.Errorf("eslint failed: %w", err)
+		samplesDir := filepath.Join(stagingDir, v.Name(), "samples")
+		if _, err := os.Stat(samplesDir); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return err
+		}
+		if err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			rel, err := filepath.Rel(samplesDir, path)
+			if err != nil {
+				return err
+			}
+			// The generator produces snippet_metadata_<api>.json but the
+			// existing convention uses snippet_metadata.<api>.json.
+			base := filepath.Base(rel)
+			if strings.HasPrefix(base, "snippet_metadata_") {
+				renamed := "snippet_metadata." + strings.TrimPrefix(base, "snippet_metadata_")
+				rel = filepath.Join(filepath.Dir(rel), renamed)
+			}
+			dst := filepath.Join(outDir, "samples", rel)
+			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+				return err
+			}
+			content, err := os.ReadFile(path)
+			if err != nil {
+				return err
+			}
+			return os.WriteFile(dst, content, 0644)
+		}); err != nil {
+			return err
+		}
 	}
 	return nil
 }

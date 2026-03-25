@@ -26,6 +26,11 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	// rootModule is the name of the root module in the configuration.
+	rootModule = "root-module"
+)
+
 var (
 	errGoAPINotFound         = errors.New("go API not found")
 	errImportPathNotFound    = errors.New("import path not found")
@@ -85,6 +90,11 @@ func DefaultLibraryName(api string) string {
 	return filepath.Base(path)
 }
 
+// DefaultOutput returns the default output directory for a Go library.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
+
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 	if library.Go == nil {
 		return nil
@@ -95,6 +105,17 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 		}
 	}
 	return nil
+}
+
+func repoRootPath(output, name string) string {
+	if name == rootModule {
+		return output
+	}
+	path := []string{output}
+	for range strings.Count(name, "/") + 1 {
+		path = append(path, "..")
+	}
+	return filepath.Join(path...)
 }
 
 // modulePath returns the Go module path for the library. ModulePathVersion is
@@ -135,9 +156,9 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }
 
-// clientPathFromLibraryRoot returns the relative path from the module root to the client directory.
+// clientPathFromRepoRoot returns the relative path from the repo root to the client directory.
 // It strips any module path version from the import path to get the correct filesystem path.
-func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) string {
+func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string {
 	importPath := goAPI.ImportPath
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion := filepath.Join(string(filepath.Separator), library.Go.ModulePathVersion)
@@ -150,4 +171,23 @@ func clientPathFromLibraryRoot(library *config.Library, goAPI *config.GoAPI) str
 // for the given library output directory and Go import path.
 func snippetDirectory(output, importPath string) string {
 	return filepath.Join(output, "internal", "generated", "snippets", importPath)
+}
+
+// findSnippetDirectory returns the path to the snippet directory for the given API path and library output directory.
+// It returns an empty string if the API is proto-only or if the snippet directory is in a path marked for deletion
+// after generation.
+func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output string) string {
+	if goAPI.ProtoOnly {
+		return ""
+	}
+	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+	// No need to format the snippet directory if the directory is within one of
+	// paths to delete after generation. The snippet directory does not exist.
+	for _, path := range library.Go.DeleteGenerationOutputPaths {
+		pathToDelete := filepath.Join(output, path)
+		if strings.HasPrefix(snippetDir, pathToDelete) {
+			return ""
+		}
+	}
+	return snippetDir
 }

@@ -1,0 +1,5 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>com.google.analytics</groupId>
+  <artifactId>google-analytics-admin-bom</artifactId>
+  <version>0.98.0</version>
+</project>

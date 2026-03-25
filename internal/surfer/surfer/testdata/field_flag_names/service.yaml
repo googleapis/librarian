@@ -1,0 +1,8 @@
+type: google.api.Service
+config_version: 3
+name: fieldflagnames.googleapis.com
+title: API with long flag names
+apis:
+  - name: field_flag_names.v1.FieldFlagNames
+documentation:
+  summary: An API with documentation.

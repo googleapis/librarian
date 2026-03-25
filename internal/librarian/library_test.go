@@ -459,7 +459,7 @@ func TestPrepareLibrary(t *testing.T) {
 		name        string
 		language    string
 		output      string
-		veneer      bool
+		rust        *config.RustCrate
 		apis        []*config.API
 		wantOutput  string
 		wantErr     bool
@@ -482,7 +482,7 @@ func TestPrepareLibrary(t *testing.T) {
 			name:       "empty output uses default for non-rust",
 			language:   config.LanguageGo,
 			apis:       []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			wantOutput: "src/generated",
+			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
 		{
 			name:        "rust with no apis creates default and derives path",
@@ -492,22 +492,23 @@ func TestPrepareLibrary(t *testing.T) {
 			wantAPIPath: "google/cloud/secretmanager/v1",
 		},
 		{
-			name:        "veneer rust with no apis does not derive path",
-			language:    config.LanguageRust,
-			output:      "src/storage/test/v1",
-			veneer:      true,
-			apis:        nil,
-			wantOutput:  "src/storage/test/v1",
-			wantAPIPath: "",
+			name:       "veneer rust with no apis does not derive path",
+			language:   config.LanguageRust,
+			output:     "src/storage/test/v1",
+			rust:       &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
+			apis:       nil,
+			wantOutput: "src/storage/test/v1",
 		},
 		{
-			name:    "veneer without output returns error",
-			veneer:  true,
-			wantErr: true,
+			name:     "veneer without output returns error",
+			language: config.LanguageRust,
+			rust:     &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
+			wantErr:  true,
 		},
 		{
 			name:       "veneer with explicit output succeeds",
-			veneer:     true,
+			language:   config.LanguageRust,
+			rust:       &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
 			output:     "src/storage",
 			wantOutput: "src/storage",
 		},
@@ -521,15 +522,15 @@ func TestPrepareLibrary(t *testing.T) {
 		{
 			name:       "Go lib without api path",
 			language:   config.LanguageGo,
-			wantOutput: "src/generated",
+			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
 				Name:   "google-cloud-secretmanager-v1",
 				Output: test.output,
-				Veneer: test.veneer,
 				APIs:   test.apis,
+				Rust:   test.rust,
 			}
 			defaults := &config.Default{
 				Output: "src/generated",
@@ -586,6 +587,56 @@ func TestCanDeriveAPIPath(t *testing.T) {
 			got := canDeriveAPIPath(test.language)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsVeneer(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		lib      *config.Library
+		want     bool
+	}{
+		{
+			name:     "rust is veneer",
+			language: config.LanguageRust,
+			lib: &config.Library{
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{{APIPath: "google/storage/v2"}},
+				},
+			},
+			want: true,
+		},
+		{
+			name:     "rust is not veneer",
+			language: config.LanguageRust,
+			lib:      &config.Library{},
+			want:     false,
+		},
+		{
+			name:     "nodejs handwritten tool is veneer",
+			language: config.LanguageNodejs,
+			lib: &config.Library{
+				Output: "packages/typeless-sample-bot",
+				APIs:   nil,
+			},
+			want: true,
+		},
+		{
+			name:     "nodejs gapic lib is not veneer",
+			language: config.LanguageNodejs,
+			lib: &config.Library{
+				Output: "packages/gapic-lib",
+				APIs:   []*config.API{{Path: "google/example/v1"}},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := isVeneer(test.language, test.lib); got != test.want {
+				t.Errorf("isVeneer(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
 			}
 		})
 	}
