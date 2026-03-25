@@ -433,8 +433,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &javaGAPICInfo{
-				NoRestNumericEnums: true,
-				NoSamples:          false,
+				NoSamples: false,
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},
