@@ -93,6 +93,7 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					ReleaseLevel: "preview",
+					Java:         &config.JavaModule{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -125,6 +126,7 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					ReleaseLevel: "preview",
+					Java:         &config.JavaModule{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -163,6 +165,7 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					ReleaseLevel: "preview",
+					Java:         &config.JavaModule{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -188,6 +191,7 @@ func TestBuildConfig(t *testing.T) {
 		{
 			name: "all java fields and overrides",
 			gen: &GenerationConfig{
+				LibrariesBomVersion: "1.2.3",
 				Libraries: []LibraryConfig{
 					{
 						LibraryName:           "pubsub",
@@ -225,6 +229,9 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					ReleaseLevel: "preview",
+					Java: &config.JavaModule{
+						LibrariesBomVersion: "1.2.3",
+					},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
@@ -291,6 +298,7 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					ReleaseLevel: "preview",
+					Java:         &config.JavaModule{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
