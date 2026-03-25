@@ -824,13 +824,13 @@ func TestCopySamplesFromStaging(t *testing.T) {
 			want: "console.log('v1');",
 		},
 		{
-			name: "v1 renamed metadata",
-			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata.google.cloud.test.v1.json"),
+			name: "v1 metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json"),
 			want: `{"snippets":[]}`,
 		},
 		{
-			name: "v1beta1 renamed metadata",
-			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata.google.cloud.test.v1beta1.json"),
+			name: "v1beta1 metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata_google.cloud.test.v1beta1.json"),
 			want: `{"snippets":["beta"]}`,
 		},
 	} {
@@ -843,12 +843,6 @@ func TestCopySamplesFromStaging(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-
-	// Verify the old underscore-prefixed names do not exist.
-	oldV1 := filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json")
-	if _, err := os.Stat(oldV1); !errors.Is(err, os.ErrNotExist) {
-		t.Error("expected snippet_metadata_ file to be renamed, but old name still exists")
 	}
 }
 

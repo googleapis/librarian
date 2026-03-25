@@ -446,13 +446,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 			if err != nil {
 				return err
 			}
-			// The generator produces snippet_metadata_<api>.json but the
-			// existing convention uses snippet_metadata.<api>.json.
-			base := filepath.Base(rel)
-			if strings.HasPrefix(base, "snippet_metadata_") {
-				renamed := "snippet_metadata." + strings.TrimPrefix(base, "snippet_metadata_")
-				rel = filepath.Join(filepath.Dir(rel), renamed)
-			}
 			dst := filepath.Join(outDir, "samples", rel)
 			if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
 				return err
