@@ -31,7 +31,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 		{
 			Name:          "google-cloud-secretmanager",
 			Version:       "6.1.0",
-			CopyrightYear: "2019",
+			CopyrightYear: "2020",
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
