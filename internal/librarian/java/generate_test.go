@@ -320,7 +320,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			targetErr: ErrExtractVersion,
+			targetErr: errExtractVersion,
 		},
 		{
 			name: "no protos found",
@@ -331,7 +331,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/nonexistent/v1"},
 				},
 			},
-			targetErr: ErrNoProtos,
+			targetErr: errNoProtos,
 		},
 		{
 			name: "mkdir failure for output dir",
