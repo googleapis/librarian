@@ -23,9 +23,8 @@ import (
 
 func TestFillDefaults(t *testing.T) {
 	defaults := &config.Default{
-		Keep:         []string{"CHANGES.md"},
-		Output:       "src/generated/",
-		ReleaseLevel: "stable",
+		Keep:   []string{"CHANGES.md"},
+		Output: "src/generated/",
 	}
 	for _, test := range []struct {
 		name     string
@@ -38,22 +37,19 @@ func TestFillDefaults(t *testing.T) {
 			defaults: defaults,
 			lib:      &config.Library{},
 			want: &config.Library{
-				Keep:         []string{"CHANGES.md"},
-				Output:       "src/generated/",
-				ReleaseLevel: "stable",
+				Keep:   []string{"CHANGES.md"},
+				Output: "src/generated/",
 			},
 		},
 		{
 			name:     "preserves existing values",
 			defaults: defaults,
 			lib: &config.Library{
-				Output:       "custom/output/",
-				ReleaseLevel: "preview",
+				Output: "custom/output/",
 			},
 			want: &config.Library{
-				Keep:         []string{"CHANGES.md"},
-				Output:       "custom/output/",
-				ReleaseLevel: "preview",
+				Keep:   []string{"CHANGES.md"},
+				Output: "custom/output/",
 			},
 		},
 		{
@@ -61,9 +57,8 @@ func TestFillDefaults(t *testing.T) {
 			defaults: defaults,
 			lib:      &config.Library{Output: "custom/output/"},
 			want: &config.Library{
-				Keep:         []string{"CHANGES.md"},
-				Output:       "custom/output/",
-				ReleaseLevel: "stable",
+				Keep:   []string{"CHANGES.md"},
+				Output: "custom/output/",
 			},
 		},
 		{

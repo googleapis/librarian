@@ -230,11 +230,10 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		libs = append(libs, &config.Library{
-			Name:         name,
-			Version:      version,
-			Keep:         parseOwlBotKeep(repoPath, output),
-			APIs:         apis,
-			ReleaseLevel: l.ReleaseLevel,
+			Name:    name,
+			Version: version,
+			Keep:    parseOwlBotKeep(repoPath, output),
+			APIs:    apis,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,
@@ -265,9 +264,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 	}
 	return &config.Config{
 		Language: "java",
-		Default: &config.Default{
-			ReleaseLevel: "preview",
-		},
 		Sources: &config.Sources{
 			Googleapis: src,
 		},

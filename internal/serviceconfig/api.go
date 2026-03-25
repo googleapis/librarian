@@ -143,6 +143,20 @@ func (api *API) HasRESTNumericEnums(language string) bool {
 	return true
 }
 
+// ReleaseLevel gets the release level for a given language.
+//
+// If language-specific release level is not defined, it falls back to the "all" language setting,
+// and then to "stable".
+func (api *API) ReleaseLevel(language string) string {
+	if rl, ok := api.ReleaseLevels[language]; ok {
+		return rl
+	}
+	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
+		return rl
+	}
+	return "stable"
+}
+
 var (
 	//go:embed sdk.yaml
 	sdkYaml []byte

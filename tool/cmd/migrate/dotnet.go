@@ -22,7 +22,6 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
@@ -108,11 +107,6 @@ func buildDotnetConfig(apisJSON *DotnetAPIsJSON, src *config.Source) (*config.Co
 			lib.APIs = []*config.API{
 				{Path: api.ProtoPath},
 			}
-		}
-
-		v := strings.ToLower(api.Version)
-		if strings.Contains(v, "alpha") || strings.Contains(v, "beta") {
-			lib.ReleaseLevel = "preview"
 		}
 
 		if api.BlockRelease != "" {

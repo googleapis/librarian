@@ -915,9 +915,8 @@ func TestWriteRepoMetadata(t *testing.T) {
 		Repo:     "googleapis/google-cloud-node",
 	}
 	library := &config.Library{
-		Name:         "google-cloud-secretmanager",
-		ReleaseLevel: "stable",
-		APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
 		t.Fatal(err)

@@ -183,8 +183,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Branch: "main",
 				},
 				Default: &config.Default{
-					ReleaseLevel: "ga",
-					TagFormat:    defaultTagFormat,
+					TagFormat: defaultTagFormat,
 				},
 			},
 		},
@@ -205,9 +204,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				},
 				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
-					Output:       "packages",
-					ReleaseLevel: "stable",
-					TagFormat:    pythonTagFormat,
+					Output:    "packages",
+					TagFormat: pythonTagFormat,
 					Python: &config.PythonDefault{
 						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
 						LibraryType:      pythonDefaultLibraryType,
@@ -245,9 +243,8 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 				},
 				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
-					Output:       "packages",
-					ReleaseLevel: "stable",
-					TagFormat:    pythonTagFormat,
+					Output:    "packages",
+					TagFormat: pythonTagFormat,
 					Python: &config.PythonDefault{
 						CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
 						LibraryType:      pythonDefaultLibraryType,
@@ -317,8 +314,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 					Branch: "main",
 				},
 				Default: &config.Default{
-					ReleaseLevel: "ga",
-					TagFormat:    defaultTagFormat,
+					TagFormat: defaultTagFormat,
 				},
 				Libraries: []*config.Library{
 					{

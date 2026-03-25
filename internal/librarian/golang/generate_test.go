@@ -50,7 +50,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "secretmanager",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -70,7 +69,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "configdelivery",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -123,7 +121,6 @@ func TestGenerate_Error(t *testing.T) {
 				APIs:          []*config.API{{Path: "google/cloud/non-existent/v1"}},
 				Output:        t.TempDir(),
 				Version:       "0.1.0",
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
@@ -144,7 +141,6 @@ func TestGenerate_Error(t *testing.T) {
 				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				Output:        t.TempDir(),
 				Version:       "0.1.0",
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 			},
 			wantErr: errGoAPINotFound,

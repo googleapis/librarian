@@ -275,11 +275,13 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 }
 
 // releaseLevel determines the release level for an API.
+// The Go generator uses "ga" rather than "stable".
 func releaseLevel(sc *serviceconfig.API) string {
-	if rl, ok := sc.ReleaseLevels[config.LanguageGo]; ok {
-		return rl
+	rl := sc.ReleaseLevel(config.LanguageGo)
+	if rl == "stable" {
+		return releaseLevelGA
 	}
-	return releaseLevelGA
+	return rl
 }
 
 // transport get transport from serviceconfig.API for language Go.
