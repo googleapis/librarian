@@ -306,10 +306,10 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 
 func TestGenerateLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		library   *config.Library
-		setup     func(t *testing.T, library *config.Library)
-		targetErr error
+		name    string
+		library *config.Library
+		setup   func(t *testing.T, library *config.Library)
+		wantErr error
 	}{
 		{
 			name: "invalid version",
@@ -320,7 +320,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			targetErr: errExtractVersion,
+			wantErr: errExtractVersion,
 		},
 		{
 			name: "no protos found",
@@ -331,7 +331,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/nonexistent/v1"},
 				},
 			},
-			targetErr: errNoProtos,
+			wantErr: errNoProtos,
 		},
 		{
 			name: "mkdir failure for output dir",
@@ -348,7 +348,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			targetErr: syscall.ENOTDIR,
+			wantErr: syscall.ENOTDIR,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -357,8 +357,8 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			}
 			cfg := &config.Config{Language: "java"}
 			err := Generate(t.Context(), cfg, test.library, googleapisDir)
-			if !errors.Is(err, test.targetErr) {
-				t.Errorf("generate() error = %v, want targetErr %v", err, test.targetErr)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("generate() error = %v, want targetErr %v", err, test.wantErr)
 			}
 		})
 	}
