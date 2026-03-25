@@ -31,7 +31,7 @@ jobs:
         run: go version
       - uses: actions/setup-node@v6
         with:
-          node-version: "22"
+          node-version: "18"
       - name: Display Node.js version
         run: node --version
       - uses: actions/setup-python@v6
@@ -47,8 +47,8 @@ jobs:
           npm install
           npm run compile
           npm link
-      - name: Install gapic-node-processing, gapic-tools, and eslint
-        run: npm install -g gapic-node-processing gapic-tools eslint@8
+      - name: Install gapic-node-processing and gapic-tools
+        run: npm install -g gapic-node-processing@0.1.7 gapic-tools@1.0.5
       - name: Install synthtool
         run: |
           pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
