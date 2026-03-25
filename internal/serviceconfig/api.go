@@ -91,6 +91,10 @@ type API struct {
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, the generator default is used.
+	//
+	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
+	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
+	// standardize release level vocabulary across lanaguages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
@@ -155,6 +159,8 @@ func (api *API) ReleaseLevel(language string) string {
 	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
 		return rl
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
+	// release level vocabulary across lanaguages.
 	if language == config.LanguageGo {
 		return "ga"
 	}

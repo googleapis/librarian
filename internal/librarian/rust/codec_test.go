@@ -597,7 +597,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 			if test.want.Codec == nil {
-				test.want.Codec = buildCodec(test.library, &serviceconfig.API{})
+				test.want.Codec = buildCodec(test.library, "stable")
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -1423,7 +1423,7 @@ func TestBuildCodec(t *testing.T) {
 			if sc == nil {
 				sc = &serviceconfig.API{}
 			}
-			got := buildCodec(test.library, sc)
+			got := buildCodec(test.library, sc.ReleaseLevel(config.LanguageRust))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
