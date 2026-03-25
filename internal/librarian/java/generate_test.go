@@ -16,9 +16,11 @@ package java
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"sort"
 
@@ -409,7 +411,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		name    string
 		library *config.Library
 		setup   func(t *testing.T, library *config.Library)
-		wantErr string
+		wantErr error
 	}{
 		{
 			name: "invalid version",
@@ -420,7 +422,18 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					{Path: "google/cloud/secretmanager"}, // Missing version
 				},
 			},
-			wantErr: "failed to extract version from api path",
+			wantErr: errExtractVersion,
+		},
+		{
+			name: "no protos found",
+			library: &config.Library{
+				Name:   "test",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/nonexistent/v1"},
+				},
+			},
+			wantErr: errNoProtos,
 		},
 		{
 			name: "mkdir failure for output dir",
@@ -437,7 +450,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "failed to create output directory",
+			wantErr: syscall.ENOTDIR,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -446,7 +459,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			}
 			cfg := &config.Config{Language: "java"}
 			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
-			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+			if !errors.Is(err, test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
