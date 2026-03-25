@@ -184,62 +184,6 @@ func TestGoClientDocURL(t *testing.T) {
 	}
 }
 
-func TestMetadataReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		api  *serviceconfig.API
-		want string
-	}{
-		{
-			name: "stable",
-			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			want: repoMetadataReleaseLevelStable,
-		},
-		{
-			name: "stable, empty path",
-			api:  &serviceconfig.API{},
-			want: repoMetadataReleaseLevelStable,
-		},
-		{
-			name: "preview, alpha api path",
-			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1alpha",
-			},
-			want: repoMetadataReleaseLevelPreview,
-		},
-		{
-			name: "preview, alpha for golang",
-			api: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
-			},
-			want: repoMetadataReleaseLevelPreview,
-		},
-		{
-			name: "preview, beta api path",
-			api: &serviceconfig.API{
-				Path: "google/cloud/secretmanager/v1beta",
-			},
-			want: repoMetadataReleaseLevelPreview,
-		},
-		{
-			name: "preview, beta for golang",
-			api: &serviceconfig.API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
-			},
-			want: repoMetadataReleaseLevelPreview,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := metadataReleaseLevel(test.api)
-			if got != test.want {
-				t.Errorf("metadataReleaseLevel() = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
 func TestGoDistributionName(t *testing.T) {
 	for _, test := range []struct {
 		name       string

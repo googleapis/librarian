@@ -20,6 +20,7 @@ import (
 	_ "embed"
 	"fmt"
 	"slices"
+	"strings"
 	"sync"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -148,17 +149,6 @@ func (api *API) HasRESTNumericEnums(language string) bool {
 // If language-specific release level is not defined, it falls back to the "all" language setting,
 // and then to "stable".
 func (api *API) ReleaseLevel(language string) string {
-	return api.RepoMetadataReleaseLevel(language)
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
-// function once the issue is resolved.
-//
-// RepoMetadataReleaseLevel gets the release level for a given language.
-//
-// If language-specific release level is not defined, it falls back to the "all" language setting,
-// and then to "stable".
-func (api *API) RepoMetadataReleaseLevel(language string) string {
 	if rl, ok := api.ReleaseLevels[language]; ok {
 		return rl
 	}
@@ -169,6 +159,26 @@ func (api *API) RepoMetadataReleaseLevel(language string) string {
 		return "ga"
 	}
 	return "stable"
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
+// function once the issue is resolved.
+//
+// RepoMetadataReleaseLevel returns the release level for repo metadata.
+// For Go, it maps the raw release level to "stable" or "preview".
+// For other languages, it returns the raw release level.
+func (api *API) RepoMetadataReleaseLevel(language string) string {
+	if language == config.LanguageGo {
+		version := ExtractVersion(api.Path)
+		if strings.Contains(version, "alpha") || strings.Contains(version, "beta") {
+			return "preview"
+		}
+		if api.ReleaseLevel(language) != "ga" {
+			return "preview"
+		}
+		return "stable"
+	}
+	return api.ReleaseLevel(language)
 }
 
 var (
