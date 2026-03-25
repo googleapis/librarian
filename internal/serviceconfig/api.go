@@ -150,7 +150,7 @@ var (
 )
 
 // HasAPIPath reports whether path matches the Path field of any API in
-// sdk.yaml
+// sdk.yaml.
 func HasAPIPath(path string) bool {
 	apisByPathOnce.Do(func() {
 		apisByPath = make(map[string]*API, len(APIs))
