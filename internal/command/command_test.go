@@ -200,17 +200,17 @@ func TestRunStreaming(t *testing.T) {
 	}{
 		{
 			name:    "simple output and err",
-			command: "/usr/bin/sh",
+			command: "/bin/sh",
 			args:    []string{"-c", "echo test-output && echo >&2 test-error"},
 			wantOut: "test-output\n",
 			wantErr: "test-error\n",
 		},
 		{
 			name:    "verbose output",
-			command: "/usr/bin/sh",
+			command: "/bin/sh",
 			args:    []string{"-c", "echo test-output"},
 			verbose: true,
-			wantOut: "/usr/bin/sh -c echo test-output\ntest-output\n",
+			wantOut: "/bin/sh -c echo test-output\ntest-output\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
