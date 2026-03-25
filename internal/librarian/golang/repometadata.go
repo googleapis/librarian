@@ -24,6 +24,11 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
+const (
+	repoMetadataReleaseLevelStable  = "stable"
+	repoMetadataReleaseLevelPreview = "preview"
+)
+
 func generateRepoMetadata(api *serviceconfig.API, library *config.Library, goAPI *config.GoAPI) error {
 	metadata := &repometadata.RepoMetadata{
 		APIShortname:        api.ShortName,
@@ -33,9 +38,20 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library, goAPI
 		DistributionName:    distributionName(goAPI.ImportPath),
 		Language:            config.LanguageGo,
 		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        api.ReleaseLevel(config.LanguageGo),
+		ReleaseLevel:        metadataReleaseLevel(api),
 	}
 	return metadata.Write(filepath.Join(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI)))
+}
+
+func metadataReleaseLevel(api *serviceconfig.API) string {
+	version := serviceconfig.ExtractVersion(api.Path)
+	if strings.Contains(version, "alpha") || strings.Contains(version, "beta") {
+		return repoMetadataReleaseLevelPreview
+	}
+	if api.ReleaseLevel(config.LanguageGo) != "ga" {
+		return repoMetadataReleaseLevelPreview
+	}
+	return repoMetadataReleaseLevelStable
 }
 
 // clientDocURL builds the client documentation URL for Go SDK.

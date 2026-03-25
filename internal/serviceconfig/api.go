@@ -148,14 +148,23 @@ func (api *API) HasRESTNumericEnums(language string) bool {
 // If language-specific release level is not defined, it falls back to the "all" language setting,
 // and then to "stable".
 func (api *API) ReleaseLevel(language string) string {
+	return api.RepoMetadataReleaseLevel(language)
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
+// function once the issue is resolved.
+//
+// RepoMetadataReleaseLevel gets the release level for a given language.
+//
+// If language-specific release level is not defined, it falls back to the "all" language setting,
+// and then to "stable".
+func (api *API) RepoMetadataReleaseLevel(language string) string {
 	if rl, ok := api.ReleaseLevels[language]; ok {
 		return rl
 	}
 	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
 		return rl
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4834): move this
-	// language-specific logic to sdk.yaml.
 	if language == config.LanguageGo {
 		return "ga"
 	}
