@@ -47,7 +47,7 @@ func IsVeneer(lib *config.Library) bool {
 	if len(lib.APIs) == 0 && lib.Output != "" {
 		// If the derived API path is in sdk.yaml, this is a generated
 		// library whose APIs have not been populated yet, not a veneer.
-		if serviceconfig.HasAPIPath(DeriveAPIPath(lib.Name), config.LanguageRust) {
+		if serviceconfig.HasAPIPath(DeriveAPIPath(lib.Name)) {
 			return false
 		}
 		return true

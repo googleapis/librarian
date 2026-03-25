@@ -43,20 +43,18 @@ func TestAPIsAlphabeticalOrder(t *testing.T) {
 
 func TestHasAPIPath(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		path     string
-		language string
-		want     bool
+		name string
+		path string
+		want bool
 	}{
-		{"matching path and language", "google/api", config.LanguageRust, true},
-		{"matching path but not language", "google/ads/admanager/v1", config.LanguageRust, false},
-		{"unknown path", "google/does/not/exist/v1", config.LanguageRust, false},
-		{"empty path", "", config.LanguageRust, false},
+		{"matching path and language", "google/api", true},
+		{"unknown path", "google/does/not/exist/v1", false},
+		{"empty path", "", false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := HasAPIPath(test.path, test.language)
+			got := HasAPIPath(test.path)
 			if got != test.want {
-				t.Errorf("HasAPIPath(%q, %q) = %v, want %v", test.path, test.language, got, test.want)
+				t.Errorf("HasAPIPath(%q) = %v, want %v", test.path, got, test.want)
 			}
 		})
 	}
