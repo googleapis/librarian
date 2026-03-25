@@ -938,6 +938,7 @@ func TestBuildGoLibraries(t *testing.T) {
 						{Path: "google/bigtable/v2"},
 						{Path: "google/bigtable/admin/v2"},
 					},
+					Keep: []string{"README.md"},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{Path: "google/bigtable/admin/v2", NoMetadata: true, ProtoOnly: true},
