@@ -710,6 +710,44 @@ func TestBuildGAPICOpts(t *testing.T) {
 	}
 }
 
+func TestBuildGAPICOpts_Error(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		apiPath       string
+		goAPI         *config.GoAPI
+		googleapisDir string
+	}{
+		{
+			name:    "api not in allowlist",
+			apiPath: "nonexistent/api/v1",
+			goAPI: &config.GoAPI{
+				ClientPackage: "nonexistent",
+				ImportPath:    "nonexistent/apiv1",
+				Path:          "nonexistent/api/v1",
+			},
+			googleapisDir: googleapisDir,
+		},
+		{
+			name:    "api not allowed for go",
+			apiPath: "google/cloud/asset/v1p1beta1",
+			goAPI: &config.GoAPI{
+				ClientPackage: "asset",
+				ImportPath:    "asset/apiv1p1beta1",
+				Path:          "google/cloud/asset/v1p1beta1",
+			},
+			googleapisDir: googleapisDir,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			_, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
+			if err == nil {
+				t.Fatal("expected error")
+			}
+		})
+	}
+}
+
 func TestMoveGeneratedFiles(t *testing.T) {
 	for _, test := range []struct {
 		name  string
