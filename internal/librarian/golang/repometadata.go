@@ -68,4 +68,3 @@ func clientDocURL(library *config.Library, importPath string) string {
 func distributionName(importPath string) string {
 	return fmt.Sprintf("cloud.google.com/go/%s", importPath)
 }
-

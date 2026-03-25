@@ -260,4 +260,3 @@ func TestGoDistributionName(t *testing.T) {
 		})
 	}
 }
-
