@@ -23,7 +23,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
 )
@@ -212,19 +211,6 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 		if err := filesystem.CopyFile(proto, target); err != nil {
 			return fmt.Errorf("failed to copy file %s to %s: %w", proto, target, err)
 		}
-	}
-	return nil
-}
-
-// generateRepoMetadata coordinates all library-level post-processing tasks,
-// such as generating .repo-metadata.json.
-func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
-	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
-	if err != nil {
-		return fmt.Errorf("failed to derive repo metadata: %w", err)
-	}
-	if err := metadata.write(outDir); err != nil {
-		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
 	}
 	return nil
 }
