@@ -459,7 +459,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/aiplatform/v1beta1/schema/predict/params
@@ -468,7 +467,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/aiplatform/v1beta1/schema/predict/prediction
@@ -477,7 +475,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/aiplatform/v1beta1/schema/trainingjob/definition
@@ -486,7 +483,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/alloydb/connectors/v1
@@ -658,7 +654,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/assuredworkloads/v1
@@ -880,7 +875,6 @@
     - go
     - java
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/bigquery/dataexchange/v1beta1
@@ -1026,7 +1020,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     all: true
   release_level:
@@ -1150,7 +1143,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/channel/v1
@@ -1287,7 +1279,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/config/v1
@@ -1422,7 +1413,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/datalabeling/v1beta1
@@ -1628,7 +1618,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: alpha
 - path: google/cloud/domains/v1beta1
@@ -1717,7 +1706,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/financialservices/v1
@@ -1755,7 +1743,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: alpha
 - path: google/cloud/functions/v2beta
@@ -1765,7 +1752,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/gdchardwaremanagement/v1alpha
@@ -1839,7 +1825,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/servicemesh/v1beta
@@ -1848,7 +1833,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1
@@ -1894,7 +1878,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: alpha
 - path: google/cloud/gkehub/v1alpha/cloudauditlogging
@@ -1903,7 +1886,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1alpha/configmanagement
@@ -1912,7 +1894,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1alpha/metering
@@ -1921,7 +1902,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1alpha/multiclusteringress
@@ -1930,7 +1910,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1alpha/servicemesh
@@ -1939,7 +1918,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1beta
@@ -1949,7 +1927,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/gkehub/v1beta/configmanagement
@@ -1958,7 +1935,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1beta/metering
@@ -1967,7 +1943,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1beta/multiclusteringress
@@ -1976,7 +1951,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkehub/v1beta1
@@ -2040,7 +2014,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/hypercomputecluster/v1beta
@@ -2066,7 +2039,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/ids/v1
@@ -2083,7 +2055,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/kms/inventory/v1
@@ -2218,7 +2189,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/managedkafka/schemaregistry/v1
@@ -2422,7 +2392,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/networksecurity/v1
@@ -2470,7 +2439,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/notebooks/v1
@@ -2560,7 +2528,6 @@
     - go
     - java
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/osconfig/v1
@@ -2586,7 +2553,6 @@
     - go
     - java
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/oslogin/common
@@ -2616,7 +2582,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/parallelstore/v1
@@ -2691,7 +2656,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/policytroubleshooter/v1
@@ -2767,7 +2731,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/recommendationengine/v1beta1
@@ -2979,7 +2942,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/security/publicca/v1beta1
@@ -2996,7 +2958,6 @@
     - go
     - java
     - python
-    - rust
   no_rest_numeric_enums:
     all: true
   release_level:
@@ -3129,7 +3090,6 @@
     - java
     - nodejs
     - python
-    - rust
   release_level:
     go: beta
 - path: google/cloud/storagebatchoperations/v1
