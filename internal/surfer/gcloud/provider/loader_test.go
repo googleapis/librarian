@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package provider
 
 import (
 	"os"
@@ -24,7 +24,7 @@ import (
 )
 
 func TestReadGcloudConfig(t *testing.T) {
-	files, err := filepath.Glob("testdata/*/gcloud.yaml")
+	files, err := filepath.Glob("../testdata/*/gcloud.yaml")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -36,7 +36,7 @@ func TestReadGcloudConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			cfg, err := yaml.Unmarshal[*Config](data)
+			cfg, err := yaml.Unmarshal[Config](data)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -46,7 +46,7 @@ func TestReadGcloudConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			roundTripped, err := yaml.Unmarshal[*Config](marshaled)
+			roundTripped, err := yaml.Unmarshal[Config](marshaled)
 			if err != nil {
 				t.Fatal(err)
 			}

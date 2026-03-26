@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package provider
 
 import (
 	"strings"
@@ -55,7 +55,7 @@ func TestGetPluralFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getPluralFromSegments(test.segments)
+			got := GetPluralFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -103,7 +103,7 @@ func TestGetParentFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getParentFromSegments(test.segments)
+			got := GetParentFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -144,7 +144,7 @@ func TestGetSingularFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getSingularFromSegments(test.segments)
+			got := GetSingularFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -186,7 +186,7 @@ func TestGetCollectionPathFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getCollectionPathFromSegments(test.segments)
+			got := GetCollectionPathFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -233,7 +233,7 @@ func TestExtractPathFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := extractPathFromSegments(test.segments)
+			got := ExtractPathFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -335,7 +335,7 @@ func TestIsPrimaryResource(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isPrimaryResource(test.field, test.method)
+			got := IsPrimaryResource(test.field, test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -443,7 +443,7 @@ func TestGetResourceForMethod(t *testing.T) {
 				ResourceDefinitions: test.resourceDefs,
 				Messages:            test.messages,
 			}
-			got := getResourceForMethod(test.method, model)
+			got := GetResourceForMethod(test.method, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -516,7 +516,7 @@ func TestGetPluralResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := getPluralResourceNameForMethod(test.method, model)
+			got := GetPluralResourceNameForMethod(test.method, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -589,7 +589,7 @@ func TestGetSingularResourceNameForMethod(t *testing.T) {
 			model := &api.API{
 				ResourceDefinitions: test.resourceDefs,
 			}
-			got := getSingularResourceNameForMethod(test.method, model)
+			got := GetSingularResourceNameForMethod(test.method, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -609,7 +609,7 @@ func TestGetResourceNameFromType(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getResourceNameFromType(test.typeStr)
+			got := GetResourceNameFromType(test.typeStr)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

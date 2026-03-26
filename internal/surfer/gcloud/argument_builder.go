@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 	"github.com/iancoleman/strcase"
 )
 
@@ -26,7 +27,7 @@ import (
 // arguments for a gcloud command.
 type argumentBuilder struct {
 	method    *api.Method
-	overrides *Config
+	overrides *provider.Config
 	model     *api.API
 	service   *api.Service
 	field     *api.Field
@@ -34,7 +35,7 @@ type argumentBuilder struct {
 }
 
 // newArgumentBuilder constructs a new argumentBuilder.
-func newArgumentBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service, field *api.Field, apiField string) *argumentBuilder {
+func newArgumentBuilder(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service, field *api.Field, apiField string) *argumentBuilder {
 	return &argumentBuilder{
 		method:    method,
 		overrides: overrides,
@@ -71,7 +72,7 @@ func (b *argumentBuilder) build() (Argument, error) {
 	} else if b.field.EnumType != nil {
 		arg.Choices = b.choices()
 	} else {
-		arg.Type = getGcloudType(b.field.Typez)
+		arg.Type = provider.GetGcloudType(b.field.Typez)
 	}
 
 	return arg, nil
@@ -82,11 +83,11 @@ func (b *argumentBuilder) repeated() bool {
 }
 
 func (b *argumentBuilder) clearable() bool {
-	return isUpdate(b.method) && b.repeated()
+	return provider.IsUpdate(b.method) && b.repeated()
 }
 
 func (b *argumentBuilder) helpText() string {
-	if rule := findFieldHelpTextRule(b.field, b.overrides); rule != nil {
+	if rule := provider.FindFieldHelpTextRule(b.overrides, b.field.ID); rule != nil {
 		return rule.HelpText.Brief
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
@@ -115,7 +116,7 @@ func (b *argumentBuilder) mapSpec() []ArgSpec {
 // BuildPrimaryResource creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
 func (b *argumentBuilder) buildPrimaryResource() Argument {
-	resource := getResourceForMethod(b.method, b.model)
+	resource := provider.GetResourceForMethod(b.method, b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
 	if resource != nil && len(resource.Patterns) > 0 {
@@ -123,44 +124,44 @@ func (b *argumentBuilder) buildPrimaryResource() Argument {
 	}
 
 	// For List methods, the primary resource is the parent of the method's resource.
-	if isList(b.method) {
-		segments = getParentFromSegments(segments)
+	if provider.IsList(b.method) {
+		segments = provider.GetParentFromSegments(segments)
 	}
 
 	resourceName := strings.TrimSuffix(b.field.Name, "_id")
-	if b.field.Name == "name" || isList(b.method) {
-		resourceName = getSingularFromSegments(segments)
+	if b.field.Name == "name" || provider.IsList(b.method) {
+		resourceName = provider.GetSingularFromSegments(segments)
 	}
 
 	var helpText string
 	switch {
-	case isCreate(b.method):
+	case provider.IsCreate(b.method):
 		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case isList(b.method):
-		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", getPluralFromSegments(segments))
+	case provider.IsList(b.method):
+		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", provider.GetPluralFromSegments(segments))
 	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
 
-	collectionPath := getCollectionPathFromSegments(segments)
+	collectionPath := provider.GetCollectionPathFromSegments(segments)
 	hostParts := strings.Split(b.service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
 	param := Argument{
 		HelpText:          helpText,
-		IsPositional:      !isList(b.method),
+		IsPositional:      !provider.IsList(b.method),
 		IsPrimaryResource: true,
 		Required:          true,
 		ResourceSpec: &ResourceSpec{
 			Name:                  resourceName,
-			PluralName:            getPluralFromSegments(segments),
+			PluralName:            provider.GetPluralFromSegments(segments),
 			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
 			DisableAutoCompleters: false,
 			Attributes:            newAttributesFromSegments(segments),
 		},
 	}
 
-	if isCreate(b.method) {
+	if provider.IsCreate(b.method) {
 		param.RequestIDField = strcase.ToLowerCamel(b.field.Name)
 	}
 
@@ -180,14 +181,14 @@ func (b *argumentBuilder) resourceReferenceSpec() (*ResourceSpec, error) {
 
 			pluralName := def.Plural
 			if pluralName == "" {
-				pluralName = getPluralFromSegments(segments)
+				pluralName = provider.GetPluralFromSegments(segments)
 			}
 
-			name := getSingularFromSegments(segments)
+			name := provider.GetSingularFromSegments(segments)
 
 			hostParts := strings.Split(b.service.DefaultHost, ".")
 			shortServiceName := hostParts[0]
-			baseCollectionPath := getCollectionPathFromSegments(segments)
+			baseCollectionPath := provider.GetCollectionPathFromSegments(segments)
 			fullCollectionPath := fmt.Sprintf("%s.%s", shortServiceName, baseCollectionPath)
 
 			return &ResourceSpec{

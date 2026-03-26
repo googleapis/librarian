@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package gcloud provides functionality for generating gcloud commands.
 package gcloud
 
 import (
@@ -22,17 +23,18 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 	"github.com/iancoleman/strcase"
 )
 
 // Generate generates gcloud commands for a service.
 func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
-	overrides, err := readGcloudConfig(gcloudconfig)
+	overrides, err := provider.ReadGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
 	}
 
-	model, err := createAPIModel(googleapis, includeList)
+	model, err := provider.CreateAPIModel(googleapis, includeList)
 	if err != nil {
 		return err
 	}
@@ -50,7 +52,7 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 	return nil
 }
 
-func generateService(service *api.Service, overrides *Config, model *api.API, output string) error {
+func generateService(service *api.Service, overrides *provider.Config, model *api.API, output string) error {
 	shortServiceName, _, found := strings.Cut(service.DefaultHost, ".")
 	if !found {
 		return fmt.Errorf("failed to determine short service name for service %q: default_host is empty", service.Name)
@@ -62,9 +64,9 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 		return fmt.Errorf("failed to create surface directory for %q: %w", shortServiceName, err)
 	}
 
-	track := strings.ToUpper(inferTrackFromPackage(service.Package))
+	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 	data := CommandGroup{
-		ServiceTitle:    getServiceTitle(model, shortServiceName),
+		ServiceTitle:    provider.GetServiceTitle(model, shortServiceName),
 		ClassNamePrefix: strcase.ToCamel(shortServiceName),
 		Tracks:          []string{track},
 	}
@@ -78,7 +80,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 	methodsByResource := make(map[string][]*api.Method)
 
 	for _, method := range service.Methods {
-		collectionID := getPluralResourceNameForMethod(method, model)
+		collectionID := provider.GetPluralResourceNameForMethod(method, model)
 
 		if collectionID != "" {
 			methodsByResource[collectionID] = append(methodsByResource[collectionID], method)
@@ -99,7 +101,7 @@ func generateService(service *api.Service, overrides *Config, model *api.API, ou
 //
 // For a given collectionID like "instances", this function will create a directory
 // `instances/` and populate it with `create.yaml`, `delete.yaml`, etc.
-func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *Config, model *api.API, service *api.Service) error {
+func generateResourceCommands(collectionID string, methods []*api.Method, baseDir string, overrides *provider.Config, model *api.API, service *api.Service) error {
 	if len(methods) == 0 {
 		return nil
 	}
@@ -110,13 +112,13 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 		return fmt.Errorf("failed to create resource directory for %q: %w", collectionID, err)
 	}
 
-	singular := getSingularResourceNameForMethod(methods[0], model)
+	singular := provider.GetSingularResourceNameForMethod(methods[0], model)
 
 	shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
 
-	track := strings.ToUpper(inferTrackFromPackage(service.Package))
+	track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 	data := CommandGroup{
-		ServiceTitle:     getServiceTitle(model, shortServiceName),
+		ServiceTitle:     provider.GetServiceTitle(model, shortServiceName),
 		ResourceSingular: singular,
 		ClassNamePrefix:  strcase.ToCamel(collectionID),
 		Tracks:           []string{track},
@@ -133,7 +135,7 @@ func generateResourceCommands(collectionID string, methods []*api.Method, baseDi
 	}
 
 	for _, method := range methods {
-		verb, err := getCommandName(method)
+		verb, err := provider.GetCommandName(method)
 		if err != nil {
 			// Continue to the next method if we can't determine a command name,
 			// logging the issue might be useful here in the future.

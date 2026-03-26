@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package provider
 
 import (
 	"fmt"
@@ -22,11 +22,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// createAPIModel parses the service specification and creates the API model.
-func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
+// CreateAPIModel parses the service specification and creates the API model.
+func CreateAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	parserConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
 		Source: &sources.SourceConfig{
@@ -53,16 +53,16 @@ func createAPIModel(googleapisPath, includeList string) (*api.API, error) {
 	return model, nil
 }
 
-// readGcloudConfig loads the gcloud configuration from a gcloud.yaml file.
-func readGcloudConfig(path string) (*Config, error) {
+// ReadGcloudConfig loads the gcloud configuration from a gcloud.yaml file.
+func ReadGcloudConfig(path string) (*Config, error) {
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read gcloud config file: %w", err)
 	}
 
-	var cfg Config
-	if err := yaml.Unmarshal(data, &cfg); err != nil {
+	cfg, err := yaml.Unmarshal[Config](data)
+	if err != nil {
 		return nil, fmt.Errorf("failed to parse gcloud config YAML: %w", err)
 	}
-	return &cfg, nil
+	return cfg, nil
 }
