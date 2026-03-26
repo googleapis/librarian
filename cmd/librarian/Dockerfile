@@ -48,12 +48,12 @@ ARG CARGO_SEMVER_CHECKS_VERSION=0.46.0
 # Python dependency versions
 ARG PYTHON_PROTOC_VERSION=25.3
 ARG PYTHON_PROTOC_CHECKSUM=5ec3474ca09df0511bb2ca66b5ca091fa8943c30aa26285f225d0b1ba60b5665b3419be4cd2322decbb55464039ca0a0405a47e86bcc11491589405d615d280e
-ARG PYTHON_GAPIC_VERSION=1.30.11
+ARG PYTHON_GAPIC_VERSION=1.30.13
 ARG NOX_VERSION=2025.11.12
 ARG RUFF_VERSION=0.14.14
 ARG ISORT_VERSION=5.11.0
 ARG BLACK_VERSION=23.7.0
-ARG SYNTHTOOL_COMMIT=afd7725f32d522a95e964884e0fba6d0d6b4cb6a
+ARG SYNTHTOOL_COMMIT=96f416c959fbe8048200b6c16000de32b352902e
 ARG PANDOC_VERSION=3.8.2
 ARG PANDOC_CHECKSUM=f5e90628b44a801ecdf812236291871607db8fb2fba0e99911a6c497b406c64a8940fd2a776d482ece7a9dac10d0228378d78da61091262b69e7276456495f5c
 
@@ -178,15 +178,24 @@ RUN curl -fsSL -o /tmp/protoc.zip \
     echo "${PYTHON_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Install Python dependencies
+# Make sure Python uses /python-packages for all installations.
+# This makes it easier to predict where things are installed, e.g. for
+# SYNTHTOOL_TEMPLATES later.
+ENV PYTHONPATH=/python-packages
+ENV PATH=${PATH}:${PYTHONPATH}/bin
+
+# Install Python dependencies, into /python-packages (so it's predictable).
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir --break-system-packages \
+    pip install -t ${PYTHONPATH} --no-cache-dir --break-system-packages \
     gapic-generator==${PYTHON_GAPIC_VERSION} \
     nox==${NOX_VERSION} \
     ruff==${RUFF_VERSION} \
     isort==${ISORT_VERSION} \
     black[jupyter]==${BLACK_VERSION} \
     gcp-synthtool@git+https://github.com/googleapis/synthtool@${SYNTHTOOL_COMMIT}
+
+# Ensure we use the local synthtool templates.
+ENV SYNTHTOOL_TEMPLATES=/${PYTHONPATH}/synthtool/gcp/templates
 
 # ============== Go Stage ==============
 FROM base AS go
