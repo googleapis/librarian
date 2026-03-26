@@ -102,7 +102,7 @@ func TestBumpCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got, err := yaml.Read[config.Config](librarianConfigPath)
+			got, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -135,7 +135,7 @@ func TestBumpCommandDeriveOutput(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := yaml.Read[config.Config](librarianConfigPath)
+	got, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1005,13 +1005,13 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 		{
 			name: "invalid config file",
 			setup: func(cfg *config.Config) {
-				writeFileAndCommit(t, librarianConfigPath, []byte("not a config file"), "broke config file")
+				writeFileAndCommit(t, config.LibrarianYAML, []byte("not a config file"), "broke config file")
 			},
 		},
 		{
 			name: "deleted config file",
 			setup: func(cfg *config.Config) {
-				if err := os.Remove(librarianConfigPath); err != nil {
+				if err := os.Remove(config.LibrarianYAML); err != nil {
 					t.Fatal(err)
 				}
 				testhelper.RunGit(t, "commit", "-m", "deleted config file", ".")
@@ -1180,7 +1180,7 @@ func TestLegacyRustBump(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			got, err := yaml.Read[config.Config](librarianConfigPath)
+			got, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1364,7 +1364,7 @@ func writeConfigAndCommitWithMessage(t *testing.T, cfg *config.Config, message s
 	if err != nil {
 		t.Fatal(err)
 	}
-	writeFileAndCommit(t, librarianConfigPath, data, message)
+	writeFileAndCommit(t, config.LibrarianYAML, data, message)
 }
 
 func writeFileAndCommit(t *testing.T, path string, content []byte, message string) {

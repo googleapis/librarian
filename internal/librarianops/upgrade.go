@@ -94,7 +94,7 @@ func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
 }
 
 func updateLibrarianVersion(version, repoDir string) error {
-	configPath := filepath.Join(repoDir, "librarian.yaml")
+	configPath := filepath.Join(repoDir, config.LibrarianYAML)
 	cfg, err := yaml.Read[config.Config](configPath)
 	if err != nil {
 		return err

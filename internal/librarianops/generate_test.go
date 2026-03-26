@@ -56,7 +56,7 @@ func TestGenerateCommand(t *testing.T) {
 			googleapisDir := filepath.Join(wd, "..", "testdata", "googleapis")
 			cfg := sample.Config()
 			cfg.Sources.Googleapis = &config.Source{Dir: googleapisDir}
-			if err := yaml.Write(filepath.Join(repoDir, "librarian.yaml"), cfg); err != nil {
+			if err := yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), cfg); err != nil {
 				t.Fatal(err)
 			}
 			testhelper.RunGit(t, "-C", repoDir, "add", ".")

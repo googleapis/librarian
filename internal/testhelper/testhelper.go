@@ -227,7 +227,7 @@ func addLibrarianConfig(t *testing.T, cfg *config.Config) {
 	if cfg == nil {
 		return
 	}
-	if err := yaml.Write("librarian.yaml", cfg); err != nil {
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 		t.Fatal(err)
 	}
 	RunGit(t, "add", ".")

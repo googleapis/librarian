@@ -162,7 +162,7 @@ func TestFormatConfig(t *testing.T) {
 func TestTidyCommand(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configPath := filepath.Join(tempDir, config.LibrarianYAML)
 	configContent := fmt.Sprintf(`language: rust
 version: %s
 sources:
@@ -303,7 +303,7 @@ func TestTidy_DerivableFields(t *testing.T) {
 			if err := RunTidyOnConfig(t.Context(), tempDir, test.config); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -409,7 +409,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)
 			}
-			got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -451,7 +451,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -491,7 +491,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -582,7 +582,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 
 			RunTidyOnConfig(t.Context(), tempDir, test.cfg)
 
-			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -643,7 +643,7 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
