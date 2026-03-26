@@ -59,7 +59,7 @@ func generateCommand() *cli.Command {
 			if all && libraryName != "" {
 				return errBothLibraryAndAllFlag
 			}
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}

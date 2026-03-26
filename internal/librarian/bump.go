@@ -94,7 +94,7 @@ Examples:
 			if all && versionOverride != "" {
 				return errBothVersionAndAllFlag
 			}
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
@@ -277,7 +277,7 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 }
 
 func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
-	branchLibrarianCfgFile, err := git.ShowFileAtRemoteBranch(ctx, gitExe, remote, branch, librarianConfigPath)
+	branchLibrarianCfgFile, err := git.ShowFileAtRemoteBranch(ctx, gitExe, remote, branch, config.LibrarianYAML)
 	if err != nil {
 		return "", err
 	}
@@ -338,7 +338,7 @@ func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error)
 // release process has not yet been completed (e.g. to find which commit
 // *should* be tagged).
 func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, error) {
-	commits, err := git.FindCommitsForPath(ctx, gitExe, librarianConfigPath)
+	commits, err := git.FindCommitsForPath(ctx, gitExe, config.LibrarianYAML)
 	if err != nil {
 		return "", err
 	}
@@ -348,7 +348,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, er
 	var candidateConfig *config.Config
 	candidateCommit := ""
 	for _, commit := range commits {
-		commitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, commit, librarianConfigPath)
+		commitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, commit, config.LibrarianYAML)
 		if err != nil {
 			return "", err
 		}

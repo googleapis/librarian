@@ -42,7 +42,7 @@ func tidyCommand() *cli.Command {
 		Usage:     "format and validate librarian.yaml",
 		UsageText: "librarian tidy",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
@@ -62,7 +62,7 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
-	return yaml.Write(filepath.Join(repoDir, librarianConfigPath), formatConfig(cfg))
+	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
 func tidyLibraries(cfg *config.Config) []*config.Library {
@@ -96,9 +96,6 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
-	if cfg.Default != nil && lib.ReleaseLevel != "" && lib.ReleaseLevel == cfg.Default.ReleaseLevel {
-		lib.ReleaseLevel = ""
-	}
 	return tidyLanguageConfig(lib, cfg.Language)
 }
 

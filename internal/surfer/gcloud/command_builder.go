@@ -48,7 +48,7 @@ func newCommandBuilder(method *api.Method, overrides *Config, model *api.API, se
 // on the commandBuilder's state, and returns the constructed Command and
 // any error encountered during assembly.
 func (b *commandBuilder) build() (*Command, error) {
-	args, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service).build()
+	args, err := b.newArguments()
 	if err != nil {
 		return nil, err
 	}
@@ -164,6 +164,68 @@ func (b *commandBuilder) requestMethod() string {
 	}
 
 	return ""
+}
+
+// newArguments generates the set of arguments for a command by parsing the
+// fields of the method's request message.
+func (b *commandBuilder) newArguments() ([]Argument, error) {
+	var args []Argument
+	if b.method.InputType == nil {
+		return args, nil
+	}
+
+	for _, field := range b.method.InputType.Fields {
+		fieldArgs, err := b.argumentsFromField(field, field.JSONName)
+		if err != nil {
+			return nil, err
+		}
+		args = append(args, fieldArgs...)
+	}
+	return args, nil
+}
+
+// argumentsFromField recursively processes a field and its sub-fields to generate
+// command-line flags. It uses a dispatch pattern to classify each field:
+//  1. Primary resource arguments (positional resource identifiers).
+//  2. Ignored fields (implicit or framework-handled).
+//  3. Nested messages (flattened into top-level flags).
+//  4. Standard arguments (scalars, maps, enums, resource references).
+//
+// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
+// handling strategy (Error vs Skip) and messaging.
+func (b *commandBuilder) argumentsFromField(field *api.Field, prefix string) ([]Argument, error) {
+	// Primary resource args are checked first because fields like "parent"
+	// and "name" are primary resources in certain method types (e.g., List
+	// and Get/Delete/Update respectively) and must not be ignored.
+	if isPrimaryResource(field, b.method) {
+		arg := newArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).buildPrimaryResource()
+		return []Argument{arg}, nil
+	}
+
+	if isIgnored(field, b.method) {
+		return nil, nil
+	}
+
+	// Nested messages are flattened into top-level flags.
+	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
+	if field.MessageType != nil && !field.Map {
+		var args []Argument
+		for _, f := range field.MessageType.Fields {
+			fieldArgs, err := b.argumentsFromField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
+			if err != nil {
+				return nil, err
+			}
+			args = append(args, fieldArgs...)
+		}
+		return args, nil
+	}
+
+	// Standard arguments: scalars, maps, enums, and resource references.
+	param, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).build()
+	if err != nil {
+		return nil, err
+	}
+	return []Argument{param}, nil
 }
 
 // collectionPath constructs the gcloud collection path(s) for a request or async operation.
@@ -297,4 +359,24 @@ func apiVersion(overrides *Config) string {
 		return overrides.APIs[0].APIVersion
 	}
 	return ""
+}
+
+// isIgnored determines if a field should be excluded from the generated command arguments.
+func isIgnored(field *api.Field, method *api.Method) bool {
+	if field.Name == "parent" || field.Name == "name" || field.Name == "update_mask" {
+		return true
+	}
+	if isList(method) {
+		switch field.Name {
+		case "page_size", "page_token", "filter", "order_by":
+			return true
+		}
+	}
+	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
+		return true
+	}
+	if isUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+		return true
+	}
+	return false
 }

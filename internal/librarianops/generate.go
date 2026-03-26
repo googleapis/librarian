@@ -121,7 +121,7 @@ func processRepo(ctx context.Context, repoName, repoDir, librarianBin string, ve
 	if err := createBranch(ctx, time.Now()); err != nil {
 		return err
 	}
-	cfg, err := yaml.Read[config.Config]("librarian.yaml")
+	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
 		return err
 	}

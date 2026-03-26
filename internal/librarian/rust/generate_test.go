@@ -287,7 +287,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "google-cloud-secretmanager-v1",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -309,7 +308,6 @@ func TestGenerate(t *testing.T) {
 		{
 			Name:          "google-cloud-configdelivery-v1",
 			Version:       "0.1.0",
-			ReleaseLevel:  "preview",
 			CopyrightYear: "2025",
 			APIs: []*config.API{
 				{
@@ -383,7 +381,6 @@ func TestGenerate_Error(t *testing.T) {
 			Name:                "broken",
 			Version:             "0.1.0",
 			Output:              filepath.Join("generated", "broken"),
-			ReleaseLevel:        "preview",
 			CopyrightYear:       "2025",
 			SpecificationFormat: "invalid",
 			APIs: []*config.API{
@@ -468,7 +465,6 @@ func TestGenerateLibrary(t *testing.T) {
 				Name:          libName,
 				Version:       "0.1.0",
 				Output:        outDir,
-				ReleaseLevel:  "preview",
 				CopyrightYear: "2025",
 				APIs: []*config.API{
 					{
@@ -689,9 +685,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "googleapis",
 			library: &config.Library{
-				Name:         "google-cloud-secretmanager-v1",
-				Version:      "0.1.0",
-				ReleaseLevel: "preview",
+				Name:    "google-cloud-secretmanager-v1",
+				Version: "0.1.0",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -707,22 +702,21 @@ func TestCreateRepoMetadata(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "preview",
 				Language:             config.LanguageRust,
 				Repo:                 "googleapis/google-cloud-rust",
 				DistributionName:     "google-cloud-secretmanager-v1",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				ReleaseLevel:         "stable",
 				LibraryType:          "GAPIC_AUTO",
 			},
 		},
 		{
 			name: "showcase",
 			library: &config.Library{
-				Name:         "google-cloud-showcase-v1beta1",
-				Version:      "0.1.0",
-				ReleaseLevel: "preview",
+				Name:    "google-cloud-showcase-v1beta1",
+				Version: "0.1.0",
 				APIs: []*config.API{
 					{
 						Path: "schema/google/showcase/v1beta1",
@@ -736,12 +730,12 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Name:                "showcase",
 				NamePretty:          "Client Libraries Showcase",
 				ClientDocumentation: "https://docs.rs/google-cloud-showcase-v1beta1/latest",
-				ReleaseLevel:        "preview",
 				Language:            config.LanguageRust,
 				Repo:                "googleapis/google-cloud-rust",
 				DistributionName:    "google-cloud-showcase-v1beta1",
 				APIID:               "showcase.googleapis.com",
 				APIShortname:        "showcase",
+				ReleaseLevel:        "stable",
 				LibraryType:         "GAPIC_AUTO",
 			},
 		},

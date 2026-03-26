@@ -54,7 +54,7 @@ func publishCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
@@ -103,7 +103,7 @@ func publish(ctx context.Context, cfg *config.Config, releaseCommit string, exec
 		return err
 	}
 	// Reload the config after checking out the release commit.
-	cfg, err = yaml.Read[config.Config](librarianConfigPath)
+	cfg, err = yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -112,7 +112,7 @@ func publish(ctx context.Context, cfg *config.Config, releaseCommit string, exec
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we want to be able to specify the release commit directly, we
 	// can skip findLatestReleaseCommitHash entirely.)
-	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, gitExe, "HEAD~", librarianConfigPath)
+	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, gitExe, "HEAD~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}

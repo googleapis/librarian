@@ -33,9 +33,8 @@ func TestFromLibrary(t *testing.T) {
 		{
 			name: "no overrides",
 			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				ReleaseLevel: "stable",
+				Name: "google-cloud-secret-manager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			want: &RepoMetadata{
 				Name:                 "secretmanager",
@@ -55,7 +54,6 @@ func TestFromLibrary(t *testing.T) {
 			name: "description override",
 			library: &config.Library{
 				Name:                "google-cloud-secret-manager",
-				ReleaseLevel:        "stable",
 				APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
 			},
@@ -76,9 +74,8 @@ func TestFromLibrary(t *testing.T) {
 		{
 			name: "no service config",
 			library: &config.Library{
-				Name:         "google-longrunning",
-				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "google/longrunning"}},
+				Name: "google-longrunning",
+				APIs: []*config.API{{Path: "google/longrunning"}},
 			},
 			want: &RepoMetadata{
 				ReleaseLevel:     "stable",
@@ -121,17 +118,15 @@ func TestFromLibrary_Error(t *testing.T) {
 		{
 			name: "no APIs",
 			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				ReleaseLevel: "stable",
+				Name: "google-cloud-secret-manager",
 			},
 			wantErr: errNoAPIs,
 		},
 		{
 			name: "non-allowlisted API",
 			library: &config.Library{
-				Name:         "google-cloud-secret-manager",
-				ReleaseLevel: "stable",
-				APIs:         []*config.API{{Path: "android/notallowed/v1"}},
+				Name: "google-cloud-secret-manager",
+				APIs: []*config.API{{Path: "android/notallowed/v1"}},
 			},
 			// Error returned by serviceconfig.Find isn't easily distinguished
 		},

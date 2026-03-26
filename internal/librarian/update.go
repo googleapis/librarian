@@ -63,7 +63,7 @@ func updateCommand() *cli.Command {
 					return fmt.Errorf("%w: %s", errUnknownSource, arg)
 				}
 			}
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func updateSource(endpoints *fetch.Endpoints, repo fetch.Repo, source *config.So
 	if oldCommit != commit || oldSHA256 != sha256 {
 		source.Commit = commit
 		source.SHA256 = sha256
-		if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+		if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 			return err
 		}
 	}

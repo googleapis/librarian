@@ -162,7 +162,7 @@ func TestFormatConfig(t *testing.T) {
 func TestTidyCommand(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configPath := filepath.Join(tempDir, config.LibrarianYAML)
 	configContent := fmt.Sprintf(`language: rust
 version: %s
 sources:
@@ -217,7 +217,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 		wantNumLibs             int
 		wantNumAPIs             int
 		wantSpecificationFormat string
-		wantReleaseLevel        string
 	}{
 		{
 			name: "derivable fields removed",
@@ -298,30 +297,13 @@ func TestTidy_DerivableFields(t *testing.T) {
 			wantNumLibs: 1,
 			wantNumAPIs: 1,
 		},
-		{
-			name: "release level removed if same as default",
-			config: &config.Config{
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name:         "google-cloud-secretmanager-v1",
-						ReleaseLevel: "preview",
-					},
-				},
-			},
-			wantNumLibs:      1,
-			wantReleaseLevel: "",
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			if err := RunTidyOnConfig(t.Context(), tempDir, test.config); err != nil {
 				t.Fatal(err)
 			}
-			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -341,9 +323,6 @@ func TestTidy_DerivableFields(t *testing.T) {
 			}
 			if lib.SpecificationFormat != test.wantSpecificationFormat {
 				t.Errorf("specification_format = %q, want %q", lib.SpecificationFormat, test.wantSpecificationFormat)
-			}
-			if lib.ReleaseLevel != test.wantReleaseLevel {
-				t.Errorf("release_level = %q, want %q", lib.ReleaseLevel, test.wantReleaseLevel)
 			}
 		})
 	}
@@ -430,7 +409,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)
 			}
-			got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -472,7 +451,7 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -512,7 +491,7 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	got, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -603,7 +582,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 
 			RunTidyOnConfig(t.Context(), tempDir, test.cfg)
 
-			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -664,7 +643,7 @@ func TestTidy_VeneerSkipGenerate(t *testing.T) {
 	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, librarianConfigPath))
+	cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 	if err != nil {
 		t.Fatal(err)
 	}

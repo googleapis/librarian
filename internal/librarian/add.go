@@ -48,7 +48,7 @@ func addCommand() *cli.Command {
 			if len(apis) == 0 {
 				return errMissingAPI
 			}
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}

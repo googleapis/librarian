@@ -28,10 +28,6 @@ import (
 // ErrLibraryNotFound is returned when the specified library is not found in config.
 var ErrLibraryNotFound = errors.New("library not found")
 
-const (
-	librarianConfigPath = "librarian.yaml"
-)
-
 // Run executes the librarian command with the given arguments.
 func Run(ctx context.Context, args ...string) error {
 	cmd := &cli.Command{

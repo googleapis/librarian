@@ -36,9 +36,8 @@ var (
 )
 
 type javaGAPICInfo struct {
-	NoRestNumericEnums bool
-	NoSamples          bool
-	AdditionalProtos   []string
+	NoSamples        bool
+	AdditionalProtos []string
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -55,8 +54,6 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
 		}
-		rule := rules[0]
-		info.NoRestNumericEnums = rule.AttrLiteral("rest_numeric_enums") == "False"
 	}
 	// 2. From java_gapic_assembly_gradle_pkg
 	if rules := file.Rules("java_gapic_assembly_gradle_pkg"); len(rules) > 0 {
@@ -223,19 +220,17 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				continue
 			}
 			javaAPI := &config.JavaAPI{
-				Path:               g.ProtoPath,
-				NoRestNumericEnums: info.NoRestNumericEnums,
-				AdditionalProtos:   info.AdditionalProtos,
-				NoSamples:          info.NoSamples,
+				Path:             g.ProtoPath,
+				AdditionalProtos: info.AdditionalProtos,
+				NoSamples:        info.NoSamples,
 			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		libs = append(libs, &config.Library{
-			Name:         name,
-			Version:      version,
-			Keep:         parseOwlBotKeep(repoPath, output),
-			APIs:         apis,
-			ReleaseLevel: l.ReleaseLevel,
+			Name:    name,
+			Version: version,
+			Keep:    parseOwlBotKeep(repoPath, output),
+			APIs:    apis,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,
@@ -267,7 +262,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 	return &config.Config{
 		Language: "java",
 		Default: &config.Default{
-			ReleaseLevel: "preview",
 			Java: &config.JavaModule{
 				LibrariesBomVersion: gen.LibrariesBomVersion,
 			},
