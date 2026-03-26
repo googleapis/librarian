@@ -102,6 +102,22 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"transport=grpc+rest",
 			},
 		},
+		{
+			name:    "default transport with no apiCfgs",
+			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{Name: "secretmanager"},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			apiCfgs: nil,
+			expected: []string{
+				"metadata",
+				"repo=googleapis/google-cloud-java",
+				"artifact=com.google.cloud:google-cloud-secretmanager",
+				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
+				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"transport=grpc",
+				"rest-numeric-enums",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

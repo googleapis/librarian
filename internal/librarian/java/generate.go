@@ -117,10 +117,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	if err != nil {
 		return fmt.Errorf("failed to find api config: %w", err)
 	}
-	transport := serviceconfig.GRPCRest
-	if apiCfg != nil {
-		transport = apiCfg.Transport(config.LanguageJava)
-	}
+	transport := deriveTransport(apiCfg)
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
 			return fmt.Errorf("failed to generate grpc: %w", err)
@@ -225,10 +222,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	}
 
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
-	transport := serviceconfig.GRPCRest
-	if apiCfgs != nil {
-		transport = apiCfgs.Transport(config.LanguageJava)
-	}
+	transport := deriveTransport(apiCfgs)
 	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
@@ -304,4 +298,11 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 		return res
 	}
 	return res
+}
+
+func deriveTransport(apiCfg *serviceconfig.API) serviceconfig.Transport {
+	if apiCfg == nil {
+		return serviceconfig.GRPC
+	}
+	return apiCfg.Transport(config.LanguageJava)
 }
