@@ -35,7 +35,6 @@ repositories:
     full-name: https://github.com/googleapis/google-cloud-go
     github-token-secret-name: "google-cloud-go-github-token"
     supported-commands:
-      - generate
       - stage-release
       - publish-release
   - name: "google-cloud-python"
