@@ -302,3 +302,64 @@ func TestGetTransport(t *testing.T) {
 		})
 	}
 }
+
+func TestRepoMetadataTransport(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		sc       *API
+		language string
+		want     string
+	}{
+		{
+			name:     "java, default",
+			sc:       &API{},
+			language: config.LanguageJava,
+			want:     "both",
+		},
+		{
+			name: "java, grpc",
+			sc: &API{
+				Transports: map[string]Transport{config.LanguageJava: GRPC},
+			},
+			language: config.LanguageJava,
+			want:     "grpc",
+		},
+		{
+			name: "java, rest",
+			sc: &API{
+				Transports: map[string]Transport{config.LanguageJava: Rest},
+			},
+			language: config.LanguageJava,
+			want:     "http",
+		},
+		{
+			name:     "non-java, default",
+			sc:       &API{},
+			language: config.LanguageGo,
+			want:     "grpc+rest",
+		},
+		{
+			name: "non-java, grpc",
+			sc: &API{
+				Transports: map[string]Transport{config.LanguageGo: GRPC},
+			},
+			language: config.LanguageGo,
+			want:     "grpc",
+		},
+		{
+			name: "non-java, rest",
+			sc: &API{
+				Transports: map[string]Transport{config.LanguageGo: Rest},
+			},
+			language: config.LanguageGo,
+			want:     "rest",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.sc.RepoMetadataTransport(test.language)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
