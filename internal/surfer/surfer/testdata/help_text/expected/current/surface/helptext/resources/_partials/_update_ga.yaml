@@ -61,8 +61,10 @@
         choices:
           - arg_value: option-a
             enum_value: OPTION_A
+            help_text: Value for the `option-a` field.
           - arg_value: option-b
             enum_value: OPTION_B
+            help_text: Value for the `option-b` field.
       - arg_name: integer-field
         api_field: resource.integerField
         help_text: Value for the `integer-field` field.

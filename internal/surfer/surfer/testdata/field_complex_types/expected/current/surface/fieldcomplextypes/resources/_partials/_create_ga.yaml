@@ -38,10 +38,13 @@
         choices:
           - arg_value: default
             enum_value: DEFAULT
+            help_text: Value for the `default` field.
           - arg_value: one
             enum_value: ONE
+            help_text: Value for the `one` field.
           - arg_value: two
             enum_value: TWO
+            help_text: Value for the `two` field.
       - arg_name: string-field
         api_field: resource.myMessage.stringField
         help_text: Value for the `string-field` field.
