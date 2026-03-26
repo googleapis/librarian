@@ -3985,6 +3985,11 @@
     java: grpc
     nodejs: grpc
     python: grpc
+- path: google/maps/geocode/v4
+  languages:
+    - python
+  release_level:
+    python: preview
 - path: google/maps/mapsplatformdatasets/v1
   languages:
     - java
