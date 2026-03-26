@@ -1120,7 +1120,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				NamePretty:           "Google Meet",
 				ProductDocumentation: "https://developers.google.com/meet/api/guides/overview",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=1216362&template=1766418",
-				ReleaseLevel:         "stable",
+				ReleaseLevel:         "preview",
 				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-apps-meet",
