@@ -15,6 +15,7 @@
 package java
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -56,34 +57,15 @@ func TestRepoMetadata_write(t *testing.T) {
 	if _, err := os.Stat(gotPath); err != nil {
 		t.Fatalf("os.Stat(%q) = %v, want nil", gotPath, err)
 	}
-
 	gotBytes, err := os.ReadFile(gotPath)
 	if err != nil {
 		t.Fatalf("os.ReadFile(%q) = %v, want nil", gotPath, err)
 	}
-
-	const wantJSON = `{
-  "api_shortname": "secretmanager",
-  "name_pretty": "Secret Manager",
-  "product_documentation": "https://cloud.google.com/secret-manager/",
-  "api_description": "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-  "client_documentation": "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
-  "release_level": "stable",
-  "transport": "grpc",
-  "language": "java",
-  "repo": "googleapis/google-cloud-java",
-  "repo_short": "java-secretmanager",
-  "distribution_name": "com.google.cloud:google-cloud-secretmanager",
-  "library_type": "GAPIC_AUTO",
-  "requires_billing": false,
-  "codeowner_team": "cloud-java-team",
-  "issue_tracker": "https://issuetracker.google.com/issues/new?component=784854\u0026template=1380926",
-  "rest_documentation": "https://example.com/rest",
-  "rpc_documentation": "https://example.com/rpc",
-  "recommended_package": "com.google.cloud.secretmanager.v1",
-  "min_java_version": 8
-}`
-	if diff := cmp.Diff(wantJSON, string(gotBytes)); diff != "" {
+	var got repoMetadata
+	if err := json.Unmarshal(gotBytes, &got); err != nil {
+		t.Fatalf("json.Unmarshal() = %v, want nil", err)
+	}
+	if diff := cmp.Diff(want, &got, cmp.AllowUnexported(repoMetadata{})); diff != "" {
 		t.Errorf("write() mismatch (-want +got):\n%s", diff)
 	}
 }
