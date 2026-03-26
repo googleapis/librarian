@@ -183,5 +183,5 @@ func TestUpgradeCommand_Error(t *testing.T) {
 
 func generateLibrarianConfigPath(t *testing.T, repoDir string) string {
 	t.Helper()
-	return filepath.Join(repoDir, "librarian.yaml")
+	return filepath.Join(repoDir, config.LibrarianYAML)
 }

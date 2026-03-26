@@ -824,13 +824,13 @@ func TestCopySamplesFromStaging(t *testing.T) {
 			want: "console.log('v1');",
 		},
 		{
-			name: "v1 renamed metadata",
-			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata.google.cloud.test.v1.json"),
+			name: "v1 metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json"),
 			want: `{"snippets":[]}`,
 		},
 		{
-			name: "v1beta1 renamed metadata",
-			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata.google.cloud.test.v1beta1.json"),
+			name: "v1beta1 metadata",
+			path: filepath.Join(outDir, "samples", "generated", "v1beta1", "snippet_metadata_google.cloud.test.v1beta1.json"),
 			want: `{"snippets":["beta"]}`,
 		},
 	} {
@@ -843,12 +843,6 @@ func TestCopySamplesFromStaging(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-
-	// Verify the old underscore-prefixed names do not exist.
-	oldV1 := filepath.Join(outDir, "samples", "generated", "v1", "snippet_metadata_google.cloud.test.v1.json")
-	if _, err := os.Stat(oldV1); !errors.Is(err, os.ErrNotExist) {
-		t.Error("expected snippet_metadata_ file to be renamed, but old name still exists")
 	}
 }
 
@@ -904,6 +898,101 @@ func createStagingFixture(t *testing.T, repoRoot, libName string, versions []str
 	}
 }
 
+func TestUpdateSnippetMetadataVersion(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		version string
+		input   string
+		want    string
+	}{
+		{
+			name:    "updates version",
+			version: "6.1.0",
+			input: `{
+  "clientLibrary": {
+    "name": "nodejs-secretmanager",
+    "version": "0.1.0",
+    "language": "TYPESCRIPT",
+    "apis": [{"id": "google.cloud.secretmanager.v1"}]
+  },
+  "snippets": [{"name": "CreateSecret"}]
+}
+`,
+			want: `{
+  "clientLibrary": {
+    "name": "nodejs-secretmanager",
+    "version": "6.1.0",
+    "language": "TYPESCRIPT",
+    "apis": [
+      {
+        "id": "google.cloud.secretmanager.v1"
+      }
+    ]
+  },
+  "snippets": [
+    {
+      "name": "CreateSecret"
+    }
+  ]
+}
+`,
+		},
+		{
+			name:    "empty version is no-op",
+			version: "",
+			input: `{
+  "clientLibrary": {
+    "name": "nodejs-secretmanager",
+    "version": "0.1.0",
+    "language": "TYPESCRIPT",
+    "apis": []
+  },
+  "snippets": []
+}
+`,
+			want: `{
+  "clientLibrary": {
+    "name": "nodejs-secretmanager",
+    "version": "0.1.0",
+    "language": "TYPESCRIPT",
+    "apis": []
+  },
+  "snippets": []
+}
+`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			metadataDir := filepath.Join(outDir, "samples", "generated", "v1")
+			if err := os.MkdirAll(metadataDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.secretmanager.v1.json")
+			if err := os.WriteFile(metadataFile, []byte(test.input), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := updateSnippetMetadataVersion(outDir, test.version); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(metadataFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestUpdateSnippetMetadataVersion_NoFiles(t *testing.T) {
+	outDir := t.TempDir()
+	if err := updateSnippetMetadataVersion(outDir, "1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestWriteRepoMetadata(t *testing.T) {
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
@@ -915,9 +1004,8 @@ func TestWriteRepoMetadata(t *testing.T) {
 		Repo:     "googleapis/google-cloud-node",
 	}
 	library := &config.Library{
-		Name:         "google-cloud-secretmanager",
-		ReleaseLevel: "stable",
-		APIs:         []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
 		t.Fatal(err)

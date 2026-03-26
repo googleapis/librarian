@@ -119,7 +119,7 @@ func setupTestConfig(t *testing.T, conf *config.Config) string {
 	}
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
-	configPath := filepath.Join(tempDir, librarianConfigPath)
+	configPath := filepath.Join(tempDir, config.LibrarianYAML)
 	if err := yaml.Write(configPath, conf); err != nil {
 		t.Fatal(err)
 	}

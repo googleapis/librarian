@@ -99,7 +99,7 @@ func TestAddLibraryCommand(t *testing.T) {
 			cfg.Default.Output = "output"
 			cfg.Libraries = test.initialLibraries
 			cfg.Sources.Googleapis.Dir = googleapisDir
-			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
 			err = runAdd(t.Context(), cfg, test.apis...)
@@ -113,7 +113,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotCfg, err := yaml.Read[config.Config](librarianConfigPath)
+			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -174,7 +174,7 @@ func TestAddCommand(t *testing.T) {
 			cfg.Default.Output = "output"
 			cfg.Libraries = nil
 			cfg.Sources.Googleapis.Dir = googleapisDir
-			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
 			args := append([]string{"librarian", "add"}, test.apis...)
@@ -189,7 +189,7 @@ func TestAddCommand(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			gotCfg, err := yaml.Read[config.Config](librarianConfigPath)
+			gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -253,7 +253,7 @@ func TestAddLibrary(t *testing.T) {
 					Output: "output/existinglib",
 				},
 			}
-			if err := yaml.Write(librarianConfigPath, cfg); err != nil {
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
 			gotName, cfg, err := addLibrary(cfg, test.apis...)

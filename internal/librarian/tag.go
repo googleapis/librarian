@@ -52,7 +52,7 @@ func tagCommand() *cli.Command {
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](librarianConfigPath)
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 		}
 		releaseCommit = latestReleaseCommit
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, librarianConfigPath)
+	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we specify the release commit directly, we can skip
 	// findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit+"~", librarianConfigPath)
+	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit+"~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}

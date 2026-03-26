@@ -116,8 +116,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 			Googleapis: src,
 		},
 		Default: &config.Default{
-			Output:       "packages",
-			ReleaseLevel: "stable",
+			Output: "packages",
 		},
 		Libraries: libraries,
 	}
@@ -351,9 +350,34 @@ func ensureNodejsPackage(l *config.Library) *config.NodejsPackage {
 // copyrightYearRegex matches "Copyright YYYY Google" in a file header.
 var copyrightYearRegex = regexp.MustCompile(`Copyright (\d{4}) Google`)
 
-// extractCopyrightYear reads the copyright year from src/index.ts.
+// versionDirRegex matches versioned directory names like v1, v2, v1beta1.
+var versionDirRegex = regexp.MustCompile(`^v\d[a-z0-9]*`)
+
+// extractCopyrightYear reads the copyright year from a versioned subdirectory
+// of src/ (e.g. src/v1/index.ts), falling back to src/index.ts if no versioned
+// directory exists.
 func extractCopyrightYear(pkgDir string) string {
-	data, err := os.ReadFile(filepath.Join(pkgDir, "src", "index.ts"))
+	srcDir := filepath.Join(pkgDir, "src")
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return ""
+	}
+	var versionDirs []string
+	for _, e := range entries {
+		if e.IsDir() && versionDirRegex.MatchString(e.Name()) {
+			versionDirs = append(versionDirs, e.Name())
+		}
+	}
+	if len(versionDirs) > 0 {
+		sort.Strings(versionDirs)
+		data, err := os.ReadFile(filepath.Join(srcDir, versionDirs[0], "index.ts"))
+		if err == nil {
+			if m := copyrightYearRegex.FindSubmatch(data); len(m) > 1 {
+				return string(m[1])
+			}
+		}
+	}
+	data, err := os.ReadFile(filepath.Join(srcDir, "index.ts"))
 	if err != nil {
 		return ""
 	}

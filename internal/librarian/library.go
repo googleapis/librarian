@@ -36,9 +36,6 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if lib.ReleaseLevel == "" {
-		lib.ReleaseLevel = d.ReleaseLevel
-	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}

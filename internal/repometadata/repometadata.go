@@ -140,7 +140,7 @@ func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Libr
 		Name:                 api.ShortName,
 		NamePretty:           cleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
-		ReleaseLevel:         library.ReleaseLevel,
+		ReleaseLevel:         api.ReleaseLevel(config.Language),
 		Repo:                 config.Repo,
 	}
 }

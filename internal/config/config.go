@@ -18,6 +18,9 @@ package config
 
 //go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
 
+// LibrarianYAML is the filename for the librarian configuration file.
+const LibrarianYAML = "librarian.yaml"
+
 // Config represents a librarian.yaml configuration file.
 type Config struct {
 	// Language is the language for this workspace (go, python, rust).
@@ -128,9 +131,6 @@ type Default struct {
 	// this is src/generated.
 	Output string `yaml:"output,omitempty"`
 
-	// ReleaseLevel is either "stable" or "preview".
-	ReleaseLevel string `yaml:"release_level,omitempty"`
-
 	// TagFormat is the template for git tags, such as "{name}/v{version}".
 	TagFormat string `yaml:"tag_format,omitempty"`
 
@@ -180,10 +180,6 @@ type Library struct {
 	// Output is the directory where code is written. This overrides
 	// Default.Output.
 	Output string `yaml:"output,omitempty"`
-
-	// ReleaseLevel is the release level, such as "stable" or "preview". This
-	// overrides Default.ReleaseLevel.
-	ReleaseLevel string `yaml:"release_level,omitempty"`
 
 	// Roots specifies the source roots to use for generation. Defaults to googleapis.
 	Roots []string `yaml:"roots,omitempty"`

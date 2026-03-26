@@ -344,9 +344,6 @@ func applyRepoMetadata(metadataPath, googleapisDir string, library *config.Libra
 	if err := json.Unmarshal(generatorInputRepoMetadata, repoMetadata); err != nil {
 		return nil, err
 	}
-	if repoMetadata.ReleaseLevel != "stable" {
-		library.ReleaseLevel = repoMetadata.ReleaseLevel
-	}
 	if repoMetadata.APIDescription != defaultTitle {
 		library.DescriptionOverride = repoMetadata.APIDescription
 	}

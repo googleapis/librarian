@@ -114,7 +114,7 @@ func TestGenerateCommand(t *testing.T) {
 					},
 				},
 			}
-			if err := yaml.Write(filepath.Join(tempDir, librarianConfigPath), cfg); err != nil {
+			if err := yaml.Write(filepath.Join(tempDir, config.LibrarianYAML), cfg); err != nil {
 				t.Fatal(err)
 			}
 
@@ -239,7 +239,7 @@ libraries:
     apis:
       - path: google/cloud/texttospeech/v1
 `, googleapisDir, lib1, lib1Output, lib2, lib2Output)
-			if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+			if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
 				t.Fatal(err)
 			}
 			err := Run(t.Context(), test.args...)
@@ -305,7 +305,7 @@ libraries:
       - path: google/cloud/secretmanager/v1
 `, googleapisDir)
 
-	if err := os.WriteFile(filepath.Join(tempDir, librarianConfigPath), []byte(configContent), 0644); err != nil {
+	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 

@@ -91,9 +91,7 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
+
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -123,9 +121,7 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
+
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -161,9 +157,7 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
+
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -223,16 +217,13 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
+
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name:         "pubsub",
-						ReleaseLevel: "stable",
+						Name: "pubsub",
 						APIs: []*config.API{
 							{Path: "google/pubsub/v1"},
 						},
@@ -289,9 +280,7 @@ func TestBuildConfig(t *testing.T) {
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
-				Default: &config.Default{
-					ReleaseLevel: "preview",
-				},
+
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
 				},
@@ -433,8 +422,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &javaGAPICInfo{
-				NoRestNumericEnums: true,
-				NoSamples:          false,
+				NoSamples: false,
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},
