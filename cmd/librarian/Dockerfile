@@ -186,7 +186,7 @@ ENV PATH=${PATH}:${PYTHONPATH}/bin
 
 # Install Python dependencies, into /python-packages (so it's predictable).
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -t ${PYTHONPATH} --no-cache-dir --break-system-packages \
+    pip install -t ${PYTHONPATH} --no-cache-dir \
     gapic-generator==${PYTHON_GAPIC_VERSION} \
     nox==${NOX_VERSION} \
     ruff==${RUFF_VERSION} \
