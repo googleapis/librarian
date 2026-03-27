@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -264,5 +265,79 @@ google-cloud-storage = { version = "0.1.0", path = "storage" }
 				t.Errorf("root Cargo.toml was not updated:\nwant: %q\ngot:\n%s", test.want, got)
 			}
 		})
+	}
+}
+
+func TestUpdateREADME(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		version     string
+		content     string
+		want        string
+	}{
+		{
+			name:        "update version in readme",
+			libraryName: "google-cloud-storage",
+			version:     "1.1.0",
+			content:     "- Read the [crate's documentation](https://docs.rs/google-cloud-storage/1.0.0)",
+			want:        "- Read the [crate's documentation](https://docs.rs/google-cloud-storage/1.1.0)",
+		},
+		{
+			name:        "no match for different library",
+			libraryName: "google-cloud-storage",
+			version:     "1.1.0",
+			content:     "- Read the [crate's documentation](https://docs.rs/google-cloud-other/1.0.0)",
+			want:        "- Read the [crate's documentation](https://docs.rs/google-cloud-other/1.0.0)",
+		},
+		{
+			name:        "version includes other characters",
+			libraryName: "google-cloud-storage",
+			version:     "1.1.0",
+			content:     "- Read the [crate's documentation](https://docs.rs/google-cloud-storage/1.0.0-beta.1)",
+			want:        "- Read the [crate's documentation](https://docs.rs/google-cloud-storage/1.1.0)",
+		},
+		{
+			name:        "raw link with trailing space",
+			libraryName: "google-cloud-storage",
+			version:     "1.1.0",
+			content:     "See https://crates.io/crates/google-cloud-storage/1.0.0 for info",
+			want:        "See https://crates.io/crates/google-cloud-storage/1.1.0 for info",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			readmePath := filepath.Join(tmpDir, "README.md")
+			if err := os.WriteFile(readmePath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := updateREADME(readmePath, test.libraryName, test.version); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := os.ReadFile(readmePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestUpdateREADME_NoFile(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	readmePath := filepath.Join(tmpDir, "README.md")
+	if err := updateREADME(readmePath, "any", "1.0.0"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(readmePath); !os.IsNotExist(err) {
+		t.Error("expected README.md to still be missing")
 	}
 }

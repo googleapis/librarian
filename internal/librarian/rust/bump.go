@@ -29,8 +29,8 @@ import (
 
 var (
 	errMissingVersion = errors.New("must provide version")
-	readmeRegex       = regexp.MustCompile(`/(?P<prefix>[^/]+)(?P<slash>/)(?P<version>[^)]+)\)`)
 )
+
 
 // Bump checks if a version bump is required and performs it.
 // It returns without error if no bump is needed (version already updated since lastTag).
@@ -98,12 +98,12 @@ func updateREADME(readmeFile, libraryName, version string) error {
 	if err != nil {
 		return err
 	}
-	result := readmeRegex.ReplaceAllStringFunc(string(content), func(m string) string {
-		match := readmeRegex.FindStringSubmatch(m)
-		if match[1] == libraryName {
-			return fmt.Sprintf("/%s%s%s)", match[1], match[2], version)
-		}
-		return m
-	})
+	
+	regexPattern := fmt.Sprintf(`(/%s/)([^/)\s"',]+)`, regexp.QuoteMeta(libraryName))
+	re, err := regexp.Compile(regexPattern)
+	if err != nil {
+		return err
+	}
+	result := re.ReplaceAllString(string(content), "${1}"+version)
 	return os.WriteFile(readmeFile, []byte(result), 0644)
 }
