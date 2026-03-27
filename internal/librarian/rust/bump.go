@@ -31,7 +31,6 @@ var (
 	errMissingVersion = errors.New("must provide version")
 )
 
-
 // Bump checks if a version bump is required and performs it.
 // It returns without error if no bump is needed (version already updated since lastTag).
 func Bump(ctx context.Context, library *config.Library, output, version, gitExe, lastTag string) error {
@@ -98,7 +97,7 @@ func updateREADME(readmeFile, libraryName, version string) error {
 	if err != nil {
 		return err
 	}
-	
+	// Match the library name in a path (e.g. /libraryName/) followed by its version.
 	regexPattern := fmt.Sprintf(`(/%s/)([^/)\s"',]+)`, regexp.QuoteMeta(libraryName))
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
