@@ -195,7 +195,7 @@ RUN --mount=type=cache,target=/root/.cache/pip \
     gcp-synthtool@git+https://github.com/googleapis/synthtool@${SYNTHTOOL_COMMIT}
 
 # Ensure we use the local synthtool templates.
-ENV SYNTHTOOL_TEMPLATES=/${PYTHONPATH}/synthtool/gcp/templates
+ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
 
 # ============== Go Stage ==============
 FROM base AS go
