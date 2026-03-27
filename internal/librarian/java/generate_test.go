@@ -107,7 +107,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
 			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			apiCfgs: nil,
+			apiCfgs: &serviceconfig.API{},
 			expected: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
