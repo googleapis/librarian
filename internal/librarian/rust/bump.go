@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
@@ -28,6 +29,7 @@ import (
 
 var (
 	errMissingVersion = errors.New("must provide version")
+	readmeRegex       = regexp.MustCompile(`/(?P<prefix>[^/]+)(?P<slash>/)(?P<version>[^)]+)\)`)
 )
 
 // Bump checks if a version bump is required and performs it.
@@ -72,11 +74,36 @@ edition                = "2021"
 			return err
 		}
 	}
-
+	readmeFile := filepath.Join(output, "README.md")
+	if err := updateREADME(readmeFile, library.Name, version.String()); err != nil {
+		return err
+	}
 	// Update the workspace manifest if it exists.
 	if err := updateWorkspaceVersion("Cargo.toml", library.Name, version); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 	library.Version = version.String()
 	return nil
+}
+
+func updateREADME(readmeFile, libraryName, version string) error {
+	_, err := os.Stat(readmeFile)
+	if errors.Is(err, os.ErrNotExist) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+	content, err := os.ReadFile(readmeFile)
+	if err != nil {
+		return err
+	}
+	result := readmeRegex.ReplaceAllStringFunc(string(content), func(m string) string {
+		match := readmeRegex.FindStringSubmatch(m)
+		if match[1] == libraryName {
+			return fmt.Sprintf("/%s%s%s)", match[1], match[2], version)
+		}
+		return m
+	})
+	return os.WriteFile(readmeFile, []byte(result), 0644)
 }
