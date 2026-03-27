@@ -102,7 +102,7 @@ func fetchSource(ctx context.Context, source *config.Source, repo string) (strin
 	if source.Dir != "" {
 		return source.Dir, nil
 	}
-	dir, err := fetch.RepoDir(ctx, repo, source.Commit, source.SHA256)
+	dir, err := fetch.Repo(ctx, repo, source.Commit, source.SHA256)
 	if err != nil {
 		return "", fmt.Errorf("failed to fetch %s: %w", repo, err)
 	}

@@ -26,7 +26,7 @@ import (
 
 const envLibrarianCache = "LIBRARIAN_CACHE"
 
-// RepoDir downloads a repository tarball and returns the path to the extracted
+// Repo downloads a repository tarball and returns the path to the extracted
 // directory.
 //
 // The cache directory is determined by LIBRARIAN_CACHE environment variable,
@@ -61,7 +61,7 @@ const envLibrarianCache = "LIBRARIAN_CACHE"
 //     through to step 3.
 //  3. Download tarball, compute SHA256, verify it matches expectedSHA256 from
 //     librarian.yaml, extract, and return the path.
-func RepoDir(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
+func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
 	cacheDir, err := cacheDir()
 	if err != nil {
 		return "", err

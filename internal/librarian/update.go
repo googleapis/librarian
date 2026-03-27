@@ -28,12 +28,12 @@ import (
 var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
-	sourceRepos    = map[string]fetch.Repo{
-		"conformance": {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
-		"discovery":   {Org: "googleapis", Repo: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
-		"googleapis":  {Org: "googleapis", Repo: "googleapis", Branch: fetch.DefaultBranchMaster},
-		"protobuf":    {Org: "protocolbuffers", Repo: "protobuf", Branch: fetch.DefaultBranchMain},
-		"showcase":    {Org: "googleapis", Repo: "gapic-showcase", Branch: fetch.DefaultBranchMain},
+	sourceRepos    = map[string]fetch.RepoRef{
+		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: fetch.DefaultBranchMain},
+		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
+		"googleapis":  {Org: "googleapis", Name: "googleapis", Branch: fetch.DefaultBranchMaster},
+		"protobuf":    {Org: "protocolbuffers", Name: "protobuf", Branch: fetch.DefaultBranchMain},
+		"showcase":    {Org: "googleapis", Name: "gapic-showcase", Branch: fetch.DefaultBranchMain},
 	}
 
 	errNoSourcesProvided = errors.New("at least one source must be provided")
@@ -100,7 +100,7 @@ func runUpdate(cfg *config.Config, sourceNames []string) error {
 	return nil
 }
 
-func updateSource(endpoints *fetch.Endpoints, repo fetch.Repo, source *config.Source, cfg *config.Config) error {
+func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config.Source, cfg *config.Config) error {
 	if source == nil {
 		return nil
 	}
