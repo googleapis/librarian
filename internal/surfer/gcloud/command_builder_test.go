@@ -20,6 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
 
 func TestOutputFormat(t *testing.T) {
@@ -119,7 +120,7 @@ func TestRequestMethod(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := newCommandBuilder(test.method, &Config{}, nil, service).requestMethod()
+			got := newCommandBuilder(test.method, &provider.Config{}, nil, service).requestMethod()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("requestMethod() mismatch (-want +got):\n%s", diff)
 			}
@@ -312,142 +313,11 @@ func TestCollectionPath(t *testing.T) {
 	}
 }
 
-func TestFindHelpTextRule(t *testing.T) {
-	method := api.NewTestMethod("CreateInstance")
-	method.ID = "google.cloud.test.v1.Service.CreateInstance"
-
-	for _, test := range []struct {
-		name      string
-		overrides *Config
-		want      *HelpTextRule
-	}{
-		{
-			name:      "No APIs in config",
-			overrides: &Config{},
-			want:      nil,
-		},
-		{
-			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
-					{
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
-								{
-									Selector: "google.cloud.test.v1.Service.CreateInstance",
-									HelpText: &HelpTextElement{
-										Brief: "Override Brief",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: &HelpTextRule{
-				Selector: "google.cloud.test.v1.Service.CreateInstance",
-				HelpText: &HelpTextElement{
-					Brief: "Override Brief",
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got := findHelpTextRule(method, test.overrides)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findHelpTextRule() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestFindFieldHelpTextRule(t *testing.T) {
-	field := api.NewTestField("instance_id")
-	field.ID = ".google.cloud.test.v1.Request.instance_id"
-
-	for _, test := range []struct {
-		name      string
-		overrides *Config
-		want      *HelpTextRule
-	}{
-		{
-			name:      "No APIs in config",
-			overrides: &Config{},
-			want:      nil,
-		},
-		{
-			name: "Matching rule found",
-			overrides: &Config{
-				APIs: []API{
-					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
-								{
-									Selector: ".google.cloud.test.v1.Request.instance_id",
-									HelpText: &HelpTextElement{
-										Brief: "Override Field Brief",
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-			want: &HelpTextRule{
-				Selector: ".google.cloud.test.v1.Request.instance_id",
-				HelpText: &HelpTextElement{
-					Brief: "Override Field Brief",
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got := findFieldHelpTextRule(field, test.overrides)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("findFieldHelpTextRule() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestAPIVersion(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		overrides *Config
-		want      string
-	}{
-		{
-			name:      "No APIs in config",
-			overrides: &Config{},
-			want:      "",
-		},
-		{
-			name: "API version found",
-			overrides: &Config{
-				APIs: []API{
-					{APIVersion: "v2beta1"},
-				},
-			},
-			want: "v2beta1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got := apiVersion(test.overrides)
-			if got != test.want {
-				t.Errorf("apiVersion() = %v, want %v", got, test.want)
-			}
-		})
-	}
-}
-
 func TestNewCommand(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		method    *api.Method
-		overrides *Config
+		overrides *provider.Config
 		want      *Command
 	}{
 		{
@@ -472,8 +342,8 @@ func TestNewCommand(t *testing.T) {
 				m.OutputType.Pagination = &api.PaginationInfo{PageableItem: m.OutputType.Fields[0]}
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &provider.Config{
+				APIs: []provider.API{
 					{RootIsHidden: false},
 				},
 			},
@@ -502,15 +372,15 @@ func TestNewCommand(t *testing.T) {
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
 				return m
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &provider.Config{
+				APIs: []provider.API{
 					{
 						RootIsHidden: true,
-						HelpText: &HelpTextRules{
-							MethodRules: []*HelpTextRule{
+						HelpText: &provider.HelpTextRules{
+							MethodRules: []*provider.HelpTextRule{
 								{
 									Selector: "google.cloud.test.v1.Service.UpdateThing",
-									HelpText: &HelpTextElement{Brief: "Updated Brief"},
+									HelpText: &provider.HelpTextElement{Brief: "Updated Brief"},
 								},
 							},
 						},
@@ -538,7 +408,7 @@ func TestNewCommand(t *testing.T) {
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "Thing", MetadataTypeID: "Metadata"}
 				return m
 			}(),
-			overrides: &Config{},
+			overrides: &provider.Config{},
 			want: &Command{
 				Hidden: true,
 				Async: &Async{

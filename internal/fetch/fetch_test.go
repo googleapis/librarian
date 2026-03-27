@@ -44,9 +44,9 @@ func TestRepoFromArchiveLink(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &Repo{
+	want := &RepoRef{
 		Org:  "org-name",
-		Repo: "repo-name",
+		Name: "repo-name",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -190,19 +190,19 @@ func TestLatestShaError(t *testing.T) {
 func TestTarballLink(t *testing.T) {
 	for _, test := range []struct {
 		githubDownload string
-		repo           *Repo
+		repo           *RepoRef
 		sha            string
 		want           string
 	}{
 		{
 			githubDownload: "https://github.com",
-			repo:           &Repo{Org: "googleapis", Repo: "googleapis"},
+			repo:           &RepoRef{Org: "googleapis", Name: "googleapis"},
 			sha:            "abc123",
 			want:           "https://github.com/googleapis/googleapis/archive/abc123.tar.gz",
 		},
 		{
 			githubDownload: "https://test.example.com",
-			repo:           &Repo{Org: "my-org", Repo: "my-repo"},
+			repo:           &RepoRef{Org: "my-org", Name: "my-repo"},
 			sha:            "def456",
 			want:           "https://test.example.com/my-org/my-repo/archive/def456.tar.gz",
 		},
@@ -592,15 +592,15 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 
 	for _, test := range []struct {
 		name              string
-		repo              *Repo
+		repo              *RepoRef
 		wantCommit        string
 		wantTarballSHA256 string
 	}{
 		{
 			name: "default branch master",
-			repo: &Repo{
+			repo: &RepoRef{
 				Org:    testOrg,
-				Repo:   testRepo,
+				Name:   testRepo,
 				Branch: DefaultBranchMaster,
 			},
 			wantCommit:        expectedMasterCommit,
@@ -608,9 +608,9 @@ func TestLatestCommitAndChecksum(t *testing.T) {
 		},
 		{
 			name: "specific repo branch",
-			repo: &Repo{
+			repo: &RepoRef{
 				Org:    testOrg,
-				Repo:   testRepo,
+				Name:   testRepo,
 				Branch: testBranch,
 			},
 			wantCommit:        expectedBranchCommit,
@@ -705,7 +705,7 @@ func TestLatestCommitAndChecksumFailure(t *testing.T) {
 		defer server.Close()
 
 		endpoints := &Endpoints{API: server.URL, Download: server.URL}
-		repo := &Repo{Org: testOrg, Repo: testRepo}
+		repo := &RepoRef{Org: testOrg, Name: testRepo}
 
 		_, _, err := LatestCommitAndChecksum(endpoints, repo)
 		if err == nil {
@@ -727,7 +727,7 @@ func TestLatestCommitAndChecksumFailure(t *testing.T) {
 		defer server.Close()
 
 		endpoints := &Endpoints{API: server.URL, Download: server.URL}
-		repo := &Repo{Org: testOrg, Repo: testRepo}
+		repo := &RepoRef{Org: testOrg, Name: testRepo}
 
 		_, _, err := LatestCommitAndChecksum(endpoints, repo)
 		if err == nil {

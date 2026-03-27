@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package provider
 
 import (
 	"fmt"
@@ -22,22 +22,22 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// getCommandName maps an API method to a standard gcloud command name (in snake_case).
+// GetCommandName maps an API method to a standard gcloud command name (in snake_case).
 // This name is typically used for the command's file name.
-func getCommandName(method *api.Method) (string, error) {
+func GetCommandName(method *api.Method) (string, error) {
 	if method == nil {
 		return "", fmt.Errorf("method cannot be nil")
 	}
 	switch {
-	case isGet(method):
+	case IsGet(method):
 		return "describe", nil
-	case isList(method):
+	case IsList(method):
 		return "list", nil
-	case isCreate(method):
+	case IsCreate(method):
 		return "create", nil
-	case isUpdate(method):
+	case IsUpdate(method):
 		return "update", nil
-	case isDelete(method):
+	case IsDelete(method):
 		return "delete", nil
 	default:
 		// For custom methods (AIP-136), we try to extract the custom verb from the HTTP path.
@@ -53,19 +53,19 @@ func getCommandName(method *api.Method) (string, error) {
 	}
 }
 
-// isCreate determines if the method is a standard Create method (AIP-133).
-func isCreate(m *api.Method) bool {
+// IsCreate determines if the method is a standard Create method (AIP-133).
+func IsCreate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Create") {
 		return false
 	}
-	if verb := getHTTPVerb(m); verb != "" {
+	if verb := GetHTTPVerb(m); verb != "" {
 		return verb == "POST"
 	}
 	return true
 }
 
-// isGet determines if the method is a standard Get method (AIP-131).
-func isGet(m *api.Method) bool {
+// IsGet determines if the method is a standard Get method (AIP-131).
+func IsGet(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
 	if m.IsAIPStandardGet {
 		return true
@@ -74,36 +74,36 @@ func isGet(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Get") {
 		return false
 	}
-	if verb := getHTTPVerb(m); verb != "" {
+	if verb := GetHTTPVerb(m); verb != "" {
 		return verb == "GET"
 	}
 	return true
 }
 
-// isList determines if the method is a standard List method (AIP-132).
-func isList(m *api.Method) bool {
+// IsList determines if the method is a standard List method (AIP-132).
+func IsList(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "List") {
 		return false
 	}
-	if verb := getHTTPVerb(m); verb != "" {
+	if verb := GetHTTPVerb(m); verb != "" {
 		return verb == "GET"
 	}
 	return true
 }
 
-// isUpdate determines if the method is a standard Update method (AIP-134).
-func isUpdate(m *api.Method) bool {
+// IsUpdate determines if the method is a standard Update method (AIP-134).
+func IsUpdate(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Update") {
 		return false
 	}
-	if verb := getHTTPVerb(m); verb != "" {
+	if verb := GetHTTPVerb(m); verb != "" {
 		return verb == "PATCH" || verb == "PUT"
 	}
 	return true
 }
 
-// isDelete determines if the method is a standard Delete method (AIP-135).
-func isDelete(m *api.Method) bool {
+// IsDelete determines if the method is a standard Delete method (AIP-135).
+func IsDelete(m *api.Method) bool {
 	// Use sidekick's robust AIP check if available.
 	if m.IsAIPStandardDelete {
 		return true
@@ -112,34 +112,34 @@ func isDelete(m *api.Method) bool {
 	if !strings.HasPrefix(m.Name, "Delete") {
 		return false
 	}
-	if verb := getHTTPVerb(m); verb != "" {
+	if verb := GetHTTPVerb(m); verb != "" {
 		return verb == "DELETE"
 	}
 	return true
 }
 
-// isStandardMethod determines if the method is one of the standard AIP methods
+// IsStandardMethod determines if the method is one of the standard AIP methods
 // (Get, List, Create, Update, Delete).
-func isStandardMethod(m *api.Method) bool {
-	return isGet(m) || isList(m) || isCreate(m) || isUpdate(m) || isDelete(m)
+func IsStandardMethod(m *api.Method) bool {
+	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
 }
 
-// getHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
-func getHTTPVerb(m *api.Method) string {
+// GetHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
+func GetHTTPVerb(m *api.Method) string {
 	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
 		return m.PathInfo.Bindings[0].Verb
 	}
 	return ""
 }
 
-// isResourceMethod determines if the method operates on a specific resource instance.
+// IsResourceMethod determines if the method operates on a specific resource instance.
 // This includes standard Get, Update, Delete methods, and custom methods where the
 // HTTP path ends with a variable segment (e.g. `.../instances/{instance}`).
-func isResourceMethod(m *api.Method) bool {
+func IsResourceMethod(m *api.Method) bool {
 	switch {
-	case isGet(m), isUpdate(m), isDelete(m):
+	case IsGet(m), IsUpdate(m), IsDelete(m):
 		return true
-	case isCreate(m), isList(m):
+	case IsCreate(m), IsList(m):
 		return false
 	default:
 		// Fallback for custom methods
@@ -156,14 +156,14 @@ func isResourceMethod(m *api.Method) bool {
 	}
 }
 
-// isCollectionMethod determines if the method operates on a collection of resources.
+// IsCollectionMethod determines if the method operates on a collection of resources.
 // This includes standard List and Create methods, and custom methods where the
 // HTTP path ends with a literal segment (e.g. `.../instances`).
-func isCollectionMethod(m *api.Method) bool {
+func IsCollectionMethod(m *api.Method) bool {
 	switch {
-	case isList(m), isCreate(m):
+	case IsList(m), IsCreate(m):
 		return true
-	case isGet(m), isUpdate(m), isDelete(m):
+	case IsGet(m), IsUpdate(m), IsDelete(m):
 		return false
 	default:
 		// Fallback for custom methods
@@ -180,9 +180,9 @@ func isCollectionMethod(m *api.Method) bool {
 	}
 }
 
-// findResourceMessage identifies the primary resource message within a List response.
+// FindResourceMessage identifies the primary resource message within a List response.
 // Per AIP-132, this is usually the repeated field in the response message.
-func findResourceMessage(outputType *api.Message) *api.Message {
+func FindResourceMessage(outputType *api.Message) *api.Message {
 	if outputType == nil {
 		return nil
 	}

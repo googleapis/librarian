@@ -54,33 +54,33 @@ type Endpoints struct {
 	Download string
 }
 
-// Repo represents a GitHub repository name.
-type Repo struct {
+// RepoRef represents a GitHub repository name.
+type RepoRef struct {
 	// Branch is the name of the repository branch, such as `master` or `preview`.
 	Branch string
 
 	// Org defines the GitHub organization (or user), that owns the repository.
 	Org string
 
-	// Repo is the name of the repository, such as `googleapis` or `google-cloud-rust`.
-	Repo string
+	// Name is the name of the repository, such as `googleapis` or `google-cloud-rust`.
+	Name string
 }
 
 // repoFromArchiveLink extracts the GitHub account and repository (such as
 // `googleapis/googleapis`, or `googleapis/google-cloud-rust`) from an archive
 // link.
-// Note: This does **not** set [Repo.Branch] as it is not derivable from a
+// Note: This does **not** set [RepoRef.Branch] as it is not derivable from a
 // commit-based archive URL.
-func repoFromArchiveLink(githubDownload, archiveLink string) (*Repo, error) {
+func repoFromArchiveLink(githubDownload, archiveLink string) (*RepoRef, error) {
 	urlPath := strings.TrimPrefix(archiveLink, githubDownload)
 	urlPath = strings.TrimPrefix(urlPath, "/")
 	components := strings.Split(urlPath, "/")
 	if len(components) < 2 {
 		return nil, fmt.Errorf("invalid archive URL %q", archiveLink)
 	}
-	repo := &Repo{
+	repo := &RepoRef{
 		Org:  components[0],
-		Repo: components[1],
+		Name: components[1],
 	}
 	return repo, nil
 }
@@ -131,8 +131,8 @@ func latestSha(query string) (string, error) {
 
 // LatestCommitAndChecksum fetches the latest commit SHA and the SHA256 of the tarball for that
 // commit from the GitHub API for the given repository.
-func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 string, err error) {
-	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Repo, repo.Branch)
+func LatestCommitAndChecksum(endpoints *Endpoints, repo *RepoRef) (commit, sha256 string, err error) {
+	apiURL := fmt.Sprintf("%s/repos/%s/%s/commits/%s", endpoints.API, repo.Org, repo.Name, repo.Branch)
 	commit, err = latestSha(apiURL)
 	if err != nil {
 		return "", "", err
@@ -148,10 +148,10 @@ func LatestCommitAndChecksum(endpoints *Endpoints, repo *Repo) (commit, sha256 s
 
 // tarballLink constructs a GitHub tarball download URL for the given
 // repository and commit SHA.
-// Note: This does **not** incorporate the [Repo.Branch] as this produces a
+// Note: This does **not** incorporate the [RepoRef.Branch] as this produces a
 // commit-based archive URL.
-func tarballLink(githubDownload string, repo *Repo, sha string) string {
-	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Repo, sha)
+func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
+	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
 // download downloads a file from the given url to the target path, verifying

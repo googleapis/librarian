@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud generates gcloud command YAML files.
-package gcloud
+// Package provider contains configuration types and helpers for surfer tools.
+package provider
 
 // Config represents the top-level schema of a gcloud config YAML file.
 type Config struct {
@@ -218,4 +218,48 @@ type ResourcePattern struct {
 	// APIVersion is the API version associated with this resource pattern
 	// (e.g., "v1").
 	APIVersion string `yaml:"api_version,omitempty"`
+}
+
+// FindHelpTextRule finds the help text rule from the config that applies to the given method ID.
+func FindHelpTextRule(c *Config, methodID string) *HelpTextRule {
+	if c.APIs == nil {
+		return nil
+	}
+	for _, api := range c.APIs {
+		if api.HelpText == nil {
+			continue
+		}
+		for _, rule := range api.HelpText.MethodRules {
+			if rule.Selector == methodID {
+				return rule
+			}
+		}
+	}
+	return nil
+}
+
+// FindFieldHelpTextRule finds the help text rule from the config that applies to the given field ID.
+func FindFieldHelpTextRule(c *Config, fieldID string) *HelpTextRule {
+	if c.APIs == nil {
+		return nil
+	}
+	for _, api := range c.APIs {
+		if api.HelpText == nil {
+			continue
+		}
+		for _, rule := range api.HelpText.FieldRules {
+			if rule.Selector == fieldID {
+				return rule
+			}
+		}
+	}
+	return nil
+}
+
+// APIVersion extracts the API version from the configuration.
+func APIVersion(c *Config) string {
+	if len(c.APIs) > 0 {
+		return c.APIs[0].APIVersion
+	}
+	return ""
 }

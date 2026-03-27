@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package provider
 
 import (
 	"testing"
@@ -36,7 +36,7 @@ func TestInferTrackFromPackage(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := inferTrackFromPackage(test.pkg)
+			got := InferTrackFromPackage(test.pkg)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -86,7 +86,7 @@ func TestGetServiceTitle(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := getServiceTitle(test.model, test.shortServiceName)
+			got := GetServiceTitle(test.model, test.shortServiceName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

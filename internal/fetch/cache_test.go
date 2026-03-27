@@ -111,7 +111,7 @@ func TestExtractDir_Empty(t *testing.T) {
 	}
 }
 
-func TestRepoDir_ExtractedDirExists(t *testing.T) {
+func TestRepo_ExtractedDirExists(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
 
@@ -123,7 +123,7 @@ func TestRepoDir_ExtractedDirExists(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	got, err := RepoDir(t.Context(), testRepo, testCommit, testSHA256)
+	got, err := Repo(t.Context(), testRepo, testCommit, testSHA256)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -133,7 +133,7 @@ func TestRepoDir_ExtractedDirExists(t *testing.T) {
 	}
 }
 
-func TestRepoDir_TarballExists(t *testing.T) {
+func TestRepo_TarballExists(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
 
@@ -151,7 +151,7 @@ func TestRepoDir_TarballExists(t *testing.T) {
 	}
 
 	sha := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(t.Context(), testRepo, testCommit, sha)
+	got, err := Repo(t.Context(), testRepo, testCommit, sha)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -168,7 +168,7 @@ func TestRepoDir_TarballExists(t *testing.T) {
 	}
 }
 
-func TestRepoDir_MismatchTarball(t *testing.T) {
+func TestRepo_MismatchTarball(t *testing.T) {
 	cache := t.TempDir()
 	t.Setenv(envLibrarianCache, cache)
 	// Set up a mock web server to fetch a tarball.
@@ -203,7 +203,7 @@ func TestRepoDir_MismatchTarball(t *testing.T) {
 	}
 	defer f.Close()
 
-	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
+	got, err := Repo(t.Context(), repo, testCommit, expectedSHA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +221,7 @@ func TestRepoDir_MismatchTarball(t *testing.T) {
 	}
 }
 
-func TestRepoDir_Download(t *testing.T) {
+func TestRepo_Download(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
 
@@ -245,7 +245,7 @@ func TestRepoDir_Download(t *testing.T) {
 
 	repo := strings.TrimPrefix(server.URL, "https://")
 	expectedSHA := fmt.Sprintf("%x", sha256.Sum256(tarballData))
-	got, err := RepoDir(t.Context(), repo, testCommit, expectedSHA)
+	got, err := Repo(t.Context(), repo, testCommit, expectedSHA)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -263,7 +263,7 @@ func TestRepoDir_Download(t *testing.T) {
 	}
 }
 
-func TestRepoDir_ContextDeadlineExceeded(t *testing.T) {
+func TestRepo_ContextDeadlineExceeded(t *testing.T) {
 	cachedir := t.TempDir()
 	t.Setenv(envLibrarianCache, cachedir)
 
@@ -281,7 +281,7 @@ func TestRepoDir_ContextDeadlineExceeded(t *testing.T) {
 	defer cancel()
 
 	repo := strings.TrimPrefix(server.URL, "https://")
-	_, err := RepoDir(ctx, repo, testCommit, "any-sha")
+	_, err := Repo(ctx, repo, testCommit, "any-sha")
 	if !errors.Is(err, context.DeadlineExceeded) {
 		t.Errorf("expected context.DeadlineExceeded, got: %v", err)
 	}

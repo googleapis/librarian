@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 	"github.com/iancoleman/strcase"
 )
 
@@ -27,13 +28,13 @@ import (
 // definition from an API method.
 type commandBuilder struct {
 	method    *api.Method
-	overrides *Config
+	overrides *provider.Config
 	model     *api.API
 	service   *api.Service
 }
 
 // newCommandBuilder constructs a new commandBuilder for a specific method execution.
-func newCommandBuilder(method *api.Method, overrides *Config, model *api.API, service *api.Service) *commandBuilder {
+func newCommandBuilder(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) *commandBuilder {
 	return &commandBuilder{
 		method:    method,
 		overrides: overrides,
@@ -57,19 +58,19 @@ func (b *commandBuilder) build() (*Command, error) {
 		Hidden:           b.hidden(),
 		HelpText:         b.helpText(),
 		ReleaseTracks:    b.releaseTracks(),
-		APIVersion:       apiVersion(b.overrides),
+		APIVersion:       provider.APIVersion(b.overrides),
 		Collection:       b.collectionPath(false),
 		Method:           b.requestMethod(),
 		Arguments:        args,
 		ResponseIDField:  b.responseIDField(),
 		OutputFormat:     b.outputFormat(),
-		ReadModifyUpdate: isUpdate(b.method),
+		ReadModifyUpdate: provider.IsUpdate(b.method),
 		Async:            b.async(),
 	}, nil
 }
 
 func (b *commandBuilder) responseIDField() string {
-	if isList(b.method) {
+	if provider.IsList(b.method) {
 		// List commands should have an id_field to enable the --uri flag.
 		return "name"
 	}
@@ -78,11 +79,11 @@ func (b *commandBuilder) responseIDField() string {
 
 // outputFormat generates the string output format for List commands.
 func (b *commandBuilder) outputFormat() string {
-	if !isList(b.method) {
+	if !provider.IsList(b.method) {
 		return ""
 	}
 
-	resourceMsg := findResourceMessage(b.method.OutputType)
+	resourceMsg := provider.FindResourceMessage(b.method.OutputType)
 	if resourceMsg == nil {
 		return ""
 	}
@@ -102,7 +103,7 @@ func (b *commandBuilder) async() *Async {
 
 	// Extract the resource result if the LRO response type matches the
 	// method's resource type.
-	resource := getResourceForMethod(b.method, b.model)
+	resource := provider.GetResourceForMethod(b.method, b.model)
 	if resource == nil {
 		return async
 	}
@@ -116,7 +117,7 @@ func (b *commandBuilder) async() *Async {
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := getSingularResourceNameForMethod(b.method, b.model)
+	singular := provider.GetSingularResourceNameForMethod(b.method, b.model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	}
@@ -133,7 +134,7 @@ func (b *commandBuilder) hidden() bool {
 }
 
 func (b *commandBuilder) helpText() HelpText {
-	rule := findHelpTextRule(b.method, b.overrides)
+	rule := provider.FindHelpTextRule(b.overrides, strings.TrimPrefix(b.method.ID, "."))
 	if rule != nil {
 		return HelpText{
 			Brief:       rule.HelpText.Brief,
@@ -147,7 +148,7 @@ func (b *commandBuilder) helpText() HelpText {
 func (b *commandBuilder) releaseTracks() []string {
 	// Infer default release track from proto package.
 	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := inferTrackFromPackage(b.method.Service.Package)
+	inferredTrack := provider.InferTrackFromPackage(b.method.Service.Package)
 	return []string{strings.ToUpper(inferredTrack)}
 }
 
@@ -157,8 +158,8 @@ func (b *commandBuilder) requestMethod() string {
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
 	if b.method.PathInfo != nil && len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
 		return *b.method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !isStandardMethod(b.method) {
-		commandName, _ := getCommandName(b.method)
+	} else if !provider.IsStandardMethod(b.method) {
+		commandName, _ := provider.GetCommandName(b.method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		return strcase.ToLowerCamel(commandName)
 	}
@@ -197,7 +198,7 @@ func (b *commandBuilder) argumentsFromField(field *api.Field, prefix string) ([]
 	// Primary resource args are checked first because fields like "parent"
 	// and "name" are primary resources in certain method types (e.g., List
 	// and Get/Delete/Update respectively) and must not be ignored.
-	if isPrimaryResource(field, b.method) {
+	if provider.IsPrimaryResource(field, b.method) {
 		arg := newArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).buildPrimaryResource()
 		return []Argument{arg}, nil
 	}
@@ -242,7 +243,7 @@ func (b *commandBuilder) collectionPath(isAsync bool) []string {
 			continue
 		}
 
-		basePath := extractPathFromSegments(binding.PathTemplate.Segments)
+		basePath := provider.ExtractPathFromSegments(binding.PathTemplate.Segments)
 
 		if basePath == "" {
 			continue
@@ -276,7 +277,7 @@ func tableFormat(message *api.Message) string {
 
 	for _, f := range message.Fields {
 		// Sanitize field name to prevent DSL injection.
-		if !isSafeName(f.JSONName) {
+		if !provider.IsSafeName(f.JSONName) {
 			continue
 		}
 
@@ -317,56 +318,12 @@ func tableFormat(message *api.Message) string {
 	return fmt.Sprintf("table(\n%s)", sb.String())
 }
 
-// findHelpTextRule finds the help text rule from the config that applies to the current method.
-func findHelpTextRule(method *api.Method, overrides *Config) *HelpTextRule {
-	if overrides.APIs == nil {
-		return nil
-	}
-	for _, api := range overrides.APIs {
-		if api.HelpText == nil {
-			continue
-		}
-		for _, rule := range api.HelpText.MethodRules {
-			if rule.Selector == strings.TrimPrefix(method.ID, ".") {
-				return rule
-			}
-		}
-	}
-	return nil
-}
-
-// findFieldHelpTextRule finds the help text rule from the config that applies to the current field.
-func findFieldHelpTextRule(field *api.Field, overrides *Config) *HelpTextRule {
-	if overrides.APIs == nil {
-		return nil
-	}
-	for _, api := range overrides.APIs {
-		if api.HelpText == nil {
-			continue
-		}
-		for _, rule := range api.HelpText.FieldRules {
-			if rule.Selector == field.ID {
-				return rule
-			}
-		}
-	}
-	return nil
-}
-
-// apiVersion extracts the API version from the configuration.
-func apiVersion(overrides *Config) string {
-	if len(overrides.APIs) > 0 {
-		return overrides.APIs[0].APIVersion
-	}
-	return ""
-}
-
 // isIgnored determines if a field should be excluded from the generated command arguments.
 func isIgnored(field *api.Field, method *api.Method) bool {
 	if field.Name == "parent" || field.Name == "name" || field.Name == "update_mask" {
 		return true
 	}
-	if isList(method) {
+	if provider.IsList(method) {
 		switch field.Name {
 		case "page_size", "page_token", "filter", "order_by":
 			return true
@@ -375,7 +332,7 @@ func isIgnored(field *api.Field, method *api.Method) bool {
 	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
 		return true
 	}
-	if isUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if provider.IsUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
 		return true
 	}
 	return false

@@ -59,12 +59,17 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
+	// generate repo metadata prior to client because info is needed for
+	// owlbot.py to generate README.md
+	if err := generateRepoMetadata(cfg, library, outdir, googleapisDir); err != nil {
+		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+	}
 	for _, api := range library.APIs {
 		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	return postProcessLibrary(cfg, library, outdir, googleapisDir)
+	return nil
 }
 
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {

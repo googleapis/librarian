@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
 
 func TestNewArguments(t *testing.T) {
@@ -53,7 +54,7 @@ func TestNewArguments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newCommandBuilder(test.method, &Config{}, model, service).newArguments()
+			got, err := newCommandBuilder(test.method, &provider.Config{}, model, service).newArguments()
 			if err != nil {
 				t.Fatalf("newArguments() unexpected error = %v", err)
 			}
@@ -89,7 +90,7 @@ func TestNewArguments_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newCommandBuilder(test.method, &Config{}, model, service).newArguments()
+			_, err := newCommandBuilder(test.method, &provider.Config{}, model, service).newArguments()
 			if err == nil {
 				t.Fatalf("newArguments() expected error, got nil")
 			}
@@ -118,7 +119,7 @@ func TestNewArgument(t *testing.T) {
 		field     *api.Field
 		apiField  string
 		method    *api.Method
-		overrides *Config
+		overrides *provider.Config
 		want      Argument
 	}{
 		{
@@ -164,12 +165,12 @@ func TestNewArgument(t *testing.T) {
 				f.ID = "test.foo"
 				return f
 			}(),
-			overrides: &Config{
-				APIs: []API{
+			overrides: &provider.Config{
+				APIs: []provider.API{
 					{
-						HelpText: &HelpTextRules{
-							FieldRules: []*HelpTextRule{
-								{Selector: "test.foo", HelpText: &HelpTextElement{Brief: "Override Foo"}},
+						HelpText: &provider.HelpTextRules{
+							FieldRules: []*provider.HelpTextRule{
+								{Selector: "test.foo", HelpText: &provider.HelpTextElement{Brief: "Override Foo"}},
 							},
 						},
 					},
@@ -189,7 +190,7 @@ func TestNewArgument(t *testing.T) {
 			t.Parallel()
 			overrides := test.overrides
 			if overrides == nil {
-				overrides = &Config{}
+				overrides = &provider.Config{}
 			}
 			got, err := newArgumentBuilder(test.method, overrides, model, service, test.field, test.apiField).build()
 			if err != nil {
@@ -528,7 +529,7 @@ func TestArgumentsFromField(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args, err := newCommandBuilder(createMethod, &Config{}, model, service).argumentsFromField(test.field, test.prefix)
+			args, err := newCommandBuilder(createMethod, &provider.Config{}, model, service).argumentsFromField(test.field, test.prefix)
 			if err != nil {
 				t.Fatalf("argumentsFromField() unexpected error = %v", err)
 			}
@@ -571,7 +572,7 @@ func TestArgumentsFromField_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newCommandBuilder(createMethod, &Config{}, model, service).argumentsFromField(test.field, test.prefix)
+			_, err := newCommandBuilder(createMethod, &provider.Config{}, model, service).argumentsFromField(test.field, test.prefix)
 			if err == nil {
 				t.Fatalf("argumentsFromField() expected error, got nil")
 			}
