@@ -26,6 +26,7 @@ runs:
     - name: Create or comment on issue
       shell: bash
       run: |
+        set -e
         # Search for an existing open issue with the same title
         EXISTING_ISSUE=$(gh issue list --repo "$GH_REPO" --search "$ISSUE_TITLE in:title" --state open --json number --jq '.[0].number')
 
@@ -43,7 +44,7 @@ runs:
           
           if [[ -n "$ISSUE_MENTION" ]]; then
             ISSUE_NUM=${ISSUE_LINK##*/}
-            gh issue comment "$ISSUE_NUM" --repo "$GH_REPO" --body "$ISSUE_MENTION A critical issue has been created, please respond immediately."
+            gh issue comment "$ISSUE_NUM" --repo "$GH_REPO" --body "$ISSUE_MENTION The workflow failed. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           fi
         fi
       env:
