@@ -161,9 +161,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	if err != nil {
 		return nil, fmt.Errorf("failed to find api config: %w", err)
 	}
-	metadata.Transport = "grpc"
-	if apiCfg != nil {
-		metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
-	}
+	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
 	return metadata, nil
 }
