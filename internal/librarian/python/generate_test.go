@@ -1173,7 +1173,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "handwritten library",
+			name: "stable handwritten library",
 			library: &config.Library{
 				Name: "google-auth",
 				Python: &config.PythonPackage{
@@ -1181,6 +1181,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 						LibraryType: "AUTH",
 					},
 				},
+				Version: "1.2.3",
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                "google-auth",
@@ -1190,6 +1191,27 @@ func TestCreateRepoMetadata(t *testing.T) {
 				LibraryType:         "AUTH",
 				Repo:                "googleapis/google-cloud-python",
 				ReleaseLevel:        "stable",
+			},
+		},
+		{
+			name: "preview handwritten library",
+			library: &config.Library{
+				Name: "google-auth",
+				Python: &config.PythonPackage{
+					PythonDefault: config.PythonDefault{
+						LibraryType: "AUTH",
+					},
+				},
+				Version: "0.1.2",
+			},
+			want: &repometadata.RepoMetadata{
+				Name:                "google-auth",
+				DistributionName:    "google-auth",
+				ClientDocumentation: "https://googleapis.dev/python/google-auth/latest",
+				Language:            config.LanguagePython,
+				LibraryType:         "AUTH",
+				Repo:                "googleapis/google-cloud-python",
+				ReleaseLevel:        "preview",
 			},
 		},
 		{
@@ -1211,7 +1233,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				Language:            config.LanguagePython,
 				LibraryType:         "AUTH",
 				Repo:                "googleapis/google-cloud-python",
-				ReleaseLevel:        "stable",
+				ReleaseLevel:        "preview",
 			},
 		},
 	} {

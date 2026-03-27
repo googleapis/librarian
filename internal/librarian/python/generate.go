@@ -138,11 +138,15 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	} else {
 		// Handwritten library: populate from scratch (and then apply overrides
 		// as normal).
+		releaseLevel := "stable"
+		if library.Version == "" || strings.HasPrefix(library.Version, "0.") {
+			releaseLevel = "preview"
+		}
 		repoMetadata = &repometadata.RepoMetadata{
 			Name:             library.Name,
 			DistributionName: library.Name,
 			Language:         cfg.Language,
-			ReleaseLevel:     "stable",
+			ReleaseLevel:     releaseLevel,
 			Repo:             cfg.Repo,
 			// Allow even handwritten libraries to specify a default value in
 			// the package options if they want to. This would be unusual, but
