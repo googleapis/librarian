@@ -347,6 +347,21 @@ with open("owlbot-ran.txt", "w") as f:
 	}
 }
 
+func TestRunOwlBot_Error(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	outDir := filepath.Join(tmp, "out")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir: outDir,
+	}
+	if err := runOwlBot(t.Context(), p); err == nil {
+		t.Error("expected error due to missing templates directory, got nil")
+	}
+}
+
 func TestAddMissingHeaders(t *testing.T) {
 	for _, test := range []struct {
 		name         string
