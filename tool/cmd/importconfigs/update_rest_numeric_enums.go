@@ -31,6 +31,17 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var langToConstant = map[string]string{
+	"all":    "LangAll",
+	"csharp": "LangCsharp",
+	"go":     "LangGo",
+	"java":   "LangJava",
+	"nodejs": "LangNodejs",
+	"php":    "LangPhp",
+	"python": "LangPython",
+	"ruby":   "LangRuby",
+}
+
 func updateRestNumericEnumsCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "update-rest-numeric-enums",
