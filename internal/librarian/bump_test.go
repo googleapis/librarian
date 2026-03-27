@@ -680,6 +680,17 @@ func TestDeriveNextVersion(t *testing.T) {
 			wantVersion: sample.NextVersion,
 		},
 		{
+			name: "rust new library default version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Language = config.LanguageRust
+				c.Libraries[0].Version = ""
+				return c
+			}(),
+			versionOpts: languageVersioningOptions[config.LanguageRust],
+			wantVersion: defaultRustVersion,
+		},
+		{
 			name:        "default semver options next GA version",
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
