@@ -23,6 +23,8 @@ import (
 	"strings"
 
 	"testing"
+
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPostProcessAPI(t *testing.T) {
@@ -90,7 +92,7 @@ func TestPostProcessAPI(t *testing.T) {
 		protoDir:       protoDir,
 	}
 	if err := postProcessAPI(t.Context(), p); err != nil {
-		t.Fatalf("postProcess failed: %v", err)
+		t.Fatal(err)
 	}
 
 	// Verify that the file from srcjar was unzipped and moved, but NO header was added.
@@ -121,47 +123,6 @@ func TestPostProcessAPI(t *testing.T) {
 	// Verify that the version directory was cleaned up
 	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
 		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
-	}
-}
-
-func TestPostProcessAPI_Staging(t *testing.T) {
-	t.Parallel()
-	outdir := t.TempDir()
-	libraryName := "secretmanager"
-	version := "v1"
-	gapicDir := filepath.Join(outdir, version, "gapic")
-	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create owlbot.py to trigger staging behavior
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte(""), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
-	p := postProcessParams{
-		outDir:         outdir,
-		libraryName:    libraryName,
-		version:        version,
-		googleapisDir:  googleapisDir,
-		apiProtos:      apiProtos,
-		includeSamples: true,
-		gapicDir:       gapicDir,
-		grpcDir:        filepath.Join(outdir, version, "grpc"),
-		protoDir:       filepath.Join(outdir, version, "proto"),
-	}
-
-	// Test restructureToStaging directly since RunInDirWithEnv is not mockable here.
-	if err := restructureToStaging(p); err != nil {
-		t.Fatalf("restructureToStaging failed: %v", err)
-	}
-
-	// Verify the nested structure: staging/v1/proto-google-cloud-secretmanager-v1
-	modules := deriveModuleNames(libraryName, version)
-	wantProtoPath := filepath.Join(outdir, "owl-bot-staging", version, modules.proto, "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
-	if _, err := os.Stat(wantProtoPath); err != nil {
-		t.Errorf("expected nested proto file at %s, but it was not found: %v", wantProtoPath, err)
 	}
 }
 
@@ -208,7 +169,7 @@ func TestRestructureOutput(t *testing.T) {
 		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
 	if err := restructureOutput(p); err != nil {
-		t.Fatalf("restructureOutput failed: %v", err)
+		t.Fatal(err)
 	}
 
 	// Verify sample file location
@@ -231,21 +192,19 @@ func TestRestructureOutput(t *testing.T) {
 func TestRestructureToStaging(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-
 	version := "v1"
-	libraryID := "secretmanager"
-	// Create a dummy structure to mimic generator output
-	dirs := []string{
+	generatorOutputDirs := []string{
 		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
 		filepath.Join(tmpDir, version, "proto"),
 	}
-	for _, dir := range dirs {
+	for _, dir := range generatorOutputDirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
+	libraryID := "secretmanager"
 	p := postProcessParams{
 		outDir:         tmpDir,
 		libraryName:    libraryID,
@@ -258,16 +217,14 @@ func TestRestructureToStaging(t *testing.T) {
 		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
 	if err := restructureToStaging(p); err != nil {
-		t.Fatalf("restructureToStaging failed: %v", err)
+		t.Fatal(err)
 	}
-
 	// Verify staging/proto file location
 	wantProtoPath := filepath.Join(tmpDir, "owl-bot-staging", version, fmt.Sprintf("proto-google-cloud-%s-%s", libraryID, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
 	}
-
-	// Verify that the direct restructuring did NOT happen (some internal files shouldn't be moved to Structure C by Librarian)
+	// Verify that the direct restructuring to final output location did NOT happen
 	libraryPath := filepath.Join(tmpDir, "google-cloud-secretmanager")
 	if _, err := os.Stat(libraryPath); !os.IsNotExist(err) {
 		t.Errorf("expected %s NOT to exist because owlbot.py should handle moving from staging", libraryPath)
@@ -307,7 +264,7 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
 	if err := restructureOutput(p); err != nil {
-		t.Fatalf("restructureOutput failed: %v", err)
+		t.Fatal(err)
 	}
 	// Verify sample file location DOES NOT exist
 	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
@@ -322,7 +279,7 @@ func TestCopyProtos_Success(t *testing.T) {
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
 	protos := []string{proto1}
 	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
-		t.Fatalf("copyProtos failed: %v", err)
+		t.Fatal(err)
 	}
 	// Verify proto1 was copied
 	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/secretmanager/v1/service.proto")); err != nil {
@@ -335,6 +292,58 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	destDir := t.TempDir()
 	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
+	}
+}
+
+func TestRunOwlBot(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+	tmp := t.TempDir()
+	outDir := filepath.Join(tmp, "out")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(tmp, "sdk-platform-java", "hermetic_build", "library_generation", "owlbot", "templates")
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a dummy owlbot.py that checks environment variables.
+	owlbotContent := `
+import os
+import sys
+
+lib_version = os.environ.get("SYNTHTOOL_LIBRARY_VERSION")
+bom_version = os.environ.get("SYNTHTOOL_LIBRARIES_BOM_VERSION")
+templates = os.environ.get("SYNTHTOOL_TEMPLATES")
+
+if lib_version != "1.2.3":
+    print(f"Expected SYNTHTOOL_LIBRARY_VERSION=1.2.3, got {lib_version}")
+    sys.exit(1)
+if bom_version != "4.5.6":
+    print(f"Expected SYNTHTOOL_LIBRARIES_BOM_VERSION=4.5.6, got {bom_version}")
+    sys.exit(1)
+if not templates or not templates.endswith("templates"):
+    print(f"Expected SYNTHTOOL_TEMPLATES to be set and end with 'templates', got {templates}")
+    sys.exit(1)
+
+with open("owlbot-ran.txt", "w") as f:
+    f.write("success")
+`
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(owlbotContent), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	p := postProcessParams{
+		outDir:              outDir,
+		libraryVersion:      "1.2.3",
+		librariesBomVersion: "4.5.6",
+	}
+	if err := runOwlBot(t.Context(), p); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
+		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
 	}
 }
 
