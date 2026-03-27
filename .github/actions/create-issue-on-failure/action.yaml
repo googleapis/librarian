@@ -19,34 +19,12 @@ inputs:
     description: "A user or team to mention in a follow-up comment if a new issue is created."
     required: false
     default: "@googleapis/cloud-sdk-librarian-team"
-
 runs:
   using: "composite"
   steps:
     - name: Create or comment on issue
       shell: bash
-      run: |
-        set -e
-        # Search for an existing open issue with the same title
-        EXISTING_ISSUE=$(gh issue list --repo "$GH_REPO" --search "$ISSUE_TITLE in:title" --state open --json number --jq '.[0].number')
-
-        if [[ -n "$EXISTING_ISSUE" && "$EXISTING_ISSUE" != "null" ]]; then
-          echo "Found existing open issue #$EXISTING_ISSUE. Adding comment."
-          gh issue comment "$EXISTING_ISSUE" --repo "$GH_REPO" --body "The build failed again. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-        else
-          echo "Creating new issue."
-          ISSUE_LINK=$(gh issue create \
-            --title "$ISSUE_TITLE" \
-            --body "$ISSUE_BODY" \
-            --label "$ISSUE_LABELS" \
-            --assignee "$ISSUE_ASSIGNEE" \
-            --repo "$GH_REPO")
-          
-          if [[ -n "$ISSUE_MENTION" ]]; then
-            ISSUE_NUM=${ISSUE_LINK##*/}
-            gh issue comment "$ISSUE_NUM" --repo "$GH_REPO" --body "$ISSUE_MENTION The workflow failed. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          fi
-        fi
+      run: "set -e\n# Search for an existing open issue with the same title\nEXISTING_ISSUE=$(gh issue list --repo \"$GH_REPO\" --search \"$ISSUE_TITLE in:title\" --state open --json number --jq '.[0].number')\n\nif [[ -n \"$EXISTING_ISSUE\" && \"$EXISTING_ISSUE\" != \"null\" ]]; then\n  echo \"Found existing open issue #$EXISTING_ISSUE. Adding comment.\"\n  gh issue comment \"$EXISTING_ISSUE\" --repo \"$GH_REPO\" --body \"The build failed again. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"\nelse\n  echo \"Creating new issue.\"\n  ISSUE_LINK=$(gh issue create \\\n    --title \"$ISSUE_TITLE\" \\\n    --body \"$ISSUE_BODY\" \\\n    --label \"$ISSUE_LABELS\" \\\n    --assignee \"$ISSUE_ASSIGNEE\" \\\n    --repo \"$GH_REPO\")\n  \n  if [[ -n \"$ISSUE_MENTION\" ]]; then\n    ISSUE_NUM=${ISSUE_LINK##*/}\n    gh issue comment \"$ISSUE_NUM\" --repo \"$GH_REPO\" --body \"$ISSUE_MENTION The workflow failed. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\"\n  fi\nfi\n"
       env:
         GITHUB_TOKEN: ${{ github.token }}
         GH_REPO: ${{ github.repository }}
