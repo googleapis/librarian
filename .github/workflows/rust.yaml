@@ -74,11 +74,9 @@ jobs:
         working-directory: google-cloud-rust
         run: cargo check -p google-cloud-showcase-v1beta1
   create-issue-on-failure:
-    runs-on: ubuntu-24.04
     needs: [test, integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    steps:
-      - uses: ./.github/workflows/create-issue-on-failure.yaml
-        with:
-          language: Rust
-          repository: google-cloud-rust
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Rust
+      repository: google-cloud-rust
