@@ -48,5 +48,5 @@ jobs:
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
     with:
-      language: Golang
+      language: Go
       repository: google-cloud-go
