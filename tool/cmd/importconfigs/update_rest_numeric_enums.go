@@ -31,6 +31,16 @@ import (
 	"github.com/urfave/cli/v3"
 )
 
+var bazelLangs = []string{
+	"csharp",
+	"go",
+	"java",
+	"nodejs",
+	"php",
+	"python",
+	"ruby",
+}
+
 func updateRestNumericEnumsCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "update-rest-numeric-enums",
@@ -149,12 +159,8 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 }
 
 func simplifyRESTNumericEnums(restNumericEnums map[string]bool) map[string]bool {
-	for lang := range langToConstant {
-		if lang == "all" {
-			continue
-		}
-		_, ok := restNumericEnums[lang]
-		if !ok {
+	for _, lang := range bazelLangs {
+		if _, ok := restNumericEnums[lang]; !ok {
 			// At least one language is not present,
 			// return as-is.
 			return restNumericEnums

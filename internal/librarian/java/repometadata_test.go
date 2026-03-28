@@ -104,7 +104,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 		APIDescription:       "Custom description",
 		ClientDocumentation:  "https://custom.client.docs",
 		ReleaseLevel:         s.ReleaseLevel,
-		Transport:            "both",
+		Transport:            "grpc",
 		Language:             cfg.Language,
 		Repo:                 cfg.Repo,
 		RepoShort:            "java-secretmanager",

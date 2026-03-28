@@ -117,10 +117,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	if err != nil {
 		return fmt.Errorf("failed to find api config: %w", err)
 	}
-	transport := serviceconfig.GRPCRest
-	if apiCfg != nil {
-		transport = apiCfg.Transport(config.LanguageJava)
-	}
+	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
 			return fmt.Errorf("failed to generate grpc: %w", err)
@@ -191,7 +188,7 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicD
 	return args
 }
 
-func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, googleapisDir string, apiCfgs *serviceconfig.API) ([]string, error) {
+func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, googleapisDir string, apiCfg *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
@@ -199,10 +196,10 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
 	gapicOpts = append(gapicOpts, gapicOpt("artifact", deriveDistributionName(library)))
 
-	if apiCfgs != nil && apiCfgs.ServiceConfig != "" {
+	if apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
-		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfgs.ServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
 	}
 
 	gapicConfig, err := serviceconfig.FindGAPICConfig(googleapisDir, api.Path)
@@ -225,15 +222,12 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	}
 
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
-	transport := serviceconfig.GRPCRest
-	if apiCfgs != nil {
-		transport = apiCfgs.Transport(config.LanguageJava)
-	}
+	transport := apiCfg.Transport(config.LanguageJava)
 	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
 
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
-	if apiCfgs == nil || apiCfgs.HasRESTNumericEnums(config.LanguageJava) {
+	if apiCfg.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
 	return gapicOpts, nil

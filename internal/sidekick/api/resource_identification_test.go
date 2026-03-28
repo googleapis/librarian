@@ -415,6 +415,69 @@ func TestIdentifyTargetResources_Heuristic(t *testing.T) {
 			},
 			want: nil,
 		},
+		{
+			name:      "heuristic: known custom resource after standalone literal",
+			serviceID: ".google.cloud.compute.v1.CrossSiteNetworks",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("global").
+				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "cross_site_network", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project").
+					WithLiteral("global").
+					WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}, {"cross_site_network"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}/global/crossSiteNetworks/{cross_site_network}"),
+			},
+		},
+		{
+			name:      "heuristic: unknown custom resource falls back to parent",
+			serviceID: ".google.cloud.compute.v1.CrossSiteNetworks",
+			path: NewPathTemplate().
+				WithLiteral("projects").WithVariableNamed("project").
+				WithLiteral("global").
+				WithLiteral("crossSiteNetworks").WithVariableNamed("cross_site_network"),
+			fields: []*Field{
+				{Name: "project", Typez: STRING_TYPE},
+				{Name: "cross_site_network", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("projects").WithVariableNamed("project"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"project"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/projects/{project}"),
+			},
+		},
+		{
+			name:      "heuristic: multiple standalone literals before known resource",
+			serviceID: ".google.cloud.compute.v1.FirewallPolicies",
+			path: NewPathTemplate().
+				WithLiteral("locations").
+				WithLiteral("global").
+				WithLiteral("firewallPolicies").WithVariableNamed("resource"),
+			fields: []*Field{
+				{Name: "resource", Typez: STRING_TYPE},
+			},
+			getPaths: []*PathTemplate{
+				NewPathTemplate().
+					WithLiteral("locations").
+					WithLiteral("global").
+					WithLiteral("firewallPolicies").WithVariableNamed("resource"),
+			},
+			want: &TargetResource{
+				FieldPaths: [][]string{{"resource"}},
+				Template:   ParseTemplateForTest("//test-api.googleapis.com/locations/global/firewallPolicies/{resource}"),
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model, binding := setupTestModel(test.serviceID, test.path, test.fields)
