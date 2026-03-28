@@ -262,45 +262,22 @@ func deriveVersionAnnotation(artifactID string) (string, error) {
 
 // generateRootPom writes the aggregator pom.xml for the monorepo root, including
 // all discovered Java modules.
-func generateRootPom(repoPath string, modules []string) (err error) {
-	f, err := os.Create(filepath.Join(repoPath, "pom.xml"))
-	if err != nil {
-		return fmt.Errorf("failed to create root pom.xml: %w", err)
-	}
-	defer func() {
-		cerr := f.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
+func generateRootPom(repoPath string, modules []string) error {
 	data := struct {
 		Modules []string
 	}{
 		Modules: modules,
 	}
-	if terr := templates.ExecuteTemplate(f, "root-pom.xml.tmpl", data); terr != nil {
-		return fmt.Errorf("failed to execute root-pom template: %w", terr)
-	}
-	return nil
+	return writePom(filepath.Join(repoPath, "pom.xml"), "root-pom.xml.tmpl", data)
 }
 
 // generateGapicLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) (err error) {
+func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) error {
 	bomDir := filepath.Join(repoPath, gapicBom)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
 	}
-	f, err := os.Create(filepath.Join(bomDir, "pom.xml"))
-	if err != nil {
-		return err
-	}
-	defer func() {
-		cerr := f.Close()
-		if err == nil {
-			err = cerr
-		}
-	}()
 	data := struct {
 		Version    string
 		BOMConfigs []*bomConfig
@@ -308,8 +285,5 @@ func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig
 		Version:    version,
 		BOMConfigs: bomConfigs,
 	}
-	if terr := templates.ExecuteTemplate(f, "gapic-libraries-bom.xml.tmpl", data); terr != nil {
-		return terr
-	}
-	return nil
+	return writePom(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
 }
