@@ -21,7 +21,7 @@ jobs:
       - uses: ./.github/actions/create-issue-on-failure
         with:
           title: "${{ inputs.repository }}: librarian generate fails when run at HEAD"
-          body: |
+          body: |-
             The ${{ inputs.language }} CI failed on the `main` branch.
 
             Running `librarian generate --all` on the [${{ inputs.repository }}](https://github.com/googleapis/${{ inputs.repository }}) repository using `librarian` at HEAD failed.
