@@ -78,31 +78,15 @@ jobs:
     needs: [test, integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
-      - name: Create an issue for push event to main
-        run: |
-          ISSUE_TITLE="google-cloud-rust: librarian generate fails when run at HEAD"
-          BODY="The Rust CI failed on the \`main\` branch.
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/create-issue-on-failure
+        with:
+          title: "google-cloud-rust: librarian generate fails when run at HEAD"
+          body: |
+            The Rust CI failed on the `main` branch.
 
-          Running \`librarian generate --all\` on the [google-cloud-rust](https://github.com/googleapis/google-cloud-rust) repository using \`librarian\` at HEAD failed.
+            Running `librarian generate --all` on the [google-cloud-rust](https://github.com/googleapis/google-cloud-rust) repository using `librarian` at HEAD failed.
 
-          Note: This integration test only runs as a postsubmit test due to its long execution time.
+            Note: This integration test only runs as a postsubmit test due to its long execution time.
 
-          Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-
-          # Check for an existing open issue
-          EXISTING_ISSUE=$(gh issue list --repo $GH_REPO --search "$ISSUE_TITLE in:title" --state open --json number --jq '.[0].number')
-
-          if [[ -n "$EXISTING_ISSUE" && "$EXISTING_ISSUE" != "null" ]]; then
-            echo "Found existing open issue #$EXISTING_ISSUE. Adding comment."
-            gh issue comment "$EXISTING_ISSUE" --repo $GH_REPO --body "The build failed again. Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          else
-            echo "Creating new issue."
-            ISSUE_LINK=$(gh issue create --title "$ISSUE_TITLE" --body "$BODY" --label ":rotating_light: critical" --assignee ${{ github.actor }} -R $GH_REPO)
-            ISSUE_NUM=${ISSUE_LINK##*/}
-            gh issue comment $ISSUE_NUM --body "@googleapis/cloud-sdk-librarian-team A critical issue has been created, please respond immediately."
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          GH_REPO: ${{ github.repository }}
-          TEST_RESULT: ${{ needs.test.result }}
-          INTEGRATION_RESULT: ${{ needs.integration.result }}
+            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
