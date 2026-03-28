@@ -103,10 +103,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/HasAutoPopulatedFields}}
         {{#Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
-        let (builder, method, _path_template, resource_name) = None
+        let (builder, method, _path_template, _resource_name) = None
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
-        let (builder, method, resource_name) = None
+        let (builder, method, _resource_name) = None
         {{/Codec.DetailedTracingAttributes}}
         {{/Codec.HasResourceNameGeneration}}
         {{^Codec.HasResourceNameGeneration}}
@@ -208,7 +208,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                     .set_rpc_method("{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}")
                     .set_url_template(_path_template)
                     {{#Codec.HasResourceNameGeneration}}
-                    .set_resource_name(resource_name)
+                    .set_resource_name(_resource_name)
                     {{/Codec.HasResourceNameGeneration}}
             );
         }
