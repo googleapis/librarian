@@ -97,7 +97,7 @@ func updateREADME(readmeFile, libraryName, version string) error {
 	if err != nil {
 		return err
 	}
-	// Match the library name in a path (e.g. /libraryName/) followed by its version.
+	// Match the library name in a string, e.g., {any string}/{libraryName}/{version}.
 	regexPattern := fmt.Sprintf(`(/%s/)([^/)\s"',]+)`, regexp.QuoteMeta(libraryName))
 	re, err := regexp.Compile(regexPattern)
 	if err != nil {
