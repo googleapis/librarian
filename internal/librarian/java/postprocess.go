@@ -59,19 +59,16 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 
 	// Check if owlbot.py exists in the library output directory.
-	// If it does, we need to restructure to staging/ and run owlbot.py.
+	// It is required for restructuring the output and generating README files.
 	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		if err := restructureToStaging(p); err != nil {
-			return fmt.Errorf("failed to restructure to staging: %w", err)
-		}
-		if err := runOwlBot(ctx, p); err != nil {
-			return fmt.Errorf("failed to run owlbot.py: %w", err)
-		}
-	} else {
-		if err := restructureOutput(p); err != nil {
-			return fmt.Errorf("failed to restructure output: %w", err)
-		}
+	if _, err := os.Stat(owlbotPath); err != nil {
+		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
+	}
+	if err := restructureToStaging(p); err != nil {
+		return fmt.Errorf("failed to restructure to staging: %w", err)
+	}
+	if err := runOwlBot(ctx, p); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
@@ -151,12 +148,6 @@ func removeConflictingFiles(protoSrcDir string) error {
 		return fmt.Errorf("failed to remove CommonResources.java: %w", err)
 	}
 	return nil
-}
-
-// restructureOutput moves the generated code from the temporary versioned directory
-// tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
-func restructureOutput(p postProcessParams) error {
-	return restructureModules(p, p.outDir)
 }
 
 // restructureToStaging moves the generated code into a temporary staging directory
