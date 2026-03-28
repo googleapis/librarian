@@ -18,10 +18,11 @@ package gcloud
 // (typically mapping to an API service or an AIP-122 Resource collection).
 // It is used to generate the Python `__init__.py` registration files.
 type CommandGroup struct {
-	ServiceTitle     string
-	ResourceSingular string
-	ClassNamePrefix  string
-	Tracks           []string
+	Name     string
+	HelpText string
+	Tracks   []string
+	Commands map[string]*Command
+	Groups   map[string]*CommandGroup
 }
 
 // Command represents the top-level structure for a gcloud command definition.

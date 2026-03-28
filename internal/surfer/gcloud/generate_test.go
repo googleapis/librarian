@@ -15,12 +15,8 @@
 package gcloud
 
 import (
-	"bytes"
-	"os"
-	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
@@ -68,64 +64,11 @@ func TestGenerateService(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			err := generateService(test.service, &provider.Config{}, test.model, tmpDir)
+			test.model.Services = []*api.Service{test.service}
+			_, err := newCommandTreeBuilder(test.model, &provider.Config{}).build()
 			if (err != nil) != test.wantErr {
-				t.Errorf("generateService() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("newCommandTreeBuilder().build() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
-	}
-}
-
-// TestGenerateResourceCommands verifies that command files are generated.
-func TestGenerateResourceCommands(t *testing.T) {
-	// This tests the file writing logic specifically.
-	tmpDir := t.TempDir()
-
-	err := generateResourceCommands("instances", []*api.Method{
-		{
-			Name: "CreateInstance",
-			Service: &api.Service{
-				Package: "google.cloud.parallelstore.v1",
-			},
-			InputType: &api.Message{},
-			PathInfo: &api.PathInfo{
-				Bindings: []*api.PathBinding{{
-					PathTemplate: &api.PathTemplate{},
-				}},
-			},
-		},
-	}, tmpDir, &provider.Config{}, &api.API{Title: "Parallelstore API"}, &api.Service{DefaultHost: "parallelstore.googleapis.com"})
-
-	if err != nil {
-		t.Fatalf("generateResourceCommands() error = %v", err)
-	}
-
-	// Check if main command file exists
-	mainFile := filepath.Join(tmpDir, "instances", "create.yaml")
-	if _, err := os.Stat(mainFile); os.IsNotExist(err) {
-		t.Errorf("expected file %s to exist", mainFile)
-	}
-
-	// Check content of main file
-	content, _ := os.ReadFile(mainFile)
-	wantContent := "_PARTIALS_: true\n"
-	if diff := cmp.Diff(wantContent, string(content)); diff != "" {
-		t.Errorf("main file content mismatch (-want +got):\n%s", diff)
-	}
-
-	// Check __init__.py content
-	initFile := filepath.Join(tmpDir, "instances", "__init__.py")
-	if _, err := os.Stat(initFile); os.IsNotExist(err) {
-		t.Errorf("expected file %s to exist", initFile)
-	}
-	initContent, _ := os.ReadFile(initFile)
-	// The mock model is empty, so we expect some defaults.
-	// But let's see if it matches the general structure.
-	if !bytes.Contains(initContent, []byte(`"""Manage Parallelstore resources."""`)) {
-		t.Errorf("__init__.py content missing expected docstring:\n%s", string(initContent))
-	}
-	if !bytes.Contains(initContent, []byte("class InstancesGa(base.Group):")) {
-		t.Errorf("__init__.py content missing expected class definition:\n%s", string(initContent))
 	}
 }

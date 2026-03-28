@@ -82,10 +82,9 @@ func TestYAMLCommandSchema(t *testing.T) {
 
 func TestRenderCommandGroup(t *testing.T) {
 	data := CommandGroup{
-		ServiceTitle:     "Compute Engine",
-		ResourceSingular: "Instance",
-		ClassNamePrefix:  "Instances",
-		Tracks:           []string{"BETA", "GA"},
+		Name:     "instances",
+		HelpText: "Manage Compute Engine Instance resources.",
+		Tracks:   []string{"BETA", "GA"},
 	}
 
 	var buf bytes.Buffer

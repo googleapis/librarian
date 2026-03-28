@@ -193,3 +193,44 @@ func FindResourceMessage(outputType *api.Message) *api.Message {
 	}
 	return nil
 }
+
+// GetFilteredSegments extracts and filters path segments for a method,
+// flattening variables and returning a sequence of literal group names.
+func GetFilteredSegments(method *api.Method) []string {
+	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
+		return nil
+	}
+	raw := method.PathInfo.Bindings[0].PathTemplate.Segments
+
+	var literals []string
+	for _, seg := range raw {
+		if seg.Literal != nil {
+			literals = append(literals, *seg.Literal)
+		} else if seg.Variable != nil {
+			for _, vSeg := range seg.Variable.Segments {
+				if vSeg != "*" && vSeg != "**" {
+					literals = append(literals, vSeg)
+				}
+			}
+		}
+	}
+
+	var filtered []string
+	for _, lit := range literals {
+		if IsIgnoredSegmentLiteral(lit) {
+			continue
+		}
+		filtered = append(filtered, lit)
+	}
+	return filtered
+}
+
+// IsIgnoredSegmentLiteral checks if a literal segment should be ignored.
+func IsIgnoredSegmentLiteral(lit string) bool {
+	switch lit {
+	case "projects", "locations", "zones", "regions", "folders", "organizations", "parents":
+		return true
+	default:
+		return len(lit) > 1 && lit[0] == 'v' && lit[1] >= '0' && lit[1] <= '9'
+	}
+}
