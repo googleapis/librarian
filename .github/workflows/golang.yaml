@@ -26,7 +26,7 @@ jobs:
           go-version-file: "go.mod"
       - name: Install go tools
         run: |
-          go tool install
+          go install tool
           go install golang.org/x/lint/golint@latest
           go install honnef.co/go/tools/cmd/staticcheck@latest
       - uses: ./.github/actions/install-protoc
