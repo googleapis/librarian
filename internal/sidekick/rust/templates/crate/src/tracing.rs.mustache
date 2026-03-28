@@ -79,18 +79,12 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         {{#Codec.DetailedTracingAttributes}}
         #[cfg(google_cloud_unstable_tracing)]
         {
-            use gaxi::observability::ClientSignalsExt as _;
-            let (start, span) = gaxi::client_request_signals!(
-                &info::INSTRUMENTATION_CLIENT_INFO,
-                &options,
-                "client::{{Codec.ServiceNameToPascal}}",
-                "{{Codec.Name}}",
-                Some("{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}")
-            );
-            self.inner
-                .{{Codec.Name}}(req, options)
-                .instrument_client(self.duration.clone(), start, span)
-                .await
+            let (_span, pending) = gaxi::client_request_signals!(
+                metric: self.duration.clone(),
+                info: *info::INSTRUMENTATION_CLIENT_INFO,
+                method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
+                self.inner.{{Codec.Name}}(req, options));
+            pending.await
         }
         #[cfg(not(google_cloud_unstable_tracing))]
         {{/Codec.DetailedTracingAttributes }}
