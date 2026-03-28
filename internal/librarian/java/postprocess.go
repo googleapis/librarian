@@ -28,6 +28,8 @@ import (
 	"github.com/googleapis/librarian/internal/license"
 )
 
+const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
+
 type postProcessParams struct {
 	outDir              string
 	libraryName         string
@@ -249,7 +251,7 @@ func runOwlBot(ctx context.Context, p postProcessParams) error {
 		"SYNTHTOOL_LIBRARIES_BOM_VERSION": p.librariesBomVersion,
 	}
 	// Path to templates used for README.md file.
-	templatesDir := filepath.Join(filepath.Dir(p.outDir), "sdk-platform-java", "hermetic_build", "library_generation", "owlbot", "templates")
+	templatesDir := filepath.Join(filepath.Dir(p.outDir), owlbotTemplatesRelPath)
 	if _, err := os.Stat(templatesDir); err != nil {
 		return fmt.Errorf("templates directory not found at %s: %w", templatesDir, err)
 	}
