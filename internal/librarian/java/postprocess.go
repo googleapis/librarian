@@ -154,41 +154,19 @@ func removeConflictingFiles(protoSrcDir string) error {
 // restructureOutput moves the generated code from the temporary versioned directory
 // tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
 func restructureOutput(p postProcessParams) error {
-	modules := deriveModuleNames(p.libraryName, p.version)
+	return restructureModules(p, p.outDir)
+}
 
-	// Temporary source directories (from protoc/generator output)
-	tempGapicSrcDir := filepath.Join(p.outDir, p.version, "gapic", "src", "main")
-	tempGapicTestDir := filepath.Join(p.outDir, p.version, "gapic", "src", "test")
-	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
-	tempGrpcSrcDir := filepath.Join(p.outDir, p.version, "grpc")
-	tempResourceNameSrcDir := filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java")
-	tempSamplesDir := filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
-
-	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-		return err
+// restructureToStaging moves the generated code into a temporary staging directory
+// that matches the structure expected by owlbot.py. It nests modules under the
+// version directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
+// ensure synthtool preserves the module structure.
+func restructureToStaging(p postProcessParams) error {
+	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
-
-	actions := []moveAction{
-		{src: tempProtoSrcDir, dest: filepath.Join(p.outDir, modules.proto, "src", "main", "java"), description: "proto source"},
-		{src: tempGrpcSrcDir, dest: filepath.Join(p.outDir, modules.grpc, "src", "main", "java"), description: "grpc source"},
-		{src: tempGapicSrcDir, dest: filepath.Join(p.outDir, modules.gapic, "src", "main"), description: "gapic source"},
-		{src: tempGapicTestDir, dest: filepath.Join(p.outDir, modules.gapic, "src", "test"), description: "gapic test"},
-		{src: tempResourceNameSrcDir, dest: filepath.Join(p.outDir, modules.proto, "src", "main", "java"), description: "resource name source"},
-	}
-	if p.includeSamples {
-		actions = append(actions, moveAction{src: tempSamplesDir, dest: filepath.Join(p.outDir, "samples", "snippets", "generated"), description: "samples"})
-	}
-
-	if err := restructure(actions); err != nil {
-		return err
-	}
-
-	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "proto")
-	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
-		return fmt.Errorf("failed to copy proto files: %w", err)
-	}
-	return nil
+	return restructureModules(p, filepath.Join(stagingDir, p.version))
 }
 
 type moveAction struct {
@@ -210,46 +188,57 @@ func restructure(actions []moveAction) error {
 	return nil
 }
 
-func restructureToStaging(p postProcessParams) error {
-	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
-		return fmt.Errorf("failed to create staging directory: %w", err)
-	}
-
+// restructureModules moves the generated code from the temporary versioned directory
+// tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
+// It also copies the relevant proto files into the proto module.
+func restructureModules(p postProcessParams, destRoot string) error {
 	modules := deriveModuleNames(p.libraryName, p.version)
 	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
 	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 		return err
 	}
-	// Nest modules under the version directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1)
-	// to ensure synthtool preserves the module structure.
 	actions := []moveAction{
-		{src: tempProtoSrcDir,
-			dest: filepath.Join(stagingDir, p.version, modules.proto, "src", "main", "java"), description: "proto source"},
-		{src: filepath.Join(p.outDir, p.version, "grpc"),
-			dest: filepath.Join(stagingDir, p.version, modules.grpc, "src", "main", "java"), description: "grpc source"},
-		{src: filepath.Join(p.outDir, p.version, "gapic", "src", "main"),
-			dest: filepath.Join(stagingDir, p.version, modules.gapic, "src", "main"), description: "gapic source"},
-		{src: filepath.Join(p.outDir, p.version, "gapic", "src", "test"),
-			dest: filepath.Join(stagingDir, p.version, modules.gapic, "src", "test"), description: "gapic test"},
-		{src: filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java"),
-			dest: filepath.Join(stagingDir, p.version, modules.proto, "src", "main", "java"), description: "resource name source"},
+		{
+			src:         tempProtoSrcDir,
+			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			description: "proto source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "grpc"),
+			dest:        filepath.Join(destRoot, modules.grpc, "src", "main", "java"),
+			description: "grpc source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "main"),
+			dest:        filepath.Join(destRoot, modules.gapic, "src", "main"),
+			description: "gapic source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "test"),
+			dest:        filepath.Join(destRoot, modules.gapic, "src", "test"),
+			description: "gapic test",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java"),
+			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			description: "resource name source",
+		},
 	}
 	if p.includeSamples {
-		actions = append(actions,
-			moveAction{src: filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
-				dest: filepath.Join(stagingDir, p.version, "samples", "snippets", "generated"), description: "samples"})
+		actions = append(actions, moveAction{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+			dest:        filepath.Join(destRoot, "samples", "snippets", "generated"),
+			description: "samples",
+		})
 	}
 	if err := restructure(actions); err != nil {
 		return err
 	}
-
-	// Copy proto files to staging/v1/proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(stagingDir, p.version, modules.proto, "src", "main", "proto")
+	// Copy proto files to proto-*/src/main/proto
+	protoFilesDestDir := filepath.Join(destRoot, modules.proto, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
-
 	return nil
 }
 
