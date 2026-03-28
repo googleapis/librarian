@@ -140,7 +140,7 @@ require (
 	github.com/google/go-querystring v1.1.0 // indirect
 	github.com/google/s2a-go v0.1.9 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.12 // indirect
-	github.com/googleapis/gapic-generator-go v0.56.0 // indirect
+	github.com/googleapis/gapic-generator-go v0.57.0 // indirect
 	github.com/gordonklaus/ineffassign v0.2.0 // indirect
 	github.com/gostaticanalysis/analysisutil v0.7.1 // indirect
 	github.com/gostaticanalysis/comment v1.5.0 // indirect
@@ -302,8 +302,8 @@ tool (
 	github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic
 	golang.org/x/tools/cmd/goimports
 	// google.golang.org/grpc/cmd/protoc-gen-go-grpc is used to generate
-    // client libraries in google-cloud-go. Changing this version will
-    // affect the client libraries generated across the repository.
+	// client libraries in google-cloud-go. Changing this version will
+	// affect the client libraries generated across the repository.
 	google.golang.org/grpc/cmd/protoc-gen-go-grpc
 	google.golang.org/protobuf/cmd/protoc-gen-go
 )

@@ -74,19 +74,9 @@ jobs:
         working-directory: google-cloud-rust
         run: cargo check -p google-cloud-showcase-v1beta1
   create-issue-on-failure:
-    runs-on: ubuntu-24.04
     needs: [test, integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/create-issue-on-failure
-        with:
-          title: "google-cloud-rust: librarian generate fails when run at HEAD"
-          body: |
-            The Rust CI failed on the `main` branch.
-
-            Running `librarian generate --all` on the [google-cloud-rust](https://github.com/googleapis/google-cloud-rust) repository using `librarian` at HEAD failed.
-
-            Note: This integration test only runs as a postsubmit test due to its long execution time.
-
-            Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Rust
+      repository: google-cloud-rust
