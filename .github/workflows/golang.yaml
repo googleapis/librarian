@@ -19,7 +19,7 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    # if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
@@ -28,6 +28,8 @@ jobs:
       - name: Install go tools
         run: |
           go install tool
+          # TODO(https://github.com/googleapis/librarian/issues/4894), Group static checks
+          # in golangci-lint
           # we need to install golint and staticcheck because
           # the vet check uses this tool.
           go install golang.org/x/lint/golint@latest
@@ -43,6 +45,8 @@ jobs:
       - name: Run librarian generate
         working-directory: google-cloud-go
         run: librarian generate --all
+        # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysi
+        # tool across librarian and google-cloud-go.
         # The vet.sh script is a comprehensive CI/CD utility in google-cloud-go that enforces code
         # quality by running static analysis tools. We use this check to validate code generated
         # by librarian.
