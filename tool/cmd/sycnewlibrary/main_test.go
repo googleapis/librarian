@@ -93,7 +93,7 @@ func TestRun(t *testing.T) {
 					t.Fatal()
 				}
 			})
-			if err := run(t.Context(), []string{test.repoPath}); err != nil {
+			if err := run([]string{test.repoPath}); err != nil {
 				t.Fatal(err)
 			}
 			got, err := yaml.Read[legacyconfig.LibrarianState](statePath)
@@ -125,7 +125,7 @@ func TestRun_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := run(t.Context(), []string{test.repoPath})
+			err := run([]string{test.repoPath})
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
