@@ -15,6 +15,8 @@
 package main
 
 import (
+	"errors"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -100,6 +102,32 @@ func TestRun(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRun_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		repoPath string
+		wantErr  error
+	}{
+		{
+			name:     "no state.yaml",
+			repoPath: "testdata/no-state",
+			wantErr:  os.ErrNotExist,
+		},
+		{
+			name:     "no librarian.yaml",
+			repoPath: "testdata/no-librarian",
+			wantErr:  os.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := run(t.Context(), []string{test.repoPath})
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
