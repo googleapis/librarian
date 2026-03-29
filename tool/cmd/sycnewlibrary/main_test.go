@@ -185,6 +185,36 @@ func TestSyncNewLibrary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "no new library",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "existing",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "existing", Version: "1.0.0"},
+				},
+			},
+			want: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "existing",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := syncNewLibrary(test.state, test.cfg)
