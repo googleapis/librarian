@@ -28,8 +28,8 @@ jobs:
       - name: Install go tools
         run: |
           go install tool
-          # TODO(https://github.com/googleapis/librarian/issues/4894), Group static checks
-          # in golangci-lint
+          # TODO(https://github.com/googleapis/librarian/issues/4894), Use golangci-lint
+          # for static checkers and linters.
           # we need to install golint and staticcheck because
           # the vet check uses this tool.
           go install golang.org/x/lint/golint@latest
