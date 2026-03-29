@@ -17,7 +17,6 @@
 package main
 
 import (
-	"context"
 	"errors"
 	"flag"
 	"fmt"
@@ -36,13 +35,12 @@ var (
 )
 
 func main() {
-	ctx := context.Background()
-	if err := run(ctx, os.Args[1:]); err != nil {
+	if err := run(os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(ctx context.Context, args []string) error {
+func run(args []string) error {
 	flagSet := flag.NewFlagSet("syncnewlibrary", flag.ContinueOnError)
 	if err := flagSet.Parse(args); err != nil {
 		return err
