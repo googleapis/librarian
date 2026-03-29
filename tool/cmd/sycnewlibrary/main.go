@@ -32,8 +32,7 @@ import (
 )
 
 var (
-	errRepoNotFound      = errors.New("repo argument is required")
-	errVersionRegression = errors.New("version is regression")
+	errRepoNotFound = errors.New("repo argument is required")
 )
 
 func main() {
@@ -67,7 +66,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 	state = syncNewLibrary(state, cfg)
-	return yaml.Write[legacyconfig.LibrarianState](stateFile, state)
+	return yaml.Write(stateFile, state)
 }
 
 func syncNewLibrary(state *legacyconfig.LibrarianState, cfg *config.Config) *legacyconfig.LibrarianState {
