@@ -27,6 +27,9 @@ jobs:
       - name: Install go tools
         run: |
           go install tool
+          # we need to install golint because vet check
+          # uses this tool.
+          go install golang.org/x/lint/golint@latest
       - uses: ./.github/actions/install-protoc
       - name: Install librarian
         run: go install ./cmd/librarian
