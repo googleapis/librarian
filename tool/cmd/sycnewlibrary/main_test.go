@@ -90,7 +90,7 @@ func TestRun(t *testing.T) {
 			}
 			t.Cleanup(func() {
 				if err := yaml.Write(statePath, original); err != nil {
-					t.Fatal()
+					t.Fatal(err)
 				}
 			})
 			if err := run([]string{test.repoPath}); err != nil {
