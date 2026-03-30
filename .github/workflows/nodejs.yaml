@@ -40,10 +40,13 @@ jobs:
       - name: Display Python version
         run: python3 --version
       - uses: ./.github/actions/install-protoc
+      - name: Download gapic-generator-typescript
+        run: |
+          mkdir -p /tmp/gapic-generator-typescript
+          curl -sL https://github.com/googleapis/google-cloud-node/archive/refs/heads/main.tar.gz | tar xz --strip-components=3 -C /tmp/gapic-generator-typescript google-cloud-node-main/generator/gapic-generator-typescript
       - name: Install gapic-generator-typescript
         run: |
-          git clone --depth 1 https://github.com/googleapis/google-cloud-node-core.git /tmp/google-cloud-node-core
-          cd /tmp/google-cloud-node-core/generator/gapic-generator-typescript
+          cd /tmp/gapic-generator-typescript
           npm install
           npm run compile
           npm link
