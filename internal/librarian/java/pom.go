@@ -43,69 +43,108 @@ type grpcProtoPomData struct {
 	ProtoGroupID     string
 }
 
+// javaModule represents a Maven module and its POM generation state.
+type javaModule struct {
+	artifactID string
+	dir        string
+	isMissing  bool
+	data       grpcProtoPomData
+	template   string
+}
+
 // generatePomsIfMissing generates missing proto-* and grpc-* POMs.
 func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir string) error {
+	modules, err := collectModules(library, libraryDir, googleapisDir)
+	if err != nil {
+		return err
+	}
+	for _, m := range modules {
+		if !m.isMissing {
+			continue
+		}
+		if err := writePom(filepath.Join(m.dir, "pom.xml"), m.template, m.data); err != nil {
+			return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
+		}
+	}
+	return nil
+}
+
+// collectModules identifies all expected proto-* and grpc-* modules
+// for the given library based on its configuration and checks a pom.xml presence
+// on the filesystem.
+func collectModules(library *config.Library, libraryDir, googleapisDir string) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.Split(distName, ":")
 	gapicGroupID := parts[0]
 	gapicArtifactID := parts[1]
+
+	var modules []javaModule
 	for _, api := range library.APIs {
-		if err := creatLeafPomsIfMissing(library, api, gapicGroupID, gapicArtifactID, libraryDir, googleapisDir); err != nil {
-			return fmt.Errorf("failed to generate leaf POMs for %s: %w", api.Path, err)
+		version := serviceconfig.ExtractVersion(api.Path)
+		if version == "" {
+			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
+		}
+
+		names := deriveModuleNames(gapicArtifactID, version)
+
+		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+		}
+		transport := apiCfg.Transport(config.LanguageJava)
+
+		data := grpcProtoPomData{
+			GroupID:          grcpProtoGroupID,
+			ProtoArtifactID:  names.proto,
+			GrpcArtifactID:   names.grpc,
+			ParentGroupID:    gapicGroupID,
+			MainArtifactID:   gapicArtifactID,
+			ParentArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
+			Version:          library.Version,
+		}
+
+		// Proto module
+		protoDir := filepath.Join(libraryDir, names.proto)
+		isProtoMissing, err := isPomMissing(protoDir)
+		if err != nil {
+			return nil, err
+		}
+		modules = append(modules, javaModule{
+			artifactID: names.proto,
+			dir:        protoDir,
+			isMissing:  isProtoMissing,
+			data:       data,
+			template:   protoPomTemplateName,
+		})
+
+		// gRPC module
+		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
+			grpcDir := filepath.Join(libraryDir, names.grpc)
+			isGrpcMissing, err := isPomMissing(grpcDir)
+			if err != nil {
+				return nil, err
+			}
+			modules = append(modules, javaModule{
+				artifactID: names.grpc,
+				dir:        grpcDir,
+				isMissing:  isGrpcMissing,
+				data:       data,
+				template:   grpcPomTemplateName,
+			})
 		}
 	}
-	return nil
+	return modules, nil
 }
 
-func creatLeafPomsIfMissing(library *config.Library, api *config.API, gapicGroupID, gapicArtifactID, libraryDir, googleapisDir string) error {
-	version := serviceconfig.ExtractVersion(api.Path)
-	if version == "" {
-		return fmt.Errorf("failed to extract version from API path %q", api.Path)
-	}
-	protoArtifactID := fmt.Sprintf("proto-%s-%s", gapicArtifactID, version)
-	grpcArtifactID := fmt.Sprintf("grpc-%s-%s", gapicArtifactID, version)
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
-	if err != nil {
-		return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
-	}
-	transport := apiCfg.Transport(config.LanguageJava)
-	data := grpcProtoPomData{
-		GroupID:          grcpProtoGroupID,
-		ProtoArtifactID:  protoArtifactID,
-		GrpcArtifactID:   grpcArtifactID,
-		ParentGroupID:    gapicGroupID,
-		MainArtifactID:   gapicArtifactID,
-		ParentArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
-		Version:          library.Version,
-	}
-	// Sync Proto POM
-	protoDir := filepath.Join(libraryDir, protoArtifactID)
-	if err := writePomIfMissing(protoDir, protoPomTemplateName, data); err != nil {
-		return fmt.Errorf("failed to write proto POM: %w", err)
-	}
-	// Sync gRPC POM if needed
-	if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-		grpcDir := filepath.Join(libraryDir, grpcArtifactID)
-		if err := writePomIfMissing(grpcDir, grpcPomTemplateName, data); err != nil {
-			return fmt.Errorf("failed to write gRPC POM: %w", err)
-		}
-	}
-	return nil
-}
-
-func writePomIfMissing(dir, templateName string, data any) error {
+func isPomMissing(dir string) (bool, error) {
 	pomPath := filepath.Join(dir, "pom.xml")
 	if _, err := os.Stat(pomPath); err == nil {
-		// File exists, skip.
-		return nil
+		return false, nil
 	}
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return fmt.Errorf("target directory %s does not exist: %w", dir, err)
+		return false, fmt.Errorf("target directory %s does not exist: %w", dir, err)
 	}
-	if err := writePom(pomPath, templateName, data); err != nil {
-		return fmt.Errorf("failed to write %s: %w", pomPath, err)
-	}
-	return nil
+	return true, nil
 }
 
 func writePom(pomPath, templateName string, data any) (err error) {

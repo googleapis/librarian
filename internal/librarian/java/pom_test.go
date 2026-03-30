@@ -79,42 +79,35 @@ func TestSyncPoms_Golden(t *testing.T) {
 	}
 }
 
-func TestWritePomIfMissing_Exists(t *testing.T) {
-	tmpDir := t.TempDir()
-	data := grpcProtoPomData{
-		ProtoArtifactID: "proto-artifact",
-	}
-	dir := filepath.Join(tmpDir, "exists")
-	want := "existing content"
-	if err := os.MkdirAll(dir, 0755); err != nil {
+func TestIsPomMissing_Exists(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	pomPath := filepath.Join(dir, "pom.xml")
-	if err := os.WriteFile(pomPath, []byte(want), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	if err := writePomIfMissing(dir, protoPomTemplateName, data); err != nil {
-		t.Errorf("writePomIfMissing(%q) error = %v, want nil", dir, err)
-	}
-
-	got, err := os.ReadFile(pomPath)
+	got, err := isPomMissing(dir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(got) != want {
-		t.Errorf("got content %q, want %q", string(got), want)
+	if got {
+		t.Errorf("isPomMissing(%q) = true, want false", dir)
 	}
 }
 
-func TestWritePomIfMissing_Error(t *testing.T) {
-	tmpDir := t.TempDir()
-	data := grpcProtoPomData{
-		ProtoArtifactID: "proto-artifact",
+func TestIsPomMissing_Missing(t *testing.T) {
+	dir := t.TempDir()
+	got, err := isPomMissing(dir)
+	if err != nil {
+		t.Fatal(err)
 	}
-	dir := filepath.Join(tmpDir, "nonexistent")
-	err := writePomIfMissing(dir, protoPomTemplateName, data)
+	if !got {
+		t.Errorf("isPomMissing(%q) = false, want true", dir)
+	}
+}
+
+func TestIsPomMissing_DirMissingError(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "nonexistent")
+	_, err := isPomMissing(dir)
 	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("writePomIfMissing(%q) error = %v, wantErr %v", dir, err, os.ErrNotExist)
+		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }
