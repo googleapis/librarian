@@ -28,13 +28,13 @@ import (
 )
 
 // Generate generates gcloud commands for a service.
-func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
+func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList, serviceConfig string) error {
 	overrides, err := provider.ReadGcloudConfig(gcloudconfig)
 	if err != nil {
 		return err
 	}
 
-	model, err := provider.CreateAPIModel(googleapis, includeList)
+	model, err := provider.CreateAPIModel(googleapis, includeList, serviceConfig)
 	if err != nil {
 		return err
 	}
