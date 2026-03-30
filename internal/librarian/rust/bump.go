@@ -86,15 +86,11 @@ edition                = "2021"
 }
 
 func updateREADME(readmeFile, libraryName, version string) error {
-	_, err := os.Stat(readmeFile)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil
-	}
-	if err != nil {
-		return err
-	}
 	content, err := os.ReadFile(readmeFile)
 	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
 		return err
 	}
 	// Match the library name in a string, e.g., {any string}/{libraryName}/{version}.
