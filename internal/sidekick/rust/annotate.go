@@ -99,6 +99,41 @@ func (m *modelAnnotations) HasServices() bool {
 	return len(m.Services) > 0
 }
 
+// HasRequiredPackages returns true if there are any required packages.
+func (m *modelAnnotations) HasRequiredPackages() bool {
+	return len(m.RequiredPackages) > 0
+}
+
+// HasExternPackages returns true if there are any extern packages.
+func (m *modelAnnotations) HasExternPackages() bool {
+	return len(m.ExternPackages) > 0
+}
+
+// HasDisabledRustdocWarnings returns true if there are any disabled rustdoc warnings.
+func (m *modelAnnotations) HasDisabledRustdocWarnings() bool {
+	return len(m.DisabledRustdocWarnings) > 0
+}
+
+// HasDisabledClippyWarnings returns true if there are any disabled clippy warnings.
+func (m *modelAnnotations) HasDisabledClippyWarnings() bool {
+	return len(m.DisabledClippyWarnings) > 0
+}
+
+// HasDefaultSystemParameters returns true if there are any default system parameters.
+func (m *modelAnnotations) HasDefaultSystemParameters() bool {
+	return len(m.DefaultSystemParameters) > 0
+}
+
+// HasDefaultFeatures returns true if there are any default features.
+func (m *modelAnnotations) HasDefaultFeatures() bool {
+	return len(m.DefaultFeatures) > 0
+}
+
+// HasExtraModules returns true if there are any extra modules.
+func (m *modelAnnotations) HasExtraModules() bool {
+	return len(m.ExtraModules) > 0
+}
+
 // IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
 // injecting some ad-hoc code.
 func (m *modelAnnotations) IsGaxiCrate() bool {
@@ -276,6 +311,16 @@ func (m *methodAnnotation) HasGrpcResourceNameArgs() bool {
 	return len(m.GrpcResourceNameArgs) > 0
 }
 
+// HasSystemParameters returns true if the method has system parameters.
+func (m *methodAnnotation) HasSystemParameters() bool {
+	return len(m.SystemParameters) > 0
+}
+
+// HasAttributes returns true if the method has attributes.
+func (m *methodAnnotation) HasAttributes() bool {
+	return len(m.Attributes) > 0
+}
+
 // HasBindings returns true if the method has path bindings.
 func (m *methodAnnotation) HasBindings() bool {
 	return m.PathInfo != nil && len(m.PathInfo.Bindings) > 0
@@ -309,6 +354,11 @@ type pathInfoAnnotation struct {
 	IsIdempotent string
 }
 
+// HasUniqueParameters returns true if there are any unique parameters.
+func (p *pathInfoAnnotation) HasUniqueParameters() bool {
+	return len(p.UniqueParameters) > 0
+}
+
 type operationInfo struct {
 	MetadataType     string
 	ResponseType     string
@@ -339,6 +389,11 @@ type discoveryLroAnnotations struct {
 	MethodName            string
 	ReturnType            string
 	PollingPathParameters []discoveryLroPathParameter
+}
+
+// HasPollingPathParameters returns true if there are any polling path parameters.
+func (d *discoveryLroAnnotations) HasPollingPathParameters() bool {
+	return len(d.PollingPathParameters) > 0
 }
 
 type discoveryLroPathParameter struct {
@@ -426,6 +481,16 @@ type pathBindingAnnotation struct {
 // HasResourceNameArgs returns true if the method has resource name arguments.
 func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
 	return len(b.ResourceNameArgs) > 0
+}
+
+// HasQueryParams returns true if the binding has query parameters.
+func (b *pathBindingAnnotation) HasQueryParams() bool {
+	return len(b.QueryParams) > 0
+}
+
+// HasSubstitutions returns true if the binding has path substitutions.
+func (b *pathBindingAnnotation) HasSubstitutions() bool {
+	return len(b.Substitutions) > 0
 }
 
 // QueryParamsCanFail returns true if we serialize certain query parameters, which can fail. The code we generate
@@ -575,6 +640,11 @@ func (a *fieldAnnotations) MessageNameInExamples() string {
 		return ma.Name
 	}
 	return ""
+}
+
+// HasOtherFieldsInGroup returns true if there are other fields in the oneof group.
+func (a *fieldAnnotations) HasOtherFieldsInGroup() bool {
+	return len(a.OtherFieldsInGroup) > 0
 }
 
 type enumAnnotation struct {
