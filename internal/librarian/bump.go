@@ -259,6 +259,8 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 		if cfg.Release.Branch == defaultPreviewBranch {
 			return defaultPreviewVersion, nil
 		}
+		// Keep this logic until we know we no longer need it i.e. all entries
+		// have a version set.
 		if cfg.Language == config.LanguageRust {
 			return rust.DefaultVersion, nil
 		}
