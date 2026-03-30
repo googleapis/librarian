@@ -27,14 +27,23 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// GenerateConfig contains parameters for generating gcloud commands.
+type GenerateConfig struct {
+	Googleapis    string
+	GcloudConfig  string
+	Output        string
+	IncludeList   string
+	ServiceConfig string
+}
+
 // Generate generates gcloud commands for a service.
-func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList string) error {
-	overrides, err := provider.ReadGcloudConfig(gcloudconfig)
+func Generate(_ context.Context, cfg GenerateConfig) error {
+	overrides, err := provider.ReadGcloudConfig(cfg.GcloudConfig)
 	if err != nil {
 		return err
 	}
 
-	model, err := provider.CreateAPIModel(googleapis, includeList)
+	model, err := provider.CreateAPIModel(cfg.Googleapis, cfg.IncludeList, cfg.ServiceConfig)
 	if err != nil {
 		return err
 	}
@@ -45,7 +54,7 @@ func Generate(_ context.Context, googleapis, gcloudconfig, output, includeList s
 
 	for _, service := range model.Services {
 		// TODO(https://github.com/googleapis/librarian/issues/3291): Ensure output directories don't collide if multiple services share a name.
-		if err := generateService(service, overrides, model, output); err != nil {
+		if err := generateService(service, overrides, model, cfg.Output); err != nil {
 			return fmt.Errorf("failed to generate commands for service %q: %w", service.Name, err)
 		}
 	}
