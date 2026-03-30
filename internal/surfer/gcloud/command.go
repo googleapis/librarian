@@ -18,15 +18,20 @@ package gcloud
 // (typically mapping to an API service or an AIP-122 Resource collection).
 // It is used to generate the Python `__init__.py` registration files.
 type CommandGroup struct {
-	ServiceTitle     string
-	ResourceSingular string
-	ClassNamePrefix  string
-	Tracks           []string
+	Name            string
+	HelpText        string
+	Tracks          []string
+	IsResourceGroup bool
+	Commands        map[string]*Command
+	Groups          map[string]*CommandGroup
 }
 
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is pure domain logic and separates CLI intent from the YAML output schema.
 type Command struct {
+	// Name specifies the name of the command.
+	Name string
+
 	// ReleaseTracks specifies the release tracks (e.g., GA, BETA, ALPHA) for which
 	// this command is available.
 	// Origin: Derived from the `release_tracks` field in the `gcloud.yaml` config file.

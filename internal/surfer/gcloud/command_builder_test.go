@@ -348,6 +348,7 @@ func TestNewCommand(t *testing.T) {
 				},
 			},
 			want: &Command{
+				Name:            "list",
 				Hidden:          false,
 				ResponseIDField: "name",
 				OutputFormat:    "table(\nname)",
@@ -388,6 +389,7 @@ func TestNewCommand(t *testing.T) {
 				},
 			},
 			want: &Command{
+				Name:             "update",
 				Hidden:           true,
 				ReadModifyUpdate: true,
 			},
@@ -410,6 +412,7 @@ func TestNewCommand(t *testing.T) {
 			}(),
 			overrides: &provider.Config{},
 			want: &Command{
+				Name:   "create",
 				Hidden: true,
 				Async: &Async{
 					Collection:            []string{"test.projects.operations"},

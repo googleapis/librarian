@@ -82,10 +82,9 @@ func TestYAMLCommandSchema(t *testing.T) {
 
 func TestRenderCommandGroup(t *testing.T) {
 	data := CommandGroup{
-		ServiceTitle:     "Compute Engine",
-		ResourceSingular: "Instance",
-		ClassNamePrefix:  "Instances",
-		Tracks:           []string{"BETA", "GA"},
+		Name:     "instances",
+		HelpText: "Manage Compute Engine Instance resources.",
+		Tracks:   []string{"BETA", "GA"},
 	}
 
 	var buf bytes.Buffer
@@ -304,5 +303,51 @@ func TestMapCommandToYAML(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWriteCommandGroupTree(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	root := &CommandGroup{
+		Name:     "users",
+		HelpText: "Manage users.",
+		Tracks:   []string{"GA"},
+		Commands: map[string]*Command{
+			"create": {
+				ReleaseTracks: []string{"GA"},
+			},
+		},
+		Groups: map[string]*CommandGroup{
+			"billing": {
+				Name:     "billing",
+				HelpText: "Manage user billing.",
+				Tracks:   []string{"GA"},
+				Commands: map[string]*Command{
+					"cancel": {
+						ReleaseTracks: []string{"GA"},
+					},
+				},
+			},
+		},
+	}
+
+	if err := writeCommandGroupTree(tmpDir, root); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	expectedFiles := []string{
+		filepath.Join(tmpDir, "users", "__init__.py"),
+		filepath.Join(tmpDir, "users", "create.yaml"),
+		filepath.Join(tmpDir, "users", "_partials", "_create_ga.yaml"),
+		filepath.Join(tmpDir, "users", "billing", "__init__.py"),
+		filepath.Join(tmpDir, "users", "billing", "cancel.yaml"),
+		filepath.Join(tmpDir, "users", "billing", "_partials", "_cancel_ga.yaml"),
+	}
+
+	for _, f := range expectedFiles {
+		if _, err := os.Stat(f); os.IsNotExist(err) {
+			t.Errorf("expected file %q to be generated", f)
+		}
 	}
 }

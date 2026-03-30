@@ -49,12 +49,18 @@ func newCommandBuilder(method *api.Method, overrides *provider.Config, model *ap
 // on the commandBuilder's state, and returns the constructed Command and
 // any error encountered during assembly.
 func (b *commandBuilder) build() (*Command, error) {
+	name, err := provider.GetCommandName(b.method)
+	if err != nil {
+		return nil, err
+	}
+
 	args, err := b.newArguments()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Command{
+		Name:             name,
 		Hidden:           b.hidden(),
 		HelpText:         b.helpText(),
 		ReleaseTracks:    b.releaseTracks(),

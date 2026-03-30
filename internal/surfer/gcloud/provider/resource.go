@@ -279,3 +279,47 @@ func ExtractCollectionFromStrings(parts []string) string {
 	}
 	return sb.String()
 }
+
+// GetLiteralSegments extracts the literal path segments from a list of PathSegments,
+// filtering out version suffixes like `V1`, `V2`, etc. and wildcard segments `*`, `**`.
+func GetLiteralSegments(raw []api.PathSegment) []string {
+	var literals []string
+	for _, seg := range raw {
+		if seg.Literal != nil {
+			literals = append(literals, *seg.Literal)
+		} else if seg.Variable != nil {
+			for _, vSeg := range seg.Variable.Segments {
+				if vSeg != "*" && vSeg != "**" {
+					literals = append(literals, vSeg)
+				}
+			}
+		}
+	}
+
+	var filtered []string
+	for _, lit := range literals {
+		if len(lit) > 1 && lit[0] == 'v' && lit[1] >= '0' && lit[1] <= '9' {
+			continue
+		}
+		filtered = append(filtered, lit)
+	}
+	return filtered
+}
+
+// GetSingularResourceNameForPrefix looks up the singular resource name for a given list of URL prefix literals.
+func GetSingularResourceNameForPrefix(model *api.API, prefix []string) string {
+	target := strings.Join(prefix, ".")
+	for _, res := range model.ResourceDefinitions {
+		if len(res.Patterns) == 0 {
+			continue
+		}
+		segments := GetLiteralSegments(res.Patterns[0])
+		if strings.Join(segments, ".") == target {
+			if res.Singular != "" {
+				return res.Singular
+			}
+			return GetSingularFromSegments(res.Patterns[0])
+		}
+	}
+	return ""
+}
