@@ -851,6 +851,13 @@
     go: ""
     java: grpc
     ruby: grpc
+- path: google/cloud/biglake/hive/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+    - rust
 - path: google/cloud/biglake/v1
   languages:
     - go
