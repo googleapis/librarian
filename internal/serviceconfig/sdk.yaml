@@ -851,6 +851,15 @@
     go: ""
     java: grpc
     ruby: grpc
+- path: google/cloud/biglake/hive/v1beta
+  languages:
+    - go
+    - java
+    - python
+  release_level:
+    go: beta
+    java: preview
+    python: preview
 - path: google/cloud/biglake/v1
   languages:
     - go
@@ -4066,6 +4075,7 @@
     python: grpc
 - path: google/maps/geocode/v4
   languages:
+    - go
     - python
   release_level:
     python: preview
