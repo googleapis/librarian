@@ -42,7 +42,6 @@ type MigrationInput struct {
 	librarianConfig *legacyconfig.LibrarianConfig
 	lang            string
 	repoPath        string
-	googleapisDir   string
 }
 
 func runLibrarianMigration(ctx context.Context, language string, repoPath string, librariesToMigrate []string) error {
