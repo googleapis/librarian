@@ -15,15 +15,11 @@
 package main
 
 import (
-	"cmp"
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"slices"
 	"sort"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -148,10 +144,7 @@ func runCompleteCleanLibrarianMigration(ctx context.Context, language string, re
 }
 
 func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*config.Config, error) {
-	repo := "googleapis/google-cloud-go"
-	if input.lang == config.LanguagePython {
-		repo = "googleapis/google-cloud-python"
-	}
+	repo := "googleapis/google-cloud-python"
 
 	src, err := fetchSource(ctx)
 	if err != nil {
@@ -173,30 +166,20 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		},
 	}
 
-	if input.lang == config.LanguagePython {
-		cfg.Default.Python = &config.PythonDefault{
-			// Declared in python.go.
-			CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
-			LibraryType:      pythonDefaultLibraryType,
-		}
-		cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
-		if err != nil {
-			return nil, err
-		}
-		cfg.Default.Output = "packages"
-		cfg.Default.TagFormat = pythonTagFormat
-	} else {
-		input.googleapisDir = src.Dir
-		cfg.Libraries, err = buildGoLibraries(input)
-		if err != nil {
-			return nil, err
-		}
+	cfg.Default.Python = &config.PythonDefault{
+		// Declared in python.go.
+		CommonGAPICPaths: pythonDefaultCommonGAPICPaths,
+		LibraryType:      pythonDefaultLibraryType,
 	}
-
+	cfg.Libraries, err = buildPythonLibraries(input, src.Dir)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Default.Output = "packages"
+	cfg.Default.TagFormat = pythonTagFormat
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
-
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -297,169 +280,6 @@ func mergeLibraries(existingConfig *config.Config, newConfig *config.Config) []*
 	return merged
 }
 
-func buildGoLibraries(input *MigrationInput) ([]*config.Library, error) {
-	var libraries []*config.Library
-	idToLibraryState := sliceToMap(
-		input.librarianState.Libraries,
-		func(lib *legacyconfig.LibraryState) string {
-			return lib.ID
-		})
-
-	idToLibraryConfig := sliceToMap(
-		input.librarianConfig.Libraries,
-		func(lib *legacyconfig.LibraryConfig) string {
-			return lib.LibraryID
-		})
-
-	idToGoModule := make(map[string]*RepoConfigModule)
-	if input.repoConfig != nil {
-		idToGoModule = sliceToMap(
-			input.repoConfig.Modules,
-			func(mod *RepoConfigModule) string {
-				return mod.Name
-			})
-	}
-	// Iterate libraries from idToLibraryState because librarianConfig.Libraries is a
-	// subset of librarianState.Libraries.
-	for id, libState := range idToLibraryState {
-		library := &config.Library{}
-		library.Name = id
-		library.Version = libState.Version
-		if libState.APIs != nil {
-			library.APIs = toAPIs(libState.APIs)
-		}
-		// Hardcode library output that is different from other libraries.
-		output, ok := outputs[id]
-		if ok {
-			library.Output = output
-		}
-		// Use the hardcode keep because the legacylibrarian has a different
-		// mechanism for which files to keep during generation.
-		k, ok := keep[id]
-		if ok {
-			library.Keep = k
-		}
-		slices.Sort(library.Keep)
-		libCfg, ok := idToLibraryConfig[id]
-		if ok {
-			library.SkipGenerate = libCfg.GenerateBlocked
-			library.SkipRelease = libCfg.ReleaseBlocked
-		}
-		libGoModule, ok := idToGoModule[id]
-		if ok {
-			var goAPIs []*config.GoAPI
-			var enabledGenFeats []string
-			// EnabledGeneratorFeatures define in both library and API level in legacy librarian,
-			// We merge and dedup them into API level.
-			enabledGenFeats = append(enabledGenFeats, libGoModule.EnabledGeneratorFeatures...)
-			if len(enabledGenFeats) > 0 {
-				var modules []*RepoConfigAPI
-				for _, api := range library.APIs {
-					module := findModule(libGoModule, api.Path)
-					if module != nil {
-						continue
-					}
-					modules = append(modules, &RepoConfigAPI{
-						Path:                     api.Path,
-						EnabledGeneratorFeatures: enabledGenFeats,
-					})
-				}
-				libGoModule.APIs = append(libGoModule.APIs, modules...)
-			}
-			for _, api := range libGoModule.APIs {
-				enabledGenFeats = append(enabledGenFeats, api.EnabledGeneratorFeatures...)
-				slices.Sort(enabledGenFeats)
-				enabledGenFeats = slices.Compact(enabledGenFeats)
-				goAPIs = append(goAPIs, &config.GoAPI{
-					ClientPackage:            api.ClientDirectory,
-					ProtoOnly:                api.DisableGAPIC,
-					EnabledGeneratorFeatures: enabledGenFeats,
-					ImportPath:               api.ImportPath,
-					NestedProtos:             api.NestedProtos,
-					Path:                     api.Path,
-					ProtoPackage:             api.ProtoPackage,
-				})
-			}
-			slices.SortFunc(goAPIs, func(a, b *config.GoAPI) int {
-				return cmp.Compare(a.Path, b.Path)
-			})
-			goModule := &config.GoModule{
-				DeleteGenerationOutputPaths: libGoModule.DeleteGenerationOutputPaths,
-				GoAPIs:                      goAPIs,
-				ModulePathVersion:           libGoModule.ModulePathVersion,
-			}
-
-			if !isEmptyGoModule(goModule) {
-				library.Go = goModule
-			}
-		}
-		mod, ok := nestedModules[id]
-		if ok {
-			if library.Go == nil {
-				library.Go = &config.GoModule{}
-			}
-			library.Go.NestedModule = mod
-		}
-		deletion, ok := deleteOutputs[id]
-		if ok {
-			if library.Go == nil {
-				library.Go = &config.GoModule{}
-			}
-			library.Go.DeleteGenerationOutputPaths = []string{deletion}
-		}
-		// Read Go GAPIC configurations from BUILD.bazel.
-		for _, api := range library.APIs {
-			info, err := parseGoBazel(input.googleapisDir, api.Path)
-			if err != nil {
-				return nil, err
-			}
-			if info == nil || isEmptyGoGAPICInfo(info) {
-				continue
-			}
-			goAPI, index := findGoAPI(library, api.Path)
-			if index == -1 {
-				goAPI = &config.GoAPI{Path: api.Path}
-			}
-			goAPI.ClientPackage = info.ClientPackageName
-			if !goAPI.ProtoOnly {
-				goAPI.ProtoOnly = info.DisableGAPIC
-			}
-			goAPI.DIREGAPIC = info.HasDiregapic
-			goAPI.ImportPath = info.ImportPath
-			// Hardcode import path that is not parsable from
-			// BUILD.bazel.
-			if importPath, ok := importPaths[api.Path]; ok {
-				goAPI.ImportPath = importPath
-			}
-			goAPI.NoMetadata = info.NoMetadata
-			if library.Go == nil {
-				library.Go = &config.GoModule{}
-			}
-			// Append an entry if no exists; otherwise update the
-			// value in place.
-			if index == -1 {
-				library.Go.GoAPIs = append(library.Go.GoAPIs, goAPI)
-			} else {
-				library.Go.GoAPIs[index] = goAPI
-			}
-		}
-
-		libraries = append(libraries, library)
-	}
-
-	return libraries, nil
-}
-
-func sliceToMap[T any](slice []*T, keyFunc func(t *T) string) map[string]*T {
-	res := make(map[string]*T, len(slice))
-	for _, t := range slice {
-		key := keyFunc(t)
-		res[key] = t
-	}
-
-	return res
-}
-
 func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 	apis := make([]*config.API, 0, len(legacyapis))
 	for _, api := range legacyapis {
@@ -472,18 +292,6 @@ func toAPIs(legacyapis []*legacyconfig.API) []*config.API {
 	// in the same order that it will eventually be saved.
 	serviceconfig.SortAPIs(apis)
 	return apis
-}
-
-func isEmptyGoModule(mod *config.GoModule) bool {
-	return reflect.DeepEqual(mod, &config.GoModule{})
-}
-
-func isEmptyGoGAPICInfo(info *goGAPICInfo) bool {
-	return info.ClientPackageName == "" &&
-		!info.DisableGAPIC &&
-		!info.HasDiregapic &&
-		info.ImportPath == "" &&
-		!info.NoMetadata
 }
 
 // readLegacyState reads the legacylibrarian state file for the given
@@ -512,80 +320,4 @@ func readLegacyGoRepoConfig(path string) (*RepoConfig, error) {
 	}
 
 	return yaml.Read[RepoConfig](configFile)
-}
-
-// parseGoBazel parses the BUILD.bazel file in the given directory to extract information from
-// the go_gapic_library rule.
-func parseGoBazel(googleapisDir, dir string) (*goGAPICInfo, error) {
-	file, err := parseBazel(googleapisDir, dir)
-	if err != nil {
-		return nil, err
-	}
-	if file == nil {
-		return nil, nil
-	}
-	rules := file.Rules("go_gapic_library")
-	if len(rules) == 0 {
-		return &goGAPICInfo{DisableGAPIC: true}, nil
-	}
-	if len(rules) > 1 {
-		return nil, fmt.Errorf("%s/BUILD.bazel contains multiple go_gapic_library rules", dir)
-	}
-	rule := rules[0]
-	importPath, clientPkg := parseImportPathFromBuild(rule.AttrString("importpath"))
-	defaultImportPath, defaultClientPkg := defaultImportPathFromAPI(dir)
-	info := &goGAPICInfo{
-		HasDiregapic: rule.AttrLiteral("diregapic") == "True",
-		NoMetadata:   rule.AttrLiteral("metadata") != "True",
-	}
-	if importPath != defaultImportPath {
-		info.ImportPath = importPath
-	}
-	if clientPkg != defaultClientPkg {
-		info.ClientPackageName = clientPkg
-	}
-	return info, nil
-}
-
-// findGoAPI searches for a GoAPI with the specified path within the library's Go configuration.
-// It returns the GoAPI pointer and its index in the GoAPIs slice if found, otherwise it returns
-// nil and -1.
-func findGoAPI(library *config.Library, apiPath string) (*config.GoAPI, int) {
-	if library.Go == nil {
-		return nil, -1
-	}
-	for i, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga, i
-		}
-	}
-	return nil, -1
-}
-
-func findModule(libGoModule *RepoConfigModule, apiPath string) *RepoConfigAPI {
-	for _, api := range libGoModule.APIs {
-		if api.Path == apiPath {
-			return api
-		}
-	}
-	return nil
-}
-
-func parseImportPathFromBuild(importPath string) (string, string) {
-	importPath = strings.TrimPrefix(importPath, "cloud.google.com/go/")
-	idx := strings.Index(importPath, ";")
-	return importPath[:idx], importPath[idx+1:]
-}
-
-func defaultImportPathFromAPI(apiPath string) (string, string) {
-	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
-	apiPath = strings.TrimPrefix(apiPath, "google/")
-	idx := strings.LastIndex(apiPath, "/")
-	if idx == -1 {
-		return "", ""
-	}
-	importPath, version := apiPath[:idx], apiPath[idx+1:]
-	idx = strings.LastIndex(importPath, "/")
-	pkg := importPath[idx+1:]
-	return fmt.Sprintf("%s/api%s", importPath, version), pkg
 }
