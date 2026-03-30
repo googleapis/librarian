@@ -27,6 +27,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
+// GenerateConfig contains parameters for generating gcloud commands.
 type GenerateConfig struct {
 	Googleapis    string
 	GcloudConfig  string
