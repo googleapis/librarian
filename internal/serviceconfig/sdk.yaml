@@ -855,9 +855,7 @@
   languages:
     - go
     - java
-    - nodejs
     - python
-    - rust
 - path: google/cloud/biglake/v1
   languages:
     - go
