@@ -1,0 +1,77 @@
+image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:19bb93e8f1f916c61b597db2bad65dc432f79baaabb210499d7d0e4ad1dffe29
+libraries:
+  - id: accessapproval
+    version: 1.9.0
+    last_generated_commit: 6c3dce4a02401667e9dd6d28304fee3f98e20ff8
+    apis:
+      - path: google/cloud/accessapproval/v1
+        service_config: accessapproval_v1.yaml
+    source_roots:
+      - accessapproval
+      - internal/generated/snippets/accessapproval
+    preserve_regex: []
+    remove_regex:
+      - ^internal/generated/snippets/accessapproval/
+      - ^accessapproval/apiv1/[^/]*_client\.go$
+      - ^accessapproval/apiv1/[^/]*_client_example_go123_test\.go$
+      - ^accessapproval/apiv1/[^/]*_client_example_test\.go$
+      - ^accessapproval/apiv1/auxiliary\.go$
+      - ^accessapproval/apiv1/auxiliary_go123\.go$
+      - ^accessapproval/apiv1/doc\.go$
+      - ^accessapproval/apiv1/gapic_metadata\.json$
+      - ^accessapproval/apiv1/helpers\.go$
+      - ^accessapproval/apiv1/accessapprovalpb/.*$
+      - ^accessapproval/apiv1/\.repo-metadata\.json$
+    release_exclude_paths:
+      - internal/generated/snippets/accessapproval/
+    tag_format: '{id}/v{version}'
+  - id: accesscontextmanager
+    version: 1.10.0
+    last_generated_commit: 6c3dce4a02401667e9dd6d28304fee3f98e20ff8
+    apis:
+      - path: google/identity/accesscontextmanager/v1
+        service_config: accesscontextmanager_v1.yaml
+    source_roots:
+      - accesscontextmanager
+      - internal/generated/snippets/accesscontextmanager
+    preserve_regex: []
+    remove_regex:
+      - ^internal/generated/snippets/accesscontextmanager/
+      - ^accesscontextmanager/apiv1/[^/]*_client\.go$
+      - ^accesscontextmanager/apiv1/[^/]*_client_example_go123_test\.go$
+      - ^accesscontextmanager/apiv1/[^/]*_client_example_test\.go$
+      - ^accesscontextmanager/apiv1/auxiliary\.go$
+      - ^accesscontextmanager/apiv1/auxiliary_go123\.go$
+      - ^accesscontextmanager/apiv1/doc\.go$
+      - ^accesscontextmanager/apiv1/gapic_metadata\.json$
+      - ^accesscontextmanager/apiv1/helpers\.go$
+      - ^accesscontextmanager/apiv1/accesscontextmanagerpb/.*$
+      - ^accesscontextmanager/apiv1/\.repo-metadata\.json$
+    release_exclude_paths:
+      - internal/generated/snippets/accesscontextmanager/
+    tag_format: '{id}/v{version}'
+  - id: advisorynotifications
+    version: 1.5.6
+    last_generated_commit: 6c3dce4a02401667e9dd6d28304fee3f98e20ff8
+    apis:
+      - path: google/cloud/advisorynotifications/v1
+        service_config: advisorynotifications_v1.yaml
+    source_roots:
+      - advisorynotifications
+      - internal/generated/snippets/advisorynotifications
+    preserve_regex: []
+    remove_regex:
+      - ^internal/generated/snippets/advisorynotifications/
+      - ^advisorynotifications/apiv1/[^/]*_client\.go$
+      - ^advisorynotifications/apiv1/[^/]*_client_example_go123_test\.go$
+      - ^advisorynotifications/apiv1/[^/]*_client_example_test\.go$
+      - ^advisorynotifications/apiv1/auxiliary\.go$
+      - ^advisorynotifications/apiv1/auxiliary_go123\.go$
+      - ^advisorynotifications/apiv1/doc\.go$
+      - ^advisorynotifications/apiv1/gapic_metadata\.json$
+      - ^advisorynotifications/apiv1/helpers\.go$
+      - ^advisorynotifications/apiv1/advisorynotificationspb/.*$
+      - ^advisorynotifications/apiv1/\.repo-metadata\.json$
+    release_exclude_paths:
+      - internal/generated/snippets/advisorynotifications/
+    tag_format: '{id}/v{version}'

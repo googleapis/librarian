@@ -44,6 +44,10 @@ For each repository, librarianops will:
 				Name:  "C",
 				Usage: "work in `directory` (repo name inferred from basename)",
 			},
+			&cli.BoolFlag{
+				Name:  "v",
+				Usage: "run librarian with verbose output",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			_, workDir, verbose, err := parseFlags(cmd)

@@ -393,8 +393,8 @@ github.com/google/yamlfmt v0.21.0 h1:9FKApQkDpMKgBjwLFytBHUCgqnQgxaQnci0uiESfbzs
 github.com/google/yamlfmt v0.21.0/go.mod h1:q6FYExB+Ueu7jZDjKECJk+EaeDXJzJ6Ne0dxx69GWfI=
 github.com/googleapis/enterprise-certificate-proxy v0.3.12 h1:Fg+zsqzYEs1ZnvmcztTYxhgCBsx3eEhEwQ1W/lHq/sQ=
 github.com/googleapis/enterprise-certificate-proxy v0.3.12/go.mod h1:vqVt9yG9480NtzREnTlmGSBmFrA+bzb0yl0TxoBQXOg=
-github.com/googleapis/gapic-generator-go v0.56.0 h1:VgOqtv2/CyZp6r/29+ou469+XbqC5rWBfj9nO6FUeKw=
-github.com/googleapis/gapic-generator-go v0.56.0/go.mod h1:XShMIBiP1+bF9jH3B2CsmeL3KaEehyjENYTztcnrbV4=
+github.com/googleapis/gapic-generator-go v0.57.0 h1:x3xlkzjBBL1RUItybQkRwhshKggBgdxPfhLNNeTnzow=
+github.com/googleapis/gapic-generator-go v0.57.0/go.mod h1:XShMIBiP1+bF9jH3B2CsmeL3KaEehyjENYTztcnrbV4=
 github.com/googleapis/gax-go/v2 v2.0.4/go.mod h1:0Wqv26UfaUD9n4G6kQubkQ+KchISgw+vpHVxEJEs9eg=
 github.com/googleapis/gax-go/v2 v2.0.5/go.mod h1:DWXyrwAJ9X0FpwwEdw+IPEYBICEFu5mhpdKc/us6bOk=
 github.com/googleapis/gax-go/v2 v2.17.0 h1:RksgfBpxqff0EZkDWYuz9q/uWsTVz+kf43LsZ1J6SMc=

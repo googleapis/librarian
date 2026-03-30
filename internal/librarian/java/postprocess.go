@@ -23,20 +23,25 @@ import (
 	"strings"
 	"time"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
 )
 
+const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
+
 type postProcessParams struct {
-	outDir         string
-	libraryName    string
-	version        string
-	googleapisDir  string
-	apiProtos      []string
-	includeSamples bool
-	gapicDir       string
-	grpcDir        string
-	protoDir       string
+	outDir              string
+	libraryName         string
+	libraryVersion      string
+	librariesBomVersion string
+	version             string
+	googleapisDir       string
+	apiProtos           []string
+	includeSamples      bool
+	gapicDir            string
+	grpcDir             string
+	protoDir            string
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
@@ -52,8 +57,18 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-	if err := restructureOutput(p); err != nil {
-		return fmt.Errorf("failed to restructure output: %w", err)
+
+	// Check if owlbot.py exists in the library output directory.
+	// It is required for restructuring the output and generating README files.
+	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
+	}
+	if err := restructureToStaging(p); err != nil {
+		return fmt.Errorf("failed to restructure to staging: %w", err)
+	}
+	if err := runOwlBot(ctx, p); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
@@ -135,65 +150,107 @@ func removeConflictingFiles(protoSrcDir string) error {
 	return nil
 }
 
-// restructureOutput moves the generated code from the temporary versioned directory
-// tree into the final directory structure for GAPIC, Proto, gRPC, and samples.
-func restructureOutput(p postProcessParams) error {
-	modules := deriveModuleNames(p.libraryName, p.version)
-	// Temporary source directories (from protoc/generator output)
-	tempGapicSrcDir := filepath.Join(p.outDir, p.version, "gapic", "src", "main")
-	tempGapicTestDir := filepath.Join(p.outDir, p.version, "gapic", "src", "test")
-	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
-	tempGrpcSrcDir := filepath.Join(p.outDir, p.version, "grpc")
-	tempResourceNameSrcDir := filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java")
-	tempSamplesDir := filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java")
-	// Final destination directories
-	gapicDestDir := filepath.Join(p.outDir, modules.gapic, "src", "main")
-	gapicTestDestDir := filepath.Join(p.outDir, modules.gapic, "src", "test")
-	protoDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "java")
-	grpcDestDir := filepath.Join(p.outDir, modules.grpc, "src", "main", "java")
-	samplesDestDir := filepath.Join(p.outDir, "samples", "snippets", "generated")
+// restructureToStaging moves the generated code into a temporary staging directory
+// that matches the structure expected by owlbot.py. It nests modules under the
+// version directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
+// ensure synthtool preserves the module structure.
+func restructureToStaging(p postProcessParams) error {
+	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
+	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+		return fmt.Errorf("failed to create staging directory: %w", err)
+	}
+	return restructureModules(p, filepath.Join(stagingDir, p.version))
+}
 
-	// Ensure destination directories exist
-	destDirs := []string{gapicDestDir, gapicTestDestDir, protoDestDir, grpcDestDir}
-	if p.includeSamples {
-		destDirs = append(destDirs, samplesDestDir)
-	}
-	for _, dir := range destDirs {
-		if err := os.MkdirAll(dir, 0755); err != nil {
-			return fmt.Errorf("failed to create directory %s: %w", dir, err)
-		}
-	}
+type moveAction struct {
+	src, dest   string
+	description string
+}
 
-	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-		return err
-	}
-
-	type moveAction struct {
-		src, dest   string
-		description string
-	}
-	actions := []moveAction{
-		{src: tempProtoSrcDir, dest: protoDestDir, description: "proto source"},
-		{src: tempGrpcSrcDir, dest: grpcDestDir, description: "grpc source"},
-		{src: tempGapicSrcDir, dest: gapicDestDir, description: "gapic source"},
-		{src: tempGapicTestDir, dest: gapicTestDestDir, description: "gapic test"},
-		{src: tempResourceNameSrcDir, dest: protoDestDir, description: "resource name source"},
-	}
-	if p.includeSamples {
-		actions = append(actions, moveAction{src: tempSamplesDir, dest: samplesDestDir, description: "samples"})
-	}
+func restructure(actions []moveAction) error {
 	for _, action := range actions {
 		if _, err := os.Stat(action.src); err == nil {
+			if err := os.MkdirAll(action.dest, 0755); err != nil {
+				return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
+			}
 			if err := filesystem.MoveAndMerge(action.src, action.dest); err != nil {
 				return fmt.Errorf("failed to move %s: %w", action.description, err)
 			}
 		}
 	}
+	return nil
+}
+
+// restructureModules moves the generated code from the temporary versioned directory
+// tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
+// It also copies the relevant proto files into the proto module.
+func restructureModules(p postProcessParams, destRoot string) error {
+	modules := deriveModuleNames(p.libraryName, p.version)
+	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
+	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
+		return err
+	}
+	actions := []moveAction{
+		{
+			src:         tempProtoSrcDir,
+			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			description: "proto source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "grpc"),
+			dest:        filepath.Join(destRoot, modules.grpc, "src", "main", "java"),
+			description: "grpc source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "main"),
+			dest:        filepath.Join(destRoot, modules.gapic, "src", "main"),
+			description: "gapic source",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "test"),
+			dest:        filepath.Join(destRoot, modules.gapic, "src", "test"),
+			description: "gapic test",
+		},
+		{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java"),
+			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			description: "resource name source",
+		},
+	}
+	if p.includeSamples {
+		actions = append(actions, moveAction{
+			src:         filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+			dest:        filepath.Join(destRoot, "samples", "snippets", "generated"),
+			description: "samples",
+		})
+	}
+	if err := restructure(actions); err != nil {
+		return err
+	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(p.outDir, modules.proto, "src", "main", "proto")
+	protoFilesDestDir := filepath.Join(destRoot, modules.proto, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
+	return nil
+}
+
+func runOwlBot(ctx context.Context, p postProcessParams) error {
+	// Versions used to populate README.md file.
+	env := map[string]string{
+		"SYNTHTOOL_LIBRARY_VERSION":       p.libraryVersion,
+		"SYNTHTOOL_LIBRARIES_BOM_VERSION": p.librariesBomVersion,
+	}
+	// Path to templates used for README.md file.
+	templatesDir := filepath.Join(filepath.Dir(p.outDir), owlbotTemplatesRelPath)
+	if _, err := os.Stat(templatesDir); err != nil {
+		return fmt.Errorf("templates directory not found at %s: %w", templatesDir, err)
+	}
+	env["SYNTHTOOL_TEMPLATES"] = templatesDir
+	if err := command.RunInDirWithEnv(ctx, p.outDir, env, "python3", "owlbot.py"); err != nil {
+		return err
+	}
+	// Staging dirs cleans up as part of owlbot.py
 	return nil
 }
 

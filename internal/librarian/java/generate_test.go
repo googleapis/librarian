@@ -114,7 +114,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"artifact=com.google.cloud:google-cloud-secretmanager",
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc",
+				"transport=grpc+rest",
 				"rest-numeric-enums",
 			},
 		},
@@ -363,8 +363,21 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
+	// Create owlbot.py and templates dir as they are mandatory for postProcessAPI
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	err := generateAPI(
 		t.Context(),
 		cfg,
@@ -377,7 +390,8 @@ func TestGenerateAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Verify that the output was restructured.
-	restructuredPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java")
+	// Since postProcessAPI now calls restructureToStaging, we check in staging/v1/...
+	restructuredPath := filepath.Join(outdir, "owl-bot-staging", "v1", "google-cloud-secretmanager", "src", "main", "java")
 	if _, err := os.Stat(restructuredPath); err != nil {
 		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
 	}
@@ -395,9 +409,21 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	outdir := t.TempDir()
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	cfg := &config.Config{Repo: "googleapis/google-cloud-java"}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
-
+	// Create owlbot.py and templates dir as they are  mandatory for postProcessAPI
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir)
 	if err != nil {
 		t.Fatal(err)

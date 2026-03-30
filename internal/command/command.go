@@ -47,7 +47,12 @@ func Run(ctx context.Context, command string, arg ...string) error {
 
 // RunInDir executes a program in a specific directory.
 func RunInDir(ctx context.Context, dir, command string, arg ...string) error {
-	_, err := runCmd(ctx, dir, nil, command, arg...)
+	return RunInDirWithEnv(ctx, dir, nil, command, arg...)
+}
+
+// RunInDirWithEnv executes a program in a specific directory with optional environment variables.
+func RunInDirWithEnv(ctx context.Context, dir string, env map[string]string, command string, arg ...string) error {
+	_, err := runCmd(ctx, dir, env, command, arg...)
 	return err
 }
 

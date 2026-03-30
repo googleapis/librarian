@@ -103,10 +103,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/HasAutoPopulatedFields}}
         {{#Codec.HasResourceNameGeneration}}
         {{#Codec.DetailedTracingAttributes}}
-        let (builder, method, _path_template, resource_name) = None
+        let (builder, method, _path_template, _resource_name) = None
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
-        let (builder, method, resource_name) = None
+        let (builder, method, _resource_name) = None
         {{/Codec.DetailedTracingAttributes}}
         {{/Codec.HasResourceNameGeneration}}
         {{^Codec.HasResourceNameGeneration}}
@@ -202,19 +202,17 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         })??;
         {{#Codec.DetailedTracingAttributes}}
         #[cfg(google_cloud_unstable_tracing)]
-        let options = {
-            use google_cloud_gax::options::internal::{RequestOptionsExt, PathTemplate};
-            options.insert_extension(PathTemplate(_path_template))
-        };
+        if let Some(recorder) = gaxi::observability::RequestRecorder::current() {
+            recorder.on_client_request(
+                gaxi::observability::ClientRequestAttributes::default()
+                    .set_rpc_method("{{SourceService.Package}}.{{SourceService.Name}}/{{Name}}")
+                    .set_url_template(_path_template)
+                    {{#Codec.HasResourceNameGeneration}}
+                    .set_resource_name(_resource_name)
+                    {{/Codec.HasResourceNameGeneration}}
+            );
+        }
         {{/Codec.DetailedTracingAttributes}}
-        {{#Codec.HasResourceNameGeneration}}
-        let options = if !resource_name.is_empty() {
-            use google_cloud_gax::options::internal::{RequestOptionsExt, ResourceName};
-            options.insert_extension(ResourceName(resource_name))
-        } else {
-            options
-        };
-        {{/Codec.HasResourceNameGeneration}}
         let options = google_cloud_gax::options::internal::set_default_idempotency(
             options,
             {{! TODO(#4156) - return idempotency from the above closure }}

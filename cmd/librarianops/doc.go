@@ -58,5 +58,32 @@ OPTIONS:
 	-v            run librarian with verbose output
 	--docker      run librarian in Docker
 	--help, -h    show help
+
+# upgrade
+
+NAME:
+
+	librarianops upgrade - upgrade librarian version in librarian.yaml
+
+USAGE:
+
+	librarianops upgrade [<repo> | -C <dir>]
+
+DESCRIPTION:
+
+	Examples:
+	  librarianops upgrade google-cloud-rust
+	  librarianops upgrade -C ~/workspace/google-cloud-rust
+
+	For each repository, librarianops will:
+	  1. Get the latest librarian version from @main.
+	  2. Update the version field in librarian.yaml.
+	  3. Run 'librarian generate --all'.
+
+OPTIONS:
+
+	-C directory  work in directory (repo name inferred from basename)
+	-v            run librarian with verbose output
+	--help, -h    show help
 */
 package main

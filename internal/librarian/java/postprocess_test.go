@@ -23,6 +23,8 @@ import (
 	"strings"
 
 	"testing"
+
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPostProcessAPI(t *testing.T) {
@@ -76,7 +78,14 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
 		t.Fatal(err)
 	}
-
+	// Create owlbot.py and templates dir
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	p := postProcessParams{
 		outDir:         outdir,
@@ -90,11 +99,11 @@ func TestPostProcessAPI(t *testing.T) {
 		protoDir:       protoDir,
 	}
 	if err := postProcessAPI(t.Context(), p); err != nil {
-		t.Fatalf("postProcess failed: %v", err)
+		t.Fatal(err)
 	}
 
 	// Verify that the file from srcjar was unzipped and moved, but NO header was added.
-	unzippedPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
+	unzippedPath := filepath.Join(outdir, "owl-bot-staging", version, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
 	gotContent, err := os.ReadFile(unzippedPath)
 	if err != nil {
 		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
@@ -104,7 +113,7 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 
 	// Verify that the proto file HAS a header added.
-	protoDestPath := filepath.Join(outdir, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "ProtoFile.java")
+	protoDestPath := filepath.Join(outdir, "owl-bot-staging", version, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "ProtoFile.java")
 	gotProtoContent, err := os.ReadFile(protoDestPath)
 	if err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", protoDestPath, err)
@@ -113,7 +122,7 @@ func TestPostProcessAPI(t *testing.T) {
 		t.Errorf("expected header to be prepended to %s, but it was not found", protoDestPath)
 	}
 
-	unzippedTestPath := filepath.Join(outdir, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
+	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", version, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
 	}
@@ -124,10 +133,20 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 }
 
-func TestRestructureOutput(t *testing.T) {
+func TestPostProcessAPI_MissingOwlBot_Error(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	p := postProcessParams{
+		outDir: outdir,
+	}
+	if err := postProcessAPI(t.Context(), p); err == nil {
+		t.Error("expected error due to missing owlbot.py, got nil")
+	}
+}
+
+func TestRestructureModules(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-
 	version := "v1"
 	libraryID := "secretmanager"
 	libraryName := "google-cloud-secretmanager"
@@ -166,28 +185,29 @@ func TestRestructureOutput(t *testing.T) {
 		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
 		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
-	if err := restructureOutput(p); err != nil {
-		t.Fatalf("restructureOutput failed: %v", err)
+	destRoot := filepath.Join(tmpDir, "dest")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
 	}
 
 	// Verify sample file location
-	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
+	wantSamplePath := filepath.Join(destRoot, "samples", "snippets", "generated", "Sample.java")
 	if _, err := os.Stat(wantSamplePath); err != nil {
 		t.Errorf("expected sample file at %s, but it was not found: %v", wantSamplePath, err)
 	}
 	// Verify reflect-config.json location
-	wantReflectPath := filepath.Join(tmpDir, libraryName, "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
+	wantReflectPath := filepath.Join(destRoot, libraryName, "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
 	if _, err := os.Stat(wantReflectPath); err != nil {
 		t.Errorf("expected reflect-config.json at %s, but it was not found: %v", wantReflectPath, err)
 	}
 	// Verify proto file location
-	wantProtoPath := filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
+	wantProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
 	}
 }
 
-func TestRestructureOutput_NoSamples(t *testing.T) {
+func TestRestructureModules_NoSamples(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	version := "v1"
@@ -219,11 +239,12 @@ func TestRestructureOutput_NoSamples(t *testing.T) {
 		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
 		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
-	if err := restructureOutput(p); err != nil {
-		t.Fatalf("restructureOutput failed: %v", err)
+	destRoot := filepath.Join(tmpDir, "dest")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
 	}
 	// Verify sample file location DOES NOT exist
-	wantSamplePath := filepath.Join(tmpDir, "samples", "snippets", "generated", "Sample.java")
+	wantSamplePath := filepath.Join(destRoot, "samples", "snippets", "generated", "Sample.java")
 	if _, err := os.Stat(wantSamplePath); !os.IsNotExist(err) {
 		t.Errorf("expected sample file at %s to be missing, but it exists", wantSamplePath)
 	}
@@ -235,7 +256,7 @@ func TestCopyProtos_Success(t *testing.T) {
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
 	protos := []string{proto1}
 	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
-		t.Fatalf("copyProtos failed: %v", err)
+		t.Fatal(err)
 	}
 	// Verify proto1 was copied
 	if _, err := os.Stat(filepath.Join(destDir, "google/cloud/secretmanager/v1/service.proto")); err != nil {
@@ -248,6 +269,73 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	destDir := t.TempDir()
 	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
+	}
+}
+
+func TestRunOwlBot(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+	tmp := t.TempDir()
+	outDir := filepath.Join(tmp, "out")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(tmp, "sdk-platform-java", "hermetic_build", "library_generation", "owlbot", "templates")
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a dummy owlbot.py that checks environment variables.
+	owlbotContent := `
+import os
+import sys
+
+lib_version = os.environ.get("SYNTHTOOL_LIBRARY_VERSION")
+bom_version = os.environ.get("SYNTHTOOL_LIBRARIES_BOM_VERSION")
+templates = os.environ.get("SYNTHTOOL_TEMPLATES")
+
+if lib_version != "1.2.3":
+    print(f"Expected SYNTHTOOL_LIBRARY_VERSION=1.2.3, got {lib_version}")
+    sys.exit(1)
+if bom_version != "4.5.6":
+    print(f"Expected SYNTHTOOL_LIBRARIES_BOM_VERSION=4.5.6, got {bom_version}")
+    sys.exit(1)
+if not templates or not templates.endswith("templates"):
+    print(f"Expected SYNTHTOOL_TEMPLATES to be set and end with 'templates', got {templates}")
+    sys.exit(1)
+
+with open("owlbot-ran.txt", "w") as f:
+    f.write("success")
+`
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(owlbotContent), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	p := postProcessParams{
+		outDir:              outDir,
+		libraryVersion:      "1.2.3",
+		librariesBomVersion: "4.5.6",
+	}
+	if err := runOwlBot(t.Context(), p); err != nil {
+		t.Fatal(err)
+	}
+
+	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
+		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
+	}
+}
+
+func TestRunOwlBot_Error(t *testing.T) {
+	t.Parallel()
+	tmp := t.TempDir()
+	outDir := filepath.Join(tmp, "out")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir: outDir,
+	}
+	if err := runOwlBot(t.Context(), p); err == nil {
+		t.Error("expected error due to missing templates directory, got nil")
 	}
 }
 

@@ -44,6 +44,7 @@ func Run(ctx context.Context, args ...string) error {
 		UsageText: "librarianops [command]",
 		Commands: []*cli.Command{
 			generateCommand(),
+			upgradeCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
