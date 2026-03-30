@@ -4066,6 +4066,7 @@
     python: grpc
 - path: google/maps/geocode/v4
   languages:
+    - go
     - python
   release_level:
     python: preview
