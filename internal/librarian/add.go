@@ -129,9 +129,9 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 
 	switch cfg.Language {
 	case config.LanguageRust:
-		rust.AddLibrary(lib)
+		lib = rust.Add(lib)
 	case config.LanguageFake:
-		fakeAddLibrary(lib, defaultVersion)
+		lib = fakeAdd(lib, defaultVersion)
 	}
 
 	cfg.Libraries = append(cfg.Libraries, lib)

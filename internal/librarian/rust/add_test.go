@@ -21,21 +21,11 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestAddLibrary(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		want *config.Library
-	}{
-		{
-			name: "sets default version",
-			lib:  &config.Library{},
-			want: &config.Library{Version: DefaultVersion},
-		},
-	} {
-		AddLibrary(test.lib)
-		if diff := cmp.Diff(test.want, test.lib); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
+func TestAdd(t *testing.T) {
+	lib := &config.Library{}
+	want := &config.Library{Version: DefaultVersion}
+	got := Add(lib)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

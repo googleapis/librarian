@@ -20,11 +20,12 @@ import "github.com/googleapis/librarian/internal/config"
 // the initial `librarian add` for a new API.
 const DefaultVersion = "1.0.0"
 
-// AddLibrary executes Rust-specific mutations of the given [config.Library]
+// Add executes Rust-specific mutations of the given [config.Library]
 // entry to be added to the librarian.yaml via `librarian add`.
 //
 // Currently, it only sets the [config.Library.Version] property to the
 // [DefaultVersion] for Rust.
-func AddLibrary(lib *config.Library) {
+func Add(lib *config.Library) *config.Library {
 	lib.Version = DefaultVersion
+	return lib
 }

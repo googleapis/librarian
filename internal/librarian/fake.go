@@ -100,6 +100,7 @@ func fakeClean(library *config.Library) error {
 	return os.Remove(filepath.Join(library.Output, "README.md"))
 }
 
-func fakeAddLibrary(lib *config.Library, version string) {
+func fakeAdd(lib *config.Library, version string) *config.Library {
 	lib.Version = version
+	return lib
 }
