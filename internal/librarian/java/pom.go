@@ -39,8 +39,6 @@ type grpcProtoPomData struct {
 	MainArtifactID   string
 	ParentGroupID    string
 	ParentArtifactID string
-	ParentVersion    string
-	ProtoGroupID     string
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -74,7 +72,10 @@ func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir st
 // on the filesystem.
 func collectModules(library *config.Library, libraryDir, googleapisDir string) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
-	parts := strings.Split(distName, ":")
+	parts := strings.SplitN(distName, ":", 2)
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("invalid distribution name %q: expected format groupID:artifactID", distName)
+	}
 	gapicGroupID := parts[0]
 	gapicArtifactID := parts[1]
 
