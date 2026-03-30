@@ -285,6 +285,15 @@ func TestUpdateREADME(t *testing.T) {
 			want:        "- Read the [crate's documentation](https://docs.rs/google-cloud-storage/1.1.0)",
 		},
 		{
+			name:        "update multiple versions in readme",
+			libraryName: "google-cloud-apphub-v1",
+			version:     "1.9.0",
+			content: "- Read the [crate's documentation](https://docs.rs/google-cloud-apphub-v1/1.8.0)\n" +
+				"[AppHub]: https://docs.rs/google-cloud-apphub-v1/1.8.0/google_cloud_apphub_v1/client/struct.AppHub.html",
+			want: "- Read the [crate's documentation](https://docs.rs/google-cloud-apphub-v1/1.9.0)\n" +
+				"[AppHub]: https://docs.rs/google-cloud-apphub-v1/1.9.0/google_cloud_apphub_v1/client/struct.AppHub.html",
+		},
+		{
 			name:        "no match for different library",
 			libraryName: "google-cloud-storage",
 			version:     "1.1.0",
