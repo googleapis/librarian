@@ -68,13 +68,9 @@ func run(args []string) error {
 }
 
 func syncNewLibrary(state *legacyconfig.LibrarianState, cfg *config.Config) *legacyconfig.LibrarianState {
-	legacyLibraries := make(map[string]bool)
-	for _, lib := range state.Libraries {
-		legacyLibraries[lib.ID] = true
-	}
 	for _, lib := range cfg.Libraries {
-		_, ok := legacyLibraries[lib.Name]
-		if ok {
+		legacyLib := state.LibraryByID(lib.Name)
+		if legacyLib != nil {
 			continue
 		}
 		state.Libraries = append(state.Libraries, &legacyconfig.LibraryState{
