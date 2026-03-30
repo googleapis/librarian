@@ -57,4 +57,3 @@ func TestReadGcloudConfig(t *testing.T) {
 		})
 	}
 }
-
