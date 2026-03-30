@@ -114,7 +114,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"artifact=com.google.cloud:google-cloud-secretmanager",
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"transport=grpc",
+				"transport=grpc+rest",
 				"rest-numeric-enums",
 			},
 		},

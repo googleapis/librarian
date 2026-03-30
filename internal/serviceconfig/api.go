@@ -120,17 +120,13 @@ type API struct {
 // Transport gets transport for a given language.
 //
 // If language-specific transport is not defined, it falls back to the "all" language setting,
-// and then to the language-specific default: GRPC for Java, GRPCRest for all others.
+// and then to the default GRPCRest for all languages.
 func (api *API) Transport(language string) Transport {
 	if trans, ok := api.Transports[language]; ok {
 		return trans
 	}
 	if trans, ok := api.Transports[config.LanguageAll]; ok {
 		return trans
-	}
-
-	if language == config.LanguageJava {
-		return GRPC
 	}
 	return GRPCRest
 }

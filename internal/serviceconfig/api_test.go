@@ -264,12 +264,6 @@ func TestGetTransport(t *testing.T) {
 			want: GRPCRest,
 		},
 		{
-			name: "empty serviceconfig java default",
-			sc:   &API{},
-			lang: config.LanguageJava,
-			want: GRPC,
-		},
-		{
 			name: "go specific transport",
 			sc: &API{
 				Transports: map[string]Transport{
@@ -316,12 +310,6 @@ func TestRepoMetadataTransport(t *testing.T) {
 		language string
 		want     string
 	}{
-		{
-			name:     "java, default",
-			sc:       &API{},
-			language: config.LanguageJava,
-			want:     "grpc",
-		},
 		{
 			name: "java, grpc",
 			sc: &API{
