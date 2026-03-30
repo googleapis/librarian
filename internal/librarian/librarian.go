@@ -22,6 +22,9 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
@@ -49,6 +52,7 @@ func Run(ctx context.Context, args ...string) error {
 			addCommand(),
 			generateCommand(),
 			bumpCommand(),
+			installCommand(),
 			tidyCommand(),
 			updateCommand(),
 			versionCommand(),
@@ -57,6 +61,26 @@ func Run(ctx context.Context, args ...string) error {
 		},
 	}
 	return cmd.Run(ctx, args)
+}
+
+func installCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "install",
+		Usage:     "install dependencies for the current language",
+		UsageText: "librarian install",
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+			if err != nil {
+				return err
+			}
+			switch cfg.Language {
+			case config.LanguageGo:
+				return golang.Install(ctx)
+			default:
+				return fmt.Errorf("language %q does not support install", cfg.Language)
+			}
+		},
+	}
 }
 
 // versionCommand prints the version information.

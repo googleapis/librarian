@@ -94,6 +94,24 @@ GLOBAL OPTIONS:
 
 	--verbose, -v  enable verbose logging
 
+# install
+
+NAME:
+
+	librarian install - install dependencies for the current language
+
+USAGE:
+
+	librarian install
+
+OPTIONS:
+
+	--help, -h  show help
+
+GLOBAL OPTIONS:
+
+	--verbose, -v  enable verbose logging
+
 # tidy
 
 NAME:
