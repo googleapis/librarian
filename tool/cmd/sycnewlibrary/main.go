@@ -78,11 +78,10 @@ func syncNewLibrary(state *legacyconfig.LibrarianState, cfg *config.Config) *leg
 			continue
 		}
 		state.Libraries = append(state.Libraries, &legacyconfig.LibraryState{
-			ID:                  lib.Name,
-			Version:             lib.Version,
-			SourceRoots:         []string{lib.Name, fmt.Sprintf("internal/generated/snippets/%s", lib.Name)},
-			ReleaseExcludePaths: []string{fmt.Sprintf("internal/generated/snippets/%s/", lib.Name)},
-			TagFormat:           "{id}/v{version}",
+			ID:          lib.Name,
+			Version:     lib.Version,
+			SourceRoots: []string{lib.Name, fmt.Sprintf("internal/generated/snippets/%s", lib.Name)},
+			TagFormat:   "{id}/v{version}",
 		})
 	}
 	sort.Slice(state.Libraries, func(i, j int) bool {
