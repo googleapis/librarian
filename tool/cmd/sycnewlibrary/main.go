@@ -19,7 +19,6 @@ package main
 import (
 	"errors"
 	"flag"
-	"fmt"
 	"log"
 	"os"
 	"path/filepath"
@@ -85,7 +84,7 @@ func createLegacyGoLibrary(id, version string) *legacyconfig.LibraryState {
 	return &legacyconfig.LibraryState{
 		ID:          id,
 		Version:     version,
-		SourceRoots: []string{id, fmt.Sprintf("internal/generated/snippets/%s", id)},
+		SourceRoots: []string{id},
 		TagFormat:   "{id}/v{version}",
 	}
 }

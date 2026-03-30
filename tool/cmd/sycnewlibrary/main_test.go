@@ -53,7 +53,7 @@ func TestRun(t *testing.T) {
 						ID:            "accesscontextmanager",
 						Version:       "1.9.7",
 						APIs:          []*legacyconfig.API{},
-						SourceRoots:   []string{"accesscontextmanager", "internal/generated/snippets/accesscontextmanager"},
+						SourceRoots:   []string{"accesscontextmanager"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 						TagFormat:     "{id}/v{version}",
@@ -73,7 +73,7 @@ func TestRun(t *testing.T) {
 						ID:            "apigeeconnect",
 						Version:       "1.7.7",
 						APIs:          []*legacyconfig.API{},
-						SourceRoots:   []string{"apigeeconnect", "internal/generated/snippets/apigeeconnect"},
+						SourceRoots:   []string{"apigeeconnect"},
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
 						TagFormat:     "{id}/v{version}",
@@ -165,7 +165,7 @@ func TestSyncNewLibrary(t *testing.T) {
 					{
 						ID:          "aiplatform",
 						Version:     "1.0.0",
-						SourceRoots: []string{"aiplatform", "internal/generated/snippets/aiplatform"},
+						SourceRoots: []string{"aiplatform"},
 						TagFormat:   "{id}/v{version}",
 					},
 					{
@@ -177,7 +177,7 @@ func TestSyncNewLibrary(t *testing.T) {
 					{
 						ID:          "secretmanager",
 						Version:     "1.2.0",
-						SourceRoots: []string{"secretmanager", "internal/generated/snippets/secretmanager"},
+						SourceRoots: []string{"secretmanager"},
 						TagFormat:   "{id}/v{version}",
 					},
 				},
