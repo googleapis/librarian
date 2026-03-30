@@ -636,3 +636,68 @@ func TestIsVeneer(t *testing.T) {
 		})
 	}
 }
+
+func TestResolvePreview(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "no preview returns same lib",
+			lib:  &config.Library{Name: "foo"},
+			want: &config.Library{Name: "foo"},
+		},
+		{
+			name: "overrides all supported fields",
+			lib: &config.Library{
+				Name:                "base-name",
+				Version:             "1.0.0",
+				CopyrightYear:       "2024",
+				DescriptionOverride: "base desc",
+				Keep:                []string{"base-keep"},
+				Output:              "base-out",
+				Roots:               []string{"base-root"},
+				SkipGenerate:        false,
+				SkipRelease:         false,
+				SpecificationFormat: "protobuf",
+				Preview: &config.Library{
+					Name:                "preview-name",
+					Version:             "1.1.0-alpha",
+					APIs:                []*config.API{{Path: "preview/api"}},
+					CopyrightYear:       "2025",
+					DescriptionOverride: "preview desc",
+					Keep:                []string{"preview-keep"},
+					Output:              "preview-out",
+					Roots:               []string{"preview-root"},
+					SkipGenerate:        true,
+					SkipRelease:         true,
+					SpecificationFormat: "discovery",
+					Go:                  &config.GoModule{ModulePathVersion: "v2"},
+				},
+			},
+			want: &config.Library{
+				Name:                "preview-name",
+				Version:             "1.1.0-alpha",
+				APIs:                []*config.API{{Path: "preview/api"}},
+				CopyrightYear:       "2025",
+				DescriptionOverride: "preview desc",
+				Keep:                []string{"preview-keep"},
+				Output:              "preview-out",
+				Roots:               []string{"preview-root"},
+				SkipGenerate:        true,
+				SkipRelease:         true,
+				SpecificationFormat: "discovery",
+				Go:                  &config.GoModule{ModulePathVersion: "v2"},
+				Preview:             nil,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ResolvePreview(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

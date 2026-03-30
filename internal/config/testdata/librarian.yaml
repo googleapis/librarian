@@ -49,6 +49,8 @@ libraries:
     apis:
       - path: google/cloud/secretmanager/v1
     version: 1.2.3
+    preview:
+      version: 1.3.0-preview.1
   - name: google-cloud-storage-v2
     roots:
       - googleapis

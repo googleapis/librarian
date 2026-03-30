@@ -167,6 +167,20 @@ type Library struct {
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
 
+	// Preview signifies that this API has a preview variant, and it contains
+	// overrides specific to the preview API variant. This is merged with the
+	// containing [Library], preferring those [Library.Preview] values that are
+	// set over their counterpart in the containing configuration.
+	//
+	// The most common overrides are [Library.Version] and [Library.APIs], with
+	// the former containing a pre-release version based on the containing
+	// version of the stable client, and the latter being a subset of APIs,
+	// typically omitting alpha and beta paths.
+	//
+	// The [Library.Output] may be a different location and derived on a
+	// per-language basis, but will not be serialized in the configuration.
+	Preview *Library `yaml:"preview,omitempty"`
+
 	// API specifies which googleapis API to generate from (for generated
 	// libraries).
 	APIs []*API `yaml:"apis,omitempty"`

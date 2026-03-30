@@ -17,6 +17,7 @@ package librarian
 import (
 	"fmt"
 	"maps"
+	"reflect"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -266,4 +267,26 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 		}
 	}
 	return nil, fmt.Errorf("%w: %q", ErrLibraryNotFound, name)
+}
+
+// ResolvePreview returns a library where fields from lib.Preview override
+// those in the base lib, if set.
+func ResolvePreview(lib *config.Library) *config.Library {
+	if lib.Preview == nil {
+		return lib
+	}
+	res := *lib
+	p := lib.Preview
+	rv := reflect.ValueOf(p).Elem()
+	dv := reflect.ValueOf(&res).Elem()
+	for i := 0; i < rv.NumField(); i++ {
+		field := rv.Field(i)
+		fieldName := rv.Type().Field(i).Name
+		if field.IsZero() || fieldName == "Preview" {
+			continue
+		}
+		dv.Field(i).Set(field)
+	}
+	res.Preview = nil
+	return &res
 }
