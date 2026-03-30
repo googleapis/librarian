@@ -126,6 +126,14 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 			Path: a,
 		})
 	}
+
+	switch cfg.Language {
+	case config.LanguageRust:
+		rust.AddLibrary(lib)
+	case config.LanguageFake:
+		fakeAddLibrary(lib, defaultVersion)
+	}
+
 	cfg.Libraries = append(cfg.Libraries, lib)
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name

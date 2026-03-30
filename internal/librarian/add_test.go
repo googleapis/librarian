@@ -47,6 +47,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				{
 					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
+					Version:       defaultVersion, // added by language-specific add
 				},
 			},
 		},
@@ -83,6 +84,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				{
 					Name:          "google-cloud-orgpolicy-v1",
 					CopyrightYear: copyrightYear,
+					Version:       defaultVersion, // added by language-specific add
 				},
 			},
 		},

@@ -36,7 +36,6 @@ const (
 	defaultPreviewBranch  = "preview"
 	defaultMainBranch     = "main"
 	defaultVersion        = "0.1.0"
-	defaultRustVersion    = "1.0.0"
 	defaultPreviewVersion = "0.1.0-preview.1"
 	zeroVersion           = "0.0.0"
 )
@@ -261,7 +260,7 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 			return defaultPreviewVersion, nil
 		}
 		if cfg.Language == config.LanguageRust {
-			return defaultRustVersion, nil
+			return rust.DefaultVersion, nil
 		}
 		return defaultVersion, nil
 	}
