@@ -36,44 +36,10 @@ var (
 	}
 )
 
-type goGAPICInfo struct {
-	ClientPackageName string
-	DisableGAPIC      bool
-	HasDiregapic      bool
-	ImportPath        string
-	NoMetadata        bool
-}
-
-// RepoConfig represents the .librarian/generator-input/repo-config.yaml file in google-cloud-go repository.
-type RepoConfig struct {
-	Modules []*RepoConfigModule `yaml:"modules"`
-}
-
-// RepoConfigModule represents a module in repo-config.yaml.
-type RepoConfigModule struct {
-	APIs                        []*RepoConfigAPI `yaml:"apis,omitempty"`
-	DeleteGenerationOutputPaths []string         `yaml:"delete_generation_output_paths,omitempty"`
-	EnabledGeneratorFeatures    []string         `yaml:"enabled_generator_features,omitempty"`
-	ModulePathVersion           string           `yaml:"module_path_version,omitempty"`
-	Name                        string           `yaml:"name"`
-}
-
-// RepoConfigAPI represents an API in repo-config.yaml.
-type RepoConfigAPI struct {
-	ClientDirectory          string   `yaml:"client_directory,omitempty"`
-	DisableGAPIC             bool     `yaml:"disable_gapic,omitempty"`
-	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
-	ImportPath               string   `yaml:"import_path,omitempty"`
-	NestedProtos             []string `yaml:"nested_protos,omitempty"`
-	Path                     string   `yaml:"path"`
-	ProtoPackage             string   `yaml:"proto_package,omitempty"`
-}
-
 // MigrationInput holds all intermediate configuration and state necessary for migration from legacy files.
 type MigrationInput struct {
 	librarianState  *legacyconfig.LibrarianState
 	librarianConfig *legacyconfig.LibrarianConfig
-	repoConfig      *RepoConfig
 	lang            string
 	repoPath        string
 	googleapisDir   string
@@ -124,16 +90,9 @@ func runCompleteCleanLibrarianMigration(ctx context.Context, language string, re
 	if err != nil {
 		return nil, err
 	}
-
-	repoConfig, err := readLegacyGoRepoConfig(repoPath)
-	if err != nil {
-		return nil, err
-	}
-
 	cfg, err := buildConfigFromLibrarian(ctx, &MigrationInput{
 		librarianState:  librarianState,
 		librarianConfig: librarianConfig,
-		repoConfig:      repoConfig,
 		lang:            language,
 		repoPath:        repoPath,
 	})
@@ -306,18 +265,4 @@ func readState(path string) (*legacyconfig.LibrarianState, error) {
 func readLegacyConfig(repoPath string) (*legacyconfig.LibrarianConfig, error) {
 	configFile := filepath.Join(repoPath, librarianDir, librarianConfigFile)
 	return yaml.Read[legacyconfig.LibrarianConfig](configFile)
-}
-
-// readLegacyGoRepoConfig reads the legacylibrary Go-specific repository
-// configuration file for the given repository root directory.
-func readLegacyGoRepoConfig(path string) (*RepoConfig, error) {
-	configFile := filepath.Join(path, librarianDir, "generator-input/repo-config.yaml")
-	if _, err := os.Stat(configFile); err != nil {
-		if os.IsNotExist(err) {
-			return nil, nil
-		}
-		return nil, err
-	}
-
-	return yaml.Read[RepoConfig](configFile)
 }
