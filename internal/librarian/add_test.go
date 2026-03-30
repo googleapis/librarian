@@ -47,6 +47,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				{
 					Name:          "google-cloud-secretmanager-v1",
 					CopyrightYear: copyrightYear,
+					Version:       defaultVersion, // added by language-specific add
 				},
 			},
 		},
@@ -83,6 +84,7 @@ func TestAddLibraryCommand(t *testing.T) {
 				{
 					Name:          "google-cloud-orgpolicy-v1",
 					CopyrightYear: copyrightYear,
+					Version:       defaultVersion, // added by language-specific add
 				},
 			},
 		},
@@ -271,8 +273,9 @@ func TestAddLibrary(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if found.Version != "" {
-				t.Errorf("version = %q, want %q", found.Version, "")
+			// [config.LanguageFake] has language-specific mutation in add.
+			if found.Version != defaultVersion {
+				t.Errorf("version = %q, want %q", found.Version, defaultVersion)
 			}
 			if diff := cmp.Diff(test.wantAPIs, found.APIs); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

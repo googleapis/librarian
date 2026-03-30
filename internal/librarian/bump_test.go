@@ -26,6 +26,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -688,7 +689,7 @@ func TestDeriveNextVersion(t *testing.T) {
 				return c
 			}(),
 			versionOpts: languageVersioningOptions[config.LanguageRust],
-			wantVersion: defaultRustVersion,
+			wantVersion: rust.DefaultVersion,
 		},
 		{
 			name:        "default semver options next GA version",
