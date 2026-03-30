@@ -75,7 +75,13 @@ service config yaml, and gcloud.yaml.`,
 			out := cmd.String("out")
 			includeList := cmd.String("proto-files-include-list")
 			serviceConfig := cmd.String("service-config")
-			return gcloud.Generate(ctx, googleapis, config, out, includeList, serviceConfig)
+			return gcloud.Generate(ctx, gcloud.GenerateConfig{
+				Googleapis:    googleapis,
+				GcloudConfig:  config,
+				Output:        out,
+				IncludeList:   includeList,
+				ServiceConfig: serviceConfig,
+			})
 		},
 	}
 }
