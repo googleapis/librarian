@@ -72,7 +72,7 @@ func run(ctx context.Context, args []string) error {
 	// selective and incremental migration for languages other than Go and
 	// Python.
 	switch base {
-	case "google-cloud-python", "google-cloud-go":
+	case "google-cloud-python":
 		parts := strings.SplitN(base, "-", 3)
 		return runLibrarianMigration(ctx, parts[2], abs, flagSet.Args()[1:])
 	case "google-cloud-java":
