@@ -53,7 +53,11 @@ func TestSyncPoms_Golden(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := generatePomsIfMissing(library, tmpDir, googleapisDir); err != nil {
+	metadata := &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+	}
+	if err := generatePomsIfMissing(library, tmpDir, googleapisDir, metadata); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID}
@@ -105,7 +109,7 @@ func TestCollectModules_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent"); err == nil {
+			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", &repoMetadata{}); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})

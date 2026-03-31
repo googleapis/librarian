@@ -73,15 +73,15 @@ func (metadata *repoMetadata) write(libraryOutputDir string) error {
 
 // generateRepoMetadata coordinates all library-level post-processing tasks,
 // such as generating .repo-metadata.json.
-func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
+func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) (*repoMetadata, error) {
 	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
-		return fmt.Errorf("failed to derive repo metadata: %w", err)
+		return nil, fmt.Errorf("failed to derive repo metadata: %w", err)
 	}
 	if err := metadata.write(outDir); err != nil {
-		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
+		return nil, fmt.Errorf("failed to write .repo-metadata.json: %w", err)
 	}
-	return nil
+	return metadata, nil
 }
 
 // deriveRepoMetadata constructs the repoMetadata for a Java library using

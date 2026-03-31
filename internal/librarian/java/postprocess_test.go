@@ -97,6 +97,10 @@ func TestPostProcessAPI(t *testing.T) {
 	p := postProcessParams{
 		outDir:      outdir,
 		libraryName: libraryName,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
 		library: &config.Library{
 			Name: libraryName,
 			APIs: []*config.API{api},

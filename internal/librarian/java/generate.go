@@ -61,18 +61,20 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	// generate repo metadata prior to client because info is needed for
 	// owlbot.py to generate README.md
-	if err := generateRepoMetadata(cfg, library, outdir, googleapisDir); err != nil {
+	metadata, err := generateRepoMetadata(cfg, library, outdir, googleapisDir)
+	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir); err != nil {
+		// metadata is needed for pom.xml generation in post process
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return nil
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
@@ -88,6 +90,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p := postProcessParams{
 		cfg:                 cfg,
 		library:             library,
+		metadata:            metadata,
 		outDir:              outdir,
 		libraryName:         library.Name,
 		libraryVersion:      library.Version,

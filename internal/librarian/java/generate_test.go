@@ -393,6 +393,10 @@ func TestGenerateAPI(t *testing.T) {
 		library,
 		googleapisDir,
 		outdir,
+		&repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -443,7 +447,10 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir)
+	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Secret Manager API",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
