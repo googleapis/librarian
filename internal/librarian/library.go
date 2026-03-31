@@ -276,17 +276,29 @@ func ResolvePreview(lib *config.Library) *config.Library {
 		return lib
 	}
 	res := *lib
-	p := lib.Preview
-	rv := reflect.ValueOf(p).Elem()
-	dv := reflect.ValueOf(&res).Elem()
-	for i := 0; i < rv.NumField(); i++ {
-		field := rv.Field(i)
-		fieldName := rv.Type().Field(i).Name
-		if field.IsZero() || fieldName == "Preview" {
-			continue
-		}
-		dv.Field(i).Set(field)
-	}
+	mergeStructs(reflect.ValueOf(&res).Elem(), reflect.ValueOf(lib.Preview).Elem())
 	res.Preview = nil
 	return &res
+}
+
+func mergeStructs(dv, sv reflect.Value) {
+	for i := 0; i < sv.NumField(); i++ {
+		sf := sv.Field(i)
+		if sf.IsZero() || sv.Type().Field(i).Name == "Preview" {
+			continue
+		}
+		df := dv.Field(i)
+		// Recurse into struct pointers to merge them.
+		if sf.Kind() == reflect.Ptr && !sf.IsNil() && sf.Elem().Kind() == reflect.Struct {
+			if !df.IsNil() {
+				// Clone the struct to avoid mutating the original pointer.
+				nv := reflect.New(df.Elem().Type())
+				nv.Elem().Set(df.Elem())
+				df.Set(nv)
+				mergeStructs(df.Elem(), sf.Elem())
+				continue
+			}
+		}
+		df.Set(sf)
+	}
 }

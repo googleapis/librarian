@@ -661,6 +661,9 @@ func TestResolvePreview(t *testing.T) {
 				SkipGenerate:        false,
 				SkipRelease:         false,
 				SpecificationFormat: "protobuf",
+				Go: &config.GoModule{
+					ModulePathVersion: "v1",
+				},
 				Preview: &config.Library{
 					Name:                "preview-name",
 					Version:             "1.1.0-alpha",
@@ -673,7 +676,9 @@ func TestResolvePreview(t *testing.T) {
 					SkipGenerate:        true,
 					SkipRelease:         true,
 					SpecificationFormat: "discovery",
-					Go:                  &config.GoModule{ModulePathVersion: "v2"},
+					Go: &config.GoModule{
+						NestedModule: "v2",
+					},
 				},
 			},
 			want: &config.Library{
@@ -688,8 +693,11 @@ func TestResolvePreview(t *testing.T) {
 				SkipGenerate:        true,
 				SkipRelease:         true,
 				SpecificationFormat: "discovery",
-				Go:                  &config.GoModule{ModulePathVersion: "v2"},
-				Preview:             nil,
+				Go: &config.GoModule{
+					ModulePathVersion: "v1",
+					NestedModule:      "v2",
+				},
+				Preview: nil,
 			},
 		},
 	} {
@@ -699,5 +707,26 @@ func TestResolvePreview(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestResolvePreview_NoMutation(t *testing.T) {
+	lib := &config.Library{
+		Name: "base",
+		Go: &config.GoModule{
+			ModulePathVersion: "v1",
+		},
+		Preview: &config.Library{
+			Go: &config.GoModule{
+				NestedModule: "v2",
+			},
+		},
+	}
+	originalGo := *lib.Go
+
+	_ = ResolvePreview(lib)
+
+	if diff := cmp.Diff(originalGo, *lib.Go); diff != "" {
+		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)
 	}
 }
