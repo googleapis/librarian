@@ -23,6 +23,7 @@ import (
 
 	"github.com/go-git/go-git/v5/plumbing"
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
 	"gopkg.in/yaml.v3"
@@ -2129,5 +2130,85 @@ func TestDetermineNextVersion(t *testing.T) {
 				t.Errorf("state mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestSyncVersion(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		legacyLibraries []*legacyconfig.LibraryState
+		libraries       []*config.Library
+		want            []*config.Library
+	}{
+		{
+			name: "update versions for libraries in legacylibrarian state.yaml",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.1.0"},
+				{ID: "lib2", Version: "2.1.0"},
+			},
+			libraries: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+				{Name: "lib3", Version: "3.0.0"},
+			},
+			want: []*config.Library{
+				{Name: "lib1", Version: "1.1.0"},
+				{Name: "lib3", Version: "3.0.0"},
+			},
+		},
+		{
+			name: "empty version is not synced",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1"},
+			},
+			libraries: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+				{Name: "lib2", Version: "2.2.0"},
+			},
+			want: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+				{Name: "lib2", Version: "2.2.0"},
+			},
+		},
+		{
+			name: "same version is not changed",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.0.0"},
+			},
+			libraries: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+			},
+			want: []*config.Library{
+				{Name: "lib1", Version: "1.0.0"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			state := &legacyconfig.LibrarianState{Libraries: test.legacyLibraries}
+			cfg := &config.Config{Libraries: test.libraries}
+			got, err := syncVersion(state, cfg)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got.Libraries); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSyncVersion_Error(t *testing.T) {
+	state := &legacyconfig.LibrarianState{
+		Libraries: []*legacyconfig.LibraryState{
+			{ID: "lib1", Version: "1.0.0"},
+		},
+	}
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: "lib1", Version: "1.1.0"},
+		},
+	}
+	_, err := syncVersion(state, cfg)
+	if !errors.Is(err, errVersionRegression) {
+		t.Errorf("got error %v, want %v", err, errVersionRegression)
 	}
 }
