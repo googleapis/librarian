@@ -112,35 +112,47 @@ func TestCollectModules_Error(t *testing.T) {
 	}
 }
 
-func TestIsPomMissing_Exists(t *testing.T) {
-	dir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("content"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	got, err := isPomMissing(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got {
-		t.Errorf("isPomMissing(%q) = true, want false", dir)
-	}
-}
-
-func TestIsPomMissing_Missing(t *testing.T) {
-	dir := t.TempDir()
-	got, err := isPomMissing(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !got {
-		t.Errorf("isPomMissing(%q) = false, want true", dir)
-	}
-}
-
-func TestIsPomMissing_DirMissingError(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "nonexistent")
-	_, err := isPomMissing(dir)
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
+func TestIsPomMissing(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setup     func(t *testing.T) string
+		want      bool
+		wantErrIs error
+	}{
+		{
+			name: "pom exists",
+			setup: func(t *testing.T) string {
+				dir := t.TempDir()
+				if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return dir
+			},
+		},
+		{
+			name: "pom missing",
+			setup: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			want: true,
+		},
+		{
+			name: "dir missing error",
+			setup: func(t *testing.T) string {
+				return filepath.Join(t.TempDir(), "nonexistent")
+			},
+			wantErrIs: os.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := test.setup(t)
+			got, err := isPomMissing(dir)
+			if !errors.Is(err, test.wantErrIs) {
+				t.Fatalf("isPomMissing(%q) error = %v, want %v", dir, err, test.wantErrIs)
+			}
+			if got != test.want {
+				t.Errorf("isPomMissing(%q) = %v, want %v", dir, got, test.want)
+			}
+		})
 	}
 }
