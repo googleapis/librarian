@@ -43,9 +43,7 @@ coverage:
         paths:
           - internal/librarian/dart/**
       librarian-golang:
-        # TODO(https://github.com/googleapis/librarian/issues/4662): fix
-        # coverage back to 80%
-        target: 75%
+        target: 80%
         threshold: 0%
         if_ci_failed: error
         paths:

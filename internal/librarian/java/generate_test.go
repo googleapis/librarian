@@ -152,6 +152,14 @@ func TestDeriveDistributionName(t *testing.T) {
 			want: "com.custom:google-cloud-secretmanager",
 		},
 		{
+			name: "distributionName override",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
+			},
+			want: "com.google.cloud:google-cloud-secretmanager-v1",
+		},
+		{
 			name:    "library name already has prefix",
 			library: &config.Library{Name: "google-cloud-secretmanager"},
 			want:    "com.google.cloud:google-cloud-secretmanager",

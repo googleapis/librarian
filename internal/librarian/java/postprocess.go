@@ -24,6 +24,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
 )
@@ -31,6 +32,8 @@ import (
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
 
 type postProcessParams struct {
+	cfg                 *config.Config
+	library             *config.Library
 	outDir              string
 	libraryName         string
 	libraryVersion      string
@@ -69,6 +72,10 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 	if err := runOwlBot(ctx, p); err != nil {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
+	}
+
+	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir); err != nil {
+		return fmt.Errorf("failed to sync poms: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.

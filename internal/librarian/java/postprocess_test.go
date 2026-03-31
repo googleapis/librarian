@@ -24,6 +24,7 @@ import (
 
 	"testing"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -90,6 +91,7 @@ func TestPostProcessAPI(t *testing.T) {
 	p := postProcessParams{
 		outDir:         outdir,
 		libraryName:    libraryName,
+		library:        &config.Library{Name: libraryName},
 		version:        version,
 		googleapisDir:  googleapisDir,
 		apiProtos:      apiProtos,

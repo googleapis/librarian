@@ -86,6 +86,8 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		bomVersion = library.Java.LibrariesBomVersion
 	}
 	p := postProcessParams{
+		cfg:                 cfg,
+		library:             library,
 		outDir:              outdir,
 		libraryName:         library.Name,
 		libraryVersion:      library.Version,
@@ -152,6 +154,9 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 }
 
 func deriveDistributionName(library *config.Library) string {
+	if library.Java != nil && library.Java.DistributionNameOverride != "" {
+		return library.Java.DistributionNameOverride
+	}
 	groupID := "com.google.cloud"
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID

@@ -67,10 +67,6 @@ type Release struct {
 	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
 	Remote string `yaml:"remote,omitempty"`
 
-	// An alternative location for the `roots.pem` file. If empty it has no
-	// effect.
-	RootsPem string `yaml:"roots_pem,omitempty"`
-
 	// Tools defines the list of tools to install, indexed by installer.
 	Tools map[string][]Tool `yaml:"tools,omitempty"`
 }
