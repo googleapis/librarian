@@ -713,20 +713,25 @@ func TestResolvePreview(t *testing.T) {
 func TestResolvePreview_NoMutation(t *testing.T) {
 	lib := &config.Library{
 		Name: "base",
+		Keep: []string{"base-keep"},
+		APIs: []*config.API{{Path: "base-api"}},
 		Go: &config.GoModule{
 			ModulePathVersion: "v1",
 		},
 		Preview: &config.Library{
+			Keep: []string{"preview-keep"},
+			APIs: []*config.API{{Path: "preview-api"}},
 			Go: &config.GoModule{
 				NestedModule: "v2",
 			},
 		},
 	}
-	originalGo := *lib.Go
+
+	want := *lib
 
 	_ = ResolvePreview(lib)
 
-	if diff := cmp.Diff(originalGo, *lib.Go); diff != "" {
+	if diff := cmp.Diff(want, *lib); diff != "" {
 		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)
 	}
 }
