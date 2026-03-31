@@ -128,6 +128,8 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	}
 
 	switch cfg.Language {
+	case config.LanguageGo:
+		lib = golang.Add(lib)
 	case config.LanguageRust:
 		lib = rust.Add(lib)
 	case config.LanguageFake:
