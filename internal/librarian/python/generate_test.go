@@ -956,6 +956,7 @@ func TestGenerate(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores, manages, and secures access to application secrets.",
+				Transport:            "grpc+rest",
 				// Fields set by Generate.
 				LibraryType:         "GAPIC_AUTO",
 				ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
@@ -1097,6 +1098,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				LibraryType:          "GAPIC_AUTO",
 				ClientDocumentation:  "https://cloud.google.com/python/docs/reference/google-cloud-secret-manager/latest",
 				DefaultVersion:       "v1",
+				Transport:            "grpc+rest",
 			},
 		},
 		{
@@ -1130,6 +1132,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				LibraryType:          "GAPIC_AUTO",
 				ClientDocumentation:  "https://googleapis.dev/python/google-apps-meet/latest",
 				DefaultVersion:       "v2",
+				Transport:            "grpc+rest",
 			},
 		},
 		{
@@ -1170,6 +1173,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				LibraryType:          "CORE",
 				ClientDocumentation:  "overridden client_documentation",
 				DefaultVersion:       "v1beta1",
+				Transport:            "grpc+rest",
 			},
 		},
 		{
