@@ -23,33 +23,34 @@ import (
 )
 
 type commandGroupBuilder struct {
-	model  *api.API
-	config *provider.Config
-	title  string
+	model   *api.API
+	config  *provider.Config
+	service *api.Service
+	title   string
 }
 
-func newCommandGroupBuilder(model *api.API, config *provider.Config) *commandGroupBuilder {
-	// TODO: https://github.com/googleapis/librarian/issues/3033 - [0] is wrong.
-	// We are currently just grabbing the first api service.
-	// Root command group should be derived from model and nested groups should be derived from
-	// the associated service.
+func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) (*commandGroupBuilder, error) {
+	if service != nil && service.DefaultHost == "" {
+		return nil, fmt.Errorf("service %q has empty default host", service.Name)
+	}
+
 	title := model.Name
-	if len(model.Services) > 0 {
-		shortServiceName, _, _ := strings.Cut(model.Services[0].DefaultHost, ".")
+	if service != nil {
+		shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
 		title = provider.GetServiceTitle(model, shortServiceName)
 	}
 
 	return &commandGroupBuilder{
-		model:  model,
-		config: config,
-		title:  title,
-	}
+		model:   model,
+		config:  config,
+		service: service,
+		title:   title,
+	}, nil
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
 	return &CommandGroup{
 		Name:     b.model.Name,
-		Tracks:   []string{b.track()},
 		HelpText: fmt.Sprintf("Manage %s resources.", b.title),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
@@ -65,13 +66,8 @@ func (b *commandGroupBuilder) build(segments []string, idx int) *CommandGroup {
 
 	return &CommandGroup{
 		Name:     seg,
-		Tracks:   []string{b.track()},
 		HelpText: fmt.Sprintf("Manage %s %s resources.", b.title, singular),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
-}
-
-func (b *commandGroupBuilder) track() string {
-	return strings.ToUpper(provider.InferTrackFromPackage(b.model.PackageName))
 }

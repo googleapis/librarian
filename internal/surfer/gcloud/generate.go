@@ -42,10 +42,10 @@ func Generate(_ context.Context, cfg GenerateConfig) error {
 		return err
 	}
 
-	rootGroup, err := newCommandTreeBuilder(model, overrides).build()
+	tree, err := newCommandTreeBuilder(model, overrides).build()
 	if err != nil {
 		return err
 	}
 
-	return writeCommandGroupTree(cfg.Output, rootGroup)
+	return writeCommandGroupTree(cfg.Output, tree)
 }

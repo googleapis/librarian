@@ -15,7 +15,6 @@
 package gcloud
 
 import (
-	"reflect"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -24,9 +23,8 @@ import (
 
 func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 	model := &api.API{
-		Name:        "parallelstore",
-		PackageName: "google.cloud.parallelstore.v1",
-		Title:       "Parallelstore API",
+		Name:  "parallelstore",
+		Title: "Parallelstore API",
 		Services: []*api.Service{
 			{
 				Name:        "ParallelstoreService",
@@ -35,21 +33,19 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 		},
 	}
 
-	builder := newCommandGroupBuilder(model, &provider.Config{})
-	root := builder.buildRoot()
+	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
+	if err != nil {
+		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
+	}
+	group := builder.buildRoot()
 
-	if root.Name != "parallelstore" {
-		t.Errorf("root.Name = %q, want %q", root.Name, "parallelstore")
+	if group.Name != "parallelstore" {
+		t.Errorf("group.Name = %q, want %q", group.Name, "parallelstore")
 	}
 
 	wantHelp := "Manage Parallelstore resources."
-	if root.HelpText != wantHelp {
-		t.Errorf("root.HelpText = %q, want %q", root.HelpText, wantHelp)
-	}
-
-	wantTracks := []string{"GA"}
-	if !reflect.DeepEqual(root.Tracks, wantTracks) {
-		t.Errorf("root.Tracks = %v, want %v", root.Tracks, wantTracks)
+	if group.HelpText != wantHelp {
+		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
 	}
 }
 
@@ -66,7 +62,10 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		},
 	}
 
-	builder := newCommandGroupBuilder(model, &provider.Config{})
+	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
+	if err != nil {
+		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
+	}
 	group := builder.build([]string{"instances"}, 0)
 
 	if group.Name != "instances" {
@@ -77,9 +76,14 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 	if group.HelpText != wantHelp {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
 	}
+}
 
-	wantTracks := []string{"BETA"}
-	if !reflect.DeepEqual(group.Tracks, wantTracks) {
-		t.Errorf("group.Tracks = %v, want %v", group.Tracks, wantTracks)
+func TestNewCommandGroupBuilder_EmptyDefaultHost(t *testing.T) {
+	model := &api.API{}
+	service := &api.Service{Name: "ParallelstoreService", DefaultHost: ""}
+
+	_, err := newCommandGroupBuilder(model, service, &provider.Config{})
+	if err == nil {
+		t.Fatal("newCommandGroupBuilder() passed when DefaultHost was empty")
 	}
 }

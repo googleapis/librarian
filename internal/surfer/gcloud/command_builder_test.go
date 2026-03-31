@@ -128,6 +128,33 @@ func TestRequestMethod(t *testing.T) {
 	}
 }
 
+func TestCommandName(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   string
+	}{
+		{
+			name: "Standard Create",
+			method: func() *api.Method {
+				m := api.NewTestMethod("CreateThing").WithVerb("POST")
+				m.Service = api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+				m.Service.DefaultHost = "test.googleapis.com"
+				return m
+			}(),
+			want: "create",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := newCommandBuilder(test.method, nil, nil, test.method.Service).name()
+			if got != test.want {
+				t.Errorf("name() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestAsync(t *testing.T) {
 	service := api.NewTestService("TestService")
 
@@ -431,12 +458,10 @@ func TestNewCommand(t *testing.T) {
 
 			got, err := newCommandBuilder(test.method, test.overrides, model, service).build()
 			if err != nil {
-				t.Fatalf("NewCommand() unexpected error = %v", err)
+				t.Fatalf("newCommandBuilder().build() unexpected error: %v", err)
 			}
 
-			// Compare the important pieces that are shaped uniquely by NewCommand
-			// to avoid asserting on deeply nested auto-generated boilerplate like Arguments.
-			opts := cmpopts.IgnoreFields(Command{}, "ReleaseTracks", "Arguments", "APIVersion", "Collection", "Method", "HelpText")
+			opts := cmpopts.IgnoreFields(Command{}, "Arguments", "APIVersion", "Collection", "Method", "HelpText")
 			if diff := cmp.Diff(test.want, got, opts); diff != "" {
 				t.Errorf("NewCommand() mismatch (-want +got):\n%s", diff)
 			}

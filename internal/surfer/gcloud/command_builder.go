@@ -49,21 +49,15 @@ func newCommandBuilder(method *api.Method, overrides *provider.Config, model *ap
 // on the commandBuilder's state, and returns the constructed Command and
 // any error encountered during assembly.
 func (b *commandBuilder) build() (*Command, error) {
-	name, err := provider.GetCommandName(b.method)
-	if err != nil {
-		return nil, err
-	}
-
 	args, err := b.newArguments()
 	if err != nil {
 		return nil, err
 	}
 
 	return &Command{
-		Name:             name,
+		Name:             b.name(),
 		Hidden:           b.hidden(),
 		HelpText:         b.helpText(),
-		ReleaseTracks:    b.releaseTracks(),
 		APIVersion:       provider.APIVersion(b.overrides),
 		Collection:       b.collectionPath(false),
 		Method:           b.requestMethod(),
@@ -73,6 +67,14 @@ func (b *commandBuilder) build() (*Command, error) {
 		ReadModifyUpdate: provider.IsUpdate(b.method),
 		Async:            b.async(),
 	}, nil
+}
+
+func (b *commandBuilder) name() string {
+	name, err := provider.GetCommandName(b.method)
+	if err != nil {
+		return ""
+	}
+	return name
 }
 
 func (b *commandBuilder) responseIDField() string {
@@ -149,13 +151,6 @@ func (b *commandBuilder) helpText() HelpText {
 		}
 	}
 	return HelpText{}
-}
-
-func (b *commandBuilder) releaseTracks() []string {
-	// Infer default release track from proto package.
-	// TODO(https://github.com/googleapis/librarian/issues/3289): Allow gcloud config to overwrite the track for this command.
-	inferredTrack := provider.InferTrackFromPackage(b.method.Service.Package)
-	return []string{strings.ToUpper(inferredTrack)}
 }
 
 // requestMethod determines the API method name for the command execution.

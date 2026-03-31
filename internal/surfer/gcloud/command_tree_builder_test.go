@@ -55,7 +55,7 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 	}
 
 	config := &provider.Config{
-		GenerateOperations: true,
+		GenerateOperations: boolPtr(true),
 		APIs: []provider.API{
 			{
 				Name: "parallelstore",
@@ -68,7 +68,7 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root)
+	got := flattenTree(root.GA)
 	want := []string{
 		"parallelstore/instances/create",
 		"parallelstore/instances/list",
@@ -89,12 +89,12 @@ func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: false}).build()
+	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(false)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root)
+	got := flattenTree(root.GA)
 	if len(got) != 0 {
 		t.Errorf("flattenTree() = %v, want empty when GenerateOperations is false", got)
 	}
@@ -109,12 +109,12 @@ func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: true}).build()
+	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root)
+	got := flattenTree(root.GA)
 	want := []string{
 		"parallelstore/operations/describe",
 	}
@@ -134,15 +134,52 @@ func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: true}).build()
+	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root)
+	got := flattenTree(root.GA)
 	want := []string{
 		"parallelstore/instances/create",
 		"parallelstore/otherInstances/create",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("flattenTree() = %v, want %v", got, want)
+	}
+}
+
+func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
+	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/projects/locations/instances"))
+	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/projects/locations/instances"))
+	serviceTwo.Package = "google.cloud.parallelstore.v1alpha"
+
+	model := &api.API{
+		Name:     "parallelstore",
+		Title:    "Parallelstore API",
+		Services: []*api.Service{serviceOne, serviceTwo},
+	}
+
+	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	// GA release track
+	got := flattenTree(root.GA)
+	want := []string{
+		"parallelstore/instances/create",
+	}
+
+	if !reflect.DeepEqual(got, want) {
+		t.Errorf("flattenTree() = %v, want %v", got, want)
+	}
+
+	// Alpha release track
+	got = flattenTree(root.ALPHA)
+	want = []string{
+		"parallelstore/instances/create",
 	}
 
 	if !reflect.DeepEqual(got, want) {
@@ -203,4 +240,8 @@ func mockService(name string, methods ...*api.Method) *api.Service {
 		m.Service = s
 	}
 	return s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
