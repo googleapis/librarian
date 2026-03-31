@@ -20,7 +20,7 @@ import (
 )
 
 // versionDevel is the version string for local builds without a module version.
-const versionDevel = "devel"
+const versionDevel = "(devel)"
 
 // Version return the version information for the binary, which is constructed
 // following https://go.dev/ref/mod#versions.
