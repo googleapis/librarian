@@ -90,7 +90,6 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 }
 
-
 func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
