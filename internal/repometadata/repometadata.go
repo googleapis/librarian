@@ -91,7 +91,7 @@ type RepoMetadata struct {
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
 
-	// Transport is the transport protocol 
+	// Transport is the transport protocol
 	Transport string `json:"transport,omitempty"`
 }
 
