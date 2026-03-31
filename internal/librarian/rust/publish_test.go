@@ -90,39 +90,6 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 }
 
-func TestPublishCratesWithRootsPem(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	tmpDir := t.TempDir()
-	rootsPem := path.Join(tmpDir, "roots.pem")
-	if err := os.WriteFile(rootsPem, []byte{}, 0644); err != nil {
-		t.Fatal(err)
-	}
-	cfg := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
-				{Name: "cargo-semver-checks", Version: "1.2.3"},
-				{Name: "cargo-workspaces", Version: "3.4.5"},
-			},
-		},
-		RootsPem: rootsPem,
-	}
-	_ = testhelper.SetupRepoWithChange(t, "release-with-roots-pem")
-	files := []string{
-		path.Join("src", "storage", "Cargo.toml"),
-		path.Join("src", "storage", "src", "lib.rs"),
-	}
-	lastTag := "release-with-roots-pem"
-	if err := publishCrates(t.Context(), cfg, true, false, false, lastTag, files); err != nil {
-		t.Fatal(err)
-	}
-}
 
 func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "git")

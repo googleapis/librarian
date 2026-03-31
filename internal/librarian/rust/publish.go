@@ -37,7 +37,6 @@ type semverData struct {
 	lastTag         string
 	cargoPath       string
 	gitPath         string
-	env             map[string]string
 }
 
 // semverCheckCPUDivisor scales the concurrency limit based on available CPUs to balance
@@ -98,11 +97,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
 	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
-	var env map[string]string
-	if config.RootsPem != "" {
-		env = map[string]string{"CARGO_HTTP_CAINFO": config.RootsPem}
-	}
-	output, err := command.OutputWithEnv(ctx, env, cargoPath, "workspaces", "plan", "--skip-published")
+	output, err := command.Output(ctx, cargoPath, "workspaces", "plan", "--skip-published")
 	if err != nil {
 		return err
 	}
@@ -128,7 +123,6 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 			manifests:       manifests,
 			lastTag:         lastTag,
 			cargoPath:       cargoPath,
-			env:             env,
 			gitPath:         gitPath,
 		}); err != nil {
 			return err
@@ -141,7 +135,7 @@ func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKe
 	} else if dryRun {
 		args = append(args, "--dry-run")
 	}
-	return command.RunWithEnv(ctx, env, cargoPath, args...)
+	return command.Run(ctx, cargoPath, args...)
 }
 
 // runSemverChecks iterates through manifests and runs semver checks for each.

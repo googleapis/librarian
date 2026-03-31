@@ -22,7 +22,6 @@ This document describes the schema for the librarian.yaml.
 | `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
 | `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
 | `remote` | string | Sets the name of the source-of-truth remote for releases, typically `upstream`. |
-| `roots_pem` | string | An alternative location for the `roots.pem` file. If empty it has no effect. |
 | `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
 
 ## Tool Configuration
