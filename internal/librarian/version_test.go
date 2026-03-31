@@ -15,14 +15,11 @@
 package librarian
 
 import (
-	"fmt"
 	"runtime/debug"
-	"strings"
 	"testing"
 )
 
 func TestVersion(t *testing.T) {
-	baseVersion := strings.TrimSpace(versionString)
 	for _, test := range []struct {
 		name      string
 		want      string
@@ -39,13 +36,16 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name:      "local development",
-			want:      versionNotAvailable,
+			want:      versionDevel,
 			buildinfo: &debug.BuildInfo{},
 		},
 		{
 			name: "local development with VCS info",
-			want: versionNotAvailable,
+			want: versionDevel,
 			buildinfo: &debug.BuildInfo{
+				Main: debug.Module{
+					Version: "(devel)",
+				},
 				Settings: []debug.BuildSetting{
 					{Key: "vcs.revision", Value: "1234567890001234"},
 					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
@@ -54,7 +54,7 @@ func TestVersion(t *testing.T) {
 		},
 		{
 			name: "local development with dirty suffix",
-			want: versionNotAvailable,
+			want: versionDevel,
 			buildinfo: &debug.BuildInfo{
 				Main: debug.Module{
 					Version: "v1.0.2-0.20260130024826-f525c91d74e9+dirty",
@@ -62,90 +62,17 @@ func TestVersion(t *testing.T) {
 			},
 		},
 		{
-			name: "retracted version",
-			want: fmt.Sprintf("%s-123456789000-20230125195754", baseVersion),
+			name: "pseudo-version",
+			want: "v0.9.0-0.20260130024826-f525c91d74e9",
 			buildinfo: &debug.BuildInfo{
 				Main: debug.Module{
-					Version: "v1.0.0",
-				},
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.revision", Value: "1234567890001234"},
-					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
+					Version: "v0.9.0-0.20260130024826-f525c91d74e9",
 				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := version(test.buildinfo); got != test.want {
-				t.Errorf("got %s; want %s", got, test.want)
-			}
-		})
-	}
-}
-
-func TestNewPseudoVersion(t *testing.T) {
-	baseVersion := strings.TrimSpace(versionString)
-	for _, test := range []struct {
-		name      string
-		want      string
-		buildinfo *debug.BuildInfo
-	}{
-		{
-			name: "full pseudo-version",
-			want: fmt.Sprintf("%s-123456789012-20230125195754", baseVersion),
-			buildinfo: &debug.BuildInfo{
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.revision", Value: "1234567890123456"},
-					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
-				},
-			},
-		},
-		{
-			name: "only revision",
-			want: fmt.Sprintf("%s-123456789012", baseVersion),
-			buildinfo: &debug.BuildInfo{
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.revision", Value: "1234567890123456"},
-				},
-			},
-		},
-		{
-			name: "only time",
-			want: fmt.Sprintf("%s-20230125195754", baseVersion),
-			buildinfo: &debug.BuildInfo{
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
-				},
-			},
-		},
-		{
-			name: "invalid time format",
-			want: fmt.Sprintf("%s-123456789012", baseVersion),
-			buildinfo: &debug.BuildInfo{
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.revision", Value: "1234567890123456"},
-					{Key: "vcs.time", Value: "invalid-time"},
-				},
-			},
-		},
-		{
-			name: "short revision",
-			want: fmt.Sprintf("%s-abc123-20230125195754", baseVersion),
-			buildinfo: &debug.BuildInfo{
-				Settings: []debug.BuildSetting{
-					{Key: "vcs.revision", Value: "abc123"},
-					{Key: "vcs.time", Value: "2023-01-25T19:57:54Z"},
-				},
-			},
-		},
-		{
-			name:      "no VCS info",
-			want:      versionNotAvailable,
-			buildinfo: &debug.BuildInfo{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if got := newPseudoVersion(test.buildinfo); got != test.want {
 				t.Errorf("got %s; want %s", got, test.want)
 			}
 		})
