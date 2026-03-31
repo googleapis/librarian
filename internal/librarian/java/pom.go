@@ -32,13 +32,16 @@ const (
 
 // grpcProtoPomData holds the data for rendering POM templates.
 type grpcProtoPomData struct {
-	GroupID          string
-	ProtoArtifactID  string
-	GrpcArtifactID   string
-	Version          string
-	MainArtifactID   string
-	ParentGroupID    string
-	ParentArtifactID string
+	Proto          coordinates
+	Grpc           coordinates
+	Parent         coordinates
+	Version        string
+	MainArtifactID string
+}
+
+type coordinates struct {
+	GroupID    string
+	ArtifactID string
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -95,13 +98,20 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string) (
 		transport := apiCfg.Transport(config.LanguageJava)
 
 		data := grpcProtoPomData{
-			GroupID:          grcpProtoGroupID,
-			ProtoArtifactID:  names.proto,
-			GrpcArtifactID:   names.grpc,
-			ParentGroupID:    gapicGroupID,
-			MainArtifactID:   gapicArtifactID,
-			ParentArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
-			Version:          library.Version,
+			Proto: coordinates{
+				GroupID:    grcpProtoGroupID,
+				ArtifactID: names.proto,
+			},
+			Grpc: coordinates{
+				GroupID:    grcpProtoGroupID,
+				ArtifactID: names.grpc,
+			},
+			Parent: coordinates{
+				GroupID:    gapicGroupID,
+				ArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
+			},
+			MainArtifactID: gapicArtifactID,
+			Version:        library.Version,
 		}
 
 		// Proto module

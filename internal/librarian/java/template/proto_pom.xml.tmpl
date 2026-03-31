@@ -2,14 +2,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>{{.GroupID}}</groupId>
-  <artifactId>{{.ProtoArtifactID}}</artifactId>
-  <version>{{.Version}}</version><!-- {x-version-update:{{.ProtoArtifactID}}:current} -->
-  <name>{{.ProtoArtifactID}}</name>
+  <groupId>{{.Proto.GroupID}}</groupId>
+  <artifactId>{{.Proto.ArtifactID}}</artifactId>
+  <version>{{.Version}}</version><!-- {x-version-update:{{.Proto.ArtifactID}}:current} -->
+  <name>{{.Proto.ArtifactID}}</name>
   <description>Proto library for {{.MainArtifactID}}</description>
   <parent>
-    <groupId>{{.ParentGroupID}}</groupId>
-    <artifactId>{{.ParentArtifactID}}</artifactId>
+    <groupId>{{.Parent.GroupID}}</groupId>
+    <artifactId>{{.Parent.ArtifactID}}</artifactId>
     <version>{{.Version}}</version><!-- {x-version-update:{{.MainArtifactID}}:current} -->
   </parent>
   <dependencies>

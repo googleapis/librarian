@@ -2,14 +2,14 @@
   xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  <groupId>{{.GroupID}}</groupId>
-  <artifactId>{{.GrpcArtifactID}}</artifactId>
-  <version>{{.Version}}</version><!-- {x-version-update:{{.GrpcArtifactID}}:current} -->
-  <name>{{.GrpcArtifactID}}</name>
+  <groupId>{{.Grpc.GroupID}}</groupId>
+  <artifactId>{{.Grpc.ArtifactID}}</artifactId>
+  <version>{{.Version}}</version><!-- {x-version-update:{{.Grpc.ArtifactID}}:current} -->
+  <name>{{.Grpc.ArtifactID}}</name>
   <description>GRPC library for {{.MainArtifactID}}</description>
   <parent>
-    <groupId>{{.ParentGroupID}}</groupId>
-    <artifactId>{{.ParentArtifactID}}</artifactId>
+    <groupId>{{.Parent.GroupID}}</groupId>
+    <artifactId>{{.Parent.ArtifactID}}</artifactId>
     <version>{{.Version}}</version><!-- {x-version-update:{{.MainArtifactID}}:current} -->
   </parent>
   <dependencies>
@@ -34,8 +34,8 @@
       <artifactId>proto-google-common-protos</artifactId>
     </dependency>
     <dependency>
-      <groupId>{{.GroupID}}</groupId>
-      <artifactId>{{.ProtoArtifactID}}</artifactId>
+      <groupId>{{.Proto.GroupID}}</groupId>
+      <artifactId>{{.Proto.ArtifactID}}</artifactId>
     </dependency>
     <dependency>
       <groupId>com.google.guava</groupId>
