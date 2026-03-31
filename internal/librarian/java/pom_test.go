@@ -27,7 +27,7 @@ import (
 
 // update is used to refresh the golden files in testdata/ when template
 // changes result in intentional output differences.
-// Usage: go test ./internal/librarian/java -v -update
+// Usage: go test ./internal/librarian/java -v -update.
 var update = flag.Bool("update", false, "update golden files")
 
 func TestSyncPoms_Golden(t *testing.T) {
