@@ -378,14 +378,11 @@ func toCommit(c []*legacygitrepo.ConventionalCommit, libraryID string) []*legacy
 
 func (r *stageRunner) updateLibrarianYAML(ctx context.Context) error {
 	librarianYAMLPath := filepath.Join(r.repo.GetDir(), config.LibrarianYAML)
-	if _, err := os.Stat(librarianYAMLPath); err != nil {
+	cfg, err := yaml.Read[config.Config](librarianYAMLPath)
+	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
 			return nil
 		}
-		return err
-	}
-	cfg, err := yaml.Read[config.Config](librarianYAMLPath)
-	if err != nil {
 		return err
 	}
 	newCfg, err := syncVersion(r.state, cfg)
