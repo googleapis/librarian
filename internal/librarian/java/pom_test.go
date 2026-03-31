@@ -44,19 +44,19 @@ func TestSyncPoms_Golden(t *testing.T) {
 		},
 	}
 	tmpDir := t.TempDir()
-	// Pre-create the directories that syncPoms expects to exist.
+	// Pre-create the directories that generatePomsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
 	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
-	if err := os.MkdirAll(filepath.Join(tmpDir, protoArtifactID), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(filepath.Join(tmpDir, grpcArtifactID), 0755); err != nil {
-		t.Fatal(err)
+	gapicArtifactID := "google-cloud-secretmanager"
+	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID} {
+		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := generatePomsIfMissing(library, tmpDir, googleapisDir); err != nil {
 		t.Fatal(err)
 	}
-	artifacts := []string{protoArtifactID, grpcArtifactID}
+	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID}
 	for _, artifact := range artifacts {
 		gotPath := filepath.Join(tmpDir, artifact, "pom.xml")
 		got, err := os.ReadFile(gotPath)

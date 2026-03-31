@@ -25,9 +25,10 @@ import (
 )
 
 const (
-	protoPomTemplateName = "proto_pom.xml.tmpl"
-	grpcPomTemplateName  = "grpc_pom.xml.tmpl"
-	grcpProtoGroupID     = "com.google.api.grpc"
+	protoPomTemplateName  = "proto_pom.xml.tmpl"
+	grpcPomTemplateName   = "grpc_pom.xml.tmpl"
+	clientPomTemplateName = "client_pom.xml.tmpl"
+	grcpProtoGroupID      = "com.google.api.grpc"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -44,16 +45,27 @@ type coordinates struct {
 	ArtifactID string
 }
 
+// clientPomData holds the data for rendering the client library POM template.
+type clientPomData struct {
+	Client       coordinates
+	Version      string
+	Name         string
+	Description  string
+	Parent       coordinates
+	ProtoModules []coordinates
+	GrpcModules  []coordinates
+}
+
 // javaModule represents a Maven module and its POM generation state.
 type javaModule struct {
 	artifactID string
 	dir        string
 	isMissing  bool
-	data       grpcProtoPomData
+	data       any
 	template   string
 }
 
-// generatePomsIfMissing generates missing proto-* and grpc-* POMs.
+// generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
 func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir string) error {
 	modules, err := collectModules(library, libraryDir, googleapisDir)
 	if err != nil {
@@ -73,10 +85,6 @@ func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir st
 // collectModules identifies all expected proto-* and grpc-* modules
 // for the given library based on its configuration and checks a pom.xml presence
 // on the filesystem.
-//
-// All expected modules are collected (even if they exist) because the client
-// module's POM requires a full list of all proto and gRPC dependencies
-// to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, googleapisDir string) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
@@ -87,6 +95,9 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string) (
 	gapicArtifactID := parts[1]
 
 	var modules []javaModule
+	var firstAPICfg *serviceconfig.API
+	protoModules := make([]coordinates, 0, len(library.APIs))
+	grpcModules := make([]coordinates, 0, len(library.APIs))
 	for _, api := range library.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 		if version == "" {
@@ -98,6 +109,9 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string) (
 		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 		if err != nil {
 			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+		}
+		if firstAPICfg == nil {
+			firstAPICfg = apiCfg
 		}
 		transport := apiCfg.Transport(config.LanguageJava)
 
@@ -131,6 +145,7 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string) (
 			data:       data,
 			template:   protoPomTemplateName,
 		})
+		protoModules = append(protoModules, data.Proto)
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
@@ -146,9 +161,53 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string) (
 				data:       data,
 				template:   grpcPomTemplateName,
 			})
+			grpcModules = append(grpcModules, data.Grpc)
 		}
 	}
+
+	// Client module
+	clientDir := filepath.Join(libraryDir, gapicArtifactID)
+	isClientMissing, err := isPomMissing(clientDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, javaModule{
+		artifactID: gapicArtifactID,
+		dir:        clientDir,
+		isMissing:  isClientMissing,
+		data: clientPomData{
+			Client:       coordinates{GroupID: gapicGroupID, ArtifactID: gapicArtifactID},
+			Version:      library.Version,
+			Name:         deriveNamePretty(library, firstAPICfg),
+			Description:  deriveDescription(library, firstAPICfg),
+			Parent:       coordinates{GroupID: gapicGroupID, ArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID)},
+			ProtoModules: protoModules,
+			GrpcModules:  grpcModules,
+		},
+		template: clientPomTemplateName,
+	})
 	return modules, nil
+}
+
+// deriveNamePretty returns the human-readable name of the API.
+func deriveNamePretty(library *config.Library, api *serviceconfig.API) string {
+	if library.Java != nil && library.Java.NamePrettyOverride != "" {
+		return library.Java.NamePrettyOverride
+	}
+	title := strings.TrimSpace(api.Title)
+	title = strings.TrimSuffix(title, " API")
+	return strings.TrimSpace(title)
+}
+
+// deriveDescription returns the human-readable description of the API.
+func deriveDescription(library *config.Library, api *serviceconfig.API) string {
+	if library.Java != nil && library.Java.APIDescriptionOverride != "" {
+		return library.Java.APIDescriptionOverride
+	}
+	if library.DescriptionOverride != "" {
+		return library.DescriptionOverride
+	}
+	return api.Description
 }
 
 func isPomMissing(dir string) (bool, error) {
