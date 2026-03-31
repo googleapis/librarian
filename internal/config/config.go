@@ -175,6 +175,11 @@ type Library struct {
 	//
 	// The [Library.Output] may be a different location and derived on a
 	// per-language basis, but will not be serialized in the configuration.
+	//
+	// Important: The boolean fields [Library.SkipRelease] and
+	// [Library.SkipGenerate] set in the containing config will always be
+	// applied to the Preview library as well, because previews are related to
+	// the stable library and should be managed identically.
 	Preview *Library `yaml:"preview,omitempty"`
 
 	// API specifies which googleapis API to generate from (for generated
