@@ -378,6 +378,11 @@ func TestGenerateAPI(t *testing.T) {
 		},
 	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	// Create owlbot.py and templates dir as they are mandatory for postProcessAPI
 	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
 		t.Fatal(err)
