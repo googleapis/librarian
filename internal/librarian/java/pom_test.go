@@ -114,10 +114,9 @@ func TestCollectModules_Error(t *testing.T) {
 
 func TestIsPomMissing(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		setup     func(t *testing.T) string
-		want      bool
-		wantErrIs error
+		name  string
+		setup func(t *testing.T) string
+		want  bool
 	}{
 		{
 			name: "pom exists",
@@ -136,23 +135,24 @@ func TestIsPomMissing(t *testing.T) {
 			},
 			want: true,
 		},
-		{
-			name: "dir missing error",
-			setup: func(t *testing.T) string {
-				return filepath.Join(t.TempDir(), "nonexistent")
-			},
-			wantErrIs: os.ErrNotExist,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := test.setup(t)
 			got, err := isPomMissing(dir)
-			if !errors.Is(err, test.wantErrIs) {
-				t.Fatalf("isPomMissing(%q) error = %v, want %v", dir, err, test.wantErrIs)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if got != test.want {
 				t.Errorf("isPomMissing(%q) = %v, want %v", dir, got, test.want)
 			}
 		})
+	}
+}
+
+func TestIsPomMissing_DirMissingError(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "nonexistent")
+	_, err := isPomMissing(dir)
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }
