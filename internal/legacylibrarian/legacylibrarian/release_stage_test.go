@@ -2367,6 +2367,66 @@ func TestUpdateLibrarianYAML(t *testing.T) {
 	}
 }
 
+func TestUpdateLibrarianYAML_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		config    *config.Config
+		state     *legacyconfig.LibrarianState
+		wantError error
+	}{
+		{
+			name: "updates versions",
+			config: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.2.0",
+					},
+					{
+						Name:    "billing",
+						Version: "2.0.0",
+					},
+				},
+			},
+			state: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:      "asset",
+						Version: "1.1.0",
+					},
+					{
+						ID:      "billing",
+						Version: "2.0.0",
+					},
+				},
+			},
+			wantError: errVersionRegression,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoDir := t.TempDir()
+			configPath := filepath.Join(repoDir, config.LibrarianYAML)
+			if err := yaml.Write(configPath, test.config); err != nil {
+				t.Fatal(err)
+			}
+			runner := &stageRunner{
+				repo:  &MockRepository{Dir: repoDir},
+				state: test.state,
+			}
+			err := runner.updateLibrarianYAML(t.Context())
+			if !errors.Is(err, test.wantError) {
+				t.Fatalf("want error %q, got %q", test.wantError, err)
+			}
+		})
+	}
+}
+
 func TestUpdateLibrarianYAML_NoConfigFile(t *testing.T) {
 	t.Parallel()
 	repoDir := t.TempDir()
