@@ -270,10 +270,11 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 }
 
 // ResolvePreview returns a library where fields from lib.Preview override
-// those in the base lib, if set.
+// those in the base lib, if set. If lib.Preview is not set or lib itself is nil
+// this returns nil.
 func ResolvePreview(lib *config.Library) *config.Library {
-	if lib.Preview == nil {
-		return lib
+	if lib == nil || lib.Preview == nil {
+		return nil
 	}
 	res := *lib
 	mergeStructs(reflect.ValueOf(&res).Elem(), reflect.ValueOf(lib.Preview).Elem())

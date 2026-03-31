@@ -644,9 +644,14 @@ func TestResolvePreview(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "no preview returns same lib",
+			name: "nil lib returns nil",
+			lib:  nil,
+			want: nil,
+		},
+		{
+			name: "no preview returns nil",
 			lib:  &config.Library{Name: "foo"},
-			want: &config.Library{Name: "foo"},
+			want: nil,
 		},
 		{
 			name: "overrides all supported fields",
