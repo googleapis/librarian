@@ -25,6 +25,9 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// update is used to refresh the golden files in testdata/ when template 
+// changes result in intentional output differences.
+// Usage: go test ./internal/librarian/java -v -update
 var update = flag.Bool("update", false, "update golden files")
 
 func TestSyncPoms_Golden(t *testing.T) {
@@ -74,7 +77,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 			t.Fatal(err)
 		}
 		if diff := cmp.Diff(string(want), string(got)); diff != "" {
-			t.Errorf("mismatch in %s (-want +got):\n%s", artifact, diff)
+			t.Errorf("mismatch in %s (-want +got):\n%s\n\nHint: run 'go test ./internal/librarian/java -v -update' to update golden files.", artifact, diff)
 		}
 	}
 }
