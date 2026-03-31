@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
-	"gopkg.in/yaml.v3"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestNewStageRunner(t *testing.T) {
@@ -1229,9 +1229,12 @@ func TestStageRun(t *testing.T) {
 
 			// If there is no release triggered for any library, then the librarian state
 			// is not written back. The `want` value for the librarian state is nil
-			var got *legacyconfig.LibrarianState
-			if err := yaml.Unmarshal(bytes, &got); err != nil {
+			got, err := yaml.Unmarshal[legacyconfig.LibrarianState](bytes)
+			if err != nil {
 				t.Fatal(err)
+			}
+			if len(bytes) == 0 {
+				got = nil
 			}
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
@@ -2210,5 +2213,168 @@ func TestSyncVersion_Error(t *testing.T) {
 	_, err := syncVersion(state, cfg)
 	if !errors.Is(err, errVersionRegression) {
 		t.Errorf("got error %v, want %v", err, errVersionRegression)
+	}
+}
+
+func TestUpdateLibrarianYAML(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		config     *config.Config
+		state      *legacyconfig.LibrarianState
+		wantConfig *config.Config
+	}{
+		{
+			name: "updates versions",
+			config: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.0.0",
+					},
+					{
+						Name:    "billing",
+						Version: "2.0.0",
+					},
+				},
+			},
+			state: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:      "asset",
+						Version: "1.1.0",
+					},
+					{
+						ID:      "billing",
+						Version: "2.0.0",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.1.0",
+					},
+					{
+						Name:    "billing",
+						Version: "2.0.0",
+					},
+				},
+			},
+		},
+		{
+			name: "ignores missing libraries in state",
+			config: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.0.0",
+					},
+				},
+			},
+			state: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{},
+			},
+			wantConfig: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.0.0",
+					},
+				},
+			},
+		},
+		{
+			name: "ignores empty version in state",
+			config: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.0.0",
+					},
+				},
+			},
+			state: &legacyconfig.LibrarianState{
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID: "asset",
+					},
+				},
+			},
+			wantConfig: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "some-commit",
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:    "asset",
+						Version: "1.0.0",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoDir := t.TempDir()
+			configPath := filepath.Join(repoDir, config.LibrarianYAML)
+			if err := yaml.Write(configPath, test.config); err != nil {
+				t.Fatal(err)
+			}
+			runner := &stageRunner{
+				repo:  &MockRepository{Dir: repoDir},
+				state: test.state,
+			}
+			err := runner.updateLibrarianYAML(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			gotConfig, err := yaml.Read[config.Config](configPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantConfig, gotConfig); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestUpdateLibrarianYAML_NoConfigFile(t *testing.T) {
+	t.Parallel()
+	repoDir := t.TempDir()
+	runner := &stageRunner{
+		repo: &MockRepository{Dir: repoDir},
+	}
+
+	if err := runner.updateLibrarianYAML(t.Context()); err != nil {
+		t.Errorf("updateLibrarianYAML() with no config file should return nil, got %v", err)
 	}
 }
