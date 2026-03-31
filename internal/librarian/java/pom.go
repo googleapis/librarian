@@ -294,13 +294,9 @@ func updateVersionsFile(libraryDir string, newModules []string, version string) 
 	versionsPath := filepath.Join(repoRoot, "versions.txt")
 	
 	// Read existing content if file exists
-	var existingContent []byte
-	var err error
-	if _, err := os.Stat(versionsPath); err == nil {
-		existingContent, err = os.ReadFile(versionsPath)
-		if err != nil {
-			return fmt.Errorf("read versions.txt: %w", err)
-		}
+	existingContent, err := os.ReadFile(versionsPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read versions.txt: %w", err)
 	}
 	
 	// Parse existing entries to avoid duplicates

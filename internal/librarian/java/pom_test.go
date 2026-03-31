@@ -261,8 +261,8 @@ func TestUpdateVersionsFile(t *testing.T) {
 				t.Fatalf("failed to read versions.txt: %v", err)
 			}
 			
-			if string(got) != test.wantContent {
-				t.Errorf("versions.txt content mismatch:\ngot:\n%s\nwant:\n%s", string(got), test.wantContent)
+			if diff := cmp.Diff(test.wantContent, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
