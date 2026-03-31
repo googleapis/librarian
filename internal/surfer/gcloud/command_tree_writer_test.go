@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -123,5 +124,141 @@ func TestWriteCommandGroupTree(t *testing.T) {
 		if _, err := os.Stat(f); os.IsNotExist(err) {
 			t.Errorf("expected file %q to be generated", f)
 		}
+	}
+}
+
+func TestGroupName(t *testing.T) {
+	tests := []struct {
+		name  string
+		ga    *CommandGroup
+		beta  *CommandGroup
+		alpha *CommandGroup
+		want  string
+	}{
+		{
+			name: "only GA",
+			ga:   &CommandGroup{Name: "instances"},
+			want: "instances",
+		},
+		{
+			name: "only Beta",
+			beta: &CommandGroup{Name: "instances"},
+			want: "instances",
+		},
+		{
+			name:  "only Alpha",
+			alpha: &CommandGroup{Name: "instances"},
+			want:  "instances",
+		},
+		{
+			name: "none",
+			want: "",
+		},
+		{
+			name: "precedence",
+			ga:   &CommandGroup{Name: "ga-name"},
+			beta: &CommandGroup{Name: "beta-name"},
+			want: "ga-name",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := groupName(tt.ga, tt.beta, tt.alpha); got != tt.want {
+				t.Errorf("groupName() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestWriteCommandGroupFile_TrackCombinations(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	tests := []struct {
+		name           string
+		ga             *CommandGroup
+		beta           *CommandGroup
+		alpha          *CommandGroup
+		containsTracks []string
+		omitsTracks    []string
+	}{
+		{
+			name:           "GA and Beta",
+			ga:             &CommandGroup{Name: "instances", HelpText: "G"},
+			beta:           &CommandGroup{Name: "instances", HelpText: "B"},
+			containsTracks: []string{"ReleaseTrack.GA", "ReleaseTrack.BETA"},
+			omitsTracks:    []string{"ReleaseTrack.ALPHA"},
+		},
+		{
+			name:           "Beta and Alpha",
+			beta:           &CommandGroup{Name: "instances", HelpText: "B"},
+			alpha:          &CommandGroup{Name: "instances", HelpText: "A"},
+			containsTracks: []string{"ReleaseTrack.BETA", "ReleaseTrack.ALPHA"},
+			omitsTracks:    []string{"ReleaseTrack.GA"},
+		},
+		{
+			name:           "Only Alpha",
+			alpha:          &CommandGroup{Name: "instances", HelpText: "A"},
+			containsTracks: []string{"ReleaseTrack.ALPHA"},
+			omitsTracks:    []string{"ReleaseTrack.GA", "ReleaseTrack.BETA"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if err := writeCommandGroupFile(tmpDir, "instances", tt.ga, tt.beta, tt.alpha); err != nil {
+				t.Fatalf("unexpected error: %v", err)
+			}
+
+			path := filepath.Join(tmpDir, "__init__.py")
+			data, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatalf("failed to read generated file: %v", err)
+			}
+
+			content := string(data)
+			for _, track := range tt.containsTracks {
+				if !strings.Contains(content, track) {
+					t.Errorf("expected content to contain %q", track)
+				}
+			}
+			for _, track := range tt.omitsTracks {
+				if strings.Contains(content, track) {
+					t.Errorf("expected content to NOT contain %q", track)
+				}
+			}
+		})
+	}
+}
+
+func TestWriteGroup_DirError(t *testing.T) {
+	// Trying to create a directory where a file already exists should fail
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "instances")
+	if err := os.WriteFile(filePath, []byte("test"), 0644); err != nil {
+		t.Fatalf("failed to create test file: %v", err)
+	}
+
+	ga := &CommandGroup{Name: "instances"}
+	err := writeGroup(tmpDir, ga, nil, nil)
+	if err == nil {
+		t.Error("expected error when creating directory over an existing file, got nil")
+	}
+}
+
+func TestWriteGroup_NoName(t *testing.T) {
+	tmpDir := t.TempDir()
+	err := writeGroup(tmpDir, nil, nil, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Should not generate any files or directories
+	entries, err := os.ReadDir(tmpDir)
+	if err != nil {
+		t.Fatalf("failed to read dir: %v", err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected empty directory, got %d entries", len(entries))
 	}
 }
