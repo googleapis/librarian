@@ -66,14 +66,5 @@ func ReadGcloudConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse gcloud config YAML: %w", err)
 	}
 
-	raw, err := yaml.Unmarshal[map[string]any](data)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse raw gcloud config YAML: %w", err)
-	}
-
-	if _, ok := (*raw)["generate_operations"]; !ok {
-		cfg.GenerateOperations = true
-	}
-
 	return cfg, nil
 }
