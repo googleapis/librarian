@@ -128,24 +128,24 @@ func mapCommandToYAML(c *Command, track string) *yamlCommand {
 	return y
 }
 
-func mapArgumentsToYAML(p []Argument) []yamlArgument {
+func mapArgumentsToYAML(args []Argument) []yamlArgument {
 	var ya []yamlArgument
-	for _, p := range p {
+	for _, a := range args {
 		ya = append(ya, yamlArgument{
-			ArgName:              p.ArgName,
-			APIField:             p.APIField,
-			HelpText:             p.HelpText,
-			IsPositional:         p.IsPositional,
-			IsPrimaryResource:    p.IsPrimaryResource,
-			RequestIDField:       p.RequestIDField,
-			ResourceSpec:         mapResourceSpecToYAML(p.ResourceSpec),
-			Required:             p.Required,
-			Repeated:             p.Repeated,
-			Clearable:            p.Clearable,
-			Type:                 p.Type,
-			Choices:              mapChoicesToYAML(p.Choices),
-			Spec:                 mapArgSpecsToYAML(p.Spec),
-			ResourceMethodParams: p.ResourceMethodParams,
+			ArgName:              a.ArgName,
+			APIField:             a.APIField,
+			HelpText:             a.HelpText,
+			IsPositional:         a.IsPositional,
+			IsPrimaryResource:    a.IsPrimaryResource,
+			RequestIDField:       a.RequestIDField,
+			ResourceSpec:         mapResourceSpecToYAML(a.ResourceSpec),
+			Required:             a.Required,
+			Repeated:             a.Repeated,
+			Clearable:            a.Clearable,
+			Type:                 a.Type,
+			Choices:              mapChoicesToYAML(a.Choices),
+			Spec:                 mapArgSpecsToYAML(a.Spec),
+			ResourceMethodParams: a.ResourceMethodParams,
 		})
 	}
 	return ya
