@@ -405,7 +405,7 @@ func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*confi
 		if maxVersion == lib.Version && legacyLibrary.Version != lib.Version {
 			// lib.Version is greater than legacyLibrary.Version, something is
 			// wrong, fail in this case.
-			return nil, fmt.Errorf("library %s, version in state, %s, is smaller than version in librarian.yaml, %s: %w", lib.Name, lib.Version, legacyLibrary.Version, errVersionRegression)
+			return nil, fmt.Errorf("library %s, version in state, %s, is smaller than version in librarian.yaml, %s: %w", lib.Name, legacyLibrary.Version, lib.Version, errVersionRegression)
 		}
 		lib.Version = legacyLibrary.Version
 	}
