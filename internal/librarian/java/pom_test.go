@@ -25,7 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// update is used to refresh the golden files in testdata/ when template 
+// update is used to refresh the golden files in testdata/ when template
 // changes result in intentional output differences.
 // Usage: go test ./internal/librarian/java -v -update
 var update = flag.Bool("update", false, "update golden files")
@@ -79,6 +79,36 @@ func TestSyncPoms_Golden(t *testing.T) {
 		if diff := cmp.Diff(string(want), string(got)); diff != "" {
 			t.Errorf("mismatch in %s (-want +got):\n%s\n\nHint: run 'go test ./internal/librarian/java -v -update' to update golden files.", artifact, diff)
 		}
+	}
+}
+
+func TestCollectModules_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+	}{
+		{
+			name: "invalid distribution name",
+			library: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "invalid-name",
+				},
+			},
+		},
+		{
+			name: "failed to find api config",
+			library: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/ads/unrecognized/v1"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent"); err == nil {
+				t.Error("collectModules() error = nil, want non-nil")
+			}
+		})
 	}
 }
 
