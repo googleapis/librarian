@@ -59,7 +59,7 @@ func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
 	return tree, nil
 }
 
-// insert traverses the trie and attaches a command leaf node. It resolves the
+// insert traverses the tree and attaches a command leaf node. It resolves the
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
 func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGroupBuilder, method *api.Method) error {

@@ -15,12 +15,11 @@
 package gcloud
 
 import (
-	"context"
 	"testing"
 )
 
 func TestGenerate_InvalidConfig(t *testing.T) {
-	err := Generate(context.Background(), GenerateConfig{
+	err := Generate(t.Context(), GenerateConfig{
 		GcloudConfig: "nonexistent_config.yaml",
 	})
 	if err == nil {
@@ -31,7 +30,7 @@ func TestGenerate_InvalidConfig(t *testing.T) {
 func TestGenerate_InvalidModel(t *testing.T) {
 	// GcloudConfig is empty, so it might pass (or not, depending on implementation),
 	// but Googleapis being nonexistent should definitely fail during model creation.
-	err := Generate(context.Background(), GenerateConfig{
+	err := Generate(t.Context(), GenerateConfig{
 		Googleapis: "nonexistent_googleapis_dir",
 	})
 	if err == nil {

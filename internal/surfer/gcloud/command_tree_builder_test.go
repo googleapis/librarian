@@ -16,11 +16,11 @@ package gcloud
 
 import (
 	"path"
-	"reflect"
 	"slices"
 	"strings"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
@@ -75,8 +75,8 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 		"parallelstore/operations/describe",
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("flattenTree() = %v, want %v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -119,8 +119,8 @@ func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
 		"parallelstore/operations/describe",
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("flattenTree() = %v, want %v when GenerateOperations is true", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got) when GenerateOperations is true:\n%s", diff)
 	}
 }
 
@@ -145,8 +145,8 @@ func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
 		"parallelstore/otherInstances/create",
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("flattenTree() = %v, want %v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -172,8 +172,8 @@ func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
 		"parallelstore/instances/create",
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("flattenTree() = %v, want %v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
 	}
 
 	// Alpha release track
@@ -182,8 +182,8 @@ func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
 		"parallelstore/instances/create",
 	}
 
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("flattenTree() = %v, want %v", got, want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
 	}
 }
 
