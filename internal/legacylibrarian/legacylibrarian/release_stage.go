@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacydocker"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -92,15 +93,7 @@ func (r *stageRunner) run(ctx context.Context) error {
 	if err := saveLibrarianState(r.repo.GetDir(), r.state); err != nil {
 		return err
 	}
-	cfg, err := yaml.Read[config.Config](filepath.Join(r.repo.GetDir(), "librarian.yaml"))
-	if err != nil {
-		return err
-	}
-	newCfg, err := syncVersion(r.state, cfg)
-	if err != nil {
-		return err
-	}
-	if err := yaml.Write(filepath.Join(r.repo.GetDir(), "librarian.yaml"), newCfg); err != nil {
+	if err := r.updateLibrarianYAML(ctx); err != nil {
 		return err
 	}
 
@@ -381,6 +374,25 @@ func toCommit(c []*legacygitrepo.ConventionalCommit, libraryID string) []*legacy
 		})
 	}
 	return commits
+}
+
+func (r *stageRunner) updateLibrarianYAML(ctx context.Context) error {
+	librarianYAMLPath := filepath.Join(r.repo.GetDir(), config.LibrarianYAML)
+	if _, err := os.Stat(librarianYAMLPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
+	}
+	cfg, err := yaml.Read[config.Config](librarianYAMLPath)
+	if err != nil {
+		return err
+	}
+	newCfg, err := syncVersion(r.state, cfg)
+	if err != nil {
+		return err
+	}
+	return librarian.RunTidyOnConfig(ctx, r.repo.GetDir(), newCfg)
 }
 
 func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*config.Config, error) {
