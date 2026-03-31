@@ -73,6 +73,10 @@ func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir st
 // collectModules identifies all expected proto-* and grpc-* modules
 // for the given library based on its configuration and checks a pom.xml presence
 // on the filesystem.
+//
+// All expected modules are collected (even if they exist) because the client
+// module's POM requires a full list of all proto and gRPC dependencies
+// to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, googleapisDir string) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
