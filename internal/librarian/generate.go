@@ -170,9 +170,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		return fakePostGenerate()
 	case config.LanguageGo:
 		for _, library := range libraries {
-			// Generation cannot be parallelized because protoc writes to a
-			// shared cloud.google.com/go directory tree under each library's
-			// output, and concurrent MoveAndMerge calls would race.
+			// TODO(https://github.com/googleapis/librarian/issues/4939): Run generate in parallel.
 			if err := golang.Generate(ctx, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
