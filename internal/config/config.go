@@ -46,6 +46,9 @@ type Config struct {
 	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
 
+	// Tools defines required tools.
+	Tools *Tools `yaml:"tools,omitempty"`
+
 	// Release holds the configuration parameter for publishing and release subcommands.
 	Release *Release `yaml:"release,omitempty"`
 
@@ -121,6 +124,21 @@ type Source struct {
 	Subpath string `yaml:"subpath,omitempty"`
 }
 
+// Tools defines required tools.
+type Tools struct {
+	// Cargo defines tools to install via cargo.
+	Cargo []*CargoTool `yaml:"cargo,omitempty"`
+}
+
+// CargoTool defines a tool to install via cargo.
+type CargoTool struct {
+	// Name is the cargo package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+}
+
 // Default contains default settings for all libraries.
 type Default struct {
 	// Keep lists files and directories to preserve during regeneration.
@@ -160,10 +178,29 @@ type Library struct {
 	// at the top for ease of consumption in file-form.
 
 	// Name is the library name, such as "secretmanager" or "storage".
-	Name string `yaml:"name"`
+	Name string `yaml:"name,omitempty"`
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
+
+	// Preview signifies that this API has a preview variant, and it contains
+	// overrides specific to the preview API variant. This is merged with the
+	// containing [Library], preferring those [Library.Preview] values that are
+	// set over their counterpart in the containing configuration.
+	//
+	// The most common overrides are [Library.Version] and [Library.APIs], with
+	// the former containing a pre-release version based on the containing
+	// version of the stable client, and the latter being a subset of APIs,
+	// typically omitting alpha and beta paths.
+	//
+	// The [Library.Output] may be a different location and derived on a
+	// per-language basis, but will not be serialized in the configuration.
+	//
+	// Important: The boolean fields [Library.SkipRelease] and
+	// [Library.SkipGenerate] set in the containing config will always be
+	// applied to the Preview library as well, because previews are related to
+	// the stable library and should be managed identically.
+	Preview *Library `yaml:"preview,omitempty"`
 
 	// API specifies which googleapis API to generate from (for generated
 	// libraries).

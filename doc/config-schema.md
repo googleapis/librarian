@@ -10,6 +10,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the librarian tool version to use. |
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
+| `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
 | `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
@@ -49,6 +50,19 @@ This document describes the schema for the librarian.yaml.
 | `sha256` | string | Is the expected hash of the tarball for this commit. |
 | `subpath` | string | Is a directory inside the fetched archive that should be treated as the root for operations. |
 
+## Tools Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+
+## CargoTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the cargo package name. |
+| `version` | string | Is the version to install. |
+
 ## Default Configuration
 
 | Field | Type | Description |
@@ -69,6 +83,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the library name, such as "secretmanager" or "storage". |
 | `version` | string | Is the library version. |
+| `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
 | `description_override` | string | Overrides the library description. |

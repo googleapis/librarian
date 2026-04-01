@@ -29,6 +29,12 @@ sources:
   conformance:
     commit: 1a2b3c4d5e6f7a8b9c0d1e2f3a4b5c6d7e8f9a0b
     sha256: f572d396fae9206628714fb2ce00f72e94f2258f
+tools:
+  cargo:
+    - name: cargo-semver-checks
+      version: "0.46.0"
+    - name: taplo-cli
+      version: "0.10.0"
 default:
   output: src/generated/
   release_level: stable

@@ -14,23 +14,28 @@
 
 package gcloud
 
+// CommandGroupsByTrack represents the top-level collection of command trees organized by release track.
+type CommandGroupsByTrack struct {
+	GA    *CommandGroup
+	BETA  *CommandGroup
+	ALPHA *CommandGroup
+}
+
 // CommandGroup defines the metadata for a structural grouping of gcloud commands
 // (typically mapping to an API service or an AIP-122 Resource collection).
 // It is used to generate the Python `__init__.py` registration files.
 type CommandGroup struct {
-	ServiceTitle     string
-	ResourceSingular string
-	ClassNamePrefix  string
-	Tracks           []string
+	Name     string
+	HelpText string
+	Commands map[string]*Command
+	Groups   map[string]*CommandGroup
 }
 
 // Command represents the top-level structure for a gcloud command definition.
 // This struct is pure domain logic and separates CLI intent from the YAML output schema.
 type Command struct {
-	// ReleaseTracks specifies the release tracks (e.g., GA, BETA, ALPHA) for which
-	// this command is available.
-	// Origin: Derived from the `release_tracks` field in the `gcloud.yaml` config file.
-	ReleaseTracks []string
+	// Name specifies the name of the command.
+	Name string
 
 	// Hidden specifies whether this command should be hidden from the user in
 	// help text and command listings.
