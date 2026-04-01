@@ -34,8 +34,10 @@ import (
 )
 
 var (
-	errLibraryAlreadyExists = errors.New("library already exists in config")
-	errMissingAPI           = errors.New("must provide at least one API")
+	errLibraryAlreadyExists      = errors.New("library already exists in config")
+	errMissingAPI                = errors.New("must provide at least one API")
+	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
+	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
 )
 
 func addCommand() *cli.Command {
@@ -109,7 +111,38 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new library, the updated config, and an error
 // if the library already exists.
 func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
-	name := deriveLibraryName(cfg.Language, apis[0])
+	var isPreview bool
+	var trimmedAPIs []string
+	for _, a := range apis {
+		if strings.HasPrefix(a, "preview/") {
+			isPreview = true
+			trimmedAPIs = append(trimmedAPIs, strings.TrimPrefix(a, "preview/"))
+		} else {
+			if isPreview {
+				return "", nil, errMixedPreviewAndNonPreview
+			}
+			trimmedAPIs = append(trimmedAPIs, a)
+		}
+	}
+
+	name := deriveLibraryName(cfg.Language, trimmedAPIs[0])
+
+	if isPreview {
+		lib, err := FindLibrary(cfg, name)
+		if err != nil {
+			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
+		}
+		lib.Preview = &config.Library{
+			APIs: make([]*config.API, 0, len(trimmedAPIs)),
+		}
+		for _, a := range trimmedAPIs {
+			lib.Preview.APIs = append(lib.Preview.APIs, &config.API{
+				Path: a,
+			})
+		}
+		return name, cfg, nil
+	}
+
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		return lib.Name == name
 	})
@@ -121,7 +154,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
 	}
-	for _, a := range apis {
+	for _, a := range trimmedAPIs {
 		lib.APIs = append(lib.APIs, &config.API{
 			Path: a,
 		})
