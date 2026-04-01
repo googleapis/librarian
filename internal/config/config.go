@@ -18,8 +18,13 @@ package config
 
 //go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
 
-// LibrarianYAML is the filename for the librarian configuration file.
-const LibrarianYAML = "librarian.yaml"
+const (
+	// BranchMain is the default git branch name.
+	BranchMain = "main"
+
+	// LibrarianYAML is the filename for the librarian configuration file.
+	LibrarianYAML = "librarian.yaml"
+)
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {

@@ -39,7 +39,7 @@ func TestGetLastTag(t *testing.T) {
 	cfg := &config.Release{
 		Remote: "origin",
 	}
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, "main")
+	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, config.BranchMain)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,7 +53,7 @@ func TestLastTagGitError(t *testing.T) {
 	cfg := &config.Release{
 		Remote: "origin",
 	}
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, "main")
+	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, config.BranchMain)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -247,7 +247,7 @@ func TestMatchesBranchPointSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", "origin", "main"); err != nil {
+	if err := MatchesBranchPoint(t.Context(), "git", "origin", config.BranchMain); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -278,7 +278,7 @@ func TestShowFileAtRemoteBranch(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
+	got, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", config.BranchMain, testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -291,7 +291,7 @@ func TestShowFileAtRemoteBranch_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	_, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", "does_not_exist")
+	_, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", config.BranchMain, "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}

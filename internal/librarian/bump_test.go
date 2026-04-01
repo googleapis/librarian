@@ -92,7 +92,7 @@ func TestBumpCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
 			opts := testhelper.SetupOptions{
-				Clone:       "main",
+				Clone:       true,
 				Config:      cfg,
 				Tags:        []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
 				WithChanges: test.withChanges,
@@ -126,7 +126,7 @@ func TestBumpCommandDeriveOutput(t *testing.T) {
 	cfg.Libraries[0].Output = ""
 
 	testhelper.Setup(t, testhelper.SetupOptions{
-		Clone:       "main",
+		Clone:       true,
 		Config:      cfg,
 		Tags:        []string{sample.InitialLib1Tag},
 		WithChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
@@ -198,7 +198,7 @@ func TestBumpCommand_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelper.Setup(t, testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: test.cfg,
 				Dirty:  test.dirty,
 			})
@@ -293,7 +293,7 @@ func TestRunBump_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
 			opts := testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: cfg,
 			}
 			testhelper.Setup(t, opts)
@@ -335,7 +335,7 @@ func TestBumpLibrary(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			opts := testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: test.cfg,
 			}
 			testhelper.Setup(t, opts)
@@ -391,7 +391,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			opts := testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: test.cfg,
 			}
 			testhelper.Setup(t, opts)
@@ -718,7 +718,7 @@ func TestDeriveNextVersion(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			opts := testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: test.cfg,
 			}
 			testhelper.Setup(t, opts)
@@ -774,13 +774,13 @@ func TestLoadBranchLibraryVersion(t *testing.T) {
 
 	want := sample.InitialVersion
 	testhelper.Setup(t, testhelper.SetupOptions{
-		Clone: "main",
+		Clone: true,
 		Config: &config.Config{
 			Libraries: []*config.Library{{Name: sample.Lib1Name, Version: want}},
 		},
 	})
 
-	got, err := loadBranchLibraryVersion(t.Context(), "git", "origin", "main", sample.Lib1Name)
+	got, err := loadBranchLibraryVersion(t.Context(), "git", "origin", config.BranchMain, sample.Lib1Name)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1064,7 +1064,7 @@ func TestLegacyRustBumpLibrary(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			opts := testhelper.SetupOptions{
-				Clone:  "main",
+				Clone:  true,
 				Config: test.cfg,
 			}
 			testhelper.Setup(t, opts)
@@ -1128,7 +1128,7 @@ func TestLegacyRustBump(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
 			opts := testhelper.SetupOptions{
-				Clone:       "main",
+				Clone:       true,
 				Config:      cfg,
 				Tags:        []string{sample.InitialLegacyRustTag},
 				WithChanges: test.withChanges,
@@ -1190,7 +1190,7 @@ func TestLegacyRustBumpAll(t *testing.T) {
 			targetCfg := test.cfg
 			sinceTag := sample.InitialLegacyRustTag
 			opts := testhelper.SetupOptions{
-				Clone:       "main",
+				Clone:       true,
 				Config:      test.cfg,
 				Tags:        []string{sample.InitialLegacyRustTag},
 				WithChanges: test.withChanges,
