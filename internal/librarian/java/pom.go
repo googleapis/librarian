@@ -28,7 +28,7 @@ const (
 	protoPomTemplateName  = "proto_pom.xml.tmpl"
 	grpcPomTemplateName   = "grpc_pom.xml.tmpl"
 	clientPomTemplateName = "client_pom.xml.tmpl"
-	grcpProtoGroupID      = "com.google.api.grpc"
+	grpcProtoGroupID      = "com.google.api.grpc"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -117,11 +117,11 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string, m
 
 		data := grpcProtoPomData{
 			Proto: coordinates{
-				GroupID:    grcpProtoGroupID,
+				GroupID:    grpcProtoGroupID,
 				ArtifactID: names.proto,
 			},
 			Grpc: coordinates{
-				GroupID:    grcpProtoGroupID,
+				GroupID:    grpcProtoGroupID,
 				ArtifactID: names.grpc,
 			},
 			Parent: coordinates{
