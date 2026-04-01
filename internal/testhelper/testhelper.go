@@ -78,6 +78,7 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", remoteDir, ".")
+	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	configNewGitRepository(t)
 }
 

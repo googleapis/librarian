@@ -400,7 +400,11 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
 func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.Release.IgnoredChanges)
+	var ignoredChanges []string
+	if cfg.Release != nil {
+		ignoredChanges = cfg.Release.IgnoredChanges
+	}
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChanges)
 	if err != nil {
 		return err
 	}
