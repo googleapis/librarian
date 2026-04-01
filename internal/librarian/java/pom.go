@@ -288,7 +288,7 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 			return lib.Version, nil
 		}
 	}
-	return "", fmt.Errorf("could not find monorepo version for google-cloud-java in config")
+	return "", fmt.Errorf("could not find monorepo version for %s in config", rootLibrary)
 }
 
 func protoGroupID(mainArtifactGroupID string) string {
