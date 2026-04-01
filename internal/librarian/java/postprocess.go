@@ -134,10 +134,7 @@ type javaModules struct {
 }
 
 func deriveModuleNames(libraryID, version string) javaModules {
-	name := libraryID
-	if !strings.HasPrefix(name, cloudPrefix) {
-		name = cloudPrefix + libraryID
-	}
+	name := ensureCloudPrefix(libraryID)
 	return javaModules{
 		gapic: name,
 		proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),

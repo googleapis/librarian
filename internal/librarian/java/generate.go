@@ -156,6 +156,15 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	return nil
 }
 
+// ensureCloudPrefix returns name with the "google-cloud-" prefix,
+// adding it if not already present.
+func ensureCloudPrefix(name string) string {
+	if !strings.HasPrefix(name, cloudPrefix) {
+		return cloudPrefix + name
+	}
+	return name
+}
+
 func deriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
@@ -164,10 +173,7 @@ func deriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID
 	}
-	artifactID := library.Name
-	if !strings.HasPrefix(artifactID, cloudPrefix) {
-		artifactID = cloudPrefix + artifactID
-	}
+	artifactID := ensureCloudPrefix(library.Name)
 	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 
