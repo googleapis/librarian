@@ -25,13 +25,12 @@
   </properties>
 
   <dependencyManagement>
-    <dependencies>
-{{range .Modules}}      <dependency>
+    <dependencies>{{range .Modules}}
+      <dependency>
         <groupId>{{.GroupID}}</groupId>
         <artifactId>{{.ArtifactID}}</artifactId>
         <version>{{.Version}}</version><!-- {x-version-update:{{.ArtifactID}}:current} -->
-      </dependency>
-{{end}}
+      </dependency>{{end}}
     </dependencies>
   </dependencyManagement>
 
