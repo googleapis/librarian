@@ -28,12 +28,12 @@ libraries:
   - id: accesscontextmanager
     version: 1.9.7
     last_generated_commit: ""
-    apis: [ ]
+    apis: []
     source_roots:
       - accesscontextmanager
       - internal/generated/snippets/accesscontextmanager
-    preserve_regex: [ ]
-    remove_regex: [ ]
+    preserve_regex: []
+    remove_regex: []
     release_exclude_paths:
       - internal/generated/snippets/accesscontextmanager/
     tag_format: '{id}/v{version}'
