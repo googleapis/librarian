@@ -95,6 +95,11 @@ func TestPostProcessAPI(t *testing.T) {
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	p := postProcessParams{
+		cfg: &config.Config{
+			Libraries: []*config.Library{
+				{Name: "google-cloud-java", Version: "1.2.3"},
+			},
+		},
 		outDir: outdir,
 		metadata: &repoMetadata{
 			NamePretty:     "Secret Manager",

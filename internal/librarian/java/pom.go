@@ -202,16 +202,10 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		template: clientPomTemplateName,
 	})
 
-	monorepoVersion := ""
-	if cfg != nil {
-		for _, lib := range cfg.Libraries {
-			if lib.Name == "google-cloud-java" {
-				monorepoVersion = lib.Version
-				break
-			}
-		}
+	monorepoVersion, err := findMonorepoVersion(cfg)
+	if err != nil {
+		return nil, err
 	}
-
 	allModules := []coordinates{clientCoord}
 	allModules = append(allModules, grpcModules...)
 	allModules = append(allModules, protoModules...)
@@ -284,4 +278,13 @@ func writePom(pomPath, templateName string, data any) (err error) {
 		return fmt.Errorf("failed to execute template %s: %w", templateName, terr)
 	}
 	return nil
+}
+
+func findMonorepoVersion(cfg *config.Config) (string, error) {
+	for _, lib := range cfg.Libraries {
+		if lib.Name == rootLibrary {
+			return lib.Version, nil
+		}
+	}
+	return "", fmt.Errorf("could not find monorepo version for google-cloud-java in config")
 }

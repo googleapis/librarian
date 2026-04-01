@@ -371,6 +371,9 @@ func TestGenerateAPI(t *testing.T) {
 		Default: &config.Default{
 			Java: &config.JavaModule{},
 		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
 	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
@@ -425,6 +428,9 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
 			Java: &config.JavaModule{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
 		},
 	}
 	library := &config.Library{
