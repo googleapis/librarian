@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -76,6 +77,8 @@ func installCommand() *cli.Command {
 			switch cfg.Language {
 			case config.LanguageGo:
 				return golang.Install(ctx)
+			case config.LanguageRust:
+				return rust.Install(ctx, cfg.Tools)
 			default:
 				return fmt.Errorf("language %q does not support install", cfg.Language)
 			}

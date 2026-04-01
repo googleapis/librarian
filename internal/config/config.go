@@ -43,6 +43,9 @@ type Config struct {
 	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
 
+	// Tools defines required tools.
+	Tools *Tools `yaml:"tools,omitempty"`
+
 	// Release holds the configuration parameter for publishing and release subcommands.
 	Release *Release `yaml:"release,omitempty"`
 
@@ -119,6 +122,21 @@ type Source struct {
 	// Subpath is a directory inside the fetched archive that should be treated as
 	// the root for operations.
 	Subpath string `yaml:"subpath,omitempty"`
+}
+
+// Tools defines required tools.
+type Tools struct {
+	// Cargo defines tools to install via cargo.
+	Cargo []*CargoTool `yaml:"cargo,omitempty"`
+}
+
+// CargoTool defines a tool to install via cargo.
+type CargoTool struct {
+	// Name is the cargo package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
 }
 
 // Default contains default settings for all libraries.
