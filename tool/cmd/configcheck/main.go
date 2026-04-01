@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Command configcheck is a tool to verify the consistency of library versions
+// between librarian.yaml and .librarian/state.yaml.
 package main
 
 import (
