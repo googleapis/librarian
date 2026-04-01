@@ -37,12 +37,12 @@ const googleapisDir = "../../testdata/googleapis"
 
 func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		cfg      *config.Config
-		library  *config.Library
-		api      *config.API
-		apiCfgs  *serviceconfig.API
-		want []string
+		name    string
+		cfg     *config.Config
+		library *config.Library
+		api     *config.API
+		apiCfgs *serviceconfig.API
+		want    []string
 	}{
 		{
 			name:    "basic case",
