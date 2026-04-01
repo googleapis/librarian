@@ -367,7 +367,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, er
 // to work on the newer "tag-per-library" logic without interrupting Rust
 // releases. The "fake" language is still valid here, for testing purposes.
 func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride, gitExe string) error {
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, config.BranchMain)
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteOrigin, config.BranchMain)
 	if err != nil {
 		return err
 	}

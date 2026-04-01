@@ -65,15 +65,15 @@ var errSemverCheck = errors.New("semver check failed")
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
-	if err := preFlight(ctx, cfg.Preinstalled, cfg.Remote, cfg.Tools["cargo"]); err != nil {
+	if err := preFlight(ctx, cfg.Preinstalled, cfg.Tools["cargo"]); err != nil {
 		return err
 	}
 	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Remote, config.BranchMain)
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteOrigin, config.BranchMain)
 	if err != nil {
 		return err
 	}
-	if err := git.MatchesBranchPoint(ctx, gitExe, cfg.Remote, config.BranchMain); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitExe, config.RemoteOrigin, config.BranchMain); err != nil {
 		return err
 	}
 	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.IgnoredChanges)

@@ -36,10 +36,7 @@ func TestGetLastTag(t *testing.T) {
 	const wantTag = "v1.2.3"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	cfg := &config.Release{
-		Remote: "origin",
-	}
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, config.BranchMain)
+	got, err := GetLastTag(t.Context(), "git", config.RemoteOrigin, config.BranchMain)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,10 +47,7 @@ func TestGetLastTag(t *testing.T) {
 
 func TestLastTagGitError(t *testing.T) {
 	t.Chdir(t.TempDir())
-	cfg := &config.Release{
-		Remote: "origin",
-	}
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, config.BranchMain)
+	_, err := GetLastTag(t.Context(), "git", config.RemoteOrigin, config.BranchMain)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}

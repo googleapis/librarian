@@ -24,6 +24,9 @@ const (
 
 	// LibrarianYAML is the filename for the librarian configuration file.
 	LibrarianYAML = "librarian.yaml"
+
+	// RemoteOrigin is the default git remote name.
+	RemoteOrigin = "origin"
 )
 
 // Config represents a librarian.yaml configuration file.
@@ -65,9 +68,6 @@ type Release struct {
 	// [preinstalled]
 	// cargo = /usr/bin/cargo
 	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
-
-	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
-	Remote string `yaml:"remote,omitempty"`
 
 	// Tools defines the list of tools to install, indexed by installer.
 	Tools map[string][]Tool `yaml:"tools,omitempty"`

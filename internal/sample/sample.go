@@ -77,9 +77,6 @@ func Config() *config.Config {
 		Default: &config.Default{
 			TagFormat: "{name}/v{version}",
 		},
-		Release: &config.Release{
-			Remote: "origin",
-		},
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
