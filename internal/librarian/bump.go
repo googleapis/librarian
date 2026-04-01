@@ -124,7 +124,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	}
 
 	for _, lib := range librariesToBump {
-		if err := bumpLibrary(cfg, lib, gitExe, versionOverride); err != nil {
+		if err := bumpLibrary(cfg, lib, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -204,7 +204,7 @@ func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 // bumpLibrary determines the next version of a library (using versionOverride
 // if that is non-empty), and applies the language-specific version bump logic
 // to update manifests, version files etc.
-func bumpLibrary(cfg *config.Config, lib *config.Library, gitExe, versionOverride string) error {
+func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
 	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
 	if err != nil {

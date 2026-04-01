@@ -341,7 +341,7 @@ func TestBumpLibrary(t *testing.T) {
 			testhelper.Setup(t, opts)
 
 			targetLibCfg := test.cfg.Libraries[0]
-			err := bumpLibrary(test.cfg, targetLibCfg, "git", test.versionOverride)
+			err := bumpLibrary(test.cfg, targetLibCfg, test.versionOverride)
 			if err != nil {
 				t.Fatalf("bumpLibrary() error = %v", err)
 			}
@@ -397,7 +397,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 			testhelper.Setup(t, opts)
 
 			targetLibCfg := test.cfg.Libraries[0]
-			gotErr := bumpLibrary(test.cfg, targetLibCfg, "git", test.versionOverride)
+			gotErr := bumpLibrary(test.cfg, targetLibCfg, test.versionOverride)
 			if gotErr == nil {
 				t.Fatal("expected error; got nil")
 			}
