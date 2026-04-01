@@ -372,7 +372,7 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 			wantErr: errMixedPreviewAndNonPreview,
 		},
 		{
-			name: "fail if mixing preview and non-preview APIs",
+			name: "fail preview already exists",
 			apis: []string{
 				"preview/google/cloud/secretmanager/v1",
 			},
