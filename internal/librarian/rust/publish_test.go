@@ -34,7 +34,7 @@ func TestPublishCratesSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -64,7 +64,7 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -95,7 +95,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -131,7 +131,7 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "git",
@@ -154,7 +154,7 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 	testhelper.RequireCommand(t, "echo")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "echo",
@@ -203,7 +203,7 @@ fi
 
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -232,7 +232,7 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -257,7 +257,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -295,8 +295,7 @@ func TestPublishLastTagError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, echo)
 	config := config.Release{
-		Remote: "origin",
-		Branch: "invalid-branch",
+		Remote: "invalid-remote",
 		Preinstalled: map[string]string{
 			"cargo": echo,
 		},
@@ -332,7 +331,7 @@ fi
 
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -388,7 +387,7 @@ fi
 
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -436,7 +435,7 @@ fi
 
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
+
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
