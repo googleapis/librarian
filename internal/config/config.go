@@ -178,7 +178,7 @@ type Library struct {
 	// at the top for ease of consumption in file-form.
 
 	// Name is the library name, such as "secretmanager" or "storage".
-	Name string `yaml:"name"`
+	Name string `yaml:"name,omitempty"`
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
