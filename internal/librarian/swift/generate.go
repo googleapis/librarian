@@ -1,0 +1,81 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+// Package swift provides functionality for generating Swift client libraries.
+package swift
+
+import (
+	"context"
+	"fmt"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
+	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
+	"github.com/googleapis/librarian/internal/sources"
+	"github.com/iancoleman/strcase"
+)
+
+// Generate generates a Swift client library.
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
+	if len(library.APIs) == 0 {
+		return fmt.Errorf("the Swift generator requires at least one api")
+	}
+	modelConfig := libraryToModelConfig(library, library.APIs[0], src)
+	model, err := parser.CreateModel(modelConfig)
+	if err != nil {
+		return err
+	}
+	return sidekickswift.Generate(ctx, model, library.Output, modelConfig)
+}
+
+// DefaultLibraryName derives a library name from an API path.
+// For example: google/cloud/secretmanager/v1 -> GoogleCloudSecretmanagerV1.
+func DefaultLibraryName(api string) string {
+	if strings.HasPrefix(api, "google/cloud/") {
+		return "GoogleCloud" + camelLibraryName(strings.TrimPrefix(api, "google/cloud/"))
+	}
+	if strings.HasPrefix(api, "google/") {
+		return "Google" + camelLibraryName(strings.TrimPrefix(api, "google/"))
+	}
+	return "Google" + camelLibraryName(api)
+}
+
+func camelLibraryName(api string) string {
+	parts := strings.Split(api, "/")
+	var name strings.Builder
+	for _, p := range parts {
+		name.WriteString(strcase.ToCamel(p))
+	}
+	return name.String()
+}
+
+func libraryToModelConfig(library *config.Library, api *config.API, src *sources.Sources) *parser.ModelConfig {
+	// Simple mapping for now, similar to what we did in tests.
+	return &parser.ModelConfig{
+		SpecificationFormat: config.SpecProtobuf,
+		ServiceConfig:       fmt.Sprintf("%s/service.yaml", api.Path), // Placeholder or derive it
+		SpecificationSource: api.Path,
+		Source: &sources.SourceConfig{
+			Sources:     src,
+			ActiveRoots: []string{"googleapis"},
+		},
+		Codec: map[string]string{
+			"copyright-year":      library.CopyrightYear,
+			"not-for-publication": "true",
+			"version":             library.Version,
+			"skip-format":         "true",
+		},
+	}
+}

@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -103,6 +104,8 @@ func deriveLibraryName(language string, api string) string {
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:
 		return rust.DefaultLibraryName(api)
+	case config.LanguageSwift:
+		return swift.DefaultLibraryName(api)
 	default:
 		return strings.ReplaceAll(api, "/", "-")
 	}
