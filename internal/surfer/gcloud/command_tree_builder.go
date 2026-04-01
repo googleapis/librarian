@@ -137,6 +137,6 @@ func (b *commandTreeBuilder) getLiteralSegments(method *api.Method) []string {
 	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
 		return nil
 	}
-	// TODO: https://github.com/googleapis/librarian/issues/3415 - handle multiple bindings
+	// TODO(https://github.com/googleapis/librarian/issues/3415): handle multiple bindings
 	return provider.GetLiteralSegments(method.PathInfo.Bindings[0].PathTemplate.Segments)
 }
