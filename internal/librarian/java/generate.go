@@ -165,16 +165,16 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	return nil
 }
 
-// ensureCloudPrefix returns name with the "google-cloud-" prefix,
+// EnsureCloudPrefix returns name with the "google-cloud-" prefix,
 // adding it if not already present.
-func ensureCloudPrefix(name string) string {
+func EnsureCloudPrefix(name string) string {
 	if !strings.HasPrefix(name, cloudPrefix) {
 		return cloudPrefix + name
 	}
 	return name
 }
 
-func deriveDistributionName(library *config.Library) string {
+func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
@@ -182,7 +182,7 @@ func deriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID
 	}
-	artifactID := ensureCloudPrefix(library.Name)
+	artifactID := EnsureCloudPrefix(library.Name)
 	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 
@@ -226,7 +226,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	gapicOpts := []string{"metadata"}
 
 	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
-	gapicOpts = append(gapicOpts, gapicOpt("artifact", deriveDistributionName(library)))
+	gapicOpts = append(gapicOpts, gapicOpt("artifact", DeriveDistributionName(library)))
 
 	if apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which

@@ -24,11 +24,17 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
 	generationConfigFileName = "generation_config.yaml"
+	managedProtoStart        = "<!-- {x-generated-proto-dependencies-start} -->"
+	managedProtoEnd          = "<!-- {x-generated-proto-dependencies-end} -->"
+	managedGrpcStart         = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGrpcEnd           = "<!-- {x-generated-grpc-dependencies-end} -->"
 )
 
 var (
@@ -151,6 +157,11 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
+
+	if err := insertMarkers(repoPath, cfg); err != nil {
+		return fmt.Errorf("failed to insert markers: %w", err)
+	}
+
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
 	}
@@ -319,4 +330,95 @@ func parseArtifactID(distributionName, name string) string {
 
 func invertBoolPtr(p *bool) bool {
 	return p != nil && !*p
+}
+
+func insertMarkers(repoPath string, cfg *config.Config) error {
+	for _, lib := range cfg.Libraries {
+		if lib.SkipGenerate {
+			continue
+		}
+		distName := java.DeriveDistributionName(lib)
+		parts := strings.SplitN(distName, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		gapicArtifactID := parts[1]
+		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
+		if _, err := os.Stat(clientPomPath); err != nil {
+			continue
+		}
+
+		contentBytes, err := os.ReadFile(clientPomPath)
+		if err != nil {
+			return err
+		}
+		content := string(contentBytes)
+
+		var protoArtifactIDs []string
+		var grpcArtifactIDs []string
+		for _, api := range lib.APIs {
+			version := serviceconfig.ExtractVersion(api.Path)
+			names := java.DeriveModuleNames(lib.Name, version)
+			protoArtifactIDs = append(protoArtifactIDs, names.Proto)
+			grpcArtifactIDs = append(grpcArtifactIDs, names.Grpc)
+		}
+
+		content = wrapDependencies(content, protoArtifactIDs, managedProtoStart, managedProtoEnd)
+		content = wrapDependencies(content, grpcArtifactIDs, managedGrpcStart, managedGrpcEnd)
+
+		if content != string(contentBytes) {
+			if err := os.WriteFile(clientPomPath, []byte(content), 0644); err != nil {
+				return err
+			}
+			log.Printf("Inserted markers in %s", clientPomPath)
+		}
+	}
+	return nil
+}
+
+func wrapDependencies(content string, artifactIDs []string, startMarker, endMarker string) string {
+	if len(artifactIDs) == 0 || strings.Contains(content, startMarker) {
+		return content
+	}
+
+	lines := strings.Split(content, "\n")
+	firstLine := -1
+	lastLine := -1
+
+	for i, line := range lines {
+		for _, id := range artifactIDs {
+			if strings.Contains(line, "<artifactId>"+id+"</artifactId>") {
+				// Find the start of this <dependency> block
+				start := i
+				for start > 0 && !strings.Contains(lines[start], "<dependency>") {
+					start--
+				}
+				if firstLine == -1 || start < firstLine {
+					firstLine = start
+				}
+
+				// Find the end of this <dependency> block
+				end := i
+				for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
+					end++
+				}
+				if end > lastLine {
+					lastLine = end
+				}
+			}
+		}
+	}
+
+	if firstLine != -1 && lastLine != -1 {
+		// Insert markers
+		newLines := make([]string, 0, len(lines)+2)
+		newLines = append(newLines, lines[:firstLine]...)
+		newLines = append(newLines, "    "+startMarker)
+		newLines = append(newLines, lines[firstLine:lastLine+1]...)
+		newLines = append(newLines, "    "+endMarker)
+		newLines = append(newLines, lines[lastLine+1:]...)
+		return strings.Join(newLines, "\n")
+	}
+
+	return content
 }
