@@ -25,11 +25,11 @@ import (
 )
 
 const (
-	protoPomTemplateName  = "proto_pom.xml.tmpl"
-	grpcPomTemplateName   = "grpc_pom.xml.tmpl"
-	clientPomTemplateName = "client_pom.xml.tmpl"
-	parentPomTemplateName = "parent_pom.xml.tmpl"
-	bomPomTemplateName    = "bom_pom.xml.tmpl"
+	protoPomTemplateName  = "module_proto_pom.xml.tmpl"
+	grpcPomTemplateName   = "module_grpc_pom.xml.tmpl"
+	clientPomTemplateName = "module_client_pom.xml.tmpl"
+	parentPomTemplateName = "module_parent_pom.xml.tmpl"
+	bomPomTemplateName    = "module_bom_pom.xml.tmpl"
 	googleGroupID         = "com.google"
 	protoGrpcSuffix       = ".api.grpc"
 )
