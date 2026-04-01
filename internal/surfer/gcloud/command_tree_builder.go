@@ -124,6 +124,8 @@ var flattenedSegments = map[string]bool{
 }
 
 func (b *commandTreeBuilder) isFlattenedSegment(lit string) bool {
+	// TODO (https://github.com/googleapis/librarian/issues/4980): these should not be flattened if
+	// there are commands that should be generated for them.
 	return flattenedSegments[lit]
 }
 

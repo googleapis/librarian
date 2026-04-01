@@ -49,7 +49,7 @@ func newCommandGroupBuilder(model *api.API, service *api.Service, config *provid
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
-	// TODO: https://github.com/googleapis/librarian/issues/4945 - Name can be an empty string here.
+	// TODO (https://github.com/googleapis/librarian/issues/4945): Name can be an empty string here.
 	// Need clear error handling rather than silent skipping
 	return &CommandGroup{
 		Name:     b.model.Name,
