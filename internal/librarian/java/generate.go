@@ -61,18 +61,20 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	// generate repo metadata prior to client because info is needed for
 	// owlbot.py to generate README.md
-	if err := generateRepoMetadata(cfg, library, outdir, googleapisDir); err != nil {
+	metadata, err := generateRepoMetadata(cfg, library, outdir, googleapisDir)
+	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 	for _, api := range library.APIs {
-		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir); err != nil {
+		// metadata is needed for pom.xml generation in post process
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return nil
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
@@ -88,18 +90,17 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p := postProcessParams{
 		cfg:                 cfg,
 		library:             library,
+		metadata:            metadata,
 		outDir:              outdir,
-		libraryName:         library.Name,
-		libraryVersion:      library.Version,
 		librariesBomVersion: bomVersion,
 		version:             version,
 		googleapisDir:       googleapisDir,
 		includeSamples:      !javaAPI.NoSamples,
-		gapicDir:            filepath.Join(outdir, version, "gapic"),
-		grpcDir:             filepath.Join(outdir, version, "grpc"),
-		protoDir:            filepath.Join(outdir, version, "proto"),
 	}
-	for _, dir := range []string{p.gapicDir, p.grpcDir, p.protoDir} {
+	gapicDir := p.gapicDir()
+	grpcDir := p.grpcDir()
+	protoDir := p.protoDir()
+	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
@@ -120,7 +121,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	if err := runProtoc(ctx, protoProtocArgs(apiProtos, googleapisDir, p.protoDir)); err != nil {
+	if err := runProtoc(ctx, protoProtocArgs(apiProtos, googleapisDir, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
@@ -130,7 +131,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	}
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
-		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, p.grpcDir)); err != nil {
+		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {
 			return fmt.Errorf("failed to generate grpc: %w", err)
 		}
 	}
@@ -143,7 +144,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	for _, p := range javaAPI.AdditionalProtos {
 		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
-	if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, p.gapicDir, gapicOpts)); err != nil {
+	if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
 		return fmt.Errorf("failed to generate gapic: %w", err)
 	}
 
@@ -151,6 +152,15 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+// ensureCloudPrefix returns name with the "google-cloud-" prefix,
+// adding it if not already present.
+func ensureCloudPrefix(name string) string {
+	if !strings.HasPrefix(name, cloudPrefix) {
+		return cloudPrefix + name
+	}
+	return name
 }
 
 func deriveDistributionName(library *config.Library) string {
@@ -161,10 +171,7 @@ func deriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID
 	}
-	artifactID := library.Name
-	if !strings.HasPrefix(artifactID, cloudPrefix) {
-		artifactID = cloudPrefix + artifactID
-	}
+	artifactID := ensureCloudPrefix(library.Name)
 	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 

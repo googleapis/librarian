@@ -1,0 +1,63 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+image: test-image
+libraries:
+  - id: accessapproval
+    version: 1.8.8
+    last_generated_commit: ""
+    apis: []
+    source_roots:
+      - accessapproval
+      - internal/generated/snippets/accessapproval
+    preserve_regex: []
+    remove_regex: []
+    release_exclude_paths:
+      - internal/generated/snippets/accessapproval/
+    tag_format: '{id}/v{version}'
+  - id: accesscontextmanager
+    version: 1.9.7
+    last_generated_commit: ""
+    apis: []
+    source_roots:
+      - accesscontextmanager
+      - internal/generated/snippets/accesscontextmanager
+    preserve_regex: []
+    remove_regex: []
+    release_exclude_paths:
+      - internal/generated/snippets/accesscontextmanager/
+    tag_format: '{id}/v{version}'
+  - id: advisorynotifications
+    version: 1.5.6
+    last_generated_commit: ""
+    apis: []
+    source_roots:
+      - advisorynotifications
+      - internal/generated/snippets/advisorynotifications
+    preserve_regex: []
+    remove_regex: []
+    release_exclude_paths:
+      - internal/generated/snippets/advisorynotifications/
+    tag_format: '{id}/v{version}'
+  - id: apigeeconnect
+    version: 1.7.7
+    last_generated_commit: ""
+    apis: []
+    source_roots:
+      - apigeeconnect
+      - internal/generated/snippets/apigeeconnect
+    preserve_regex: []
+    remove_regex: []
+    release_exclude_paths:
+      - internal/generated/snippets/apigeeconnect/
+    tag_format: '{id}/v{version}'

@@ -29,6 +29,10 @@ libraries:
       go_apis:
         - import_path: accesscontextmanager/apiv1
           path: google/identity/accesscontextmanager/v1
+  - name: advisorynotifications
+    version: 1.5.6
+    apis:
+      - path: google/cloud/advisorynotifications/v1
   - name: apigeeconnect
     version: 1.7.7
     apis:

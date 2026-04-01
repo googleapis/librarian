@@ -44,9 +44,5 @@ jobs:
           # Verify plugins are executable (they don't support --version)
           test -x "$(which protoc-gen-java_grpc)"
           test -x "$(which protoc-gen-java_gapic)"
-      - name: Run internal/librarian/java tests
-        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/java
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run internal/librarian/java tests and check coverage
+        run: go run ./tool/cmd/coverage ./internal/librarian/java

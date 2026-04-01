@@ -18,8 +18,16 @@ package config
 
 //go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
 
-// LibrarianYAML is the filename for the librarian configuration file.
-const LibrarianYAML = "librarian.yaml"
+const (
+	// BranchMain is the default git branch name.
+	BranchMain = "main"
+
+	// LibrarianYAML is the filename for the librarian configuration file.
+	LibrarianYAML = "librarian.yaml"
+
+	// RemoteUpstream is the default git remote name.
+	RemoteUpstream = "upstream"
+)
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
@@ -51,9 +59,6 @@ type Config struct {
 
 // Release holds the configuration parameter for publish command.
 type Release struct {
-	// Branch sets the name of the release branch, typically `main`
-	Branch string `yaml:"branch,omitempty"`
-
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
 
@@ -63,9 +68,6 @@ type Release struct {
 	// [preinstalled]
 	// cargo = /usr/bin/cargo
 	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
-
-	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
-	Remote string `yaml:"remote,omitempty"`
 
 	// Tools defines the list of tools to install, indexed by installer.
 	Tools map[string][]Tool `yaml:"tools,omitempty"`

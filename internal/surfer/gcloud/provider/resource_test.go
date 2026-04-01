@@ -633,3 +633,77 @@ func parseResourcePattern(pattern string) []api.PathSegment {
 	}
 	return segments
 }
+
+func TestGetLiteralSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     []string
+	}{
+		{
+			name:     "Standard",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     []string{"projects", "locations", "instances"},
+		},
+		{
+			name:     "Version Filtered",
+			segments: parseResourcePattern("v1/projects/{project}"),
+			want:     []string{"projects"},
+		},
+		{
+			name: "With Wildcards",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithLiteral("foo").WithMatch().WithLiteral("bar")),
+			},
+			want: []string{"projects", "foo", "bar"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := GetLiteralSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetSingularResourceNameForPrefix(t *testing.T) {
+	instanceResource := &api.Resource{
+		Type:     "example.googleapis.com/Instance",
+		Singular: "instance_custom",
+		Patterns: []api.ResourcePattern{
+			parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+		},
+	}
+
+	model := &api.API{
+		ResourceDefinitions: []*api.Resource{instanceResource},
+	}
+
+	for _, test := range []struct {
+		name   string
+		prefix []string
+		want   string
+	}{
+		{
+			name:   "Match",
+			prefix: []string{"projects", "locations", "instances"},
+			want:   "instance_custom",
+		},
+		{
+			name:   "No Match",
+			prefix: []string{"projects", "locations", "unknown"},
+			want:   "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := GetSingularResourceNameForPrefix(model, test.prefix)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

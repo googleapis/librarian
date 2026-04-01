@@ -73,15 +73,15 @@ func (metadata *repoMetadata) write(libraryOutputDir string) error {
 
 // generateRepoMetadata coordinates all library-level post-processing tasks,
 // such as generating .repo-metadata.json.
-func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) error {
+func generateRepoMetadata(cfg *config.Config, library *config.Library, outDir, googleapisDir string) (*repoMetadata, error) {
 	metadata, err := deriveRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
-		return fmt.Errorf("failed to derive repo metadata: %w", err)
+		return nil, fmt.Errorf("failed to derive repo metadata: %w", err)
 	}
 	if err := metadata.write(outDir); err != nil {
-		return fmt.Errorf("failed to write .repo-metadata.json: %w", err)
+		return nil, fmt.Errorf("failed to write .repo-metadata.json: %w", err)
 	}
-	return nil
+	return metadata, nil
 }
 
 // deriveRepoMetadata constructs the repoMetadata for a Java library using
@@ -99,6 +99,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		ProductDocumentation: sharedMetadata.ProductDocumentation,
 		APIDescription:       sharedMetadata.APIDescription,
 		ReleaseLevel:         sharedMetadata.ReleaseLevel,
+		Transport:            sharedMetadata.Transport,
 		Language:             config.LanguageJava,
 		Repo:                 sharedMetadata.Repo,
 		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
@@ -156,11 +157,5 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		artifactID := parts[len(parts)-1]
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
-	// transport
-	apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
 	return metadata, nil
 }

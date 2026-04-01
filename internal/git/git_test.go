@@ -36,11 +36,7 @@ func TestGetLastTag(t *testing.T) {
 	const wantTag = "v1.2.3"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	cfg := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
+	got, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, "git"), config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -51,11 +47,7 @@ func TestGetLastTag(t *testing.T) {
 
 func TestLastTagGitError(t *testing.T) {
 	t.Chdir(t.TempDir())
-	cfg := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
+	_, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, "git"), config.RemoteUpstream, config.BranchMain)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -247,43 +239,31 @@ func TestAssertGitStatusClean(t *testing.T) {
 
 func TestMatchesBranchPointSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
+	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, config.BranchMain); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMatchesBranchDiffError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "not-a-valid-branch",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
 
 func TestMatchesDirtyCloneError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "not-a-valid-branch",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with a dirty clone")
 	}
 }
@@ -292,7 +272,7 @@ func TestShowFileAtRemoteBranch(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", testhelper.ReadmeFile)
+	got, err := ShowFileAtRemoteBranch(t.Context(), "git", config.RemoteUpstream, config.BranchMain, testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -305,7 +285,7 @@ func TestShowFileAtRemoteBranch_Error(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	_, err := ShowFileAtRemoteBranch(t.Context(), "git", "origin", "main", "does_not_exist")
+	_, err := ShowFileAtRemoteBranch(t.Context(), "git", config.RemoteUpstream, config.BranchMain, "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}

@@ -42,6 +42,11 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.MkdirAll(grpcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	content := "package com.google.cloud.secretmanager.v1;"
 	grpcFile := filepath.Join(grpcDir, "GrpcFile.java")
 	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
@@ -88,17 +93,21 @@ func TestPostProcessAPI(t *testing.T) {
 		t.Fatal(err)
 	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	p := postProcessParams{
-		outDir:         outdir,
-		libraryName:    libraryName,
-		library:        &config.Library{Name: libraryName},
+		outDir: outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		library: &config.Library{
+			Name: libraryName,
+			APIs: []*config.API{api},
+		},
 		version:        version,
 		googleapisDir:  googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
-		gapicDir:       gapicDir,
-		grpcDir:        grpcDir,
-		protoDir:       protoDir,
 	}
 	if err := postProcessAPI(t.Context(), p); err != nil {
 		t.Fatal(err)
@@ -178,14 +187,11 @@ func TestRestructureModules(t *testing.T) {
 
 	p := postProcessParams{
 		outDir:         tmpDir,
-		libraryName:    libraryID,
+		library:        &config.Library{Name: libraryID},
 		version:        version,
 		googleapisDir:  googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
-		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
-		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
-		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -232,14 +238,11 @@ func TestRestructureModules_NoSamples(t *testing.T) {
 
 	p := postProcessParams{
 		outDir:         tmpDir,
-		libraryName:    libraryID,
+		library:        &config.Library{Name: libraryID},
 		version:        version,
 		googleapisDir:  googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
-		gapicDir:       filepath.Join(tmpDir, version, "gapic"),
-		grpcDir:        filepath.Join(tmpDir, version, "grpc"),
-		protoDir:       filepath.Join(tmpDir, version, "proto"),
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -314,7 +317,7 @@ with open("owlbot-ran.txt", "w") as f:
 
 	p := postProcessParams{
 		outDir:              outDir,
-		libraryVersion:      "1.2.3",
+		library:             &config.Library{Version: "1.2.3"},
 		librariesBomVersion: "4.5.6",
 	}
 	if err := runOwlBot(t.Context(), p); err != nil {
@@ -334,7 +337,8 @@ func TestRunOwlBot_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := postProcessParams{
-		outDir: outDir,
+		outDir:  outDir,
+		library: &config.Library{},
 	}
 	if err := runOwlBot(t.Context(), p); err == nil {
 		t.Error("expected error due to missing templates directory, got nil")

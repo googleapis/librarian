@@ -34,28 +34,32 @@ const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generat
 type postProcessParams struct {
 	cfg                 *config.Config
 	library             *config.Library
+	metadata            *repoMetadata
 	outDir              string
-	libraryName         string
-	libraryVersion      string
 	librariesBomVersion string
 	version             string
 	googleapisDir       string
 	apiProtos           []string
 	includeSamples      bool
-	gapicDir            string
-	grpcDir             string
-	protoDir            string
 }
 
+func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
+func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
+func (p postProcessParams) modules() javaModules { return deriveModuleNames(p.library.Name, p.version) }
+
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
+	gapicDir := p.gapicDir()
+	grpcDir := p.grpcDir()
+	protoDir := p.protoDir()
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
-	srcjarPath := filepath.Join(p.gapicDir, "temp-codegen.srcjar")
+	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
-		if err := filesystem.Unzip(ctx, srcjarPath, p.gapicDir); err != nil {
+		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{p.grpcDir, p.protoDir} {
+	for _, dir := range []string{grpcDir, protoDir} {
 		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
@@ -74,12 +78,12 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
-	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir); err != nil {
+	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir, p.metadata); err != nil {
 		return fmt.Errorf("failed to sync poms: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
-	modules := deriveModuleNames(p.libraryName, p.version)
+	modules := p.modules()
 	protoModuleRoot := filepath.Join(p.outDir, modules.proto)
 	if err := generateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
@@ -133,10 +137,7 @@ type javaModules struct {
 }
 
 func deriveModuleNames(libraryID, version string) javaModules {
-	name := libraryID
-	if !strings.HasPrefix(name, cloudPrefix) {
-		name = cloudPrefix + libraryID
-	}
+	name := ensureCloudPrefix(libraryID)
 	return javaModules{
 		gapic: name,
 		proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),
@@ -192,8 +193,8 @@ func restructure(actions []moveAction) error {
 // tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
 // It also copies the relevant proto files into the proto module.
 func restructureModules(p postProcessParams, destRoot string) error {
-	modules := deriveModuleNames(p.libraryName, p.version)
-	tempProtoSrcDir := filepath.Join(p.outDir, p.version, "proto")
+	modules := p.modules()
+	tempProtoSrcDir := p.protoDir()
 	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 		return err
 	}
@@ -204,29 +205,29 @@ func restructureModules(p postProcessParams, destRoot string) error {
 			description: "proto source",
 		},
 		{
-			src:         filepath.Join(p.outDir, p.version, "grpc"),
+			src:         p.grpcDir(),
 			dest:        filepath.Join(destRoot, modules.grpc, "src", "main", "java"),
 			description: "grpc source",
 		},
 		{
-			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "main"),
+			src:         filepath.Join(p.gapicDir(), "src", "main"),
 			dest:        filepath.Join(destRoot, modules.gapic, "src", "main"),
 			description: "gapic source",
 		},
 		{
-			src:         filepath.Join(p.outDir, p.version, "gapic", "src", "test"),
+			src:         filepath.Join(p.gapicDir(), "src", "test"),
 			dest:        filepath.Join(destRoot, modules.gapic, "src", "test"),
 			description: "gapic test",
 		},
 		{
-			src:         filepath.Join(p.outDir, p.version, "gapic", "proto", "src", "main", "java"),
+			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
 			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
 			description: "resource name source",
 		},
 	}
 	if p.includeSamples {
 		actions = append(actions, moveAction{
-			src:         filepath.Join(p.outDir, p.version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+			src:         filepath.Join(p.gapicDir(), "samples", "snippets", "generated", "src", "main", "java"),
 			dest:        filepath.Join(destRoot, "samples", "snippets", "generated"),
 			description: "samples",
 		})
@@ -245,7 +246,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 func runOwlBot(ctx context.Context, p postProcessParams) error {
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       p.libraryVersion,
+		"SYNTHTOOL_LIBRARY_VERSION":       p.library.Version,
 		"SYNTHTOOL_LIBRARIES_BOM_VERSION": p.librariesBomVersion,
 	}
 	// Path to templates used for README.md file.
