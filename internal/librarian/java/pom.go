@@ -127,15 +127,15 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		}
 		transport := apiCfg.Transport(config.LanguageJava)
 
-		protoGrpID := protoGroupID(gapicGroupID)
+		protoGrpcID := protoGroupID(gapicGroupID)
 		data := grpcProtoPomData{
 			Proto: coordinates{
-				GroupID:    protoGrpID,
+				GroupID:    protoGrpcID,
 				ArtifactID: names.proto,
 				Version:    library.Version,
 			},
 			Grpc: coordinates{
-				GroupID:    protoGrpID,
+				GroupID:    protoGrpcID,
 				ArtifactID: names.grpc,
 				Version:    library.Version,
 			},
