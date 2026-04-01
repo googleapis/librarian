@@ -334,11 +334,11 @@ func TestAddLibrary_Preview(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			found, err := FindLibrary(gotCfg, gotName)
+			got, err := FindLibrary(gotCfg, gotName)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantPreview, found.Preview); diff != "" {
+			if diff := cmp.Diff(test.wantPreview, got.Preview); diff != "" {
 				t.Errorf("preview mismatch (-want +got):\n%s", diff)
 			}
 		})
