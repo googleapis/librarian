@@ -15,6 +15,7 @@
 package java
 
 import (
+	"errors"
 	"flag"
 	"os"
 	"path/filepath"
@@ -47,7 +48,8 @@ func TestSyncPoms_Golden(t *testing.T) {
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
 	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
 	gapicArtifactID := "google-cloud-secretmanager"
-	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID} {
+	bomArtifactID := "google-cloud-secretmanager-bom"
+	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
 		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -153,5 +155,13 @@ func TestIsPomMissing(t *testing.T) {
 				t.Errorf("isPomMissing(%q) = %v, want %v", dir, got, test.want)
 			}
 		})
+	}
+}
+
+func TestIsPomMissing_DirMissingError(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "nonexistent")
+	_, err := isPomMissing(dir)
+	if !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }

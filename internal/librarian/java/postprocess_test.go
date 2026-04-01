@@ -42,7 +42,7 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.MkdirAll(grpcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1"} {
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}

@@ -373,7 +373,7 @@ func TestGenerateAPI(t *testing.T) {
 		},
 	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
-	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1"} {
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -434,7 +434,7 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 			api,
 		},
 	}
-	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1"} {
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}

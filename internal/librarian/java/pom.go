@@ -59,22 +59,21 @@ type clientPomData struct {
 	GrpcModules  []coordinates
 }
 
-// pomData holds the data for rendering the BOM and Parent library POM template.
-type pomData struct {
+// bomParentPomData holds the data for rendering the BOM and Parent library POM template.
+type bomParentPomData struct {
 	MainModule      coordinates
 	Name            string
-	Monorepo        bool
 	MonorepoVersion string
 	Modules         []coordinates
 }
 
 // javaModule represents a Maven module and its POM generation state.
 type javaModule struct {
-	artifactID string
-	dir        string
-	isMissing  bool
-	data       any
-	template   string
+	artifactID   string
+	dir          string
+	isMissing    bool
+	templateData any
+	template     string
 }
 
 // generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
@@ -87,7 +86,7 @@ func generatePomsIfMissing(cfg *config.Config, library *config.Library, libraryD
 		if !m.isMissing {
 			continue
 		}
-		if err := writePom(filepath.Join(m.dir, "pom.xml"), m.template, m.data); err != nil {
+		if err := writePom(filepath.Join(m.dir, "pom.xml"), m.template, m.templateData); err != nil {
 			return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
 		}
 	}
@@ -154,11 +153,11 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 			return nil, err
 		}
 		modules = append(modules, javaModule{
-			artifactID: names.proto,
-			dir:        protoDir,
-			isMissing:  isProtoMissing,
-			data:       data,
-			template:   protoPomTemplateName,
+			artifactID:   names.proto,
+			dir:          protoDir,
+			isMissing:    isProtoMissing,
+			templateData: data,
+			template:     protoPomTemplateName,
 		})
 		protoModules = append(protoModules, data.Proto)
 
@@ -170,11 +169,11 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 				return nil, err
 			}
 			modules = append(modules, javaModule{
-				artifactID: names.grpc,
-				dir:        grpcDir,
-				isMissing:  isGrpcMissing,
-				data:       data,
-				template:   grpcPomTemplateName,
+				artifactID:   names.grpc,
+				dir:          grpcDir,
+				isMissing:    isGrpcMissing,
+				templateData: data,
+				template:     grpcPomTemplateName,
 			})
 			grpcModules = append(grpcModules, data.Grpc)
 		}
@@ -191,7 +190,7 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		artifactID: gapicArtifactID,
 		dir:        clientDir,
 		isMissing:  isClientMissing,
-		data: clientPomData{
+		templateData: clientPomData{
 			Client:       clientCoord,
 			Version:      library.Version,
 			Name:         metadata.NamePretty,
@@ -204,12 +203,10 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 	})
 
 	monorepoVersion := ""
-	monorepo := false
 	if cfg != nil {
 		for _, lib := range cfg.Libraries {
 			if lib.Name == "google-cloud-java" {
 				monorepoVersion = lib.Version
-				monorepo = true
 				break
 			}
 		}
@@ -230,10 +227,9 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		artifactID: bomArtifactID,
 		dir:        bomDir,
 		isMissing:  isBomMissing,
-		data: pomData{
+		templateData: bomParentPomData{
 			MainModule:      clientCoord,
 			Name:            metadata.NamePretty,
-			Monorepo:        monorepo,
 			MonorepoVersion: monorepoVersion,
 			Modules:         allModules,
 		},
@@ -250,10 +246,9 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		artifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
 		dir:        parentDir,
 		isMissing:  isParentMissing,
-		data: pomData{
+		templateData: bomParentPomData{
 			MainModule:      clientCoord,
 			Name:            metadata.NamePretty,
-			Monorepo:        monorepo,
 			MonorepoVersion: monorepoVersion,
 			Modules:         allModules,
 		},
@@ -268,13 +263,13 @@ func isPomMissing(dir string) (bool, error) {
 	if _, err := os.Stat(pomPath); err == nil {
 		return false, nil
 	}
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return false, fmt.Errorf("target directory %s does not exist: %w", dir, err)
+	}
 	return true, nil
 }
 
 func writePom(pomPath, templateName string, data any) (err error) {
-	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
-		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(pomPath), err)
-	}
 	f, err := os.Create(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", pomPath, err)

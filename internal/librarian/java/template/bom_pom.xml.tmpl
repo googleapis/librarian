@@ -5,20 +5,12 @@
   <artifactId>{{.MainModule.ArtifactID}}-bom</artifactId>
   <version>{{.MainModule.Version}}</version><!-- {x-version-update:{{.MainModule.ArtifactID}}:current} -->
   <packaging>pom</packaging>
-  {{if .Monorepo -}}
   <parent>
     <groupId>com.google.cloud</groupId>
     <artifactId>google-cloud-pom-parent</artifactId>
     <version>{{.MonorepoVersion}}</version><!-- {x-version-update:google-cloud-java:current} -->
     <relativePath>../../google-cloud-pom-parent/pom.xml</relativePath>
   </parent>
-  {{- else -}}
-  <parent>
-    <groupId>com.google.cloud</groupId>
-    <artifactId>google-cloud-shared-config</artifactId>
-    <version>1.5.3</version>
-  </parent>
-  {{- end}}
 
   <name>Google {{.Name}} BOM</name>
   <description>
