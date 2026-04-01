@@ -17,7 +17,6 @@ package swift
 import (
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -26,9 +25,11 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-var testdataDir, _ = filepath.Abs("../../testdata")
-
 func TestFromProtobuf(t *testing.T) {
+	testdataDir, err := filepath.Abs("../../testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
 	if _, err := exec.LookPath("protoc"); err != nil {
 		t.Skip("skipping test because protoc is not installed")
 	}
@@ -40,7 +41,7 @@ func TestFromProtobuf(t *testing.T) {
 		SpecificationSource: "google/cloud/secretmanager/v1",
 		Source: &sources.SourceConfig{
 			Sources: &sources.Sources{
-				Googleapis: path.Join(testdataDir, "googleapis"),
+				Googleapis: filepath.Join(testdataDir, "googleapis"),
 			},
 			ActiveRoots: []string{"googleapis"},
 		},
@@ -58,7 +59,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
 		t.Fatal(err)
 	}
-	filename := path.Join(outDir, "README.md")
+	filename := filepath.Join(outDir, "README.md")
 	stat, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		t.Errorf("missing %s: %s", filename, err)
