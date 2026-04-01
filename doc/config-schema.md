@@ -10,6 +10,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the librarian tool version to use. |
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
+| `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
 | `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
@@ -49,6 +50,19 @@ This document describes the schema for the librarian.yaml.
 | `dir` | string | Is a local directory path to use instead of fetching. If set, Commit and SHA256 are ignored. |
 | `sha256` | string | Is the expected hash of the tarball for this commit. |
 | `subpath` | string | Is a directory inside the fetched archive that should be treated as the root for operations. |
+
+## Tools Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+
+## CargoTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the cargo package name. |
+| `version` | string | Is the version to install. |
 
 ## Default Configuration
 

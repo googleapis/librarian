@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// ErrMissingToolVersion indicates a cargo tool entry is missing its version.
 var ErrMissingToolVersion = errors.New("cargo tool missing version")
 
 // Install installs cargo tool dependencies defined in the tools configuration.
