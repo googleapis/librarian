@@ -61,13 +61,13 @@ func TestRun_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := run([]string{test.repoPath})
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("got error %v, want %v", err, test.wantErr)
+				t.Errorf("run(%q) error = %v, want %v", test.repoPath, err, test.wantErr)
 			}
 		})
 	}
 }
 
-func TestSyncNewLibrary(t *testing.T) {
+func TestConfigCheck(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		state *legacyconfig.LibrarianState
@@ -108,7 +108,7 @@ func TestSyncNewLibrary(t *testing.T) {
 	}
 }
 
-func TestSyncNewLibrary_Error(t *testing.T) {
+func TestConfigCheck_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		state   *legacyconfig.LibrarianState
@@ -193,7 +193,7 @@ func TestSyncNewLibrary_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			err := configCheck(test.state, test.cfg)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("got error %v, want %v", err, test.wantErr)
+				t.Errorf("configCheck() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}

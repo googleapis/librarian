@@ -61,7 +61,7 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	cfg, err := yaml.Read[config.Config](filepath.Join(abs, "librarian.yaml"))
+	cfg, err := yaml.Read[config.Config](filepath.Join(abs, config.LibrarianYAML))
 	if err != nil {
 		return err
 	}
