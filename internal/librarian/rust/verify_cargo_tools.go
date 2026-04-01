@@ -30,7 +30,7 @@ func preFlight(ctx context.Context, preinstalled map[string]string, cargoTools [
 	if err := git.CheckVersion(ctx, gitExe); err != nil {
 		return err
 	}
-	if err := git.CheckRemoteURL(ctx, gitExe, config.RemoteOrigin); err != nil {
+	if err := git.CheckRemoteURL(ctx, gitExe, config.RemoteUpstream); err != nil {
 		return err
 	}
 	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)

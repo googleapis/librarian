@@ -254,6 +254,7 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
+	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	configNewGitRepository(t)
 }
 

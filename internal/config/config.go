@@ -25,8 +25,8 @@ const (
 	// LibrarianYAML is the filename for the librarian configuration file.
 	LibrarianYAML = "librarian.yaml"
 
-	// RemoteOrigin is the default git remote name.
-	RemoteOrigin = "origin"
+	// RemoteUpstream is the default git remote name.
+	RemoteUpstream = "upstream"
 )
 
 // Config represents a librarian.yaml configuration file.

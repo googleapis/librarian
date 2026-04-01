@@ -184,17 +184,6 @@ func TestBumpCommand_Error(t *testing.T) {
 			dirty:   true,
 			wantErr: git.ErrGitStatusUnclean,
 		},
-		{
-			name: "release config empty",
-			args: []string{"librarian", "bump", "--all"},
-			cfg: func() *config.Config {
-				c := sample.Config()
-
-				c.Release = nil
-				return c
-			}(),
-			wantErr: errReleaseConfigEmpty,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelper.Setup(t, testhelper.SetupOptions{
@@ -780,7 +769,7 @@ func TestLoadBranchLibraryVersion(t *testing.T) {
 		},
 	})
 
-	got, err := loadBranchLibraryVersion(t.Context(), "git", "origin", config.BranchMain, sample.Lib1Name)
+	got, err := loadBranchLibraryVersion(t.Context(), "git", config.RemoteUpstream, config.BranchMain, sample.Lib1Name)
 	if err != nil {
 		t.Fatal(err)
 	}

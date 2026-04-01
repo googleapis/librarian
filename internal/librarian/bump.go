@@ -39,8 +39,6 @@ const (
 var (
 	errBothVersionAndAllFlag = errors.New("cannot specify both --version and --all")
 	errReleaseCommitNotFound = errors.New("no release commit found")
-	errReleaseConfigEmpty    = errors.New("release config not set in librarian.yaml")
-
 	// languageVersioningOptions contains language-specific SemVer versioning
 	// options. Over time, languages should align on versioning semantics and
 	// this should be removed. If a language does not have specific needs, a
@@ -102,10 +100,11 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	if cfg.Release == nil {
-		return errReleaseConfigEmpty
+	var preinstalled map[string]string
+	if cfg.Release != nil {
+		preinstalled = cfg.Release.Preinstalled
 	}
-	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	gitExe := command.GetExecutablePath(preinstalled, "git")
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -157,7 +156,11 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, cfg.Release.IgnoredChanges)
+		var ignoredChanges []string
+		if cfg.Release != nil {
+			ignoredChanges = cfg.Release.IgnoredChanges
+		}
+		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -367,7 +370,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, er
 // to work on the newer "tag-per-library" logic without interrupting Rust
 // releases. The "fake" language is still valid here, for testing purposes.
 func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride, gitExe string) error {
-	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteOrigin, config.BranchMain)
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
 	}
