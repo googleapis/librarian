@@ -17,7 +17,6 @@ package librarian
 import (
 	"fmt"
 	"maps"
-	"reflect"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -277,29 +276,452 @@ func ResolvePreview(lib *config.Library) *config.Library {
 		return nil
 	}
 	res := *lib
-	mergeStructs(reflect.ValueOf(&res).Elem(), reflect.ValueOf(lib.Preview).Elem())
+	p := lib.Preview
+	if p.Name != "" {
+		res.Name = p.Name
+	}
+	if p.Version != "" {
+		res.Version = p.Version
+	}
+	if p.APIs != nil {
+		res.APIs = p.APIs
+	}
+	if p.CopyrightYear != "" {
+		res.CopyrightYear = p.CopyrightYear
+	}
+	if p.DescriptionOverride != "" {
+		res.DescriptionOverride = p.DescriptionOverride
+	}
+	if p.Keep != nil {
+		res.Keep = p.Keep
+	}
+	if p.Output != "" {
+		res.Output = p.Output
+	}
+	if p.Roots != nil {
+		res.Roots = p.Roots
+	}
+	if p.SkipGenerate {
+		res.SkipGenerate = p.SkipGenerate
+	}
+	if p.SkipRelease {
+		res.SkipRelease = p.SkipRelease
+	}
+	if p.SpecificationFormat != "" {
+		res.SpecificationFormat = p.SpecificationFormat
+	}
+	res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
+	res.Dart = mergeDart(res.Dart, p.Dart)
+	res.Go = mergeGo(res.Go, p.Go)
+	res.Java = mergeJava(res.Java, p.Java)
+	res.Nodejs = mergeNodejs(res.Nodejs, p.Nodejs)
+	res.Python = mergePython(res.Python, p.Python)
+	res.Rust = mergeRust(res.Rust, p.Rust)
 	res.Preview = nil
 	return &res
 }
 
-func mergeStructs(dv, sv reflect.Value) {
-	for i := 0; i < sv.NumField(); i++ {
-		sf := sv.Field(i)
-		if sf.IsZero() || sv.Type().Field(i).Name == "Preview" {
-			continue
-		}
-		df := dv.Field(i)
-		// Recurse into struct pointers to merge them.
-		if sf.Kind() == reflect.Ptr && !sf.IsNil() && sf.Elem().Kind() == reflect.Struct {
-			if !df.IsNil() {
-				// Clone the struct to avoid mutating the original pointer.
-				nv := reflect.New(df.Elem().Type())
-				nv.Elem().Set(df.Elem())
-				df.Set(nv)
-				mergeStructs(df.Elem(), sf.Elem())
-				continue
-			}
-		}
-		df.Set(sf)
+func mergeDotnet(dst, src *config.DotnetPackage) *config.DotnetPackage {
+	if src == nil {
+		return dst
 	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.AdditionalServiceDescriptors != nil {
+		res.AdditionalServiceDescriptors = src.AdditionalServiceDescriptors
+	}
+	res.Csproj = mergeDotnetCsproj(res.Csproj, src.Csproj)
+	if src.Dependencies != nil {
+		res.Dependencies = src.Dependencies
+	}
+	if src.Generator != "" {
+		res.Generator = src.Generator
+	}
+	if src.PackageGroup != nil {
+		res.PackageGroup = src.PackageGroup
+	}
+	if src.Postgeneration != nil {
+		res.Postgeneration = src.Postgeneration
+	}
+	if src.Pregeneration != nil {
+		res.Pregeneration = src.Pregeneration
+	}
+	return &res
+}
+
+func mergeDotnetCsproj(dst, src *config.DotnetCsproj) *config.DotnetCsproj {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	res.Snippets = mergeDotnetCsprojSnippets(res.Snippets, src.Snippets)
+	res.IntegrationTests = mergeDotnetCsprojSnippets(res.IntegrationTests, src.IntegrationTests)
+	return &res
+}
+
+func mergeDotnetCsprojSnippets(dst, src *config.DotnetCsprojSnippets) *config.DotnetCsprojSnippets {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.EmbeddedResources != nil {
+		res.EmbeddedResources = src.EmbeddedResources
+	}
+	return &res
+}
+
+func mergeDart(dst, src *config.DartPackage) *config.DartPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.APIKeysEnvironmentVariables != "" {
+		res.APIKeysEnvironmentVariables = src.APIKeysEnvironmentVariables
+	}
+	if src.Dependencies != "" {
+		res.Dependencies = src.Dependencies
+	}
+	if src.DevDependencies != "" {
+		res.DevDependencies = src.DevDependencies
+	}
+	if src.ExtraImports != "" {
+		res.ExtraImports = src.ExtraImports
+	}
+	if src.IncludeList != nil {
+		res.IncludeList = src.IncludeList
+	}
+	if src.IssueTrackerURL != "" {
+		res.IssueTrackerURL = src.IssueTrackerURL
+	}
+	if src.LibraryPathOverride != "" {
+		res.LibraryPathOverride = src.LibraryPathOverride
+	}
+	if src.NameOverride != "" {
+		res.NameOverride = src.NameOverride
+	}
+	if src.Packages != nil {
+		res.Packages = src.Packages
+	}
+	if src.PartFile != "" {
+		res.PartFile = src.PartFile
+	}
+	if src.Prefixes != nil {
+		res.Prefixes = src.Prefixes
+	}
+	if src.Protos != nil {
+		res.Protos = src.Protos
+	}
+	if src.ReadmeAfterTitleText != "" {
+		res.ReadmeAfterTitleText = src.ReadmeAfterTitleText
+	}
+	if src.ReadmeQuickstartText != "" {
+		res.ReadmeQuickstartText = src.ReadmeQuickstartText
+	}
+	if src.RepositoryURL != "" {
+		res.RepositoryURL = src.RepositoryURL
+	}
+	if src.TitleOverride != "" {
+		res.TitleOverride = src.TitleOverride
+	}
+	if src.Version != "" {
+		res.Version = src.Version
+	}
+	return &res
+}
+
+func mergeGo(dst, src *config.GoModule) *config.GoModule {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.DeleteGenerationOutputPaths != nil {
+		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
+	}
+	if src.GoAPIs != nil {
+		res.GoAPIs = src.GoAPIs
+	}
+	if src.ModulePathVersion != "" {
+		res.ModulePathVersion = src.ModulePathVersion
+	}
+	if src.NestedModule != "" {
+		res.NestedModule = src.NestedModule
+	}
+	return &res
+}
+
+func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.APIIDOverride != "" {
+		res.APIIDOverride = src.APIIDOverride
+	}
+	if src.APIReference != "" {
+		res.APIReference = src.APIReference
+	}
+	if src.APIDescriptionOverride != "" {
+		res.APIDescriptionOverride = src.APIDescriptionOverride
+	}
+	if src.ClientDocumentationOverride != "" {
+		res.ClientDocumentationOverride = src.ClientDocumentationOverride
+	}
+	if src.NonCloudAPI {
+		res.NonCloudAPI = src.NonCloudAPI
+	}
+	if src.CodeownerTeam != "" {
+		res.CodeownerTeam = src.CodeownerTeam
+	}
+	if src.DistributionNameOverride != "" {
+		res.DistributionNameOverride = src.DistributionNameOverride
+	}
+	if src.ExcludedDependencies != "" {
+		res.ExcludedDependencies = src.ExcludedDependencies
+	}
+	if src.ExcludedPoms != "" {
+		res.ExcludedPoms = src.ExcludedPoms
+	}
+	if src.ExtraVersionedModules != "" {
+		res.ExtraVersionedModules = src.ExtraVersionedModules
+	}
+	if src.GroupID != "" {
+		res.GroupID = src.GroupID
+	}
+	if src.IssueTrackerOverride != "" {
+		res.IssueTrackerOverride = src.IssueTrackerOverride
+	}
+	if src.LibrariesBomVersion != "" {
+		res.LibrariesBomVersion = src.LibrariesBomVersion
+	}
+	if src.LibraryTypeOverride != "" {
+		res.LibraryTypeOverride = src.LibraryTypeOverride
+	}
+	if src.MinJavaVersion != 0 {
+		res.MinJavaVersion = src.MinJavaVersion
+	}
+	if src.NamePrettyOverride != "" {
+		res.NamePrettyOverride = src.NamePrettyOverride
+	}
+	if src.JavaAPIs != nil {
+		res.JavaAPIs = src.JavaAPIs
+	}
+	if src.ProductDocumentationOverride != "" {
+		res.ProductDocumentationOverride = src.ProductDocumentationOverride
+	}
+	if src.RecommendedPackage != "" {
+		res.RecommendedPackage = src.RecommendedPackage
+	}
+	if src.BillingNotRequired {
+		res.BillingNotRequired = src.BillingNotRequired
+	}
+	if src.RestDocumentation != "" {
+		res.RestDocumentation = src.RestDocumentation
+	}
+	if src.RpcDocumentation != "" {
+		res.RpcDocumentation = src.RpcDocumentation
+	}
+	return &res
+}
+
+func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.BundleConfig != "" {
+		res.BundleConfig = src.BundleConfig
+	}
+	if src.Dependencies != nil {
+		res.Dependencies = src.Dependencies
+	}
+	if src.ExtraProtocParameters != nil {
+		res.ExtraProtocParameters = src.ExtraProtocParameters
+	}
+	if src.HandwrittenLayer {
+		res.HandwrittenLayer = src.HandwrittenLayer
+	}
+	if src.MainService != "" {
+		res.MainService = src.MainService
+	}
+	if src.Mixins != "" {
+		res.Mixins = src.Mixins
+	}
+	if src.PackageName != "" {
+		res.PackageName = src.PackageName
+	}
+	return &res
+}
+
+func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.CommonGAPICPaths != nil {
+		res.CommonGAPICPaths = src.CommonGAPICPaths
+	}
+	if src.LibraryType != "" {
+		res.LibraryType = src.LibraryType
+	}
+	if src.OptArgsByAPI != nil {
+		res.OptArgsByAPI = src.OptArgsByAPI
+	}
+	if src.ProtoOnlyAPIs != nil {
+		res.ProtoOnlyAPIs = src.ProtoOnlyAPIs
+	}
+	if src.NamePrettyOverride != "" {
+		res.NamePrettyOverride = src.NamePrettyOverride
+	}
+	if src.ProductDocumentationOverride != "" {
+		res.ProductDocumentationOverride = src.ProductDocumentationOverride
+	}
+	if src.APIShortnameOverride != "" {
+		res.APIShortnameOverride = src.APIShortnameOverride
+	}
+	if src.APIIDOverride != "" {
+		res.APIIDOverride = src.APIIDOverride
+	}
+	if src.ClientDocumentationOverride != "" {
+		res.ClientDocumentationOverride = src.ClientDocumentationOverride
+	}
+	if src.IssueTrackerOverride != "" {
+		res.IssueTrackerOverride = src.IssueTrackerOverride
+	}
+	if src.MetadataNameOverride != "" {
+		res.MetadataNameOverride = src.MetadataNameOverride
+	}
+	if src.DefaultVersion != "" {
+		res.DefaultVersion = src.DefaultVersion
+	}
+	if src.SkipReadmeCopy {
+		res.SkipReadmeCopy = src.SkipReadmeCopy
+	}
+	return &res
+}
+
+func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.PackageDependencies != nil {
+		res.PackageDependencies = src.PackageDependencies
+	}
+	if src.DisabledRustdocWarnings != nil {
+		res.DisabledRustdocWarnings = src.DisabledRustdocWarnings
+	}
+	if src.GenerateSetterSamples != "" {
+		res.GenerateSetterSamples = src.GenerateSetterSamples
+	}
+	if src.GenerateRpcSamples != "" {
+		res.GenerateRpcSamples = src.GenerateRpcSamples
+	}
+	if src.DetailedTracingAttributes != nil {
+		res.DetailedTracingAttributes = src.DetailedTracingAttributes
+	}
+	if src.ResourceNameHeuristic != nil {
+		res.ResourceNameHeuristic = src.ResourceNameHeuristic
+	}
+	if src.Modules != nil {
+		res.Modules = src.Modules
+	}
+	if src.PerServiceFeatures {
+		res.PerServiceFeatures = src.PerServiceFeatures
+	}
+	if src.ModulePath != "" {
+		res.ModulePath = src.ModulePath
+	}
+	if src.TemplateOverride != "" {
+		res.TemplateOverride = src.TemplateOverride
+	}
+	if src.PackageNameOverride != "" {
+		res.PackageNameOverride = src.PackageNameOverride
+	}
+	if src.RootName != "" {
+		res.RootName = src.RootName
+	}
+	if src.DefaultFeatures != nil {
+		res.DefaultFeatures = src.DefaultFeatures
+	}
+	if src.IncludeList != nil {
+		res.IncludeList = src.IncludeList
+	}
+	if src.IncludedIds != nil {
+		res.IncludedIds = src.IncludedIds
+	}
+	if src.SkippedIds != nil {
+		res.SkippedIds = src.SkippedIds
+	}
+	if src.DisabledClippyWarnings != nil {
+		res.DisabledClippyWarnings = src.DisabledClippyWarnings
+	}
+	if src.HasVeneer {
+		res.HasVeneer = src.HasVeneer
+	}
+	if src.RoutingRequired {
+		res.RoutingRequired = src.RoutingRequired
+	}
+	if src.IncludeGrpcOnlyMethods {
+		res.IncludeGrpcOnlyMethods = src.IncludeGrpcOnlyMethods
+	}
+	if src.PostProcessProtos != "" {
+		res.PostProcessProtos = src.PostProcessProtos
+	}
+	if src.DocumentationOverrides != nil {
+		res.DocumentationOverrides = src.DocumentationOverrides
+	}
+	if src.PaginationOverrides != nil {
+		res.PaginationOverrides = src.PaginationOverrides
+	}
+	if src.NameOverrides != "" {
+		res.NameOverrides = src.NameOverrides
+	}
+	res.Discovery = mergeRustDiscovery(res.Discovery, src.Discovery)
+	if src.QuickstartServiceOverride != "" {
+		res.QuickstartServiceOverride = src.QuickstartServiceOverride
+	}
+	return &res
+}
+
+func mergeRustDiscovery(dst, src *config.RustDiscovery) *config.RustDiscovery {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.OperationID != "" {
+		res.OperationID = src.OperationID
+	}
+	if src.Pollers != nil {
+		res.Pollers = src.Pollers
+	}
+	return &res
 }
