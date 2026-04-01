@@ -15,7 +15,6 @@
 package java
 
 import (
-	"errors"
 	"flag"
 	"os"
 	"path/filepath"
@@ -57,12 +56,16 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := generatePomsIfMissing(library, tmpDir, googleapisDir, metadata); err != nil {
+	if err := generatePomsIfMissing(nil, library, tmpDir, googleapisDir, metadata); err != nil {
 		t.Fatal(err)
 	}
-	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID}
+	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
 	for _, artifact := range artifacts {
-		gotPath := filepath.Join(tmpDir, artifact, "pom.xml")
+		dir := artifact
+		if artifact == "google-cloud-secretmanager-parent" {
+			dir = ""
+		}
+		gotPath := filepath.Join(tmpDir, dir, "pom.xml")
 		got, err := os.ReadFile(gotPath)
 		if err != nil {
 			t.Fatal(err)
@@ -109,7 +112,7 @@ func TestCollectModules_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", &repoMetadata{}); err == nil {
+			if _, err := collectModules(nil, test.library, t.TempDir(), "/nonexistent", &repoMetadata{}); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})
@@ -150,13 +153,5 @@ func TestIsPomMissing(t *testing.T) {
 				t.Errorf("isPomMissing(%q) = %v, want %v", dir, got, test.want)
 			}
 		})
-	}
-}
-
-func TestIsPomMissing_DirMissingError(t *testing.T) {
-	dir := filepath.Join(t.TempDir(), "nonexistent")
-	_, err := isPomMissing(dir)
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }

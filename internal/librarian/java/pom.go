@@ -28,6 +28,8 @@ const (
 	protoPomTemplateName  = "proto_pom.xml.tmpl"
 	grpcPomTemplateName   = "grpc_pom.xml.tmpl"
 	clientPomTemplateName = "client_pom.xml.tmpl"
+	parentPomTemplateName = "parent_pom.xml.tmpl"
+	bomPomTemplateName    = "bom_pom.xml.tmpl"
 	grpcProtoGroupID      = "com.google.api.grpc"
 )
 
@@ -43,6 +45,7 @@ type grpcProtoPomData struct {
 type coordinates struct {
 	GroupID    string
 	ArtifactID string
+	Version    string
 }
 
 // clientPomData holds the data for rendering the client library POM template.
@@ -56,6 +59,15 @@ type clientPomData struct {
 	GrpcModules  []coordinates
 }
 
+// pomData holds the data for rendering the BOM and Parent library POM template.
+type pomData struct {
+	MainModule      coordinates
+	Name            string
+	Monorepo        bool
+	MonorepoVersion string
+	Modules         []coordinates
+}
+
 // javaModule represents a Maven module and its POM generation state.
 type javaModule struct {
 	artifactID string
@@ -66,8 +78,8 @@ type javaModule struct {
 }
 
 // generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
-func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) error {
-	modules, err := collectModules(library, libraryDir, googleapisDir, metadata)
+func generatePomsIfMissing(cfg *config.Config, library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) error {
+	modules, err := collectModules(cfg, library, libraryDir, googleapisDir, metadata)
 	if err != nil {
 		return err
 	}
@@ -82,14 +94,14 @@ func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir st
 	return nil
 }
 
-// collectModules identifies all expected proto-* and grpc-* modules
+// collectModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
 // for the given library based on its configuration and checks a pom.xml presence
 // on the filesystem.
 //
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) ([]javaModule, error) {
+func collectModules(cfg *config.Config, library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	if len(parts) != 2 {
@@ -119,14 +131,17 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string, m
 			Proto: coordinates{
 				GroupID:    grpcProtoGroupID,
 				ArtifactID: names.proto,
+				Version:    library.Version,
 			},
 			Grpc: coordinates{
 				GroupID:    grpcProtoGroupID,
 				ArtifactID: names.grpc,
+				Version:    library.Version,
 			},
 			Parent: coordinates{
 				GroupID:    gapicGroupID,
 				ArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
+				Version:    library.Version,
 			},
 			MainArtifactID: gapicArtifactID,
 			Version:        library.Version,
@@ -171,21 +186,80 @@ func collectModules(library *config.Library, libraryDir, googleapisDir string, m
 	if err != nil {
 		return nil, err
 	}
+	clientCoord := coordinates{GroupID: gapicGroupID, ArtifactID: gapicArtifactID, Version: library.Version}
 	modules = append(modules, javaModule{
 		artifactID: gapicArtifactID,
 		dir:        clientDir,
 		isMissing:  isClientMissing,
 		data: clientPomData{
-			Client:       coordinates{GroupID: gapicGroupID, ArtifactID: gapicArtifactID},
+			Client:       clientCoord,
 			Version:      library.Version,
 			Name:         metadata.NamePretty,
 			Description:  metadata.APIDescription,
-			Parent:       coordinates{GroupID: gapicGroupID, ArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID)},
+			Parent:       coordinates{GroupID: gapicGroupID, ArtifactID: fmt.Sprintf("%s-parent", gapicArtifactID), Version: library.Version},
 			ProtoModules: protoModules,
 			GrpcModules:  grpcModules,
 		},
 		template: clientPomTemplateName,
 	})
+
+	monorepoVersion := ""
+	monorepo := false
+	if cfg != nil {
+		for _, lib := range cfg.Libraries {
+			if lib.Name == "google-cloud-java" {
+				monorepoVersion = lib.Version
+				monorepo = true
+				break
+			}
+		}
+	}
+
+	allModules := []coordinates{clientCoord}
+	allModules = append(allModules, grpcModules...)
+	allModules = append(allModules, protoModules...)
+
+	// BOM module
+	bomArtifactID := fmt.Sprintf("%s-bom", gapicArtifactID)
+	bomDir := filepath.Join(libraryDir, bomArtifactID)
+	isBomMissing, err := isPomMissing(bomDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, javaModule{
+		artifactID: bomArtifactID,
+		dir:        bomDir,
+		isMissing:  isBomMissing,
+		data: pomData{
+			MainModule:      clientCoord,
+			Name:            metadata.NamePretty,
+			Monorepo:        monorepo,
+			MonorepoVersion: monorepoVersion,
+			Modules:         allModules,
+		},
+		template: bomPomTemplateName,
+	})
+
+	// Parent module
+	parentDir := libraryDir
+	isParentMissing, err := isPomMissing(parentDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, javaModule{
+		artifactID: fmt.Sprintf("%s-parent", gapicArtifactID),
+		dir:        parentDir,
+		isMissing:  isParentMissing,
+		data: pomData{
+			MainModule:      clientCoord,
+			Name:            metadata.NamePretty,
+			Monorepo:        monorepo,
+			MonorepoVersion: monorepoVersion,
+			Modules:         allModules,
+		},
+		template: parentPomTemplateName,
+	})
+
 	return modules, nil
 }
 
@@ -194,13 +268,13 @@ func isPomMissing(dir string) (bool, error) {
 	if _, err := os.Stat(pomPath); err == nil {
 		return false, nil
 	}
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return false, fmt.Errorf("target directory %s does not exist: %w", dir, err)
-	}
 	return true, nil
 }
 
 func writePom(pomPath, templateName string, data any) (err error) {
+	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(pomPath), err)
+	}
 	f, err := os.Create(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", pomPath, err)

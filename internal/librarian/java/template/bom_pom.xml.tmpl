@@ -1,0 +1,41 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>{{.MainModule.GroupID}}</groupId>
+  <artifactId>{{.MainModule.ArtifactID}}-bom</artifactId>
+  <version>{{.MainModule.Version}}</version><!-- {x-version-update:{{.MainModule.ArtifactID}}:current} -->
+  <packaging>pom</packaging>
+  {{if .Monorepo -}}
+  <parent>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-pom-parent</artifactId>
+    <version>{{.MonorepoVersion}}</version><!-- {x-version-update:google-cloud-java:current} -->
+    <relativePath>../../google-cloud-pom-parent/pom.xml</relativePath>
+  </parent>
+  {{- else -}}
+  <parent>
+    <groupId>com.google.cloud</groupId>
+    <artifactId>google-cloud-shared-config</artifactId>
+    <version>1.5.3</version>
+  </parent>
+  {{- end}}
+
+  <name>Google {{.Name}} BOM</name>
+  <description>
+    BOM for {{.Name}}
+  </description>
+
+  <properties>
+    <maven.antrun.skip>true</maven.antrun.skip>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>{{range .Modules}}
+      <dependency>
+        <groupId>{{.GroupID}}</groupId>
+        <artifactId>{{.ArtifactID}}</artifactId>
+        <version>{{.Version}}</version><!-- {x-version-update:{{.ArtifactID}}:current} -->
+      </dependency>{{end}}
+    </dependencies>
+  </dependencyManagement>
+</project>

@@ -78,7 +78,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
-	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir, p.metadata); err != nil {
+	if err := generatePomsIfMissing(p.cfg, p.library, p.outDir, p.googleapisDir, p.metadata); err != nil {
 		return fmt.Errorf("failed to sync poms: %w", err)
 	}
 
