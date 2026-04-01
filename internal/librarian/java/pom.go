@@ -287,6 +287,10 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 	return "", fmt.Errorf("could not find monorepo version for %s in config", rootLibrary)
 }
 
+// protoGroupID returns the Maven Group ID for the generated proto and gRPC
+// artifacts. It maps the GAPIC library's Group ID to a standard format and
+// checks for special cases in groupInclusions (e.g., mapping
+// "com.google.cloud" to "com.google.api.grpc").
 func protoGroupID(mainArtifactGroupID string) string {
 	prefix := mainArtifactGroupID
 	if groupInclusions[mainArtifactGroupID] {
