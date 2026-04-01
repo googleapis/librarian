@@ -65,6 +65,6 @@ func TestFromProtobuf(t *testing.T) {
 		t.Errorf("missing %s: %s", filename, err)
 	}
 	if stat.Mode().Perm()|0666 != 0666 {
-		t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
 	}
 }
