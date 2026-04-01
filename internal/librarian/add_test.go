@@ -371,6 +371,22 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 			},
 			wantErr: errMixedPreviewAndNonPreview,
 		},
+		{
+			name: "fail if mixing preview and non-preview APIs",
+			apis: []string{
+				"preview/google/cloud/secretmanager/v1",
+			},
+			initialLibraries: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Preview: &config.Library{
+						APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					},
+				},
+			},
+			wantErr: errPreviewAlreadyExists,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{

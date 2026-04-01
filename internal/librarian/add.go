@@ -38,6 +38,7 @@ var (
 	errMissingAPI                = errors.New("must provide at least one API")
 	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
 	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
+	errPreviewAlreadyExists      = errors.New("preview library config already exists")
 )
 
 func addCommand() *cli.Command {
@@ -111,34 +112,36 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new library, the updated config, and an error
 // if the library already exists.
 func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
-	var isPreview bool
-	var trimmedAPIs []string
-	for _, a := range apis {
-		if strings.HasPrefix(a, "preview/") {
-			isPreview = true
-			trimmedAPIs = append(trimmedAPIs, strings.TrimPrefix(a, "preview/"))
-		} else {
-			if isPreview {
-				return "", nil, errMixedPreviewAndNonPreview
-			}
-			trimmedAPIs = append(trimmedAPIs, a)
-		}
+	isPreview := slices.ContainsFunc(apis, func(a string) bool {
+		return strings.HasPrefix(a, "preview/")
+	})
+	mixed := slices.ContainsFunc(apis, func(a string) bool {
+		return isPreview && !strings.HasPrefix(a, "preview/")
+	})
+	if mixed {
+		return "", nil, errMixedPreviewAndNonPreview
 	}
 
-	name := deriveLibraryName(cfg.Language, trimmedAPIs[0])
+	paths := make([]*config.API, 0, len(apis))
+	for _, a := range apis {
+		if isPreview {
+			a = strings.TrimPrefix(a, "preview/")
+		}
+		paths = append(paths, &config.API{Path: a})
+	}
+
+	name := deriveLibraryName(cfg.Language, paths[0].Path)
 
 	if isPreview {
 		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
 		}
-		lib.Preview = &config.Library{
-			APIs: make([]*config.API, 0, len(trimmedAPIs)),
+		if lib.Preview != nil {
+			return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
 		}
-		for _, a := range trimmedAPIs {
-			lib.Preview.APIs = append(lib.Preview.APIs, &config.API{
-				Path: a,
-			})
+		lib.Preview = &config.Library{
+			APIs: paths,
 		}
 		return name, cfg, nil
 	}
@@ -153,11 +156,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-	}
-	for _, a := range trimmedAPIs {
-		lib.APIs = append(lib.APIs, &config.API{
-			Path: a,
-		})
+		APIs:          paths,
 	}
 
 	switch cfg.Language {
