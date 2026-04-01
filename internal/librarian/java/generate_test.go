@@ -42,7 +42,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 		library  *config.Library
 		api      *config.API
 		apiCfgs  *serviceconfig.API
-		expected []string
+		want []string
 	}{
 		{
 			name:    "basic case",
@@ -52,7 +52,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPCRest,
 			}},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -70,7 +70,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.Rest,
 			}},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -93,7 +93,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 					config.LanguageJava: true,
 				},
 			},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -108,7 +108,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -125,7 +125,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
