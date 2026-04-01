@@ -68,6 +68,8 @@ func run(args []string) error {
 	return configCheck(state, cfg)
 }
 
+// configCheck verifies that the libraries and their versions defined in the
+// state.yaml match those in librarian.yaml.
 func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
 	legacyLibs := make(map[string]string)
 	for _, lib := range state.Libraries {
