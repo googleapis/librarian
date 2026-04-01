@@ -30,7 +30,8 @@ const (
 	clientPomTemplateName = "client_pom.xml.tmpl"
 	parentPomTemplateName = "parent_pom.xml.tmpl"
 	bomPomTemplateName    = "bom_pom.xml.tmpl"
-	grpcProtoGroupID      = "com.google.api.grpc"
+	googleGroupID         = "com.google"
+	protoGrpcSuffix       = ".api.grpc"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -126,14 +127,15 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		}
 		transport := apiCfg.Transport(config.LanguageJava)
 
+		protoGrpID := protoGroupID(gapicGroupID)
 		data := grpcProtoPomData{
 			Proto: coordinates{
-				GroupID:    grpcProtoGroupID,
+				GroupID:    protoGrpID,
 				ArtifactID: names.proto,
 				Version:    library.Version,
 			},
 			Grpc: coordinates{
-				GroupID:    grpcProtoGroupID,
+				GroupID:    protoGrpID,
 				ArtifactID: names.grpc,
 				Version:    library.Version,
 			},
@@ -287,4 +289,12 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 		}
 	}
 	return "", fmt.Errorf("could not find monorepo version for google-cloud-java in config")
+}
+
+func protoGroupID(mainArtifactGroupID string) string {
+	prefix := mainArtifactGroupID
+	if groupInclusions[mainArtifactGroupID] {
+		prefix = googleGroupID
+	}
+	return prefix + protoGrpcSuffix
 }
