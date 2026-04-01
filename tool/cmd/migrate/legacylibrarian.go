@@ -119,9 +119,7 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		Default: &config.Default{
 			TagFormat: defaultTagFormat,
 		},
-		Release: &config.Release{
-			Branch: "main",
-		},
+		Release: &config.Release{},
 	}
 
 	cfg.Default.Python = &config.PythonDefault{

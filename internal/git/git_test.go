@@ -38,9 +38,8 @@ func TestGetLastTag(t *testing.T) {
 	testhelper.CloneRepository(t, remoteDir)
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
 	}
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
+	got, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, "main")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -53,9 +52,8 @@ func TestLastTagGitError(t *testing.T) {
 	t.Chdir(t.TempDir())
 	cfg := &config.Release{
 		Remote: "origin",
-		Branch: "main",
 	}
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, cfg.Branch)
+	_, err := GetLastTag(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"), cfg.Remote, "main")
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -247,43 +245,31 @@ func TestAssertGitStatusClean(t *testing.T) {
 
 func TestMatchesBranchPointSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "main",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err != nil {
+	if err := MatchesBranchPoint(t.Context(), "git", "origin", "main"); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMatchesBranchDiffError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "not-a-valid-branch",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := MatchesBranchPoint(t.Context(), "git", "origin", "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
 
 func TestMatchesDirtyCloneError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	config := &config.Release{
-		Remote: "origin",
-		Branch: "not-a-valid-branch",
-	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 
-	if err := MatchesBranchPoint(t.Context(), "git", config.Remote, config.Branch); err == nil {
+	if err := MatchesBranchPoint(t.Context(), "git", "origin", "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with a dirty clone")
 	}
 }

@@ -147,7 +147,7 @@ func SetupRepo(t *testing.T) string {
 // SetupOptions include the various options for configuring test setup.
 type SetupOptions struct {
 	// Clone is the branch that [Setup] should clone into after all setup is
-	// complete. Must not be set in PreviewOptions.
+	// complete.
 	Clone string
 	// Config is the [config.Config] to write to librarian.yaml in the root
 	// of the repo created.
@@ -155,9 +155,6 @@ type SetupOptions struct {
 	// Dirty indicates if the cloned repository should be left in a dirty state,
 	// with uncommitted files. Primarily used for error testing.
 	Dirty bool
-	// PreviewOptions indicate the creation of a 'preview' branch in the repo
-	// using the provided SetupOptions.
-	PreviewOptions *SetupOptions
 	// remoteDir is the directory of the repo created by [SetupRepo] that
 	// should be cloned when [Clone] is set. Internal only.
 	remoteDir string
@@ -193,10 +190,6 @@ func setup(t *testing.T, opts SetupOptions) {
 			touchFile(t, srcPath)
 		}
 		RunGit(t, "commit", "-m", "feat: changed file(s)", ".")
-	}
-	if opts.PreviewOptions != nil {
-		RunGit(t, "checkout", "-b", "preview")
-		setup(t, *opts.PreviewOptions)
 	}
 	if opts.Clone != "" {
 		CloneRepositoryBranch(t, opts.remoteDir, opts.Clone)

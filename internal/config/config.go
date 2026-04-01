@@ -51,9 +51,6 @@ type Config struct {
 
 // Release holds the configuration parameter for publish command.
 type Release struct {
-	// Branch sets the name of the release branch, typically `main`
-	Branch string `yaml:"branch,omitempty"`
-
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
 

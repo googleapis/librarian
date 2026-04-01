@@ -69,11 +69,11 @@ func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoin
 		return err
 	}
 	gitExe := command.GetExecutablePath(config.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitExe, config.Remote, config.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.Remote, "main")
 	if err != nil {
 		return err
 	}
-	if err := git.MatchesBranchPoint(ctx, gitExe, config.Remote, config.Branch); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitExe, config.Remote, "main"); err != nil {
 		return err
 	}
 	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, config.IgnoredChanges)
