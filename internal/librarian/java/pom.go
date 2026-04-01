@@ -78,8 +78,8 @@ type javaModule struct {
 }
 
 // generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
-func generatePomsIfMissing(cfg *config.Config, library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) error {
-	modules, err := collectModules(cfg, library, libraryDir, googleapisDir, metadata)
+func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir, monorepoVersion string, metadata *repoMetadata) error {
+	modules, err := collectModules(library, libraryDir, googleapisDir, monorepoVersion, metadata)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func generatePomsIfMissing(cfg *config.Config, library *config.Library, libraryD
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(cfg *config.Config, library *config.Library, libraryDir, googleapisDir string, metadata *repoMetadata) ([]javaModule, error) {
+func collectModules(library *config.Library, libraryDir, googleapisDir, monorepoVersion string, metadata *repoMetadata) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	if len(parts) != 2 {
@@ -204,10 +204,6 @@ func collectModules(cfg *config.Config, library *config.Library, libraryDir, goo
 		template: clientPomTemplateName,
 	})
 
-	monorepoVersion, err := findMonorepoVersion(cfg)
-	if err != nil {
-		return nil, err
-	}
 	allModules := []coordinates{clientCoord}
 	allModules = append(allModules, grpcModules...)
 	allModules = append(allModules, protoModules...)

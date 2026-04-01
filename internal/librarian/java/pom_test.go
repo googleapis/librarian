@@ -43,11 +43,6 @@ func TestSyncPoms_Golden(t *testing.T) {
 			{Path: "google/cloud/secretmanager/v1"},
 		},
 	}
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{Name: "google-cloud-java", Version: "1.2.3"},
-		},
-	}
 	tmpDir := t.TempDir()
 	// Pre-create the directories that generatePomsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
@@ -63,7 +58,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := generatePomsIfMissing(cfg, library, tmpDir, googleapisDir, metadata); err != nil {
+	if err := generatePomsIfMissing(library, tmpDir, googleapisDir, "1.2.3", metadata); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
@@ -97,11 +92,6 @@ func TestSyncPoms_Golden(t *testing.T) {
 }
 
 func TestCollectModules_Error(t *testing.T) {
-	validCfg := &config.Config{
-		Libraries: []*config.Library{
-			{Name: "google-cloud-java", Version: "1.2.3"},
-		},
-	}
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -124,7 +114,7 @@ func TestCollectModules_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(validCfg, test.library, t.TempDir(), "/nonexistent", &repoMetadata{}); err == nil {
+			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{}); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})

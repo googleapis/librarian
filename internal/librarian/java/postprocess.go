@@ -78,7 +78,11 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
-	if err := generatePomsIfMissing(p.cfg, p.library, p.outDir, p.googleapisDir, p.metadata); err != nil {
+	monorepoVersion, err := findMonorepoVersion(p.cfg)
+	if err != nil {
+		return fmt.Errorf("failed to find monorepo version: %w", err)
+	}
+	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir, monorepoVersion, p.metadata); err != nil {
 		return fmt.Errorf("failed to sync poms: %w", err)
 	}
 
