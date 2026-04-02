@@ -30,8 +30,8 @@ import (
 
 // Generate generates a Swift client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	if len(library.APIs) == 0 {
-		return fmt.Errorf("the Swift generator requires at least one api")
+	if len(library.APIs) != 1 {
+		return fmt.Errorf("the Swift generator only supports a single api per library")
 	}
 	modelConfig, err := libraryToModelConfig(library, library.APIs[0], src)
 	if err != nil {
