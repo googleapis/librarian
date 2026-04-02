@@ -16,9 +16,8 @@ package swift
 
 import "path/filepath"
 
-// DefaultOutput derives an output path from a library name and a default
-// output directory. Currently, this just assumes each library is a directory
-// directly underneath the default output directory.
-func DefaultOutput(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, name)
+// DefaultOutput derives an output path from an API path and a default
+// output directory.
+func DefaultOutput(api, defaultOutput string) string {
+	return filepath.Join(defaultOutput, api)
 }

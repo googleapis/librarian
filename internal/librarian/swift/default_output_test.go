@@ -14,40 +14,50 @@
 
 package swift
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+)
 
 func TestDefaultOutput(t *testing.T) {
 	tests := []struct {
-		name    string
-		libName string
-		defOut  string
-		want    string
+		name   string
+		api    string
+		defOut string
+		want   string
 	}{
 		{
-			name:    "simple",
-			libName: "secretmanager",
-			defOut:  "packages",
-			want:    "packages/secretmanager",
+			name:   "simple",
+			api:    "secretmanager",
+			defOut: "packages",
+			want:   "packages/secretmanager",
 		},
 		{
-			name:    "empty default",
-			libName: "secretmanager",
-			defOut:  "",
-			want:    "secretmanager",
+			name:   "empty default",
+			api:    "secretmanager",
+			defOut: "",
+			want:   "secretmanager",
 		},
 		{
-			name:    "nested default",
-			libName: "secretmanager",
-			defOut:  "a/b/c",
-			want:    "a/b/c/secretmanager",
+			name:   "nested default",
+			api:    "secretmanager",
+			defOut: "a/b/c",
+			want:   "a/b/c/secretmanager",
+		},
+		{
+			name:   "api path",
+			api:    "google/cloud/secretmanager/v1",
+			defOut: "generated",
+			want:   "generated/google/cloud/secretmanager/v1",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := DefaultOutput(tt.libName, tt.defOut)
-			if got != tt.want {
-				t.Errorf("DefaultOutput(%q, %q) = %q; want %q", tt.libName, tt.defOut, got, tt.want)
+			got := DefaultOutput(tt.api, tt.defOut)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
