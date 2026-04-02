@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,13 +26,17 @@ import (
 )
 
 const (
-	protoPomTemplateName  = "module_proto_pom.xml.tmpl"
-	grpcPomTemplateName   = "module_grpc_pom.xml.tmpl"
-	clientPomTemplateName = "module_client_pom.xml.tmpl"
-	parentPomTemplateName = "module_parent_pom.xml.tmpl"
-	bomPomTemplateName    = "module_bom_pom.xml.tmpl"
-	googleGroupID         = "com.google"
-	protoGrpcSuffix       = ".api.grpc"
+	protoPomTemplateName    = "module_proto_pom.xml.tmpl"
+	grpcPomTemplateName     = "module_grpc_pom.xml.tmpl"
+	clientPomTemplateName   = "module_client_pom.xml.tmpl"
+	parentPomTemplateName   = "module_parent_pom.xml.tmpl"
+	bomPomTemplateName      = "module_bom_pom.xml.tmpl"
+	googleGroupID           = "com.google"
+	protoGrpcSuffix         = ".api.grpc"
+	managedProtoStartMarker = "<!-- {x-librarian-managed-proto-dependencies-start} -->"
+	managedProtoEndMarker   = "<!-- {x-librarian-managed-proto-dependencies-end} -->"
+	managedGrpcStartMarker  = "<!-- {x-librarian-managed-grpc-dependencies-start} -->"
+	managedGrpcEndMarker    = "<!-- {x-librarian-managed-grpc-dependencies-end} -->"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -77,21 +82,71 @@ type javaModule struct {
 	template     string
 }
 
-// generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
-func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir, monorepoVersion string, metadata *repoMetadata) error {
+// syncPoms generates missing proto-*, grpc-*, and client POMs, and surgically updates
+// existing client library POMs to include new dependencies.
+func syncPoms(library *config.Library, libraryDir, googleapisDir, monorepoVersion string, metadata *repoMetadata) error {
 	modules, err := collectModules(library, libraryDir, googleapisDir, monorepoVersion, metadata)
 	if err != nil {
 		return err
 	}
 	for _, m := range modules {
-		if !m.isMissing {
+		pomPath := filepath.Join(m.dir, "pom.xml")
+		if m.isMissing {
+			if err := writePom(pomPath, m.template, m.templateData); err != nil {
+				return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
+			}
 			continue
 		}
-		if err := writePom(filepath.Join(m.dir, "pom.xml"), m.template, m.templateData); err != nil {
-			return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
+		if m.template == clientPomTemplateName {
+			if err := updateClientPom(pomPath, m.templateData.(clientPomData)); err != nil {
+				return fmt.Errorf("failed to update client pom %s: %w", m.artifactID, err)
+			}
 		}
 	}
 	return nil
+}
+
+// updateClientPom surgicially updates the client POM using template markers
+// to inject missing proto- and grpc- dependencies while preserving existing
+// formatting and metadata comments.
+func updateClientPom(pomPath string, data clientPomData) error {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return err
+	}
+	updated := string(content)
+	if updated, err = updateManagedBlock(updated, "managed_proto_dependencies", managedProtoStartMarker, managedProtoEndMarker, data); err != nil {
+		return err
+	}
+	if updated, err = updateManagedBlock(updated, "managed_grpc_dependencies", managedGrpcStartMarker, managedGrpcEndMarker, data); err != nil {
+		return err
+	}
+	if updated != string(content) {
+		return os.WriteFile(pomPath, []byte(updated), 0644)
+	}
+	return nil
+}
+
+func updateManagedBlock(content, templateName, startMarker, endMarker string, data clientPomData) (string, error) {
+	var buf bytes.Buffer
+	if err := templates.ExecuteTemplate(&buf, templateName, data); err != nil {
+		return "", err
+	}
+	return replaceBlock(content, startMarker, endMarker, buf.String())
+}
+
+func replaceBlock(content, startMarker, endMarker, newContent string) (string, error) {
+	startIdx := strings.Index(content, startMarker)
+	if startIdx == -1 {
+		return content, fmt.Errorf("missing start marker %q", endMarker)
+	}
+	endIdx := strings.Index(content, endMarker)
+	if endIdx == -1 {
+		return "", fmt.Errorf("found start marker %q but no end marker %q", startMarker, endMarker)
+	}
+	// Calculate the content strictly between the markers.
+	// We preserve the markers themselves and the indentation of the end marker.
+	return content[:startIdx+len(startMarker)] + "\n" + strings.TrimSpace(newContent) + "\n    " + content[endIdx:], nil
 }
 
 // collectModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules

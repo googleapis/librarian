@@ -40,12 +40,9 @@
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-common-protos</artifactId>
     </dependency>
-{{- range .ProtoModules}}
-    <dependency>
-      <groupId>{{.GroupID}}</groupId>
-      <artifactId>{{.ArtifactID}}</artifactId>
-    </dependency>
-{{- end}}
+    <!-- {x-librarian-managed-proto-dependencies-start} -->
+    {{- template "managed_proto_dependencies" . }}
+    <!-- {x-librarian-managed-proto-dependencies-end} -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -87,13 +84,9 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-{{- range .GrpcModules}}
-    <dependency>
-      <groupId>{{.GroupID}}</groupId>
-      <artifactId>{{.ArtifactID}}</artifactId>
-      <scope>test</scope>
-    </dependency>
-{{- end}}
+    <!-- {x-librarian-managed-grpc-dependencies-start} -->
+    {{- template "managed_grpc_dependencies" . }}
+    <!-- {x-librarian-managed-grpc-dependencies-end} -->
     <!-- Need testing utility classes for generated gRPC clients tests -->
     <dependency>
       <groupId>com.google.api</groupId>
@@ -115,3 +108,20 @@
     </dependency>
   </dependencies>
 </project>
+{{- define "managed_proto_dependencies" }}
+{{- range .ProtoModules }}
+    <dependency>
+      <groupId>{{ .GroupID }}</groupId>
+      <artifactId>{{ .ArtifactID }}</artifactId>
+    </dependency>
+{{- end }}
+{{- end }}
+{{- define "managed_grpc_dependencies" }}
+{{- range .GrpcModules }}
+    <dependency>
+      <groupId>{{ .GroupID }}</groupId>
+      <artifactId>{{ .ArtifactID }}</artifactId>
+      <scope>test</scope>
+    </dependency>
+{{- end }}
+{{- end -}}

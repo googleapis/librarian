@@ -82,7 +82,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	if err != nil {
 		return fmt.Errorf("failed to find monorepo version: %w", err)
 	}
-	if err := generatePomsIfMissing(p.library, p.outDir, p.googleapisDir, monorepoVersion, p.metadata); err != nil {
+	if err := syncPoms(p.library, p.outDir, p.googleapisDir, monorepoVersion, p.metadata); err != nil {
 		return fmt.Errorf("failed to sync poms: %w", err)
 	}
 
