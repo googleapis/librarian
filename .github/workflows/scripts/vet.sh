@@ -13,11 +13,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-# Fail on any error
-set -e
-
-# Display commands being run
-set -x
+# This script is designed to run in the googleapis/google-cloud-go root directory.
+set -ex
 
 # Fail if a dependency was added without the necessary go.mod/go.sum change
 # being part of the commit.
