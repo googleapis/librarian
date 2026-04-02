@@ -299,7 +299,6 @@ func findFirstSubdir(dir string) (string, string) {
 	return "", ""
 }
 
-
 func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 	t.Helper()
 	allPass := true
