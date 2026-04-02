@@ -17,7 +17,6 @@ package rust
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -26,14 +25,14 @@ import (
 
 // preFlight performs all the necessary checks before a release.
 func preFlight(ctx context.Context, preinstalled map[string]string, cargoTools []config.Tool) error {
-	gitExe := command.GetExecutablePath(preinstalled, "git")
+	gitExe := command.GetExecutablePath(preinstalled, command.Git)
 	if err := git.CheckVersion(ctx, gitExe); err != nil {
 		return err
 	}
 	if err := git.CheckRemoteURL(ctx, gitExe, config.RemoteUpstream); err != nil {
 		return err
 	}
-	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, "cargo"), cargoTools)
+	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, command.Cargo), cargoTools)
 }
 
 // cargoPreFlight verifies all the necessary cargo tools are installed.
@@ -45,7 +44,6 @@ func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) e
 		if tool.Version == "" {
 			continue
 		}
-		slog.Info("installing cargo tool", "name", tool.Name, "version", tool.Version)
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		if err := command.Run(ctx, cargoExe, "install", "--locked", spec); err != nil {
 			return err

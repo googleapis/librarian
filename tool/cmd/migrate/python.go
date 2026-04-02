@@ -33,32 +33,39 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-var pythonDefaultCommonGAPICPaths = []string{
-	"samples/generated_samples",
-	"tests/unit/gapic",
-	"testing",
-	"{neutral-source}/__init__.py",
-	"{neutral-source}/gapic_version.py",
-	"{neutral-source}/py.typed",
-	"tests/unit/__init__.py",
-	"tests/__init__.py",
-	"setup.py",
-	"noxfile.py",
-	".coveragerc",
-	".flake8",
-	".repo-metadata.json",
-	"mypy.ini",
-	"README.rst",
-	"LICENSE",
-	"MANIFEST.in",
-	"docs/_static/custom.css",
-	"docs/_templates/layout.html",
-	"docs/conf.py",
-	"docs/index.rst",
-	"docs/multiprocessing.rst",
-	"docs/README.rst",
-	"docs/summary_overview.md",
-}
+var (
+	pythonIgnoredChanges = []string{
+		".repo-metadata.json",
+		"docs/README.rst",
+	}
+
+	pythonDefaultCommonGAPICPaths = []string{
+		"samples/generated_samples",
+		"tests/unit/gapic",
+		"testing",
+		"{neutral-source}/__init__.py",
+		"{neutral-source}/gapic_version.py",
+		"{neutral-source}/py.typed",
+		"tests/unit/__init__.py",
+		"tests/__init__.py",
+		"setup.py",
+		"noxfile.py",
+		".coveragerc",
+		".flake8",
+		".repo-metadata.json",
+		"mypy.ini",
+		"README.rst",
+		"LICENSE",
+		"MANIFEST.in",
+		"docs/_static/custom.css",
+		"docs/_templates/layout.html",
+		"docs/conf.py",
+		"docs/index.rst",
+		"docs/multiprocessing.rst",
+		"docs/README.rst",
+		"docs/summary_overview.md",
+	}
+)
 
 const (
 	pythonDefaultLibraryType = repometadata.GAPICAutoLibraryType

@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"maps"
 	"runtime"
 	"slices"
 	"strings"
@@ -65,10 +64,10 @@ var errSemverCheck = errors.New("semver check failed")
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
-	if err := preFlight(ctx, cfg.Preinstalled, cfg.Tools["cargo"]); err != nil {
+	if err := preFlight(ctx, cfg.Preinstalled, cfg.Tools[command.Cargo]); err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
+	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
 	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
@@ -95,8 +94,7 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 			manifests[name] = manifest
 		}
 	}
-	slog.Info("computing publication plan with: cargo workspaces plan")
-	cargoPath := command.GetExecutablePath(cfg.Preinstalled, "cargo")
+	cargoPath := command.GetExecutablePath(cfg.Preinstalled, command.Cargo)
 	output, err := command.Output(ctx, cargoPath, "workspaces", "plan", "--skip-published")
 	if err != nil {
 		return err
@@ -111,13 +109,8 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 		}
 	}
 
-	crateSummary := slices.Collect(maps.Keys(manifests))
-	totalCrates := len(crateSummary)
-	crateSummary = crateSummary[0:min(20, totalCrates)]
-	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
-
 	if !skipSemverChecks {
-		gitPath := command.GetExecutablePath(cfg.Preinstalled, "git")
+		gitPath := command.GetExecutablePath(cfg.Preinstalled, command.Git)
 		if err := runSemverChecks(ctx, semverData{
 			dryRunKeepGoing: dryRunKeepGoing,
 			manifests:       manifests,
@@ -128,7 +121,6 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 			return err
 		}
 	}
-	slog.Info("publishing crates with: cargo workspaces publish --skip-published ...")
 	args := []string{"workspaces", "publish", "--skip-published", "--publish-interval=60", "--no-git-commit", "--from-git", "skip"}
 	if dryRunKeepGoing {
 		args = append(args, "--dry-run", "--keep-going")

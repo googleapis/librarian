@@ -612,7 +612,7 @@ func (template *PathTemplate) FlatPath() string {
 		if segment.Literal != nil {
 			buffer.WriteString(*segment.Literal)
 		} else if segment.Variable != nil {
-			buffer.WriteString(fmt.Sprintf("{%s}", strings.Join(segment.Variable.FieldPath, ".")))
+			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath, "."))
 		}
 		sep = "/"
 	}

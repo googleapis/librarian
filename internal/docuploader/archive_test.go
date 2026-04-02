@@ -16,7 +16,6 @@ package docuploader
 
 import (
 	"errors"
-	"log/slog"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -55,7 +54,6 @@ func TestCreateArchive(t *testing.T) {
 		if err := os.WriteFile(fullPath, []byte{}, 0644); err != nil {
 			t.Fatal(err)
 		}
-		slog.Info("Created file", "file", fullPath)
 	}
 
 	sourceDir := filepath.Join(dir, "docs")

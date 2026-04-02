@@ -86,7 +86,7 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 // and changes the current working directory to it.
 func ContinueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
-	RequireCommand(t, "git")
+	RequireCommand(t, command.Git)
 	t.Chdir(tmpDir)
 	RunGit(t, "init", "-b", config.BranchMain)
 	configNewGitRepository(t)
@@ -100,7 +100,7 @@ func configNewGitRepository(t *testing.T) {
 
 func initRepositoryContents(t *testing.T) {
 	t.Helper()
-	RequireCommand(t, "git")
+	RequireCommand(t, command.Git)
 	if err := os.WriteFile(ReadmeFile, []byte(ReadmeContents), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -261,7 +261,7 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 
 // RunGit runs git with the specified arguments, aborting the test on any error.
 func RunGit(t *testing.T, args ...string) {
-	if err := command.Run(t.Context(), "git", args...); err != nil {
+	if err := command.Run(t.Context(), command.Git, args...); err != nil {
 		t.Fatal(err)
 	}
 }

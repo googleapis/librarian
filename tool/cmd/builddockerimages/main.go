@@ -20,7 +20,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"log/slog"
 	"os"
 	"os/exec"
 
@@ -89,7 +88,6 @@ func buildDockerImages(ctx context.Context, version, revision string, languages 
 }
 
 func buildDockerImage(ctx context.Context, version, language string) error {
-	slog.Info("building image", "language", language)
 	args := []string{
 		"build",
 		"-t",
@@ -118,5 +116,5 @@ func cloneRepo(ctx context.Context, repoDir, revision string) error {
 		"--revision=" + revision,
 		repoDir,
 	}
-	return command.Run(ctx, "git", args...)
+	return command.Run(ctx, command.Git, args...)
 }

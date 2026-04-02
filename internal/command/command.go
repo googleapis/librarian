@@ -24,6 +24,14 @@ import (
 	"os/exec"
 )
 
+const (
+	// Cargo is the command name for the cargo executable.
+	Cargo = "cargo"
+
+	// Git is the command name for the git executable.
+	Git = "git"
+)
+
 var (
 	// Verbose controls whether commands are printed to stderr before execution.
 	//
