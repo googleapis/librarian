@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
 	"github.com/googleapis/librarian/internal/sources"
@@ -32,7 +33,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("the Swift generator requires at least one api")
 	}
-	modelConfig := libraryToModelConfig(library, library.APIs[0], src)
+	modelConfig, err := libraryToModelConfig(library, library.APIs[0], src)
+	if err != nil {
+		return err
+	}
 	model, err := parser.CreateModel(modelConfig)
 	if err != nil {
 		return err
@@ -61,21 +65,23 @@ func camelLibraryName(api string) string {
 	return name.String()
 }
 
-func libraryToModelConfig(library *config.Library, api *config.API, src *sources.Sources) *parser.ModelConfig {
-	// Simple mapping for now, similar to what we did in tests.
+func libraryToModelConfig(library *config.Library, api *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
+	svcConfig, err := serviceconfig.Find(src.Googleapis, api.Path, config.LanguageSwift)
+	if err != nil {
+		return nil, err
+	}
+
 	return &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
-		ServiceConfig:       fmt.Sprintf("%s/service.yaml", api.Path), // Placeholder or derive it
+		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: api.Path,
 		Source: &sources.SourceConfig{
 			Sources:     src,
 			ActiveRoots: []string{"googleapis"},
 		},
 		Codec: map[string]string{
-			"copyright-year":      library.CopyrightYear,
-			"not-for-publication": "true",
-			"version":             library.Version,
-			"skip-format":         "true",
+			"copyright-year": library.CopyrightYear,
+			"version":        library.Version,
 		},
-	}
+	}, nil
 }
