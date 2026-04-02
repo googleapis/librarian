@@ -174,7 +174,7 @@ func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFi
 
 func updateGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceName string) {
 	t.Helper()
-	expectedServiceDir := resolveExpectedServiceDir(expectedRoot, gotServiceName, true)
+	expectedServiceDir := filepath.Join(expectedRoot, gotServiceName)
 	if err := os.RemoveAll(expectedRoot); err != nil && !os.IsNotExist(err) {
 		t.Fatal(err)
 	}
@@ -191,7 +191,7 @@ func verifyGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceNa
 	if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
 		t.Fatalf("expected output directory not found in scenario directory: %s", expectedRoot)
 	}
-	expectedServiceDir := resolveExpectedServiceDir(expectedRoot, gotServiceName, false)
+	expectedServiceDir := filepath.Join(expectedRoot, gotServiceName)
 	if !compareDirectories(t, expectedServiceDir, gotServiceDir) {
 		t.Logf("Generated directory tree for %s:\n%s", testName, getDirTree(gotServiceDir))
 	}
@@ -299,33 +299,6 @@ func findFirstSubdir(dir string) (string, string) {
 	return "", ""
 }
 
-func findMatchingExpectedServiceDir(root, targetName string) string {
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		return ""
-	}
-	normalizedTarget := normalize(targetName)
-	for _, entry := range entries {
-		if entry.IsDir() && normalize(entry.Name()) == normalizedTarget {
-			return filepath.Join(root, entry.Name())
-		}
-	}
-	return ""
-}
-
-func resolveExpectedServiceDir(root, targetName string, isUpdate bool) string {
-	if dir := findMatchingExpectedServiceDir(root, targetName); dir != "" {
-		return dir
-	}
-	if isUpdate {
-		return filepath.Join(root, targetName)
-	}
-	return root
-}
-
-func normalize(s string) string {
-	return strings.ReplaceAll(strings.ToLower(s), "_", "")
-}
 
 func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 	t.Helper()

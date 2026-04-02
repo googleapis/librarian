@@ -93,3 +93,23 @@ func TestGetServiceTitle(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveRootPackage(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		model *api.API
+		want  string
+	}{
+		{"Standard package", &api.API{PackageName: "google.cloud.parallelstore.v1", Name: "fallback"}, "parallelstore"},
+		{"Synthetic package", &api.API{PackageName: "resource_standard.v1", Name: "fallback"}, "resource_standard"},
+		{"No dots", &api.API{PackageName: "parallelstore", Name: "fallback"}, "fallback"},
+		{"Empty package", &api.API{PackageName: "", Name: "fallback"}, "fallback"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ResolveRootPackage(test.model)
+			if got != test.want {
+				t.Errorf("ResolveRootPackage(%v) = %q, want %q", test.model, got, test.want)
+			}
+		})
+	}
+}
