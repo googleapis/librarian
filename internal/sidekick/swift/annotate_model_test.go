@@ -55,3 +55,37 @@ func TestModelAnnotations(t *testing.T) {
 		t.Errorf("mismatch in model annotations (-want, +got)\n:%s", diff)
 	}
 }
+
+func TestRelativeFilenames(t *testing.T) {
+	tests := []struct {
+		name       string
+		rootSource string
+		files      []string
+		want       []string
+	}{
+		{
+			name:       "empty root source",
+			rootSource: "",
+			files:      []string{"google/api/expr.proto", "google/api/test-only.proto"},
+			want:       []string{"google/api/expr.proto", "google/api/test-only.proto"},
+		},
+		{
+			name:       "non-empty root source",
+			rootSource: "/root/googleapis",
+			files:      []string{"/root/googleapis/google/api/expr.proto", "/root/googleapis/google/api/test-only.proto"},
+			want:       []string{"google/api/expr.proto", "google/api/test-only.proto"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := relativeFilenames(tt.rootSource, tt.files)
+			if err != nil {
+				t.Fatalf("relativeFilenames() error = %v", err)
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("relativeFilenames() mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
