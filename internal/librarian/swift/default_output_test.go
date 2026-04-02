@@ -21,7 +21,7 @@ import (
 )
 
 func TestDefaultOutput(t *testing.T) {
-	for _, tt :=  range []struct {
+	for _, tt := range []struct {
 		name   string
 		api    string
 		defOut string
