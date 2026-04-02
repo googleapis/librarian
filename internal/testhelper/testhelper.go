@@ -78,7 +78,6 @@ func SetupForVersionBump(t *testing.T, wantTag string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", remoteDir, ".")
-	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	configNewGitRepository(t)
 }
 
@@ -88,7 +87,7 @@ func ContinueInNewGitRepository(t *testing.T, tmpDir string) {
 	t.Helper()
 	RequireCommand(t, "git")
 	t.Chdir(tmpDir)
-	RunGit(t, "init", "-b", config.BranchMain)
+	RunGit(t, "init", "-b", "main")
 	configNewGitRepository(t)
 }
 
@@ -147,17 +146,20 @@ func SetupRepo(t *testing.T) string {
 
 // SetupOptions include the various options for configuring test setup.
 type SetupOptions struct {
-	// Clone indicates whether to clone the repository after setup is
-	// complete. The clone uses [config.BranchMain].
-	Clone bool
+	// Clone is the branch that [Setup] should clone into after all setup is
+	// complete. Must not be set in PreviewOptions.
+	Clone string
 	// Config is the [config.Config] to write to librarian.yaml in the root
 	// of the repo created.
 	Config *config.Config
 	// Dirty indicates if the cloned repository should be left in a dirty state,
 	// with uncommitted files. Primarily used for error testing.
 	Dirty bool
+	// PreviewOptions indicate the creation of a 'preview' branch in the repo
+	// using the provided SetupOptions.
+	PreviewOptions *SetupOptions
 	// remoteDir is the directory of the repo created by [SetupRepo] that
-	// is cloned when [Clone] is true. Internal only.
+	// should be cloned when [Clone] is set. Internal only.
 	remoteDir string
 	// Tags is the list of tags that will be applied once all initial file set up is
 	// complete.
@@ -192,8 +194,12 @@ func setup(t *testing.T, opts SetupOptions) {
 		}
 		RunGit(t, "commit", "-m", "feat: changed file(s)", ".")
 	}
-	if opts.Clone {
-		CloneRepository(t, opts.remoteDir)
+	if opts.PreviewOptions != nil {
+		RunGit(t, "checkout", "-b", "preview")
+		setup(t, *opts.PreviewOptions)
+	}
+	if opts.Clone != "" {
+		CloneRepositoryBranch(t, opts.remoteDir, opts.Clone)
 	}
 	if opts.Dirty {
 		RunGit(t, "reset", "HEAD~1")
@@ -245,7 +251,7 @@ func SetupRepoWithChange(t *testing.T, wantTag string) string {
 // CloneRepository clones the remote repository into a new temporary directory
 // and changes the current working directory to the cloned repository.
 func CloneRepository(t *testing.T, remoteDir string) {
-	CloneRepositoryBranch(t, remoteDir, config.BranchMain)
+	CloneRepositoryBranch(t, remoteDir, "main")
 }
 
 // CloneRepositoryBranch clones the repository at the specified branch into
@@ -255,7 +261,6 @@ func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
 	cloneDir := t.TempDir()
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
-	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
 	configNewGitRepository(t)
 }
 

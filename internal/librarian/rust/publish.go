@@ -64,27 +64,27 @@ var errSemverCheck = errors.New("semver check failed")
 
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
-func Publish(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
-	if err := preFlight(ctx, cfg.Preinstalled, cfg.Tools["cargo"]); err != nil {
+func Publish(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
+	if err := preFlight(ctx, config.Preinstalled, config.Remote, config.Tools["cargo"]); err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
-	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
+	gitExe := command.GetExecutablePath(config.Preinstalled, "git")
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.Remote, config.Branch)
 	if err != nil {
 		return err
 	}
-	if err := git.MatchesBranchPoint(ctx, gitExe, config.RemoteUpstream, config.BranchMain); err != nil {
+	if err := git.MatchesBranchPoint(ctx, gitExe, config.Remote, config.Branch); err != nil {
 		return err
 	}
-	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, config.IgnoredChanges)
 	if err != nil {
 		return err
 	}
-	return publishCrates(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, lastTag, files)
+	return publishCrates(ctx, config, dryRun, dryRunKeepGoing, skipSemverChecks, lastTag, files)
 }
 
 // publishCrates publishes the crates that have changed.
-func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool, lastTag string, files []string) error {
+func publishCrates(ctx context.Context, config *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
 	for _, manifest := range findCargoManifests(files) {
 		names, err := publishedCrate(manifest)
@@ -96,7 +96,7 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 		}
 	}
 	slog.Info("computing publication plan with: cargo workspaces plan")
-	cargoPath := command.GetExecutablePath(cfg.Preinstalled, "cargo")
+	cargoPath := command.GetExecutablePath(config.Preinstalled, "cargo")
 	output, err := command.Output(ctx, cargoPath, "workspaces", "plan", "--skip-published")
 	if err != nil {
 		return err
@@ -117,7 +117,7 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 	slog.Info(fmt.Sprintf("there are %d crates in need of publishing, summary=%v", totalCrates, crateSummary))
 
 	if !skipSemverChecks {
-		gitPath := command.GetExecutablePath(cfg.Preinstalled, "git")
+		gitPath := command.GetExecutablePath(config.Preinstalled, "git")
 		if err := runSemverChecks(ctx, semverData{
 			dryRunKeepGoing: dryRunKeepGoing,
 			manifests:       manifests,

@@ -33,6 +33,8 @@ import (
 const (
 	// DefaultBranchMaster represents the default git branch "master".
 	DefaultBranchMaster = "master"
+	// DefaultBranchMain represents the default git branch "main".
+	DefaultBranchMain = "main"
 )
 
 var (

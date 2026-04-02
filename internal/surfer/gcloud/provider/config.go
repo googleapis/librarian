@@ -21,9 +21,6 @@ type Config struct {
 	// correlate to a single service config with one or more APIs defined.
 	ServiceName string `yaml:"service_name"`
 
-	// GenerateOperations indicates whether to generate top-level operations commands.
-	GenerateOperations *bool `yaml:"generate_operations,omitempty"`
-
 	// APIs describes the APIs for which to generate a gcloud surface.
 	APIs []API `yaml:"apis,omitempty"`
 
@@ -265,13 +262,4 @@ func APIVersion(c *Config) string {
 		return c.APIs[0].APIVersion
 	}
 	return ""
-}
-
-// ShouldGenerateOperations returns true if operations commands should be generated.
-// It defaults to true if omitted from the config.
-func ShouldGenerateOperations(c *Config) bool {
-	if c == nil || c.GenerateOperations == nil {
-		return true
-	}
-	return *c.GenerateOperations
 }

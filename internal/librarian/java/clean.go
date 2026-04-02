@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"syscall"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -30,7 +31,10 @@ var itTestRegexp = regexp.MustCompile(`src/test/java/com/google/cloud/.*/v.*/it/
 // Clean removes files in the library's output directory that are not in the keep list.
 // It targets patterns like proto-*, grpc-*, and the main GAPIC module.
 func Clean(library *config.Library) error {
-	libraryName := ensureCloudPrefix(library.Name)
+	libraryName := library.Name
+	if !strings.HasPrefix(libraryName, "google-cloud-") {
+		libraryName = "google-cloud-" + libraryName
+	}
 	patterns := []string{
 		fmt.Sprintf("proto-%s-*", libraryName),
 		fmt.Sprintf("grpc-%s-*", libraryName),

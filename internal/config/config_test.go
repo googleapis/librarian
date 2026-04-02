@@ -52,18 +52,6 @@ func TestRustRead(t *testing.T) {
 				SHA256: "f572d396fae9206628714fb2ce00f72e94f2258f",
 			},
 		},
-		Tools: &Tools{
-			Cargo: []*CargoTool{
-				{
-					Name:    "cargo-semver-checks",
-					Version: "0.46.0",
-				},
-				{
-					Name:    "taplo-cli",
-					Version: "0.10.0",
-				},
-			},
-		},
 		Default: &Default{
 			Output:    "src/generated/",
 			TagFormat: "{name}/v{version}",

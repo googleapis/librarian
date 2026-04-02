@@ -25,7 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -55,9 +54,6 @@ func tidyCommand() *cli.Command {
 // RunTidyOnConfig formats and validates the provided librarian configuration
 // and writes it to disk, relative to the specified repository root directory.
 func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) error {
-	if err := validateTools(cfg); err != nil {
-		return err
-	}
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
@@ -106,18 +102,6 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
 	derivedOutput := defaultOutput(cfg.Language, lib.Name, lib.APIs[0].Path, cfg.Default.Output)
 	return lib.Output == derivedOutput
-}
-
-func validateTools(cfg *config.Config) error {
-	if cfg.Tools == nil {
-		return nil
-	}
-	for _, tool := range cfg.Tools.Cargo {
-		if tool.Version == "" {
-			return fmt.Errorf("%w: %s", rust.ErrMissingToolVersion, tool.Name)
-		}
-	}
-	return nil
 }
 
 func validateLibraries(cfg *config.Config) error {
@@ -191,11 +175,6 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
-	if cfg.Tools != nil {
-		slices.SortFunc(cfg.Tools.Cargo, func(a, b *config.CargoTool) int {
-			return strings.Compare(a.Name, b.Name)
-		})
-	}
 	if cfg.Default != nil && cfg.Default.Rust != nil {
 		slices.SortFunc(cfg.Default.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {
 			return strings.Compare(a.Name, b.Name)

@@ -79,7 +79,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return err
 		}
 	}
-	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
+	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
 		return err
 	}
 	if library.Go != nil {

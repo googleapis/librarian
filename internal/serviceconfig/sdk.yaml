@@ -2994,7 +2994,6 @@
     - nodejs
     - python
     - rust
-    - swift
   open_api: testdata/secretmanager_openapi_v1.json
 - path: google/cloud/secretmanager/v1beta2
   languages:

@@ -33,6 +33,8 @@ func TestPublishCratesSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -61,6 +63,8 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -90,6 +94,8 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -124,6 +130,8 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 func TestPublishCratesGetPlanError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "git",
@@ -145,6 +153,8 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "echo")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "echo",
@@ -192,6 +202,8 @@ fi
 	}
 
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -219,6 +231,8 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -242,6 +256,8 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	config := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": "/bin/echo",
@@ -274,6 +290,24 @@ func TestPublishPreflightError(t *testing.T) {
 	}
 }
 
+func TestPublishLastTagError(t *testing.T) {
+	const echo = "/bin/echo"
+	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, echo)
+	config := config.Release{
+		Remote: "origin",
+		Branch: "invalid-branch",
+		Preinstalled: map[string]string{
+			"cargo": echo,
+		},
+	}
+	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
+	testhelper.CloneRepository(t, remoteDir)
+	if err := Publish(t.Context(), &config, true, false, false); err == nil {
+		t.Fatalf("expected an error during GetLastTag")
+	}
+}
+
 func TestPublishCratesDryRunKeepGoing(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows, bash script set up does not work")
@@ -297,6 +331,8 @@ fi
 	}
 
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -351,6 +387,8 @@ fi
 	}
 
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,
@@ -397,6 +435,8 @@ fi
 	}
 
 	cfg := &config.Release{
+		Remote: "origin",
+		Branch: "main",
 		Preinstalled: map[string]string{
 			"git":   "git",
 			"cargo": cargoScript,

@@ -29,17 +29,13 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
 
 var (
-	errLibraryAlreadyExists      = errors.New("library already exists in config")
-	errMissingAPI                = errors.New("must provide at least one API")
-	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
-	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
-	errPreviewAlreadyExists      = errors.New("preview library config already exists")
+	errLibraryAlreadyExists = errors.New("library already exists in config")
+	errMissingAPI           = errors.New("must provide at least one API")
 )
 
 func addCommand() *cli.Command {
@@ -104,8 +100,6 @@ func deriveLibraryName(language string, api string) string {
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:
 		return rust.DefaultLibraryName(api)
-	case config.LanguageSwift:
-		return swift.DefaultLibraryName(api)
 	default:
 		return strings.ReplaceAll(api, "/", "-")
 	}
@@ -115,40 +109,7 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new library, the updated config, and an error
 // if the library already exists.
 func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
-	isPreview := slices.ContainsFunc(apis, func(a string) bool {
-		return strings.HasPrefix(a, "preview/")
-	})
-	mixed := slices.ContainsFunc(apis, func(a string) bool {
-		return isPreview && !strings.HasPrefix(a, "preview/")
-	})
-	if mixed {
-		return "", nil, errMixedPreviewAndNonPreview
-	}
-
-	paths := make([]*config.API, 0, len(apis))
-	for _, a := range apis {
-		if isPreview {
-			a = strings.TrimPrefix(a, "preview/")
-		}
-		paths = append(paths, &config.API{Path: a})
-	}
-
-	name := deriveLibraryName(cfg.Language, paths[0].Path)
-
-	if isPreview {
-		lib, err := FindLibrary(cfg, name)
-		if err != nil {
-			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
-		}
-		if lib.Preview != nil {
-			return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
-		}
-		lib.Preview = &config.Library{
-			APIs: paths,
-		}
-		return name, cfg, nil
-	}
-
+	name := deriveLibraryName(cfg.Language, apis[0])
 	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
 		return lib.Name == name
 	})
@@ -159,7 +120,11 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-		APIs:          paths,
+	}
+	for _, a := range apis {
+		lib.APIs = append(lib.APIs, &config.API{
+			Path: a,
+		})
 	}
 
 	switch cfg.Language {

@@ -51,14 +51,14 @@ func TestCargoPreFlightBadTool(t *testing.T) {
 }
 
 func TestPreFlightMissingGit(t *testing.T) {
-	if err := preFlight(t.Context(), map[string]string{"git": "git-is-not-installed"}, nil); err == nil {
+	if err := preFlight(t.Context(), map[string]string{"git": "git-is-not-installed"}, "", nil); err == nil {
 		t.Fatal("expected an error, got nil")
 	}
 }
 
 func TestPreFlightMissingCargo(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	if err := preFlight(t.Context(), map[string]string{"cargo": "cargo-is-not-installed"}, nil); err == nil {
+	if err := preFlight(t.Context(), map[string]string{"cargo": "cargo-is-not-installed"}, "", nil); err == nil {
 		t.Fatal("expected an error, got nil")
 	}
 }
@@ -70,7 +70,7 @@ func TestPreFlightMissingUpstream(t *testing.T) {
 		"cargo": "/bin/echo",
 	}
 	testhelper.ContinueInNewGitRepository(t, t.TempDir())
-	if err := preFlight(t.Context(), preinstalled, nil); err == nil {
+	if err := preFlight(t.Context(), preinstalled, "origin", nil); err == nil {
 		t.Fatal("expected an error, got nil")
 	}
 }
@@ -88,7 +88,7 @@ func TestPreFlightWithTools(t *testing.T) {
 		},
 	}
 	testhelper.SetupForVersionBump(t, "test-preflight-with-tools")
-	if err := preFlight(t.Context(), preinstalled, tools); err != nil {
+	if err := preFlight(t.Context(), preinstalled, "origin", tools); err != nil {
 		t.Errorf("expected a successful run, got=%v", err)
 	}
 }
@@ -106,7 +106,7 @@ func TestPreFlightToolFailure(t *testing.T) {
 		},
 	}
 	testhelper.SetupForVersionBump(t, "test-preflight-with-tools")
-	if err := preFlight(t.Context(), preinstalled, tools); err == nil {
+	if err := preFlight(t.Context(), preinstalled, "origin", tools); err == nil {
 		t.Errorf("expected an error installing cargo-semver-checks")
 	}
 }

@@ -21,12 +21,11 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestGenerateInternalVersionFile_CheckVersion(t *testing.T) {
+func TestGenerateInternalVersionFile(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		version     string
@@ -45,7 +44,7 @@ func TestGenerateInternalVersionFile_CheckVersion(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
-			if err := generateInternalVersionFile(dir, "", test.version); err != nil {
+			if err := generateInternalVersionFile(dir, test.version); err != nil {
 				t.Fatal(err)
 			}
 
@@ -55,42 +54,6 @@ func TestGenerateInternalVersionFile_CheckVersion(t *testing.T) {
 			}
 			if !strings.Contains(string(content), test.wantVersion) {
 				t.Errorf("want %q in output, got:\n%s", test.wantVersion, content)
-			}
-			if !strings.Contains(string(content), "package internal") {
-				t.Errorf("want package internal in output, got:\n%s", content)
-			}
-		})
-	}
-}
-
-func TestGenerateInternalVersionFile_CheckYear(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		year     string
-		wantYear string
-	}{
-		{
-			name:     "with year",
-			year:     "2025",
-			wantYear: "2025",
-		},
-		{
-			name:     "empty year",
-			wantYear: time.Now().Format("2006"),
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if err := generateInternalVersionFile(dir, test.year, ""); err != nil {
-				t.Fatal(err)
-			}
-
-			content, err := os.ReadFile(filepath.Join(dir, "internal", "version.go"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if !strings.Contains(string(content), test.wantYear) {
-				t.Errorf("want %q in output, got:\n%s", test.wantYear, content)
 			}
 			if !strings.Contains(string(content), "package internal") {
 				t.Errorf("want package internal in output, got:\n%s", content)

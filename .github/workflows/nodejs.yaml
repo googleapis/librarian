@@ -52,5 +52,9 @@ jobs:
       - name: Install synthtool
         run: |
           pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
-      - name: Run internal/librarian/nodejs tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/nodejs
+      - name: Run internal/librarian/nodejs tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/nodejs
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}

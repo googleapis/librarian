@@ -33,7 +33,7 @@ var (
 	internalVersionTmpl string
 )
 
-func generateInternalVersionFile(moduleDir, year, version string) (err error) {
+func generateInternalVersionFile(moduleDir, version string) (err error) {
 	if version == "" {
 		version = "0.0.0"
 	}
@@ -51,7 +51,7 @@ func generateInternalVersionFile(moduleDir, year, version string) (err error) {
 			err = cerr
 		}
 	}()
-	if err := writeLicenseHeader(f, year); err != nil {
+	if err := writeLicenseHeader(f); err != nil {
 		return err
 	}
 	t := template.Must(template.New("version").Parse(internalVersionTmpl))
@@ -80,7 +80,7 @@ func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (er
 			err = cerr
 		}
 	}()
-	if err := writeLicenseHeader(f, library.CopyrightYear); err != nil {
+	if err := writeLicenseHeader(f); err != nil {
 		return err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
@@ -91,10 +91,8 @@ func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (er
 }
 
 // writeLicenseHeader writes the license header as Go comments to the given file.
-func writeLicenseHeader(f *os.File, year string) error {
-	if year == "" {
-		year = time.Now().Format("2006")
-	}
+func writeLicenseHeader(f *os.File) error {
+	year := time.Now().Format("2006")
 	for _, line := range license.Header(year) {
 		if _, err := f.WriteString("//" + line + "\n"); err != nil {
 			return err

@@ -177,6 +177,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,
@@ -215,6 +216,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
+				Release: &config.Release{Branch: "main"},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,

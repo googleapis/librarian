@@ -60,9 +60,12 @@ var (
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
 func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
-	monorepoVersion, err := findMonorepoVersion(cfg)
-	if err != nil {
-		return err
+	monorepoVersion := ""
+	for _, lib := range cfg.Libraries {
+		if lib.Name == rootLibrary {
+			monorepoVersion = lib.Version
+			break
+		}
 	}
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)

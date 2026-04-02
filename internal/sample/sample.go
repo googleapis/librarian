@@ -50,6 +50,22 @@ const (
 	// NextVersion is the next version typically assigned to libraries
 	// starting from [InitialVersion].
 	NextVersion = "1.1.0"
+	// InitialLib1PreviewTag is the tag form of [Lib1Name]
+	// [InitialPreviewVersion] for use in tests.
+	InitialLib1PreviewTag = "google-cloud-storage/v1.1.0-preview.1"
+	// InitialLib2PreviewTag is the tag form of [Lib2Name]
+	// [InitialPreviewVersion] for use in tests.
+	InitialLib2PreviewTag = "gax-internal/v1.1.0-preview.1"
+	// InitialPreviewVersion is an initial version that can be assigned to
+	// libraries on a preview branch.
+	InitialPreviewVersion = "1.1.0-preview.1"
+	// NextPreviewPrereleaseVersion is the next prerelease version typically
+	// assigned to preview libraries starting from [InitialPreviewVersion].
+	NextPreviewPrereleaseVersion = "1.1.0-preview.2"
+	// NextPreviewCoreVersion is the next core version typically
+	// assigned to preview libraries starting from [InitialPreviewVersion] when
+	// the main version has moved on to [NextVersion].
+	NextPreviewCoreVersion = "1.2.0-preview.1"
 	// RustNonGAVersion is a non-GA client library version typical of a Rust
 	// client library.
 	RustNonGAVersion = "0.1.0-beta"
@@ -77,6 +93,10 @@ func Config() *config.Config {
 		Default: &config.Default{
 			TagFormat: "{name}/v{version}",
 		},
+		Release: &config.Release{
+			Remote: "origin",
+			Branch: "main",
+		},
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "9fcfbea0aa5b50fa22e190faceb073d74504172b",
@@ -96,4 +116,18 @@ func Config() *config.Config {
 			},
 		},
 	}
+}
+
+// PreviewConfig produces a [config.Config] using the normal [Config] function,
+// but modifies the resulting [config.Config] properties to align with that of
+// a Preview generation track.
+func PreviewConfig() *config.Config {
+	c := Config()
+
+	c.Release.Branch = "preview"
+	for _, lib := range c.Libraries {
+		lib.Version = InitialPreviewVersion
+	}
+
+	return c
 }

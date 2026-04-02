@@ -53,5 +53,9 @@ jobs:
           python -m pip install ruff==0.14.14
       - name: Verify git is available
         run: git --version
-      - name: Run internal/librarian/python tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/python
+      - name: Run internal/librarian/python tests
+        run: go test -race -coverprofile=coverage.out -covermode=atomic ./internal/librarian/python
+      - name: Upload coverage report
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
