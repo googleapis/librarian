@@ -126,12 +126,14 @@ func buildLicenseText(year int) string {
 	return b.String()
 }
 
+// JavaModules contains the Maven artifact IDs for the GAPIC, Proto, and gRPC modules.
 type JavaModules struct {
 	Gapic string // e.g., google-cloud-secretmanager
 	Proto string // e.g., proto-google-cloud-secretmanager-v1
 	Grpc  string // e.g., grpc-google-cloud-secretmanager-v1
 }
 
+// DeriveModuleNames returns the Maven artifact IDs for the library's modules.
 func DeriveModuleNames(libraryID, version string) JavaModules {
 	name := EnsureCloudPrefix(libraryID)
 	return JavaModules{

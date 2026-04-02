@@ -352,22 +352,23 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		if err != nil {
 			return err
 		}
-		content := string(contentBytes)
+		lines := strings.Split(string(contentBytes), "\n")
 
-		var protoArtifactIDs []string
-		var grpcArtifactIDs []string
+		var protoIDs []string
+		var grpcIDs []string
 		for _, api := range lib.APIs {
 			version := serviceconfig.ExtractVersion(api.Path)
 			names := java.DeriveModuleNames(lib.Name, version)
-			protoArtifactIDs = append(protoArtifactIDs, names.Proto)
-			grpcArtifactIDs = append(grpcArtifactIDs, names.Grpc)
+			protoIDs = append(protoIDs, names.Proto)
+			grpcIDs = append(grpcIDs, names.Grpc)
 		}
 
-		content = wrapDependencies(content, protoArtifactIDs, managedProtoStart, managedProtoEnd)
-		content = wrapDependencies(content, grpcArtifactIDs, managedGrpcStart, managedGrpcEnd)
+		lines = wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
+		lines = wrapDependencies(lines, grpcIDs, managedGrpcStart, managedGrpcEnd)
 
-		if content != string(contentBytes) {
-			if err := os.WriteFile(clientPomPath, []byte(content), 0644); err != nil {
+		newContent := strings.Join(lines, "\n")
+		if newContent != string(contentBytes) {
+			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
 				return err
 			}
 			log.Printf("Inserted markers in %s", clientPomPath)
@@ -376,49 +377,63 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	return nil
 }
 
-func wrapDependencies(content string, artifactIDs []string, startMarker, endMarker string) string {
-	if len(artifactIDs) == 0 || strings.Contains(content, startMarker) {
-		return content
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
+	if len(artifactIDs) == 0 {
+		return lines
+	}
+	for _, line := range lines {
+		if strings.Contains(line, startMarker) {
+			return lines
+		}
 	}
 
-	lines := strings.Split(content, "\n")
-	firstLine := -1
-	lastLine := -1
+	targets := make([]string, len(artifactIDs))
+	for i, id := range artifactIDs {
+		targets[i] = "<artifactId>" + id + "</artifactId>"
+	}
 
+	firstLine, lastLine := -1, -1
 	for i, line := range lines {
-		for _, id := range artifactIDs {
-			if strings.Contains(line, "<artifactId>"+id+"</artifactId>") {
-				// Find the start of this <dependency> block
-				start := i
-				for start > 0 && !strings.Contains(lines[start], "<dependency>") {
-					start--
-				}
-				if firstLine == -1 || start < firstLine {
-					firstLine = start
-				}
-
-				// Find the end of this <dependency> block
-				end := i
-				for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
-					end++
-				}
-				if end > lastLine {
-					lastLine = end
-				}
+		match := false
+		for _, t := range targets {
+			if strings.Contains(line, t) {
+				match = true
+				break
 			}
+		}
+		if !match {
+			continue
+		}
+
+		// Find the start of this <dependency> block
+		start := i
+		for start > 0 && !strings.Contains(lines[start], "<dependency>") {
+			start--
+		}
+		if firstLine == -1 || start < firstLine {
+			firstLine = start
+		}
+
+		// Find the end of this <dependency> block
+		end := i
+		for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
+			end++
+		}
+		if end > lastLine {
+			lastLine = end
 		}
 	}
 
 	if firstLine != -1 && lastLine != -1 {
-		// Insert markers
+		indent := lines[firstLine][:len(lines[firstLine])-len(strings.TrimLeft(lines[firstLine], " \t"))]
 		newLines := make([]string, 0, len(lines)+2)
 		newLines = append(newLines, lines[:firstLine]...)
-		newLines = append(newLines, "    "+startMarker)
+		newLines = append(newLines, indent+startMarker)
 		newLines = append(newLines, lines[firstLine:lastLine+1]...)
-		newLines = append(newLines, "    "+endMarker)
+		newLines = append(newLines, indent+endMarker)
 		newLines = append(newLines, lines[lastLine+1:]...)
-		return strings.Join(newLines, "\n")
+		return newLines
 	}
 
-	return content
+	return lines
 }

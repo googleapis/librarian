@@ -174,6 +174,7 @@ func EnsureCloudPrefix(name string) string {
 	return name
 }
 
+// DeriveDistributionName returns the Maven distribution name (groupId:artifactId) for the library.
 func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
