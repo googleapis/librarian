@@ -476,6 +476,9 @@ func TestAugmentLegacyReleaseExcludePaths(t *testing.T) {
 					{Name: "initially-empty-exclude"},
 					{Name: "librarian-extra"},
 				},
+				Default: &config.Default{
+					Output: "packages",
+				},
 				Release: &config.Release{
 					IgnoredChanges: []string{"metadata", "docs/readme"},
 				},
@@ -569,6 +572,9 @@ func TestAugmentLegacyReleaseExcludePaths_Error(t *testing.T) {
 		Repo:     "google-cloud-python",
 		Libraries: []*config.Library{
 			{Name: "irrelevant"},
+		},
+		Default: &config.Default{
+			Output: "packages",
 		},
 		Release: &config.Release{
 			IgnoredChanges: []string{"irrelevant"},

@@ -197,7 +197,7 @@ func augmentLegacyReleaseExcludePaths(repoPath string, cfg *config.Config) error
 			continue
 		}
 		for _, path := range cfg.Release.IgnoredChanges {
-			repoRelativePath := filepath.Join("packages", lib.Name, path)
+			repoRelativePath := filepath.Join(cfg.Default.Output, lib.Name, path)
 			if !slices.Contains(libraryState.ReleaseExcludePaths, repoRelativePath) {
 				libraryState.ReleaseExcludePaths = append(libraryState.ReleaseExcludePaths, repoRelativePath)
 			}
