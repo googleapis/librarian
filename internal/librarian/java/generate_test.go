@@ -582,8 +582,8 @@ func TestGenerateLibrary_Error(t *testing.T) {
 	}
 }
 
-func TestGenerate_Full(t *testing.T) {
-	// Temporarily mock runProtoc to avoid external tool requirements.
+func TestGenerate_Logic(t *testing.T) {
+	// Tests the orchestration logic, temporarily mock runProtoc to avoid external tool requirements.
 	oldRunProtoc := runProtoc
 	defer func() { runProtoc = oldRunProtoc }()
 	runProtoc = func(ctx context.Context, args []string) error { return nil }
