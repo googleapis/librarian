@@ -35,7 +35,6 @@ type modelAnnotations struct {
 	PackageNamespace string
 	RequiredPackages []string
 	ExternPackages   []string
-	HasLROs          bool
 	CopyrightYear    string
 	BoilerPlate      []string
 	DefaultHost      string
@@ -132,6 +131,18 @@ func (m *modelAnnotations) HasDefaultFeatures() bool {
 // HasExtraModules returns true if there are any extra modules.
 func (m *modelAnnotations) HasExtraModules() bool {
 	return len(m.ExtraModules) > 0
+}
+
+// HasLROs returns true if any service in the model has long-running operations.
+func (m *modelAnnotations) HasLROs() bool {
+	for _, s := range m.Services {
+		if s.Codec != nil {
+			if svcAnn, ok := s.Codec.(*serviceAnnotations); ok && svcAnn.HasLROs() {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // IsGaxiCrate returns true if we handle references to `gaxi` traits from within the `gaxi` crate, by
@@ -714,12 +725,8 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 			}
 		}
 	}
-	hasLROs := false
 	for _, s := range model.Services {
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.DiscoveryLro != nil {
-				hasLROs = true
-			}
 			if !codec.generateMethod(m) {
 				continue
 			}
@@ -791,7 +798,6 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		ReleaseLevel:     codec.releaseLevel,
 		RequiredPackages: requiredPackages(codec.extraPackages),
 		ExternPackages:   externPackages(codec.extraPackages),
-		HasLROs:          hasLROs,
 		CopyrightYear:    codec.generationYear,
 		BoilerPlate: append(license.HeaderBulk(),
 			"",

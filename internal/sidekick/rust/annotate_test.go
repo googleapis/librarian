@@ -61,7 +61,6 @@ func TestPackageNames(t *testing.T) {
 		PackageNamespace:          "google_cloud_workflows_v1",
 		RequiredPackages:          []string{},
 		ExternPackages:            []string{},
-		HasLROs:                   false,
 		CopyrightYear:             "2035",
 		Services:                  []*api.Service{},
 		NameToLower:               "workflows-v1",
@@ -73,6 +72,10 @@ func TestPackageNames(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
 		t.Errorf("mismatch in modelAnnotations list (-want, +got)\n:%s", diff)
+	}
+	// Verify HasLROs() method works correctly (should be false for no services)
+	if got.HasLROs() {
+		t.Errorf("HasLROs() = true, want false for model with no services")
 	}
 }
 
