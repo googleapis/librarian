@@ -389,7 +389,11 @@ func TestGenerateAPI(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(
 		t.Context(),
 		cfg,
 		&config.API{Path: "google/cloud/secretmanager/v1"},
@@ -400,6 +404,7 @@ func TestGenerateAPI(t *testing.T) {
 			NamePretty:     "Secret Manager",
 			APIDescription: "Secret Manager API",
 		},
+		apiCfg,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -453,10 +458,14 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
 		NamePretty:     "Secret Manager",
 		APIDescription: "Secret Manager API",
-	})
+	}, apiCfg)
 	if err != nil {
 		t.Fatal(err)
 	}

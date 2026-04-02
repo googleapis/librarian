@@ -65,16 +65,35 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
+
+	apiConfigs := make(map[string]*serviceconfig.API)
+	for _, api := range library.APIs {
+		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		if err != nil {
+			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+		}
+		apiConfigs[api.Path] = apiCfg
+	}
+
 	for _, api := range library.APIs {
 		// metadata is needed for pom.xml generation in post process
-		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata, apiConfigs[api.Path]); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
+
+	monorepoVersion, err := findMonorepoVersion(cfg)
+	if err != nil {
+		return err
+	}
+	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, apiConfigs); err != nil {
+		return err
+	}
+
 	return nil
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
@@ -125,10 +144,6 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
-	if err != nil {
-		return fmt.Errorf("failed to find api config: %w", err)
-	}
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {
