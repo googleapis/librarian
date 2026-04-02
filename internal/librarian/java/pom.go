@@ -83,12 +83,19 @@ func generatePomsIfMissing(library *config.Library, libraryDir, googleapisDir, m
 	if err != nil {
 		return err
 	}
+	var newModules []string
 	for _, m := range modules {
 		if !m.isMissing {
 			continue
 		}
 		if err := writePom(filepath.Join(m.dir, "pom.xml"), m.template, m.templateData); err != nil {
 			return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
+		}
+		newModules = append(newModules, m.artifactID)
+	}
+	if len(newModules) > 0 {
+		if err := updateVersionsFile(libraryDir, newModules, library.Version); err != nil {
+			return fmt.Errorf("failed to update versions.txt: %w", err)
 		}
 	}
 	return nil
@@ -278,23 +285,71 @@ func writePom(pomPath, templateName string, data any) (err error) {
 	return nil
 }
 
-func findMonorepoVersion(cfg *config.Config) (string, error) {
-	for _, lib := range cfg.Libraries {
-		if lib.Name == rootLibrary {
-			return lib.Version, nil
+// updateVersionsFile adds entries for new modules to versions.txt.
+// The format is: module-name:released-version:snapshot-version
+// For new modules, released-version is 0.0.0 and snapshot-version is library.Version-SNAPSHOT.
+func updateVersionsFile(libraryDir string, newModules []string, version string) error {
+	// Find the repository root (parent of library directory)
+	repoRoot := filepath.Dir(libraryDir)
+	versionsPath := filepath.Join(repoRoot, "versions.txt")
+	
+	// Read existing content if file exists
+	existingContent, err := os.ReadFile(versionsPath)
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("read versions.txt: %w", err)
+	}
+	
+	// Parse existing entries to avoid duplicates
+	existingModules := make(map[string]bool)
+	if len(existingContent) > 0 {
+		lines := strings.Split(string(existingContent), "\n")
+		for _, line := range lines {
+			line = strings.TrimSpace(line)
+			if line == "" || strings.HasPrefix(line, "#") {
+				continue
+			}
+			parts := strings.Split(line, ":")
+			if len(parts) >= 1 {
+				existingModules[parts[0]] = true
+			}
 		}
 	}
-	return "", fmt.Errorf("could not find monorepo version for %s in config", rootLibrary)
-}
-
-// protoGroupID returns the Maven Group ID for the generated proto and gRPC
-// artifacts. It maps the GAPIC library's Group ID to a standard format and
-// checks for special cases in groupInclusions (e.g., mapping
-// "com.google.cloud" to "com.google.api.grpc").
-func protoGroupID(mainArtifactGroupID string) string {
-	prefix := mainArtifactGroupID
-	if groupInclusions[mainArtifactGroupID] {
-		prefix = googleGroupID
+	
+	// Prepare new entries
+	var newEntries []string
+	snapshotVersion := version + "-SNAPSHOT"
+	for _, module := range newModules {
+		if !existingModules[module] {
+			// Format: module:released-version:snapshot-version
+			// For new modules, released version is 0.0.0
+			entry := fmt.Sprintf("%s:0.0.0:%s", module, snapshotVersion)
+			newEntries = append(newEntries, entry)
+		}
 	}
-	return prefix + protoGrpcSuffix
+	
+	if len(newEntries) == 0 {
+		return nil // No new entries to add
+	}
+	
+	// Append new entries to the file
+	f, err := os.OpenFile(versionsPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("open versions.txt: %w", err)
+	}
+	defer f.Close()
+	
+	// Add a newline before new entries if file doesn't end with one
+	if len(existingContent) > 0 && !strings.HasSuffix(string(existingContent), "\n") {
+		if _, err := f.WriteString("\n"); err != nil {
+			return fmt.Errorf("write newline to versions.txt: %w", err)
+		}
+	}
+	
+	for _, entry := range newEntries {
+		if _, err := f.WriteString(entry + "\n"); err != nil {
+			return fmt.Errorf("write entry to versions.txt: %w", err)
+		}
+	}
+	
+	return nil
 }

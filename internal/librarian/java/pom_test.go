@@ -201,3 +201,69 @@ func TestProtoGroupID(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateVersionsFile(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		existingContent string
+		newModules      []string
+		version         string
+		wantContent     string
+	}{
+		{
+			name:        "create new file with single module",
+			newModules:  []string{"proto-google-cloud-test-v1"},
+			version:     "1.2.3",
+			wantContent: "proto-google-cloud-test-v1:0.0.0:1.2.3-SNAPSHOT\n",
+		},
+		{
+			name:            "append to existing file",
+			existingContent: "proto-google-cloud-existing-v1:1.0.0:1.1.0-SNAPSHOT\n",
+			newModules:      []string{"proto-google-cloud-test-v2"},
+			version:         "1.2.3",
+			wantContent:     "proto-google-cloud-existing-v1:1.0.0:1.1.0-SNAPSHOT\nproto-google-cloud-test-v2:0.0.0:1.2.3-SNAPSHOT\n",
+		},
+		{
+			name:            "skip duplicate modules",
+			existingContent: "proto-google-cloud-test-v1:1.0.0:1.1.0-SNAPSHOT\n",
+			newModules:      []string{"proto-google-cloud-test-v1", "proto-google-cloud-test-v2"},
+			version:         "1.2.3",
+			wantContent:     "proto-google-cloud-test-v1:1.0.0:1.1.0-SNAPSHOT\nproto-google-cloud-test-v2:0.0.0:1.2.3-SNAPSHOT\n",
+		},
+		{
+			name:            "add multiple new modules",
+			existingContent: "",
+			newModules:      []string{"proto-google-cloud-test-v1", "grpc-google-cloud-test-v1"},
+			version:         "2.0.0",
+			wantContent:     "proto-google-cloud-test-v1:0.0.0:2.0.0-SNAPSHOT\ngrpc-google-cloud-test-v1:0.0.0:2.0.0-SNAPSHOT\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			libraryDir := filepath.Join(tmpDir, "java-test")
+			if err := os.MkdirAll(libraryDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			
+			versionsPath := filepath.Join(tmpDir, "versions.txt")
+			if test.existingContent != "" {
+				if err := os.WriteFile(versionsPath, []byte(test.existingContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			
+			if err := updateVersionsFile(libraryDir, test.newModules, test.version); err != nil {
+				t.Fatalf("updateVersionsFile() error = %v", err)
+			}
+			
+			got, err := os.ReadFile(versionsPath)
+			if err != nil {
+				t.Fatalf("failed to read versions.txt: %v", err)
+			}
+			
+			if diff := cmp.Diff(test.wantContent, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
