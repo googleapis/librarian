@@ -20,6 +20,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -332,7 +333,10 @@ func invertBoolPtr(p *bool) bool {
 	return p != nil && !*p
 }
 
+// insertMarkers updates the pom.xml of the main client module for each library
+// to include managed dependency markers for generated proto and gRPC dependencies.
 func insertMarkers(repoPath string, cfg *config.Config) error {
+	var totalInserts int
 	for _, lib := range cfg.Libraries {
 		if lib.SkipGenerate {
 			continue
@@ -345,6 +349,7 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		gapicArtifactID := parts[1]
 		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
 		if _, err := os.Stat(clientPomPath); err != nil {
+			log.Printf("Warning: pom.xml not found for library %s at %s", lib.Name, clientPomPath)
 			continue
 		}
 
@@ -354,15 +359,7 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		}
 		lines := strings.Split(string(contentBytes), "\n")
 
-		var protoIDs []string
-		var grpcIDs []string
-		for _, api := range lib.APIs {
-			version := serviceconfig.ExtractVersion(api.Path)
-			names := java.DeriveModuleNames(lib.Name, version)
-			protoIDs = append(protoIDs, names.Proto)
-			grpcIDs = append(grpcIDs, names.Grpc)
-		}
-
+		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
 		lines = wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
 		lines = wrapDependencies(lines, grpcIDs, managedGrpcStart, managedGrpcEnd)
 
@@ -371,20 +368,31 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
 				return err
 			}
-			log.Printf("Inserted markers in %s", clientPomPath)
+			totalInserts++
 		}
+	}
+	if totalInserts > 0 {
+		log.Printf("Inserted markers in %d Java pom.xml files", totalInserts)
 	}
 	return nil
 }
 
-func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
-	if len(artifactIDs) == 0 {
-		return lines
+// getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
+func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
+	for _, api := range lib.APIs {
+		version := serviceconfig.ExtractVersion(api.Path)
+		names := java.DeriveModuleNames(lib.Name, version)
+		protoIDs = append(protoIDs, names.Proto)
+		grpcIDs = append(grpcIDs, names.Grpc)
 	}
-	for _, line := range lines {
-		if strings.Contains(line, startMarker) {
-			return lines
-		}
+	return
+}
+
+// wrapDependencies inserts start and end markers around the block of dependencies
+// matching the provided artifact IDs. It returns the modified lines.
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
+	if len(artifactIDs) == 0 || slices.Contains(lines, startMarker) {
+		return lines
 	}
 
 	targets := make([]string, len(artifactIDs))
@@ -392,7 +400,26 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 		targets[i] = "<artifactId>" + id + "</artifactId>"
 	}
 
-	firstLine, lastLine := -1, -1
+	first, last := findMarkerBounds(lines, targets)
+	if first == -1 {
+		return lines
+	}
+
+	// Use the same indentation as the first dependency line.
+	indent := lines[first][:len(lines[first])-len(strings.TrimLeft(lines[first], " \t"))]
+	return slices.Concat(
+		lines[:first],
+		[]string{indent + startMarker},
+		lines[first:last+1],
+		[]string{indent + endMarker},
+		lines[last+1:],
+	)
+}
+
+// findMarkerBounds returns the starting line of the first <dependency> block
+// and the ending line of the last <dependency> block that contain any of the target artifact IDs.
+func findMarkerBounds(lines []string, targets []string) (first, last int) {
+	first, last = -1, -1
 	for i, line := range lines {
 		match := false
 		for _, t := range targets {
@@ -410,8 +437,8 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 		for start > 0 && !strings.Contains(lines[start], "<dependency>") {
 			start--
 		}
-		if firstLine == -1 || start < firstLine {
-			firstLine = start
+		if first == -1 || start < first {
+			first = start
 		}
 
 		// Find the end of this <dependency> block
@@ -419,21 +446,9 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 		for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
 			end++
 		}
-		if end > lastLine {
-			lastLine = end
+		if end > last {
+			last = end
 		}
 	}
-
-	if firstLine != -1 && lastLine != -1 {
-		indent := lines[firstLine][:len(lines[firstLine])-len(strings.TrimLeft(lines[firstLine], " \t"))]
-		newLines := make([]string, 0, len(lines)+2)
-		newLines = append(newLines, lines[:firstLine]...)
-		newLines = append(newLines, indent+startMarker)
-		newLines = append(newLines, lines[firstLine:lastLine+1]...)
-		newLines = append(newLines, indent+endMarker)
-		newLines = append(newLines, lines[lastLine+1:]...)
-		return newLines
-	}
-
-	return lines
+	return
 }
