@@ -75,10 +75,7 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: api.Path,
-		Source: &sources.SourceConfig{
-			Sources:     src,
-			ActiveRoots: []string{"googleapis"},
-		},
+		Source:              sources.NewSourceConfig(src, library.Roots),
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,
