@@ -118,9 +118,6 @@ func TestCollectModules_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{})
-			if err == nil {
-				t.Fatal("collectModules() error = nil, want non-nil")
-			}
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("collectModules() error = %v, want %v", err, test.wantErr)
 			}
