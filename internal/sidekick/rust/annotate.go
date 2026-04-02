@@ -505,11 +505,6 @@ func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	return false
 }
 
-// HasVariablePath returns true if the path has a variable.
-func (b *pathBindingAnnotation) HasVariablePath() bool {
-	return len(b.Substitutions) != 0
-}
-
 // PathTemplate produces a path template suitable for instrumentation and logging.
 // Variable parts are replaced with {field_name}.
 func (b *pathBindingAnnotation) PathTemplate() string {

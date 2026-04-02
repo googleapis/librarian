@@ -119,7 +119,7 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
         {{/Codec.HasResourceNameGeneration}}
         {{#PathInfo.Bindings}}
         .or_else(|| {
-            {{#Codec.HasVariablePath}}
+            {{#Codec.HasSubstitutions}}
             {{#Codec.Substitutions}}
             let {{VariableName}} = try_match({{{FieldAccessor}}}, {{{TemplateAsArray}}})?;
             {{/Codec.Substitutions}}
@@ -129,10 +129,10 @@ impl super::stub::{{Codec.Name}} for {{Codec.Name}} {
                 {{VariableName}},
                 {{/Codec.Substitutions}}
             );
-            {{/Codec.HasVariablePath}}
-            {{^Codec.HasVariablePath}}
+            {{/Codec.HasSubstitutions}}
+            {{^Codec.HasSubstitutions}}
             let path = "{{Codec.PathFmt}}".to_string();
-            {{/Codec.HasVariablePath}}
+            {{/Codec.HasSubstitutions}}
             {{#Codec.DetailedTracingAttributes}}
             let path_template = "{{Codec.PathTemplate}}";
             {{/Codec.DetailedTracingAttributes}}
