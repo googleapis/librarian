@@ -42,8 +42,8 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             config.LanguagePython,
-				Repo:                 "googleapis/google-cloud-python",
+				Language:             config.LanguageNodejs,
+				Repo:                 "googleapis/google-cloud-node",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
@@ -64,8 +64,8 @@ func TestFromLibrary(t *testing.T) {
 				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
-				Language:             config.LanguagePython,
-				Repo:                 "googleapis/google-cloud-python",
+				Language:             config.LanguageNodejs,
+				Repo:                 "googleapis/google-cloud-node",
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
@@ -84,7 +84,6 @@ func TestFromLibrary(t *testing.T) {
 				Language:         config.LanguagePython,
 				Repo:             "googleapis/google-cloud-python",
 				DistributionName: "google-longrunning",
-				Transport:        "grpc+rest",
 			},
 		},
 	} {
@@ -96,8 +95,8 @@ func TestFromLibrary(t *testing.T) {
 			}
 
 			cfg := &config.Config{
-				Language: config.LanguagePython,
-				Repo:     "googleapis/google-cloud-python",
+				Language: test.want.Language,
+				Repo:     test.want.Repo,
 			}
 
 			got, err := FromLibrary(cfg, test.library, "../testdata/googleapis")
