@@ -250,6 +250,12 @@ func TestIsEmptyAPI(t *testing.T) {
 			},
 		},
 		{
+			name: "not empty with NoSnippets",
+			goAPI: &config.GoAPI{
+				NoSnippets: true,
+			},
+		},
+		{
 			name: "not empty with ProtoOnly",
 			goAPI: &config.GoAPI{
 				ProtoOnly: true,

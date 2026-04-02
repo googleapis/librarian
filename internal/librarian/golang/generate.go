@@ -145,6 +145,9 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 	if !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
+	if goAPI.NoSnippets {
+		opts = append(opts, "omit-snippets")
+	}
 	if sc != nil && sc.HasRESTNumericEnums(config.LanguageGo) {
 		opts = append(opts, "rest-numeric-enums")
 	}
@@ -199,6 +202,9 @@ func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, outDir strin
 // moveAndUpdateSnippets moves the generated snippets from the temporary location to their final
 // destination and updates their library versions.
 func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, outDir string) error {
+	if goAPI.NoSnippets {
+		return nil
+	}
 	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
 	snippetDest := findSnippetDirectory(library, goAPI, outDir)
 	if snippetDest == "" {

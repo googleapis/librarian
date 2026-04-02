@@ -59,6 +59,7 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 		goAPI.ImportPath == "" &&
 		len(goAPI.NestedProtos) == 0 &&
 		!goAPI.NoMetadata &&
+		!goAPI.NoSnippets &&
 		!goAPI.ProtoOnly &&
 		goAPI.ProtoPackage == ""
 }
