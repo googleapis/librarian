@@ -15,13 +15,14 @@
 package gcloud
 
 import (
+	"fmt"
 	"path"
 	"slices"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
 
@@ -43,9 +44,9 @@ func TestCommandTreeBuilder_Build_EmptyDefaultHost(t *testing.T) {
 
 func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com",
-		mockMethod("CreateInstance", "v1/projects/locations/instances"),
-		mockMethod("ListInstances", "v1/projects/locations/instances"),
-		mockMethod("GetOperation", "v1/projects/locations/operations"),
+		mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"),
+		mockMethod("ListInstances", "v1/{parent=projects/*/locations/*}/instances"),
+		mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"),
 	)
 	model := &api.API{
 		Name:        "parallelstore",
@@ -81,7 +82,7 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 }
 
 func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
-	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/projects/locations/operations"))
+	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
 
 	model := &api.API{
 		Name:     "parallelstore",
@@ -101,7 +102,7 @@ func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
 }
 
 func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
-	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/projects/locations/operations"))
+	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
 
 	model := &api.API{
 		Name:     "parallelstore",
@@ -125,8 +126,8 @@ func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
 }
 
 func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
-	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/projects/locations/instances"))
-	serviceTwo := mockService("OtherParallelstoreService", mockMethod("CreateOtherInstance", "v1/projects/locations/otherInstances"))
+	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
+	serviceTwo := mockService("OtherParallelstoreService", mockMethod("CreateOtherInstance", "v1/{parent=projects/*/locations/*}/otherInstances"))
 
 	model := &api.API{
 		Name:     "parallelstore",
@@ -151,8 +152,8 @@ func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
 }
 
 func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
-	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/projects/locations/instances"))
-	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/projects/locations/instances"))
+	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
+	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/{parent=projects/*/locations/*}/instances"))
 	serviceTwo.Package = "google.cloud.parallelstore.v1alpha"
 
 	model := &api.API{
@@ -203,23 +204,17 @@ func flattenTree(g *CommandGroup) []string {
 	return paths
 }
 
-func parseLiteralPath(path string) *api.PathTemplate {
-	pt := api.NewPathTemplate()
-	for _, part := range strings.Split(path, "/") {
-		if part != "" {
-			pt = pt.WithLiteral(part)
-		}
-	}
-	return pt
-}
-
 func mockMethod(name, path string) *api.Method {
+	pt, err := httprule.ParseResourcePattern(path)
+	if err != nil {
+		panic(fmt.Sprintf("failed to parse path %q: %v", path, err))
+	}
 	return &api.Method{
 		Name: name,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					PathTemplate: parseLiteralPath(path),
+					PathTemplate: pt,
 				},
 			},
 		},

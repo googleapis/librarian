@@ -323,3 +323,42 @@ func GetSingularResourceNameForPrefix(model *api.API, prefix []string) string {
 	}
 	return ""
 }
+
+// IsSingletonFromSegments determines whether a resource is a singleton from its path segments.
+// It returns true if there are two literal path segments back to back, or two elements
+// within a variable's segments list back to back that are not "*".
+func IsSingletonFromSegments(segments []api.PathSegment) bool {
+	for i := 0; i < len(segments)-1; i++ {
+		if segments[i].Literal != nil && segments[i+1].Literal != nil {
+			return true
+		}
+	}
+
+	for _, seg := range segments {
+		if seg.Variable == nil {
+			continue
+		}
+		for i := 0; i < len(seg.Variable.Segments)-1; i++ {
+			curr := seg.Variable.Segments[i]
+			next := seg.Variable.Segments[i+1]
+			if curr != "*" && next != "*" {
+				return true
+			}
+		}
+	}
+
+	for _, seg := range segments {
+		// Variable "name" indicates this is a resource-based method (e.g. Get, Update, Delete)
+		// rather than a collection-based method (e.g. List, Create, which use "parent").
+		if seg.Variable != nil && len(seg.Variable.FieldPath) > 0 && seg.Variable.FieldPath[0] == "name" {
+			if len(seg.Variable.Segments) > 0 {
+				lastInternal := seg.Variable.Segments[len(seg.Variable.Segments)-1]
+				if lastInternal != "*" && lastInternal != "**" && !strings.HasPrefix(lastInternal, ":") {
+					return true
+				}
+			}
+		}
+	}
+
+	return false
+}

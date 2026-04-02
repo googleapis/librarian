@@ -707,3 +707,98 @@ func TestGetSingularResourceNameForPrefix(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSingletonFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     bool
+	}{
+		{
+			name:     "Empty",
+			segments: nil,
+			want:     false,
+		},
+		{
+			name:     "Standard Pattern (Not Singleton)",
+			segments: parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+			want:     false,
+		},
+		{
+			name: "Adjacent Literals (Singleton)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithLiteral("projects"),
+				*api.NewPathSegment().WithLiteral("locations"),
+			},
+			want: true,
+		},
+		{
+			name: "Adjacent Non-Wildcards in Variable (Singleton)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithLiteral("locations")),
+			},
+			want: true,
+		},
+		{
+			name: "Variable with Wildcard (Not Singleton)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
+			},
+			want: false,
+		},
+		{
+			name: "Variable with Adjacent Wildcards (Not Singleton)",
+			segments: []api.PathSegment{
+				*api.NewPathSegment().WithVariable(api.NewPathVariable("name").WithMatch().WithMatch()),
+			},
+			want: false,
+		},
+		{
+			name: "Heuristic: Variable 'name' ends in literal (Singleton)",
+			segments: []api.PathSegment{
+				{
+					Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{"projects", "*", "locations", "*", "singletonResource"},
+					},
+				},
+			},
+			want: true,
+		},
+		{
+			name: "Heuristic: Variable 'name' ends in wildcard (Not Singleton)",
+			segments: []api.PathSegment{
+				{
+					Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{"projects", "*", "locations", "*", "resources", "*"},
+					},
+				},
+			},
+			want: false,
+		},
+		{
+			name: "Heuristic: Variable 'parent' ends in literal (Not Singleton by name variable rule)",
+			segments: []api.PathSegment{
+				{
+					Variable: &api.PathVariable{
+						FieldPath: []string{"parent"},
+						Segments:  []string{"projects", "*"},
+					},
+				},
+				{
+					Literal: func() *string { s := "zones"; return &s }(),
+				},
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := IsSingletonFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
