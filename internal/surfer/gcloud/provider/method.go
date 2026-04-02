@@ -201,3 +201,12 @@ func FindResourceMessage(outputType *api.Message) *api.Message {
 	}
 	return nil
 }
+
+func IsSingletonResourceMethod(method *api.Method, model *api.API) bool {
+	if method == nil {
+		return false
+	}
+
+	resource := GetResourceForMethod(method, model)
+	return isSingletonResource(resource)
+}

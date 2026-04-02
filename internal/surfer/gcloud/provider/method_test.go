@@ -305,3 +305,128 @@ func TestIsStandardMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestIsSingletonResourceMethod(t *testing.T) {
+	model := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type: "test.googleapis.com/Singleton",
+				Patterns: []api.ResourcePattern{
+					[]api.PathSegment{
+						*api.NewPathSegment().WithLiteral("projects"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
+						*api.NewPathSegment().WithLiteral("singletonConfig"),
+					},
+				},
+			},
+			{
+				Type: "test.googleapis.com/AdjacentLiterals",
+				Patterns: []api.ResourcePattern{
+					[]api.PathSegment{
+						*api.NewPathSegment().WithLiteral("projects"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
+						*api.NewPathSegment().WithLiteral("literal1"),
+						*api.NewPathSegment().WithLiteral("literal2"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("instance")),
+					},
+				},
+			},
+			{
+				Type: "test.googleapis.com/Standard",
+				Patterns: []api.ResourcePattern{
+					[]api.PathSegment{
+						*api.NewPathSegment().WithLiteral("projects"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
+						*api.NewPathSegment().WithLiteral("instances"),
+						*api.NewPathSegment().WithVariable(api.NewPathVariable("instance")),
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		model  *api.API
+		want   bool
+	}{
+		{
+			name:   "Nil Method",
+			method: nil,
+			model:  &api.API{},
+			want:   false,
+		},
+		{
+			name:   "Fallback: No Resource Found, Path Ends in Variable",
+			method: api.NewTestMethod("Test").WithPathTemplate(&api.PathTemplate{Segments: parseResourcePattern("projects/{project}/instances/{instance}")}),
+			model:  &api.API{},
+			want:   false,
+		},
+		{
+			name:   "Fallback: No Resource Found, Path Ends in Literal",
+			method: api.NewTestMethod("Test").WithPathTemplate(&api.PathTemplate{Segments: parseResourcePattern("projects/{project}/singletonConfig")}),
+			model:  &api.API{},
+			want:   false, // Was true when fallback existed.
+		},
+		{
+			name: "Resource Found: Singleton Pattern",
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetSingleton")
+				m.InputType = &api.Message{
+					Fields: []*api.Field{{
+						Name: "name",
+						ResourceReference: &api.ResourceReference{
+							Type: "test.googleapis.com/Singleton",
+						},
+					}},
+				}
+				return m
+			}(),
+			model: model,
+			want:  true,
+		},
+		{
+			name: "Resource Found: Adjacent Literals Pattern",
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetAdjacent")
+				m.InputType = &api.Message{
+					Fields: []*api.Field{{
+						Name: "name",
+						ResourceReference: &api.ResourceReference{
+							Type: "test.googleapis.com/AdjacentLiterals",
+						},
+					}},
+				}
+				return m
+			}(),
+			model: model,
+			want:  true,
+		},
+		{
+			name: "Resource Found: Standard Pattern",
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetStandard")
+				m.InputType = &api.Message{
+					Fields: []*api.Field{{
+						Name: "name",
+						ResourceReference: &api.ResourceReference{
+							Type: "test.googleapis.com/Standard",
+						},
+					}},
+				}
+				return m
+			}(),
+			model: model,
+			want:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := IsSingletonResourceMethod(test.method, test.model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

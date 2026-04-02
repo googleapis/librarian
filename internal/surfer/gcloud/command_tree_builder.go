@@ -63,8 +63,12 @@ func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
 func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGroupBuilder, method *api.Method) error {
+	if provider.IsSingletonResourceMethod(method, b.model) {
+		return nil
+	}
+
 	binding := provider.PrimaryBinding(method)
-	if binding == nil || provider.IsSingletonFromSegments(binding.PathTemplate.Segments) {
+	if binding == nil {
 		return nil
 	}
 
