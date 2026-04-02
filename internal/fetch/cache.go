@@ -19,7 +19,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"io"
-	"log/slog"
 	"os"
 	"path/filepath"
 )
@@ -90,7 +89,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 				}
 			}
 			if err := os.Remove(tgz); err != nil {
-				slog.Debug("failed to remove tarball", "path", tgz, "err", err)
+				return "", fmt.Errorf("failed to remove %q: %w", tgz, err)
 			}
 		}
 	}

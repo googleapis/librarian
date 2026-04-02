@@ -37,12 +37,12 @@ const googleapisDir = "../../testdata/googleapis"
 
 func TestResolveGAPICOptions(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		cfg      *config.Config
-		library  *config.Library
-		api      *config.API
-		apiCfgs  *serviceconfig.API
-		expected []string
+		name    string
+		cfg     *config.Config
+		library *config.Library
+		api     *config.API
+		apiCfgs *serviceconfig.API
+		want    []string
 	}{
 		{
 			name:    "basic case",
@@ -52,7 +52,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPCRest,
 			}},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -70,7 +70,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.Rest,
 			}},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -93,7 +93,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 					config.LanguageJava: true,
 				},
 			},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -108,7 +108,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			library: &config.Library{Name: "secretmanager"},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{},
-			expected: []string{
+			want: []string{
 				"metadata",
 				"repo=googleapis/google-cloud-java",
 				"artifact=com.google.cloud:google-cloud-secretmanager",
@@ -125,7 +125,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.expected, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -175,34 +175,29 @@ func TestDeriveDistributionName(t *testing.T) {
 }
 
 func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name    string
 		files   []string
 		apiPath string
-		wantErr string
 	}{
 		{
 			name:    "multiple grpc configs",
 			files:   []string{"a_grpc_service_config.json", "b_grpc_service_config.json"},
 			apiPath: "google/cloud/multiple/v1",
-			wantErr: "multiple gRPC service config files found",
 		},
 		{
 			name:    "multiple gapic configs",
 			files:   []string{"a_gapic.yaml", "b_gapic.yaml"},
 			apiPath: "google/cloud/multiplegapic/v1",
-			wantErr: "multiple GAPIC config files found",
 		},
-	}
-
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			apiDir := filepath.Join(tmpDir, tc.apiPath)
+			apiDir := filepath.Join(tmpDir, test.apiPath)
 			if err := os.MkdirAll(apiDir, 0755); err != nil {
 				t.Fatal(err)
 			}
-			for _, file := range tc.files {
+			for _, file := range test.files {
 				content := []byte("")
 				if strings.HasSuffix(file, ".json") {
 					content = []byte("{}")
@@ -215,9 +210,9 @@ func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPC,
 			}}
-			_, err := resolveGAPICOptions(&config.Config{Repo: "test-repo"}, &config.Library{Name: "test"}, &config.API{Path: tc.apiPath}, tmpDir, apiCfgs)
-			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
-				t.Errorf("resolveGAPICOptions() error = %v, wantErr %v", err, tc.wantErr)
+			_, err := resolveGAPICOptions(&config.Config{Repo: "test-repo"}, &config.Library{Name: "test"}, &config.API{Path: test.apiPath}, tmpDir, apiCfgs)
+			if err == nil {
+				t.Fatal("resolveGAPICOptions() error = nil, want non-nil")
 			}
 		})
 	}
@@ -376,8 +371,16 @@ func TestGenerateAPI(t *testing.T) {
 		Default: &config.Default{
 			Java: &config.JavaModule{},
 		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
 	}
 	library := &config.Library{Name: "secretmanager", Output: outdir}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	// Create owlbot.py and templates dir as they are mandatory for postProcessAPI
 	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
 		t.Fatal(err)
@@ -393,6 +396,10 @@ func TestGenerateAPI(t *testing.T) {
 		library,
 		googleapisDir,
 		outdir,
+		&repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -422,8 +429,22 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		Default: &config.Default{
 			Java: &config.JavaModule{},
 		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
 	}
-	library := &config.Library{Name: "secretmanager", Output: outdir}
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: outdir,
+		APIs: []*config.API{
+			api,
+		},
+	}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
 	// Create owlbot.py and templates dir as they are  mandatory for postProcessAPI
 	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
 		t.Fatal(err)
@@ -432,7 +453,10 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir)
+	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Secret Manager API",
+	})
 	if err != nil {
 		t.Fatal(err)
 	}

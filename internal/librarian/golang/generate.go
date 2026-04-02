@@ -79,7 +79,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return err
 		}
 	}
-	if err := generateInternalVersionFile(outDir, library.Version); err != nil {
+	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
 		return err
 	}
 	if library.Go != nil {
@@ -142,16 +142,16 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 	}
 
 	opts := []string{"go-gapic-package=" + buildGAPICImportPath(goAPI)}
-	if goAPI == nil || !goAPI.NoMetadata {
+	if !goAPI.NoMetadata {
 		opts = append(opts, "metadata")
 	}
 	if sc != nil && sc.HasRESTNumericEnums(config.LanguageGo) {
 		opts = append(opts, "rest-numeric-enums")
 	}
-	if goAPI != nil && goAPI.DIREGAPIC {
+	if goAPI.DIREGAPIC {
 		opts = append(opts, "diregapic")
 	}
-	if goAPI != nil && goAPI.EnabledGeneratorFeatures != nil {
+	if goAPI.EnabledGeneratorFeatures != nil {
 		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
 	}
 	if sc != nil {

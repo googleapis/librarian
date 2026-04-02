@@ -21,7 +21,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -52,7 +51,7 @@ var (
 // Clean cleans up a Go library and its associated snippets.
 func Clean(library *config.Library) error {
 	libraryDir := library.Output
-	keepSet, err := check(libraryDir, library.Keep)
+	keepSet, err := buildKeepSet(libraryDir, library.Keep)
 	if err != nil {
 		return err
 	}
@@ -66,10 +65,10 @@ func Clean(library *config.Library) error {
 	return nil
 }
 
-// check validates the given directory and returns a set of files to keep.
+// buildKeepSet validates the given directory and returns a set of files to keep.
 // It ensures that the provided directory exists and is a directory.
 // It also verifies that all files specified in 'keep' exist within 'dir'.
-func check(dir string, keep []string) (map[string]bool, error) {
+func buildKeepSet(dir string, keep []string) (map[string]bool, error) {
 	info, err := os.Stat(dir)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -111,7 +110,7 @@ func cleanRootFiles(libraryDir string, keepSet map[string]bool) error {
 		}
 		rootFilePath := filepath.Join(libraryDir, rootFile)
 		if err := os.Remove(rootFilePath); err != nil {
-			if errors.Is(err, syscall.ENOENT) {
+			if errors.Is(err, fs.ErrNotExist) {
 				// The file doesn't exist during deletion, it's fine to ignore this error.
 				continue
 			}

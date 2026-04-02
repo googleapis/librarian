@@ -90,6 +90,9 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
+
+	// Transport is the transport protocol
+	Transport string `json:"transport,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -106,6 +109,7 @@ type RepoMetadata struct {
 // - ProductDocumentation
 // - ReleaseLevel
 // - Repo
+// - Transport
 //
 // Any other fields required by the caller's language should be populated by the
 // caller before writing to disk.
@@ -142,6 +146,7 @@ func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Libr
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         api.ReleaseLevel(config.Language),
 		Repo:                 config.Repo,
+		Transport:            api.RepoMetadataTransport(config.Language),
 	}
 }
 

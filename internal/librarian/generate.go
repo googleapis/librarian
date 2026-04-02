@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -129,6 +130,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 				return fmt.Errorf("generating keep list: %w", keepErr)
 			}
 			err = checkAndClean(library.Output, keep)
+		case config.LanguageSwift:
+			err = checkAndClean(library.Output, library.Keep)
 		default:
 			err = fmt.Errorf("language %q does not support cleaning", language)
 		}
@@ -169,12 +172,17 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return fakePostGenerate()
 	case config.LanguageGo:
+		for _, library := range libraries {
+			// Generation cannot be parallelized because protoc writes to a
+			// shared cloud.google.com/go directory tree under each library's
+			// output, and concurrent MoveAndMerge calls would race.
+			if err := golang.Generate(ctx, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+		}
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Generate(gctx, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
 				if err := golang.Format(gctx, library); err != nil {
 					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 				}
@@ -232,6 +240,17 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return rust.UpdateWorkspace(ctx)
+	case config.LanguageSwift:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := swift.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
 	default:
 		return fmt.Errorf("language %q does not support generation", cfg.Language)
 	}

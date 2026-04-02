@@ -1,0 +1,20 @@
+- release_tracks:
+    - GA
+  auto_generated: true
+  help_text:
+    brief: ""
+    description: ""
+  arguments:
+    params:
+      - help_text: The  to operate on.
+        is_positional: true
+        is_primary_resource: true
+        resource_spec:
+          collection: methodoperations.
+          disable_auto_completers: false
+        required: true
+        repeated: false
+  request:
+    api_version: v1
+    collection:
+      - methodoperations.projects.locations.operations

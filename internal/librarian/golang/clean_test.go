@@ -331,7 +331,7 @@ func createFiles(t *testing.T, base string, files []string) {
 // getFilesInDir is a test helper to get relative paths of files in a directory.
 func getFilesInDir(t *testing.T, dirPath, basePath string) []string {
 	t.Helper()
-	if _, err := os.Stat(dirPath); os.IsNotExist(err) {
+	if _, err := os.Stat(dirPath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	var files []string
@@ -350,7 +350,7 @@ func getFilesInDir(t *testing.T, dirPath, basePath string) []string {
 		return nil
 	})
 	if err != nil {
-		t.Fatalf("failed to walk directory %q: %v", dirPath, err)
+		t.Fatal(err)
 	}
 	return files
 }

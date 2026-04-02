@@ -83,6 +83,9 @@ func newUpdateImageRunner(cfg *legacyconfig.Config) (*updateImageRunner, error) 
 }
 
 func (r *updateImageRunner) run(ctx context.Context) error {
+	if r.librarianConfig != nil && r.librarianConfig.ReleaseOnlyMode {
+		return errGenerateInReleaseOnlyMode
+	}
 	imagesClient := r.imagesClient
 	if imagesClient == nil {
 		slog.Info("no imagesClient provided, defaulting to ArtifactRegistry implementation")

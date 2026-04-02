@@ -44,21 +44,30 @@ func TestSyncPoms_Golden(t *testing.T) {
 		},
 	}
 	tmpDir := t.TempDir()
-	// Pre-create the directories that syncPoms expects to exist.
+	// Pre-create the directories that generatePomsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
 	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
-	if err := os.MkdirAll(filepath.Join(tmpDir, protoArtifactID), 0755); err != nil {
+	gapicArtifactID := "google-cloud-secretmanager"
+	bomArtifactID := "google-cloud-secretmanager-bom"
+	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
+		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	metadata := &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+	}
+	if err := generatePomsIfMissing(library, tmpDir, googleapisDir, "1.2.3", metadata); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(tmpDir, grpcArtifactID), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := generatePomsIfMissing(library, tmpDir, googleapisDir); err != nil {
-		t.Fatal(err)
-	}
-	artifacts := []string{protoArtifactID, grpcArtifactID}
+	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
 	for _, artifact := range artifacts {
-		gotPath := filepath.Join(tmpDir, artifact, "pom.xml")
+		dir := artifact
+		if artifact == "google-cloud-secretmanager-parent" {
+			dir = ""
+		}
+		gotPath := filepath.Join(tmpDir, dir, "pom.xml")
 		got, err := os.ReadFile(gotPath)
 		if err != nil {
 			t.Fatal(err)
@@ -105,7 +114,7 @@ func TestCollectModules_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent"); err == nil {
+			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{}); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})
@@ -154,5 +163,41 @@ func TestIsPomMissing_DirMissingError(t *testing.T) {
 	_, err := isPomMissing(dir)
 	if !errors.Is(err, os.ErrNotExist) {
 		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
+	}
+}
+
+func TestProtoGroupID(t *testing.T) {
+	for _, test := range []struct {
+		name                string
+		mainArtifactGroupID string
+		want                string
+	}{
+		{
+			name:                "cloud group id",
+			mainArtifactGroupID: "com.google.cloud",
+			want:                "com.google.api.grpc",
+		},
+		{
+			name:                "analytics group id",
+			mainArtifactGroupID: "com.google.analytics",
+			want:                "com.google.api.grpc",
+		},
+		{
+			name:                "area120 group id",
+			mainArtifactGroupID: "com.google.area120",
+			want:                "com.google.api.grpc",
+		},
+		{
+			name:                "non-cloud group id",
+			mainArtifactGroupID: "com.google.maps",
+			want:                "com.google.maps.api.grpc",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := protoGroupID(test.mainArtifactGroupID)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

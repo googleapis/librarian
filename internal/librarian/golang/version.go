@@ -16,6 +16,7 @@ package golang
 
 import (
 	_ "embed"
+	"io"
 	"os"
 	"path/filepath"
 	"text/template"
@@ -33,7 +34,7 @@ var (
 	internalVersionTmpl string
 )
 
-func generateInternalVersionFile(moduleDir, version string) (err error) {
+func generateInternalVersionFile(moduleDir, year, version string) (err error) {
 	if version == "" {
 		version = "0.0.0"
 	}
@@ -51,7 +52,7 @@ func generateInternalVersionFile(moduleDir, version string) (err error) {
 			err = cerr
 		}
 	}()
-	if err := writeLicenseHeader(f); err != nil {
+	if err := writeLicenseHeader(f, year); err != nil {
 		return err
 	}
 	t := template.Must(template.New("version").Parse(internalVersionTmpl))
@@ -80,7 +81,7 @@ func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (er
 			err = cerr
 		}
 	}()
-	if err := writeLicenseHeader(f); err != nil {
+	if err := writeLicenseHeader(f, library.CopyrightYear); err != nil {
 		return err
 	}
 	t := template.Must(template.New("version").Parse(clientVersionTmpl))
@@ -90,15 +91,17 @@ func generateClientVersionFile(library *config.Library, goAPI *config.GoAPI) (er
 	})
 }
 
-// writeLicenseHeader writes the license header as Go comments to the given file.
-func writeLicenseHeader(f *os.File) error {
-	year := time.Now().Format("2006")
+// writeLicenseHeader writes the license header as Go comments to the given writer.
+func writeLicenseHeader(w io.Writer, year string) error {
+	if year == "" {
+		year = time.Now().Format("2006")
+	}
 	for _, line := range license.Header(year) {
-		if _, err := f.WriteString("//" + line + "\n"); err != nil {
+		if _, err := io.WriteString(w, "//"+line+"\n"); err != nil {
 			return err
 		}
 	}
-	if _, err := f.WriteString("\n"); err != nil {
+	if _, err := io.WriteString(w, "\n"); err != nil {
 		return err
 	}
 	return nil

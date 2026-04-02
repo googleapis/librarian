@@ -284,6 +284,123 @@ func TestAddLibrary(t *testing.T) {
 	}
 }
 
+func TestAddLibrary_Preview(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		apis             []string
+		initialLibraries []*config.Library
+		wantPreview      *config.Library
+	}{
+		{
+			name: "add preview to existing library",
+			apis: []string{"preview/google/cloud/secretmanager/v1"},
+			initialLibraries: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				},
+			},
+			wantPreview: &config.Library{
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+		},
+		{
+			name: "add preview with multiple APIs",
+			apis: []string{
+				"preview/google/cloud/secretmanager/v1",
+				"preview/google/cloud/secretmanager/v2",
+			},
+			initialLibraries: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				},
+			},
+			wantPreview: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v2"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language:  config.LanguageGo,
+				Libraries: test.initialLibraries,
+			}
+			gotName, gotCfg, err := addLibrary(cfg, test.apis...)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := FindLibrary(gotCfg, gotName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantPreview, got.Preview); diff != "" {
+				t.Errorf("preview mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddLibrary_Preview_Error(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		apis             []string
+		initialLibraries []*config.Library
+		wantErr          error
+	}{
+		{
+			name: "fail if library doesn't exist",
+			apis: []string{"preview/google/cloud/secretmanager/v1"},
+			initialLibraries: []*config.Library{
+				{
+					Name: "otherlib",
+					APIs: []*config.API{{Path: "google/cloud/other/v1"}},
+				},
+			},
+			wantErr: errPreviewRequiresLibrary,
+		},
+		{
+			name: "fail if mixing preview and non-preview APIs",
+			apis: []string{
+				"preview/google/cloud/secretmanager/v1",
+				"google/cloud/secretmanager/v1beta2",
+			},
+			wantErr: errMixedPreviewAndNonPreview,
+		},
+		{
+			name: "fail preview already exists",
+			apis: []string{
+				"preview/google/cloud/secretmanager/v1",
+			},
+			initialLibraries: []*config.Library{
+				{
+					Name: "secretmanager",
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Preview: &config.Library{
+						APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					},
+				},
+			},
+			wantErr: errPreviewAlreadyExists,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language:  config.LanguageGo,
+				Libraries: test.initialLibraries,
+			}
+			_, _, err := addLibrary(cfg, test.apis...)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
 func TestDeriveLibraryName(t *testing.T) {
 	for _, test := range []struct {
 		language string

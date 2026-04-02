@@ -1,5 +1,5 @@
-# SHA corresponds to v0.9.0
-librarian-image-sha: sha256:f5b05d5d6b237e0f866325eb83d0ae8f00efa318c0073c883e2cef615d66d8bd
+# SHA corresponds to v0.9.1
+librarian-image-sha: sha256:579c1203caa26bd503252a07db605386456e8845e5fcf7296c65de125388a984
 repositories:
   - name: "gapic-generator-go"
     full-name: https://github.com/googleapis/gapic-generator-go

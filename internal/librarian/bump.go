@@ -33,18 +33,12 @@ import (
 )
 
 const (
-	defaultPreviewBranch  = "preview"
-	defaultMainBranch     = "main"
-	defaultVersion        = "0.1.0"
-	defaultPreviewVersion = "0.1.0-preview.1"
-	zeroVersion           = "0.0.0"
+	defaultVersion = "0.1.0"
 )
 
 var (
 	errBothVersionAndAllFlag = errors.New("cannot specify both --version and --all")
 	errReleaseCommitNotFound = errors.New("no release commit found")
-	errReleaseConfigEmpty    = errors.New("release config not set in librarian.yaml")
-
 	// languageVersioningOptions contains language-specific SemVer versioning
 	// options. Over time, languages should align on versioning semantics and
 	// this should be removed. If a language does not have specific needs, a
@@ -106,10 +100,11 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	if cfg.Release == nil {
-		return errReleaseConfigEmpty
+	var preinstalled map[string]string
+	if cfg.Release != nil {
+		preinstalled = cfg.Release.Preinstalled
 	}
-	gitExe := command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+	gitExe := command.GetExecutablePath(preinstalled, command.Git)
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -128,7 +123,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	}
 
 	for _, lib := range librariesToBump {
-		if err := bumpLibrary(ctx, cfg, lib, gitExe, versionOverride); err != nil {
+		if err := bumpLibrary(cfg, lib, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -161,7 +156,11 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, cfg.Release.IgnoredChanges)
+		var ignoredChanges []string
+		if cfg.Release != nil {
+			ignoredChanges = cfg.Release.IgnoredChanges
+		}
+		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -208,9 +207,9 @@ func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 // bumpLibrary determines the next version of a library (using versionOverride
 // if that is non-empty), and applies the language-specific version bump logic
 // to update manifests, version files etc.
-func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, gitExe, versionOverride string) error {
+func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(ctx, gitExe, cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}
@@ -233,9 +232,9 @@ func bumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, g
 func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case config.LanguageRust:
-		cargoExe := "cargo"
+		cargoExe := command.Cargo
 		if cfg.Release != nil {
-			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
+			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Cargo)
 		}
 		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
 			return err
@@ -244,21 +243,18 @@ func postBump(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, libConfig *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
+func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
 	// If a version override has been specified, use it - but
 	// check that it's not a regression or a no-op.
 	if versionOverride != "" {
-		if err := semver.ValidateNext(libConfig.Version, versionOverride); err != nil {
+		if err := semver.ValidateNext(library.Version, versionOverride); err != nil {
 			return "", err
 		}
 		return versionOverride, nil
 	}
 
 	// First release, use the appropriate default starting version.
-	if libConfig.Version == "" {
-		if cfg.Release.Branch == defaultPreviewBranch {
-			return defaultPreviewVersion, nil
-		}
+	if library.Version == "" {
 		// Keep this logic until we know we no longer need it i.e. all entries
 		// have a version set.
 		if cfg.Language == config.LanguageRust {
@@ -267,18 +263,7 @@ func deriveNextVersion(ctx context.Context, gitExe string, cfg *config.Config, l
 		return defaultVersion, nil
 	}
 
-	if cfg.Release.Branch == defaultPreviewBranch {
-		stableVersion, err := loadBranchLibraryVersion(ctx, gitExe, cfg.Release.Remote, defaultMainBranch, libConfig.Name)
-		if errors.Is(err, ErrLibraryNotFound) {
-			// If the preview setup precedes the stable setup, ensure stable is always behind.
-			stableVersion = zeroVersion
-		} else if err != nil {
-			return "", err
-		}
-		return semver.DeriveNextPreview(libConfig.Version, stableVersion, opts)
-	}
-
-	return semver.DeriveNext(semver.Minor, libConfig.Version, opts)
+	return semver.DeriveNext(semver.Minor, library.Version, opts)
 }
 
 func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
@@ -385,7 +370,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, er
 // to work on the newer "tag-per-library" logic without interrupting Rust
 // releases. The "fake" language is still valid here, for testing purposes.
 func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride, gitExe string) error {
-	lastTag, err := git.GetLastTag(ctx, gitExe, cfg.Release.Remote, cfg.Release.Branch)
+	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
 	}
@@ -415,7 +400,11 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
 func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.Release.IgnoredChanges)
+	var ignoredChanges []string
+	if cfg.Release != nil {
+		ignoredChanges = cfg.Release.IgnoredChanges
+	}
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChanges)
 	if err != nil {
 		return err
 	}
@@ -440,7 +429,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 // the next version.)
 func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, gitExe, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(ctx, gitExe, cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}

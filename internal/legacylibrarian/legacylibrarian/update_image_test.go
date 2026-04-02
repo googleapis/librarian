@@ -760,6 +760,21 @@ func TestUpdateImageRunnerRun(t *testing.T) {
 			wantBuildCalls:      0,
 			wantCheckoutCalls:   1,
 		},
+		{
+			name: "update-image in release only mode returns error",
+			librarianConfig: &legacyconfig.LibrarianConfig{
+				ReleaseOnlyMode: true,
+			},
+			containerClient:     &mockContainerClient{},
+			imagesClient:        &mockImagesClient{},
+			ghClient:            &mockGitHubClient{},
+			wantFindLatestCalls: 0,
+			wantGenerateCalls:   0,
+			wantBuildCalls:      0,
+			wantCheckoutCalls:   0,
+			wantErr:             true,
+			wantErrMsg:          "generate in release only mode",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testRepo := newTestGitRepoWithState(t, test.state)

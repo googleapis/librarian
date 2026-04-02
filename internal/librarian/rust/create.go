@@ -24,13 +24,13 @@ import (
 
 // create creates a cargo workspace skeleton.
 func create(ctx context.Context, outputDir string) error {
-	if err := command.Run(ctx, "cargo", "--version"); err != nil {
+	if err := command.Run(ctx, command.Cargo, "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
 	if err := command.Run(ctx, "taplo", "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `taplo --version`, please install using `cargo install taplo-cli`: %w", err)
 	}
-	if err := command.Run(ctx, "cargo", "new", "--vcs", "none", "--lib", outputDir); err != nil {
+	if err := command.Run(ctx, command.Cargo, "new", "--vcs", "none", "--lib", outputDir); err != nil {
 		return err
 	}
 	return command.Run(ctx, "taplo", "fmt", "Cargo.toml")
@@ -39,14 +39,14 @@ func create(ctx context.Context, outputDir string) error {
 // validate does formatting and other post generation tasks to validate the library.
 var validate = func(ctx context.Context, outputDir string) error {
 	manifestPath := path.Join(outputDir, "Cargo.toml")
-	if err := command.Run(ctx, "cargo", "fmt", "--manifest-path", manifestPath); err != nil {
+	if err := command.Run(ctx, command.Cargo, "fmt", "--manifest-path", manifestPath); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "cargo", "test", "--manifest-path", manifestPath); err != nil {
+	if err := command.Run(ctx, command.Cargo, "test", "--manifest-path", manifestPath); err != nil {
 		return err
 	}
-	if err := command.RunWithEnv(ctx, map[string]string{"RUSTDOCFLAGS": "-D warnings"}, "cargo", "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
+	if err := command.RunWithEnv(ctx, map[string]string{"RUSTDOCFLAGS": "-D warnings"}, command.Cargo, "doc", "--manifest-path", manifestPath, "--no-deps"); err != nil {
 		return err
 	}
-	return command.Run(ctx, "cargo", "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings")
+	return command.Run(ctx, command.Cargo, "clippy", "--manifest-path", manifestPath, "--", "--deny", "warnings")
 }

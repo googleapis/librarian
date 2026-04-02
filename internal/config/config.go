@@ -18,8 +18,16 @@ package config
 
 //go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/config-schema.md
 
-// LibrarianYAML is the filename for the librarian configuration file.
-const LibrarianYAML = "librarian.yaml"
+const (
+	// BranchMain is the default git branch name.
+	BranchMain = "main"
+
+	// LibrarianYAML is the filename for the librarian configuration file.
+	LibrarianYAML = "librarian.yaml"
+
+	// RemoteUpstream is the default git remote name.
+	RemoteUpstream = "upstream"
+)
 
 // Config represents a librarian.yaml configuration file.
 type Config struct {
@@ -38,6 +46,9 @@ type Config struct {
 	// Sources references external source repositories.
 	Sources *Sources `yaml:"sources,omitempty"`
 
+	// Tools defines required tools.
+	Tools *Tools `yaml:"tools,omitempty"`
+
 	// Release holds the configuration parameter for publishing and release subcommands.
 	Release *Release `yaml:"release,omitempty"`
 
@@ -51,9 +62,6 @@ type Config struct {
 
 // Release holds the configuration parameter for publish command.
 type Release struct {
-	// Branch sets the name of the release branch, typically `main`
-	Branch string `yaml:"branch,omitempty"`
-
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
 
@@ -63,9 +71,6 @@ type Release struct {
 	// [preinstalled]
 	// cargo = /usr/bin/cargo
 	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
-
-	// Remote sets the name of the source-of-truth remote for releases, typically `upstream`.
-	Remote string `yaml:"remote,omitempty"`
 
 	// Tools defines the list of tools to install, indexed by installer.
 	Tools map[string][]Tool `yaml:"tools,omitempty"`
@@ -119,6 +124,21 @@ type Source struct {
 	Subpath string `yaml:"subpath,omitempty"`
 }
 
+// Tools defines required tools.
+type Tools struct {
+	// Cargo defines tools to install via cargo.
+	Cargo []*CargoTool `yaml:"cargo,omitempty"`
+}
+
+// CargoTool defines a tool to install via cargo.
+type CargoTool struct {
+	// Name is the cargo package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+}
+
 // Default contains default settings for all libraries.
 type Default struct {
 	// Keep lists files and directories to preserve during regeneration.
@@ -158,10 +178,29 @@ type Library struct {
 	// at the top for ease of consumption in file-form.
 
 	// Name is the library name, such as "secretmanager" or "storage".
-	Name string `yaml:"name"`
+	Name string `yaml:"name,omitempty"`
 
 	// Version is the library version.
 	Version string `yaml:"version,omitempty"`
+
+	// Preview signifies that this API has a preview variant, and it contains
+	// overrides specific to the preview API variant. This is merged with the
+	// containing [Library], preferring those [Library.Preview] values that are
+	// set over their counterpart in the containing configuration.
+	//
+	// The most common overrides are [Library.Version] and [Library.APIs], with
+	// the former containing a pre-release version based on the containing
+	// version of the stable client, and the latter being a subset of APIs,
+	// typically omitting alpha and beta paths.
+	//
+	// The [Library.Output] may be a different location and derived on a
+	// per-language basis, but will not be serialized in the configuration.
+	//
+	// Important: The boolean fields [Library.SkipRelease] and
+	// [Library.SkipGenerate] set in the containing config will always be
+	// applied to the Preview library as well, because previews are related to
+	// the stable library and should be managed identically.
+	Preview *Library `yaml:"preview,omitempty"`
 
 	// API specifies which googleapis API to generate from (for generated
 	// libraries).
