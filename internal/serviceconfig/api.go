@@ -191,8 +191,15 @@ func (api *API) RepoMetadataReleaseLevel(language string) string {
 // TODO(https://github.com/googleapis/librarian/issues/4854): delete
 // once the issue is resolved.
 // For Java, it maps the transport to "grpc", "http", or "both".
+// TODO(https://github.com/googleapis/librarian/issues/5000): remove the
+// Python exclusion, or change the comments.
+// For Python, transport is currently excluded to reduce the difference during
+// migration.
 func (api *API) RepoMetadataTransport(language string) string {
 	transport := api.Transport(language)
+	if language == config.LanguagePython {
+		return ""
+	}
 	if language == config.LanguageJava {
 		switch transport {
 		case GRPC:

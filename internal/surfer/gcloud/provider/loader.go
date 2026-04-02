@@ -26,9 +26,10 @@ import (
 )
 
 // CreateAPIModel parses the service specification and creates the API model.
-func CreateAPIModel(googleapisPath, includeList string) (*api.API, error) {
+func CreateAPIModel(googleapisPath, includeList, serviceConfig string) (*api.API, error) {
 	parserConfig := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecProtobuf,
+		ServiceConfig:       serviceConfig,
 		Source: &sources.SourceConfig{
 			Sources: &sources.Sources{
 				Googleapis: googleapisPath,
@@ -64,5 +65,6 @@ func ReadGcloudConfig(path string) (*Config, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse gcloud config YAML: %w", err)
 	}
+
 	return cfg, nil
 }

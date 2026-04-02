@@ -66,9 +66,9 @@ func tagCommand() *cli.Command {
 // release commit to publish (unless already specified). The configuration at
 // the release commit is used for all further operations.
 func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createReleaseTag bool) error {
-	gitExe := "git"
+	gitExe := command.Git
 	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, "git")
+		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Git)
 	}
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err

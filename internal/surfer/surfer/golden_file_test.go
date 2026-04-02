@@ -35,27 +35,7 @@ var (
 )
 
 func TestGolden(t *testing.T) {
-	testhelper.RequireCommand(t, "protoc")
-
-	var coreGoogleapisPath string
-	// Locate core googleapis, prioritizing SURFER_GOOGLEAPIS env var.
-	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
-		coreGoogleapisPath = env
-	} else {
-		// Try relative path from this directory.
-		relPath := "../../testdata/googleapis"
-		if _, err := os.Stat(relPath); err == nil {
-			abs, err := filepath.Abs(relPath)
-			if err != nil {
-				t.Fatalf("failed to get absolute path for %q: %v", relPath, err)
-			}
-			coreGoogleapisPath = abs
-		}
-	}
-
-	if coreGoogleapisPath == "" {
-		t.Fatal("core googleapis not found via repo layout or SURFER_GOOGLEAPIS env var")
-	}
+	coreGoogleapisPath := requireGoogleapisPath(t)
 
 	for _, test := range []struct {
 		name string
@@ -99,6 +79,7 @@ func TestGolden(t *testing.T) {
 			// 1. Arrange: Build the complex virtual filesystem
 			inputDir := filepath.Join(scenarioPath, "input")
 			configFile := filepath.Join(inputDir, "gcloud.yaml")
+			serviceFile := filepath.Join(inputDir, "service.yaml")
 			if _, err := os.Stat(configFile); os.IsNotExist(err) {
 				t.Fatalf("gcloud.yaml not found in scenario input directory: %s", configFile)
 			}
@@ -108,18 +89,10 @@ func TestGolden(t *testing.T) {
 			defer cancel()
 
 			tmpDir := t.TempDir()
-			protoRoot, outDir := setupVirtualEnvironment(t, inputDir, coreGoogleapisPath, tmpDir)
-
-			// Symlink common parent protos if necessary (e.g., for regional_endpoints nested scenarios)
-			if parent := filepath.Dir(scenarioPath); parent != "testdata" {
-				parentInputDir := filepath.Join(parent, "input")
-				if _, err := os.Stat(parentInputDir); err == nil {
-					copyProtos(t, parentInputDir, protoRoot)
-				}
-			}
+			protoRoot, outDir := setupVirtualEnvironment(t, scenarioPath, coreGoogleapisPath, tmpDir)
 
 			// 2. Act: Execute the CLI compiler
-			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, protoRoot, outDir)
+			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, serviceFile, protoRoot, outDir)
 
 			// 3. Assert: Validate the outputs against the goldens
 			t.Run("current", func(t *testing.T) {
@@ -142,7 +115,7 @@ func TestGolden(t *testing.T) {
 	}
 }
 
-func setupVirtualEnvironment(t *testing.T, inputDir, coreGoogleapisPath, tmpDir string) (string, string) {
+func setupVirtualEnvironment(t *testing.T, scenarioPath, coreGoogleapisPath, tmpDir string) (string, string) {
 	t.Helper()
 	outDir := filepath.Join(tmpDir, "out")
 	protoRoot := filepath.Join(tmpDir, "proto_root")
@@ -156,12 +129,21 @@ func setupVirtualEnvironment(t *testing.T, inputDir, coreGoogleapisPath, tmpDir 
 	}
 
 	// Symlink scenario protos
+	inputDir := filepath.Join(scenarioPath, "input")
 	copyProtos(t, inputDir, protoRoot)
+
+	// Symlink parent protos if necessary (e.g., for regional_endpoints nested scenarios)
+	if parent := filepath.Dir(scenarioPath); parent != "testdata" {
+		parentInputDir := filepath.Join(parent, "input")
+		if _, err := os.Stat(parentInputDir); err == nil {
+			copyProtos(t, parentInputDir, protoRoot)
+		}
+	}
 
 	return protoRoot, outDir
 }
 
-func runSurferGenerator(ctx context.Context, t *testing.T, configFile, protoRoot, outDir string) (string, string) {
+func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFile, protoRoot, outDir string) (string, string) {
 	t.Helper()
 	protoFiles := findProtos(protoRoot)
 	if len(protoFiles) == 0 {
@@ -172,6 +154,7 @@ func runSurferGenerator(ctx context.Context, t *testing.T, configFile, protoRoot
 		"surfer",
 		"generate",
 		configFile,
+		"--service-config", serviceFile,
 		"--googleapis", protoRoot,
 		"--proto-files-include-list", strings.Join(protoFiles, ","),
 		"--out", outDir,
@@ -420,4 +403,25 @@ func compareFiles(t *testing.T, expected, got, rel string) bool {
 		}
 	}
 	return true
+}
+
+func requireGoogleapisPath(t *testing.T) string {
+	t.Helper()
+	testhelper.RequireCommand(t, "protoc")
+
+	if env := os.Getenv("SURFER_GOOGLEAPIS"); env != "" {
+		return env
+	}
+
+	relPath := "../../testdata/googleapis"
+	if _, err := os.Stat(relPath); err == nil {
+		abs, err := filepath.Abs(relPath)
+		if err != nil {
+			t.Fatalf("failed to get absolute path for %q: %v", relPath, err)
+		}
+		return abs
+	}
+
+	t.Fatal("core googleapis not found via repo layout or SURFER_GOOGLEAPIS env var")
+	return ""
 }

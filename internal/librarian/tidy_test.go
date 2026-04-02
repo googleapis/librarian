@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -68,8 +69,47 @@ func TestValidateLibraries(t *testing.T) {
 	}
 }
 
+func TestValidateTools_NoTools(t *testing.T) {
+	if err := validateTools(&config.Config{}); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateTools(t *testing.T) {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "taplo-cli", Version: "0.10.0"},
+			},
+		},
+	}
+	if err := validateTools(cfg); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestValidateTools_MissingVersion(t *testing.T) {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "taplo-cli"},
+			},
+		},
+	}
+	err := validateTools(cfg)
+	if !errors.Is(err, rust.ErrMissingToolVersion) {
+		t.Fatalf("got %v, want %v", err, rust.ErrMissingToolVersion)
+	}
+}
+
 func TestFormatConfig(t *testing.T) {
 	cfg := formatConfig(&config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "taplo-cli", Version: "0.10.0"},
+				{Name: "cargo-semver-checks", Version: "0.46.0"},
+			},
+		},
 		Default: &config.Default{
 			Rust: &config.RustDefault{
 				PackageDependencies: []*config.RustPackageDependency{
@@ -152,6 +192,17 @@ func TestFormatConfig(t *testing.T) {
 		var got []string
 		for _, dep := range storageLib.Rust.PackageDependencies {
 			got = append(got, dep.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts cargo tools by name", func(t *testing.T) {
+		want := []string{"cargo-semver-checks", "taplo-cli"}
+		var got []string
+		for _, tool := range cfg.Tools.Cargo {
+			got = append(got, tool.Name)
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)

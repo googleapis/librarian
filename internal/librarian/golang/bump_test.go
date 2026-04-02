@@ -57,7 +57,7 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore nested module",
+			name: "ignore nested module version file",
 			initialFiles: map[string]string{
 				"test-lib/internal/version.go":               "package internal\n\nconst Version = \"0.1.0\"\n",
 				"test-lib/nested-module/internal/version.go": "package internal\n\nconst Version = \"0.1.0\"\n",
@@ -101,7 +101,7 @@ func TestBump(t *testing.T) {
 			},
 		},
 		{
-			name: "ignore nested module",
+			name: "ignore nested module snippets",
 			initialFiles: map[string]string{
 				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json":           "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 				"internal/generated/snippets/test-lib/v2/apiv1/nested/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",

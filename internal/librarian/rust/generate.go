@@ -121,7 +121,7 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, sources *so
 
 // UpdateWorkspace updates dependencies for the entire Rust workspace.
 func UpdateWorkspace(ctx context.Context) error {
-	return command.Run(ctx, "cargo", "update", "--workspace")
+	return command.Run(ctx, command.Cargo, "update", "--workspace")
 }
 
 // Format formats a generated Rust library. Must be called sequentially;
@@ -131,7 +131,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err := command.Run(ctx, "taplo", "fmt", filepath.Join(library.Output, "Cargo.toml")); err != nil {
 		return err
 	}
-	if err := command.Run(ctx, "cargo", "fmt", "-p", library.Name); err != nil {
+	if err := command.Run(ctx, command.Cargo, "fmt", "-p", library.Name); err != nil {
 		return err
 	}
 	return nil

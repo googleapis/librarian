@@ -61,6 +61,10 @@ service config yaml, and gcloud.yaml.`,
 				Value: "google/cloud/parallelstore/v1/parallelstore.proto",
 				Usage: "comma-separated list of protobuf files used to generate the gcloud commands",
 			},
+			&cli.StringFlag{
+				Name:  "service-config",
+				Usage: "path to the api service config",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if cmd.Args().Len() == 0 {
@@ -70,7 +74,14 @@ service config yaml, and gcloud.yaml.`,
 			googleapis := cmd.String("googleapis")
 			out := cmd.String("out")
 			includeList := cmd.String("proto-files-include-list")
-			return gcloud.Generate(ctx, googleapis, config, out, includeList)
+			serviceConfig := cmd.String("service-config")
+			return gcloud.Generate(ctx, gcloud.GenerateConfig{
+				Googleapis:    googleapis,
+				GcloudConfig:  config,
+				Output:        out,
+				IncludeList:   includeList,
+				ServiceConfig: serviceConfig,
+			})
 		},
 	}
 }

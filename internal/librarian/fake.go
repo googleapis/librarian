@@ -99,3 +99,8 @@ func fakeClean(library *config.Library) error {
 	// This function shouldn't be called if the output directory doesn't exist.
 	return os.Remove(filepath.Join(library.Output, "README.md"))
 }
+
+func fakeAdd(lib *config.Library, version string) *config.Library {
+	lib.Version = version
+	return lib
+}

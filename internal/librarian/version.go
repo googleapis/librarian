@@ -15,23 +15,12 @@
 package librarian
 
 import (
-	_ "embed"
 	"runtime/debug"
 	"strings"
-	"time"
 )
 
-//go:embed version.txt
-var versionString string
-
-// versionNotAvailable is returned by Version when no VCS info is present,
-// which occurs during local development builds.
-const versionNotAvailable = "not available"
-
-// retractedVersions is a list of Go module versions that have been officially retracted
-// via the go.mod 'retract' directive. v1.0.2 added to account for local dev builds
-// from untagged commits.
-var retractedVersions = []string{"v1.0.0", "v1.0.1", "v1.0.2"}
+// versionDevel is the version string for local builds without a module version.
+const versionDevel = "(devel)"
 
 // Version return the version information for the binary, which is constructed
 // following https://go.dev/ref/mod#versions.
@@ -48,53 +37,7 @@ func version(info *debug.BuildInfo) string {
 	// uncommitted changes indicated by the +dirty suffix.
 	if info.Main.Version == "" || info.Main.Version == "(devel)" ||
 		strings.HasSuffix(info.Main.Version, "+dirty") {
-		return versionNotAvailable
-	}
-	// Retracted versions should use a pseudo-version so users know
-	// they're running a retracted release.
-	for _, v := range retractedVersions {
-		if strings.HasPrefix(info.Main.Version, v) {
-			return newPseudoVersion(info)
-		}
+		return versionDevel
 	}
 	return info.Main.Version
-}
-
-// newPseudoVersion constructs a pseudo-version string from the build info.
-func newPseudoVersion(info *debug.BuildInfo) string {
-	var revision, at string
-	for _, s := range info.Settings {
-		if s.Key == "vcs.revision" {
-			revision = s.Value
-		}
-		if s.Key == "vcs.time" {
-			at = s.Value
-		}
-	}
-
-	if revision == "" && at == "" {
-		return versionNotAvailable
-	}
-	// Construct the pseudo-version string per
-	// https://go.dev/ref/mod#pseudo-versions.
-	var buf strings.Builder
-	buf.WriteString(strings.TrimSpace(versionString))
-	if revision != "" {
-		buf.WriteString("-")
-		// Per https://go.dev/ref/mod#pseudo-versions, only use the first 12
-		// letters of the commit hash.
-		if len(revision) > 12 {
-			revision = revision[:12]
-		}
-		buf.WriteString(revision)
-	}
-	if at != "" {
-		// commit time is of the form 2023-01-25T19:57:54Z
-		p, err := time.Parse(time.RFC3339, at)
-		if err == nil {
-			buf.WriteString("-")
-			buf.WriteString(p.Format("20060102150405"))
-		}
-	}
-	return buf.String()
 }

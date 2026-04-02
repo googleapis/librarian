@@ -47,7 +47,7 @@ func TestGenerateCommand(t *testing.T) {
 			testhelper.RunGit(t, "init", repoDir)
 			testhelper.RunGit(t, "-C", repoDir, "config", "user.email", "test@example.com")
 			testhelper.RunGit(t, "-C", repoDir, "config", "user.name", "Test User")
-			testhelper.RunGit(t, "-C", repoDir, "checkout", "-b", "main")
+			testhelper.RunGit(t, "-C", repoDir, "checkout", "-b", config.BranchMain)
 
 			wd, err := os.Getwd()
 			if err != nil {

@@ -177,7 +177,9 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
-				Release: &config.Release{Branch: "main"},
+				Release: &config.Release{
+					IgnoredChanges: pythonIgnoredChanges,
+				},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,
@@ -216,7 +218,9 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
-				Release: &config.Release{Branch: "main"},
+				Release: &config.Release{
+					IgnoredChanges: pythonIgnoredChanges,
+				},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,
@@ -453,5 +457,132 @@ func TestFetchGoogleapisWithCommit(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAugmentLegacyReleaseExcludePaths(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		cfg          *config.Config
+		initialState *legacyconfig.LibrarianState
+		wantState    *legacyconfig.LibrarianState
+		wantErr      error
+	}{
+		{
+			name: "all",
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "existing-exclude"},
+					{Name: "initially-empty-exclude"},
+					{Name: "librarian-extra"},
+				},
+				Default: &config.Default{
+					Output: "packages",
+				},
+				Release: &config.Release{
+					IgnoredChanges: []string{"metadata", "docs/readme"},
+				},
+			},
+			initialState: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:                  "existing-exclude",
+						Version:             "1.2.3",
+						ReleaseExcludePaths: []string{"packages/existing-exclude/other"},
+					},
+					{
+						ID:      "initially-empty-exclude",
+						Version: "2.3.4",
+					},
+					{
+						ID:      "legacylibrarian-extra",
+						Version: "3.4.5",
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:      "existing-exclude",
+						Version: "1.2.3",
+						ReleaseExcludePaths: []string{
+							"packages/existing-exclude/other",
+							"packages/existing-exclude/metadata",
+							"packages/existing-exclude/docs/readme",
+						},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:      "initially-empty-exclude",
+						Version: "2.3.4",
+						ReleaseExcludePaths: []string{
+							"packages/initially-empty-exclude/metadata",
+							"packages/initially-empty-exclude/docs/readme",
+						},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+					{
+						ID:            "legacylibrarian-extra",
+						Version:       "3.4.5",
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{},
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repoDir := t.TempDir()
+			stateFile := filepath.Join(repoDir, librarianDir, librarianStateFile)
+			if err := os.MkdirAll(filepath.Dir(stateFile), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := yaml.Write(stateFile, test.initialState); err != nil {
+				t.Fatal(err)
+			}
+			if err := augmentLegacyReleaseExcludePaths(repoDir, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			gotState, err := readState(repoDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+				t.Errorf("mismatch in resulting libraries (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAugmentLegacyReleaseExcludePaths_Error(t *testing.T) {
+	// Deliberately don't create a state file.
+	repoDir := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Repo:     "google-cloud-python",
+		Libraries: []*config.Library{
+			{Name: "irrelevant"},
+		},
+		Default: &config.Default{
+			Output: "packages",
+		},
+		Release: &config.Release{
+			IgnoredChanges: []string{"irrelevant"},
+		},
+	}
+	gotErr := augmentLegacyReleaseExcludePaths(repoDir, cfg)
+	wantErr := os.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("error = %v, wantErr %v", gotErr, wantErr)
 	}
 }

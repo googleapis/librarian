@@ -29,11 +29,11 @@ var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
 	sourceRepos    = map[string]fetch.RepoRef{
-		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: fetch.DefaultBranchMain},
+		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
 		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 		"googleapis":  {Org: "googleapis", Name: "googleapis", Branch: fetch.DefaultBranchMaster},
-		"protobuf":    {Org: "protocolbuffers", Name: "protobuf", Branch: fetch.DefaultBranchMain},
-		"showcase":    {Org: "googleapis", Name: "gapic-showcase", Branch: fetch.DefaultBranchMain},
+		"protobuf":    {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
+		"showcase":    {Org: "googleapis", Name: "gapic-showcase", Branch: config.BranchMain},
 	}
 
 	errNoSourcesProvided = errors.New("at least one source must be provided")

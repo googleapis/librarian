@@ -46,13 +46,8 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
-      - name: Run tests
-        run: |
-          go test -race -coverprofile=coverage.out -covermode=atomic ./internal/legacylibrarian/...
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
+      - name: Run tests and check coverage
+        run: go run ./tool/cmd/coverage ./internal/legacylibrarian/...
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
@@ -62,14 +57,13 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
-      - name: Run tests
+      - uses: ./.github/actions/install-protoc
+      - name: Install Go tools
+        run: go install tool
+      - name: Run tests and check coverage
         run: |
-          go test -race -coverprofile=coverage.out -covermode=atomic \
+          go run ./tool/cmd/coverage \
             $(go list ./... | grep -v -E 'internal/librarian/(dart|java|nodejs|python|rust)|internal/sidekick|internal/legacylibrarian')
-      - name: Upload coverage report
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [go-generate, legacylibrarian, test]

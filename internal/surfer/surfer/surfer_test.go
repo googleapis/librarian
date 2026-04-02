@@ -36,6 +36,17 @@ func TestRun(t *testing.T) {
 			},
 		},
 		{
+			name: "valid command with service-config",
+			args: []string{
+				"surfer",
+				"generate",
+				"../gcloud/testdata/parallelstore/gcloud.yaml",
+				"--googleapis", "../gcloud/testdata/googleapis",
+				"--out", "../gcloud/testdata/parallelstore/surface",
+				"--service-config", "../gcloud/testdata/googleapis/google/cloud/parallelstore/v1/parallelstore_service.yaml",
+			},
+		},
+		{
 			name: "invalid gcloud.yaml filepath",
 			args: []string{
 				"surfer",

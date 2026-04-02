@@ -47,6 +47,8 @@ const (
 	LanguageRust = "rust"
 	// LanguageRustStorage is a variation of the Rust generator for storage.
 	LanguageRustStorage = "rust_storage"
+	// LanguageSwift is the language identifier for Swift.
+	LanguageSwift = "swift"
 )
 
 // GoModule represents the Go-specific configuration for a library.
