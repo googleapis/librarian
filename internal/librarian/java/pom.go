@@ -78,8 +78,8 @@ type javaModule struct {
 }
 
 // generatePomsIfMissing generates missing proto-*, grpc-*, and client POMs.
-func generatePomsIfMissing(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, apiConfigs map[string]*serviceconfig.API) error {
-	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, apiConfigs)
+func generatePomsIfMissing(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
+	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
 		return err
 	}
@@ -101,7 +101,7 @@ func generatePomsIfMissing(library *config.Library, libraryDir, monorepoVersion 
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, apiConfigs map[string]*serviceconfig.API) ([]javaModule, error) {
+func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	if len(parts) != 2 {
@@ -121,11 +121,10 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		names := deriveModuleNames(gapicArtifactID, version)
 
-		apiCfg, ok := apiConfigs[api.Path]
+		transport, ok := transports[api.Path]
 		if !ok {
-			return nil, fmt.Errorf("missing api config for %s", api.Path)
+			return nil, fmt.Errorf("missing transport for %s", api.Path)
 		}
-		transport := apiCfg.Transport(config.LanguageJava)
 
 		protoGrpcID := protoGroupID(gapicGroupID)
 		data := grpcProtoPomData{

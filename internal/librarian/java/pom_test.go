@@ -49,8 +49,8 @@ func TestSyncPoms_Golden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	apiConfigs := map[string]*serviceconfig.API{
-		apiPath: apiCfg,
+	transports := map[string]serviceconfig.Transport{
+		apiPath: apiCfg.Transport(config.LanguageJava),
 	}
 
 	tmpDir := t.TempDir()
@@ -68,7 +68,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := generatePomsIfMissing(library, tmpDir, "1.2.3", metadata, apiConfigs); err != nil {
+	if err := generatePomsIfMissing(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
@@ -105,7 +105,7 @@ func TestCollectModules_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		library    *config.Library
-		apiConfigs map[string]*serviceconfig.API
+		transports map[string]serviceconfig.Transport
 	}{
 		{
 			name: "invalid distribution name",
@@ -122,11 +122,11 @@ func TestCollectModules_Error(t *testing.T) {
 					{Path: "google/ads/unrecognized/v1"},
 				},
 			},
-			apiConfigs: map[string]*serviceconfig.API{},
+			transports: map[string]serviceconfig.Transport{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.apiConfigs); err == nil {
+			if _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.transports); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})

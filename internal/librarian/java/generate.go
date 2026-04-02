@@ -84,10 +84,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to find monorepo version: %w", err)
 	}
-	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, apiConfigs); err != nil {
-		return err
+	transports := make(map[string]serviceconfig.Transport)
+	for path, apiCfg := range apiConfigs {
+		transports[path] = apiCfg.Transport(config.LanguageJava)
+	}
+	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, transports); err != nil {
+		return fmt.Errorf("failed to generate poms: %w", err)
 	}
 
 	return nil
