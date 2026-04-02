@@ -38,11 +38,8 @@ const (
 )
 
 var (
-	// errExtractVersion is returned when an API version cannot be extracted from its path.
-	errExtractVersion = errors.New("failed to extract version")
-	// errNoProtos is returned when no proto files are found in an API directory.
-	errNoProtos = errors.New("no protos found")
-	// errMonorepoVersion is returned when a monorepo version cannot be found in the config.
+	errExtractVersion  = errors.New("failed to extract version")
+	errNoProtos        = errors.New("no protos found")
 	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 )
 
