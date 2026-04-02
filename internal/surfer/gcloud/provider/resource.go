@@ -196,7 +196,7 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	return nil
 }
 
-// IsSingletonResource determines whether a resource is a singleton.
+// isSingletonResource determines whether a resource is a singleton.
 // It checks if any of the resource's canonical patterns end in a literal segment
 // or contain two adjacent literal segments.
 func isSingletonResource(resource *api.Resource) bool {

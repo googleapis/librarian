@@ -202,6 +202,8 @@ func FindResourceMessage(outputType *api.Message) *api.Message {
 	return nil
 }
 
+// IsSingletonResourceMethod determines whether a resource is a singleton.
+// It checks if the resource associated with the method is a singleton.
 func IsSingletonResourceMethod(method *api.Method, model *api.API) bool {
 	if method == nil {
 		return false
