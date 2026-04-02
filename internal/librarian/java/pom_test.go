@@ -124,10 +124,6 @@ func TestCollectModules_Error(t *testing.T) {
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("collectModules() error = %v, want %v", err, test.wantErr)
 			}
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("collectModules() error = %v, want %v", err, test.wantErr)
->>>>>>> 5025b898 (refactor: use sentinel errors with errors.Is for error validation)
-			}
 		})
 	}
 }

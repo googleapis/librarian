@@ -36,11 +36,11 @@ const (
 )
 
 var (
-	// ErrInvalidDistributionName is returned when the distribution name format is invalid.
-	ErrInvalidDistributionName = errors.New("invalid distribution name")
+	// errInvalidDistributionName is returned when the distribution name format is invalid.
+	errInvalidDistributionName = errors.New("invalid distribution name")
 
-	// ErrAPIConfigNotFound is returned when the API config cannot be found.
-	ErrAPIConfigNotFound = errors.New("failed to find api config")
+	// errAPIConfigNotFound is returned when the API config cannot be found.
+	errAPIConfigNotFound = errors.New("failed to find api config")
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -114,7 +114,7 @@ func collectModules(library *config.Library, libraryDir, googleapisDir, monorepo
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	if len(parts) != 2 {
-		return nil, fmt.Errorf("%w %q: expected format groupID:artifactID", ErrInvalidDistributionName, distName)
+		return nil, fmt.Errorf("%w %q: expected format groupID:artifactID", errInvalidDistributionName, distName)
 	}
 	gapicGroupID := parts[0]
 	gapicArtifactID := parts[1]
@@ -132,7 +132,7 @@ func collectModules(library *config.Library, libraryDir, googleapisDir, monorepo
 
 		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 		if err != nil {
-			return nil, fmt.Errorf("%w for %s: %w", ErrAPIConfigNotFound, api.Path, err)
+			return nil, fmt.Errorf("%w for %s: %w", errAPIConfigNotFound, api.Path, err)
 		}
 		transport := apiCfg.Transport(config.LanguageJava)
 
