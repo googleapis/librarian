@@ -710,7 +710,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				ReleaseLevel:         "stable",
 				LibraryType:          "GAPIC_AUTO",
-				Transport:            "grpc+rest",
 			},
 		},
 		{
@@ -738,7 +737,6 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIShortname:        "showcase",
 				ReleaseLevel:        "stable",
 				LibraryType:         "GAPIC_AUTO",
-				Transport:           "grpc+rest",
 			},
 		},
 	} {
