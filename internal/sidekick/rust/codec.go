@@ -764,8 +764,8 @@ func httpPathFmt(t *api.PathTemplate) string {
 			fmt = fmt + "/{}"
 		}
 	}
-	if t.Verb != nil {
-		fmt = fmt + ":" + *t.Verb
+	if t.Verb != "" {
+		fmt = fmt + ":" + t.Verb
 	}
 	return fmt
 }

@@ -185,9 +185,9 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 			builder.WriteString("}")
 		}
 	}
-	if t.Verb != nil {
+	if t.Verb != "" {
 		builder.WriteString(":")
-		builder.WriteString(*t.Verb)
+		builder.WriteString(t.Verb)
 	}
 
 	return builder.String()

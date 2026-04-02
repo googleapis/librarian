@@ -144,9 +144,13 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	if pos != len(pathTemplate) {
 		return nil, fmt.Errorf("invalid path template, expected it to end at position %d: %s", pos, pathTemplate)
 	}
+	var v string
+	if verb != nil {
+		v = *verb
+	}
 	return &api.PathTemplate{
 		Segments: segments,
-		Verb:     verb,
+		Verb:     v,
 	}, nil
 
 }

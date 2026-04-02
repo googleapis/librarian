@@ -70,7 +70,7 @@ func ParseUriTemplate(uriTemplate string) (*api.PathTemplate, error) {
 			return nil, err
 		}
 		pos += width
-		template.Verb = &literal.Literal
+		template.Verb = literal.Literal
 	}
 	if pos != len(uriTemplate) {
 		return nil, fmt.Errorf("trailing data (%q) cannot be parsed as a URI template", uriTemplate[pos:])

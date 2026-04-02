@@ -727,7 +727,7 @@ const (
 // PathTemplate is a template for a path.
 type PathTemplate struct {
 	Segments []PathSegment
-	Verb     *string
+	Verb     string
 }
 
 // FlatPath returns a simplified representation of the path template as a string.
@@ -792,7 +792,7 @@ func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
 
 // WithVerb adds a verb to the path template.
 func (p *PathTemplate) WithVerb(v string) *PathTemplate {
-	p.Verb = &v
+	p.Verb = v
 	return p
 }
 

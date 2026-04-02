@@ -226,7 +226,7 @@ func TestPathTemplateBuilder(t *testing.T) {
 				},
 			},
 		},
-		Verb: &verb,
+		Verb: verb,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("bad builder result (-want, +got):\n%s", diff)
