@@ -33,10 +33,10 @@ const (
 	bomPomTemplateName      = "module_bom_pom.xml.tmpl"
 	googleGroupID           = "com.google"
 	protoGrpcSuffix         = ".api.grpc"
-	managedProtoStartMarker = "<!-- {x-librarian-managed-proto-dependencies-start} -->"
-	managedProtoEndMarker   = "<!-- {x-librarian-managed-proto-dependencies-end} -->"
-	managedGrpcStartMarker  = "<!-- {x-librarian-managed-grpc-dependencies-start} -->"
-	managedGrpcEndMarker    = "<!-- {x-librarian-managed-grpc-dependencies-end} -->"
+	managedProtoStartMarker = "<!-- {x-generated-proto-dependencies-start} -->"
+	managedProtoEndMarker   = "<!-- {x-generated-proto-dependencies-end} -->"
+	managedGrpcStartMarker  = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGrpcEndMarker    = "<!-- {x-generated-grpc-dependencies-end} -->"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.

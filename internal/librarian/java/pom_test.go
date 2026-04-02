@@ -118,23 +118,23 @@ func TestSyncPoms_Update(t *testing.T) {
   <artifactId>google-cloud-secretmanager</artifactId>
   <version>1.2.3</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
   <dependencies>
-    <!-- {x-librarian-managed-proto-dependencies-start} -->
+    <!-- {x-generated-proto-dependencies-start} -->
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-cloud-secretmanager-v0</artifactId>
     </dependency>
-    <!-- {x-librarian-managed-proto-dependencies-end} -->
+    <!-- {x-generated-proto-dependencies-end} -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
     </dependency>
-    <!-- {x-librarian-managed-grpc-dependencies-start} -->
+    <!-- {x-generated-grpc-dependencies-start} -->
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>grpc-google-cloud-secretmanager-v0</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- {x-librarian-managed-grpc-dependencies-end} -->
+    <!-- {x-generated-grpc-dependencies-end} -->
   </dependencies>
 </project>`
 	if err := os.WriteFile(pomPath, []byte(initialContent), 0644); err != nil {

@@ -40,9 +40,9 @@
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-common-protos</artifactId>
     </dependency>
-    <!-- {x-librarian-managed-proto-dependencies-start} -->
+    <!-- {x-generated-proto-dependencies-start} -->
     {{- template "managed_proto_dependencies" . }}
-    <!-- {x-librarian-managed-proto-dependencies-end} -->
+    <!-- {x-generated-proto-dependencies-end} -->
     <dependency>
       <groupId>com.google.guava</groupId>
       <artifactId>guava</artifactId>
@@ -84,9 +84,9 @@
       <artifactId>junit</artifactId>
       <scope>test</scope>
     </dependency>
-    <!-- {x-librarian-managed-grpc-dependencies-start} -->
+    <!-- {x-generated-grpc-dependencies-start} -->
     {{- template "managed_grpc_dependencies" . }}
-    <!-- {x-librarian-managed-grpc-dependencies-end} -->
+    <!-- {x-generated-grpc-dependencies-end} -->
     <!-- Need testing utility classes for generated gRPC clients tests -->
     <dependency>
       <groupId>com.google.api</groupId>
