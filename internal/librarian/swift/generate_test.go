@@ -14,7 +14,15 @@
 
 package swift
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/testhelper"
+)
 
 func TestDefaultLibraryName(t *testing.T) {
 	for _, test := range []struct {
@@ -32,5 +40,42 @@ func TestDefaultLibraryName(t *testing.T) {
 				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.api, got, test.want)
 			}
 		})
+	}
+}
+
+func TestGenerate(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	libraries := []*config.Library{
+		{
+			Name:          "GoogleCloudSecretmanagerV1",
+			APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			CopyrightYear: "2025",
+		},
+	}
+	for _, library := range libraries {
+		library.Output = filepath.Join(outDir, "generated", library.Name)
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	for _, library := range libraries {
+		if err := Generate(t.Context(), cfg, library, src); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, library := range libraries {
+		expectedFile := filepath.Join(library.Output, "README.md")
+		if _, err := os.Stat(expectedFile); err != nil {
+			t.Errorf("Stat(%s) returned error: %v", expectedFile, err)
+		}
 	}
 }
