@@ -95,6 +95,7 @@ func TestCollectModules_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
+		wantErr error
 	}{
 		{
 			name: "invalid distribution name",
@@ -103,6 +104,7 @@ func TestCollectModules_Error(t *testing.T) {
 					DistributionNameOverride: "invalid-name",
 				},
 			},
+			wantErr: errInvalidDistributionName,
 		},
 		{
 			name: "failed to find api config",
@@ -111,11 +113,13 @@ func TestCollectModules_Error(t *testing.T) {
 					{Path: "google/ads/unrecognized/v1"},
 				},
 			},
+			wantErr: errAPIConfigNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{}); err == nil {
-				t.Error("collectModules() error = nil, want non-nil")
+			_, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{})
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("collectModules() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
