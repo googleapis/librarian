@@ -66,18 +66,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
-	apiConfigs := make(map[string]*serviceconfig.API)
+	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
 		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 		if err != nil {
 			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
 		}
-		apiConfigs[api.Path] = apiCfg
-	}
-
-	for _, api := range library.APIs {
+		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
 		// metadata is needed for pom.xml generation in post process
-		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata, apiConfigs[api.Path]); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata, apiCfg); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -85,10 +82,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return fmt.Errorf("failed to find monorepo version: %w", err)
-	}
-	transports := make(map[string]serviceconfig.Transport)
-	for path, apiCfg := range apiConfigs {
-		transports[path] = apiCfg.Transport(config.LanguageJava)
 	}
 	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, transports); err != nil {
 		return fmt.Errorf("failed to generate poms: %w", err)
