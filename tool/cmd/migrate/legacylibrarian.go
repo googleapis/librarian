@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -74,6 +75,9 @@ func runLibrarianMigration(ctx context.Context, language string, repoPath string
 	if err := blockLegacyGeneration(repoPath, cfg); err != nil {
 		return err
 	}
+	if err := augmentLegacyReleaseExcludePaths(repoPath, cfg); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -118,6 +122,9 @@ func buildConfigFromLibrarian(ctx context.Context, input *MigrationInput) (*conf
 		},
 		Default: &config.Default{
 			TagFormat: defaultTagFormat,
+		},
+		Release: &config.Release{
+			IgnoredChanges: pythonIgnoredChanges,
 		},
 	}
 
@@ -172,6 +179,32 @@ func blockLegacyGeneration(repoPath string, cfg *config.Config) error {
 		return err
 	}
 	return nil
+}
+
+// augmentLegacyReleaseExcludePaths ensures that every library in the
+// legacylibrarian state file that is also specified in the librarian config
+// has release-exclude paths matching the ones in the release "ignored changes"
+// config section. This will reduce the number of unnecessary releases
+// immediately after migration.
+func augmentLegacyReleaseExcludePaths(repoPath string, cfg *config.Config) error {
+	state, err := readState(repoPath)
+	if err != nil {
+		return err
+	}
+	for _, lib := range cfg.Libraries {
+		libraryState := state.LibraryByID(lib.Name)
+		if libraryState == nil {
+			continue
+		}
+		for _, path := range cfg.Release.IgnoredChanges {
+			repoRelativePath := filepath.Join("packages", lib.Name, path)
+			if !slices.Contains(libraryState.ReleaseExcludePaths, repoRelativePath) {
+				libraryState.ReleaseExcludePaths = append(libraryState.ReleaseExcludePaths, repoRelativePath)
+			}
+		}
+	}
+	stateFile := filepath.Join(repoPath, librarianDir, librarianStateFile)
+	return yaml.Write(stateFile, state)
 }
 
 func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
