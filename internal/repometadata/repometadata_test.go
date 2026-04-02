@@ -48,7 +48,6 @@ func TestFromLibrary(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				Transport:            "grpc+rest",
 			},
 		},
 		{
@@ -70,7 +69,6 @@ func TestFromLibrary(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores, manages, and secures access to application secrets.",
-				Transport:            "grpc+rest",
 			},
 		},
 		{
