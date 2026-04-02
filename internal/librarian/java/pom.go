@@ -121,11 +121,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		names := deriveModuleNames(gapicArtifactID, version)
 
-		transport, ok := transports[api.Path]
-		if !ok {
-			return nil, fmt.Errorf("missing transport for %s", api.Path)
-		}
-
+		transport := transports[api.Path]
 		protoGrpcID := protoGroupID(gapicGroupID)
 		data := grpcProtoPomData{
 			Proto: coordinates{
