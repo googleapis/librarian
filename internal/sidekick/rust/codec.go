@@ -1114,7 +1114,7 @@ func escapeUrls(line string) string {
 		} else if strings.HasSuffix(line[lastIndex:match[0]], `"`) && strings.HasPrefix(line[match[1]:], `"`) {
 			// The URL is in quotes `"`, escape it to appear as verbatim text.
 			escapedLine.WriteString(line[lastIndex : match[0]-1])
-			escapedLine.WriteString(fmt.Sprintf("`%s`", url))
+			fmt.Fprintf(&escapedLine, "`%s`", url)
 			lastIndex = match[1] + 1
 		} else if strings.HasSuffix(prefix, "]: ") && (suffix == "\n" || suffix == "") {
 			// Looks line a link definition, just leave it as-is
@@ -1123,9 +1123,9 @@ func escapeUrls(line string) string {
 		} else {
 			escapedLine.WriteString(line[lastIndex:match[0]])
 			if strings.HasSuffix(url, ".") {
-				escapedLine.WriteString(fmt.Sprintf("<%s>.", strings.TrimSuffix(url, ".")))
+				fmt.Fprintf(&escapedLine, "<%s>.", strings.TrimSuffix(url, "."))
 			} else {
-				escapedLine.WriteString(fmt.Sprintf("<%s>", url))
+				fmt.Fprintf(&escapedLine, "<%s>", url)
 			}
 			lastIndex = match[1]
 		}

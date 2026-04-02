@@ -800,10 +800,10 @@ func writeTiming(workRoot string, timeByLibrary map[string]time.Duration) error 
 
 	// Create the timing log in memory: one summary line, then one line per library.
 	var sb strings.Builder
-	sb.WriteString(fmt.Sprintf("Processed %d libraries in %s; average=%s\n", len(timeByLibrary), total.Round(time.Millisecond), average.Round(time.Millisecond)))
+	fmt.Fprintf(&sb, "Processed %d libraries in %s; average=%s\n", len(timeByLibrary), total.Round(time.Millisecond), average.Round(time.Millisecond))
 
 	for _, ts := range timingStructs {
-		sb.WriteString(fmt.Sprintf("%s: %s\n", ts.LibraryID, ts.Duration.Round(time.Millisecond)))
+		fmt.Fprintf(&sb, "%s: %s\n", ts.LibraryID, ts.Duration.Round(time.Millisecond))
 	}
 
 	// Write it out to disk.
