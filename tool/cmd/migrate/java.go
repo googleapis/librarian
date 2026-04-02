@@ -339,11 +339,13 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	var totalInserts int
 	for _, lib := range cfg.Libraries {
 		if lib.SkipGenerate {
+			log.Printf("Debug: skipping library %s (SkipGenerate=true)", lib.Name)
 			continue
 		}
 		distName := java.DeriveDistributionName(lib)
 		parts := strings.SplitN(distName, ":", 2)
 		if len(parts) != 2 {
+			log.Printf("Debug: skipping library %s (invalid distribution name: %s)", lib.Name, distName)
 			continue
 		}
 		gapicArtifactID := parts[1]
@@ -360,15 +362,22 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		lines := strings.Split(string(contentBytes), "\n")
 
 		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
-		lines = wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
-		lines = wrapDependencies(lines, grpcIDs, managedGrpcStart, managedGrpcEnd)
+		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
+			log.Printf("Debug: skipping library %s (no APIs found to wrap)", lib.Name)
+			continue
+		}
 
-		newContent := strings.Join(lines, "\n")
+		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd, lib.Name, "proto")
+		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd, lib.Name, "grpc")
+
+		newContent := strings.Join(updatedLines, "\n")
 		if newContent != string(contentBytes) {
 			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
 				return err
 			}
 			totalInserts++
+		} else {
+			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
 		}
 	}
 	if totalInserts > 0 {
@@ -390,8 +399,12 @@ func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
 
 // wrapDependencies inserts start and end markers around the block of dependencies
 // matching the provided artifact IDs. It returns the modified lines.
-func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
-	if len(artifactIDs) == 0 || slices.Contains(lines, startMarker) {
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string, libName, depType string) []string {
+	if len(artifactIDs) == 0 {
+		return lines
+	}
+	if slices.Contains(lines, startMarker) {
+		log.Printf("Debug: library %s already has %s markers", libName, depType)
 		return lines
 	}
 
@@ -402,6 +415,7 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 
 	first, last := findMarkerBounds(lines, targets)
 	if first == -1 {
+		log.Printf("Debug: library %s: none of the %s artifact IDs %v found in pom.xml", libName, depType, artifactIDs)
 		return lines
 	}
 
