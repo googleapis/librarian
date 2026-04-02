@@ -177,18 +177,18 @@ func cloneRepo(ctx context.Context, repoDir, repoName string) error {
 
 func createBranch(ctx context.Context, now time.Time) error {
 	branchName := fmt.Sprintf("%s%s", branchPrefix, now.UTC().Format("20060102T150405Z"))
-	return command.Run(ctx, "git", "checkout", "-b", branchName)
+	return command.Run(ctx, command.Git, "checkout", "-b", branchName)
 }
 
 func commitChanges(ctx context.Context) error {
-	if err := command.Run(ctx, "git", "add", "."); err != nil {
+	if err := command.Run(ctx, command.Git, "add", "."); err != nil {
 		return err
 	}
-	return command.Run(ctx, "git", "commit", "-m", commitTitle)
+	return command.Run(ctx, command.Git, "commit", "-m", commitTitle)
 }
 
 func pushBranch(ctx context.Context) error {
-	return command.Run(ctx, "git", "push", "-u", "origin", "HEAD")
+	return command.Run(ctx, command.Git, "push", "-u", "origin", "HEAD")
 }
 
 func createPR(ctx context.Context, repoName string) error {
@@ -202,7 +202,7 @@ func createPR(ctx context.Context, repoName string) error {
 }
 
 func runCargoUpdate(ctx context.Context) error {
-	return command.Run(ctx, "cargo", "update", "--workspace")
+	return command.Run(ctx, command.Cargo, "update", "--workspace")
 }
 
 func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, args ...string) error {

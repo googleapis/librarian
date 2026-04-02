@@ -38,7 +38,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if cfg.SpecificationFormat != libconfig.SpecProtobuf {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)
 	}
-	if err := command.Run(ctx, "cargo", "--version"); err != nil {
+	if err := command.Run(ctx, command.Cargo, "--version"); err != nil {
 		return fmt.Errorf("got an error trying to run `cargo --version`, the instructions on https://www.rust-lang.org/learn/get-started may solve this problem: %w", err)
 	}
 	if err := command.Run(ctx, "protoc", "--version"); err != nil {
@@ -80,7 +80,7 @@ func buildRS(ctx context.Context, rootName, tmpDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	cmd := exec.CommandContext(ctx, "cargo", "build", "--features", "_generate-protos")
+	cmd := exec.CommandContext(ctx, command.Cargo, "build", "--features", "_generate-protos")
 	cmd.Dir = tmpDir
 	cmd.Env = append(os.Environ(), fmt.Sprintf("SOURCE_ROOT=%s", absRoot))
 	cmd.Env = append(cmd.Env, fmt.Sprintf("DEST=%s", absOutDir))

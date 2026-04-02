@@ -36,7 +36,7 @@ func TestGetLastTag(t *testing.T) {
 	const wantTag = "v1.2.3"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, "git"), config.RemoteUpstream, config.BranchMain)
+	got, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, command.Git), config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -47,7 +47,7 @@ func TestGetLastTag(t *testing.T) {
 
 func TestLastTagGitError(t *testing.T) {
 	t.Chdir(t.TempDir())
-	_, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, "git"), config.RemoteUpstream, config.BranchMain)
+	_, err := GetLastTag(t.Context(), command.GetExecutablePath(nil, command.Git), config.RemoteUpstream, config.BranchMain)
 	if err == nil {
 		t.Fatal("expected an error but got none")
 	}
@@ -59,7 +59,7 @@ func TestLastTagGitError(t *testing.T) {
 func TestIsNewFileSuccess(t *testing.T) {
 	testhelper.SetupForVersionBump(t, "dummy-tag")
 	// Get the HEAD commit hash, which serves as a unique reference for this test.
-	cmd := exec.CommandContext(t.Context(), "git", "rev-parse", "HEAD")
+	cmd := exec.CommandContext(t.Context(), command.Git, "rev-parse", "HEAD")
 	out, err := cmd.Output()
 	if err != nil {
 		t.Fatal(err)
@@ -70,7 +70,7 @@ func TestIsNewFileSuccess(t *testing.T) {
 		t.Fatal(err)
 	}
 	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
+	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
 
 	newName := path.Join("src", "storage", "src", "new.rs")
 	if err := os.MkdirAll(path.Dir(newName), 0755); err != nil {
@@ -94,7 +94,7 @@ func TestIsNewFileDiffError(t *testing.T) {
 	t.Chdir(t.TempDir())
 	testhelper.SetupForVersionBump(t, wantTag)
 	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, "git")
+	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
 	existingName := path.Join("src", "storage", "src", "lib.rs")
 	if IsNewFile(t.Context(), gitExe, "invalid-tag", existingName) {
 		t.Errorf("diff errors should return false for isNewFile(): %s", existingName)
@@ -106,7 +106,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
 
-	got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), wantTag, nil)
+	got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, command.Git), wantTag, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,7 +120,7 @@ func TestFilesBadRef(t *testing.T) {
 	const wantTag = "release-2002-03-04"
 	remoteDir := testhelper.SetupRepoWithChange(t, wantTag)
 	testhelper.CloneRepository(t, remoteDir)
-	if got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, "git"), "--invalid--", nil); err == nil {
+	if got, err := FilesChangedSince(t.Context(), command.GetExecutablePath(nil, command.Git), "--invalid--", nil); err == nil {
 		t.Errorf("expected an error with invalid tag, got=%v", got)
 	}
 }
@@ -229,7 +229,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 			test.setup(t)
-			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg.Preinstalled, "git"))
+			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg.Preinstalled, command.Git))
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -238,41 +238,41 @@ func TestAssertGitStatusClean(t *testing.T) {
 }
 
 func TestMatchesBranchPointSuccess(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, config.BranchMain); err != nil {
+	if err := MatchesBranchPoint(t.Context(), command.Git, config.RemoteUpstream, config.BranchMain); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestMatchesBranchDiffError(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
-	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, "not-a-valid-branch"); err == nil {
+	if err := MatchesBranchPoint(t.Context(), command.Git, config.RemoteUpstream, "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with an invalid branch")
 	}
 }
 
 func TestMatchesDirtyCloneError(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepoWithChange(t, "v1.0.0")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 
-	if err := MatchesBranchPoint(t.Context(), "git", config.RemoteUpstream, "not-a-valid-branch"); err == nil {
+	if err := MatchesBranchPoint(t.Context(), command.Git, config.RemoteUpstream, "not-a-valid-branch"); err == nil {
 		t.Errorf("expected an error with a dirty clone")
 	}
 }
 
 func TestShowFileAtRemoteBranch(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	got, err := ShowFileAtRemoteBranch(t.Context(), "git", config.RemoteUpstream, config.BranchMain, testhelper.ReadmeFile)
+	got, err := ShowFileAtRemoteBranch(t.Context(), command.Git, config.RemoteUpstream, config.BranchMain, testhelper.ReadmeFile)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -282,10 +282,10 @@ func TestShowFileAtRemoteBranch(t *testing.T) {
 }
 
 func TestShowFileAtRemoteBranch_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
-	_, err := ShowFileAtRemoteBranch(t.Context(), "git", config.RemoteUpstream, config.BranchMain, "does_not_exist")
+	_, err := ShowFileAtRemoteBranch(t.Context(), command.Git, config.RemoteUpstream, config.BranchMain, "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
@@ -295,7 +295,7 @@ func TestShowFileAtRemoteBranch_Error(t *testing.T) {
 }
 
 func TestShowFileAtRevision(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	opts := testhelper.SetupOptions{
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
@@ -324,7 +324,7 @@ func TestShowFileAtRevision(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := ShowFileAtRevision(t.Context(), "git", test.revision, testhelper.ReadmeFile)
+			got, err := ShowFileAtRevision(t.Context(), command.Git, test.revision, testhelper.ReadmeFile)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -336,9 +336,9 @@ func TestShowFileAtRevision(t *testing.T) {
 }
 
 func TestShowFileAtRevision_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	testhelper.SetupRepo(t)
-	_, err := ShowFileAtRevision(t.Context(), "git", "HEAD", "does_not_exist")
+	_, err := ShowFileAtRevision(t.Context(), command.Git, "HEAD", "does_not_exist")
 	if err == nil {
 		t.Fatal("expected an error showing file that should not exist")
 	}
@@ -349,9 +349,9 @@ func TestShowFileAtRevision_Error(t *testing.T) {
 
 func TestCheckVersion(t *testing.T) {
 	t.Parallel()
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 
-	if err := CheckVersion(t.Context(), "git"); err != nil {
+	if err := CheckVersion(t.Context(), command.Git); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -364,27 +364,27 @@ func TestCheckVersion_Error(t *testing.T) {
 }
 
 func TestCheckRemoteURL(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := CheckRemoteURL(t.Context(), "git", testhelper.TestRemote); err != nil {
+	if err := CheckRemoteURL(t.Context(), command.Git, testhelper.TestRemote); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestCheckRemoteURL_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	remoteDir := testhelper.SetupRepo(t)
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := CheckRemoteURL(t.Context(), "git", "remote_that_does_not_exist"); err == nil {
+	if err := CheckRemoteURL(t.Context(), command.Git, "remote_that_does_not_exist"); err == nil {
 		t.Errorf("expected an error checking for a remote URL, but did not get one")
 	}
 }
 
 func TestFindCommitsForPath(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	opts := testhelper.SetupOptions{
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
@@ -406,7 +406,7 @@ func TestFindCommitsForPath(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := FindCommitsForPath(t.Context(), "git", test.path)
+			got, err := FindCommitsForPath(t.Context(), command.Git, test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -424,21 +424,21 @@ func TestFindCommitsForPath(t *testing.T) {
 }
 
 func TestFindCommitsForPath_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	testhelper.SetupRepo(t)
 	// It's invalid to try to get the log for a path outside the repo
-	if _, err := FindCommitsForPath(t.Context(), "git", ".."); err == nil {
+	if _, err := FindCommitsForPath(t.Context(), command.Git, ".."); err == nil {
 		t.Errorf("expected an error finding commits for path outside the repo, but did not get one")
 	}
 }
 
 func TestCheckout(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	opts := testhelper.SetupOptions{
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
 	testhelper.Setup(t, opts)
-	if err := Checkout(t.Context(), "git", "HEAD~"); err != nil {
+	if err := Checkout(t.Context(), command.Git, "HEAD~"); err != nil {
 		t.Fatal(err)
 	}
 	readmeContent, err := os.ReadFile(testhelper.ReadmeFile)
@@ -451,30 +451,30 @@ func TestCheckout(t *testing.T) {
 }
 
 func TestCheckout_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	testhelper.SetupRepo(t)
-	err := Checkout(t.Context(), "git", "invalid-revision")
+	err := Checkout(t.Context(), command.Git, "invalid-revision")
 	if err == nil {
 		t.Errorf("expected error when checking out a non-existent revision, but did not get one")
 	}
 }
 
 func TestTag(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	const tagName = "test-tag"
 	opts := testhelper.SetupOptions{
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
 	testhelper.Setup(t, opts)
-	commit, err := GetCommitHash(t.Context(), "git", "HEAD~")
+	commit, err := GetCommitHash(t.Context(), command.Git, "HEAD~")
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = Tag(t.Context(), "git", tagName, commit)
+	err = Tag(t.Context(), command.Git, tagName, commit)
 	if err != nil {
 		t.Fatal(err)
 	}
-	taggedCommit, err := GetCommitHash(t.Context(), "git", tagName)
+	taggedCommit, err := GetCommitHash(t.Context(), command.Git, tagName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -485,7 +485,7 @@ func TestTag(t *testing.T) {
 }
 
 func TestTag_Error(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	for _, test := range []struct {
 		name    string
 		tagName string
@@ -519,7 +519,7 @@ func TestTag_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			testhelper.SetupRepo(t)
-			err := Tag(t.Context(), "git", test.tagName, test.commit)
+			err := Tag(t.Context(), command.Git, test.tagName, test.commit)
 			if err == nil {
 				t.Fatal("wanted an error; got none")
 			}
@@ -528,16 +528,16 @@ func TestTag_Error(t *testing.T) {
 }
 
 func TestGetCommitHash(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	opts := testhelper.SetupOptions{
 		WithChanges: []string{testhelper.ReadmeFile},
 	}
 	testhelper.Setup(t, opts)
-	commits, err := FindCommitsForPath(t.Context(), "git", ".")
+	commits, err := FindCommitsForPath(t.Context(), command.Git, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
-	headCommit, err := GetCommitHash(t.Context(), "git", "HEAD")
+	headCommit, err := GetCommitHash(t.Context(), command.Git, "HEAD")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -546,7 +546,7 @@ func TestGetCommitHash(t *testing.T) {
 		t.Errorf("GetCommitHash() for HEAD: got = %s; want = %s", headCommit, commits[0])
 	}
 
-	previousToHeadCommit, err := GetCommitHash(t.Context(), "git", "HEAD~")
+	previousToHeadCommit, err := GetCommitHash(t.Context(), command.Git, "HEAD~")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -557,7 +557,7 @@ func TestGetCommitHash(t *testing.T) {
 }
 
 func TestGetCommitSubject(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
+	testhelper.RequireCommand(t, command.Git)
 	for _, test := range []struct {
 		name     string
 		setup    func(*testing.T)
@@ -593,7 +593,7 @@ func TestGetCommitSubject(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			testhelper.SetupRepo(t)
 			test.setup(t)
-			got, err := GetCommitSubject(t.Context(), "git", test.revision)
+			got, err := GetCommitSubject(t.Context(), command.Git, test.revision)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -606,7 +606,7 @@ func TestGetCommitSubject(t *testing.T) {
 
 func TestGetCommitSubject_Error(t *testing.T) {
 	testhelper.SetupRepo(t)
-	_, err := GetCommitSubject(t.Context(), "git", "bad-revision")
+	_, err := GetCommitSubject(t.Context(), command.Git, "bad-revision")
 	if err == nil {
 		t.Fatal("wanted an error; got none")
 	}

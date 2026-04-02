@@ -118,5 +118,5 @@ func cloneRepo(ctx context.Context, repoDir, revision string) error {
 		"--revision=" + revision,
 		repoDir,
 	}
-	return command.Run(ctx, "git", args...)
+	return command.Run(ctx, command.Git, args...)
 }

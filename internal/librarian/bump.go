@@ -104,7 +104,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	if cfg.Release != nil {
 		preinstalled = cfg.Release.Preinstalled
 	}
-	gitExe := command.GetExecutablePath(preinstalled, "git")
+	gitExe := command.GetExecutablePath(preinstalled, command.Git)
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -232,9 +232,9 @@ func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string
 func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case config.LanguageRust:
-		cargoExe := "cargo"
+		cargoExe := command.Cargo
 		if cfg.Release != nil {
-			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, "cargo")
+			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Cargo)
 		}
 		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
 			return err
