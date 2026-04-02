@@ -38,7 +38,7 @@ git diff --exit-code '*go.sum' :^internal/generated/snippets
 # We only check for the 'diff ' lines to identify which files need formatting.
 golangci-lint fmt --diff --enable goimports,gofmt ./... 2>&1 | \
     grep "^diff " | \
-    grep -vE ".pb.go|spanner/key_recipe_cache_test.go" > fmt_issues.txt || true
+    grep -vE "spanner/key_recipe_cache_test.go" > fmt_issues.txt || true
 
 if [ -s fmt_issues.txt ]; then
   echo "Found untidy files:"
