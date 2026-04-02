@@ -38,10 +38,9 @@ const (
 )
 
 var (
-	// errExtractVersion is returned when an API version cannot be extracted from its path.
-	errExtractVersion = errors.New("failed to extract version")
-	// errNoProtos is returned when no proto files are found in an API directory.
-	errNoProtos = errors.New("no protos found")
+	errExtractVersion  = errors.New("failed to extract version")
+	errNoProtos        = errors.New("no protos found")
+	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 )
 
 // Generate generates a Java client library.
@@ -65,16 +64,32 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
+
+	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
+		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		if err != nil {
+			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+		}
+		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
 		// metadata is needed for pom.xml generation in post process
-		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata, apiCfg); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
+
+	monorepoVersion, err := findMonorepoVersion(cfg)
+	if err != nil {
+		return err
+	}
+	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, transports); err != nil {
+		return fmt.Errorf("failed to generate poms: %w", err)
+	}
+
 	return nil
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	version := serviceconfig.ExtractVersion(api.Path)
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
@@ -125,10 +140,6 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
-	if err != nil {
-		return fmt.Errorf("failed to find api config: %w", err)
-	}
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
 		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {

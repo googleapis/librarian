@@ -389,7 +389,11 @@ func TestGenerateAPI(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(
 		t.Context(),
 		cfg,
 		&config.API{Path: "google/cloud/secretmanager/v1"},
@@ -400,6 +404,7 @@ func TestGenerateAPI(t *testing.T) {
 			NamePretty:     "Secret Manager",
 			APIDescription: "Secret Manager API",
 		},
+		apiCfg,
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -453,10 +458,14 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err := os.MkdirAll(templatesDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	err := generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
 		NamePretty:     "Secret Manager",
 		APIDescription: "Secret Manager API",
-	})
+	}, apiCfg)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -525,17 +534,99 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			wantErr: syscall.ENOTDIR,
 		},
+		{
+			name: "missing monorepo version",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			setup: func(t *testing.T, library *config.Library) {
+				// Ensure output artifacts exist for postProcessAPI to succeed.
+				for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+					if err := os.MkdirAll(filepath.Join(library.Output, artifact), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				if err := os.WriteFile(filepath.Join(library.Output, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				templatesDir := filepath.Join(filepath.Dir(library.Output), owlbotTemplatesRelPath)
+				if err := os.MkdirAll(templatesDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errMonorepoVersion,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			// Temporarily mock runProtoc to avoid external tool requirements.
+			oldRunProtoc := runProtoc
+			defer func() { runProtoc = oldRunProtoc }()
+			runProtoc = func(ctx context.Context, args []string) error { return nil }
+
 			if test.setup != nil {
 				test.setup(t, test.library)
 			}
-			cfg := &config.Config{Language: "java"}
+			cfg := &config.Config{
+				Language:  config.LanguageJava,
+				Libraries: []*config.Library{test.library},
+			}
 			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+func TestGenerate_Logic(t *testing.T) {
+	// Tests the orchestration logic, temporarily mock runProtoc to avoid external tool requirements.
+	oldRunProtoc := runProtoc
+	defer func() { runProtoc = oldRunProtoc }()
+	runProtoc = func(ctx context.Context, args []string) error { return nil }
+
+	outdir := t.TempDir()
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "0.1.2",
+		Output:  outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	cfg := &config.Config{
+		Language: config.LanguageJava,
+		Repo:     "googleapis/google-cloud-java",
+		Libraries: []*config.Library{
+			library,
+			{Name: rootLibrary, Version: "1.2.3"},
+		},
+	}
+	// Setup mandatory files for postProcessAPI and generatePomsIfMissing
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that parent pom was generated in the library root.
+	if _, err := os.Stat(filepath.Join(outdir, "pom.xml")); err != nil {
+		t.Errorf("expected parent pom.xml to exist: %v", err)
 	}
 }
 
