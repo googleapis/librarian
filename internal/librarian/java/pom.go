@@ -279,7 +279,7 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 			return lib.Version, nil
 		}
 	}
-	return "", fmt.Errorf("could not find monorepo version for %s in config", rootLibrary)
+	return "", errMonorepoVersion
 }
 
 // protoGroupID returns the Maven Group ID for the generated proto and gRPC

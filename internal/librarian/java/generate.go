@@ -42,6 +42,8 @@ var (
 	errExtractVersion = errors.New("failed to extract version")
 	// errNoProtos is returned when no proto files are found in an API directory.
 	errNoProtos = errors.New("no protos found")
+	// errMonorepoVersion is returned when a monorepo version cannot be found in the config.
+	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 )
 
 // Generate generates a Java client library.
@@ -81,7 +83,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
-		return fmt.Errorf("failed to find monorepo version: %w", err)
+		return err
 	}
 	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, transports); err != nil {
 		return fmt.Errorf("failed to generate poms: %w", err)

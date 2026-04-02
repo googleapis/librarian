@@ -558,7 +558,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: errors.New("failed to find monorepo version"),
+			wantErr: errMonorepoVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -575,7 +575,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				Libraries: []*config.Library{test.library},
 			}
 			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
-			if err == nil || !strings.Contains(err.Error(), test.wantErr.Error()) {
+			if !errors.Is(err, test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
