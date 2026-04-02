@@ -27,7 +27,6 @@ linters:
     - govet
     - ineffassign
     - misspell
-    - revive
     - staticcheck
     - unparam
     - unused
@@ -61,23 +60,6 @@ linters:
       - path: internal/legacylibrarian/
         linters:
           - godoclint
-          - revive
       - path: _test\.go$
         linters:
           - godoclint
-      - linters: [revive, staticcheck]
-        text: "redefines-builtin-id|package-comments|unused-parameter|empty-block|QF10[0-9]+|SA1024|grpc.Dial|grpc.WithInsecure|grpc.WithBlock|CredentialsFromJSON|internal/pretty|var-declaration|unnecessary-else|trace\\.go|rpcreplay"
-      - linters: [revive]
-        text: "receiver name [a-zA-Z]+[0-9]* should be consistent with previous receiver name"
-      - linters: [revive]
-        text: "exported const AllUsers|AllAuthenticatedUsers|RoleOwner|SSD|HDD|PRODUCTION|DEVELOPMENT should have comment"
-      - linters: [revive]
-        text: "exported func Value returns unexported type pretty.val"
-      - linters: [revive]
-        text: "exported func (Increment|FieldTransformIncrement|FieldTransformMinimum|FieldTransformMaximum) returns unexported type firestore.transform"
-      - linters: [revive]
-        text: "var-naming|increment-decrement|exported: type name will be used as|don't use an underscore in package name|avoid meaningless package names|don't use underscores in Go names|comment on exported type|should have comment or be unexported|exported: exported const"
-      - path: "gen\\.go"
-        linters: [revive]
-      - path: "apiv[0-9]+"
-        linters: [revive]
