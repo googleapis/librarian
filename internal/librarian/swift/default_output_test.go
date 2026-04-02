@@ -21,7 +21,7 @@ import (
 )
 
 func TestDefaultOutput(t *testing.T) {
-	tests := []struct {
+	for _, tt :=  range []struct {
 		name   string
 		api    string
 		defOut string
@@ -51,9 +51,7 @@ func TestDefaultOutput(t *testing.T) {
 			defOut: "generated",
 			want:   "generated/google/cloud/secretmanager/v1",
 		},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := DefaultOutput(tt.api, tt.defOut)
 			if diff := cmp.Diff(tt.want, got); diff != "" {
