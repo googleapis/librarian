@@ -32,10 +32,6 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestSyncPoms_Golden(t *testing.T) {
-	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
-	if err != nil {
-		t.Fatal(err)
-	}
 	testdataDir := filepath.Join("testdata", "syncpoms", "secretmanager-v1")
 	library := &config.Library{
 		Name:    "secretmanager",
@@ -45,14 +41,9 @@ func TestSyncPoms_Golden(t *testing.T) {
 		},
 	}
 	apiPath := library.APIs[0].Path
-	apiCfg, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageJava)
-	if err != nil {
-		t.Fatal(err)
-	}
 	transports := map[string]serviceconfig.Transport{
-		apiPath: apiCfg.Transport(config.LanguageJava),
+		apiPath: serviceconfig.GRPC,
 	}
-
 	tmpDir := t.TempDir()
 	// Pre-create the directories that generatePomsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
