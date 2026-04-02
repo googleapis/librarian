@@ -170,9 +170,9 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 	t := pathInfo.Bindings[0].PathTemplate
 	for _, segment := range t.Segments {
 		switch {
-		case segment.Literal != nil:
+		case segment.Literal != "":
 			builder.WriteString("/")
-			builder.WriteString(*segment.Literal)
+			builder.WriteString(segment.Literal)
 		case segment.Variable != nil:
 			// Form '${request.foo!.bar!.baz}'.
 			builder.WriteString("/${request")

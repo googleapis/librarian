@@ -741,8 +741,8 @@ func (template *PathTemplate) FlatPath() string {
 	sep := ""
 	for _, segment := range template.Segments {
 		buffer.WriteString(sep)
-		if segment.Literal != nil {
-			buffer.WriteString(*segment.Literal)
+		if segment.Literal != "" {
+			buffer.WriteString(segment.Literal)
 		} else if segment.Variable != nil {
 			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath, "."))
 		}
@@ -753,7 +753,7 @@ func (template *PathTemplate) FlatPath() string {
 
 // PathSegment is a segment of a path.
 type PathSegment struct {
-	Literal  *string
+	Literal  string
 	Variable *PathVariable
 }
 
@@ -773,7 +773,7 @@ func NewPathVariable(fields ...string) *PathVariable {
 
 // WithLiteral adds a literal to the path template.
 func (p *PathTemplate) WithLiteral(l string) *PathTemplate {
-	p.Segments = append(p.Segments, PathSegment{Literal: &l})
+	p.Segments = append(p.Segments, PathSegment{Literal: l})
 	return p
 }
 
@@ -822,7 +822,7 @@ func (v *PathVariable) WithAllowReserved() *PathVariable {
 
 // WithLiteral adds a literal to the path segment.
 func (s *PathSegment) WithLiteral(l string) *PathSegment {
-	s.Literal = &l
+	s.Literal = l
 	return s
 }
 

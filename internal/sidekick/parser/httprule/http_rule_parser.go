@@ -204,7 +204,7 @@ func parseLiteralSegment(literalSegment string) (*api.PathSegment, int, error) {
 		return nil, 0, err
 	}
 	return &api.PathSegment{
-		Literal: (*string)(literal),
+		Literal: string(*literal),
 	}, width, nil
 }
 

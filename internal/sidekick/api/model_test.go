@@ -206,12 +206,11 @@ func TestPathTemplateBuilder(t *testing.T) {
 			WithMatchRecursive()).
 		WithVariableNamed("v2", "field").
 		WithVerb("verb")
-	name := "v1"
 	verb := "verb"
 	want := &PathTemplate{
 		Segments: []PathSegment{
 			{
-				Literal: &name,
+				Literal: "v1",
 			},
 			{
 				Variable: &PathVariable{

@@ -247,8 +247,8 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 		// The `parameter_name` is derived from the preceding literal segment
 		// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
-		if i > 0 && segments[i-1].Literal != nil {
-			parameterName = *segments[i-1].Literal + "Id"
+		if i > 0 && segments[i-1].Literal != "" {
+			parameterName = segments[i-1].Literal + "Id"
 		} else {
 			parameterName = name + "sId"
 		}

@@ -85,11 +85,11 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	// Iterate backwards over segments
 	for i := len(tmpl.Segments) - 1; i >= 0; i-- {
 		seg := tmpl.Segments[i]
-		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == nil {
+		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == "" {
 			continue
 		}
 
-		token := *tmpl.Segments[i-1].Literal
+		token := tmpl.Segments[i-1].Literal
 		if !vocabulary[token] && !isVersionString(token) {
 			continue // continue scanning backward if not in vocabulary
 		}
@@ -105,8 +105,8 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 				prevSeg := tmpl.Segments[firstIndex-1]
 
 				// Case 1: The preceding segment is a standalone literal (e.g., "global")
-				if prevSeg.Literal != nil {
-					if isVersionString(*prevSeg.Literal) {
+				if prevSeg.Literal != "" {
+					if isVersionString(prevSeg.Literal) {
 						break // Stop at version strings (e.g., "v1")
 					}
 					firstIndex--
@@ -115,11 +115,11 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 
 				// Case 2: The preceding segment is a variable. It must be paired with a literal.
 				if prevSeg.Variable != nil {
-					if firstIndex < 2 || tmpl.Segments[firstIndex-2].Literal == nil {
+					if firstIndex < 2 || tmpl.Segments[firstIndex-2].Literal == "" {
 						break // Variable near the beginning, cannot form a pair
 					}
 
-					prevLiteralVal := *tmpl.Segments[firstIndex-2].Literal
+					prevLiteralVal := tmpl.Segments[firstIndex-2].Literal
 
 					// If the literal is a known collection, include the pair and continue
 					if vocabulary[prevLiteralVal] {
@@ -257,15 +257,15 @@ func constructTemplate(method *Method, segments []PathSegment) ([]PathSegment, e
 
 	var result []PathSegment
 	h := "//" + host
-	result = append(result, PathSegment{Literal: &h})
+	result = append(result, PathSegment{Literal: h})
 
 	for _, seg := range segments {
-		if seg.Literal != nil {
-			l := *seg.Literal
+		if seg.Literal != "" {
+			l := seg.Literal
 			if isVersionString(l) {
 				continue
 			}
-			result = append(result, PathSegment{Literal: &l})
+			result = append(result, PathSegment{Literal: l})
 		} else if seg.Variable != nil {
 			result = append(result, PathSegment{Variable: &PathVariable{
 				FieldPath: seg.Variable.FieldPath,

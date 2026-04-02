@@ -141,7 +141,7 @@ func TestParseLiteral(t *testing.T) {
 			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
 			continue
 		}
-		if diff := cmp.Diff(&api.PathSegment{Literal: &test.want}, gotSegment); diff != "" {
+		if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
 			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
 		}
 		if len(test.want) != gotWidth {

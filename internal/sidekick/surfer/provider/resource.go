@@ -36,11 +36,7 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 		return ""
 	}
 	// The second to last segment should be the literal plural name
-	secondLastSegment := segments[len(segments)-2]
-	if secondLastSegment.Literal == nil {
-		return ""
-	}
-	return *secondLastSegment.Literal
+	return segments[len(segments)-2].Literal
 }
 
 // GetParentFromSegments extracts the pattern segments for the parent resource.
@@ -53,7 +49,7 @@ func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
 	}
 	// We verify that the last segment is a variable and the second to last is a literal,
 	// consistent with standard AIP-122 patterns.
-	if segments[len(segments)-1].Variable != nil && segments[len(segments)-2].Literal != nil {
+	if segments[len(segments)-1].Variable != nil && segments[len(segments)-2].Literal != "" {
 		return segments[:len(segments)-2]
 	}
 	return nil
@@ -83,10 +79,10 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	var collectionParts []string
 	for i := 0; i < len(segments)-1; i++ {
 		// A collection identifier is a literal segment followed by a variable segment.
-		if segments[i].Literal == nil || segments[i+1].Variable == nil {
+		if segments[i].Literal == "" || segments[i+1].Variable == nil {
 			continue
 		}
-		collectionParts = append(collectionParts, *segments[i].Literal)
+		collectionParts = append(collectionParts, segments[i].Literal)
 	}
 	return strings.Join(collectionParts, ".")
 }
@@ -223,13 +219,13 @@ func isSingletonResource(resource *api.Resource) bool {
 		}
 
 		// A pattern ending in a literal is a singleton (e.g., projects/{project}/singletonConfig).
-		if pattern[len(pattern)-1].Literal != nil {
+		if pattern[len(pattern)-1].Literal != "" {
 			return true
 		}
 
 		// Adjacent literals anywhere in the pattern signify a singleton (e.g., .../literal1/literal2/...).
 		for i := 0; i < len(pattern)-1; i++ {
-			if pattern[i].Literal != nil && pattern[i+1].Literal != nil {
+			if pattern[i].Literal != "" && pattern[i+1].Literal != "" {
 				return true
 			}
 		}
@@ -282,13 +278,12 @@ func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string
 func ExtractPathFromSegments(segments []api.PathSegment) string {
 	var parts []string
 	for i, seg := range segments {
-		if seg.Literal != nil {
-			val := *seg.Literal
+		if seg.Literal != "" {
 			// Heuristic: Skip API version at the start.
-			if i == 0 && len(val) >= 2 && val[0] == 'v' && val[1] >= '0' && val[1] <= '9' {
+			if i == 0 && len(seg.Literal) >= 2 && seg.Literal[0] == 'v' && seg.Literal[1] >= '0' && seg.Literal[1] <= '9' {
 				continue
 			}
-			parts = append(parts, val)
+			parts = append(parts, seg.Literal)
 		} else if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
 			internal := ExtractCollectionFromStrings(seg.Variable.Segments)
 			if internal != "" {
@@ -327,8 +322,8 @@ func ExtractCollectionFromStrings(parts []string) string {
 func GetLiteralSegments(raw []api.PathSegment) []string {
 	var literals []string
 	for _, seg := range raw {
-		if seg.Literal != nil {
-			literals = append(literals, *seg.Literal)
+		if seg.Literal != "" {
+			literals = append(literals, seg.Literal)
 		} else if seg.Variable != nil {
 			for _, vSeg := range seg.Variable.Segments {
 				if vSeg != "*" && vSeg != "**" {

@@ -184,7 +184,7 @@ func IsCollectionMethod(m *api.Method) bool {
 		}
 		lastSegment := template.Segments[len(template.Segments)-1]
 		// If the path ends with a literal, it's a collection method.
-		return lastSegment.Literal != nil
+		return lastSegment.Literal != ""
 	}
 }
 

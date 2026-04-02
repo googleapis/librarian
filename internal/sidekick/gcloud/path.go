@@ -108,8 +108,8 @@ func pathFormatFromSegments(segments []api.PathSegment) string {
 	var parts []string
 	for _, seg := range segments {
 		switch {
-		case seg.Literal != nil:
-			parts = append(parts, *seg.Literal)
+		case seg.Literal != "":
+			parts = append(parts, seg.Literal)
 		case seg.Variable != nil && len(seg.Variable.FieldPath) > 0:
 			parts = append(parts, "%s")
 			hasVar = true
