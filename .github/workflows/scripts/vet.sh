@@ -22,11 +22,7 @@ set -x
 # Fail if a dependency was added without the necessary go.mod/go.sum change
 # being part of the commit.
 go mod tidy
-for i in $(find . -name go.mod); do
-  pushd $(dirname $i)
-  go mod tidy
-  popd
-done
+find . -name go.mod -execdir go mod tidy \;
 
 # Documentation for the :^ pathspec can be found at:
 # https://git-scm.com/docs/gitglossary#Documentation/gitglossary.txt-aiddefpathspecapathspec
