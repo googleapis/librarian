@@ -18,7 +18,7 @@ sources:
     commit: 6f8a554039638f4a9ca78d5f0c964281a16f4166
     sha256: ace9b15956b839f9352b95818a88b200c311e1ec3fd4df0796895f3e6355d87b
 release:
-  ignored_paths:
+  ignored_changes:
     - .repo-metadata.json
 default:
   output: packages
