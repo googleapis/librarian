@@ -205,6 +205,37 @@ func TestConfigCheck_Error(t *testing.T) {
 			},
 			wantErr: errLibraryVersionNotSame,
 		},
+		{
+			name: "a library exists in two configs but api is different",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "lib-1",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+					{
+						ID:      "lib-2",
+						Version: "1.2.0",
+						APIs: []*legacyconfig.API{
+							{Path: "google/lib2"},
+							{Path: "google/lib2/sub1"},
+						},
+						SourceRoots: []string{"another"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "lib-1", Version: "1.0.0"},
+					{Name: "lib-2", Version: "1.2.0", APIs: []*config.API{{Path: "google/lib2"}}},
+				},
+			},
+			wantErr: errLibraryAPINotSame,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := configCheck(test.state, test.cfg)
