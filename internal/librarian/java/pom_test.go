@@ -284,8 +284,8 @@ func TestProtoGroupID(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := protoGroupID(test.mainArtifactGroupID)
-			if got != test.want {
-				t.Errorf("protoGroupID(%q) = %q, want %q", test.mainArtifactGroupID, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
