@@ -43,9 +43,9 @@ type postProcessParams struct {
 	includeSamples      bool
 }
 
-func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
-func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
+func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
+func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) modules() javaModules {
 	return deriveModuleNames(deriveGAPICCoordinates(p.library), p.version)
 }
