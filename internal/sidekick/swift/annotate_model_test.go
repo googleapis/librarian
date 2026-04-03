@@ -27,7 +27,7 @@ func TestModelAnnotations(t *testing.T) {
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
 	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
-	if err := codec.annotateModel(model); err != nil {
+	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{

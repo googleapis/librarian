@@ -36,6 +36,7 @@ func TestParseOptions(t *testing.T) {
 		GenerationYear: "2038",
 		PackageName:    "GoogleCloudBigtable",
 		RootName:       "test-root",
+		Model:          model,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)

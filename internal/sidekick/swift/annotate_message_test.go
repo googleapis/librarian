@@ -37,7 +37,7 @@ func TestAnnotateMessage(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(model); err != nil {
+	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 	want := &messageAnnotations{

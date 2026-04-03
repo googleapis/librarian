@@ -16,17 +16,16 @@ package swift
 
 import (
 	"github.com/googleapis/librarian/internal/license"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func (codec *codec) annotateModel(model *api.API) error {
+func (codec *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear: codec.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
 		PackageName:   codec.PackageName,
 	}
-	model.Codec = annotations
-	for _, message := range model.Messages {
+	codec.Model.Codec = annotations
+	for _, message := range codec.Model.Messages {
 		codec.annotateMessage(message, annotations)
 	}
 	return nil
