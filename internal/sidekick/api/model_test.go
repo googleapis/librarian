@@ -278,6 +278,7 @@ func TestTypezString(t *testing.T) {
 		{"SINT32", SINT32_TYPE, "SINT32"},
 		{"SINT64", SINT64_TYPE, "SINT64"},
 		{"Default", Typez(99), "Typez(99)"},
+		{"Negative", Typez(-1), "Typez(-1)"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.t.String()
