@@ -19,7 +19,6 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -148,7 +147,11 @@ func TestSyncPoms_Update(t *testing.T) {
 		}
 		mangled := string(content)
 		for _, m := range target.markers {
-			mangled = replaceBlockContent(mangled, m.start, m.end, "      <mangled>true</mangled>")
+			var err error
+			mangled, err = replaceBlock(mangled, m.start, m.end, "      <mangled>true</mangled>")
+			if err != nil {
+				t.Fatal(err)
+			}
 		}
 		if err := os.WriteFile(filepath.Join(tmpDir, target.relPath), []byte(mangled), 0644); err != nil {
 			t.Fatal(err)
@@ -193,15 +196,6 @@ func TestSyncPoms_Update(t *testing.T) {
 			t.Errorf("mismatch in %s (-want +got):\n%s", target.relPath, diff)
 		}
 	}
-}
-
-func replaceBlockContent(content, startMarker, endMarker, newContent string) string {
-	startIdx := strings.Index(content, startMarker)
-	endIdx := strings.Index(content, endMarker)
-	if startIdx == -1 || endIdx == -1 {
-		return content
-	}
-	return content[:startIdx+len(startMarker)] + "\n" + newContent + "\n" + content[endIdx:]
 }
 
 func TestCollectModules_Error(t *testing.T) {
