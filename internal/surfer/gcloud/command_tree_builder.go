@@ -88,7 +88,7 @@ func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGro
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = groupBuilder.build(segments, i)
+			curr.Groups[seg] = groupBuilder.build(segments, i, curr.Path)
 		}
 		curr = curr.Groups[seg]
 	}

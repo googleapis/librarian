@@ -25,48 +25,56 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func writeCommandGroupTree(outputDir string, tree *CommandGroupsByTrack) error {
-	return writeGroup(outputDir, tree.GA, tree.BETA, tree.ALPHA)
+type groupBundle struct {
+	ga    *CommandGroup
+	beta  *CommandGroup
+	alpha *CommandGroup
 }
 
-func writeGroup(outputDir string, ga, beta, alpha *CommandGroup) error {
-	name := groupName(ga, beta, alpha)
+func writeCommandGroupTree(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
+	bundle := groupBundle{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
+	return writeGroup(outputDir, baseModule, bundle)
+}
+
+func writeGroup(outputDir string, baseModule string, b groupBundle) error {
+	name := groupName(b)
 	if name == "" {
 		return nil
 	}
 
-	groupDir := filepath.Join(outputDir, strcase.ToSnake(name))
+	moduleName := strcase.ToSnake(name)
+	groupDir := filepath.Join(outputDir, moduleName)
 	if err := os.MkdirAll(groupDir, 0755); err != nil {
 		return err
 	}
 
-	if err := writeCommandGroupFile(groupDir, name, ga, beta, alpha); err != nil {
+	if err := writeCommandGroupFile(groupDir, baseModule, name, b); err != nil {
 		return err
 	}
 
-	if err := writeGroupCommands(groupDir, ga, beta, alpha); err != nil {
+	if err := writeGroupCommands(groupDir, b); err != nil {
 		return err
 	}
 
-	return writeGroupSubgroups(groupDir, ga, beta, alpha)
+	return writeGroupSubgroups(groupDir, baseModule, b)
 }
 
-func groupName(ga, beta, alpha *CommandGroup) string {
-	if ga != nil {
-		return ga.Name
+func groupName(b groupBundle) string {
+	if b.ga != nil {
+		return b.ga.Name
 	}
-	if beta != nil {
-		return beta.Name
+	if b.beta != nil {
+		return b.beta.Name
 	}
-	if alpha != nil {
-		return alpha.Name
+	if b.alpha != nil {
+		return b.alpha.Name
 	}
 	return ""
 }
 
-func writeGroupCommands(groupDir string, ga, beta, alpha *CommandGroup) error {
+func writeGroupCommands(groupDir string, b groupBundle) error {
 	cmdNames := make(map[string]bool)
-	tracks := []*CommandGroup{ga, beta, alpha}
+	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
 	for _, g := range tracks {
 		if g != nil {
 			for n := range g.Commands {
@@ -77,14 +85,14 @@ func writeGroupCommands(groupDir string, ga, beta, alpha *CommandGroup) error {
 
 	for verb := range cmdNames {
 		var gaCmd, betaCmd, alphaCmd *Command
-		if ga != nil {
-			gaCmd = ga.Commands[verb]
+		if b.ga != nil {
+			gaCmd = b.ga.Commands[verb]
 		}
-		if beta != nil {
-			betaCmd = beta.Commands[verb]
+		if b.beta != nil {
+			betaCmd = b.beta.Commands[verb]
 		}
-		if alpha != nil {
-			alphaCmd = alpha.Commands[verb]
+		if b.alpha != nil {
+			alphaCmd = b.alpha.Commands[verb]
 		}
 
 		if err := writeCommandFiles(groupDir, verb, gaCmd, betaCmd, alphaCmd); err != nil {
@@ -94,9 +102,9 @@ func writeGroupCommands(groupDir string, ga, beta, alpha *CommandGroup) error {
 	return nil
 }
 
-func writeGroupSubgroups(groupDir string, ga, beta, alpha *CommandGroup) error {
+func writeGroupSubgroups(groupDir string, baseModule string, b groupBundle) error {
 	subNames := make(map[string]bool)
-	tracks := []*CommandGroup{ga, beta, alpha}
+	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
 	for _, g := range tracks {
 		if g != nil {
 			for n := range g.Groups {
@@ -106,56 +114,75 @@ func writeGroupSubgroups(groupDir string, ga, beta, alpha *CommandGroup) error {
 	}
 
 	for sub := range subNames {
-		var gaSub, betaSub, alphaSub *CommandGroup
-		if ga != nil {
-			gaSub = ga.Groups[sub]
+		subBundle := groupBundle{}
+		if b.ga != nil {
+			subBundle.ga = b.ga.Groups[sub]
 		}
-		if beta != nil {
-			betaSub = beta.Groups[sub]
+		if b.beta != nil {
+			subBundle.beta = b.beta.Groups[sub]
 		}
-		if alpha != nil {
-			alphaSub = alpha.Groups[sub]
+		if b.alpha != nil {
+			subBundle.alpha = b.alpha.Groups[sub]
 		}
 
-		if err := writeGroup(groupDir, gaSub, betaSub, alphaSub); err != nil {
+		if err := writeGroup(groupDir, baseModule, subBundle); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeCommandGroupFile(dir string, name string, ga, beta, alpha *CommandGroup) error {
-	path := filepath.Join(dir, "__init__.py")
+func writeCommandGroupFile(dir string, baseModule string, name string, b groupBundle) error {
+	initPath := filepath.Join(dir, "__init__.py")
+	extPath := filepath.Join(dir, "_init_extensions.py")
 
+	var path []string
 	var primaryHelpText string
 	var gaView, betaView, alphaView *trackView
 
-	if ga != nil {
-		gaView = &trackView{Name: "GA", HelpText: ga.HelpText}
+	if b.ga != nil {
+		gaView = &trackView{Name: "GA", HelpText: b.ga.HelpText}
+		primaryHelpText = b.ga.HelpText
+		path = b.ga.Path
+	}
+	if b.beta != nil {
+		betaView = &trackView{Name: "BETA", HelpText: b.beta.HelpText}
 		if primaryHelpText == "" {
-			primaryHelpText = ga.HelpText
+			primaryHelpText = b.beta.HelpText
+		}
+		if len(path) == 0 {
+			path = b.beta.Path
 		}
 	}
-	if beta != nil {
-		betaView = &trackView{Name: "BETA", HelpText: beta.HelpText}
+	if b.alpha != nil {
+		alphaView = &trackView{Name: "ALPHA", HelpText: b.alpha.HelpText}
 		if primaryHelpText == "" {
-			primaryHelpText = beta.HelpText
+			primaryHelpText = b.alpha.HelpText
 		}
-	}
-	if alpha != nil {
-		alphaView = &trackView{Name: "ALPHA", HelpText: alpha.HelpText}
-		if primaryHelpText == "" {
-			primaryHelpText = alpha.HelpText
+		if len(path) == 0 {
+			path = b.alpha.Path
 		}
 	}
 
+	modulePathParts := make([]string, 0, 2+len(path))
+	if baseModule != "" {
+		modulePathParts = append(modulePathParts, baseModule)
+		modulePathParts = append(modulePathParts, "surface")
+	}
+	modulePathParts = append(modulePathParts, path...)
+	fullModulePath := strings.Join(modulePathParts, ".")
+
+	isRoot := len(path) <= 1
+
 	view := commandGroupView{
-		Name:     name,
-		HelpText: primaryHelpText,
-		Year:     time.Now().Year(),
-		GA:       gaView,
-		BETA:     betaView,
-		ALPHA:    alphaView,
+		Name:       name,
+		ModulePath: fullModulePath,
+		HelpText:   primaryHelpText,
+		Year:       time.Now().Year(),
+		IsRoot:     isRoot,
+		GA:         gaView,
+		BETA:       betaView,
+		ALPHA:      alphaView,
 	}
 
 	var buf bytes.Buffer
@@ -163,7 +190,16 @@ func writeCommandGroupFile(dir string, name string, ga, beta, alpha *CommandGrou
 		return err
 	}
 
-	return os.WriteFile(path, []byte(strings.TrimSpace(buf.String())+"\n"), 0644)
+	if err := os.WriteFile(initPath, []byte(strings.TrimSpace(buf.String())+"\n"), 0644); err != nil {
+		return err
+	}
+
+	buf.Reset()
+	if err := initExtensionsTemplate.Execute(&buf, view); err != nil {
+		return err
+	}
+
+	return os.WriteFile(extPath, []byte(strings.TrimSpace(buf.String())+"\n"), 0644)
 }
 
 type trackView struct {
@@ -172,12 +208,14 @@ type trackView struct {
 }
 
 type commandGroupView struct {
-	Name     string
-	HelpText string
-	Year     int
-	GA       *trackView
-	BETA     *trackView
-	ALPHA    *trackView
+	Name       string
+	ModulePath string
+	HelpText   string
+	Year       int
+	IsRoot     bool
+	GA         *trackView
+	BETA       *trackView
+	ALPHA      *trackView
 }
 
 var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{
@@ -202,24 +240,57 @@ var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(templ
 """{{.HelpText}}"""
 
 from googlecloudsdk.calliope import base
+from {{.ModulePath}} import _init_extensions as extensions
 {{if .GA}}
 
 @base.ReleaseTracks(base.ReleaseTrack.GA)
 @base.Autogenerated
-class {{$.Name | toCamel}}Ga(base.Group):
+class {{$.Name | toCamel}}Ga(extensions.{{$.Name | toCamel}}Ga):
   """{{.GA.HelpText}}"""
 {{end}}
 {{if .BETA}}
 
 @base.ReleaseTracks(base.ReleaseTrack.BETA)
 @base.Autogenerated
-class {{$.Name | toCamel}}Beta(base.Group):
+class {{$.Name | toCamel}}Beta(extensions.{{$.Name | toCamel}}Beta):
   """{{.BETA.HelpText}}"""
 {{end}}
 {{if .ALPHA}}
 
 @base.ReleaseTracks(base.ReleaseTrack.ALPHA)
 @base.Autogenerated
-class {{$.Name | toCamel}}Alpha(base.Group):
+class {{$.Name | toCamel}}Alpha(extensions.{{$.Name | toCamel}}Alpha):
   """{{.ALPHA.HelpText}}"""
+{{end}}`))
+
+var initExtensionsTemplate = template.Must(template.New("_init_extensions.py").Funcs(template.FuncMap{
+	"toCamel": strcase.ToCamel,
+}).Parse(`# -*- coding: utf-8 -*- #
+# Copyright {{.Year}} Google LLC. All Rights Reserved.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#    http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+from googlecloudsdk.calliope import base
+
+class {{$.Name | toCamel}}Alpha(base.Group):
+  """Optional no-auto-generated code for ALPHA."""
+{{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
+{{end}}
+class {{$.Name | toCamel}}Beta(base.Group):
+  """Optional no-auto-generated code for BETA."""
+{{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
+{{end}}
+class {{$.Name | toCamel}}Ga(base.Group):
+  """Optional no-auto-generated code for GA."""
+{{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
 {{end}}`))

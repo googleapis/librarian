@@ -43,6 +43,11 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 		t.Errorf("group.Name = %q, want %q", group.Name, "parallelstore")
 	}
 
+	wantPath := []string{"parallelstore"}
+	if len(group.Path) != len(wantPath) || group.Path[0] != wantPath[0] {
+		t.Errorf("group.Path = %v, want %v", group.Path, wantPath)
+	}
+
 	wantHelp := "Manage Parallelstore resources."
 	if group.HelpText != wantHelp {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
@@ -66,10 +71,15 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 	if err != nil {
 		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
 	}
-	group := builder.build([]string{"instances"}, 0)
+	group := builder.build([]string{"instances"}, 0, []string{"parallelstore"})
 
 	if group.Name != "instances" {
 		t.Errorf("group.Name = %q, want %q", group.Name, "instances")
+	}
+
+	wantPath := []string{"parallelstore", "instances"}
+	if len(group.Path) != len(wantPath) || group.Path[0] != wantPath[0] || group.Path[1] != wantPath[1] {
+		t.Errorf("group.Path = %v, want %v", group.Path, wantPath)
 	}
 
 	wantHelp := "Manage Parallelstore instances resources." // Fallback singular is the segment name if no resource found

@@ -72,6 +72,11 @@ service config yaml, and gcloud.yaml.`,
 				Name:  "descriptor-files",
 				Usage: "comma-separated list of paths to binary FileDescriptorSet files",
 			},
+			&cli.StringFlag{
+				Name:  "base-module",
+				Value: "googlecloudsdk",
+				Usage: "base python module path for surface command groups",
+			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			if cmd.Args().Len() == 0 {
@@ -84,6 +89,7 @@ service config yaml, and gcloud.yaml.`,
 			serviceConfig := cmd.String("service-config")
 			descriptorFiles := cmd.String("descriptor-files")
 			descriptorFilesToGenerate := cmd.String("descriptor-files-to-generate")
+			baseModule := cmd.String("base-module")
 			return gcloud.Generate(ctx, gcloud.GenerateConfig{
 				GcloudConfig:              config,
 				ServiceConfig:             serviceConfig,
@@ -92,6 +98,7 @@ service config yaml, and gcloud.yaml.`,
 				DescriptorFilesToGenerate: descriptorFilesToGenerate,
 				DescriptorFiles:           descriptorFiles,
 				Output:                    out,
+				BaseModule:                baseModule,
 			})
 		},
 	}

@@ -49,23 +49,30 @@ func newCommandGroupBuilder(model *api.API, service *api.Service, config *provid
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
+	rootName := provider.ResolveRootPackage(b.model)
 	return &CommandGroup{
-		Name:     provider.ResolveRootPackage(b.model),
+		Name:     rootName,
+		Path:     []string{rootName},
 		HelpText: fmt.Sprintf("Manage %s resources.", b.title),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
 }
 
-func (b *commandGroupBuilder) build(segments []string, idx int) *CommandGroup {
+func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []string) *CommandGroup {
 	seg := segments[idx]
 	singular := seg
 	if resName := provider.GetSingularResourceNameForPrefix(b.model, segments[:idx+1]); resName != "" {
 		singular = resName
 	}
 
+	path := make([]string, 0, len(parentPath)+1)
+	path = append(path, parentPath...)
+	path = append(path, seg)
+
 	return &CommandGroup{
 		Name:     seg,
+		Path:     path,
 		HelpText: fmt.Sprintf("Manage %s %s resources.", b.title, singular),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
