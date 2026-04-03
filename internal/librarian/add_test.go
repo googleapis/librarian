@@ -430,84 +430,194 @@ func TestDeriveLibraryName(t *testing.T) {
 }
 
 func TestSyncToStateYAML(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
-	// Setup .librarian/state.yaml
-	if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	stateFile := filepath.Join(legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
-	initialState := &legacyconfig.LibrarianState{
-		Image: "gcr.io/my-image:latest",
-		Libraries: []*legacyconfig.LibraryState{
-			{
-				ID:      "existinglib",
-				Version: "1.2.3",
-				APIs: []*legacyconfig.API{
-					{Path: "google/cloud/existing/v1"},
+	for _, test := range []struct {
+		name         string
+		initialState *legacyconfig.LibrarianState
+		cfg          *config.Config
+		wantState    *legacyconfig.LibrarianState
+	}{
+		{
+			name: "sync new library",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "existing",
+						Version:       "1.2.3",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"existing"},
+					},
 				},
-				SourceRoots: []string{"existinglib"},
+			},
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Libraries: []*config.Library{
+					{
+						Name:    "existing",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/existing/v1"},
+						},
+					},
+					{
+						Name:    "new",
+						Version: "0.1.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/new/v1"},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "existing",
+						Version:       "1.2.3",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"existing"},
+					},
+					{
+						ID:            "new",
+						Version:       "0.1.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"new"},
+						TagFormat:     "{id}/v{version}",
+					},
+				},
 			},
 		},
-	}
-	if err := yaml.Write(stateFile, initialState); err != nil {
-		t.Fatal(err)
-	}
-	// Mock Config
-	cfg := &config.Config{
-		Language: config.LanguageGo,
-		Libraries: []*config.Library{
-			{
-				Name:    "existinglib",
-				Version: "1.2.3",
-				APIs: []*config.API{
-					{Path: "google/cloud/existing/v1"},
+		{
+			name: "multiple new libraries",
+			initialState: &legacyconfig.LibrarianState{
+				Image:     "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "lib-b", Version: "1.0.0"},
+					{Name: "lib-a", Version: "2.0.0"},
 				},
 			},
-			{
-				Name:    "newlib",
-				Version: "0.1.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/new/v1"},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-a"},
+						TagFormat:     "{id}/v{version}",
+					},
+					{
+						ID:            "lib-b",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-b"},
+						TagFormat:     "{id}/v{version}",
+					},
 				},
 			},
 		},
-	}
-	if err := syncToStateYAML(".", cfg); err != nil {
-		t.Fatal(err)
-	}
-	// Verify updated state.yaml
-	gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
-	if err != nil {
-		t.Fatal(err)
-	}
+		{
+			name: "no new libraries",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-a"},
+						TagFormat:     "{id}/v{version}",
+					},
+					{
+						ID:            "lib-b",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-b"},
+						TagFormat:     "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "lib-b", Version: "1.0.0"},
+					{Name: "lib-a", Version: "2.0.0"},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-a"},
+						TagFormat:     "{id}/v{version}",
+					},
+					{
+						ID:            "lib-b",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{},
+						SourceRoots:   []string{"lib-b"},
+						TagFormat:     "{id}/v{version}",
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
 
-	wantState := &legacyconfig.LibrarianState{
-		Image: "gcr.io/my-image:latest",
-		Libraries: []*legacyconfig.LibraryState{
-			{
-				ID:            "existinglib",
-				Version:       "1.2.3",
-				PreserveRegex: []string{},
-				RemoveRegex:   []string{},
-				APIs: []*legacyconfig.API{
-					{Path: "google/cloud/existing/v1"},
-				},
-				SourceRoots: []string{"existinglib"},
-			},
-			{
-				ID:            "newlib",
-				Version:       "0.1.0",
-				PreserveRegex: []string{},
-				RemoveRegex:   []string{},
-				APIs:          []*legacyconfig.API{},
-				SourceRoots:   []string{"newlib"},
-				TagFormat:     "{id}/v{version}",
-			},
-		},
-	}
+			stateFile := filepath.Join(legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
+			if test.initialState != nil {
+				if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := yaml.Write(stateFile, test.initialState); err != nil {
+					t.Fatal(err)
+				}
+			}
 
-	if diff := cmp.Diff(wantState, gotState); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			if err := syncToStateYAML(".", test.cfg); err != nil {
+				t.Fatal(err)
+			}
+
+			if test.wantState == nil {
+				if _, err := os.Stat(stateFile); !os.IsNotExist(err) {
+					t.Errorf("expected state.yaml to not exist")
+				}
+				return
+			}
+
+			gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
