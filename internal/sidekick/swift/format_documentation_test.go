@@ -23,7 +23,7 @@ import (
 func TestFormatDocumentation(t *testing.T) {
 	codec := &codec{}
 
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name string
 		doc  string
 		want []string
@@ -49,9 +49,9 @@ func TestFormatDocumentation(t *testing.T) {
 			want: []string{"Line 1", ""},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			got := codec.formatDocumentation(tt.doc)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+		t.Run(test.name, func(t *testing.T) {
+			got := codec.formatDocumentation(test.doc)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("formatDocumentation() mismatch (-want +got):\n%s", diff)
 			}
 		})
