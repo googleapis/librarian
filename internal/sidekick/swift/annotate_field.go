@@ -18,25 +18,16 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-type messageAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
+type fieldAnnotations struct {
+	Name     string
+	DocLines []string
 }
 
-func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) *messageAnnotations {
-	docLines := codec.formatDocumentation(message.Documentation)
-	messageAnnotations := &messageAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          message.Name,
-		DocLines:      docLines,
+func (codec *codec) annotateField(field *api.Field) *fieldAnnotations {
+	fieldAnnotations := &fieldAnnotations{
+		Name:     camelCase(field.Name),
+		DocLines: codec.formatDocumentation(field.Documentation),
 	}
-
-	message.Codec = messageAnnotations
-	for _, field := range message.Fields {
-		codec.annotateField(field)
-	}
-	return messageAnnotations
+	field.Codec = fieldAnnotations
+	return fieldAnnotations
 }
