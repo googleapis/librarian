@@ -108,7 +108,7 @@ func TestRun_Descriptors(t *testing.T) {
 	tmpDir := t.TempDir()
 	descFile := filepath.Join(tmpDir, "field_attributes.desc")
 
-	cmd := exec.Command("protoc", "-o", descFile, "--include_imports",
+	cmd := exec.CommandContext(t.Context(), "protoc", "-o", descFile, "--include_imports",
 		"-I", scenarioDir,
 		"-I", coreGoogleapisPath,
 		filepath.Join(scenarioDir, "field_attributes.proto"))

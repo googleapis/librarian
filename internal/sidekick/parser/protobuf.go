@@ -44,7 +44,7 @@ func ParseProtobuf(cfg *ModelConfig) (*api.API, error) {
 
 	if cfg.DescriptorFiles != "" {
 		if cfg.DescriptorFilesToGenerate == "" {
-			return nil, fmt.Errorf("DescriptorFilesToGenerate must be specified when using DescriptorFiles")
+			return nil, fmt.Errorf("descriptorFilesToGenerate must be specified when using descriptorFiles")
 		}
 		request, err = codeGeneratorRequestFromDescriptors(cfg.DescriptorFiles, cfg.DescriptorFilesToGenerate)
 		if err != nil {
@@ -114,10 +114,7 @@ func codeGeneratorRequestFromSource(source string, sourceCfg *sources.SourceConf
 
 func loadDescriptorSet(descriptorFiles string) ([]*descriptorpb.FileDescriptorProto, error) {
 	var allFiles []*descriptorpb.FileDescriptorProto
-	for _, f := range strings.Split(descriptorFiles, ",") {
-		if f = strings.TrimSpace(f); f == "" {
-			continue
-		}
+	for _, f := range parseCommaSeparatedList(descriptorFiles) {
 		data, err := os.ReadFile(f)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read descriptor file %q: %w", f, err)
@@ -146,7 +143,7 @@ func filterTargetDescriptors(allFiles []*descriptorpb.FileDescriptorProto, gener
 	for _, name := range generateList {
 		found := false
 		for _, pb := range allFiles {
-			if pb.GetName() == name || strings.HasSuffix(pb.GetName(), name) {
+			if pb.GetName() == name || strings.HasSuffix(pb.GetName(), "/"+name) {
 				target = append(target, pb)
 				found = true
 				break
