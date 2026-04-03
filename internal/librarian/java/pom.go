@@ -181,6 +181,11 @@ func detectIndentation(content string, index int) string {
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
 	var modules []javaModule
 	gapicCoord := deriveGAPICCoordinates(library)
+	parentCoord := coordinates{
+		GroupID:    gapicCoord.GroupID,
+		ArtifactID: fmt.Sprintf("%s-parent", gapicCoord.ArtifactID),
+		Version:    library.Version,
+	}
 
 	protoModules := make([]coordinates, 0, len(library.APIs))
 	grpcModules := make([]coordinates, 0, len(library.APIs))
@@ -194,13 +199,9 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		transport := transports[api.Path]
 		data := grpcProtoPomData{
-			Proto: names.proto,
-			Grpc:  names.grpc,
-			Parent: coordinates{
-				GroupID:    gapicCoord.GroupID,
-				ArtifactID: fmt.Sprintf("%s-parent", gapicCoord.ArtifactID),
-				Version:    library.Version,
-			},
+			Proto:          names.proto,
+			Grpc:           names.grpc,
+			Parent:         parentCoord,
 			MainArtifactID: gapicCoord.ArtifactID,
 			Version:        library.Version,
 		}
@@ -253,7 +254,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			Version:      library.Version,
 			Name:         metadata.NamePretty,
 			Description:  metadata.APIDescription,
-			Parent:       coordinates{GroupID: gapicCoord.GroupID, ArtifactID: fmt.Sprintf("%s-parent", gapicCoord.ArtifactID), Version: library.Version},
+			Parent:       parentCoord,
 			ProtoModules: protoModules,
 			GrpcModules:  grpcModules,
 		},
@@ -291,7 +292,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		return nil, err
 	}
 	modules = append(modules, javaModule{
-		artifactID: fmt.Sprintf("%s-parent", gapicCoord.ArtifactID),
+		artifactID: parentCoord.ArtifactID,
 		dir:        parentDir,
 		isMissing:  isParentMissing,
 		templateData: bomParentPomData{
