@@ -206,7 +206,7 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 			existingAPIs[api.Path] = true
 		}
 		for _, api := range lib.APIs {
-			if _, ok := existingAPIs[api.Path]; !ok {
+			if !existingAPIs[api.Path] {
 				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
 			}
 		}
