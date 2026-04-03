@@ -17,7 +17,6 @@ package language
 import (
 	"embed"
 	"os"
-	"path"
 	"path/filepath"
 	"testing"
 
@@ -38,7 +37,7 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, expected := range []string{"README.md", "test001.txt"} {
-		filename := path.Join(outDir, expected)
+		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			t.Errorf("missing %s: %s", filename, err)
