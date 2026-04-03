@@ -503,8 +503,8 @@ func TestSyncToStateYAML(t *testing.T) {
 			},
 			cfg: &config.Config{
 				Libraries: []*config.Library{
-					{Name: "lib-b", Version: "1.0.0"},
-					{Name: "lib-a", Version: "2.0.0"},
+					{Name: "lib-b", Version: "1.0.0", APIs: []*config.API{{Path: "google/cloud/lib-b/v1"}}},
+					{Name: "lib-a", Version: "2.0.0", APIs: []*config.API{{Path: "google/cloud/lib-a/v1"}}},
 				},
 			},
 			wantState: &legacyconfig.LibrarianState{
@@ -515,7 +515,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "2.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
 						SourceRoots:   []string{"lib-a"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -524,7 +524,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-b/v1"}},
 						SourceRoots:   []string{"lib-b"},
 						TagFormat:     "{id}/v{version}",
 					},
