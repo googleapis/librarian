@@ -20,7 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
-// newTestCodec creates a simple codec and ModelConfigfor the tests.
+// newTestCodec creates a simple codec for the tests.
 func newTestCodec(t *testing.T, options map[string]string) *codec {
 	t.Helper()
 	cfg := &parser.ModelConfig{
