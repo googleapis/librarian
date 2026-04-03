@@ -79,14 +79,22 @@ func TestConfigCheck(t *testing.T) {
 				Image: "test-image",
 				Libraries: []*legacyconfig.LibraryState{
 					{
-						ID:          "lib-1",
-						Version:     "1.0.0",
+						ID:      "lib-1",
+						Version: "1.0.0",
+						APIs: []*legacyconfig.API{
+							{Path: "google/lib1"},
+							{Path: "google/lib1/sub1"},
+						},
 						SourceRoots: []string{"existing"},
 						TagFormat:   "{id}/v{version}",
 					},
 					{
-						ID:          "lib-2",
-						Version:     "1.2.0",
+						ID:      "lib-2",
+						Version: "1.2.0",
+						APIs: []*legacyconfig.API{
+							{Path: "google/lib2"},
+							{Path: "google/lib2/sub1"},
+						},
 						SourceRoots: []string{"another"},
 						TagFormat:   "{id}/v{version}",
 					},
@@ -94,8 +102,16 @@ func TestConfigCheck(t *testing.T) {
 			},
 			cfg: &config.Config{
 				Libraries: []*config.Library{
-					{Name: "lib-1", Version: "1.0.0"},
-					{Name: "lib-2", Version: "1.2.0"},
+					{
+						Name:    "lib-1",
+						Version: "1.0.0",
+						APIs:    []*config.API{{"google/lib1"}, {"google/lib1/sub1"}},
+					},
+					{
+						Name:    "lib-2",
+						Version: "1.2.0",
+						APIs:    []*config.API{{"google/lib2"}, {"google/lib2/sub1"}},
+					},
 				},
 			},
 		},
