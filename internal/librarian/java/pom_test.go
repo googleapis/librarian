@@ -94,10 +94,13 @@ func TestSyncPoms_Golden(t *testing.T) {
 }
 
 func TestSyncPoms_Update(t *testing.T) {
+	testdataDir := filepath.Join("testdata", "syncpoms", "secretmanager-v1")
 	tmpDir := t.TempDir()
-	gapicArtifactID := "google-cloud-secretmanager"
+
+	// Setup directory structure for all modules.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
 	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
+	gapicArtifactID := "google-cloud-secretmanager"
 	bomArtifactID := "google-cloud-secretmanager-bom"
 	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
 		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
@@ -105,37 +108,51 @@ func TestSyncPoms_Update(t *testing.T) {
 		}
 	}
 
-	gapicDir := filepath.Join(tmpDir, gapicArtifactID)
+	// Prepare mangled existing POMs for Client, BOM, and Parent to simulate outdated state.
+	targets := []struct {
+		relPath string
+		markers []struct{ start, end string }
+	}{
+		{
+			relPath: filepath.Join(gapicArtifactID, "pom.xml"),
+			markers: []struct{ start, end string }{
+				{managedProtoStartMarker, managedProtoEndMarker},
+				{managedGrpcStartMarker, managedGrpcEndMarker},
+			},
+		},
+		{
+			relPath: filepath.Join(bomArtifactID, "pom.xml"),
+			markers: []struct{ start, end string }{
+				{managedDependenciesStartMarker, managedDependenciesEndMarker},
+			},
+		},
+		{
+			relPath: "pom.xml", // Parent
+			markers: []struct{ start, end string }{
+				{managedDependenciesStartMarker, managedDependenciesEndMarker},
+				{managedModulesStartMarker, managedModulesEndMarker},
+			},
+		},
+	}
 
-	pomPath := filepath.Join(gapicDir, "pom.xml")
-	initialContent := `<?xml version='1.0' encoding='UTF-8'?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion>4.0.0</modelVersion>
-  <groupId>com.google.cloud</groupId>
-  <artifactId>google-cloud-secretmanager</artifactId>
-  <version>1.2.3</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
-  <dependencies>
-    <!-- {x-generated-proto-dependencies-start} -->
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>proto-google-cloud-secretmanager-v0</artifactId>
-    </dependency>
-    <!-- {x-generated-proto-dependencies-end} -->
-    <dependency>
-      <groupId>com.google.guava</groupId>
-      <artifactId>guava</artifactId>
-    </dependency>
-    <!-- {x-generated-grpc-dependencies-start} -->
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-secretmanager-v0</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <!-- {x-generated-grpc-dependencies-end} -->
-  </dependencies>
-</project>`
-	if err := os.WriteFile(pomPath, []byte(initialContent), 0644); err != nil {
-		t.Fatal(err)
+	for _, target := range targets {
+		goldenDir := filepath.Dir(target.relPath)
+		if target.relPath == "pom.xml" {
+			goldenDir = "google-cloud-secretmanager-parent"
+		}
+		goldenPath := filepath.Join(testdataDir, goldenDir, "pom.xml")
+
+		content, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		mangled := string(content)
+		for _, m := range target.markers {
+			mangled = replaceBlockContent(mangled, m.start, m.end, "      <mangled>true</mangled>")
+		}
+		if err := os.WriteFile(filepath.Join(tmpDir, target.relPath), []byte(mangled), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	library := &config.Library{
@@ -150,37 +167,45 @@ func TestSyncPoms_Update(t *testing.T) {
 	}
 	metadata := &repoMetadata{
 		NamePretty:     "Secret Manager",
-		APIDescription: "Description",
+		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
 	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
-	got, err := os.ReadFile(pomPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gotStr := string(got)
-
-	if !strings.Contains(gotStr, "proto-google-cloud-secretmanager-v1") {
-		t.Errorf("missing updated proto dependency, got:\n%s", gotStr)
-	}
-	if strings.Contains(gotStr, "proto-google-cloud-secretmanager-v0") {
-		t.Errorf("still contains old proto dependency, got:\n%s", gotStr)
-	}
-	if !strings.Contains(gotStr, "grpc-google-cloud-secretmanager-v1") {
-		t.Errorf("missing updated grpc dependency, got:\n%s", gotStr)
-	}
-	if !strings.Contains(gotStr, "<!-- {x-version-update:google-cloud-secretmanager:current} -->") {
-		t.Error("lost version update comment")
-	}
-	if !strings.Contains(gotStr, "<artifactId>guava</artifactId>") {
-		t.Error("lost guava dependency")
+	// Verify all POMs match their golden versions.
+	for _, target := range targets {
+		got, err := os.ReadFile(filepath.Join(tmpDir, target.relPath))
+		if err != nil {
+			t.Fatal(err)
+		}
+		goldenDir := filepath.Dir(target.relPath)
+		if target.relPath == "pom.xml" {
+			goldenDir = "google-cloud-secretmanager-parent"
+		}
+		goldenPath := filepath.Join(testdataDir, goldenDir, "pom.xml")
+		want, err := os.ReadFile(goldenPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if diff := cmp.Diff(string(want), string(got)); diff != "" {
+			t.Errorf("mismatch in %s (-want +got):\n%s", target.relPath, diff)
+		}
 	}
 }
 
+func replaceBlockContent(content, startMarker, endMarker, newContent string) string {
+	startIdx := strings.Index(content, startMarker)
+	endIdx := strings.Index(content, endMarker)
+	if startIdx == -1 || endIdx == -1 {
+		return content
+	}
+	return content[:startIdx+len(startMarker)] + "\n" + newContent + "\n" + content[endIdx:]
+}
+
 func TestCollectModules_Error(t *testing.T) {
+
 	for _, test := range []struct {
 		name       string
 		library    *config.Library
