@@ -75,7 +75,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if cfg.Language == config.LanguageGo {
 		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
 		// fully migrating off legacylibrarian.
-		if err := syncToStateYAML(".", cfg, apis); err != nil {
+		if err := syncToStateYAML(".", cfg); err != nil {
 			return err
 		}
 	}
@@ -188,7 +188,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 }
 
 // syncToStateYAML updates the .librarian/state.yaml with any new libraries.
-func syncToStateYAML(repoDir string, cfg *config.Config, apis []string) error {
+func syncToStateYAML(repoDir string, cfg *config.Config) error {
 	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
 	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
 	if err != nil {
@@ -198,11 +198,17 @@ func syncToStateYAML(repoDir string, cfg *config.Config, apis []string) error {
 		legacyLib := state.LibraryByID(lib.Name)
 		if legacyLib == nil {
 			// Add a new library
-			state.Libraries = append(state.Libraries, createLegacyLibrary(lib, apis))
+			state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
 			continue
 		}
-		for _, api := range apis {
-			legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api})
+		existingAPIs := make(map[string]bool)
+		for _, api := range legacyLib.APIs {
+			existingAPIs[api.Path] = true
+		}
+		for _, api := range lib.APIs {
+			if _, ok := existingAPIs[api.Path]; !ok {
+				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
+			}
 		}
 	}
 	sort.Slice(state.Libraries, func(i, j int) bool {
@@ -211,10 +217,10 @@ func syncToStateYAML(repoDir string, cfg *config.Config, apis []string) error {
 	return yaml.Write(stateFile, state)
 }
 
-func createLegacyLibrary(lib *config.Library, apis []string) *legacyconfig.LibraryState {
-	libAPIs := make([]*legacyconfig.API, 0, len(apis))
-	for _, api := range apis {
-		libAPIs = append(libAPIs, &legacyconfig.API{Path: api})
+func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
+	for _, api := range lib.APIs {
+		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
 	}
 	return &legacyconfig.LibraryState{
 		ID:          lib.Name,

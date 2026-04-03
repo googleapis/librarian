@@ -448,7 +448,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.2.3",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
 						SourceRoots:   []string{"existing"},
 					},
 				},
@@ -480,7 +480,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.2.3",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
 						SourceRoots:   []string{"existing"},
 					},
 					{
@@ -488,7 +488,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "0.1.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/new/v1"}},
 						SourceRoots:   []string{"new"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -597,7 +597,7 @@ func TestSyncToStateYAML(t *testing.T) {
 			if err := yaml.Write(stateFile, test.initialState); err != nil {
 				t.Fatal(err)
 			}
-			if err := syncToStateYAML(tmpDir, test.cfg, nil); err != nil {
+			if err := syncToStateYAML(tmpDir, test.cfg); err != nil {
 				t.Fatal(err)
 			}
 			gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
@@ -624,7 +624,7 @@ func TestSyncToStateYAML_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := syncToStateYAML(t.TempDir(), test.cfg, nil)
+			err := syncToStateYAML(t.TempDir(), test.cfg)
 			if !errors.Is(err, test.wantError) {
 				t.Errorf("syncToStateYAML(%s): got error %v, want %v", test.name, err, test.wantError)
 			}
