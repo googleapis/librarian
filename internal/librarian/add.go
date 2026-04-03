@@ -75,7 +75,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if cfg.Language == config.LanguageGo {
 		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
 		// fully migrating off legacylibrarian.
-		if err := syncToStateYAML(".", cfg); err != nil {
+		if err := syncToStateYAML(".", cfg, apis); err != nil {
 			return err
 		}
 	}
@@ -188,17 +188,22 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 }
 
 // syncToStateYAML updates the .librarian/state.yaml with any new libraries.
-func syncToStateYAML(repoDir string, cfg *config.Config) error {
+func syncToStateYAML(repoDir string, cfg *config.Config, apis []string) error {
 	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
 	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
 	if err != nil {
 		return err
 	}
 	for _, lib := range cfg.Libraries {
-		if state.LibraryByID(lib.Name) != nil {
+		legacyLib := state.LibraryByID(lib.Name)
+		if legacyLib == nil {
+			// Add a new library
+			state.Libraries = append(state.Libraries, createLegacyLibrary(lib, apis))
 			continue
 		}
-		state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
+		for _, api := range apis {
+			legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api})
+		}
 	}
 	sort.Slice(state.Libraries, func(i, j int) bool {
 		return state.Libraries[i].ID < state.Libraries[j].ID
@@ -206,10 +211,15 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 	return yaml.Write(stateFile, state)
 }
 
-func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+func createLegacyLibrary(lib *config.Library, apis []string) *legacyconfig.LibraryState {
+	libAPIs := make([]*legacyconfig.API, 0, len(apis))
+	for _, api := range apis {
+		libAPIs = append(libAPIs, &legacyconfig.API{Path: api})
+	}
 	return &legacyconfig.LibraryState{
 		ID:          lib.Name,
 		Version:     lib.Version,
+		APIs:        libAPIs,
 		SourceRoots: []string{lib.Name},
 		TagFormat:   "{id}/v{version}",
 	}

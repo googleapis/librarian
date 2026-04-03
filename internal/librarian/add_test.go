@@ -597,7 +597,7 @@ func TestSyncToStateYAML(t *testing.T) {
 			if err := yaml.Write(stateFile, test.initialState); err != nil {
 				t.Fatal(err)
 			}
-			if err := syncToStateYAML(tmpDir, test.cfg); err != nil {
+			if err := syncToStateYAML(tmpDir, test.cfg, nil); err != nil {
 				t.Fatal(err)
 			}
 			gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
@@ -624,7 +624,7 @@ func TestSyncToStateYAML_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := syncToStateYAML(t.TempDir(), test.cfg)
+			err := syncToStateYAML(t.TempDir(), test.cfg, nil)
 			if !errors.Is(err, test.wantError) {
 				t.Errorf("syncToStateYAML(%s): got error %v, want %v", test.name, err, test.wantError)
 			}
