@@ -105,12 +105,18 @@ func TestConfigCheck(t *testing.T) {
 					{
 						Name:    "lib-1",
 						Version: "1.0.0",
-						APIs:    []*config.API{{"google/lib1"}, {"google/lib1/sub1"}},
+						APIs: []*config.API{
+							{Path: "google/lib1"},
+							{Path: "google/lib1/sub1"},
+						},
 					},
 					{
 						Name:    "lib-2",
 						Version: "1.2.0",
-						APIs:    []*config.API{{"google/lib2"}, {"google/lib2/sub1"}},
+						APIs: []*config.API{
+							{Path: "google/lib2"},
+							{Path: "google/lib2/sub1"},
+						},
 					},
 				},
 			},
