@@ -143,6 +143,7 @@ func filterTargetDescriptors(allFiles []*descriptorpb.FileDescriptorProto, gener
 	for _, name := range generateList {
 		found := false
 		for _, pb := range allFiles {
+			// Protobuf descriptor names always use forward slashes "/" regardless of the operating system.
 			if pb.GetName() == name || strings.HasSuffix(pb.GetName(), "/"+name) {
 				target = append(target, pb)
 				found = true
