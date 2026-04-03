@@ -43,10 +43,12 @@ type postProcessParams struct {
 	includeSamples      bool
 }
 
-func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
-func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) modules() javaModules { return deriveModuleNames(p.library.Name, p.version) }
+func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
+func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
+func (p postProcessParams) modules() javaModules {
+	return deriveModuleNames(deriveGAPICCoordinates(p.library), p.version)
+}
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
@@ -80,7 +82,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 
 	// Generate clirr-ignored-differences.xml for the proto module.
 	modules := p.modules()
-	protoModuleRoot := filepath.Join(p.outDir, modules.proto)
+	protoModuleRoot := filepath.Join(p.outDir, modules.proto.ArtifactID)
 	if err := generateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
@@ -127,17 +129,40 @@ func buildLicenseText(year int) string {
 }
 
 type javaModules struct {
-	gapic string // e.g., google-cloud-secretmanager
-	proto string // e.g., proto-google-cloud-secretmanager-v1
-	grpc  string // e.g., grpc-google-cloud-secretmanager-v1
+	gapic coordinates
+	proto coordinates
+	grpc  coordinates
 }
 
-func deriveModuleNames(libraryID, version string) javaModules {
-	name := ensureCloudPrefix(libraryID)
+func deriveGAPICCoordinates(library *config.Library) coordinates {
+	distName := deriveDistributionName(library)
+	parts := strings.SplitN(distName, ":", 2)
+	groupID := parts[0]
+	artifactID := groupID
+	if len(parts) == 2 {
+		artifactID = parts[1]
+	}
+	return coordinates{
+		GroupID:    groupID,
+		ArtifactID: artifactID,
+		Version:    library.Version,
+	}
+}
+
+func deriveModuleNames(gapic coordinates, version string) javaModules {
+	protoGrpcGroupID := protoGroupID(gapic.GroupID)
 	return javaModules{
-		gapic: name,
-		proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),
-		grpc:  fmt.Sprintf("%s%s-%s", grpcPrefix, name, version),
+		gapic: gapic,
+		proto: coordinates{
+			GroupID:    protoGrpcGroupID,
+			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, gapic.ArtifactID, version),
+			Version:    gapic.Version,
+		},
+		grpc: coordinates{
+			GroupID:    protoGrpcGroupID,
+			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, gapic.ArtifactID, version),
+			Version:    gapic.Version,
+		},
 	}
 }
 
@@ -197,27 +222,27 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, modules.proto.ArtifactID, "src", "main", "java"),
 			description: "proto source",
 		},
 		{
 			src:         p.grpcDir(),
-			dest:        filepath.Join(destRoot, modules.grpc, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, modules.grpc.ArtifactID, "src", "main", "java"),
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, modules.gapic, "src", "main"),
+			dest:        filepath.Join(destRoot, modules.gapic.ArtifactID, "src", "main"),
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, modules.gapic, "src", "test"),
+			dest:        filepath.Join(destRoot, modules.gapic.ArtifactID, "src", "test"),
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, modules.proto, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, modules.proto.ArtifactID, "src", "main", "java"),
 			description: "resource name source",
 		},
 	}
@@ -232,7 +257,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, modules.proto, "src", "main", "proto")
+	protoFilesDestDir := filepath.Join(destRoot, modules.proto.ArtifactID, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
