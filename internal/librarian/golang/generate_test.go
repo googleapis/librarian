@@ -595,6 +595,26 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
+			name:    "no snippets",
+			apiPath: "google/cloud/gkehub/v1",
+			goAPI: &config.GoAPI{
+				ClientPackage: "gkehub",
+				ImportPath:    "gkehub/apiv1",
+				NoSnippets:    true,
+				Path:          "google/cloud/gkehub/v1",
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/gkehub/apiv1;gkehub",
+				"metadata",
+				"omit-snippets",
+				"rest-numeric-enums",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/gkehub/v1/gkehub_v1.yaml"),
+				"transport=grpc+rest",
+				"release-level=ga",
+			},
+		},
+		{
 			name:    "generator features",
 			apiPath: "google/cloud/bigquery/v2",
 			goAPI: &config.GoAPI{
@@ -802,6 +822,37 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, "internal", "generated", "snippets", "lib", "apiv1"), lib
 			},
 		},
+		{
+			name: "no snippets",
+			setup: func(t *testing.T, tmpDir string) (string, string, string, *config.Library) {
+				repoRoot := filepath.Join(tmpDir, "repo")
+				outDir := filepath.Join(repoRoot, "lib")
+				srcDir := filepath.Join(outDir, "cloud.google.com", "go", "lib", "apiv1")
+				if err := os.MkdirAll(srcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "main.go"), []byte("package foo"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				// Even if snippet source exists in cloud.google.com/go, it should not be moved.
+				snippetDirSuffix := filepath.Join("internal", "generated", "snippets", "lib", "apiv1")
+				snippetSrcDir := filepath.Join(outDir, "cloud.google.com", "go", snippetDirSuffix)
+				if err := os.MkdirAll(snippetSrcDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(snippetSrcDir, "snippet.go"), []byte("package internal"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				lib := &config.Library{
+					Name: "lib",
+					APIs: []*config.API{{Path: "lib/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{{Path: "lib/v1", ImportPath: "lib/apiv1", NoSnippets: true}},
+					},
+				}
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -813,8 +864,14 @@ func TestMoveGeneratedFiles(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(apiDir, "main.go")); err != nil {
 				t.Errorf("expected main.go to exist, got err: %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); err != nil {
-				t.Errorf("expected snippet.go to exist, got err: %v", err)
+			if lib.Go.GoAPIs[0].NoSnippets {
+				if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); !errors.Is(err, os.ErrNotExist) {
+					t.Errorf("expected snippet.go to not exist, got err: %v", err)
+				}
+			} else {
+				if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); err != nil {
+					t.Errorf("expected snippet.go to exist, got err: %v", err)
+				}
 			}
 		})
 	}

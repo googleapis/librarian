@@ -269,6 +269,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 		return python.DefaultOutput(name, defaultOut)
 	case config.LanguageRust:
 		return rust.DefaultOutput(api, defaultOut)
+	case config.LanguageSwift:
+		return swift.DefaultOutput(api, defaultOut)
 	default:
 		return defaultOut
 	}

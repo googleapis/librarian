@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // update is used to refresh the golden files in testdata/ when template
@@ -31,10 +32,6 @@ import (
 var update = flag.Bool("update", false, "update golden files")
 
 func TestSyncPoms_Golden(t *testing.T) {
-	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
-	if err != nil {
-		t.Fatal(err)
-	}
 	testdataDir := filepath.Join("testdata", "syncpoms", "secretmanager-v1")
 	library := &config.Library{
 		Name:    "secretmanager",
@@ -42,6 +39,10 @@ func TestSyncPoms_Golden(t *testing.T) {
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 		},
+	}
+	apiPath := library.APIs[0].Path
+	transports := map[string]serviceconfig.Transport{
+		apiPath: serviceconfig.GRPC,
 	}
 	tmpDir := t.TempDir()
 	// Pre-create the directories that generatePomsIfMissing expects to exist.
@@ -58,7 +59,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := generatePomsIfMissing(library, tmpDir, googleapisDir, "1.2.3", metadata); err != nil {
+	if err := generatePomsIfMissing(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
@@ -93,8 +94,9 @@ func TestSyncPoms_Golden(t *testing.T) {
 
 func TestCollectModules_Error(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
+		name       string
+		library    *config.Library
+		transports map[string]serviceconfig.Transport
 	}{
 		{
 			name: "invalid distribution name",
@@ -111,10 +113,11 @@ func TestCollectModules_Error(t *testing.T) {
 					{Path: "google/ads/unrecognized/v1"},
 				},
 			},
+			transports: map[string]serviceconfig.Transport{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "/nonexistent", "1.2.3", &repoMetadata{}); err == nil {
+			if _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.transports); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})
