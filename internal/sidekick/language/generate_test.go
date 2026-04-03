@@ -105,7 +105,7 @@ func verifyElementOutput(t *testing.T, outDir string) {
 		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if os.IsNotExist(err) {
-			t.Errorf("missing %s: %s", filename, err)
+			t.Fatal(err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
