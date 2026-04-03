@@ -141,7 +141,7 @@ func updateManagedBlock(content, templateName, startMarker, endMarker string, da
 func replaceBlock(content, startMarker, endMarker, newContent string) (string, error) {
 	startIdx := strings.Index(content, startMarker)
 	if startIdx == -1 {
-		return content, fmt.Errorf("missing start marker %q", startMarker)
+		return "", fmt.Errorf("missing start marker %q", startMarker)
 	}
 	endIdx := strings.Index(content, endMarker)
 	if endIdx == -1 {
