@@ -15,19 +15,28 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/license"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func (codec *codec) annotateModel(model *api.API) error {
-	annotations := &modelAnnotations{
-		CopyrightYear: codec.GenerationYear,
-		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   PackageName(model, codec.PackageName),
+type messageAnnotations struct {
+	CopyrightYear string
+	BoilerPlate   []string
+	Name          string
+	DocLines      []string
+}
+
+func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) *messageAnnotations {
+	docLines := codec.formatDocumentation(message.Documentation)
+	messageAnnotations := &messageAnnotations{
+		CopyrightYear: model.CopyrightYear,
+		BoilerPlate:   model.BoilerPlate,
+		Name:          message.Name,
+		DocLines:      docLines,
 	}
-	model.Codec = annotations
-	for _, message := range model.Messages {
-		codec.annotateMessage(message, annotations)
+
+	message.Codec = messageAnnotations
+	for _, field := range message.Fields {
+		codec.annotateField(field)
 	}
-	return nil
+	return messageAnnotations
 }
