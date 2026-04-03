@@ -18,6 +18,7 @@ import (
 	"embed"
 	"os"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -102,7 +103,7 @@ func TestGenerateEnum(t *testing.T) {
 func verifyElementOutput(t *testing.T, outDir string) {
 	t.Helper()
 	for _, expected := range []string{"test002.txt"} {
-		filename := path.Join(outDir, expected)
+		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			t.Errorf("missing %s: %s", filename, err)
