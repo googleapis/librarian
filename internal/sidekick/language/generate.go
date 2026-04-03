@@ -72,14 +72,8 @@ func generateElement(outDir string, element any, provider TemplateProvider, gen 
 	if err != nil {
 		return err
 	}
-	var destination string
-	if outDir == "" {
-		destination = gen.OutputPath
-	} else {
-		destination = filepath.Join(outDir, gen.OutputPath)
-	}
-	// We want to ensure the directory exists, an create it if needed. os.IsExist() is fine.
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil && !os.IsExist(err) {
+	destination := filepath.Join(outDir, gen.OutputPath)
+	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
 		return err
 	}
 	nestedProvider := mustacheProvider{
