@@ -1036,17 +1036,16 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 	testhelper.RequireCommand(t, "node")
 	testhelper.RequireCommand(t, "npx")
-
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
 		Keep: []string{"librarian.js"},
 	}
+
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	// This script uses a path relative to the repository root.
 	// This only works if the script is executed from repoRoot.
 	relPath := filepath.Join("packages", library.Name, "output.txt")
@@ -1056,17 +1055,15 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	if err := os.WriteFile(librarianJS, []byte(script), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	createStagingFixture(t, repoRoot, library.Name, []string{"v1"})
-
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
+
 	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-
 	// The file should have been created at outDir/output.txt
 	if _, err := os.Stat(filepath.Join(outDir, "output.txt")); err != nil {
 		t.Errorf("expected librarian.js to create output.txt using root-relative path: %v", err)
