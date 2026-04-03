@@ -624,9 +624,7 @@ func TestSyncToStateYAML_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			tmpDir := t.TempDir()
-			t.Chdir(tmpDir)
-			err := syncToStateYAML(".", test.cfg)
+			err := syncToStateYAML(t.TempDir(), test.cfg)
 			if !errors.Is(err, test.wantError) {
 				t.Errorf("syncToStateYAML(%s): got error %v, want %v", test.name, err, test.wantError)
 			}
