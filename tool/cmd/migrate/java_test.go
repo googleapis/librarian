@@ -606,7 +606,6 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 	protoIDs, grpcIDs := getModuleArtifactIDs(lib)
 	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"}
 	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1"}
-
 	if diff := cmp.Diff(wantProto, protoIDs); diff != "" {
 		t.Errorf("mismatch in protoIDs (-want +got):\n%s", diff)
 	}
@@ -624,7 +623,6 @@ func TestInsertMarkers(t *testing.T) {
 	if err := os.MkdirAll(clientDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	pomContent := `<project>
   <dependencies>
     <dependency>
@@ -641,7 +639,6 @@ func TestInsertMarkers(t *testing.T) {
 	if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{
@@ -655,17 +652,14 @@ func TestInsertMarkers(t *testing.T) {
 			},
 		},
 	}
-
 	if err := insertMarkers(repoPath, cfg); err != nil {
 		t.Fatal(err)
 	}
-
 	gotBytes, err := os.ReadFile(pomPath)
 	if err != nil {
 		t.Fatal(err)
 	}
 	got := string(gotBytes)
-
 	if !strings.Contains(got, managedProtoStart) {
 		t.Errorf("expected %s in pom.xml, but not found", managedProtoStart)
 	}

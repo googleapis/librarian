@@ -405,17 +405,14 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 			return lines
 		}
 	}
-
 	targets := make([]string, len(artifactIDs))
 	for i, id := range artifactIDs {
 		targets[i] = "<artifactId>" + id + "</artifactId>"
 	}
-
 	first, last := findMarkerBounds(lines, targets)
 	if first == -1 {
 		return lines
 	}
-
 	// Use the same indentation as the first dependency line.
 	indent := lines[first][:len(lines[first])-len(strings.TrimLeft(lines[first], " \t"))]
 	return slices.Concat(
@@ -442,7 +439,6 @@ func findMarkerBounds(lines []string, targets []string) (first, last int) {
 		if !match {
 			continue
 		}
-
 		// Find the start of this <dependency> block
 		start := i
 		for start > 0 && !strings.Contains(lines[start], "<dependency>") {
@@ -451,7 +447,6 @@ func findMarkerBounds(lines []string, targets []string) (first, last int) {
 		if first == -1 || start < first {
 			first = start
 		}
-
 		// Find the end of this <dependency> block
 		end := i
 		for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
