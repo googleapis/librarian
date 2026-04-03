@@ -17,6 +17,7 @@ package parser
 import (
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -2219,29 +2220,20 @@ func TestParseProtobuf_Descriptors(t *testing.T) {
 
 func newTestDescriptorFile(t *testing.T, filename string) string {
 	t.Helper()
-	src := &sources.SourceConfig{
-		Sources: &sources.Sources{
-			Googleapis:  "../../testdata/googleapis",
-			ProtobufSrc: "testdata",
-		},
-		ActiveRoots: []string{"googleapis", "protobuf-src"},
-		IncludeList: []string{filename},
-	}
-	contents, err := runProtoc([]string{filename}, src)
-	if err != nil {
-		t.Fatalf("Failed to run protoc: %v", err)
+
+	tmpDir := t.TempDir()
+	descFile := filepath.Join(tmpDir, "test.desc")
+
+	cmd := exec.CommandContext(t.Context(), "protoc", "-o", descFile, "--include_imports",
+		"-I", "testdata",
+		"-I", "../../testdata/googleapis",
+		filepath.Join("testdata", filename))
+
+	if err := cmd.Run(); err != nil {
+		t.Fatalf("Failed to generate .desc file: %v", err)
 	}
 
-	tempFile, err := os.CreateTemp("", "test-desc-")
-	if err != nil {
-		t.Fatalf("Failed to create temp file: %v", err)
-	}
-	if _, err := tempFile.Write(contents); err != nil {
-		t.Fatalf("Failed to write to temp file: %v", err)
-	}
-	_ = tempFile.Close()
-
-	return tempFile.Name()
+	return descFile
 }
 
 func requireProtoc(t *testing.T) {
