@@ -19,6 +19,7 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -458,6 +459,247 @@ func TestParseJavaBazel(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindMarkerBounds(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		lines     []string
+		targets   []string
+		wantFirst int
+		wantLast  int
+	}{
+		{
+			name: "single match",
+			lines: []string{
+				"<dependencies>",
+				"  <dependency>",
+				"    <artifactId>proto-google-cloud-vision-v1</artifactId>",
+				"  </dependency>",
+				"</dependencies>",
+			},
+			targets:   []string{"<artifactId>proto-google-cloud-vision-v1</artifactId>"},
+			wantFirst: 1,
+			wantLast:  3,
+		},
+		{
+			name: "multiple matches",
+			lines: []string{
+				"<dependencies>",
+				"  <dependency>",
+				"    <artifactId>proto-google-cloud-vision-v1</artifactId>",
+				"  </dependency>",
+				"  <dependency>",
+				"    <artifactId>proto-google-cloud-vision-v2</artifactId>",
+				"  </dependency>",
+				"</dependencies>",
+			},
+			targets: []string{
+				"<artifactId>proto-google-cloud-vision-v1</artifactId>",
+				"<artifactId>proto-google-cloud-vision-v2</artifactId>",
+			},
+			wantFirst: 1,
+			wantLast:  6,
+		},
+		{
+			name: "no match",
+			lines: []string{
+				"<dependencies>",
+				"  <dependency>",
+				"    <artifactId>other</artifactId>",
+				"  </dependency>",
+				"</dependencies>",
+			},
+			targets:   []string{"<artifactId>proto-google-cloud-vision-v1</artifactId>"},
+			wantFirst: -1,
+			wantLast:  -1,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotFirst, gotLast := findMarkerBounds(test.lines, test.targets)
+			if gotFirst != test.wantFirst || gotLast != test.wantLast {
+				t.Errorf("findMarkerBounds() = (%d, %d), want (%d, %d)", gotFirst, gotLast, test.wantFirst, test.wantLast)
+			}
+		})
+	}
+}
+
+func TestWrapDependencies(t *testing.T) {
+	lines := []string{
+		"<dependencies>",
+		"  <dependency>",
+		"    <artifactId>proto-v1</artifactId>",
+		"  </dependency>",
+		"  <dependency>",
+		"    <artifactId>other</artifactId>",
+		"  </dependency>",
+		"</dependencies>",
+	}
+	for _, test := range []struct {
+		name        string
+		artifactIDs []string
+		want        []string
+	}{
+		{
+			name:        "wrap existing",
+			artifactIDs: []string{"proto-v1"},
+			want: []string{
+				"<dependencies>",
+				"  " + managedProtoStart,
+				"  <dependency>",
+				"    <artifactId>proto-v1</artifactId>",
+				"  </dependency>",
+				"  " + managedProtoEnd,
+				"  <dependency>",
+				"    <artifactId>other</artifactId>",
+				"  </dependency>",
+				"</dependencies>",
+			},
+		},
+		{
+			name:        "no match",
+			artifactIDs: []string{"non-existent"},
+			want:        lines,
+		},
+		{
+			name:        "empty artifactIDs",
+			artifactIDs: []string{},
+			want:        lines,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := wrapDependencies(lines, test.artifactIDs, managedProtoStart, managedProtoEnd, "test-lib", "proto")
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestWrapDependencies_AlreadyWrapped(t *testing.T) {
+	lines := []string{
+		"<dependencies>",
+		"  " + managedProtoStart,
+		"  <dependency>",
+		"    <artifactId>proto-v1</artifactId>",
+		"  </dependency>",
+		"  " + managedProtoEnd,
+		"</dependencies>",
+	}
+	got := wrapDependencies(lines, []string{"proto-v1"}, managedProtoStart, managedProtoEnd, "test-lib", "proto")
+	if diff := cmp.Diff(lines, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGetModuleArtifactIDs(t *testing.T) {
+	lib := &config.Library{
+		Name: "vision",
+		APIs: []*config.API{
+			{Path: "google/cloud/vision/v1"},
+			{Path: "google/cloud/vision/v1p1beta1"},
+		},
+	}
+	protoIDs, grpcIDs := getModuleArtifactIDs(lib)
+	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"}
+	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1"}
+
+	if diff := cmp.Diff(wantProto, protoIDs); diff != "" {
+		t.Errorf("mismatch in protoIDs (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(wantGrpc, grpcIDs); diff != "" {
+		t.Errorf("mismatch in grpcIDs (-want +got):\n%s", diff)
+	}
+}
+
+func TestInsertMarkers(t *testing.T) {
+	dir := t.TempDir()
+	libName := "vision"
+	artifactID := "google-cloud-vision"
+	repoPath := dir
+	clientDir := filepath.Join(repoPath, "java-"+libName, artifactID)
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	pomContent := `<project>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-vision-v1</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-vision-v1</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	pomPath := filepath.Join(clientDir, "pom.xml")
+	if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name: libName,
+				APIs: []*config.API{
+					{Path: "google/cloud/vision/v1"},
+				},
+				Java: &config.JavaModule{
+					DistributionNameOverride: "com.google.cloud:" + artifactID,
+				},
+			},
+		},
+	}
+
+	if err := insertMarkers(repoPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	gotBytes, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(gotBytes)
+
+	if !strings.Contains(got, managedProtoStart) {
+		t.Errorf("expected %s in pom.xml, but not found", managedProtoStart)
+	}
+	if !strings.Contains(got, managedGrpcStart) {
+		t.Errorf("expected %s in pom.xml, but not found", managedGrpcStart)
+	}
+}
+
+func TestParseArtifactID(t *testing.T) {
+	for _, test := range []struct {
+		distributionName string
+		name             string
+		want             string
+	}{
+		{
+			distributionName: "com.google.cloud:google-cloud-vision",
+			name:             "vision",
+			want:             "google-cloud-vision",
+		},
+		{
+			distributionName: "",
+			name:             "vision",
+			want:             "google-cloud-vision",
+		},
+		{
+			distributionName: "google-cloud-vision",
+			name:             "vision",
+			want:             "google-cloud-vision",
+		},
+	} {
+		t.Run(test.distributionName+"_"+test.name, func(t *testing.T) {
+			got := parseArtifactID(test.distributionName, test.name)
+			if got != test.want {
+				t.Errorf("parseArtifactID(%q, %q) = %q, want %q", test.distributionName, test.name, got, test.want)
 			}
 		})
 	}

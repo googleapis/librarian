@@ -403,9 +403,11 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 	if len(artifactIDs) == 0 {
 		return lines
 	}
-	if slices.Contains(lines, startMarker) {
-		log.Printf("Debug: library %s already has %s markers", libName, depType)
-		return lines
+	for _, line := range lines {
+		if strings.Contains(line, startMarker) {
+			log.Printf("Debug: library %s already has %s markers", libName, depType)
+			return lines
+		}
 	}
 
 	targets := make([]string, len(artifactIDs))
