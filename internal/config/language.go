@@ -80,6 +80,9 @@ type GoAPI struct {
 	// NoMetadata indicates whether to skip generating gapic_metadata.json.
 	// This is typically false.
 	NoMetadata bool `yaml:"no_metadata,omitempty"`
+	// NoSnippets indicates whether to skip generating snippets.
+	// This is typically false.
+	NoSnippets bool `yaml:"no_snippets,omitempty"`
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 	// ProtoOnly determines whether to generate a Proto-only client.

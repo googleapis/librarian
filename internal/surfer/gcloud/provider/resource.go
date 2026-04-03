@@ -196,6 +196,35 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 	return nil
 }
 
+// isSingletonResource determines whether a resource is a singleton.
+// It checks if any of the resource's canonical patterns end in a literal segment
+// or contain two adjacent literal segments.
+func isSingletonResource(resource *api.Resource) bool {
+	if resource == nil {
+		return false
+	}
+
+	for _, pattern := range resource.Patterns {
+		if len(pattern) == 0 {
+			continue
+		}
+
+		// A pattern ending in a literal is a singleton (e.g., projects/{project}/singletonConfig).
+		if pattern[len(pattern)-1].Literal != nil {
+			return true
+		}
+
+		// Adjacent literals anywhere in the pattern signify a singleton (e.g., .../literal1/literal2/...).
+		for i := 0; i < len(pattern)-1; i++ {
+			if pattern[i].Literal != nil && pattern[i+1].Literal != nil {
+				return true
+			}
+		}
+	}
+
+	return false
+}
+
 // GetPluralResourceNameForMethod determines the plural name of a resource. It follows a clear
 // hierarchy of truth: first, the explicit `plural` field in the resource
 // definition, and second, inference from the resource pattern.

@@ -50,3 +50,12 @@ func GetServiceTitle(model *api.API, shortServiceName string) string {
 	}
 	return strcase.ToCamel(shortServiceName)
 }
+
+// ResolveRootPackage extracts the service name from the package name (second to last element),
+// falling back to the provided fallback if there are not enough segments.
+func ResolveRootPackage(model *api.API) string {
+	if parts := strings.Split(model.PackageName, "."); len(parts) >= 2 {
+		return parts[len(parts)-2]
+	}
+	return model.Name
+}

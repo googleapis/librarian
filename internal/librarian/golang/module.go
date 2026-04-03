@@ -174,10 +174,10 @@ func snippetDirectory(output, importPath string) string {
 }
 
 // findSnippetDirectory returns the path to the snippet directory for the given API path and library output directory.
-// It returns an empty string if the API is proto-only or if the snippet directory is in a path marked for deletion
-// after generation.
+// It returns an empty string if the API is proto-only, if snippet generation is disabled,
+// or if the snippet directory is in a path marked for deletion after generation.
 func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output string) string {
-	if goAPI.ProtoOnly {
+	if goAPI.ProtoOnly || goAPI.NoSnippets {
 		return ""
 	}
 	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))

@@ -49,10 +49,8 @@ func newCommandGroupBuilder(model *api.API, service *api.Service, config *provid
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
-	// TODO (https://github.com/googleapis/librarian/issues/4945): Name can be an empty string here.
-	// Need clear error handling rather than silent skipping
 	return &CommandGroup{
-		Name:     b.model.Name,
+		Name:     provider.ResolveRootPackage(b.model),
 		HelpText: fmt.Sprintf("Manage %s resources.", b.title),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),

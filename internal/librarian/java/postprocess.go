@@ -78,14 +78,6 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
-	monorepoVersion, err := findMonorepoVersion(p.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to find monorepo version: %w", err)
-	}
-	if err := syncPoms(p.library, p.outDir, p.googleapisDir, monorepoVersion, p.metadata); err != nil {
-		return fmt.Errorf("failed to sync poms: %w", err)
-	}
-
 	// Generate clirr-ignored-differences.xml for the proto module.
 	modules := p.modules()
 	protoModuleRoot := filepath.Join(p.outDir, modules.proto)

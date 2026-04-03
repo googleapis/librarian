@@ -124,10 +124,18 @@ func IsStandardMethod(m *api.Method) bool {
 	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
 }
 
+// PrimaryBinding returns the primary path binding for the method, or nil if not available.
+func PrimaryBinding(m *api.Method) *api.PathBinding {
+	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+		return nil
+	}
+	return m.PathInfo.Bindings[0]
+}
+
 // GetHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
 func GetHTTPVerb(m *api.Method) string {
-	if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-		return m.PathInfo.Bindings[0].Verb
+	if b := PrimaryBinding(m); b != nil {
+		return b.Verb
 	}
 	return ""
 }
@@ -192,4 +200,15 @@ func FindResourceMessage(outputType *api.Message) *api.Message {
 		}
 	}
 	return nil
+}
+
+// IsSingletonResourceMethod determines whether a resource is a singleton.
+// It checks if the resource associated with the method is a singleton.
+func IsSingletonResourceMethod(method *api.Method, model *api.API) bool {
+	if method == nil {
+		return false
+	}
+
+	resource := GetResourceForMethod(method, model)
+	return isSingletonResource(resource)
 }

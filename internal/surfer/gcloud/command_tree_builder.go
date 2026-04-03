@@ -63,7 +63,16 @@ func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
 func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGroupBuilder, method *api.Method) error {
-	segments := b.getLiteralSegments(method)
+	if provider.IsSingletonResourceMethod(method, b.model) {
+		return nil
+	}
+
+	binding := provider.PrimaryBinding(method)
+	if binding == nil {
+		return nil
+	}
+
+	segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
 	if len(segments) == 0 {
 		return nil
 	}
@@ -73,7 +82,8 @@ func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGro
 		if b.isTerminatedSegment(seg) {
 			return nil
 		}
-		if b.isFlattenedSegment(seg) {
+		isLeaf := i == len(segments)-1
+		if b.isFlattenedSegment(seg) && !isLeaf {
 			continue
 		}
 
@@ -124,19 +134,9 @@ var flattenedSegments = map[string]bool{
 }
 
 func (b *commandTreeBuilder) isFlattenedSegment(lit string) bool {
-	// TODO (https://github.com/googleapis/librarian/issues/4980): these should not be flattened if
-	// there are commands that should be generated for them.
 	return flattenedSegments[lit]
 }
 
 func (b *commandTreeBuilder) isTerminatedSegment(lit string) bool {
 	return lit == "operations" && !provider.ShouldGenerateOperations(b.config)
-}
-
-func (b *commandTreeBuilder) getLiteralSegments(method *api.Method) []string {
-	if method.PathInfo == nil || len(method.PathInfo.Bindings) == 0 {
-		return nil
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/3415): handle multiple bindings
-	return provider.GetLiteralSegments(method.PathInfo.Bindings[0].PathTemplate.Segments)
 }

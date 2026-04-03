@@ -107,6 +107,29 @@ handling:
 - [Generics Tutorial](https://go.dev/doc/tutorial/generics)
 - [Error Handling with Generics](https://go.dev/blog/error-syntax)
 
+### Wrapping errors
+
+Whether to wrap an error or not is discussed at length in the
+[Go Blog post](https://go.dev/blog/go1.13-errors#whether-to-wrap). Best practice
+for _how_ to wrap errors is described in the
+[Go Style Guide](https://google.github.io/styleguide/go/best-practices#placement-of-w-in-errors)
+and summarized below.
+
+When using the `%w` format specifier via `fmt.Errorf`, prefer to put it at the
+end of the string, prepending the added context of where the error is being
+handled, creating a chain of errors. For example:
+
+```go
+f, err := os.Open("special.cfg")
+if err != nil {
+  return fmt.Errorf("failed opening special config: %w", err)
+}
+```
+
+However, when including a sentinel error in the newly formatted error, the `%w`
+specifier for that sentinel error should appear at the front of the formatted
+error, as per the [Go Style Guide](https://google.github.io/styleguide/go/best-practices#sentinel-error-placement).
+
 ### Avoid unnecessary `else`
 
 To keep the main logic flow linear and reduce indentation, return early or

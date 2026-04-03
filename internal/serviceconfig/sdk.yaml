@@ -118,6 +118,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/api/apikeys/v2
   documentation_uri: https://cloud.google.com/api-keys/docs
@@ -127,6 +128,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/api/cloudquotas/v1
@@ -136,6 +138,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/api/cloudquotas/v1beta
@@ -154,6 +157,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/api/servicecontrol/v2
   documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
@@ -162,6 +166,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/api/servicemanagement/v1
   documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
@@ -170,6 +175,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/api/serviceusage/v1
   documentation_uri: https://cloud.google.com/service-usage
   languages:
@@ -178,6 +184,7 @@
     - nodejs
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     go: true
 - path: google/api/serviceusage/v1beta1
@@ -203,6 +210,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/apps/card/v1
   documentation_uri: https://developers.google.com/chat
   languages:
@@ -257,6 +265,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -271,6 +280,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -284,6 +294,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -297,6 +308,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -310,6 +322,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -323,6 +336,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -336,6 +350,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     python: true
@@ -358,6 +373,7 @@
     - go
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -384,6 +400,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/accessapproval/v1
@@ -393,6 +410,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/advisorynotifications/v1
   languages:
     - go
@@ -400,6 +418,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/aiplatform/v1
@@ -409,6 +428,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     go: grpc
     java: grpc
@@ -418,6 +438,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
@@ -428,6 +449,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
@@ -438,6 +460,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
@@ -448,6 +471,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   service_config: google/cloud/aiplatform/v1/schema/aiplatform_v1.yaml
@@ -503,6 +527,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   release_level:
@@ -528,6 +553,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/alloydb/v1alpha
@@ -554,6 +580,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/apigeeconnect/v1
   documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
   languages:
@@ -562,6 +589,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     go: ""
     python: grpc
@@ -584,6 +612,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -602,6 +631,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -622,6 +652,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -634,6 +665,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
 - path: google/cloud/asset/v1p1beta1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
@@ -681,6 +713,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/assuredworkloads/v1beta1
   documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
@@ -702,6 +735,7 @@
     - java
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -731,6 +765,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/backupdr/v1
@@ -740,6 +775,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/baremetalsolution/v2
@@ -750,6 +786,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
 - path: google/cloud/batch/v1
@@ -779,6 +816,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -795,6 +833,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -811,6 +850,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -827,6 +867,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -843,6 +884,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -866,6 +908,7 @@
     - java
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -878,6 +921,7 @@
     - nodejs
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     all: true
   release_level:
@@ -908,6 +952,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/bigquery/connection/v1beta1
   languages:
     - dart
@@ -939,6 +984,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
 - path: google/cloud/bigquery/datapolicies/v1beta1
@@ -962,6 +1008,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -983,6 +1030,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
 - path: google/cloud/bigquery/logging/v1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/auditlogs
@@ -1001,6 +1049,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   no_rest_numeric_enums:
     all: true
@@ -1034,6 +1083,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/bigquery/storage/v1
   languages:
     - go
@@ -1092,6 +1142,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     go: true
   release_level:
@@ -1129,6 +1180,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/binaryauthorization/v1
   documentation_uri: https://cloud.google.com/binary-authorization
   languages:
@@ -1137,6 +1189,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/binaryauthorization/v1beta1
   documentation_uri: https://cloud.google.com/binary-authorization
   languages:
@@ -1153,6 +1206,7 @@
     - java
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/cloud/capacityplanner/v1beta
@@ -1173,6 +1227,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
 - path: google/cloud/ces/v1
@@ -1183,6 +1238,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1213,6 +1269,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1224,6 +1281,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/cloudcontrolspartner/v1beta
@@ -1242,6 +1300,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -1256,6 +1315,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1267,6 +1327,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -1286,6 +1347,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   transports:
@@ -1299,6 +1361,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
   no_rest_numeric_enums:
     go: true
@@ -1326,6 +1389,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -1346,6 +1410,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/configdelivery/v1
@@ -1355,6 +1420,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1380,6 +1446,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/contactcenterinsights/v1
   documentation_uri: https://cloud.google.com/contact-center/insights/docs
   languages:
@@ -1388,6 +1455,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/contentwarehouse/v1
   documentation_uri: https://cloud.google.com/document-warehouse/
   languages:
@@ -1414,6 +1482,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   no_rest_numeric_enums:
     php: true
@@ -1426,6 +1495,7 @@
     - nodejs
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     all: true
   transports:
@@ -1449,6 +1519,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1470,6 +1541,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/datafusion/v1beta1
   languages:
     - dart
@@ -1502,6 +1574,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/dataproc/logging
   languages:
     - dart
@@ -1509,6 +1582,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/dataproc/v1
@@ -1519,6 +1593,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559745
 - path: google/cloud/dataqna/v1alpha
   documentation_uri: https://cloud.google.com/bigquery/docs/dataqna
@@ -1538,6 +1613,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/datastream/v1
@@ -1548,6 +1624,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/datastream/v1alpha1
   documentation_uri: https://cloud.google.com/datastream/
   languages:
@@ -1565,6 +1642,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/developerconnect/v1
   languages:
     - go
@@ -1572,6 +1650,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1583,6 +1662,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1595,6 +1675,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
   release_level:
     java: preview
@@ -1616,6 +1697,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/dialogflow/v2beta1
   languages:
     - go
@@ -1631,6 +1713,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/discoveryengine/v1alpha
@@ -1655,6 +1738,7 @@
     - go
     - python
     - rust
+    - swift
   short_name: dns
   service_name: dns.googleapis.com
   title: Cloud DNS
@@ -1665,6 +1749,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/documentai/v1beta3
   languages:
     - go
@@ -1681,6 +1766,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/domains/v1alpha2
   languages:
     - dart
@@ -1707,6 +1793,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/edgenetwork/v1
@@ -1716,6 +1803,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/enterpriseknowledgegraph/v1
@@ -1735,6 +1823,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/eventarc/logging/v1
   languages:
     - dart
@@ -1742,6 +1831,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/eventarc/publishing/v1
@@ -1752,6 +1842,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -1763,6 +1854,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/filestore/v1
   documentation_uri: https://cloud.google.com/filestore/
   languages:
@@ -1771,6 +1863,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/filestore/v1beta1
   languages:
     - dart
@@ -1787,6 +1880,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1808,6 +1902,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
 - path: google/cloud/functions/v2alpha
   languages:
@@ -1859,6 +1954,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/gkebackup/v1
@@ -1868,6 +1964,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -1878,6 +1975,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -1920,11 +2018,13 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/gkehub/v1/configmanagement
   languages:
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   title: GKE Hub Types
@@ -1935,6 +2035,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   title: GKE Hub Types
@@ -1945,6 +2046,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
   title: GKE Hub Types
@@ -2046,6 +2148,7 @@
     - nodejs
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     all: true
   release_level:
@@ -2061,6 +2164,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2073,6 +2177,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/hypercomputecluster/v1
@@ -2083,6 +2188,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2113,6 +2219,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/iap/v1beta1
   languages:
     - dart
@@ -2130,6 +2237,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/integrations/v1alpha
   languages:
     - dart
@@ -2145,6 +2253,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2156,6 +2265,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5264932
 - path: google/cloud/language/v1
   languages:
@@ -2182,6 +2292,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - path: google/cloud/licensemanager/v1
   languages:
@@ -2190,6 +2301,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2212,6 +2324,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/cloud/locationfinder/v1
   languages:
@@ -2220,6 +2333,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2231,6 +2345,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2242,6 +2357,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2263,6 +2379,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -2285,6 +2402,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     python: preview
@@ -2295,6 +2413,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2325,6 +2444,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/memcache/v1beta2
   documentation_uri: https://cloud.google.com/memorystore/docs/memcached/
   languages:
@@ -2341,6 +2461,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     python: preview
@@ -2364,6 +2485,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/metastore/v1alpha
   documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
@@ -2389,6 +2511,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2399,6 +2522,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2419,6 +2543,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2429,6 +2554,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/networkconnectivity/v1
@@ -2439,6 +2565,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -2479,6 +2606,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/networkmanagement/v1beta1
   languages:
     - dart
@@ -2496,6 +2624,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
   transports:
@@ -2524,6 +2653,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2568,6 +2698,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/optimization/v1
   documentation_uri: https://cloud.google.com/optimization/docs
   languages:
@@ -2575,6 +2706,7 @@
     - java
     - python
     - rust
+    - swift
 - path: google/cloud/oracledatabase/v1
   languages:
     - go
@@ -2582,6 +2714,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2594,6 +2727,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/orchestration/airflow/service/v1beta1
   documentation_uri: https://cloud.google.com/composer/
   languages:
@@ -2609,6 +2743,7 @@
     - java
     - python
     - rust
+    - swift
   title: Organization Policy Types
 - path: google/cloud/orgpolicy/v2
   documentation_uri: https://cloud.google.com/resource-manager/docs/organization-policy/overview
@@ -2618,6 +2753,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/osconfig/agentendpoint/v1beta
   languages:
     - dart
@@ -2634,6 +2770,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/osconfig/v1alpha
   documentation_uri: https://cloud.google.com/compute/docs/manage-os
   languages:
@@ -2656,6 +2793,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     csharp: true
     python: true
@@ -2670,6 +2808,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559755
 - path: google/cloud/oslogin/v1beta
   languages:
@@ -2687,6 +2826,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2707,6 +2847,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2718,6 +2859,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     all: true
 - path: google/cloud/phishingprotection/v1beta1
@@ -2738,6 +2880,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2748,6 +2891,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/policytroubleshooter/iam/v3beta
@@ -2766,6 +2910,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/privatecatalog/v1beta1
   documentation_uri: https://cloud.google.com/private-catalog/
   languages:
@@ -2784,6 +2929,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -2793,6 +2939,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     csharp: true
     go: true
@@ -2810,6 +2957,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2821,6 +2969,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -2852,6 +3001,7 @@
     - go
     - python
     - rust
+    - swift
 - path: google/cloud/recommender/v1
   documentation_uri: https://cloud.google.com/recommender
   languages:
@@ -2860,6 +3010,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/recommender/v1beta1
   documentation_uri: https://cloud.google.com/recommender
   languages:
@@ -2876,6 +3027,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2894,6 +3046,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/redis/v1beta1
   languages:
     - go
@@ -2910,6 +3063,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559757
 - path: google/cloud/retail/logging
   languages:
@@ -2918,6 +3072,7 @@
     - java
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     python: true
 - path: google/cloud/retail/v2
@@ -2928,6 +3083,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/retail/v2alpha
   documentation_uri: https://cloud.google.com/retail/docs/
   languages:
@@ -2954,6 +3110,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -2975,6 +3132,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
 - path: google/cloud/scheduler/v1beta1
   documentation_uri: https://cloud.google.com/scheduler/docs
@@ -3017,6 +3175,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/security/privateca/v1
@@ -3027,6 +3186,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/security/privateca/v1beta1
   documentation_uri: https://cloud.google.com/certificate-authority-service
   languages:
@@ -3042,6 +3202,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     python: preview
@@ -3106,6 +3267,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/cloud/securitycentermanagement/v1
@@ -3115,6 +3277,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/securityposture/v1
@@ -3123,6 +3286,7 @@
     - java
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/cloud/servicedirectory/v1
@@ -3133,6 +3297,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/servicedirectory/v1beta1
   documentation_uri: https://cloud.google.com/service-directory/
   languages:
@@ -3149,6 +3314,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -3160,6 +3326,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/speech/v1
   documentation_uri: https://cloud.google.com/speech-to-text/docs/
   languages:
@@ -3186,6 +3353,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559758
 - path: google/cloud/sql/v1
   languages:
@@ -3193,6 +3361,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     python: grpc
 - path: google/cloud/sql/v1beta4
@@ -3211,6 +3380,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -3222,6 +3392,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -3232,6 +3403,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -3252,6 +3424,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559664
 - path: google/cloud/talent/v4beta1
   documentation_uri: https://cloud.google.com/solutions/talent-solution/
@@ -3271,6 +3444,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5433985
 - path: google/cloud/tasks/v2beta2
   documentation_uri: https://cloud.google.com/tasks/docs/
@@ -3299,6 +3473,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/telcoautomation/v1alpha1
@@ -3316,6 +3491,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5235428
   no_rest_numeric_enums:
     python: true
@@ -3335,6 +3511,7 @@
     - go
     - python
     - rust
+    - swift
 - path: google/cloud/tpu/v1
   documentation_uri: https://cloud.google.com/tpu/
   languages:
@@ -3357,6 +3534,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/tpu/v2alpha1
   documentation_uri: https://cloud.google.com/tpu/
   languages:
@@ -3382,6 +3560,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559749
 - path: google/cloud/translate/v3beta1
   documentation_uri: https://cloud.google.com/translate/docs/
@@ -3399,6 +3578,7 @@
     - java
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/cloud/vectorsearch/v1
@@ -3409,6 +3589,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -3430,6 +3611,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
 - path: google/cloud/video/stitcher/v1
@@ -3440,6 +3622,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
   transports:
@@ -3456,6 +3639,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/videointelligence/v1
   documentation_uri: https://cloud.google.com/video-intelligence/docs/
   languages:
@@ -3464,6 +3648,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5084810
 - path: google/cloud/videointelligence/v1beta2
   documentation_uri: https://cloud.google.com/video-intelligence/docs/
@@ -3513,6 +3698,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
 - path: google/cloud/vision/v1p1beta1
   documentation_uri: https://cloud.google.com/vision/docs/
@@ -3558,6 +3744,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     java: preview
     python: preview
@@ -3577,6 +3764,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/vmwareengine/v1
   documentation_uri: https://cloud.google.com/vmware-engine/
   languages:
@@ -3585,6 +3773,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     java: preview
@@ -3597,6 +3786,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/webrisk/v1
   documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
@@ -3605,6 +3795,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/cloud/webrisk/v1beta1
   documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
@@ -3622,6 +3813,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559748
 - path: google/cloud/websecurityscanner/v1alpha
   documentation_uri: https://cloud.google.com/security-scanner/docs/
@@ -3649,6 +3841,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
   no_rest_numeric_enums:
     all: true
@@ -3678,6 +3871,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559729
 - path: google/cloud/workflows/v1beta
   documentation_uri: https://cloud.google.com/workflows/
@@ -3697,6 +3891,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
     java: preview
@@ -3708,6 +3903,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     python: preview
 - path: google/cloud/workstations/v1beta
@@ -3726,6 +3922,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559746
 - path: google/container/v1beta1
   documentation_uri: https://cloud.google.com/kubernetes-engine/
@@ -3759,6 +3956,7 @@
     - go
     - python
     - rust
+    - swift
 - path: google/datastore/v1
   languages:
     - go
@@ -3771,6 +3969,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/devtools/artifactregistry/v1beta2
   documentation_uri: https://cloud.google.com/artifact-registry
   languages:
@@ -3788,6 +3987,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
   no_rest_numeric_enums:
     php: true
@@ -3799,6 +3999,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/5226584
 - path: google/devtools/clouderrorreporting/v1beta1
   documentation_uri: https://cloud.google.com/error-reporting
@@ -3818,6 +4019,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/devtools/cloudtrace/v1
@@ -3827,6 +4029,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559776
   title: Cloud Trace API
 - path: google/devtools/cloudtrace/v2
@@ -3836,6 +4039,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559776
   release_level:
     go: beta
@@ -3848,6 +4052,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559777
 - path: google/devtools/containeranalysis/v1beta1
   languages:
@@ -3870,6 +4075,7 @@
     - go
     - python
     - rust
+    - swift
 - path: google/firestore/bundle
   languages:
     - python
@@ -3881,6 +4087,7 @@
     - go
     - python
     - rust
+    - swift
   title: Cloud Firestore API
 - path: google/geo/type
   languages:
@@ -3897,6 +4104,7 @@
     - java
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -3912,6 +4120,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
 - path: google/iam/v1
   documentation_uri: https://cloud.google.com/iam/docs/
@@ -3921,6 +4130,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
   no_rest_numeric_enums:
     csharp: true
@@ -3946,6 +4156,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559761
 - path: google/iam/v2beta
   documentation_uri: https://cloud.google.com/iam/docs/
@@ -3965,6 +4176,7 @@
     - nodejs
     - python
     - rust
+    - swift
   release_level:
     go: beta
 - path: google/iam/v3beta
@@ -3982,6 +4194,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: Access Context Manager Types
 - path: google/identity/accesscontextmanager/v1
@@ -3992,6 +4205,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     python: preview
@@ -4002,6 +4216,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: Logging types
 - path: google/logging/v2
@@ -4011,6 +4226,7 @@
     - java
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     java: grpc
@@ -4023,6 +4239,7 @@
     - go
     - python
     - rust
+    - swift
   no_rest_numeric_enums:
     csharp: true
     go: true
@@ -4151,6 +4368,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
 - path: google/monitoring/metricsscope/v1
   documentation_uri: https://cloud.google.com/monitoring/docs
@@ -4159,6 +4377,7 @@
     - java
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
   release_level:
     java: preview
@@ -4177,6 +4396,7 @@
     - nodejs
     - python
     - rust
+    - swift
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
   release_level:
     go: beta
@@ -4195,15 +4415,18 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/protobuf
   languages:
     - rust
+    - swift
     - dart
 - path: google/pubsub/v1
   languages:
     - go
     - python
     - rust
+    - swift
 - path: google/rpc
   documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
@@ -4211,6 +4434,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/rpc/context
   documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
@@ -4218,6 +4442,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: RPC Audit and Logging Attributes
 - path: google/shopping/css/v1
@@ -4445,11 +4670,13 @@
     - go
     - python
     - rust
+    - swift
 - path: google/spanner/admin/instance/v1
   languages:
     - go
     - python
     - rust
+    - swift
 - path: google/spanner/executor/v1
   languages:
     - go
@@ -4462,17 +4689,20 @@
     - go
     - python
     - rust
+    - swift
 - path: google/storage/control/v2
   languages:
     - go
     - nodejs
     - python
     - rust
+    - swift
 - path: google/storage/v2
   languages:
     - go
     - python
     - rust
+    - swift
   transports:
     go: grpc
     java: grpc
@@ -4486,6 +4716,7 @@
     - nodejs
     - python
     - rust
+    - swift
 - path: google/streetview/publish/v1
   languages:
     - go
@@ -4499,6 +4730,7 @@
     - go
     - python
     - rust
+    - swift
   new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: grafeas/v1
   documentation_uri: https://grafeas.io
@@ -4508,6 +4740,7 @@
     - nodejs
     - python
     - rust
+    - swift
   transports:
     csharp: grpc
     go: grpc
@@ -4520,6 +4753,7 @@
     - go
     - python
     - rust
+    - swift
   service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
 - path: src/google/protobuf
   languages:
@@ -4527,3 +4761,4 @@
     - go
     - python
     - rust
+    - swift
