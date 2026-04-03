@@ -220,6 +220,9 @@ func (r *stageRunner) processLibrary(ctx context.Context, library *legacyconfig.
 	if err != nil {
 		return fmt.Errorf("failed to fetch conventional commits for library, %s: %w", library.ID, err)
 	}
+	for _, commit := range commits {
+		slog.Info("found commit for library", "id", library.ID, "commit", commit)
+	}
 	// Filter specifically for commits relevant to a library
 	commits = filterCommitsByLibraryID(commits, library.ID)
 	return r.updateLibrary(ctx, library, commits)
