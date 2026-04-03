@@ -403,3 +403,61 @@ func TestAddMissingHeaders(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveModuleNames(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		library   *config.Library
+		version   string
+		wantGapic string
+		wantProto string
+		wantGrpc  string
+	}{
+		{
+			name: "default case",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			version:   "v1",
+			wantGapic: "google-cloud-secretmanager",
+			wantProto: "proto-google-cloud-secretmanager-v1",
+			wantGrpc:  "grpc-google-cloud-secretmanager-v1",
+		},
+		{
+			name: "with distribution name override",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					DistributionNameOverride: "com.google.cloud:google-secretmanager",
+				},
+			},
+			version:   "v1",
+			wantGapic: "google-secretmanager",
+			wantProto: "proto-google-secretmanager-v1",
+			wantGrpc:  "grpc-google-secretmanager-v1",
+		},
+		{
+			name: "library name already has prefix",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+			},
+			version:   "v1",
+			wantGapic: "google-cloud-secretmanager",
+			wantProto: "proto-google-cloud-secretmanager-v1",
+			wantGrpc:  "grpc-google-cloud-secretmanager-v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveModuleNames(test.library, test.version)
+			if got.gapic != test.wantGapic {
+				t.Errorf("gapic = %q, want %q", got.gapic, test.wantGapic)
+			}
+			if got.proto != test.wantProto {
+				t.Errorf("proto = %q, want %q", got.proto, test.wantProto)
+			}
+			if got.grpc != test.wantGrpc {
+				t.Errorf("grpc = %q, want %q", got.grpc, test.wantGrpc)
+			}
+		})
+	}
+}

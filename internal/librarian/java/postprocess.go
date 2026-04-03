@@ -46,7 +46,7 @@ type postProcessParams struct {
 func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
 func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) modules() javaModules { return deriveModuleNames(p.library.Name, p.version) }
+func (p postProcessParams) modules() javaModules { return deriveModuleNames(p.library, p.version) }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
@@ -132,8 +132,10 @@ type javaModules struct {
 	grpc  string // e.g., grpc-google-cloud-secretmanager-v1
 }
 
-func deriveModuleNames(libraryID, version string) javaModules {
-	name := ensureCloudPrefix(libraryID)
+func deriveModuleNames(library *config.Library, version string) javaModules {
+	distName := deriveDistributionName(library)
+	parts := strings.SplitN(distName, ":", 2)
+	name := parts[1]
 	return javaModules{
 		gapic: name,
 		proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),

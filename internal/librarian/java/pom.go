@@ -196,7 +196,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		names := deriveModuleNames(gapicArtifactID, version)
+		names := deriveModuleNames(library, version)
 
 		transport := transports[api.Path]
 		protoGrpcID := protoGroupID(gapicGroupID)
