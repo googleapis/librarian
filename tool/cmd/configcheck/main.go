@@ -23,6 +23,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
@@ -34,7 +35,14 @@ var (
 	errLibNotFoundInLibrarianYAML = errors.New("library not found in librarian.yaml")
 	errLibNotFoundInStateYAML     = errors.New("library not found in state.yaml")
 	errLibraryVersionNotSame      = errors.New("library version not same")
+	errLibraryAPINotSame          = errors.New("library API not same")
 )
+
+type library struct {
+	id      string
+	version string
+	apis    []string
+}
 
 func main() {
 	if err := run(os.Args[1:]); err != nil {
@@ -71,21 +79,18 @@ func run(args []string) error {
 // configCheck verifies that the libraries and their versions defined in the
 // state.yaml match those in librarian.yaml.
 func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
-	legacyLibs := make(map[string]string)
-	for _, lib := range state.Libraries {
-		legacyLibs[lib.ID] = lib.Version
-	}
-	libs := make(map[string]string)
-	for _, lib := range cfg.Libraries {
-		libs[lib.Name] = lib.Version
-	}
-	for id, version := range legacyLibs {
-		libVersion, ok := libs[id]
+	legacyLibs := convertLegacyLibs(state.Libraries)
+	libs := convertLibs(cfg.Libraries)
+	for id, legacyLib := range legacyLibs {
+		lib, ok := libs[id]
 		if !ok {
 			return fmt.Errorf("library %s: %w", id, errLibNotFoundInLibrarianYAML)
 		}
-		if version != libVersion {
+		if lib.version != legacyLib.version {
 			return fmt.Errorf("library %s: %w", id, errLibraryVersionNotSame)
+		}
+		if !slices.Equal(lib.apis, legacyLib.apis) {
+			return fmt.Errorf("library %s: %w", id, errLibraryAPINotSame)
 		}
 	}
 	for name := range libs {
@@ -94,4 +99,38 @@ func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
 		}
 	}
 	return nil
+}
+
+func convertLegacyLibs(libs []*legacyconfig.LibraryState) map[string]*library {
+	res := make(map[string]*library)
+	for _, lib := range libs {
+		var apis []string
+		for _, api := range lib.APIs {
+			apis = append(apis, api.Path)
+		}
+		slices.Sort(apis)
+		res[lib.ID] = &library{
+			id:      lib.ID,
+			version: lib.Version,
+			apis:    apis,
+		}
+	}
+	return res
+}
+
+func convertLibs(libs []*config.Library) map[string]*library {
+	res := make(map[string]*library)
+	for _, lib := range libs {
+		var apis []string
+		for _, api := range lib.APIs {
+			apis = append(apis, api.Path)
+		}
+		slices.Sort(apis)
+		res[lib.Name] = &library{
+			id:      lib.Name,
+			version: lib.Version,
+			apis:    apis,
+		}
+	}
+	return res
 }
