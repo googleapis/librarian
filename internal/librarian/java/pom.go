@@ -135,6 +135,9 @@ func updateManagedBlock(content, templateName, startMarker, endMarker string, da
 	return replaceBlock(content, startMarker, endMarker, buf.String())
 }
 
+// replaceBlock surgically replaces the content between startMarker and endMarker.
+// It detects the indentation of the line where startMarker is placed and
+// ensures the endMarker follows the same indentation.
 func replaceBlock(content, startMarker, endMarker, newContent string) (string, error) {
 	startIdx := strings.Index(content, startMarker)
 	if startIdx == -1 {
@@ -144,9 +147,27 @@ func replaceBlock(content, startMarker, endMarker, newContent string) (string, e
 	if endIdx == -1 {
 		return "", fmt.Errorf("found start marker %q but no end marker %q", startMarker, endMarker)
 	}
-	// Calculate the content strictly between the markers.
-	// We preserve the markers themselves and the indentation of the end marker.
-	return content[:startIdx+len(startMarker)] + "\n" + strings.TrimSpace(newContent) + "\n    " + content[endIdx:], nil
+
+	// Detect indentation of the start marker by looking at the content before
+	// it on the same line.
+	// TODO(https://github.com/googleapis/librarian/issues/5039):
+	// Remove when formatter for pom.xml is used
+	indent := detectIndentation(content, startIdx)
+
+	// Calculate the content strictly between the markers. We preserve the
+	// markers themselves and the indentation of the start marker is used for
+	// the end marker as well.
+	return content[:startIdx+len(startMarker)] + "\n" + strings.Trim(newContent, "\n") + "\n" + indent + content[endIdx:], nil
+}
+
+func detectIndentation(content string, index int) string {
+	lineStart := strings.LastIndex(content[:index], "\n")
+	if lineStart == -1 {
+		lineStart = 0
+	} else {
+		lineStart++ // skip the newline
+	}
+	return content[lineStart:index]
 }
 
 // collectModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
