@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -24,6 +25,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -424,5 +426,88 @@ func TestDeriveLibraryName(t *testing.T) {
 				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)
 			}
 		})
+	}
+}
+
+func TestSyncToStateYAML(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	// Setup .librarian/state.yaml
+	if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	stateFile := filepath.Join(legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
+	initialState := &legacyconfig.LibrarianState{
+		Image: "gcr.io/my-image:latest",
+		Libraries: []*legacyconfig.LibraryState{
+			{
+				ID:      "existinglib",
+				Version: "1.2.3",
+				APIs: []*legacyconfig.API{
+					{Path: "google/cloud/existing/v1"},
+				},
+				SourceRoots: []string{"existinglib"},
+			},
+		},
+	}
+	if err := yaml.Write(stateFile, initialState); err != nil {
+		t.Fatal(err)
+	}
+	// Mock Config
+	cfg := &config.Config{
+		Language: config.LanguageGo,
+		Libraries: []*config.Library{
+			{
+				Name:    "existinglib",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/existing/v1"},
+				},
+			},
+			{
+				Name:    "newlib",
+				Version: "0.1.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/new/v1"},
+				},
+			},
+		},
+	}
+	if err := syncToStateYAML(".", cfg); err != nil {
+		t.Fatal(err)
+	}
+	// Verify updated state.yaml
+	gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantState := &legacyconfig.LibrarianState{
+		Image: "gcr.io/my-image:latest",
+		Libraries: []*legacyconfig.LibraryState{
+			{
+				ID:            "existinglib",
+				Version:       "1.2.3",
+				PreserveRegex: []string{},
+				RemoveRegex:   []string{},
+				APIs: []*legacyconfig.API{
+					{Path: "google/cloud/existing/v1"},
+				},
+				SourceRoots: []string{"existinglib"},
+			},
+			{
+				ID:            "newlib",
+				Version:       "0.1.0",
+				PreserveRegex: []string{},
+				RemoveRegex:   []string{},
+				APIs:          []*legacyconfig.API{},
+				SourceRoots:   []string{"newlib"},
+				TagFormat:     "{id}/v{version}",
+			},
+		},
+	}
+
+	if diff := cmp.Diff(wantState, gotState); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

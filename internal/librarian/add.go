@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -25,6 +26,7 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
@@ -69,6 +71,12 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	cfg, err = resolveDependencies(ctx, cfg, name)
 	if err != nil {
 		return err
+	}
+	switch cfg.Language {
+	case config.LanguageGo:
+		if err := syncToStateYAML(".", cfg); err != nil {
+			return err
+		}
 	}
 	return RunTidyOnConfig(ctx, ".", cfg)
 }
@@ -176,4 +184,32 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
 	return name, cfg, nil
+}
+
+// syncToStateYAML updates the .librarian/state.yaml file with any new libraries.
+func syncToStateYAML(repoDir string, cfg *config.Config) error {
+	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
+	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
+	if err != nil {
+		return err
+	}
+	for _, lib := range cfg.Libraries {
+		if state.LibraryByID(lib.Name) != nil {
+			continue
+		}
+		state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
+	}
+	sort.Slice(state.Libraries, func(i, j int) bool {
+		return state.Libraries[i].ID < state.Libraries[j].ID
+	})
+	return yaml.Write(stateFile, state)
+}
+
+func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+	return &legacyconfig.LibraryState{
+		ID:          lib.Name,
+		Version:     lib.Version,
+		SourceRoots: []string{lib.Name},
+		TagFormat:   "{id}/v{version}",
+	}
 }
