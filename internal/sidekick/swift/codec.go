@@ -22,13 +22,13 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
-// codec represents the configuration for a Swift Sidekick Codec.
+// codec represents the configuration for a Swift sidekick Codec.
 //
-// A sideckick "Codec" is a package that generates libraries from an `api.API`
-// model and some configuration. The `Generate()` function creates a `codec`
-// object for each `api.API` that needs to be generated. That lends naturally
-// into a single object that carries all the information needed to generate
-// the library.
+// A sideckick Codec is a package that generates libraries from an `api.API`
+// model and some configuration. In the Swift codec, the `Generate()`
+// function  creates a `codec` object for each `api.API` that needs to be
+// generated. That lends naturally into a single object that carries all the
+// information needed to generate the library.
 type codec struct {
 	GenerationYear string
 	PackageName    string
