@@ -34,7 +34,7 @@ func TestAnnotateField(t *testing.T) {
 		Fields:  []*api.Field{field},
 	}
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	codec := newTestCodec(t, map[string]string{})
+	codec := newTestCodec(t, model, map[string]string{})
 	if err := codec.annotateModel(model); err != nil {
 		t.Fatal(err)
 	}

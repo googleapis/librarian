@@ -21,7 +21,7 @@ import (
 )
 
 func TestPackageName(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name     string
 		input    string
 		override string
@@ -52,19 +52,11 @@ func TestPackageName(t *testing.T) {
 			input: "grafeas.v1",
 			want:  "GoogleGrafeasV1",
 		},
-		{
-			name:     "override",
-			input:    "google.cloud.storage.v2",
-			override: "OverrideName",
-			want:     "OverrideName",
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := PackageName(&api.API{PackageName: tt.input}, tt.override)
-			if got != tt.want {
-				t.Errorf("PackageName(%q, %q) = %q, want %q", tt.input, tt.override, got, tt.want)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := PackageName(&api.API{PackageName: test.input})
+			if got != test.want {
+				t.Errorf("mismatch got = %q, want %q", got, test.want)
 			}
 		})
 	}

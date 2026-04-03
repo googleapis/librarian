@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -29,11 +30,11 @@ type codec struct {
 	RootName string
 }
 
-func newCodec(cfg *parser.ModelConfig) *codec {
+func newCodec(model *api.API, cfg *parser.ModelConfig) *codec {
 	year, _, _ := time.Now().Date()
 	result := &codec{
 		GenerationYear: fmt.Sprintf("%04d", year),
-		PackageName:    "",
+		PackageName:    PackageName(model),
 		RootName:       "googleapis",
 	}
 	for key, definition := range cfg.Codec {

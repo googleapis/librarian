@@ -22,11 +22,7 @@ import (
 )
 
 // PackageName returns the package name for the API.
-func PackageName(api *api.API, packageNameOverride string) string {
-	if len(packageNameOverride) > 0 {
-		return packageNameOverride
-	}
-
+func PackageName(api *api.API) string {
 	var name string
 	switch {
 	case strings.HasPrefix(api.PackageName, "google.cloud."):

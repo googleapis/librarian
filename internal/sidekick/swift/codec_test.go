@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
@@ -29,7 +30,8 @@ func TestParseOptions(t *testing.T) {
 			"root-name":             "test-root",
 		},
 	}
-	got := newCodec(cfg)
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	got := newCodec(model, cfg)
 	want := &codec{
 		GenerationYear: "2038",
 		PackageName:    "GoogleCloudBigtable",
@@ -41,10 +43,10 @@ func TestParseOptions(t *testing.T) {
 }
 
 // newTestCodec creates a simple codec for the tests.
-func newTestCodec(t *testing.T, options map[string]string) *codec {
+func newTestCodec(t *testing.T, model *api.API, options map[string]string) *codec {
 	t.Helper()
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	return newCodec(cfg)
+	return newCodec(model, cfg)
 }
