@@ -39,7 +39,6 @@ var (
 )
 
 type library struct {
-	id      string
 	version string
 	apis    []string
 }
@@ -104,13 +103,12 @@ func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
 func convertLegacyLibs(libs []*legacyconfig.LibraryState) map[string]*library {
 	res := make(map[string]*library)
 	for _, lib := range libs {
-		var apis []string
+		apis := make([]string, 0, len(lib.APIs))
 		for _, api := range lib.APIs {
 			apis = append(apis, api.Path)
 		}
 		slices.Sort(apis)
 		res[lib.ID] = &library{
-			id:      lib.ID,
 			version: lib.Version,
 			apis:    apis,
 		}
@@ -121,13 +119,12 @@ func convertLegacyLibs(libs []*legacyconfig.LibraryState) map[string]*library {
 func convertLibs(libs []*config.Library) map[string]*library {
 	res := make(map[string]*library)
 	for _, lib := range libs {
-		var apis []string
+		apis := make([]string, 0, len(lib.APIs))
 		for _, api := range lib.APIs {
 			apis = append(apis, api.Path)
 		}
 		slices.Sort(apis)
 		res[lib.Name] = &library{
-			id:      lib.Name,
 			version: lib.Version,
 			apis:    apis,
 		}
