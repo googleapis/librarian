@@ -2198,6 +2198,25 @@ func TestParseResourcePatterns(t *testing.T) {
 	})
 }
 
+func TestParseProtobuf_Descriptors(t *testing.T) {
+	requireProtoc(t)
+	descFile := newTestDescriptorFile(t, "scalar.proto")
+	defer os.Remove(descFile)
+
+	cfg := &ModelConfig{
+		DescriptorFiles:           descFile,
+		DescriptorFilesToGenerate: "scalar.proto",
+		ServiceConfig:             secretManagerYamlFullPath,
+	}
+	got, err := ParseProtobuf(cfg)
+	if err != nil {
+		t.Fatalf("ParseProtobuf failed: %v", err)
+	}
+	if got == nil {
+		t.Fatalf("ParseProtobuf returned nil model")
+	}
+}
+
 func newTestDescriptorFile(t *testing.T, filename string) string {
 	t.Helper()
 	src := &sources.SourceConfig{
@@ -2223,25 +2242,6 @@ func newTestDescriptorFile(t *testing.T, filename string) string {
 	_ = tempFile.Close()
 
 	return tempFile.Name()
-}
-
-func TestParseProtobuf_Descriptors(t *testing.T) {
-	requireProtoc(t)
-	descFile := newTestDescriptorFile(t, "scalar.proto")
-	defer os.Remove(descFile)
-
-	cfg := &ModelConfig{
-		DescriptorFiles:           descFile,
-		DescriptorFilesToGenerate: "scalar.proto",
-		ServiceConfig:             secretManagerYamlFullPath,
-	}
-	got, err := ParseProtobuf(cfg)
-	if err != nil {
-		t.Fatalf("ParseProtobuf failed: %v", err)
-	}
-	if got == nil {
-		t.Fatalf("ParseProtobuf returned nil model")
-	}
 }
 
 func requireProtoc(t *testing.T) {
