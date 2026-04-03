@@ -48,27 +48,7 @@ func (p *mustacheProvider) Get(name string) (string, error) {
 func GenerateFromModel(outdir string, model *api.API, provider TemplateProvider, generatedFiles []GeneratedFile) error {
 	var errs []error
 	for _, gen := range generatedFiles {
-		templateContents, err := provider(gen.TemplatePath)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if outdir == "" {
-			wd, _ := os.Getwd()
-			outdir = wd
-		}
-		destination := filepath.Join(outdir, gen.OutputPath)
-		os.MkdirAll(filepath.Dir(destination), 0777) // Ignore errors
-		nestedProvider := mustacheProvider{
-			impl:    provider,
-			dirname: filepath.Dir(gen.TemplatePath),
-		}
-		s, err := mustache.RenderPartials(templateContents, &nestedProvider, model)
-		if err != nil {
-			errs = append(errs, err)
-			continue
-		}
-		if err := os.WriteFile(destination, []byte(s), 0666); err != nil {
+		if err := generateElement(outdir, model, provider, gen); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -76,4 +56,41 @@ func GenerateFromModel(outdir string, model *api.API, provider TemplateProvider,
 		return fmt.Errorf("errors generating output files: %w", errors.Join(errs...))
 	}
 	return nil
+}
+
+// GenerateService generates a single file using the api.Service model.
+func GenerateService(outdir string, service *api.Service, provider TemplateProvider, gen GeneratedFile) error {
+	return generateElement(outdir, service, provider, gen)
+}
+
+// GenerateMessage generates a single file using the api.Message model.
+func GenerateMessage(outdir string, message *api.Message, provider TemplateProvider, gen GeneratedFile) error {
+	return generateElement(outdir, message, provider, gen)
+}
+
+// GenerateEnum generates a single file using the api.Enum model.
+func GenerateEnum(outdir string, enum *api.Enum, provider TemplateProvider, gen GeneratedFile) error {
+	return generateElement(outdir, enum, provider, gen)
+}
+
+func generateElement(outdir string, element any, provider TemplateProvider, gen GeneratedFile) error {
+	templateContents, err := provider(gen.TemplatePath)
+	if err != nil {
+		return err
+	}
+	if outdir == "" {
+		wd, _ := os.Getwd()
+		outdir = wd
+	}
+	destination := filepath.Join(outdir, gen.OutputPath)
+	os.MkdirAll(filepath.Dir(destination), 0777) // Ignore errors
+	nestedProvider := mustacheProvider{
+		impl:    provider,
+		dirname: filepath.Dir(gen.TemplatePath),
+	}
+	s, err := mustache.RenderPartials(templateContents, &nestedProvider, element)
+	if err != nil {
+		return err
+	}
+	return os.WriteFile(destination, []byte(s), 0666)
 }
