@@ -39,3 +39,12 @@ func TestParseOptions(t *testing.T) {
 		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
 	}
 }
+
+// newTestCodec creates a simple codec for the tests.
+func newTestCodec(t *testing.T, options map[string]string) *codec {
+	t.Helper()
+	cfg := &parser.ModelConfig{
+		Codec: options,
+	}
+	return newCodec(cfg)
+}
