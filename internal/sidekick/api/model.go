@@ -49,6 +49,52 @@ const (
 	SINT64_TYPE                 // 18
 )
 
+// String returns the symbolic name for the Typez.
+func (t Typez) String() string {
+	switch t {
+	case UNDEFINED_TYPE:
+		return "UNDEFINED"
+	case DOUBLE_TYPE:
+		return "DOUBLE"
+	case FLOAT_TYPE:
+		return "FLOAT"
+	case INT64_TYPE:
+		return "INT64"
+	case UINT64_TYPE:
+		return "UINT64"
+	case INT32_TYPE:
+		return "INT32"
+	case FIXED64_TYPE:
+		return "FIXED64"
+	case FIXED32_TYPE:
+		return "FIXED32"
+	case BOOL_TYPE:
+		return "BOOL"
+	case STRING_TYPE:
+		return "STRING"
+	case GROUP_TYPE:
+		return "GROUP"
+	case MESSAGE_TYPE:
+		return "MESSAGE"
+	case BYTES_TYPE:
+		return "BYTES"
+	case UINT32_TYPE:
+		return "UINT32"
+	case ENUM_TYPE:
+		return "ENUM"
+	case SFIXED32_TYPE:
+		return "SFIXED32"
+	case SFIXED64_TYPE:
+		return "SFIXED64"
+	case SINT32_TYPE:
+		return "SINT32"
+	case SINT64_TYPE:
+		return "SINT64"
+	default:
+		return fmt.Sprintf("Typez(%d)", t)
+	}
+}
+
 // FieldBehavior represents annotations for how the code generator handles a
 // field.
 //
