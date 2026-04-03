@@ -19,7 +19,7 @@ import (
 )
 
 func TestEscapeKeyword(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		input string
 		want  string
 	}{
@@ -36,17 +36,17 @@ func TestEscapeKeyword(t *testing.T) {
 		{input: "secret", want: "secret"},
 		{input: "volume", want: "volume"},
 	} {
-		t.Run(tt.input, func(t *testing.T) {
-			got := escapeKeyword(tt.input)
-			if got != tt.want {
-				t.Errorf("escapeKeyword(%q) = %q, want %q", tt.input, got, tt.want)
+		t.Run(test.input, func(t *testing.T) {
+			got := escapeKeyword(test.input)
+			if got != test.want {
+				t.Errorf("escapeKeyword(%q) = %q, want %q", test.input, got, test.want)
 			}
 		})
 	}
 }
 
 func TestCamelCase(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		input string
 		want  string
 	}{
@@ -58,10 +58,10 @@ func TestCamelCase(t *testing.T) {
 		{input: "protocol", want: "`protocol`"},
 		{input: "will_set", want: "`willSet`"},
 	} {
-		t.Run(tt.input, func(t *testing.T) {
-			got := camelCase(tt.input)
-			if got != tt.want {
-				t.Errorf("camelCase(%q) = %q, want %q", tt.input, got, tt.want)
+		t.Run(test.input, func(t *testing.T) {
+			got := camelCase(test.input)
+			if got != test.want {
+				t.Errorf("camelCase(%q) = %q, want %q", test.input, got, test.want)
 			}
 		})
 	}
