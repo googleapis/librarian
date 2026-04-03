@@ -31,7 +31,7 @@ func TestFormatDocumentation(t *testing.T) {
 		{
 			name: "empty",
 			doc:  "",
-			want: []string{""},
+			want: nil,
 		},
 		{
 			name: "single line",
