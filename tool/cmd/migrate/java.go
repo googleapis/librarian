@@ -339,19 +339,16 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	var totalInserts int
 	for _, lib := range cfg.Libraries {
 		if lib.SkipGenerate {
-			log.Printf("Debug: skipping library %s (SkipGenerate=true)", lib.Name)
 			continue
 		}
 		distName := java.DeriveDistributionName(lib)
 		parts := strings.SplitN(distName, ":", 2)
 		if len(parts) != 2 {
-			log.Printf("Debug: skipping library %s (invalid distribution name: %s)", lib.Name, distName)
 			continue
 		}
 		gapicArtifactID := parts[1]
 		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
 		if _, err := os.Stat(clientPomPath); err != nil {
-			log.Printf("Warning: pom.xml not found for library %s at %s", lib.Name, clientPomPath)
 			continue
 		}
 
@@ -363,7 +360,6 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 
 		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
 		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
-			log.Printf("Debug: skipping library %s (no APIs found to wrap)", lib.Name)
 			continue
 		}
 
@@ -417,7 +413,6 @@ func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMark
 
 	first, last := findMarkerBounds(lines, targets)
 	if first == -1 {
-		log.Printf("Debug: library %s: none of the %s artifact IDs %v found in pom.xml", libName, depType, artifactIDs)
 		return lines
 	}
 
