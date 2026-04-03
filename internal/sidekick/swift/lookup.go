@@ -21,8 +21,9 @@ import (
 )
 
 func lookupMessage(model *api.API, id string) (*api.Message, error) {
-	if m, ok := model.State.MessageByID[id]; ok {
-		return m, nil
+	m, ok := model.State.MessageByID[id]
+	if !ok {
+		return nil, fmt.Errorf("unable to lookup message %q", id)
 	}
-	return nil, fmt.Errorf("unable to lookup message %q", id)
+	return m, nil
 }

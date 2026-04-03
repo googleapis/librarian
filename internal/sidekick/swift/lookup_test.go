@@ -27,7 +27,7 @@ func TestLookupMessage(t *testing.T) {
 
 	got, err := lookupMessage(model, ".test.Secret")
 	if err != nil {
-		t.Fatalf("lookupMessage() unexpected error: %v", err)
+		t.Fatal(err)
 	}
 	if diff := cmp.Diff(msg, got); diff != "" {
 		t.Errorf("lookupMessage() mismatch (-want +got):\n%s", diff)
