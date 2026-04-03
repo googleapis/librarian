@@ -72,8 +72,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if err != nil {
 		return err
 	}
-	switch cfg.Language {
-	case config.LanguageGo:
+	if cfg.Language == config.LanguageGo {
 		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
 		// fully migrating off legacylibrarian.
 		if err := syncToStateYAML(".", cfg); err != nil {
