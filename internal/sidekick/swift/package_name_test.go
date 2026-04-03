@@ -22,10 +22,9 @@ import (
 
 func TestPackageName(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		input    string
-		override string
-		want     string
+		name  string
+		input string
+		want  string
 	}{
 		{
 			name:  "cloud storage v2",
