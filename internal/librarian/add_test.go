@@ -588,33 +588,20 @@ func TestSyncToStateYAML(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-
 			stateFile := filepath.Join(legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
-			if test.initialState != nil {
-				if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := yaml.Write(stateFile, test.initialState); err != nil {
-					t.Fatal(err)
-				}
+			if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
+				t.Fatal(err)
 			}
-
+			if err := yaml.Write(stateFile, test.initialState); err != nil {
+				t.Fatal(err)
+			}
 			if err := syncToStateYAML(".", test.cfg); err != nil {
 				t.Fatal(err)
 			}
-
-			if test.wantState == nil {
-				if _, err := os.Stat(stateFile); !os.IsNotExist(err) {
-					t.Errorf("expected state.yaml to not exist")
-				}
-				return
-			}
-
 			gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
