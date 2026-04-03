@@ -24,6 +24,7 @@ import (
 
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -404,59 +405,99 @@ func TestAddMissingHeaders(t *testing.T) {
 	}
 }
 
-func TestDeriveModuleNames(t *testing.T) {
+func TestDeriveGAPICCoordinates(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		library   *config.Library
-		version   string
-		wantGapic string
-		wantProto string
-		wantGrpc  string
+		name    string
+		library *config.Library
+		want    coordinates
 	}{
 		{
 			name: "default case",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:    "secretmanager",
+				Version: "1.2.3",
 			},
-			version:   "v1",
-			wantGapic: "google-cloud-secretmanager",
-			wantProto: "proto-google-cloud-secretmanager-v1",
-			wantGrpc:  "grpc-google-cloud-secretmanager-v1",
+			want: coordinates{
+				GroupID:    "com.google.cloud",
+				ArtifactID: "google-cloud-secretmanager",
+				Version:    "1.2.3",
+			},
 		},
 		{
 			name: "with distribution name override",
 			library: &config.Library{
-				Name: "secretmanager",
+				Name:    "secretmanager",
+				Version: "1.2.3",
 				Java: &config.JavaModule{
 					DistributionNameOverride: "com.google.cloud:google-secretmanager",
 				},
 			},
-			version:   "v1",
-			wantGapic: "google-secretmanager",
-			wantProto: "proto-google-secretmanager-v1",
-			wantGrpc:  "grpc-google-secretmanager-v1",
+			want: coordinates{
+				GroupID:    "com.google.cloud",
+				ArtifactID: "google-secretmanager",
+				Version:    "1.2.3",
+			},
 		},
 		{
-			name: "library name already has prefix",
+			name: "invalid distribution name override (one part)",
 			library: &config.Library{
-				Name: "google-cloud-secretmanager",
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				Java: &config.JavaModule{
+					DistributionNameOverride: "invalidname",
+				},
 			},
-			version:   "v1",
-			wantGapic: "google-cloud-secretmanager",
-			wantProto: "proto-google-cloud-secretmanager-v1",
-			wantGrpc:  "grpc-google-cloud-secretmanager-v1",
+			want: coordinates{
+				GroupID:    "invalidname",
+				ArtifactID: "invalidname",
+				Version:    "1.2.3",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveModuleNames(test.library, test.version)
-			if got.gapic != test.wantGapic {
-				t.Errorf("gapic = %q, want %q", got.gapic, test.wantGapic)
+			got := deriveGAPICCoordinates(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-			if got.proto != test.wantProto {
-				t.Errorf("proto = %q, want %q", got.proto, test.wantProto)
+		})
+	}
+}
+
+func TestDeriveModuleNames(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		gapic     coordinates
+		version   string
+		wantProto coordinates
+		wantGrpc  coordinates
+	}{
+		{
+			name: "standard cloud mapping",
+			gapic: coordinates{
+				GroupID:    "com.google.cloud",
+				ArtifactID: "google-cloud-secretmanager",
+				Version:    "1.2.3",
+			},
+			version: "v1",
+			wantProto: coordinates{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "proto-google-cloud-secretmanager-v1",
+				Version:    "1.2.3",
+			},
+			wantGrpc: coordinates{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "grpc-google-cloud-secretmanager-v1",
+				Version:    "1.2.3",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveModuleNames(test.gapic, test.version)
+			if diff := cmp.Diff(test.wantProto, got.proto); diff != "" {
+				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}
-			if got.grpc != test.wantGrpc {
-				t.Errorf("grpc = %q, want %q", got.grpc, test.wantGrpc)
+			if diff := cmp.Diff(test.wantGrpc, got.grpc); diff != "" {
+				t.Errorf("grpc mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
