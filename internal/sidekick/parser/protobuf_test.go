@@ -15,6 +15,7 @@
 package parser
 
 import (
+	"os"
 	"os/exec"
 	"strings"
 	"testing"
@@ -2132,6 +2133,7 @@ func TestProtobuf_ParseBadFiles(t *testing.T) {
 		{SpecificationSource: "-invalid-file-name-", ServiceConfig: secretManagerYamlFullPath},
 		{SpecificationSource: protobufFile, ServiceConfig: "-invalid-file-name-"},
 		{SpecificationSource: secretManagerYamlFullPath, ServiceConfig: secretManagerYamlFullPath},
+		{DescriptorFiles: "dummy.desc", DescriptorFilesToGenerate: ""},
 	} {
 		if got, err := ParseProtobuf(cfg); err == nil {
 			t.Fatalf("expected error with missing source file, got=%v", got)
@@ -2149,7 +2151,7 @@ func newTestCodeGeneratorRequest(t *testing.T, filename string) *pluginpb.CodeGe
 		ActiveRoots: []string{"googleapis", "protobuf-src"},
 		IncludeList: []string{filename},
 	}
-	request, err := newCodeGeneratorRequest("testdata", src)
+	request, err := codeGeneratorRequestFromSource("testdata", src)
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
@@ -2194,6 +2196,52 @@ func TestParseResourcePatterns(t *testing.T) {
 			t.Errorf("parseResourcePatterns() returned error %q, want %q", err.Error(), want)
 		}
 	})
+}
+
+func newTestDescriptorFile(t *testing.T, filename string) string {
+	t.Helper()
+	src := &sources.SourceConfig{
+		Sources: &sources.Sources{
+			Googleapis:  "../../testdata/googleapis",
+			ProtobufSrc: "testdata",
+		},
+		ActiveRoots: []string{"googleapis", "protobuf-src"},
+		IncludeList: []string{filename},
+	}
+	contents, err := runProtoc([]string{filename}, src)
+	if err != nil {
+		t.Fatalf("Failed to run protoc: %v", err)
+	}
+
+	tempFile, err := os.CreateTemp("", "test-desc-")
+	if err != nil {
+		t.Fatalf("Failed to create temp file: %v", err)
+	}
+	if _, err := tempFile.Write(contents); err != nil {
+		t.Fatalf("Failed to write to temp file: %v", err)
+	}
+	_ = tempFile.Close()
+
+	return tempFile.Name()
+}
+
+func TestParseProtobuf_Descriptors(t *testing.T) {
+	requireProtoc(t)
+	descFile := newTestDescriptorFile(t, "scalar.proto")
+	defer os.Remove(descFile)
+
+	cfg := &ModelConfig{
+		DescriptorFiles:           descFile,
+		DescriptorFilesToGenerate: "scalar.proto",
+		ServiceConfig:             secretManagerYamlFullPath,
+	}
+	got, err := ParseProtobuf(cfg)
+	if err != nil {
+		t.Fatalf("ParseProtobuf failed: %v", err)
+	}
+	if got == nil {
+		t.Fatalf("ParseProtobuf returned nil model")
+	}
 }
 
 func requireProtoc(t *testing.T) {

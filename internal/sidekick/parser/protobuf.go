@@ -16,7 +16,6 @@ package parser
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -40,11 +39,25 @@ import (
 // ParseProtobuf reads Protobuf specifications and converts them into
 // the `api.API` model.
 func ParseProtobuf(cfg *ModelConfig) (*api.API, error) {
-	source := cfg.SpecificationSource
-	request, err := newCodeGeneratorRequest(source, cfg.Source)
-	if err != nil {
-		return nil, err
+	var request *pluginpb.CodeGeneratorRequest
+	var err error
+
+	if cfg.DescriptorFiles != "" {
+		if cfg.DescriptorFilesToGenerate == "" {
+			return nil, fmt.Errorf("DescriptorFilesToGenerate must be specified when using DescriptorFiles")
+		}
+		request, err = codeGeneratorRequestFromDescriptors(cfg.DescriptorFiles, cfg.DescriptorFilesToGenerate)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		source := cfg.SpecificationSource
+		request, err = codeGeneratorRequestFromSource(source, cfg.Source)
+		if err != nil {
+			return nil, err
+		}
 	}
+
 	serviceConfig, err := loadServiceConfig(cfg)
 	if err != nil {
 		return nil, err
@@ -52,27 +65,34 @@ func ParseProtobuf(cfg *ModelConfig) (*api.API, error) {
 	return makeAPIForProtobuf(serviceConfig, request)
 }
 
-// Create a temporary files to store `protoc`'s output.
-func newCodeGeneratorRequest(source string, sourceCfg *sources.SourceConfig) (_ *pluginpb.CodeGeneratorRequest, err error) {
-	tempFile, err := os.CreateTemp("", "protoc-out-")
+func codeGeneratorRequestFromDescriptors(descriptorFiles, generateFiles string) (*pluginpb.CodeGeneratorRequest, error) {
+	allFiles, err := loadDescriptorSet(descriptorFiles)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		rerr := tempFile.Close()
-		rerr = errors.Join(rerr, os.Remove(tempFile.Name()))
-		if err == nil {
-			err = rerr
-		}
-	}()
 
+	generateList := parseCommaSeparatedList(generateFiles)
+	target, err := filterTargetDescriptors(allFiles, generateList)
+	if err != nil {
+		return nil, err
+	}
+
+	return &pluginpb.CodeGeneratorRequest{
+		FileToGenerate:        generateList,
+		SourceFileDescriptors: target,
+		ProtoFile:             allFiles,
+		CompilerVersion:       newCompilerVersion(),
+	}, nil
+}
+
+// Create a temporary files to store `protoc`'s output.
+func codeGeneratorRequestFromSource(source string, sourceCfg *sources.SourceConfig) (*pluginpb.CodeGeneratorRequest, error) {
 	files, err := protobuf.DetermineInputFiles(source, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
 
-	// Call protoc with the given arguments.
-	contents, err := protoc(tempFile.Name(), files, sourceCfg)
+	contents, err := runProtoc(files, sourceCfg)
 	if err != nil {
 		return nil, err
 	}
@@ -81,33 +101,79 @@ func newCodeGeneratorRequest(source string, sourceCfg *sources.SourceConfig) (_ 
 	if err := proto.Unmarshal(contents, descriptors); err != nil {
 		return nil, err
 	}
-	var target []*descriptorpb.FileDescriptorProto
-	// Find all the file descriptors that correspond to the input files
-	for _, filename := range files {
-		for _, pb := range descriptors.File {
-			// protoc requires files to be in a subdirectory of the
-			// --proto_path options and it strips the option value from the
-			// filename.
-			if strings.HasSuffix(filename, *pb.Name) {
-				target = append(target, pb)
-			}
-		}
-	}
-	request := &pluginpb.CodeGeneratorRequest{
+
+	target := matchDescriptorsToFiles(descriptors.File, files)
+
+	return &pluginpb.CodeGeneratorRequest{
 		FileToGenerate:        files,
 		SourceFileDescriptors: target,
 		ProtoFile:             descriptors.File,
 		CompilerVersion:       newCompilerVersion(),
-	}
-	return request, nil
+	}, nil
 }
 
-func protoc(tempFile string, files []string, sourceCfg *sources.SourceConfig) ([]byte, error) {
+func loadDescriptorSet(descriptorFiles string) ([]*descriptorpb.FileDescriptorProto, error) {
+	var allFiles []*descriptorpb.FileDescriptorProto
+	for _, f := range strings.Split(descriptorFiles, ",") {
+		if f = strings.TrimSpace(f); f == "" {
+			continue
+		}
+		data, err := os.ReadFile(f)
+		if err != nil {
+			return nil, fmt.Errorf("failed to read descriptor file %q: %w", f, err)
+		}
+		set := &descriptorpb.FileDescriptorSet{}
+		if err := proto.Unmarshal(data, set); err != nil {
+			return nil, fmt.Errorf("failed to unmarshal descriptor file %q: %w", f, err)
+		}
+		allFiles = append(allFiles, set.File...)
+	}
+	return allFiles, nil
+}
+
+func parseCommaSeparatedList(s string) []string {
+	var list []string
+	for _, f := range strings.Split(s, ",") {
+		if f = strings.TrimSpace(f); f != "" {
+			list = append(list, f)
+		}
+	}
+	return list
+}
+
+func filterTargetDescriptors(allFiles []*descriptorpb.FileDescriptorProto, generateList []string) ([]*descriptorpb.FileDescriptorProto, error) {
+	var target []*descriptorpb.FileDescriptorProto
+	for _, name := range generateList {
+		found := false
+		for _, pb := range allFiles {
+			if pb.GetName() == name || strings.HasSuffix(pb.GetName(), name) {
+				target = append(target, pb)
+				found = true
+				break
+			}
+		}
+		if !found {
+			return nil, fmt.Errorf("file to generate %q not found in descriptor files", name)
+		}
+	}
+	return target, nil
+}
+
+func runProtoc(files []string, sourceCfg *sources.SourceConfig) ([]byte, error) {
+	tempFile, err := os.CreateTemp("", "protoc-out-")
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		_ = tempFile.Close()
+		_ = os.Remove(tempFile.Name())
+	}()
+
 	args := []string{
 		"--include_imports",
 		"--include_source_info",
 		"--retain_options",
-		"--descriptor_set_out", tempFile,
+		"--descriptor_set_out", tempFile.Name(),
 	}
 	if sourceCfg != nil {
 		for _, root := range sourceCfg.ActiveRoots {
@@ -128,7 +194,19 @@ func protoc(tempFile string, files []string, sourceCfg *sources.SourceConfig) ([
 		return nil, fmt.Errorf("error calling protoc\ndetails:\n%s\nargs:\n%v\n: %w", stderr.String(), args, err)
 	}
 
-	return os.ReadFile(tempFile)
+	return os.ReadFile(tempFile.Name())
+}
+
+func matchDescriptorsToFiles(descriptors []*descriptorpb.FileDescriptorProto, files []string) []*descriptorpb.FileDescriptorProto {
+	var target []*descriptorpb.FileDescriptorProto
+	for _, filename := range files {
+		for _, pb := range descriptors {
+			if strings.HasSuffix(filename, *pb.Name) {
+				target = append(target, pb)
+			}
+		}
+	}
+	return target
 }
 
 func newCompilerVersion() *pluginpb.Version {

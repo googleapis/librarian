@@ -46,15 +46,13 @@ func generateCommand() *cli.Command {
 service config yaml, and gcloud.yaml.`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
-				Name:     "googleapis",
-				Value:    "https://github.com/googleapis/googleapis",
-				Usage:    "URL or directory path to googleapis",
-				Required: true,
-			},
-			&cli.StringFlag{
 				Name:  "out",
 				Value: ".",
 				Usage: "output directory",
+			},
+			&cli.StringFlag{
+				Name:  "service-config",
+				Usage: "path to the api service config",
 			},
 			&cli.StringFlag{
 				Name:  "proto-files-include-list",
@@ -62,8 +60,17 @@ service config yaml, and gcloud.yaml.`,
 				Usage: "comma-separated list of protobuf files used to generate the gcloud commands",
 			},
 			&cli.StringFlag{
-				Name:  "service-config",
-				Usage: "path to the api service config",
+				Name:  "googleapis",
+				Value: "https://github.com/googleapis/googleapis",
+				Usage: "URL or directory path to googleapis",
+			},
+			&cli.StringFlag{
+				Name:  "descriptor-files-to-generate",
+				Usage: "comma-separated list of files to generate from the descriptors",
+			},
+			&cli.StringFlag{
+				Name:  "descriptor-files",
+				Usage: "comma-separated list of paths to binary FileDescriptorSet files",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -75,12 +82,16 @@ service config yaml, and gcloud.yaml.`,
 			out := cmd.String("out")
 			includeList := cmd.String("proto-files-include-list")
 			serviceConfig := cmd.String("service-config")
+			descriptorFiles := cmd.String("descriptor-files")
+			descriptorFilesToGenerate := cmd.String("descriptor-files-to-generate")
 			return gcloud.Generate(ctx, gcloud.GenerateConfig{
-				Googleapis:    googleapis,
-				GcloudConfig:  config,
-				Output:        out,
-				IncludeList:   includeList,
-				ServiceConfig: serviceConfig,
+				GcloudConfig:              config,
+				ServiceConfig:             serviceConfig,
+				IncludeList:               includeList,
+				Googleapis:                googleapis,
+				DescriptorFilesToGenerate: descriptorFilesToGenerate,
+				DescriptorFiles:           descriptorFiles,
+				Output:                    out,
 			})
 		},
 	}

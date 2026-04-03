@@ -26,10 +26,12 @@ import (
 )
 
 // CreateAPIModel parses the service specification and creates the API model.
-func CreateAPIModel(googleapisPath, includeList, serviceConfig string) (*api.API, error) {
+func CreateAPIModel(googleapisPath, includeList, serviceConfig, descriptorFiles, descriptorFilesToGenerate string) (*api.API, error) {
 	parserConfig := &parser.ModelConfig{
-		SpecificationFormat: libconfig.SpecProtobuf,
-		ServiceConfig:       serviceConfig,
+		SpecificationFormat:       libconfig.SpecProtobuf,
+		ServiceConfig:             serviceConfig,
+		DescriptorFiles:           descriptorFiles,
+		DescriptorFilesToGenerate: descriptorFilesToGenerate,
 		Source: &sources.SourceConfig{
 			Sources: &sources.Sources{
 				Googleapis: googleapisPath,

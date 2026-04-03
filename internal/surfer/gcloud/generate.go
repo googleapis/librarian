@@ -23,11 +23,13 @@ import (
 
 // GenerateConfig contains parameters for generating gcloud commands.
 type GenerateConfig struct {
-	Googleapis    string
-	GcloudConfig  string
-	Output        string
-	IncludeList   string
-	ServiceConfig string
+	GcloudConfig              string
+	ServiceConfig             string
+	IncludeList               string
+	Googleapis                string
+	DescriptorFilesToGenerate string
+	DescriptorFiles           string
+	Output                    string
 }
 
 // Generate generates gcloud commands for a service.
@@ -37,7 +39,7 @@ func Generate(_ context.Context, cfg GenerateConfig) error {
 		return err
 	}
 
-	model, err := provider.CreateAPIModel(cfg.Googleapis, cfg.IncludeList, cfg.ServiceConfig)
+	model, err := provider.CreateAPIModel(cfg.Googleapis, cfg.IncludeList, cfg.ServiceConfig, cfg.DescriptorFiles, cfg.DescriptorFilesToGenerate)
 	if err != nil {
 		return err
 	}

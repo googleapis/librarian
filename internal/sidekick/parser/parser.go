@@ -37,6 +37,10 @@ type ModelConfig struct {
 	SpecificationSource string
 	Source              *sources.SourceConfig
 
+	// File paths to descriptor files
+	DescriptorFilesToGenerate string
+	DescriptorFiles           string
+
 	// Service config
 	ServiceConfig string
 
