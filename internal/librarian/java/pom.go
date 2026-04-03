@@ -121,6 +121,7 @@ func updateClientPom(pomPath string, data clientPomData) error {
 	if updated, err = updateManagedBlock(updated, "managed_grpc_dependencies", managedGrpcStartMarker, managedGrpcEndMarker, data); err != nil {
 		return err
 	}
+	// compare to avoid unnecessary I/O
 	if updated != string(content) {
 		return os.WriteFile(pomPath, []byte(updated), 0644)
 	}
