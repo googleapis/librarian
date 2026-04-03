@@ -20,7 +20,10 @@ import (
 
 // keywords defines the list of identifiers that cannot be used as Swift identifiers.
 //
-// See https://docs.swift.org/swift-book/documentation/the-swift-programming-language/lexicalstructure/#Keywords-and-Punctuation
+// These keywords were sourced, circa 2026-04-03, from [Keywords and Punctuation].
+// At that time, 6.2 was the latest Swift version.
+//
+// [Keywords and Punctuation]: https://docs.swift.org/swift-book/documentation/the-swift-programming-language/lexicalstructure/#Keywords-and-Punctuation
 var keywords = map[string]bool{
 	// Keywords used in declarations:
 	"associatedtype":  true,
