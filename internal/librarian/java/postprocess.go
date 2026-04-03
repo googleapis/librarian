@@ -46,7 +46,7 @@ type postProcessParams struct {
 func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
 func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) modules() JavaModules { return DeriveModuleNames(p.library.Name, p.version) }
+func (p postProcessParams) modules() javaModules { return DeriveModuleNames(p.library.Name, p.version) }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
@@ -126,17 +126,18 @@ func buildLicenseText(year int) string {
 	return b.String()
 }
 
-// JavaModules contains the Maven artifact IDs for the GAPIC, Proto, and gRPC modules.
-type JavaModules struct {
+// javaModules contains the Maven artifact IDs for the GAPIC, Proto, and gRPC modules.
+type javaModules struct {
 	Gapic string // e.g., google-cloud-secretmanager
 	Proto string // e.g., proto-google-cloud-secretmanager-v1
 	Grpc  string // e.g., grpc-google-cloud-secretmanager-v1
 }
 
 // DeriveModuleNames returns the Maven artifact IDs for the library's modules.
-func DeriveModuleNames(libraryID, version string) JavaModules {
-	name := EnsureCloudPrefix(libraryID)
-	return JavaModules{
+// TODO(https://github.com/googleapis/librarian/issues/5050): do not need to export after migrate is done.
+func DeriveModuleNames(libraryID, version string) javaModules {
+	name := ensureCloudPrefix(libraryID)
+	return javaModules{
 		Gapic: name,
 		Proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),
 		Grpc:  fmt.Sprintf("%s%s-%s", grpcPrefix, name, version),

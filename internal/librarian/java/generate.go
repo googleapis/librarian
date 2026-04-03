@@ -165,9 +165,9 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	return nil
 }
 
-// EnsureCloudPrefix returns name with the "google-cloud-" prefix,
+// ensureCloudPrefix returns name with the "google-cloud-" prefix,
 // adding it if not already present.
-func EnsureCloudPrefix(name string) string {
+func ensureCloudPrefix(name string) string {
 	if !strings.HasPrefix(name, cloudPrefix) {
 		return cloudPrefix + name
 	}
@@ -175,6 +175,7 @@ func EnsureCloudPrefix(name string) string {
 }
 
 // DeriveDistributionName returns the Maven distribution name (groupId:artifactId) for the library.
+// TODO(https://github.com/googleapis/librarian/issues/5050): do not need to export after migrate is done.
 func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
@@ -183,7 +184,7 @@ func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID
 	}
-	artifactID := EnsureCloudPrefix(library.Name)
+	artifactID := ensureCloudPrefix(library.Name)
 	return fmt.Sprintf("%s:%s", groupID, artifactID)
 }
 
