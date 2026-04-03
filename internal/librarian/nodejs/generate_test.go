@@ -523,8 +523,8 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Error("expected owl-bot-staging to be removed after post-processing")
 	}
 
-	if _, err := os.Stat(filepath.Join(outDir, "librarian-ran.txt")); err != nil {
-		t.Errorf("expected librarian.js to run and create librarian-ran.txt: %v", err)
+	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {
+		t.Errorf("expected librarian.js to run and create librarian-ran.txt in repoRoot: %v", err)
 	}
 
 	content, err := os.ReadFile(readmePath)

@@ -257,7 +257,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// It has nothing to do with the Librarian CLI tool.
 	librarianScript := filepath.Join(outDir, "librarian.js")
 	if _, err := os.Stat(librarianScript); err == nil {
-		if err := command.RunInDir(ctx, outDir, "node", "librarian.js"); err != nil {
+		if err := command.RunInDir(ctx, repoRoot, "node", librarianScript); err != nil {
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
