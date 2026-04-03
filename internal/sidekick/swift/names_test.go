@@ -19,7 +19,7 @@ import (
 )
 
 func TestEscapeKeyword(t *testing.T) {
-	tests := []struct {
+	for _, tt := range []struct {
 		input string
 		want  string
 	}{
@@ -35,9 +35,7 @@ func TestEscapeKeyword(t *testing.T) {
 		// Non-keywords requested NOT to be escaped
 		{input: "secret", want: "secret"},
 		{input: "volume", want: "volume"},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.input, func(t *testing.T) {
 			got := escapeKeyword(tt.input)
 			if got != tt.want {
