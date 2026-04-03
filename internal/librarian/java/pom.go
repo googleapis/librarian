@@ -93,7 +93,7 @@ func syncPoms(library *config.Library, libraryDir, googleapisDir, monorepoVersio
 		pomPath := filepath.Join(m.dir, "pom.xml")
 		if m.isMissing {
 			if err := writePom(pomPath, m.template, m.templateData); err != nil {
-				return fmt.Errorf("failed to generate %s: %w", m.artifactID, err)
+				return fmt.Errorf("failed to generate pom for %s: %w", m.artifactID, err)
 			}
 			continue
 		}
