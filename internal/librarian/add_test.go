@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -604,6 +605,29 @@ func TestSyncToStateYAML(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantState, gotState); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestSyncToStateYAML_Error(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		initialState *legacyconfig.LibrarianState
+		cfg          *config.Config
+		wantError    error
+	}{
+		{
+			name:      "state.yaml does not exist",
+			wantError: fs.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			err := syncToStateYAML(".", test.cfg)
+			if !errors.Is(err, test.wantError) {
+				t.Errorf("syncToStateYAML(%s): got error %v, want %v", test.name, err, test.wantError)
 			}
 		})
 	}
