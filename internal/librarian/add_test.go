@@ -431,6 +431,7 @@ func TestDeriveLibraryName(t *testing.T) {
 }
 
 func TestSyncToStateYAML(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name         string
 		initialState *legacyconfig.LibrarianState
@@ -587,16 +588,16 @@ func TestSyncToStateYAML(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			tmpDir := t.TempDir()
-			t.Chdir(tmpDir)
-			stateFile := filepath.Join(legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
-			if err := os.Mkdir(legacyconfig.LibrarianDir, 0755); err != nil {
+			stateFile := filepath.Join(tmpDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
+			if err := os.Mkdir(filepath.Join(tmpDir, legacyconfig.LibrarianDir), 0755); err != nil {
 				t.Fatal(err)
 			}
 			if err := yaml.Write(stateFile, test.initialState); err != nil {
 				t.Fatal(err)
 			}
-			if err := syncToStateYAML(".", test.cfg); err != nil {
+			if err := syncToStateYAML(tmpDir, test.cfg); err != nil {
 				t.Fatal(err)
 			}
 			gotState, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
