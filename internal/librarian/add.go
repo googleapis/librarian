@@ -74,6 +74,8 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	}
 	switch cfg.Language {
 	case config.LanguageGo:
+		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
+		// fully migrating off legacylibrarian.
 		if err := syncToStateYAML(".", cfg); err != nil {
 			return err
 		}
@@ -186,7 +188,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	return name, cfg, nil
 }
 
-// syncToStateYAML updates the .librarian/state.yaml file with any new libraries.
+// syncToStateYAML updates the .librarian/state.yaml with any new libraries.
 func syncToStateYAML(repoDir string, cfg *config.Config) error {
 	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
 	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
