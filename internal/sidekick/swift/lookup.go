@@ -20,6 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+// lookupMessage finds a message in the model by its fully-qualified ID.
 func lookupMessage(model *api.API, id string) (*api.Message, error) {
 	m, ok := model.State.MessageByID[id]
 	if !ok {
