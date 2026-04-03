@@ -16,6 +16,8 @@ package swift
 
 import (
 	"fmt"
+
+	"github.com/iancoleman/strcase"
 )
 
 // keywords defines the list of identifiers that cannot be used as Swift identifiers.
@@ -142,4 +144,8 @@ func escapeKeyword(s string) string {
 		return fmt.Sprintf("`%s`", s)
 	}
 	return s
+}
+
+func camelCase(s string) string {
+	return escapeKeyword(strcase.ToLowerCamel(s))
 }

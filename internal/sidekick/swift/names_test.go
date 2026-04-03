@@ -44,3 +44,25 @@ func TestEscapeKeyword(t *testing.T) {
 		})
 	}
 }
+
+func TestCamelCase(t *testing.T) {
+	for _, tt := range []struct {
+		input string
+		want  string
+	}{
+		{input: "secret_version", want: "secretVersion"},
+		{input: "display_name", want: "displayName"},
+		{input: "iam_policy", want: "iamPolicy"},
+
+		// Keywords that should be escaped after camelCase
+		{input: "protocol", want: "`protocol`"},
+		{input: "will_set", want: "`willSet`"},
+	} {
+		t.Run(tt.input, func(t *testing.T) {
+			got := camelCase(tt.input)
+			if got != tt.want {
+				t.Errorf("camelCase(%q) = %q, want %q", tt.input, got, tt.want)
+			}
+		})
+	}
+}
