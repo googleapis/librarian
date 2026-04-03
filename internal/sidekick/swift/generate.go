@@ -18,6 +18,7 @@ package swift
 import (
 	"context"
 	"embed"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
@@ -40,6 +41,22 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 		}
 		return string(contents), nil
 	}
+	if err := codec.generateMessages(outdir, model, provider); err != nil {
+		return err
+	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+}
+
+func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, m := range model.Messages {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/message.swift.mustache",
+			OutputPath:   filepath.Join("Sources", c.PackageName, m.Name+".swift"),
+		}
+		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
 }
