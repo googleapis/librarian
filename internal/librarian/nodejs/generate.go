@@ -257,6 +257,8 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// It has nothing to do with the Librarian CLI tool.
 	// We execute it from the repository root because many scripts (e.g. secretmanager)
 	// use root-relative paths: https://github.com/googleapis/google-cloud-node/blob/1b44bd187289552199b4566f1201974730623a3a/packages/google-cloud-secretmanager/librarian.js#L35
+	// TODO(https://github.com/googleapis/librarian/issues/5040) remove librarian.js once it's part
+	// of the gapic-generator-typescript
 	librarianScript := filepath.Join(outDir, "librarian.js")
 	if _, err := os.Stat(librarianScript); err == nil {
 		if err := command.RunInDir(ctx, repoRoot, "node", librarianScript); err != nil {
