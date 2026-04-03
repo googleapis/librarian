@@ -586,6 +586,48 @@ func TestSyncToStateYAML(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "add an api to an existing library",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
+						SourceRoots:   []string{"lib-a"},
+						TagFormat:     "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name:    "lib-a",
+						Version: "2.0.0",
+						APIs:    []*config.API{{Path: "google/cloud/lib-a/v1"}, {Path: "google/cloud/lib-a/v2"}}},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs: []*legacyconfig.API{
+							{Path: "google/cloud/lib-a/v1"},
+							{Path: "google/cloud/lib-a/v2"},
+						},
+						SourceRoots: []string{"lib-a"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
