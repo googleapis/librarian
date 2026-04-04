@@ -704,7 +704,9 @@ func rustFieldTypesCases() *api.API {
 			},
 		},
 	}
-	return api.NewTestAPI([]*api.Message{target, mapMessage, message}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{target, message}, []*api.Enum{}, []*api.Service{})
+	model.State.MessageByID[mapMessage.ID] = mapMessage
+	return model
 
 }
 
@@ -870,7 +872,8 @@ func TestFieldMapTypeValues(t *testing.T) {
 			IsMap:  true,
 			Fields: []*api.Field{key, value},
 		}
-		model := api.NewTestAPI([]*api.Message{message, other_message, map_thing}, []*api.Enum{}, []*api.Service{})
+		model := api.NewTestAPI([]*api.Message{message, other_message}, []*api.Enum{}, []*api.Service{})
+		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model.State, false, model.PackageName)
@@ -933,7 +936,8 @@ func TestFieldMapTypeKey(t *testing.T) {
 			Name: "EnumType",
 			ID:   ".test.EnumType",
 		}
-		model := api.NewTestAPI([]*api.Message{message, map_thing}, []*api.Enum{enum}, []*api.Service{})
+		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
+		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model.State, false, model.PackageName)
