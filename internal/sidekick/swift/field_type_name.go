@@ -85,12 +85,12 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	}
 	// Names can be qualified with nested objects.
 	name := pascalCase(m.Name)
-	if m.Parent != nil {
-		parent, err := c.messageTypeName(m.Parent)
-		if err != nil {
-			return "", err
-		}
-		return fmt.Sprintf("%s.%s", parent, name), nil
+	if m.Parent == nil {
+		return name, nil
 	}
-	return name, nil
+	parent, err := c.messageTypeName(m.Parent)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", parent, name), nil
 }
