@@ -115,6 +115,10 @@ type API struct {
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, all languages use GRPCRest by default.
 	Transports map[string]Transport `yaml:"transports,omitempty"`
+
+	// GAPICYaml contains configuration imported from *_gapic.yaml files in
+	// googleapis.
+	GAPICYaml *GAPICYamlConfig `yaml:"gapic_yaml,omitempty"`
 }
 
 // Transport gets transport for a given language.

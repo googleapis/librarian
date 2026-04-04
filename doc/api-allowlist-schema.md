@@ -20,3 +20,62 @@ This document describes the schema for the API Allowlist.
 | `service_name` | string | Is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`. |
 | `title` | string | Overrides the API title from the service config. |
 | `transports` | map[string]Transport | Defines the supported transports per language. Map key is the language name (e.g., "python", "rust"). Optional. If omitted, all languages use GRPCRest by default. |
+| `gapic_yaml` | [GAPICYamlConfig](#gapicyamlconfig-configuration) (optional) | Contains configuration imported from *_gapic.yaml files in googleapis. |
+
+## GAPICBatchDescriptor Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `batched_field` | string |  |
+| `discriminator_fields` | list of string |  |
+| `subresponse_field` | string |  |
+
+## GAPICBatching Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `thresholds` | [GAPICBatchingThresholds](#gapicbatchingthresholds-configuration) (optional) |  |
+| `batch_descriptor` | [GAPICBatchDescriptor](#gapicbatchdescriptor-configuration) (optional) |  |
+
+## GAPICBatchingThresholds Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `element_count_threshold` | int |  |
+| `request_byte_threshold` | int |  |
+| `delay_threshold_millis` | int |  |
+| `flow_control_element_limit` | int |  |
+| `flow_control_byte_limit` | int |  |
+| `flow_control_limit_exceeded_behavior` | string |  |
+
+## GAPICInterface Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string |  |
+| `methods` | list of [GAPICMethod](#gapicmethod-configuration) |  |
+
+## GAPICLongRunning Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `initial_poll_delay_millis` | int64 |  |
+| `poll_delay_multiplier` | float64 |  |
+| `max_poll_delay_millis` | int64 |  |
+| `total_poll_timeout_millis` | int64 |  |
+
+## GAPICMethod Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string |  |
+| `long_running` | [GAPICLongRunning](#gapiclongrunning-configuration) (optional) |  |
+| `batching` | [GAPICBatching](#gapicbatching-configuration) (optional) |  |
+
+## GAPICYamlConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `java_package_name` | string | Is the Java package name. TODO(https://github.com/googleapis/librarian/issues/3041): move to librarian.yaml. |
+| `java_interface_names` | map[string]string | Maps fully-qualified interface names to short Java class names. TODO(https://github.com/googleapis/librarian/issues/3041): move to librarian.yaml. |
+| `interfaces` | list of [GAPICInterface](#gapicinterface-configuration) | Contains language-neutral per-interface, per-method configuration including long-running operation polling settings and batching config. |
