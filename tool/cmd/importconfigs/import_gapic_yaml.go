@@ -117,7 +117,11 @@ func findGAPICYAMLFiles(googleapisDir string) ([]string, error) {
 			return nil
 		}
 		if strings.HasSuffix(d.Name(), "_gapic.yaml") {
-			res = append(res, strings.TrimPrefix(path, googleapisDir+"/"))
+			rel, err := filepath.Rel(googleapisDir, path)
+			if err != nil {
+				return err
+			}
+			res = append(res, filepath.ToSlash(rel))
 		}
 		return nil
 	})
