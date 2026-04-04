@@ -40,10 +40,8 @@ jobs:
         run: |
           git --version
           tar --version
-      - name: Run sidekick tests
-        run: go test -race ./internal/sidekick/...
-      - name: Run internal/librarian/rust tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/rust
+      - name: Run tests and check coverage
+        run: go run ./tool/cmd/coverage ./internal/sidekick/... ./internal/librarian/rust
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
