@@ -20,13 +20,13 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	"github.com/iancoleman/strcase"
 )
 
 type commandGroupBuilder struct {
 	model   *api.API
 	config  *provider.Config
 	service *api.Service
-	title   string
 }
 
 func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) (*commandGroupBuilder, error) {
@@ -34,17 +34,10 @@ func newCommandGroupBuilder(model *api.API, service *api.Service, config *provid
 		return nil, fmt.Errorf("service %q has empty default host", service.Name)
 	}
 
-	title := model.Name
-	if service != nil {
-		shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
-		title = provider.GetServiceTitle(model, shortServiceName)
-	}
-
 	return &commandGroupBuilder{
 		model:   model,
 		config:  config,
 		service: service,
-		title:   title,
 	}, nil
 }
 
@@ -53,7 +46,7 @@ func (b *commandGroupBuilder) buildRoot() *CommandGroup {
 	return &CommandGroup{
 		Name:     rootName,
 		Path:     []string{rootName},
-		HelpText: fmt.Sprintf("Manage %s resources.", b.title),
+		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
@@ -73,8 +66,21 @@ func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []str
 	return &CommandGroup{
 		Name:     seg,
 		Path:     path,
-		HelpText: fmt.Sprintf("Manage %s %s resources.", b.title, singular),
+		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(singular)),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
+}
+
+func toTitleCase(s string) string {
+	// Convert to CamelCase first to handle snake_case
+	camel := strcase.ToCamel(s)
+	var sb strings.Builder
+	for i, r := range camel {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			sb.WriteByte(' ')
+		}
+		sb.WriteRune(r)
+	}
+	return sb.String()
 }

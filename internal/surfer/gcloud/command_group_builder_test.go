@@ -82,7 +82,7 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		t.Errorf("group.Path = %v, want %v", group.Path, wantPath)
 	}
 
-	wantHelp := "Manage Parallelstore instances resources." // Fallback singular is the segment name if no resource found
+	wantHelp := "Manage Instances resources." // Fallback singular is the segment name if no resource found
 	if group.HelpText != wantHelp {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
 	}
