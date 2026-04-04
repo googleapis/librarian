@@ -26,14 +26,14 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestSimplifyRestNumericEnums(t *testing.T) {
+func TestSimplifySkipRESTNumericEnums(t *testing.T) {
 	for _, test := range []struct {
 		name             string
 		restNumericEnums map[string]bool
-		want             map[string]bool
+		want             []string
 	}{
 		{
-			name: "all true",
+			name: "all languages present",
 			restNumericEnums: map[string]bool{
 				"csharp": true,
 				"go":     true,
@@ -43,22 +43,19 @@ func TestSimplifyRestNumericEnums(t *testing.T) {
 				"python": true,
 				"ruby":   true,
 			},
-			want: map[string]bool{"all": true},
+			want: []string{"all"},
 		},
 		{
-			name: "some present, different values",
+			name: "some present",
 			restNumericEnums: map[string]bool{
 				"java":   true,
 				"python": true,
 			},
-			want: map[string]bool{
-				"java":   true,
-				"python": true,
-			},
+			want: []string{"java", "python"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := simplifyRESTNumericEnums(test.restNumericEnums)
+			got := simplifySkipRESTNumericEnums(test.restNumericEnums)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -99,10 +96,8 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 						config.LanguagePython,
 						config.LanguageRust,
 					},
-					Path: "google/cloud/workstations/v1",
-					NoRESTNumericEnums: map[string]bool{
-						"all": true,
-					},
+					Path:                 "google/cloud/workstations/v1",
+					SkipRESTNumericEnums: []string{"all"},
 				},
 			},
 		},
@@ -129,10 +124,7 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 						config.LanguageGo,
 						config.LanguageJava,
 					},
-					NoRESTNumericEnums: map[string]bool{
-						config.LanguageCsharp: true,
-						config.LanguageGo:     true,
-					},
+					SkipRESTNumericEnums: []string{config.LanguageCsharp, config.LanguageGo},
 					Path: "google/non-cloud/v1",
 					Transports: map[string]serviceconfig.Transport{
 						config.LanguageAll: serviceconfig.GRPC,
@@ -249,9 +241,9 @@ func TestRunUpdateRestNumericEnums_Error(t *testing.T) {
 
 func TestReadRestNumericEnums_Error(t *testing.T) {
 	tmpDir := t.TempDir()
-	got := readRestNumericEnums(tmpDir, "missing")
+	got := readSkipRESTNumericEnums(tmpDir, "missing")
 	if got != nil {
-		t.Errorf("readRestNumericEnums() = %v, want nil", got)
+		t.Errorf("readSkipRESTNumericEnums() = %v, want nil", got)
 	}
 }
 
