@@ -30,10 +30,6 @@ type commandGroupBuilder struct {
 }
 
 func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) (*commandGroupBuilder, error) {
-	if service != nil && service.DefaultHost == "" {
-		return nil, fmt.Errorf("service %q has empty default host", service.Name)
-	}
-
 	return &commandGroupBuilder{
 		model:   model,
 		config:  config,

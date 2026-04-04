@@ -87,13 +87,3 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
 	}
 }
-
-func TestNewCommandGroupBuilder_EmptyDefaultHost(t *testing.T) {
-	model := &api.API{}
-	service := &api.Service{Name: "ParallelstoreService", DefaultHost: ""}
-
-	_, err := newCommandGroupBuilder(model, service, &provider.Config{})
-	if err == nil {
-		t.Fatal("newCommandGroupBuilder() passed when DefaultHost was empty")
-	}
-}
