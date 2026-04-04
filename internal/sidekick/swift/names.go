@@ -174,8 +174,7 @@ func pascalCase(s string) string {
 	// better than calling `strcase.ToCamel()` in cases like `IAMPolicy`, which
 	// would be converted to `Iampolicy`. We are trusting that the original
 	// name in API definition chose to keep the acronym for a reason.
-	runes := []rune(s)
-	if unicode.IsUpper(runes[0]) && !strings.ContainsRune(s, '_') {
+	if unicode.IsUpper(rune(s[0])) && !strings.ContainsRune(s, '_') {
 		return escapeKeyword(s)
 	}
 	return escapeKeyword(strcase.ToCamel(s))
