@@ -43,41 +43,38 @@ func (c *codec) fieldTypeName(field *api.Field) (string, error) {
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
-	var out string
 	switch field.Typez {
 	case api.DOUBLE_TYPE:
-		out = "Double"
+		return "Double", nil
 	case api.FLOAT_TYPE:
-		out = "Float"
+		return "Float", nil
 	case api.INT64_TYPE:
-		out = "Int64"
+		return "Int64", nil
 	case api.UINT64_TYPE:
-		out = "UInt64"
+		return "UInt64", nil
 	case api.INT32_TYPE:
-		out = "Int32"
+		return "Int32", nil
 	case api.FIXED64_TYPE:
-		out = "UInt64"
+		return "UInt64", nil
 	case api.FIXED32_TYPE:
-		out = "UInt32"
+		return "UInt32", nil
 	case api.BOOL_TYPE:
-		out = "Bool"
+		return "Bool", nil
 	case api.STRING_TYPE:
-		out = "String"
+		return "String", nil
 	case api.BYTES_TYPE:
-		out = "Data"
+		return "Data", nil
 	case api.UINT32_TYPE:
-		out = "UInt32"
+		return "UInt32", nil
 	case api.SFIXED32_TYPE:
-		out = "Int32"
+		return "Int32", nil
 	case api.SFIXED64_TYPE:
-		out = "Int64"
+		return "Int64", nil
 	case api.SINT32_TYPE:
-		out = "Int32"
+		return "Int32", nil
 	case api.SINT64_TYPE:
-		out = "Int64"
-
+		return "Int64", nil
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
 	}
-	return out, nil
 }
