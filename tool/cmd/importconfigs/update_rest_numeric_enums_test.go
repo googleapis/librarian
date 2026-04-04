@@ -125,7 +125,7 @@ func TestRunUpdateRestNumericEnums(t *testing.T) {
 						config.LanguageJava,
 					},
 					SkipRESTNumericEnums: []string{config.LanguageCsharp, config.LanguageGo},
-					Path: "google/non-cloud/v1",
+					Path:                 "google/non-cloud/v1",
 					Transports: map[string]serviceconfig.Transport{
 						config.LanguageAll: serviceconfig.GRPC,
 					},
