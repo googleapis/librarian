@@ -19,15 +19,21 @@ import (
 )
 
 type fieldAnnotations struct {
-	Name     string
-	DocLines []string
+	Name      string
+	FieldType string
+	DocLines  []string
 }
 
-func (codec *codec) annotateField(field *api.Field) *fieldAnnotations {
+func (codec *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
+	fieldType, err := codec.fieldTypeName(field)
+	if err != nil {
+		return nil, err
+	}
 	annotations := &fieldAnnotations{
-		Name:     camelCase(field.Name),
-		DocLines: codec.formatDocumentation(field.Documentation),
+		Name:      camelCase(field.Name),
+		FieldType: fieldType,
+		DocLines:  codec.formatDocumentation(field.Documentation),
 	}
 	field.Codec = annotations
-	return annotations
+	return annotations, nil
 }

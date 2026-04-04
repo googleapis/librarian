@@ -26,7 +26,9 @@ func (codec *codec) annotateModel() error {
 	}
 	codec.Model.Codec = annotations
 	for _, message := range codec.Model.Messages {
-		codec.annotateMessage(message, annotations)
+		if _, err := codec.annotateMessage(message, annotations); err != nil {
+			return err
+		}
 	}
 	return nil
 }
