@@ -42,6 +42,8 @@ func newCommandGroupBuilder(model *api.API, service *api.Service, config *provid
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
+	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
+	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(b.model)
 	return &CommandGroup{
 		Name:     rootName,
@@ -72,6 +74,11 @@ func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []str
 	}
 }
 
+// TODO (https://github.com/googleapis/librarian/issues/3414): Move all of the magic
+// string manipulation into one location.
+// - put all of these helpers in one place
+// - make it clear when and where not to use them. Ideally, we shouldn't use
+//   them till the presentation layer but help text breaks that pattern.
 func toTitleCase(s string) string {
 	// Convert to CamelCase first to handle snake_case
 	camel := strcase.ToCamel(s)
