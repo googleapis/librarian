@@ -17,6 +17,7 @@ package gcloud
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
@@ -44,8 +45,8 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 	}
 
 	wantPath := []string{"parallelstore"}
-	if len(group.Path) != len(wantPath) || group.Path[0] != wantPath[0] {
-		t.Errorf("group.Path = %v, want %v", group.Path, wantPath)
+	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
+		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
 	}
 
 	wantHelp := "Manage Parallelstore resources."
@@ -78,8 +79,8 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 	}
 
 	wantPath := []string{"parallelstore", "instances"}
-	if len(group.Path) != len(wantPath) || group.Path[0] != wantPath[0] || group.Path[1] != wantPath[1] {
-		t.Errorf("group.Path = %v, want %v", group.Path, wantPath)
+	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
+		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
 	}
 
 	wantHelp := "Manage Instances resources." // Fallback singular is the segment name if no resource found
