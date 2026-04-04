@@ -31,6 +31,10 @@ func TestEscapeKeyword(t *testing.T) {
 		{input: "func", want: "`func`"},
 		{input: "if", want: "`if`"},
 		{input: "while", want: "`while`"},
+		// Metatype-related keywords, need custom escaping
+		{input: "Type", want: "Type_"},
+		{input: "Protocol", want: "Protocol_"},
+		{input: "self", want: "self_"},
 
 		// Non-keywords requested NOT to be escaped
 		{input: "secret", want: "secret"},
@@ -53,10 +57,12 @@ func TestCamelCase(t *testing.T) {
 		{input: "secret_version", want: "secretVersion"},
 		{input: "display_name", want: "displayName"},
 		{input: "iam_policy", want: "iamPolicy"},
+		{input: "Type", want: "type"},
 
 		// Keywords that should be escaped after camelCase
 		{input: "protocol", want: "`protocol`"},
 		{input: "will_set", want: "`willSet`"},
+		{input: "Self", want: "self_"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := camelCase(test.input)
