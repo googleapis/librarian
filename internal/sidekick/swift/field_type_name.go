@@ -25,6 +25,24 @@ import (
 // The implementation is pretty simple for primitive types. For message and enum fields it may get more
 // difficult as the name may be in a separate package.
 func (c *codec) fieldTypeName(field *api.Field) (string, error) {
+	baseFieldType, err := c.baseFieldTypeName(field)
+	if err != nil {
+		return "", err
+	}
+	switch {
+	case field.Typez == api.MESSAGE_TYPE && field.MessageType.IsMap:
+		return "/* ERROR: map types are not supported */", nil
+	case field.Optional:
+		return fmt.Sprintf("%s?", baseFieldType), nil
+	case field.Repeated:
+		return fmt.Sprintf("[%s]", baseFieldType), nil
+	default:
+		return baseFieldType, nil
+	}
+}
+
+// baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
+func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
 	case api.MESSAGE_TYPE:
 		m, err := lookupMessage(c.Model, field.TypezID)

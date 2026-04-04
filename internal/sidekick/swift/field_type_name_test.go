@@ -66,7 +66,7 @@ func TestScalarFieldTypeName(t *testing.T) {
 	}
 }
 
-func TestFieldTypeName_Message(t *testing.T) {
+func TestFieldTypeName_BaseMessage(t *testing.T) {
 	outer := &api.Message{
 		Name:    "OuterMessage",
 		Package: "google.cloud.test.v1",
@@ -119,6 +119,138 @@ func TestFieldTypeName_Message(t *testing.T) {
 				ID:      ".test.field2",
 			},
 			want: "OuterMessage.NestedMessage",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.baseFieldTypeName(test.field)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFieldTypeName_Optional(t *testing.T) {
+	secret := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.Secret",
+	}
+
+	model := api.NewTestAPI([]*api.Message{secret}, nil, nil)
+	c := newTestCodec(t, model, nil)
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  string
+	}{
+		{
+			name: "optional message Secret",
+			field: &api.Field{
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     ".google.cloud.test.v1.Secret",
+				ID:          ".test.field1",
+				Optional:    true,
+				MessageType: secret,
+			},
+			want: "Secret?",
+		},
+		{
+			name: "optional string",
+			field: &api.Field{
+				Typez:    api.STRING_TYPE,
+				ID:       ".test.field5",
+				Optional: true,
+			},
+			want: "String?",
+		},
+		{
+			name: "optional bytes",
+			field: &api.Field{
+				Typez:    api.BYTES_TYPE,
+				ID:       ".test.field7",
+				Optional: true,
+			},
+			want: "Data?",
+		},
+		{
+			name: "optional int32",
+			field: &api.Field{
+				Typez:    api.INT32_TYPE,
+				ID:       ".test.field9",
+				Optional: true,
+			},
+			want: "Int32?",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.fieldTypeName(test.field)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFieldTypeName_Repeated(t *testing.T) {
+	secret := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.Secret",
+	}
+
+	model := api.NewTestAPI([]*api.Message{secret}, nil, nil)
+	c := newTestCodec(t, model, nil)
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  string
+	}{
+		{
+			name: "repeated message Secret",
+			field: &api.Field{
+				Typez:       api.MESSAGE_TYPE,
+				TypezID:     ".google.cloud.test.v1.Secret",
+				ID:          ".test.field2",
+				Repeated:    true,
+				MessageType: secret,
+			},
+			want: "[Secret]",
+		},
+		{
+			name: "repeated string",
+			field: &api.Field{
+				Typez:    api.STRING_TYPE,
+				ID:       ".test.field6",
+				Repeated: true,
+			},
+			want: "[String]",
+		},
+		{
+			name: "repeated bytes",
+			field: &api.Field{
+				Typez:    api.BYTES_TYPE,
+				ID:       ".test.field8",
+				Repeated: true,
+			},
+			want: "[Data]",
+		},
+		{
+			name: "repeated int32",
+			field: &api.Field{
+				Typez:    api.INT32_TYPE,
+				ID:       ".test.field10",
+				Repeated: true,
+			},
+			want: "[Int32]",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
