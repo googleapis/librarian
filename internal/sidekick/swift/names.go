@@ -138,21 +138,15 @@ var keywords = map[string]bool{
 	"willSet":       true,
 }
 
-var metaKeywords = map[string]bool{
-	"Protocol": true,
-	"Type":     true,
-	"self":     true,
-}
-
 // escapeKeyword escapes a string if it is a keyword.
 func escapeKeyword(s string) string {
 	// In Swift we can use backtick escaping for most keywords except `Type`, `Protocol`, and `self`:
 	//   https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/#Metatype-Type
 	// In an expression like `Foo.Type` that is *always* the metatype of `Foo` and not the nested type `Type` even if `Foo` has such a nested type.
-	if _, ok := metaKeywords[s]; ok {
+	if s == "Protocol" || s == "Type" || s == "self" {
 		return fmt.Sprintf("%s_", s)
 	}
-	if _, ok := keywords[s]; ok {
+	if keywords[s] {
 		return fmt.Sprintf("`%s`", s)
 	}
 	return s
