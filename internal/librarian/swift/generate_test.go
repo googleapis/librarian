@@ -53,9 +53,9 @@ func TestGenerate(t *testing.T) {
 	outDir := t.TempDir()
 	libraries := []*config.Library{
 		{
-			Name:          "GoogleCloudSecretmanagerV1",
-			APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-			CopyrightYear: "2025",
+			Name:          "GoogleType",
+			APIs:          []*config.API{{Path: "google/type"}},
+			CopyrightYear: "2038",
 		},
 	}
 	for _, library := range libraries {

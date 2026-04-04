@@ -32,6 +32,7 @@ func TestAnnotateMessage(t *testing.T) {
 			{
 				Name:          "secret_key",
 				Documentation: "The key.",
+				Typez:         api.STRING_TYPE,
 			},
 		},
 	}

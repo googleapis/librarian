@@ -38,8 +38,8 @@ func TestFromProtobuf(t *testing.T) {
 
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
-		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		SpecificationSource: "google/cloud/secretmanager/v1",
+		ServiceConfig:       "google/type/type.yaml",
+		SpecificationSource: "google/type",
 		Source: &sources.SourceConfig{
 			Sources: &sources.Sources{
 				Googleapis: filepath.Join(testdataDir, "googleapis"),
@@ -47,7 +47,7 @@ func TestFromProtobuf(t *testing.T) {
 			ActiveRoots: []string{"googleapis"},
 		},
 		Codec: map[string]string{
-			"copyright-year":      "2026",
+			"copyright-year":      "2038",
 			"not-for-publication": "true",
 			"version":             "0.1.0",
 			"skip-format":         "true",

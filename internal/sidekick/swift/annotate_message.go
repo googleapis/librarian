@@ -25,7 +25,7 @@ type messageAnnotations struct {
 	DocLines      []string
 }
 
-func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) *messageAnnotations {
+func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) (*messageAnnotations, error) {
 	docLines := codec.formatDocumentation(message.Documentation)
 	messageAnnotations := &messageAnnotations{
 		CopyrightYear: model.CopyrightYear,
@@ -36,7 +36,9 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 
 	message.Codec = messageAnnotations
 	for _, field := range message.Fields {
-		codec.annotateField(field)
+		if _, err := codec.annotateField(field); err != nil {
+			return nil, err
+		}
 	}
-	return messageAnnotations
+	return messageAnnotations, nil
 }
