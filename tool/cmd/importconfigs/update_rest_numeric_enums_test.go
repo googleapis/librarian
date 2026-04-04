@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestSimplifySkipRESTNumericEnums(t *testing.T) {
+func TestCollapseLanguages(t *testing.T) {
 	for _, test := range []struct {
 		name             string
 		restNumericEnums map[string]bool
@@ -55,7 +55,7 @@ func TestSimplifySkipRESTNumericEnums(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := simplifySkipRESTNumericEnums(test.restNumericEnums)
+			got := collapseLanguages(test.restNumericEnums)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

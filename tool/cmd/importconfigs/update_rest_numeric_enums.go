@@ -155,10 +155,10 @@ func readSkipRESTNumericEnums(googleapisDir, path string) []string {
 		slog.Warn("failed to parse rest numeric enums", "path", buildPath, "error", err)
 		return nil
 	}
-	return simplifySkipRESTNumericEnums(numericEnums)
+	return collapseLanguages(numericEnums)
 }
 
-func simplifySkipRESTNumericEnums(noRestNumericEnums map[string]bool) []string {
+func collapseLanguages(noRestNumericEnums map[string]bool) []string {
 	for _, lang := range bazelLangs {
 		if _, ok := noRestNumericEnums[lang]; !ok {
 			// At least one language is not present, return the specific languages.
