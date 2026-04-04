@@ -101,7 +101,7 @@ func TestRunGenerate(t *testing.T) {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
 			if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
-				t.Fatalf("APISouceRepo prepare test error = %v", err)
+				t.Fatalf("APISourceRepo prepare test error = %v", err)
 			}
 			if test.push {
 				// Create a local bare repository to act as the remote for the push.
@@ -209,7 +209,7 @@ func TestCleanAndCopy(t *testing.T) {
 		t.Fatalf("languageRepo prepare test error = %v", err)
 	}
 	if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
-		t.Fatalf("APISouceRepo prepare test error = %v", err)
+		t.Fatalf("APISourceRepo prepare test error = %v", err)
 	}
 
 	cmd := exec.Command(
@@ -289,7 +289,7 @@ func TestRunConfigure(t *testing.T) {
 				t.Fatalf("prepare test error = %v", err)
 			}
 			if err := initRepo(t, apiSourceRepo, test.apiSource, "feat: add a new api\n\nPiperOrigin-RevId: 123456"); err != nil {
-				t.Fatalf("APISouceRepo prepare test error = %v", err)
+				t.Fatalf("APISourceRepo prepare test error = %v", err)
 			}
 
 			cmd := exec.Command(
@@ -392,7 +392,7 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 				t.Fatalf("languageRepo prepare test error = %v", err)
 			}
 			if err := initRepo(t, apiSourceRepo, localAPISource, "initial commit"); err != nil {
-				t.Fatalf("APISouceRepo prepare test error = %v", err)
+				t.Fatalf("APISourceRepo prepare test error = %v", err)
 			}
 
 			cmd := exec.Command(

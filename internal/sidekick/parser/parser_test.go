@@ -146,7 +146,7 @@ func TestCreateModelOverrides(t *testing.T) {
 	}
 	for _, c := range testCases {
 		if c.got != c.want {
-			t.Errorf("mimatched override got=%q, want=%q", c.got, c.want)
+			t.Errorf("mismatched override got=%q, want=%q", c.got, c.want)
 		}
 	}
 }

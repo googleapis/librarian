@@ -396,7 +396,7 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 				Fields:  tc.fields,
 				OneOfs:  []*OneOf{group},
 			}
-			oneMesage := &Message{
+			oneMessage := &Message{
 				Name:    "OneMessage",
 				ID:      ".test.OneMessage",
 				Package: "test",
@@ -406,7 +406,7 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 				ID:      ".test.AnotherMessage",
 				Package: "test",
 			}
-			model := NewTestAPI([]*Message{message, oneMesage, anotherMessage, mapMessage}, []*Enum{}, []*Service{})
+			model := NewTestAPI([]*Message{message, oneMessage, anotherMessage, mapMessage}, []*Enum{}, []*Service{})
 			if err := CrossReference(model); err != nil {
 				t.Fatal(err)
 			}

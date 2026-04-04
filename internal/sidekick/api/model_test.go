@@ -165,7 +165,7 @@ func TestRoutingCombosFull(t *testing.T) {
 	}
 }
 
-func TestRoutingInfoVarianFieldName(t *testing.T) {
+func TestRoutingInfoVariantFieldName(t *testing.T) {
 	variant := &RoutingInfoVariant{
 		FieldPath: []string{"request", "b", "c"},
 	}

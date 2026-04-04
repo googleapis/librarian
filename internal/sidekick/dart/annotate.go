@@ -358,7 +358,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			// Expressed as: 'package:<package name>' = '<version constraint>'
 			// For example: 'package:http' = '^1.3.0'
 			//
-			// If the package is needed as a dependency, then this constract is used.
+			// If the package is needed as a dependency, then this contract is used.
 			annotate.dependencyConstraints[strings.TrimPrefix(key, "package:")] = definition
 		}
 	}

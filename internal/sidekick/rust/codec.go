@@ -845,7 +845,7 @@ func isMultiLineListItem(lines []string, index int) bool {
 }
 
 // fixSetextHeadings avoids [setext headers] that were intended to be list
-// items, which may result from the discovery documentation pipepline.
+// items, which may result from the discovery documentation pipeline.
 //
 // [setext headers]: https://spec.commonmark.org/0.20/#setext-header
 func fixSetextHeadings(input string) string {
