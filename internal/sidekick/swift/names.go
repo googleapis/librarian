@@ -16,6 +16,8 @@ package swift
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/iancoleman/strcase"
 )
@@ -152,6 +154,29 @@ func escapeKeyword(s string) string {
 	return s
 }
 
+// camelCase converts an identifier to camelCase (note the leading lowercase) and, if needed, escapes it.
+//
+// This function is used for field names and method names, where the Swift style is `camelCase`.
 func camelCase(s string) string {
 	return escapeKeyword(strcase.ToLowerCamel(s))
+}
+
+// pascalCase converts an identifier to PascalCase (note the leading uppercase) and, if needed, escapes it.
+//
+// This function is used for services, messages, and enums, where the Swift style is `PascalCase`.
+func pascalCase(s string) string {
+	// In Swift, it is conventional to preserve ALL CAPS names:
+	//     https://www.swift.org/documentation/api-design-guidelines/#conventions
+	if strings.ToUpper(s) == s {
+		return escapeKeyword(s)
+	}
+	// Symbols that are already `PascalCase` should need no mapping. This works
+	// better than calling `strcase.ToCamel()` in cases like `IAMPolicy`, which
+	// would be converted to `Iampolicy`. We are trusting that the original
+	// name in API definition chose to keep the acronym for a reason.
+	runes := []rune(s)
+	if unicode.IsUpper(runes[0]) && !strings.ContainsRune(s, '_') {
+		return escapeKeyword(s)
+	}
+	return escapeKeyword(strcase.ToCamel(s))
 }

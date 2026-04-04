@@ -16,6 +16,8 @@ package swift
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestEscapeKeyword(t *testing.T) {
@@ -66,8 +68,33 @@ func TestCamelCase(t *testing.T) {
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := camelCase(test.input)
-			if got != test.want {
-				t.Errorf("camelCase(%q) = %q, want %q", test.input, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPascalCase(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "SecretManagerService", want: "SecretManagerService"},
+		{input: "CreateSecretRequest", want: "CreateSecretRequest"},
+		{input: "IAMPolicy", want: "IAMPolicy"},
+		{input: "IAM", want: "IAM"},
+
+		// Keywords that should be escaped after pascalCase
+		{input: "Protocol", want: "Protocol_"},
+		{input: "Type", want: "Type_"},
+		{input: "Self", want: "`Self`"},
+		{input: "Any", want: "`Any`"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := pascalCase(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
