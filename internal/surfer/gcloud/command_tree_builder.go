@@ -38,10 +38,7 @@ func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
 	tree := &CommandGroupsByTrack{}
 
 	for _, service := range b.model.Services {
-		groupBuilder, err := newCommandGroupBuilder(b.model, service, b.config)
-		if err != nil {
-			return nil, err
-		}
+		groupBuilder := newCommandGroupBuilder(b.model, service, b.config)
 
 		track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 		root, err := b.root(tree, track, groupBuilder)

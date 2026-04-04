@@ -29,12 +29,12 @@ type commandGroupBuilder struct {
 	service *api.Service
 }
 
-func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) (*commandGroupBuilder, error) {
+func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) *commandGroupBuilder {
 	return &commandGroupBuilder{
 		model:   model,
 		config:  config,
 		service: service,
-	}, nil
+	}
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
@@ -72,9 +72,9 @@ func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []str
 
 // TODO (https://github.com/googleapis/librarian/issues/3414): Move all of the magic
 // string manipulation into one location.
-// - put all of these helpers in one place
-// - make it clear when and where not to use them. Ideally, we shouldn't use
-//   them till the presentation layer but help text breaks that pattern.
+//   - put all of these helpers in one place
+//   - make it clear when and where not to use them. Ideally, we shouldn't use
+//     them till the presentation layer but help text breaks that pattern.
 func toTitleCase(s string) string {
 	// Convert to CamelCase first to handle snake_case
 	camel := strcase.ToCamel(s)

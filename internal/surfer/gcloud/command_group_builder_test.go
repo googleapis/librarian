@@ -34,10 +34,7 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 		},
 	}
 
-	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
-	if err != nil {
-		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
-	}
+	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.buildRoot()
 
 	if group.Name != "parallelstore" {
@@ -68,10 +65,7 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		},
 	}
 
-	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
-	if err != nil {
-		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
-	}
+	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.build([]string{"instances"}, 0, []string{"parallelstore"})
 
 	if group.Name != "instances" {
