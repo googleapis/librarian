@@ -18,11 +18,14 @@
 """File to add optional custom code to extend __init__.py."""
 from googlecloudsdk.calliope import base
 
+
 class OperationsAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 
+
 class OperationsBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
+
 
 class OperationsGa(base.Group):
   """Optional no-auto-generated code for GA."""
