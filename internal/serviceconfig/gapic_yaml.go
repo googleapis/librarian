@@ -36,44 +36,96 @@ type GAPICYamlConfig struct {
 // GAPICInterface represents a service interface with method-level config
 // imported from *_gapic.yaml files in googleapis.
 type GAPICInterface struct {
-	Name    string        `yaml:"name"`
+	// Name is the fully-qualified name of the service interface
+	// (e.g. "google.cloud.speech.v1.Speech").
+	Name string `yaml:"name"`
+
+	// Methods contains per-method configuration such as long-running
+	// operation polling and batching settings.
 	Methods []GAPICMethod `yaml:"methods,omitempty"`
 }
 
 // GAPICMethod represents method-level configuration from a gapic yaml file.
 type GAPICMethod struct {
-	Name        string            `yaml:"name"`
+	// Name is the simple method name (e.g. "LongRunningRecognize").
+	Name string `yaml:"name"`
+
+	// LongRunning contains polling configuration for long-running
+	// operations. Nil when the method is not long-running.
 	LongRunning *GAPICLongRunning `yaml:"long_running,omitempty"`
-	Batching    *GAPICBatching    `yaml:"batching,omitempty"`
+
+	// Batching contains request batching configuration. Nil when the
+	// method does not support batching.
+	Batching *GAPICBatching `yaml:"batching,omitempty"`
 }
 
 // GAPICLongRunning contains polling configuration for long-running operations.
 type GAPICLongRunning struct {
-	InitialPollDelayMillis int64   `yaml:"initial_poll_delay_millis,omitempty"`
-	PollDelayMultiplier    float64 `yaml:"poll_delay_multiplier,omitempty"`
-	MaxPollDelayMillis     int64   `yaml:"max_poll_delay_millis,omitempty"`
-	TotalPollTimeoutMillis int64   `yaml:"total_poll_timeout_millis,omitempty"`
+	// InitialPollDelayMillis is the delay before the first poll, in
+	// milliseconds.
+	InitialPollDelayMillis int64 `yaml:"initial_poll_delay_millis,omitempty"`
+
+	// PollDelayMultiplier is the multiplier applied to the poll delay
+	// after each attempt.
+	PollDelayMultiplier float64 `yaml:"poll_delay_multiplier,omitempty"`
+
+	// MaxPollDelayMillis is the maximum poll delay, in milliseconds.
+	MaxPollDelayMillis int64 `yaml:"max_poll_delay_millis,omitempty"`
+
+	// TotalPollTimeoutMillis is the total time allowed for polling
+	// before the operation is considered timed out, in milliseconds.
+	TotalPollTimeoutMillis int64 `yaml:"total_poll_timeout_millis,omitempty"`
 }
 
 // GAPICBatching contains request batching configuration.
 type GAPICBatching struct {
-	Thresholds      *GAPICBatchingThresholds `yaml:"thresholds,omitempty"`
-	BatchDescriptor *GAPICBatchDescriptor    `yaml:"batch_descriptor,omitempty"`
+	// Thresholds defines the conditions that trigger a batch to be sent.
+	Thresholds *GAPICBatchingThresholds `yaml:"thresholds,omitempty"`
+
+	// BatchDescriptor describes how individual requests are combined
+	// into a batch.
+	BatchDescriptor *GAPICBatchDescriptor `yaml:"batch_descriptor,omitempty"`
 }
 
 // GAPICBatchingThresholds defines when batching should occur.
 type GAPICBatchingThresholds struct {
-	ElementCountThreshold            int    `yaml:"element_count_threshold,omitempty"`
-	RequestByteThreshold             int    `yaml:"request_byte_threshold,omitempty"`
-	DelayThresholdMillis             int    `yaml:"delay_threshold_millis,omitempty"`
-	FlowControlElementLimit          int    `yaml:"flow_control_element_limit,omitempty"`
-	FlowControlByteLimit             int    `yaml:"flow_control_byte_limit,omitempty"`
+	// ElementCountThreshold is the number of elements that triggers a
+	// batch to be sent.
+	ElementCountThreshold int `yaml:"element_count_threshold,omitempty"`
+
+	// RequestByteThreshold is the total byte size of elements that
+	// triggers a batch to be sent.
+	RequestByteThreshold int `yaml:"request_byte_threshold,omitempty"`
+
+	// DelayThresholdMillis is the maximum time to wait before sending a
+	// batch, in milliseconds.
+	DelayThresholdMillis int `yaml:"delay_threshold_millis,omitempty"`
+
+	// FlowControlElementLimit is the maximum number of elements that
+	// may be outstanding at once.
+	FlowControlElementLimit int `yaml:"flow_control_element_limit,omitempty"`
+
+	// FlowControlByteLimit is the maximum total byte size of elements
+	// that may be outstanding at once.
+	FlowControlByteLimit int `yaml:"flow_control_byte_limit,omitempty"`
+
+	// FlowControlLimitExceededBehavior controls what happens when the
+	// flow control limit is exceeded (e.g. "ThrowException", "Block").
 	FlowControlLimitExceededBehavior string `yaml:"flow_control_limit_exceeded_behavior,omitempty"`
 }
 
 // GAPICBatchDescriptor describes how requests should be batched together.
 type GAPICBatchDescriptor struct {
-	BatchedField        string   `yaml:"batched_field,omitempty"`
+	// BatchedField is the request field whose values are combined when
+	// batching (e.g. "entries" in a logging API).
+	BatchedField string `yaml:"batched_field,omitempty"`
+
+	// DiscriminatorFields are request fields that must have identical
+	// values for requests to be batched together.
 	DiscriminatorFields []string `yaml:"discriminator_fields,omitempty"`
-	SubresponseField    string   `yaml:"subresponse_field,omitempty"`
+
+	// SubresponseField is the response field that contains per-element
+	// results, used to split a batched response back to individual
+	// callers.
+	SubresponseField string `yaml:"subresponse_field,omitempty"`
 }

@@ -26,51 +26,51 @@ This document describes the schema for the API Allowlist.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `batched_field` | string |  |
-| `discriminator_fields` | list of string |  |
-| `subresponse_field` | string |  |
+| `batched_field` | string | Is the request field whose values are combined when batching (e.g. "entries" in a logging API). |
+| `discriminator_fields` | list of string | Are request fields that must have identical values for requests to be batched together. |
+| `subresponse_field` | string | Is the response field that contains per-element results, used to split a batched response back to individual callers. |
 
 ## GAPICBatching Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `thresholds` | [GAPICBatchingThresholds](#gapicbatchingthresholds-configuration) (optional) |  |
-| `batch_descriptor` | [GAPICBatchDescriptor](#gapicbatchdescriptor-configuration) (optional) |  |
+| `thresholds` | [GAPICBatchingThresholds](#gapicbatchingthresholds-configuration) (optional) | Defines the conditions that trigger a batch to be sent. |
+| `batch_descriptor` | [GAPICBatchDescriptor](#gapicbatchdescriptor-configuration) (optional) | Describes how individual requests are combined into a batch. |
 
 ## GAPICBatchingThresholds Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `element_count_threshold` | int |  |
-| `request_byte_threshold` | int |  |
-| `delay_threshold_millis` | int |  |
-| `flow_control_element_limit` | int |  |
-| `flow_control_byte_limit` | int |  |
-| `flow_control_limit_exceeded_behavior` | string |  |
+| `element_count_threshold` | int | Is the number of elements that triggers a batch to be sent. |
+| `request_byte_threshold` | int | Is the total byte size of elements that triggers a batch to be sent. |
+| `delay_threshold_millis` | int | Is the maximum time to wait before sending a batch, in milliseconds. |
+| `flow_control_element_limit` | int | Is the maximum number of elements that may be outstanding at once. |
+| `flow_control_byte_limit` | int | Is the maximum total byte size of elements that may be outstanding at once. |
+| `flow_control_limit_exceeded_behavior` | string | Controls what happens when the flow control limit is exceeded (e.g. "ThrowException", "Block"). |
 
 ## GAPICInterface Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string |  |
-| `methods` | list of [GAPICMethod](#gapicmethod-configuration) |  |
+| `name` | string | Is the fully-qualified name of the service interface (e.g. "google.cloud.speech.v1.Speech"). |
+| `methods` | list of [GAPICMethod](#gapicmethod-configuration) | Contains per-method configuration such as long-running operation polling and batching settings. |
 
 ## GAPICLongRunning Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `initial_poll_delay_millis` | int64 |  |
-| `poll_delay_multiplier` | float64 |  |
-| `max_poll_delay_millis` | int64 |  |
-| `total_poll_timeout_millis` | int64 |  |
+| `initial_poll_delay_millis` | int64 | Is the delay before the first poll, in milliseconds. |
+| `poll_delay_multiplier` | float64 | Is the multiplier applied to the poll delay after each attempt. |
+| `max_poll_delay_millis` | int64 | Is the maximum poll delay, in milliseconds. |
+| `total_poll_timeout_millis` | int64 | Is the total time allowed for polling before the operation is considered timed out, in milliseconds. |
 
 ## GAPICMethod Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string |  |
-| `long_running` | [GAPICLongRunning](#gapiclongrunning-configuration) (optional) |  |
-| `batching` | [GAPICBatching](#gapicbatching-configuration) (optional) |  |
+| `name` | string | Is the simple method name (e.g. "LongRunningRecognize"). |
+| `long_running` | [GAPICLongRunning](#gapiclongrunning-configuration) (optional) | Contains polling configuration for long-running operations. Nil when the method is not long-running. |
+| `batching` | [GAPICBatching](#gapicbatching-configuration) (optional) | Contains request batching configuration. Nil when the method does not support batching. |
 
 ## GAPICYamlConfig Configuration
 
