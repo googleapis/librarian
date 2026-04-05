@@ -209,7 +209,7 @@ func runLibrarianWithVersion(ctx context.Context, version string, verbose bool, 
 	if verbose {
 		args = append([]string{"-v"}, args...)
 	}
-	return command.RunStreaming(ctx, "go",
+	return command.RunStreaming(ctx, command.Go,
 		append([]string{"run", fmt.Sprintf("github.com/googleapis/librarian/cmd/librarian@%s", version)}, args...)...)
 }
 
@@ -228,7 +228,7 @@ func runLibrarianInDocker(ctx context.Context, language, version string, verbose
 	}
 	dockerArgs := []string{
 		"run",
-		// Clean up the container afterwards.
+		// Clean up the container afterward.
 		"--rm",
 		// Run as the current user in the container, so that files are still
 		// owned appropriately.
