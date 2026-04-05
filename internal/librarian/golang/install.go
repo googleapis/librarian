@@ -23,10 +23,6 @@ import (
 var tools = []string{
 	"github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.57.0",
 	"golang.org/x/tools/cmd/goimports@latest",
-	// google.golang.org/grpc/cmd/protoc-gen-go-grpc is used to generate
-	// client libraries in google-cloud-go.
-	// Changing this version will affect the client libraries generated
-	// across the repository.
 	"google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0",
 	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
 }

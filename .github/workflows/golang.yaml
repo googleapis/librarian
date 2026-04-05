@@ -19,7 +19,6 @@ permissions:
 jobs:
   integration:
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-go@v6
@@ -36,6 +35,8 @@ jobs:
       - uses: ./.github/actions/install-protoc
       - name: Install librarian
         run: go install ./cmd/librarian
+      - name: Run librarian install
+        run: librarian install
       - name: Checkout google-cloud-go
         uses: actions/checkout@v6
         with:
@@ -43,8 +44,7 @@ jobs:
           path: google-cloud-go
       - name: Run librarian generate
         working-directory: google-cloud-go
-        run: |
-          librarian install && librarian generate --all
+        run: librarian generate --all
         # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysis
         # tool across librarian and google-cloud-go.
         # The vet.sh script is a comprehensive CI/CD utility in google-cloud-go that enforces code
