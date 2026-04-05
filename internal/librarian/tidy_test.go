@@ -69,36 +69,53 @@ func TestValidateLibraries(t *testing.T) {
 	}
 }
 
-func TestValidateTools_NoTools(t *testing.T) {
-	if err := validateTools(&config.Config{}); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestValidateTools(t *testing.T) {
-	cfg := &config.Config{
-		Tools: &config.Tools{
-			Cargo: []*config.CargoTool{
-				{Name: "taplo-cli", Version: "0.10.0"},
+	for _, test := range []struct {
+		name    string
+		config  *config.Config
+		wantErr error
+	}{
+		{
+			name:   "no tools",
+			config: &config.Config{},
+		},
+		{
+			name: "valid tools",
+			config: &config.Config{
+				Tools: &config.Tools{
+					Cargo: []*config.CargoTool{
+						{Name: "taplo-cli", Version: "0.10.0"},
+					},
+				},
 			},
 		},
-	}
-	if err := validateTools(cfg); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestValidateTools_MissingVersion(t *testing.T) {
-	cfg := &config.Config{
-		Tools: &config.Tools{
-			Cargo: []*config.CargoTool{
-				{Name: "taplo-cli"},
+		{
+			name: "missing version",
+			config: &config.Config{
+				Tools: &config.Tools{
+					Cargo: []*config.CargoTool{
+						{Name: "taplo-cli"},
+					},
+				},
 			},
+			wantErr: rust.ErrMissingToolVersion,
 		},
-	}
-	err := validateTools(cfg)
-	if !errors.Is(err, rust.ErrMissingToolVersion) {
-		t.Fatalf("got %v, want %v", err, rust.ErrMissingToolVersion)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateTools(test.config)
+			if test.wantErr == nil {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected %v, got nil", test.wantErr)
+			}
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected %v, got %v", test.wantErr, err)
+			}
+		})
 	}
 }
 
@@ -108,6 +125,15 @@ func TestFormatConfig(t *testing.T) {
 			Cargo: []*config.CargoTool{
 				{Name: "taplo-cli", Version: "0.10.0"},
 				{Name: "cargo-semver-checks", Version: "0.46.0"},
+			},
+			NPM: []*config.NPMTool{
+				{Name: "gapic-tools", Version: "1.0.5"},
+				{Name: "gapic-generator-typescript", Version: "1.0.0"},
+				{Name: "gapic-node-processing", Version: "0.1.7"},
+			},
+			Pip: []*config.PipTool{
+				{Name: "synthtool", Version: "abc123"},
+				{Name: "nox", Version: "2024.1.1"},
 			},
 		},
 		Default: &config.Default{
@@ -202,6 +228,28 @@ func TestFormatConfig(t *testing.T) {
 		want := []string{"cargo-semver-checks", "taplo-cli"}
 		var got []string
 		for _, tool := range cfg.Tools.Cargo {
+			got = append(got, tool.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts npm tools by name", func(t *testing.T) {
+		want := []string{"gapic-generator-typescript", "gapic-node-processing", "gapic-tools"}
+		var got []string
+		for _, tool := range cfg.Tools.NPM {
+			got = append(got, tool.Name)
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("sorts pip tools by name", func(t *testing.T) {
+		want := []string{"nox", "synthtool"}
+		var got []string
+		for _, tool := range cfg.Tools.Pip {
 			got = append(got, tool.Name)
 		}
 		if diff := cmp.Diff(want, got); diff != "" {

@@ -3,6 +3,24 @@ sources:
   googleapis:
     commit: 9fcfbea0aa5b50fa22e190faceb073d74504172b
     sha256: 81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98
+tools:
+  npm:
+    - name: gapic-generator-typescript
+      version: "76ba85a7f55c6e82943008b4eceb07a0f58b39e1"
+      package: "https://github.com/googleapis/google-cloud-node-core/archive/76ba85a7f55c6e82943008b4eceb07a0f58b39e1.tar.gz"
+      checksum: "9561a116203761bad63bf1a0abc7a4a0db67608683c3d67b45abfc394df612ac"
+      build:
+        - "npm install"
+        - "npm run compile"
+        - "npm link"
+    - name: gapic-node-processing
+      version: "0.1.7"
+    - name: gapic-tools
+      version: "1.0.5"
+  pip:
+    - name: synthtool
+      version: "5aa438a342707842d11fbbb302c6277fbf9e4655"
+      package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655"
 default:
   output: packages
   keep:
