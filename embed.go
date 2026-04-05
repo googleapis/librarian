@@ -12,6 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package librarian embeds the module-level configuration files, such as
+// go.mod and go.sum, making them accessible to internal packages.
 package librarian
 
 import _ "embed"
