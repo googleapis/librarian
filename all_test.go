@@ -19,8 +19,6 @@ import (
 	"os/exec"
 	"strings"
 	"testing"
-
-	"github.com/googleapis/librarian/internal/command"
 )
 
 func TestGolangCILint(t *testing.T) {
@@ -49,7 +47,7 @@ func rungo(t *testing.T, args ...string) string {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
-	cmd := exec.Command(command.Go, args...)
+	cmd := exec.Command("go", args...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
