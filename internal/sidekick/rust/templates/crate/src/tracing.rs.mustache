@@ -34,7 +34,6 @@ pub struct {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     inner: T,
     {{#Codec.DetailedTracingAttributes}}
-    #[cfg(google_cloud_unstable_tracing)]
     {{! Use a fully qualified name to avoid conflicts with any client called `DurationMetric` }}
     duration: gaxi::observability::DurationMetric,
     {{/Codec.DetailedTracingAttributes}}
@@ -49,7 +48,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         Self {
             inner,
             {{#Codec.DetailedTracingAttributes}}
-            #[cfg(google_cloud_unstable_tracing)]
             duration: gaxi::observability::DurationMetric::new(
                 &info::INSTRUMENTATION_CLIENT_INFO,
             ),
@@ -77,7 +75,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
         {{#Codec.DetailedTracingAttributes}}
-        #[cfg(google_cloud_unstable_tracing)]
         {
             let (_span, pending) = gaxi::client_request_signals!(
                 metric: self.duration.clone(),
@@ -86,9 +83,10 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                 self.inner.{{Codec.Name}}(req, options));
             pending.await
         }
-        #[cfg(not(google_cloud_unstable_tracing))]
-        {{/Codec.DetailedTracingAttributes }}
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
         self.inner.{{Codec.Name}}(req, options).await
+        {{/Codec.DetailedTracingAttributes}}
     }
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
@@ -112,7 +110,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 {{/Codec.Services}}
 {{#Codec.HasServices}}
 {{#Codec.DetailedTracingAttributes}}
-#[cfg(google_cloud_unstable_tracing)]
 pub(crate) mod info {
     const NAME: &str = env!("CARGO_PKG_NAME");
     const VERSION: &str = env!("CARGO_PKG_VERSION");
