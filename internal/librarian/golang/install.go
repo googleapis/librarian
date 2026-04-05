@@ -27,6 +27,7 @@ var tools = []string{
 	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
 }
 
+// Install installs the tools required for Go library generation.
 func Install(ctx context.Context) error {
 	for _, tool := range tools {
 		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
