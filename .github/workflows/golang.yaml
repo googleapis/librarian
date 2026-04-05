@@ -44,7 +44,7 @@ jobs:
         working-directory: google-cloud-go
         run: |
           librarian install && librarian generate --all
-        # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysi
+        # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysis
         # tool across librarian and google-cloud-go.
         # The vet.sh script is a comprehensive CI/CD utility in google-cloud-go that enforces code
         # quality by running static analysis tools. We use this check to validate code generated
