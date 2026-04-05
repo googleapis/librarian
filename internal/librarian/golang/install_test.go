@@ -32,8 +32,6 @@ func TestInstall(t *testing.T) {
 		suffix = ".exe"
 	}
 	for _, tool := range []string{
-		"golangci-lint",
-		"yamlfmt",
 		"protoc-gen-go_gapic",
 		"goimports",
 		"protoc-gen-go-grpc",

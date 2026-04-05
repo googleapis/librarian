@@ -16,26 +16,22 @@ package golang
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"path/filepath"
 
-	"github.com/googleapis/librarian"
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Install installs Go tool dependencies defined in the librarian module's go.mod tool directive.
+var tools = []string{
+	"github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.57.0",
+	"golang.org/x/tools/cmd/goimports@latest",
+	"google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0",
+	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
+}
+
 func Install(ctx context.Context) error {
-	dir, err := os.MkdirTemp("", "librarian-install-*")
-	if err != nil {
-		return fmt.Errorf("failed to create temp dir for tool installation: %w", err)
+	for _, tool := range tools {
+		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
+			return err
+		}
 	}
-	defer os.RemoveAll(dir)
-	if err := os.WriteFile(filepath.Join(dir, "go.mod"), librarian.GoMod, 0644); err != nil {
-		return fmt.Errorf("failed to write embedded go.mod: %w", err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "go.sum"), librarian.GoSum, 0644); err != nil {
-		return fmt.Errorf("failed to write embedded go.sum: %w", err)
-	}
-	return command.RunInDir(ctx, dir, "go", "install", "tool")
+	return nil
 }
