@@ -17,6 +17,7 @@ package golang
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -207,7 +208,7 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 
 	gotPath := filepath.Join(library.Output, "alloydb/connectors/apiv1")
 	versionPath := filepath.Join(gotPath, "version.go")
-	if _, err := os.Stat(versionPath); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(versionPath); !errors.Is(err, fs.ErrNotExist) {
 		t.Fatal("client version file should not exist")
 	}
 }
