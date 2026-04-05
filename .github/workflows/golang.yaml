@@ -35,13 +35,14 @@ jobs:
       - uses: ./.github/actions/install-protoc
       - name: Install librarian
         run: go install ./cmd/librarian
-      - name: Run librarian install
-        run: librarian install
       - name: Checkout google-cloud-go
         uses: actions/checkout@v6
         with:
           repository: googleapis/google-cloud-go
           path: google-cloud-go
+      - name: Run librarian install
+        working-directory: google-cloud-go
+        run: librarian install
       - name: Run librarian generate
         working-directory: google-cloud-go
         run: librarian generate --all
