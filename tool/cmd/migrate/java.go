@@ -20,15 +20,22 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
 	generationConfigFileName = "generation_config.yaml"
+	managedProtoStart        = "<!-- {x-generated-proto-dependencies-start} -->"
+	managedProtoEnd          = "<!-- {x-generated-proto-dependencies-end} -->"
+	managedGrpcStart         = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGrpcEnd           = "<!-- {x-generated-grpc-dependencies-end} -->"
 )
 
 var (
@@ -151,6 +158,11 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
+
+	if err := insertMarkers(repoPath, cfg); err != nil {
+		return fmt.Errorf("failed to insert markers: %w", err)
+	}
+
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
 	}
@@ -319,4 +331,130 @@ func parseArtifactID(distributionName, name string) string {
 
 func invertBoolPtr(p *bool) bool {
 	return p != nil && !*p
+}
+
+// insertMarkers updates the pom.xml of the main client module for each library
+// to include managed dependency markers for generated proto and gRPC dependencies.
+func insertMarkers(repoPath string, cfg *config.Config) error {
+	var totalInserts int
+	for _, lib := range cfg.Libraries {
+		if lib.SkipGenerate {
+			continue
+		}
+		distName := java.DeriveDistributionName(lib)
+		parts := strings.SplitN(distName, ":", 2)
+		if len(parts) != 2 {
+			continue
+		}
+		gapicArtifactID := parts[1]
+		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
+		if _, err := os.Stat(clientPomPath); err != nil {
+			continue
+		}
+
+		contentBytes, err := os.ReadFile(clientPomPath)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(string(contentBytes), "\n")
+
+		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
+		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
+			continue
+		}
+
+		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd, lib.Name, "proto")
+		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd, lib.Name, "grpc")
+
+		newContent := strings.Join(updatedLines, "\n")
+		if newContent != string(contentBytes) {
+			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
+				return err
+			}
+			totalInserts++
+		} else {
+			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
+		}
+	}
+	if totalInserts > 0 {
+		log.Printf("Inserted markers in %d Java pom.xml files", totalInserts)
+	}
+	return nil
+}
+
+// getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
+func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
+	for _, api := range lib.APIs {
+		version := serviceconfig.ExtractVersion(api.Path)
+		names := java.DeriveModuleNames(lib.Name, version)
+		protoIDs = append(protoIDs, names.Proto)
+		grpcIDs = append(grpcIDs, names.Grpc)
+	}
+	return
+}
+
+// wrapDependencies inserts start and end markers around the block of dependencies
+// matching the provided artifact IDs. It returns the modified lines.
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string, libName, depType string) []string {
+	if len(artifactIDs) == 0 {
+		return lines
+	}
+	for _, line := range lines {
+		if strings.Contains(line, startMarker) {
+			log.Printf("Debug: library %s already has %s markers", libName, depType)
+			return lines
+		}
+	}
+	targets := make([]string, len(artifactIDs))
+	for i, id := range artifactIDs {
+		targets[i] = "<artifactId>" + id + "</artifactId>"
+	}
+	first, last := findMarkerBounds(lines, targets)
+	if first == -1 {
+		return lines
+	}
+	// Use the same indentation as the first dependency line.
+	indent := lines[first][:len(lines[first])-len(strings.TrimLeft(lines[first], " \t"))]
+	return slices.Concat(
+		lines[:first],
+		[]string{indent + startMarker},
+		lines[first:last+1],
+		[]string{indent + endMarker},
+		lines[last+1:],
+	)
+}
+
+// findMarkerBounds returns the starting line of the first <dependency> block
+// and the ending line of the last <dependency> block that contain any of the target artifact IDs.
+func findMarkerBounds(lines []string, targets []string) (first, last int) {
+	first, last = -1, -1
+	for i, line := range lines {
+		match := false
+		for _, t := range targets {
+			if strings.Contains(line, t) {
+				match = true
+				break
+			}
+		}
+		if !match {
+			continue
+		}
+		// Find the start of this <dependency> block
+		start := i
+		for start > 0 && !strings.Contains(lines[start], "<dependency>") {
+			start--
+		}
+		if first == -1 || start < first {
+			first = start
+		}
+		// Find the end of this <dependency> block
+		end := i
+		for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
+			end++
+		}
+		if end > last {
+			last = end
+		}
+	}
+	return
 }

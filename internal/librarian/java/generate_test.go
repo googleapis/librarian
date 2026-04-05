@@ -166,7 +166,7 @@ func TestDeriveDistributionName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveDistributionName(test.library)
+			got := DeriveDistributionName(test.library)
 			if got != test.want {
 				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
 			}

@@ -179,7 +179,7 @@ func detectIndentation(content string, index int) string {
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
-	distName := deriveDistributionName(library)
+	distName := DeriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	if len(parts) != 2 {
 		return nil, fmt.Errorf("invalid distribution name %q: expected format groupID:artifactID", distName)
@@ -196,19 +196,19 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		names := deriveModuleNames(gapicArtifactID, version)
+		names := DeriveModuleNames(library.Name, version)
 
 		transport := transports[api.Path]
 		protoGrpcID := protoGroupID(gapicGroupID)
 		data := grpcProtoPomData{
 			Proto: coordinates{
 				GroupID:    protoGrpcID,
-				ArtifactID: names.proto,
+				ArtifactID: names.Proto,
 				Version:    library.Version,
 			},
 			Grpc: coordinates{
 				GroupID:    protoGrpcID,
-				ArtifactID: names.grpc,
+				ArtifactID: names.Grpc,
 				Version:    library.Version,
 			},
 			Parent: coordinates{
@@ -221,13 +221,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		}
 
 		// Proto module
-		protoDir := filepath.Join(libraryDir, names.proto)
+		protoDir := filepath.Join(libraryDir, names.Proto)
 		isProtoMissing, err := isPomMissing(protoDir)
 		if err != nil {
 			return nil, err
 		}
 		modules = append(modules, javaModule{
-			artifactID:   names.proto,
+			artifactID:   names.Proto,
 			dir:          protoDir,
 			isMissing:    isProtoMissing,
 			templateData: data,
@@ -237,13 +237,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-			grpcDir := filepath.Join(libraryDir, names.grpc)
+			grpcDir := filepath.Join(libraryDir, names.Grpc)
 			isGrpcMissing, err := isPomMissing(grpcDir)
 			if err != nil {
 				return nil, err
 			}
 			modules = append(modules, javaModule{
-				artifactID:   names.grpc,
+				artifactID:   names.Grpc,
 				dir:          grpcDir,
 				isMissing:    isGrpcMissing,
 				templateData: data,

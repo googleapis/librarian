@@ -174,7 +174,9 @@ func ensureCloudPrefix(name string) string {
 	return name
 }
 
-func deriveDistributionName(library *config.Library) string {
+// DeriveDistributionName returns the Maven distribution name (groupId:artifactId) for the library.
+// TODO(https://github.com/googleapis/librarian/issues/5050): do not need to export after migrate is done.
+func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
@@ -226,7 +228,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	gapicOpts := []string{"metadata"}
 
 	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
-	gapicOpts = append(gapicOpts, gapicOpt("artifact", deriveDistributionName(library)))
+	gapicOpts = append(gapicOpts, gapicOpt("artifact", DeriveDistributionName(library)))
 
 	if apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
