@@ -79,3 +79,26 @@ func TestGenerate(t *testing.T) {
 		}
 	}
 }
+
+func TestFormat(t *testing.T) {
+	testhelper.RequireCommand(t, "swift-format")
+
+	outDir := t.TempDir()
+	sourcesDir := filepath.Join(outDir, "Sources")
+	if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	filePath := filepath.Join(sourcesDir, "test.swift")
+	// Write a file that needs formatting.
+	if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Output: outDir,
+	}
+
+	if err := Format(t.Context(), library); err != nil {
+		t.Fatal(err)
+	}
+}
