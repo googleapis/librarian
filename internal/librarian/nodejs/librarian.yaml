@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # TODO(https://github.com/googleapis/librarian/issues/4848): move this file to
 # github.com/googleapis/google-cloud-node after the repository has migrated to
 # librarian.
