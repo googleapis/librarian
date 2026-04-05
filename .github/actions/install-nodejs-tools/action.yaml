@@ -1,0 +1,25 @@
+name: Install Node.js tools
+description: Install and cache tools required by librarian for Node.js.
+runs:
+  using: composite
+  steps:
+    - name: Get npm and pip prefixes
+      id: paths
+      run: |
+        echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
+        echo "pip=$(python3 -c 'import site; print(site.getsitepackages()[0])')" >> "$GITHUB_OUTPUT"
+      shell: bash
+    - uses: actions/cache@v5
+      id: cache
+      with:
+        path: |
+          ${{ steps.paths.outputs.npm }}
+          ${{ steps.paths.outputs.pip }}
+        key: nodejs-tools-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
+    - name: Run librarian install
+      if: steps.cache.outputs.cache-hit != 'true'
+      run: |
+        cp internal/librarian/nodejs/librarian.yaml librarian.yaml
+        librarian -v install
+        rm librarian.yaml
+      shell: bash
