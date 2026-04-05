@@ -123,7 +123,7 @@ func runUsage(t *testing.T, bin string, args []string) string {
 	var stdout bytes.Buffer
 	fullArgs := append([]string{"run", bin}, args...)
 	fullArgs = append(fullArgs, "--help")
-	cmd := exec.Command("go", fullArgs...)
+	cmd := exec.Command(Go, fullArgs...)
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stdout // Some help might go to stderr
 	if err := cmd.Run(); err != nil {
