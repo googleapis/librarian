@@ -26,17 +26,23 @@ import (
 )
 
 const (
-	protoPomTemplateName    = "module_proto_pom.xml.tmpl"
-	grpcPomTemplateName     = "module_grpc_pom.xml.tmpl"
-	clientPomTemplateName   = "module_client_pom.xml.tmpl"
-	parentPomTemplateName   = "module_parent_pom.xml.tmpl"
-	bomPomTemplateName      = "module_bom_pom.xml.tmpl"
-	googleGroupID           = "com.google"
-	protoGrpcSuffix         = ".api.grpc"
+	protoPomTemplateName  = "module_proto_pom.xml.tmpl"
+	grpcPomTemplateName   = "module_grpc_pom.xml.tmpl"
+	clientPomTemplateName = "module_client_pom.xml.tmpl"
+	parentPomTemplateName = "module_parent_pom.xml.tmpl"
+	bomPomTemplateName    = "module_bom_pom.xml.tmpl"
+	googleGroupID         = "com.google"
+	protoGrpcSuffix       = ".api.grpc"
+	// Template markers for client pom.xml.
 	managedProtoStartMarker = "<!-- {x-generated-proto-dependencies-start} -->"
 	managedProtoEndMarker   = "<!-- {x-generated-proto-dependencies-end} -->"
 	managedGrpcStartMarker  = "<!-- {x-generated-grpc-dependencies-start} -->"
 	managedGrpcEndMarker    = "<!-- {x-generated-grpc-dependencies-end} -->"
+	// Template markers for BOM and parent pom.xml.
+	managedDependenciesStartMarker = "<!-- {x-generated-dependencies-start} -->"
+	managedDependenciesEndMarker   = "<!-- {x-generated-dependencies-end} -->"
+	managedModulesStartMarker      = "<!-- {x-generated-modules-start} -->"
+	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
 // grpcProtoPomData holds the data for rendering POM templates.
@@ -97,9 +103,18 @@ func syncPoms(library *config.Library, libraryDir, monorepoVersion string, metad
 			}
 			continue
 		}
-		if m.template == clientPomTemplateName {
+		switch m.template {
+		case clientPomTemplateName:
 			if err := updateClientPom(pomPath, m.templateData.(clientPomData)); err != nil {
 				return fmt.Errorf("failed to update client pom %s: %w", m.artifactID, err)
+			}
+		case bomPomTemplateName:
+			if err := updateBomPom(pomPath, m.templateData.(bomParentPomData)); err != nil {
+				return fmt.Errorf("failed to update bom pom %s: %w", m.artifactID, err)
+			}
+		case parentPomTemplateName:
+			if err := updateParentPom(pomPath, m.templateData.(bomParentPomData)); err != nil {
+				return fmt.Errorf("failed to update parent pom %s: %w", m.artifactID, err)
 			}
 		}
 	}
@@ -128,7 +143,48 @@ func updateClientPom(pomPath string, data clientPomData) error {
 	return nil
 }
 
-func updateManagedBlock(content, templateName, startMarker, endMarker string, data clientPomData) (string, error) {
+// updateBomPom surgically updates the BOM POM using template markers to inject
+// the dependencyManagement section while preserving existing formatting and
+// metadata comments.
+func updateBomPom(pomPath string, data bomParentPomData) error {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return err
+	}
+	updated, err := updateManagedBlock(string(content), "managed_dependencies", managedDependenciesStartMarker, managedDependenciesEndMarker, data)
+	if err != nil {
+		return err
+	}
+	// compare to avoid unnecessary I/O
+	if updated != string(content) {
+		return os.WriteFile(pomPath, []byte(updated), 0644)
+	}
+	return nil
+}
+
+// updateParentPom surgically updates the Parent POM using template markers to inject
+// the modules and dependencyManagement sections while preserving existing formatting
+// and metadata comments.
+func updateParentPom(pomPath string, data bomParentPomData) error {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return err
+	}
+	updated := string(content)
+	if updated, err = updateManagedBlock(updated, "managed_modules", managedModulesStartMarker, managedModulesEndMarker, data); err != nil {
+		return err
+	}
+	if updated, err = updateManagedBlock(updated, "managed_dependencies", managedDependenciesStartMarker, managedDependenciesEndMarker, data); err != nil {
+		return err
+	}
+	// compare to avoid unnecessary I/O
+	if updated != string(content) {
+		return os.WriteFile(pomPath, []byte(updated), 0644)
+	}
+	return nil
+}
+
+func updateManagedBlock(content, templateName, startMarker, endMarker string, data any) (string, error) {
 	var buf bytes.Buffer
 	if err := templates.ExecuteTemplate(&buf, templateName, data); err != nil {
 		return "", err

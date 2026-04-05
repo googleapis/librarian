@@ -22,12 +22,19 @@
   </properties>
 
   <dependencyManagement>
-    <dependencies>{{range .Modules}}
+    <dependencies>
+      <!-- {x-generated-dependencies-start} -->
+      {{- template "managed_dependencies" . }}
+      <!-- {x-generated-dependencies-end} -->
+    </dependencies>
+  </dependencyManagement>
+</project>
+{{- define "managed_dependencies" }}
+{{- range .Modules }}
       <dependency>
         <groupId>{{.GroupID}}</groupId>
         <artifactId>{{.ArtifactID}}</artifactId>
         <version>{{.Version}}</version><!-- {x-version-update:{{.ArtifactID}}:current} -->
-      </dependency>{{end}}
-    </dependencies>
-  </dependencyManagement>
-</project>
+      </dependency>
+{{- end }}
+{{- end -}}
