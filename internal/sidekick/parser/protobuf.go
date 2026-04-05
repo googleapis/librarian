@@ -600,7 +600,9 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 			if err != nil {
 				return nil, err
 			}
-			message.Messages = append(message.Messages, nmsg)
+			if !nmsg.IsMap {
+				message.Messages = append(message.Messages, nmsg)
+			}
 		}
 	}
 	for _, e := range m.GetEnumType() {

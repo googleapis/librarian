@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
-{{^IsMap}}
 {{^ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 #[doc(hidden)]
@@ -76,4 +75,3 @@ impl<'de> serde::de::Deserialize<'de> for super::{{Codec.RelativeName}} {
 {{/Messages}}
 {{/Codec.HasNestedTypes}}
 {{/ServicePlaceholder}}
-{{/IsMap}}
