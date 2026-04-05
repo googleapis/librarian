@@ -16,6 +16,7 @@ package golang
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 
@@ -27,14 +28,14 @@ import (
 func Install(ctx context.Context) error {
 	dir, err := os.MkdirTemp("", "librarian-install-*")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create temp dir for tool installation: %w", err)
 	}
 	defer os.RemoveAll(dir)
 	if err := os.WriteFile(filepath.Join(dir, "go.mod"), librarian.GoMod, 0644); err != nil {
-		return err
+		return fmt.Errorf("failed to write embedded go.mod: %w", err)
 	}
 	if err := os.WriteFile(filepath.Join(dir, "go.sum"), librarian.GoSum, 0644); err != nil {
-		return err
+		return fmt.Errorf("failed to write embedded go.sum: %w", err)
 	}
 	return command.RunInDir(ctx, dir, "go", "install", "tool")
 }
