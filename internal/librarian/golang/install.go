@@ -16,11 +16,25 @@ package golang
 
 import (
 	"context"
+	"os"
+	"path/filepath"
 
+	"github.com/googleapis/librarian"
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Install installs Go tool dependencies defined in the go.mod tool directive.
+// Install installs Go tool dependencies defined in the librarian module's go.mod tool directive.
 func Install(ctx context.Context) error {
-	return command.Run(ctx, "go", "install", "tool")
+	dir, err := os.MkdirTemp("", "librarian-install-*")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), librarian.GoMod, 0644); err != nil {
+		return err
+	}
+	if err := os.WriteFile(filepath.Join(dir, "go.sum"), librarian.GoSum, 0644); err != nil {
+		return err
+	}
+	return command.RunInDir(ctx, dir, "go", "install", "tool")
 }

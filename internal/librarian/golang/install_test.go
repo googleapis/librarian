@@ -22,20 +22,11 @@ import (
 )
 
 func TestInstall(t *testing.T) {
-	// go install tool requires running from the module root.
-	repoRoot, err := filepath.Abs("../../..")
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Chdir(repoRoot)
-
 	gobin := t.TempDir()
 	t.Setenv("GOBIN", gobin)
-
 	if err := Install(t.Context()); err != nil {
 		t.Fatal(err)
 	}
-
 	suffix := ""
 	if runtime.GOOS == "windows" {
 		suffix = ".exe"
