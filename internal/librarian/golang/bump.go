@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -57,8 +58,11 @@ func Bump(library *config.Library, output, version string) error {
 
 func bumpInternalVersion(output, version string) error {
 	versionFilePath := filepath.Join(output, internalVersionFile)
-	if _, err := os.Stat(versionFilePath); os.IsNotExist(err) {
-		return nil
+	if _, err := os.Stat(versionFilePath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return nil
+		}
+		return err
 	}
 
 	return findAndReplace(versionFilePath, version)
