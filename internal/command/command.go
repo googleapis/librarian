@@ -27,9 +27,10 @@ import (
 const (
 	// Cargo is the command name for the cargo executable.
 	Cargo = "cargo"
-
 	// Git is the command name for the git executable.
 	Git = "git"
+	// Go is the command name for the go executable.
+	Go = "go"
 )
 
 var (

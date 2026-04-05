@@ -27,7 +27,6 @@ jobs:
           go-version-file: "go.mod"
       - name: Install go tools
         run: |
-          go install tool
           # TODO(https://github.com/googleapis/librarian/issues/4894), Use golangci-lint
           # for static checkers and linters.
           # we need to install golint and staticcheck because
@@ -42,10 +41,13 @@ jobs:
         with:
           repository: googleapis/google-cloud-go
           path: google-cloud-go
+      - name: Run librarian install
+        working-directory: google-cloud-go
+        run: librarian install
       - name: Run librarian generate
         working-directory: google-cloud-go
         run: librarian generate --all
-        # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysi
+        # TODO(https://github.com/googleapis/librarian/issues/4895): Standardize static analysis
         # tool across librarian and google-cloud-go.
         # The vet.sh script is a comprehensive CI/CD utility in google-cloud-go that enforces code
         # quality by running static analysis tools. We use this check to validate code generated
