@@ -99,7 +99,7 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 		return "", nil
 	}
 
-	// Optimization for homogenous API version used across service interfaces.
+	// Optimization for homogeneous API version used across service interfaces.
 	// Only triggers if there are more than 5 service interfaces in the API.
 	// If there are fewer, there is still value in listing them individually.
 	for _, v := range lpv {

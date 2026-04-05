@@ -802,7 +802,7 @@ func toPascal(symbol string) string {
 	if symbol == "" {
 		return ""
 	}
-	// The Rust style guide frowns on all upppercase for struct names, even if
+	// The Rust style guide frowns on all uppercase for struct names, even if
 	// they are acronyms (consider `IAM`). In such cases we must use the normal
 	// mapping.
 	if strings.ToUpper(symbol) == symbol {

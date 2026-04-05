@@ -93,7 +93,7 @@ type API struct {
 	//
 	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
 	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
-	// standardize release level vocabulary across lanaguages.
+	// standardize release level vocabulary across languages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
@@ -158,7 +158,7 @@ func (api *API) ReleaseLevel(language string) string {
 		return rl
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across lanaguages.
+	// release level vocabulary across languages.
 	if language == config.LanguageGo {
 		return "ga"
 	}

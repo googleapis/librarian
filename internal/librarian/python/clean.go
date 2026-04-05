@@ -172,7 +172,7 @@ func cleanGAPICCommon(lib *config.Library) error {
 }
 
 // deleteUnlessKept deletes the specified path unless it's preserved by the
-// Keep configuration of the specifified library. If the path is a directory,
+// Keep configuration of the specified library. If the path is a directory,
 // the function recurses, deleting all files below the directory (including
 // files in child directories). Directories themselves are never deleted. If
 // a directory appears in a Keep list, no child files are deleted.
