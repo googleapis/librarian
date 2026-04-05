@@ -15,7 +15,6 @@
 # TODO(https://github.com/googleapis/librarian/issues/4848): move this file to
 # github.com/googleapis/google-cloud-node after the repository has migrated to
 # librarian.
-
 language: nodejs
 tools:
   npm:
