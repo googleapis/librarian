@@ -371,6 +371,24 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			},
 			wantErr: errAPIAlreadyExists,
 		},
+		{
+			name: "python doesn't support updating existing library",
+			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errLibraryAlreadyExists,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
