@@ -287,7 +287,7 @@ func TestAddLibrary(t *testing.T) {
 	}
 }
 
-func TestAddLibrary_UpdateExistingLibrary(t *testing.T) {
+func TestAddLibrary_ExistingLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		apis     []string
@@ -372,6 +372,46 @@ func TestAddLibrary_UpdateExistingLibrary(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantCfg, gotCfg); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apis    []string
+		cfg     *config.Config
+		wantErr error
+	}{
+		{
+			name: "fail if api already exists",
+			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errAPIAlreadyExists,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			_, _, err := addLibrary(test.cfg, test.apis...)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
 		})
 	}

@@ -38,6 +38,7 @@ import (
 
 var (
 	errLibraryAlreadyExists      = errors.New("library already exists in config")
+	errAPIAlreadyExists          = errors.New("api already exists in library")
 	errMissingAPI                = errors.New("must provide at least one API")
 	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
 	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
@@ -201,10 +202,11 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 
 func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
 	for _, api := range apis {
-		if !slices.Contains(existingLib.APIs, api) {
-			existingLib.APIs = append(existingLib.APIs, api)
+		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
+			return "", nil, fmt.Errorf("%s already exists in library %s: %w", api.Path, existingLib.Name, errAPIAlreadyExists)
 		}
 	}
+	existingLib.APIs = append(existingLib.APIs, apis...)
 	return existingLib.Name, cfg, nil
 }
 
