@@ -667,34 +667,3 @@ func TestInsertMarkers(t *testing.T) {
 		t.Errorf("expected %s in pom.xml, but not found", managedGrpcStart)
 	}
 }
-
-func TestParseArtifactID(t *testing.T) {
-	for _, test := range []struct {
-		distributionName string
-		name             string
-		want             string
-	}{
-		{
-			distributionName: "com.google.cloud:google-cloud-vision",
-			name:             "vision",
-			want:             "google-cloud-vision",
-		},
-		{
-			distributionName: "",
-			name:             "vision",
-			want:             "google-cloud-vision",
-		},
-		{
-			distributionName: "google-cloud-vision",
-			name:             "vision",
-			want:             "google-cloud-vision",
-		},
-	} {
-		t.Run(test.distributionName+"_"+test.name, func(t *testing.T) {
-			got := parseArtifactID(test.distributionName, test.name)
-			if got != test.want {
-				t.Errorf("parseArtifactID(%q, %q) = %q, want %q", test.distributionName, test.name, got, test.want)
-			}
-		})
-	}
-}
