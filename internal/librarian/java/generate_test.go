@@ -89,9 +89,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageJava: serviceconfig.GRPCRest,
 				},
-				NoRESTNumericEnums: map[string]bool{
-					config.LanguageJava: true,
-				},
+				SkipRESTNumericEnums: []string{config.LanguageJava},
 			},
 			want: []string{
 				"metadata",
