@@ -68,7 +68,7 @@ func (c *codec) generateServices(outdir string, model *api.API, provider languag
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.mustache",
-			OutputPath:   filepath.Join("Sources", c.PackageName, pascalCase(s.Name)+".swift"),
+			OutputPath:   filepath.Join("Sources", c.PackageName, s.Name+".swift"),
 		}
 		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 			return err
