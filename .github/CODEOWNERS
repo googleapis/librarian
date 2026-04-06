@@ -10,6 +10,7 @@
 /*/sidekick/dart/ @googleapis/cloud-sdk-dart-team
 /*/sidekick/rust/ @googleapis/cloud-sdk-rust-team
 /*/sidekick/rust_prost/ @googleapis/cloud-sdk-rust-team
+/*/sidekick/swift/ @googleapis/cloud-sdk-swift-team
 
 # Locations for all surfer code.
 /*/surfer/ @googleapis/cloud-sdk-surfer-team
