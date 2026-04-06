@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -89,6 +90,8 @@ from librarian.yaml in the current directory.`,
 				return golang.Install(ctx)
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx)
+			case config.LanguagePython:
+				return python.Install(ctx)
 			case config.LanguageRust:
 				return rust.Install(ctx, cfg.Tools)
 			default:
