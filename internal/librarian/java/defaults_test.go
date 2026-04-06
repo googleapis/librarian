@@ -98,3 +98,65 @@ func TestTidy(t *testing.T) {
 		})
 	}
 }
+
+func TestValidate(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+	}{
+		{
+			name: "valid",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:part2",
+				},
+			},
+		},
+		{
+			name: "empty java config",
+			lib:  &config.Library{},
+		},
+		{
+			name: "empty distribution name override",
+			lib: &config.Library{
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Validate(test.lib); err != nil {
+				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
+			}
+		})
+	}
+}
+
+func TestValidate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+	}{
+		{
+			name: "missing colon",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "nocolon",
+				},
+			},
+		},
+		{
+			name: "too many colons",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:part2:part3",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Validate(test.lib); err == nil {
+				t.Errorf("Validate(%+v) error = nil, want error", test.lib)
+			}
+		})
+	}
+}

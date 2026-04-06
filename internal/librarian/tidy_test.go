@@ -33,6 +33,7 @@ func TestValidateLibraries(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		libraries []*config.Library
+		language  string
 		wantErr   error
 	}{
 		{
@@ -60,12 +61,13 @@ func TestValidateLibraries(t *testing.T) {
 					},
 				},
 			},
-			wantErr: java.ErrInvalidDistributionName,
+			language: config.LanguageJava,
+			wantErr:  java.ErrInvalidDistributionName,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
-				Language:  config.LanguageJava,
+				Language:  test.language,
 				Libraries: test.libraries,
 			}
 			err := validateLibraries(cfg)

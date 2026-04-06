@@ -51,13 +51,15 @@ var (
 	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
 )
 
-// Validate validates the Java-specific configuration for a library.
+// Validate checks that the Java-specific configuration for a library is
+// correctly formatted. It ensures that the distribution name override
+// contains exactly two parts (GroupID and ArtifactID) separated by a colon.
 func Validate(library *config.Library) error {
 	if library.Java == nil || library.Java.DistributionNameOverride == "" {
 		return nil
 	}
-	if !strings.Contains(library.Java.DistributionNameOverride, ":") {
-		return fmt.Errorf("%w: must contain group_id and artifact_id separated by colon, got %q", ErrInvalidDistributionName, library.Java.DistributionNameOverride)
+	if len(strings.Split(library.Java.DistributionNameOverride, ":")) != 2 {
+		return fmt.Errorf("%w: %s: want 2 parts separated by colon, got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
 	}
 	return nil
 }
