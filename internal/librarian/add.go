@@ -158,6 +158,9 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
+		if cfg.Language == config.LanguageGo {
+			return updateExistingLibrary(cfg, existingLib, paths)
+		}
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 	return addNewLibrary(cfg, paths, name)
@@ -194,6 +197,15 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
 	return name, cfg, nil
+}
+
+func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
+	for _, api := range apis {
+		if !slices.Contains(existingLib.APIs, api) {
+			existingLib.APIs = append(existingLib.APIs, api)
+		}
+	}
+	return existingLib.Name, cfg, nil
 }
 
 // syncToStateYAML updates the .librarian/state.yaml with any new libraries.
