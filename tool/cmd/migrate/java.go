@@ -339,16 +339,19 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	var totalInserts int
 	for _, lib := range cfg.Libraries {
 		if lib.SkipGenerate {
+			log.Printf("Debug: skipping library %s (SkipGenerate is true)", lib.Name)
 			continue
 		}
 		distName := java.DeriveDistributionName(lib)
 		parts := strings.SplitN(distName, ":", 2)
 		if len(parts) != 2 {
+			log.Printf("Debug: skipping library %s (invalid distribution name: %q)", lib.Name, distName)
 			continue
 		}
 		gapicArtifactID := parts[1]
 		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
 		if _, err := os.Stat(clientPomPath); err != nil {
+			log.Printf("Debug: skipping library %s (pom.xml not found at %s)", lib.Name, clientPomPath)
 			continue
 		}
 
@@ -360,6 +363,7 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 
 		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
 		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
+			log.Printf("Debug: skipping library %s (no proto or gRPC artifact IDs found)", lib.Name)
 			continue
 		}
 

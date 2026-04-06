@@ -534,6 +534,9 @@ func TestWrapDependencies(t *testing.T) {
 		"    <artifactId>proto-v1</artifactId>",
 		"  </dependency>",
 		"  <dependency>",
+		"    <artifactId>grpc-v1</artifactId>",
+		"  </dependency>",
+		"  <dependency>",
 		"    <artifactId>other</artifactId>",
 		"  </dependency>",
 		"</dependencies>",
@@ -541,11 +544,15 @@ func TestWrapDependencies(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		artifactIDs []string
+		start       string
+		end         string
 		want        []string
 	}{
 		{
-			name:        "wrap existing",
+			name:        "wrap existing proto",
 			artifactIDs: []string{"proto-v1"},
+			start:       managedProtoStart,
+			end:         managedProtoEnd,
 			want: []string{
 				"<dependencies>",
 				"  " + managedProtoStart,
@@ -553,6 +560,30 @@ func TestWrapDependencies(t *testing.T) {
 				"    <artifactId>proto-v1</artifactId>",
 				"  </dependency>",
 				"  " + managedProtoEnd,
+				"  <dependency>",
+				"    <artifactId>grpc-v1</artifactId>",
+				"  </dependency>",
+				"  <dependency>",
+				"    <artifactId>other</artifactId>",
+				"  </dependency>",
+				"</dependencies>",
+			},
+		},
+		{
+			name:        "wrap existing grpc",
+			artifactIDs: []string{"grpc-v1"},
+			start:       managedGrpcStart,
+			end:         managedGrpcEnd,
+			want: []string{
+				"<dependencies>",
+				"  <dependency>",
+				"    <artifactId>proto-v1</artifactId>",
+				"  </dependency>",
+				"  " + managedGrpcStart,
+				"  <dependency>",
+				"    <artifactId>grpc-v1</artifactId>",
+				"  </dependency>",
+				"  " + managedGrpcEnd,
 				"  <dependency>",
 				"    <artifactId>other</artifactId>",
 				"  </dependency>",
@@ -562,16 +593,20 @@ func TestWrapDependencies(t *testing.T) {
 		{
 			name:        "no match",
 			artifactIDs: []string{"non-existent"},
+			start:       managedProtoStart,
+			end:         managedProtoEnd,
 			want:        lines,
 		},
 		{
 			name:        "empty artifactIDs",
 			artifactIDs: []string{},
+			start:       managedProtoStart,
+			end:         managedProtoEnd,
 			want:        lines,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := wrapDependencies(lines, test.artifactIDs, managedProtoStart, managedProtoEnd, "test-lib", "proto")
+			got := wrapDependencies(lines, test.artifactIDs, test.start, test.end, "test-lib", "type")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
