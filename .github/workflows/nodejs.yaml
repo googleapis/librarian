@@ -18,7 +18,7 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-24.04
-    # TODO(https://github.com/googleapis/librarian/issues/4593): 
+    # TODO(https://github.com/googleapis/librarian/issues/4593):
     # gapic-generator-typescript installation takes over 4 minutes.
     # Improve installation speed and revert timeout to 5 minutes.
     timeout-minutes: 6
@@ -27,31 +27,38 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
-      - name: Display Go version
-        run: go version
+      - uses: actions/cache@v5
+        with:
+          path: ~/.cache/go-build
+          key: go-build-${{ hashFiles('go.sum') }}
+          restore-keys: go-build-
       - uses: actions/setup-node@v6
         with:
           node-version: "18"
-      - name: Display Node.js version
-        run: node --version
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Display Python version
-        run: python3 --version
       - uses: ./.github/actions/install-protoc
-      - name: Download google-cloud-node-core
-        run: git clone --depth 1 https://github.com/googleapis/google-cloud-node-core.git /tmp/google-cloud-node-core
-      - name: Install gapic-generator-typescript
-        working-directory: /tmp/google-cloud-node-core/generator/gapic-generator-typescript
+      - name: Install librarian
+        run: go install ./cmd/librarian
+      - name: "Install Node.js dependencies (resolve cache paths)"
+        id: tool-paths
         run: |
-          npm install
-          npm run compile
-          npm link
-      - name: Install gapic-node-processing and gapic-tools
-        run: npm install -g gapic-node-processing@0.1.7 gapic-tools@1.0.5
-      - name: Install synthtool
+          echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
+          echo "pip=$(python3 -c 'import site; print(site.getsitepackages()[0])')" >> "$GITHUB_OUTPUT"
+      - name: "Install Node.js dependencies (restore cache)"
+        uses: actions/cache@v5
+        id: tools-cache
+        with:
+          path: |
+            ${{ steps.tool-paths.outputs.npm }}
+            ${{ steps.tool-paths.outputs.pip }}
+          key: nodejs-tools-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
+      - name: "Install Node.js dependencies (run librarian install)"
+        if: steps.tools-cache.outputs.cache-hit != 'true'
         run: |
-          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655
-      - name: Run internal/librarian/nodejs tests and check coverage
+          cp internal/librarian/nodejs/librarian.yaml librarian.yaml
+          librarian -v install
+          rm librarian.yaml
+      - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/nodejs

@@ -61,6 +61,8 @@ type Config struct {
 }
 
 // Release holds the configuration parameter for publish command.
+//
+// TODO(https://github.com/googleapis/librarian/issues/4910): delete Release.
 type Release struct {
 	// IgnoredChanges defines globs that are ignored in change analysis.
 	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
@@ -128,6 +130,12 @@ type Source struct {
 type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
+
+	// NPM defines tools to install via npm.
+	NPM []*NPMTool `yaml:"npm,omitempty"`
+
+	// Pip defines tools to install via pip.
+	Pip []*PipTool `yaml:"pip,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -137,6 +145,36 @@ type CargoTool struct {
 
 	// Version is the version to install.
 	Version string `yaml:"version"`
+}
+
+// NPMTool defines a tool to install via npm.
+type NPMTool struct {
+	// Name is the npm package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the URL or path of the package to install.
+	Package string `yaml:"package,omitempty"`
+
+	// Checksum is the SHA256 checksum of the package.
+	Checksum string `yaml:"checksum,omitempty"`
+
+	// Build defines the commands to run to build the tool after installation.
+	Build []string `yaml:"build,omitempty"`
+}
+
+// PipTool defines a tool to install via pip.
+type PipTool struct {
+	// Name is the pip package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the pip install specifier (e.g., "pkg@git+https://...").
+	Package string `yaml:"package,omitempty"`
 }
 
 // Default contains default settings for all libraries.
