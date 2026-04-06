@@ -812,6 +812,10 @@ func TestProtobuf_MapFields(t *testing.T) {
 		},
 	})
 
+	if diff := cmp.Diff([]*api.Message(nil), message.Messages); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
 	message, ok = test.State.MessageByID[".test.Fake.SingularMapEntry"]
 	if !ok {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")

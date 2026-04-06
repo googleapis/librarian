@@ -38,6 +38,8 @@ import (
 
 var (
 	errLibraryAlreadyExists      = errors.New("library already exists in config")
+	errAPIAlreadyExists          = errors.New("api already exists in library")
+	errAPIDuplicate              = errors.New("api duplicate in input")
 	errMissingAPI                = errors.New("must provide at least one API")
 	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
 	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
@@ -134,10 +136,15 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return "", nil, errMixedPreviewAndNonPreview
 	}
 	paths := make([]*config.API, 0, len(apis))
+	seen := make(map[string]bool)
 	for _, a := range apis {
 		if isPreview {
 			a = strings.TrimPrefix(a, "preview/")
 		}
+		if seen[a] {
+			return "", nil, fmt.Errorf("%w: %s", errAPIDuplicate, a)
+		}
+		seen[a] = true
 		paths = append(paths, &config.API{Path: a})
 	}
 	name := deriveLibraryName(cfg.Language, paths[0].Path)
@@ -158,7 +165,10 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
-		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		if cfg.Language != config.LanguageGo {
+			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		}
+		return updateExistingLibrary(cfg, existingLib, paths)
 	}
 	return addNewLibrary(cfg, paths, name)
 }
@@ -194,6 +204,16 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
 	return name, cfg, nil
+}
+
+func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
+	for _, api := range apis {
+		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
+			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
+		}
+	}
+	existingLib.APIs = append(existingLib.APIs, apis...)
+	return existingLib.Name, cfg, nil
 }
 
 // syncToStateYAML updates the .librarian/state.yaml with any new libraries.
@@ -232,10 +252,16 @@ func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
 		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
 	}
 	return &legacyconfig.LibraryState{
-		ID:          lib.Name,
-		Version:     lib.Version,
-		APIs:        libAPIs,
-		SourceRoots: []string{lib.Name},
-		TagFormat:   "{id}/v{version}",
+		ID:      lib.Name,
+		Version: lib.Version,
+		APIs:    libAPIs,
+		SourceRoots: []string{
+			lib.Name,
+			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
+		},
+		ReleaseExcludePaths: []string{
+			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
+		},
+		TagFormat: "{id}/v{version}",
 	}
 }

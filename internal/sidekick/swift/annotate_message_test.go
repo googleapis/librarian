@@ -50,3 +50,25 @@ func TestAnnotateMessage(t *testing.T) {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateMessage_EscapedName(t *testing.T) {
+	msg := &api.Message{
+		Name:          "Protocol",
+		Documentation: "A message named Protocol.",
+		ID:            ".test.Protocol",
+		Package:       "test",
+	}
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	want := &messageAnnotations{
+		Name:     "Protocol_",
+		DocLines: []string{"A message named Protocol."},
+	}
+
+	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}

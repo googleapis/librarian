@@ -30,7 +30,7 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 	messageAnnotations := &messageAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
-		Name:          message.Name,
+		Name:          pascalCase(message.Name),
 		DocLines:      docLines,
 	}
 

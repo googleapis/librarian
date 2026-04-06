@@ -368,7 +368,8 @@ func TestFieldType_Maps(t *testing.T) {
 		Typez:    api.MESSAGE_TYPE,
 		TypezID:  map1.ID,
 	}
-	model := api.NewTestAPI([]*api.Message{map1}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	model.State.MessageByID[map1.ID] = map1
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
