@@ -22,7 +22,7 @@
               attribute_name: location
               help: The location id of the {resource} resource.
             - parameter_name: filteredResourcesId
-              attribute_name: filteredResource
+              attribute_name: filtered_resource
               help: The filteredResource id of the {resource} resource.
           disable_auto_completers: false
         required: true

@@ -22,7 +22,7 @@
               attribute_name: zone
               help: The zone id of the {resource} resource.
             - parameter_name: zoneResourcesId
-              attribute_name: zoneResource
+              attribute_name: zone_resource
               help: The zoneResource id of the {resource} resource.
           disable_auto_completers: false
         required: true

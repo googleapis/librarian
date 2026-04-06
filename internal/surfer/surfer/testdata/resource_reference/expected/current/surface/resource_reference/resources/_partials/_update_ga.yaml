@@ -86,7 +86,7 @@
               help: The project id of the {resource} resource.
               property: core/project
             - parameter_name: multiReferencesId
-              attribute_name: multiReference
+              attribute_name: multi_reference
               help: The multiReference id of the {resource} resource.
           disable_auto_completers: true
         required: false
@@ -150,7 +150,7 @@
               attribute_name: parent
               help: The parent id of the {resource} resource.
             - parameter_name: globalReferencesId
-              attribute_name: globalReference
+              attribute_name: global_reference
               help: The globalReference id of the {resource} resource.
           disable_auto_completers: true
         required: false
