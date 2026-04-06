@@ -15,6 +15,9 @@
 package golang
 
 import (
+	"path/filepath"
+	"strings"
+
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -24,10 +27,8 @@ func Tidy(library *config.Library) *config.Library {
 	if library.Name == rootModule {
 		return library
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4692), Refactor
-	// how to tidy output for abs path.
-	if library.Output == library.Name {
-		library.Output = ""
+	if strings.HasSuffix(library.Output, library.Name) {
+		library.Output = removeLibraryNameFromOutput(library.Output, library.Name)
 	}
 	if library.Go == nil {
 		return library
@@ -50,6 +51,16 @@ func Tidy(library *config.Library) *config.Library {
 		library.Go = nil
 	}
 	return library
+}
+
+// removeLibraryNameFromOutput removes the library name from the output path if it exists
+func removeLibraryNameFromOutput(output, name string) string {
+	prefix := strings.TrimSuffix(output, name)
+	// Removes file separators if they exist (e.g. "/" to "")
+	if prefix == "" || strings.HasSuffix(prefix, string(filepath.Separator)) {
+		return strings.TrimSuffix(prefix, string(filepath.Separator))
+	}
+	return output
 }
 
 func isEmptyAPI(goAPI *config.GoAPI) bool {

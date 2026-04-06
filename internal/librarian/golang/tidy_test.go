@@ -49,6 +49,27 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "absolute library output is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace",
+			},
+		},
+		{
+			name: "absolute library output at root is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/secretmanager",
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
 			name: "root module does not change",
 			library: &config.Library{
 				Name:   "root-module",
