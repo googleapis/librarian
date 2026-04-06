@@ -75,6 +75,20 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
+	// Check if owlbot.py exists in the library output directory.
+	// It is required for restructuring the output and generating README files.
+	owlbotPath := filepath.Join(outdir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		return fmt.Errorf("owlbot.py not found in %s: %w", outdir, err)
+	}
+	bomVersion, err := findBomVersion(cfg)
+	if err != nil {
+		return err
+	}
+	if err := runOwlBot(ctx, library, outdir, bomVersion); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
+	}
+
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -92,22 +106,14 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
 	javaAPI := resolveJavaAPI(library, api)
-	bomVersion := ""
-	if cfg.Default != nil && cfg.Default.Java != nil {
-		bomVersion = cfg.Default.Java.LibrariesBomVersion
-	}
-	if library.Java != nil && library.Java.LibrariesBomVersion != "" {
-		bomVersion = library.Java.LibrariesBomVersion
-	}
 	p := postProcessParams{
-		cfg:                 cfg,
-		library:             library,
-		metadata:            metadata,
-		outDir:              outdir,
-		librariesBomVersion: bomVersion,
-		version:             version,
-		googleapisDir:       googleapisDir,
-		includeSamples:      !javaAPI.NoSamples,
+		cfg:            cfg,
+		library:        library,
+		metadata:       metadata,
+		outDir:         outdir,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		includeSamples: !javaAPI.NoSamples,
 	}
 	gapicDir := p.gapicDir()
 	grpcDir := p.grpcDir()
@@ -306,4 +312,11 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 		return res
 	}
 	return res
+}
+
+func findBomVersion(cfg *config.Config) (string, error) {
+	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBomVersion != "" {
+		return cfg.Default.Java.LibrariesBomVersion, nil
+	}
+	return "", errors.New("libraries bom version not found in config")
 }

@@ -84,14 +84,6 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
 		t.Fatal(err)
 	}
-	// Create owlbot.py and templates dir
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	p := postProcessParams{
@@ -146,17 +138,6 @@ func TestPostProcessAPI(t *testing.T) {
 	// Verify that the version directory was cleaned up
 	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
 		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
-	}
-}
-
-func TestPostProcessAPI_MissingOwlBot_Error(t *testing.T) {
-	t.Parallel()
-	outdir := t.TempDir()
-	p := postProcessParams{
-		outDir: outdir,
-	}
-	if err := postProcessAPI(t.Context(), p); err == nil {
-		t.Error("expected error due to missing owlbot.py, got nil")
 	}
 }
 
@@ -320,12 +301,8 @@ with open("owlbot-ran.txt", "w") as f:
 		t.Fatal(err)
 	}
 
-	p := postProcessParams{
-		outDir:              outDir,
-		library:             &config.Library{Version: "1.2.3"},
-		librariesBomVersion: "4.5.6",
-	}
-	if err := runOwlBot(t.Context(), p); err != nil {
+	library := &config.Library{Version: "1.2.3"}
+	if err := runOwlBot(t.Context(), library, outDir, "4.5.6"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -341,11 +318,8 @@ func TestRunOwlBot_Error(t *testing.T) {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	p := postProcessParams{
-		outDir:  outDir,
-		library: &config.Library{},
-	}
-	if err := runOwlBot(t.Context(), p); err == nil {
+	library := &config.Library{}
+	if err := runOwlBot(t.Context(), library, outDir, ""); err == nil {
 		t.Error("expected error due to missing templates directory, got nil")
 	}
 }

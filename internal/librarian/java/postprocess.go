@@ -32,15 +32,14 @@ import (
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
 
 type postProcessParams struct {
-	cfg                 *config.Config
-	library             *config.Library
-	metadata            *repoMetadata
-	outDir              string
-	librariesBomVersion string
-	version             string
-	googleapisDir       string
-	apiProtos           []string
-	includeSamples      bool
+	cfg            *config.Config
+	library        *config.Library
+	metadata       *repoMetadata
+	outDir         string
+	version        string
+	googleapisDir  string
+	apiProtos      []string
+	includeSamples bool
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
@@ -67,17 +66,8 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		}
 	}
 
-	// Check if owlbot.py exists in the library output directory.
-	// It is required for restructuring the output and generating README files.
-	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
-	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
-	}
-	if err := runOwlBot(ctx, p); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
@@ -226,19 +216,19 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	return nil
 }
 
-func runOwlBot(ctx context.Context, p postProcessParams) error {
+func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       p.library.Version,
-		"SYNTHTOOL_LIBRARIES_BOM_VERSION": p.librariesBomVersion,
+		"SYNTHTOOL_LIBRARY_VERSION":       library.Version,
+		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
 	}
 	// Path to templates used for README.md file.
-	templatesDir := filepath.Join(filepath.Dir(p.outDir), owlbotTemplatesRelPath)
+	templatesDir := filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath)
 	if _, err := os.Stat(templatesDir); err != nil {
 		return fmt.Errorf("templates directory not found at %s: %w", templatesDir, err)
 	}
 	env["SYNTHTOOL_TEMPLATES"] = templatesDir
-	if err := command.RunInDirWithEnv(ctx, p.outDir, env, "python3", "owlbot.py"); err != nil {
+	if err := command.RunInDirWithEnv(ctx, outDir, env, "python3", "owlbot.py"); err != nil {
 		return err
 	}
 	// Staging dirs cleans up as part of owlbot.py

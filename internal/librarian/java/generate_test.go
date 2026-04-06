@@ -337,14 +337,6 @@ func TestGenerateAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Create owlbot.py and templates dir as they are mandatory for postProcessAPI
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
 	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
 	if err != nil {
 		t.Fatal(err)
@@ -405,14 +397,6 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}
-	}
-	// Create owlbot.py and templates dir as they are  mandatory for postProcessAPI
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
 	}
 	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
@@ -527,7 +511,12 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{
-				Language:  config.LanguageJava,
+				Language: config.LanguageJava,
+				Default: &config.Default{
+					Java: &config.JavaModule{
+						LibrariesBomVersion: "1.2.3",
+					},
+				},
 				Libraries: []*config.Library{test.library},
 			}
 			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
@@ -556,6 +545,11 @@ func TestGenerate_Logic(t *testing.T) {
 	cfg := &config.Config{
 		Language: config.LanguageJava,
 		Repo:     "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBomVersion: "1.2.3",
+			},
+		},
 		Libraries: []*config.Library{
 			library,
 			{Name: rootLibrary, Version: "1.2.3"},
