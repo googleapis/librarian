@@ -16,6 +16,7 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -31,6 +32,13 @@ import (
 )
 
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
+
+var (
+	errOwlBotMissing    = errors.New("owlbot.py not found")
+	errTemplatesMissing = errors.New("templates directory not found")
+	errRunOwlBot        = errors.New("failed to run owlbot.py")
+	errSyncPoms         = errors.New("failed to generate poms")
+)
 
 type postProcessParams struct {
 	cfg            *config.Config
@@ -56,14 +64,14 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	// It is required for restructuring the output and generating README files.
 	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
+		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
 	}
 	bomVersion, err := findBomVersion(p.cfg)
 	if err != nil {
 		return err
 	}
 	if err := runOwlBot(ctx, p.library, p.outDir, bomVersion); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
+		return fmt.Errorf("%w: %w", errRunOwlBot, err)
 	}
 
 	monorepoVersion, err := findMonorepoVersion(p.cfg)
@@ -71,7 +79,7 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 		return err
 	}
 	if err := syncPoms(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
-		return fmt.Errorf("failed to generate poms: %w", err)
+		return fmt.Errorf("%w: %w", errSyncPoms, err)
 	}
 
 	return nil
@@ -260,7 +268,7 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 	// Path to templates used for README.md file.
 	templatesDir := filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath)
 	if _, err := os.Stat(templatesDir); err != nil {
-		return fmt.Errorf("templates directory not found at %s: %w", templatesDir, err)
+		return fmt.Errorf("%w at %s: %w", errTemplatesMissing, templatesDir, err)
 	}
 	env["SYNTHTOOL_TEMPLATES"] = templatesDir
 	if err := command.RunInDirWithEnv(ctx, outDir, env, "python3", "owlbot.py"); err != nil {

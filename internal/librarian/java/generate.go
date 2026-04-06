@@ -35,9 +35,10 @@ const (
 )
 
 var (
-	errExtractVersion  = errors.New("failed to extract version")
-	errNoProtos        = errors.New("no protos found")
-	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errExtractVersion    = errors.New("failed to extract version")
+	errNoProtos          = errors.New("no protos found")
+	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errBomVersionMissing = errors.New("libraries bom version not found in config")
 )
 
 // Generate generates a Java client library.
@@ -306,5 +307,5 @@ func findBomVersion(cfg *config.Config) (string, error) {
 	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBomVersion != "" {
 		return cfg.Default.Java.LibrariesBomVersion, nil
 	}
-	return "", errors.New("libraries bom version not found in config")
+	return "", errBomVersionMissing
 }

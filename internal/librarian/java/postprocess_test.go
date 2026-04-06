@@ -17,6 +17,7 @@ package java
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -263,7 +264,7 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	}
 }
 
-func TestPostProcessLibrary(t *testing.T) {
+func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	t.Parallel()
 	testhelper.RequireCommand(t, "python3")
 
@@ -289,12 +290,12 @@ func TestPostProcessLibrary(t *testing.T) {
 		name    string
 		cfg     *config.Config
 		setup   func(t *testing.T, outDir string)
-		wantErr string
+		wantErr error
 	}{
 		{
 			name:    "owlbot.py missing",
 			cfg:     defaultCfg,
-			wantErr: "owlbot.py not found",
+			wantErr: errOwlBotMissing,
 		},
 		{
 			name: "findBomVersion failure",
@@ -302,7 +303,7 @@ func TestPostProcessLibrary(t *testing.T) {
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
 			},
-			wantErr: "libraries bom version not found in config",
+			wantErr: errBomVersionMissing,
 		},
 		{
 			name: "runOwlBot failure (missing templates)",
@@ -310,7 +311,7 @@ func TestPostProcessLibrary(t *testing.T) {
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
 			},
-			wantErr: "templates directory not found",
+			wantErr: errTemplatesMissing,
 		},
 		{
 			name: "findMonorepoVersion failure",
@@ -323,7 +324,7 @@ func TestPostProcessLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "failed to find monorepo version",
+			wantErr: errMonorepoVersion,
 		},
 		{
 			name: "runOwlBot failure (non-zero exit status)",
@@ -334,7 +335,7 @@ func TestPostProcessLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "failed to run owlbot.py",
+			wantErr: errRunOwlBot,
 		},
 		{
 			name: "syncPoms failure (missing module directories)",
@@ -345,7 +346,7 @@ func TestPostProcessLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: "target directory",
+			wantErr: errTargetDir,
 		},
 		{
 			name: "success",
@@ -384,13 +385,13 @@ func TestPostProcessLibrary(t *testing.T) {
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
 			err := postProcessLibrary(t.Context(), params)
-			if test.wantErr == "" {
+			if test.wantErr == nil {
 				if err != nil {
 					t.Fatalf("unexpected error: %v", err)
 				}
 			} else {
-				if err == nil || !strings.Contains(err.Error(), test.wantErr) {
-					t.Fatalf("expected error containing %q, got %v", test.wantErr, err)
+				if !errors.Is(err, test.wantErr) {
+					t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 				}
 			}
 		})

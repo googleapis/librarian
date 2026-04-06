@@ -16,6 +16,7 @@ package java
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -42,6 +43,8 @@ const (
 	managedModulesStartMarker      = "<!-- {x-generated-modules-start} -->"
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
+
+var errTargetDir = errors.New("target directory does not exist")
 
 // grpcProtoPomData holds the data for rendering POM templates.
 type grpcProtoPomData struct {
@@ -355,7 +358,7 @@ func isPomMissing(dir string) (bool, error) {
 		return false, nil
 	}
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return false, fmt.Errorf("target directory %s does not exist: %w", dir, err)
+		return false, fmt.Errorf("%w: %s does not exist: %w", errTargetDir, dir, err)
 	}
 	return true, nil
 }
