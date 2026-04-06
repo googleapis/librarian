@@ -18,7 +18,7 @@ inputs:
     description: Whether to install protoc.
     default: "true"
   install-tools:
-    description: Whether to install Go tools (go install tool and go install ./cmd/librarian).
+    description: Whether to run `go install tool` and `go install ./cmd/librarian`.
     default: "true"
 runs:
   using: composite
