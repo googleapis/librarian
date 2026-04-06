@@ -386,9 +386,9 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
 	for _, api := range lib.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
-		names := java.DeriveModuleNames(lib.Name, version)
-		protoIDs = append(protoIDs, names.Proto)
-		grpcIDs = append(grpcIDs, names.Grpc)
+		apiCoord := java.DeriveAPICoord(java.DeriveLibCoord(lib), version)
+		protoIDs = append(protoIDs, apiCoord.Proto.ArtifactID)
+		grpcIDs = append(grpcIDs, apiCoord.Grpc.ArtifactID)
 	}
 	return
 }

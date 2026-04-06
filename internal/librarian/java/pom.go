@@ -228,7 +228,7 @@ func detectIndentation(content string, index int) string {
 // to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
 	var modules []javaModule
-	libCoord := deriveLibCoord(library)
+	libCoord := DeriveLibCoord(library)
 
 	protoModules := make([]coordinate, 0, len(library.APIs))
 	grpcModules := make([]coordinate, 0, len(library.APIs))
@@ -238,25 +238,25 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		apiCoord := deriveAPICoord(libCoord, version)
+		apiCoord := DeriveAPICoord(libCoord, version)
 
 		transport := transports[api.Path]
 		data := grpcProtoPomData{
-			Proto:          apiCoord.proto,
-			Grpc:           apiCoord.grpc,
+			Proto:          apiCoord.Proto,
+			Grpc:           apiCoord.Grpc,
 			Parent:         libCoord.parent,
 			MainArtifactID: libCoord.gapic.ArtifactID,
 			Version:        library.Version,
 		}
 
 		// Proto module
-		protoDir := filepath.Join(libraryDir, apiCoord.proto.ArtifactID)
+		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
 		isProtoMissing, err := isPomMissing(protoDir)
 		if err != nil {
 			return nil, err
 		}
 		modules = append(modules, javaModule{
-			artifactID:   apiCoord.proto.ArtifactID,
+			artifactID:   apiCoord.Proto.ArtifactID,
 			dir:          protoDir,
 			isMissing:    isProtoMissing,
 			templateData: data,
@@ -266,13 +266,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-			grpcDir := filepath.Join(libraryDir, apiCoord.grpc.ArtifactID)
+			grpcDir := filepath.Join(libraryDir, apiCoord.Grpc.ArtifactID)
 			isGrpcMissing, err := isPomMissing(grpcDir)
 			if err != nil {
 				return nil, err
 			}
 			modules = append(modules, javaModule{
-				artifactID:   apiCoord.grpc.ArtifactID,
+				artifactID:   apiCoord.Grpc.ArtifactID,
 				dir:          grpcDir,
 				isMissing:    isGrpcMissing,
 				templateData: data,

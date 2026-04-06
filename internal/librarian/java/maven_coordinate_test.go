@@ -55,7 +55,7 @@ func TestDeriveDistributionName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveDistributionName(test.library)
+			got := DeriveDistributionName(test.library)
 			if got != test.want {
 				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
 			}
@@ -158,7 +158,7 @@ func TestDeriveLibCoords(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveLibCoord(test.library)
+			got := DeriveLibCoord(test.library)
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(libCoord{}, coordinate{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -218,11 +218,11 @@ func TestDeriveAPICoords(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveAPICoord(test.lc, test.version)
-			if diff := cmp.Diff(test.wantProto, got.proto, cmp.AllowUnexported(coordinate{})); diff != "" {
+			got := DeriveAPICoord(test.lc, test.version)
+			if diff := cmp.Diff(test.wantProto, got.Proto, cmp.AllowUnexported(coordinate{})); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantGrpc, got.grpc, cmp.AllowUnexported(coordinate{})); diff != "" {
+			if diff := cmp.Diff(test.wantGrpc, got.Grpc, cmp.AllowUnexported(coordinate{})); diff != "" {
 				t.Errorf("grpc mismatch (-want +got):\n%s", diff)
 			}
 		})

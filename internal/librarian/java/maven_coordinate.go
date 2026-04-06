@@ -35,10 +35,16 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/5050):
+// Exported selected functions and fields to use in migrate tool.
+// Unexport after migrate is done.
 type coordinate struct {
-	GroupID    string
+	// GroupID is the Maven Group ID (e.g., "com.google.cloud").
+	GroupID string
+	// ArtifactID is the Maven Artifact ID (e.g., "google-cloud-storage").
 	ArtifactID string
-	Version    string
+	// Version is the Maven version string (e.g., "1.2.3").
+	Version string
 }
 
 type libCoord struct {
@@ -49,12 +55,16 @@ type libCoord struct {
 
 type apiCoord struct {
 	libCoord
-	proto coordinate
-	grpc  coordinate
+	// Proto is the Maven coordinate for the generated proto artifact.
+	Proto coordinate
+	// Grpc is the Maven coordinate for the generated gRPC artifact.
+	Grpc coordinate
 }
 
-func deriveLibCoord(library *config.Library) libCoord {
-	distName := deriveDistributionName(library)
+// DeriveLibCoord returns the Maven coordinates for the GAPIC library, its
+// parent, and its BOM based on the library's configuration.
+func DeriveLibCoord(library *config.Library) libCoord {
+	distName := DeriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	groupID := parts[0]
 	artifactID := groupID
@@ -81,16 +91,18 @@ func deriveLibCoord(library *config.Library) libCoord {
 	}
 }
 
-func deriveAPICoord(lc libCoord, version string) apiCoord {
+// DeriveAPICoord returns the Maven coordinates for the proto and gRPC
+// artifacts associated with a specific API version.
+func DeriveAPICoord(lc libCoord, version string) apiCoord {
 	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
 	return apiCoord{
 		libCoord: lc,
-		proto: coordinate{
+		Proto: coordinate{
 			GroupID:    protoGrpcGroupID,
 			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
 			Version:    lc.gapic.Version,
 		},
-		grpc: coordinate{
+		Grpc: coordinate{
 			GroupID:    protoGrpcGroupID,
 			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
 			Version:    lc.gapic.Version,
@@ -119,7 +131,9 @@ func ensureCloudPrefix(name string) string {
 	return name
 }
 
-func deriveDistributionName(library *config.Library) string {
+// DeriveDistributionName returns the Maven distribution name (GroupID:ArtifactID)
+// for the library, applying overrides and defaults as necessary.
+func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
