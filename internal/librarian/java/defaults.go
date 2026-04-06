@@ -15,6 +15,9 @@
 package java
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -40,4 +43,21 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	return library
+}
+
+var (
+	// ErrInvalidDistributionName is returned when a distribution name override
+	// is incorrectly formatted.
+	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
+)
+
+// Validate validates the Java-specific configuration for a library.
+func Validate(library *config.Library) error {
+	if library.Java == nil || library.Java.DistributionNameOverride == "" {
+		return nil
+	}
+	if !strings.Contains(library.Java.DistributionNameOverride, ":") {
+		return fmt.Errorf("%w: must contain group_id and artifact_id separated by colon, got %q", ErrInvalidDistributionName, library.Java.DistributionNameOverride)
+	}
+	return nil
 }
