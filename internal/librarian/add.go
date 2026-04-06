@@ -39,6 +39,7 @@ import (
 var (
 	errLibraryAlreadyExists      = errors.New("library already exists in config")
 	errAPIAlreadyExists          = errors.New("api already exists in library")
+	errAPIDuplicate              = errors.New("api duplicate in input")
 	errMissingAPI                = errors.New("must provide at least one API")
 	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
 	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
@@ -135,10 +136,15 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return "", nil, errMixedPreviewAndNonPreview
 	}
 	paths := make([]*config.API, 0, len(apis))
+	seen := make(map[string]bool)
 	for _, a := range apis {
 		if isPreview {
 			a = strings.TrimPrefix(a, "preview/")
 		}
+		if seen[a] {
+			return "", nil, fmt.Errorf("%w: %s", errAPIDuplicate, a)
+		}
+		seen[a] = true
 		paths = append(paths, &config.API{Path: a})
 	}
 	name := deriveLibraryName(cfg.Language, paths[0].Path)
@@ -203,7 +209,7 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
 	for _, api := range apis {
 		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
-			return "", nil, fmt.Errorf("%s already exists in library %s: %w", api.Path, existingLib.Name, errAPIAlreadyExists)
+			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 		}
 	}
 	existingLib.APIs = append(existingLib.APIs, apis...)

@@ -372,6 +372,14 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			wantErr: errAPIAlreadyExists,
 		},
 		{
+			name: "fail if api duplicated",
+			apis: []string{
+				"google/cloud/secretmanager/v1beta2",
+				"google/cloud/secretmanager/v1beta2",
+			},
+			wantErr: errAPIDuplicate,
+		},
+		{
 			name: "python doesn't support updating existing library",
 			apis: []string{"google/cloud/secretmanager/v1beta2"},
 			cfg: &config.Config{
