@@ -53,12 +53,14 @@ func Tidy(library *config.Library) *config.Library {
 	return library
 }
 
-// removeLibraryNameFromOutput removes the library name from the output path if it exists
+// removeLibraryNameFromOutput removes the library name from the output path if it exists.
+// It normalizes paths to use '/' as a portable separator.
 func removeLibraryNameFromOutput(output, name string) string {
+	output = filepath.ToSlash(output)
 	prefix := strings.TrimSuffix(output, name)
 	// Removes file separators if they exist (e.g. "/" to "")
-	if prefix == "" || strings.HasSuffix(prefix, string(filepath.Separator)) {
-		return strings.TrimSuffix(prefix, string(filepath.Separator))
+	if prefix == "" || strings.HasSuffix(prefix, "/") {
+		return strings.TrimSuffix(prefix, "/")
 	}
 	return output
 }
