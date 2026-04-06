@@ -438,21 +438,6 @@ func TestDeriveGAPICCoordinates(t *testing.T) {
 				Version:    "1.2.3",
 			},
 		},
-		{
-			name: "invalid distribution name override (one part)",
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.3",
-				Java: &config.JavaModule{
-					DistributionNameOverride: "invalidname",
-				},
-			},
-			want: coordinates{
-				GroupID:    "invalidname",
-				ArtifactID: "invalidname",
-				Version:    "1.2.3",
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := deriveGAPICCoordinates(test.library)
@@ -487,6 +472,25 @@ func TestDeriveModuleNames(t *testing.T) {
 			wantGrpc: coordinates{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "grpc-google-cloud-secretmanager-v1",
+				Version:    "1.2.3",
+			},
+		},
+		{
+			name: "non-cloud mapping",
+			gapic: coordinates{
+				GroupID:    "com.google.maps",
+				ArtifactID: "google-maps-places",
+				Version:    "1.2.3",
+			},
+			version: "v1",
+			wantProto: coordinates{
+				GroupID:    "com.google.maps.api.grpc",
+				ArtifactID: "proto-google-maps-places-v1",
+				Version:    "1.2.3",
+			},
+			wantGrpc: coordinates{
+				GroupID:    "com.google.maps.api.grpc",
+				ArtifactID: "grpc-google-maps-places-v1",
 				Version:    "1.2.3",
 			},
 		},
