@@ -275,39 +275,3 @@ func TestIsPomMissing_DirMissingError(t *testing.T) {
 		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }
-
-func TestProtoGroupID(t *testing.T) {
-	for _, test := range []struct {
-		name                string
-		mainArtifactGroupID string
-		want                string
-	}{
-		{
-			name:                "cloud group id",
-			mainArtifactGroupID: "com.google.cloud",
-			want:                "com.google.api.grpc",
-		},
-		{
-			name:                "analytics group id",
-			mainArtifactGroupID: "com.google.analytics",
-			want:                "com.google.api.grpc",
-		},
-		{
-			name:                "area120 group id",
-			mainArtifactGroupID: "com.google.area120",
-			want:                "com.google.api.grpc",
-		},
-		{
-			name:                "non-cloud group id",
-			mainArtifactGroupID: "com.google.maps",
-			want:                "com.google.maps.api.grpc",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := protoGroupID(test.mainArtifactGroupID)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}

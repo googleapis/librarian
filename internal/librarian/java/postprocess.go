@@ -128,63 +128,6 @@ func buildLicenseText(year int) string {
 	return b.String()
 }
 
-type libCoords struct {
-	gapic  coordinates
-	parent coordinates
-	bom    coordinates
-}
-
-type apiCoords struct {
-	libCoords
-	proto coordinates
-	grpc  coordinates
-}
-
-func deriveLibCoords(library *config.Library) libCoords {
-	distName := deriveDistributionName(library)
-	parts := strings.SplitN(distName, ":", 2)
-	groupID := parts[0]
-	artifactID := groupID
-	if len(parts) == 2 {
-		artifactID = parts[1]
-	}
-	gapic := coordinates{
-		GroupID:    groupID,
-		ArtifactID: artifactID,
-		Version:    library.Version,
-	}
-	return libCoords{
-		gapic: gapic,
-		parent: coordinates{
-			GroupID:    gapic.GroupID,
-			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
-			Version:    gapic.Version,
-		},
-		bom: coordinates{
-			GroupID:    gapic.GroupID,
-			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
-			Version:    gapic.Version,
-		},
-	}
-}
-
-func deriveAPICoords(lc libCoords, version string) apiCoords {
-	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
-	return apiCoords{
-		libCoords: lc,
-		proto: coordinates{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
-		},
-		grpc: coordinates{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
-		},
-	}
-}
-
 func removeConflictingFiles(protoSrcDir string) error {
 	// These files are removed because they are often duplicated across
 	// multiple artifacts in the Google Cloud Java ecosystem, leading

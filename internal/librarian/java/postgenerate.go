@@ -128,12 +128,6 @@ type mavenProject struct {
 	Version    string   `xml:"version"`
 }
 
-var groupInclusions = map[string]bool{
-	"com.google.cloud":     true,
-	"com.google.analytics": true,
-	"com.google.area120":   true,
-}
-
 // searchForBOMArtifacts scans the repoPath for subdirectories that contain a -bom subdirectory
 // with a pom.xml file. It also includes specific special-case modules like dns, notification, and grafeas.
 // It returns a list of bomConfig objects sorted by ArtifactID.

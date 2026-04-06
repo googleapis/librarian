@@ -31,8 +31,6 @@ const (
 	clientPomTemplateName = "module_client_pom.xml.tmpl"
 	parentPomTemplateName = "module_parent_pom.xml.tmpl"
 	bomPomTemplateName    = "module_bom_pom.xml.tmpl"
-	googleGroupID         = "com.google"
-	protoGrpcSuffix       = ".api.grpc"
 	// Template markers for client pom.xml.
 	managedProtoStartMarker = "<!-- {x-generated-proto-dependencies-start} -->"
 	managedProtoEndMarker   = "<!-- {x-generated-proto-dependencies-end} -->"
@@ -52,12 +50,6 @@ type grpcProtoPomData struct {
 	Parent         coordinates
 	Version        string
 	MainArtifactID string
-}
-
-type coordinates struct {
-	GroupID    string
-	ArtifactID string
-	Version    string
 }
 
 // clientPomData holds the data for rendering the client library POM template.
@@ -392,16 +384,4 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 		}
 	}
 	return "", errMonorepoVersion
-}
-
-// protoGroupID returns the Maven Group ID for the generated proto and gRPC
-// artifacts. It maps the GAPIC library's Group ID to a standard format and
-// checks for special cases in groupInclusions (e.g., mapping
-// "com.google.cloud" to "com.google.api.grpc").
-func protoGroupID(mainArtifactGroupID string) string {
-	prefix := mainArtifactGroupID
-	if groupInclusions[mainArtifactGroupID] {
-		prefix = googleGroupID
-	}
-	return prefix + protoGrpcSuffix
 }
