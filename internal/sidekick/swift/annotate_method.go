@@ -18,24 +18,17 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-type serviceAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
+type methodAnnotations struct {
+	Name     string
+	DocLines []string
 }
 
-func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) {
-	docLines := codec.formatDocumentation(service.Documentation)
-	annotations := &serviceAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          pascalCase(service.Name),
-		DocLines:      docLines,
+func (c *codec) annotateMethod(method *api.Method) *api.Method {
+	docLines := c.formatDocumentation(method.Documentation)
+	annotations := &methodAnnotations{
+		Name:     camelCase(method.Name),
+		DocLines: docLines,
 	}
-
-	service.Codec = annotations
-	for _, method := range service.Methods {
-		codec.annotateMethod(method)
-	}
+	method.Codec = annotations
+	return method
 }
