@@ -99,7 +99,7 @@ func formatAPIVersionReleaseNotes(lpv []*libraryPackageAPIVersions) (string, err
 		return "", nil
 	}
 
-	// Optimization for homogenous API version used across service interfaces.
+	// Optimization for homogeneous API version used across service interfaces.
 	// Only triggers if there are more than 5 service interfaces in the API.
 	// If there are fewer, there is still value in listing them individually.
 	for _, v := range lpv {
@@ -161,7 +161,7 @@ func extractAPIVersions(metadataDocuments map[string]*gapic.GapicMetadata) []*li
 // readGapicMetadata traverses the [legacyconfig.LibraryState] SourceRoots under the
 // provided directory, parses any "gapic_metadata.json" file it finds, and
 // stores it in a map keyed by the [gapic.GapicMetadata] LibraryPackage.
-// There should be at most one "gapic_metadta.json" file per generated library
+// There should be at most one "gapic_metadata.json" file per generated library
 // package under SourceRoots, typically one per APIs entry, each with a unique
 // library package name.
 func readGapicMetadata(dir string, library *legacyconfig.LibraryState) (map[string]*gapic.GapicMetadata, error) {

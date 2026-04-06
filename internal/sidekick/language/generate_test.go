@@ -17,7 +17,7 @@ package language
 import (
 	"embed"
 	"os"
-	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -30,13 +30,6 @@ func TestGenerate(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	outDir := t.TempDir()
 
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
-	}
 	// The list of files to generate, just load them from the embedded templates.
 	generatedFiles := WalkTemplatesDir(templates, "testTemplates")
 	err := GenerateFromModel(outDir, model, provider, generatedFiles)
@@ -44,7 +37,7 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, expected := range []string{"README.md", "test001.txt"} {
-		filename := path.Join(outDir, expected)
+		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
 		if os.IsNotExist(err) {
 			t.Errorf("missing %s: %s", filename, err)
@@ -53,4 +46,77 @@ func TestGenerate(t *testing.T) {
 			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
 		}
 	}
+}
+
+func TestGenerateService(t *testing.T) {
+	service := &api.Service{
+		Name: "ExpectedName",
+	}
+	outDir := t.TempDir()
+
+	gen := GeneratedFile{
+		TemplatePath: "testTemplates/test002.mustache",
+		OutputPath:   "test002.txt",
+	}
+	err := GenerateService(outDir, service, provider, gen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifyElementOutput(t, outDir)
+}
+
+func TestGenerateMessage(t *testing.T) {
+	message := &api.Message{
+		Name: "ExpectedName",
+	}
+	outDir := t.TempDir()
+
+	gen := GeneratedFile{
+		TemplatePath: "testTemplates/test002.mustache",
+		OutputPath:   "test002.txt",
+	}
+	err := GenerateMessage(outDir, message, provider, gen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifyElementOutput(t, outDir)
+}
+
+func TestGenerateEnum(t *testing.T) {
+	enum := &api.Enum{
+		Name: "ExpectedName",
+	}
+	outDir := t.TempDir()
+
+	gen := GeneratedFile{
+		TemplatePath: "testTemplates/test002.mustache",
+		OutputPath:   "test002.txt",
+	}
+	err := GenerateEnum(outDir, enum, provider, gen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	verifyElementOutput(t, outDir)
+}
+
+func verifyElementOutput(t *testing.T, outDir string) {
+	t.Helper()
+	for _, expected := range []string{"test002.txt"} {
+		filename := filepath.Join(outDir, expected)
+		stat, err := os.Stat(filename)
+		if os.IsNotExist(err) {
+			t.Fatal(err)
+		}
+		if stat.Mode().Perm()|0666 != 0666 {
+			t.Errorf("generated files should not be executable %s: %o", filename, stat.Mode())
+		}
+	}
+}
+
+func provider(name string) (string, error) {
+	contents, err := templates.ReadFile(name)
+	if err != nil {
+		return "", err
+	}
+	return string(contents), nil
 }

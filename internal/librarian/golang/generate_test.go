@@ -16,6 +16,7 @@ package golang
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -430,7 +431,7 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 		t.Fatal(err)
 	}
 	// README doesn't exist because the generation is skipped.
-	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("want README.md to not exist, got: %v", err)
 	}
 }

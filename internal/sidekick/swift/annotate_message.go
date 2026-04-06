@@ -15,26 +15,30 @@
 package swift
 
 import (
-	"testing"
-
-	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestModelAnnotations(t *testing.T) {
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
-	if err := codec.annotateModel(); err != nil {
-		t.Fatal(err)
+type messageAnnotations struct {
+	CopyrightYear string
+	BoilerPlate   []string
+	Name          string
+	DocLines      []string
+}
+
+func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) (*messageAnnotations, error) {
+	docLines := codec.formatDocumentation(message.Documentation)
+	messageAnnotations := &messageAnnotations{
+		CopyrightYear: model.CopyrightYear,
+		BoilerPlate:   model.BoilerPlate,
+		Name:          message.Name,
+		DocLines:      docLines,
 	}
-	want := &modelAnnotations{
-		PackageName:   "GoogleCloudWorkflowsV1",
-		CopyrightYear: "2038",
+
+	message.Codec = messageAnnotations
+	for _, field := range message.Fields {
+		if _, err := codec.annotateField(field); err != nil {
+			return nil, err
+		}
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+	return messageAnnotations, nil
 }

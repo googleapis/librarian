@@ -358,7 +358,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			// Expressed as: 'package:<package name>' = '<version constraint>'
 			// For example: 'package:http' = '^1.3.0'
 			//
-			// If the package is needed as a dependency, then this constract is used.
+			// If the package is needed as a dependency, then this contract is used.
 			annotate.dependencyConstraints[strings.TrimPrefix(key, "package:")] = definition
 		}
 	}
@@ -1083,14 +1083,14 @@ func (annotate *annotateModel) buildQueryLines(
 	ref := fmt.Sprintf("%s%s", refPrefix, fieldName(field))
 	param := fmt.Sprintf("%s%s", paramPrefix, field.JSONName)
 
-	var preable string
+	var preamble string
 	if codec.Nullable {
-		preable = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
+		preamble = fmt.Sprintf("if (%s case final $1?) '%s'", ref, param)
 	} else {
 		if couldRefPrefixBeNull {
-			preable = fmt.Sprintf("if (%s case final $1? when $1.isNotDefault) '%s'", ref, param)
+			preamble = fmt.Sprintf("if (%s case final $1? when $1.isNotDefault) '%s'", ref, param)
 		} else {
-			preable = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
+			preamble = fmt.Sprintf("if (%s case final $1 when $1.isNotDefault) '%s'", ref, param)
 		}
 	}
 
@@ -1099,16 +1099,16 @@ func (annotate *annotateModel) buildQueryLines(
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.STRING_TYPE:
-			return append(result, fmt.Sprintf("%s: $1", preable))
+			return append(result, fmt.Sprintf("%s: $1", preamble))
 		case api.ENUM_TYPE:
-			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preable))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preamble))
 		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
 			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
 			api.UINT64_TYPE, api.SINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE,
 			api.FLOAT_TYPE, api.DOUBLE_TYPE:
-			return append(result, fmt.Sprintf("%s: $1.map((e) => '$e')", preable))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => '$e')", preamble))
 		case api.BYTES_TYPE:
-			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preable))
+			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preamble))
 		default:
 			slog.Error("unhandled list query param", "type", field.Typez)
 			return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
@@ -1128,7 +1128,7 @@ func (annotate *annotateModel) buildQueryLines(
 		_, hasCustomEncoding := usesCustomEncoding[field.TypezID]
 		if hasCustomEncoding {
 			// Example: 'fieldMask': fieldMask!.toJson()
-			return append(result, fmt.Sprintf("%s: $1.toJson()", preable))
+			return append(result, fmt.Sprintf("%s: $1.toJson()", preamble))
 		}
 
 		// Unroll the fields for messages.
@@ -1139,9 +1139,9 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.STRING_TYPE:
-		return append(result, fmt.Sprintf("%s: $1", preable))
+		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.ENUM_TYPE:
-		return append(result, fmt.Sprintf("%s: $1.value", preable))
+		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||
 		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
@@ -1150,9 +1150,9 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
 		field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE ||
 		field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
-		return append(result, fmt.Sprintf("%s: '${$1}'", preable))
+		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
 	case field.Typez == api.BYTES_TYPE:
-		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preable))
+		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preamble))
 	default:
 		slog.Error("unhandled query param", "type", field.Typez)
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))

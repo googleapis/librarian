@@ -22,19 +22,31 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestModelAnnotations(t *testing.T) {
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
+func TestAnnotateMessage(t *testing.T) {
+	msg := &api.Message{
+		Name:          "Secret",
+		Documentation: "A secret message.\nWith two lines.",
+		ID:            ".test.Secret",
+		Package:       "test",
+		Fields: []*api.Field{
+			{
+				Name:          "secret_key",
+				Documentation: "The key.",
+				Typez:         api.STRING_TYPE,
+			},
+		},
+	}
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	want := &modelAnnotations{
-		PackageName:   "GoogleCloudWorkflowsV1",
-		CopyrightYear: "2038",
+	want := &messageAnnotations{
+		Name:     "Secret",
+		DocLines: []string{"A secret message.", "With two lines."},
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

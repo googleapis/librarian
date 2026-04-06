@@ -19,6 +19,7 @@ import (
 	"flag"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -59,7 +60,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := generatePomsIfMissing(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
@@ -89,6 +90,93 @@ func TestSyncPoms_Golden(t *testing.T) {
 		if diff := cmp.Diff(string(want), string(got)); diff != "" {
 			t.Errorf("mismatch in %s (-want +got):\n%s\n\nHint: run 'go test ./internal/librarian/java -v -update' to update golden files.", artifact, diff)
 		}
+	}
+}
+
+func TestSyncPoms_Update(t *testing.T) {
+	tmpDir := t.TempDir()
+	gapicArtifactID := "google-cloud-secretmanager"
+	protoArtifactID := "proto-google-cloud-secretmanager-v1"
+	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
+	bomArtifactID := "google-cloud-secretmanager-bom"
+	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
+		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	gapicDir := filepath.Join(tmpDir, gapicArtifactID)
+
+	pomPath := filepath.Join(gapicDir, "pom.xml")
+	initialContent := `<?xml version='1.0' encoding='UTF-8'?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>com.google.cloud</groupId>
+  <artifactId>google-cloud-secretmanager</artifactId>
+  <version>1.2.3</version><!-- {x-version-update:google-cloud-secretmanager:current} -->
+  <dependencies>
+    <!-- {x-generated-proto-dependencies-start} -->
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-secretmanager-v0</artifactId>
+    </dependency>
+    <!-- {x-generated-proto-dependencies-end} -->
+    <dependency>
+      <groupId>com.google.guava</groupId>
+      <artifactId>guava</artifactId>
+    </dependency>
+    <!-- {x-generated-grpc-dependencies-start} -->
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>grpc-google-cloud-secretmanager-v0</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- {x-generated-grpc-dependencies-end} -->
+  </dependencies>
+</project>`
+	if err := os.WriteFile(pomPath, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	transports := map[string]serviceconfig.Transport{
+		"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+	}
+	metadata := &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Description",
+	}
+
+	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotStr := string(got)
+
+	if !strings.Contains(gotStr, "proto-google-cloud-secretmanager-v1") {
+		t.Errorf("missing updated proto dependency, got:\n%s", gotStr)
+	}
+	if strings.Contains(gotStr, "proto-google-cloud-secretmanager-v0") {
+		t.Errorf("still contains old proto dependency, got:\n%s", gotStr)
+	}
+	if !strings.Contains(gotStr, "grpc-google-cloud-secretmanager-v1") {
+		t.Errorf("missing updated grpc dependency, got:\n%s", gotStr)
+	}
+	if !strings.Contains(gotStr, "<!-- {x-version-update:google-cloud-secretmanager:current} -->") {
+		t.Error("lost version update comment")
+	}
+	if !strings.Contains(gotStr, "<artifactId>guava</artifactId>") {
+		t.Error("lost guava dependency")
 	}
 }
 

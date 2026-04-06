@@ -195,10 +195,21 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 		return err
 	}
 	for _, lib := range cfg.Libraries {
-		if state.LibraryByID(lib.Name) != nil {
+		legacyLib := state.LibraryByID(lib.Name)
+		if legacyLib == nil {
+			// Add a new library
+			state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
 			continue
 		}
-		state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
+		existingAPIs := make(map[string]bool)
+		for _, api := range legacyLib.APIs {
+			existingAPIs[api.Path] = true
+		}
+		for _, api := range lib.APIs {
+			if !existingAPIs[api.Path] {
+				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
+			}
+		}
 	}
 	sort.Slice(state.Libraries, func(i, j int) bool {
 		return state.Libraries[i].ID < state.Libraries[j].ID
@@ -207,9 +218,14 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 }
 
 func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
+	for _, api := range lib.APIs {
+		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
+	}
 	return &legacyconfig.LibraryState{
 		ID:          lib.Name,
 		Version:     lib.Version,
+		APIs:        libAPIs,
 		SourceRoots: []string{lib.Name},
 		TagFormat:   "{id}/v{version}",
 	}

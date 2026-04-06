@@ -527,7 +527,7 @@ func buildFakeCargo(t *testing.T, src string) string {
 		t.Errorf("failed to write fake cargo source: %v", err)
 	}
 
-	if err := command.Run(t.Context(), "go", "build", "-o", fakeCargoExe, mainGo); err != nil {
+	if err := command.Run(t.Context(), command.Go, "build", "-o", fakeCargoExe, mainGo); err != nil {
 		t.Errorf("failed to build fake cargo: %v", err)
 	}
 

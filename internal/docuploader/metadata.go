@@ -89,7 +89,7 @@ type DocUploaderMetadata struct {
 // specified RepoMetadata. This does not populate UpdateTime or Version (which
 // should always be populated by the caller afterwards) or the advanced fields
 // (ServingPath, Stem, XRefServices, XRefs). No validation is performed for
-// whether the fields have been set to non-empty vlaues in repoMetadata.
+// whether the fields have been set to non-empty values in repoMetadata.
 func FromRepoMetadata(repoMetadata *repometadata.RepoMetadata) *DocUploaderMetadata {
 	return &DocUploaderMetadata{
 		DistributionName: repoMetadata.DistributionName,

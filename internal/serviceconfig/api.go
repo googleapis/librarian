@@ -64,8 +64,7 @@ type API struct {
 	DocumentationURI string `yaml:"documentation_uri,omitempty"`
 
 	// Languages restricts which languages can generate client libraries for this API.
-	// Empty means all languages can use this API.
-	// We should be explicit about supported languages when adding entries.
+	// Use "all" to indicate all languages can use this API.
 	//
 	// Restrictions exist for several reasons:
 	//   - Newer languages (Rust, Dart) skip older beta versions when stable versions exist
@@ -94,7 +93,7 @@ type API struct {
 	//
 	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
 	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
-	// standardize release level vocabulary across lanaguages.
+	// standardize release level vocabulary across languages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
@@ -159,7 +158,7 @@ func (api *API) ReleaseLevel(language string) string {
 		return rl
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across lanaguages.
+	// release level vocabulary across languages.
 	if language == config.LanguageGo {
 		return "ga"
 	}
@@ -249,7 +248,7 @@ func HasAPIPath(path, language string) bool {
 	if !ok {
 		return false
 	}
-	return len(api.Languages) == 0 || slices.Contains(api.Languages, language)
+	return slices.Contains(api.Languages, config.LanguageAll) || slices.Contains(api.Languages, language)
 }
 
 func unmarshalAPIsOrPanic() []API {

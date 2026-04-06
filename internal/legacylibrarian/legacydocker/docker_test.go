@@ -908,7 +908,7 @@ func TestWriteLibraryState(t *testing.T) {
 
 			if test.wantErr {
 				if err == nil {
-					t.Fatalf("writeLibraryState() shoud fail")
+					t.Fatalf("writeLibraryState() should fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {
@@ -1019,7 +1019,7 @@ func TestWriteLibrarianState(t *testing.T) {
 			err := writeLibrarianState(test.state, filePath)
 			if test.wantErr {
 				if err == nil {
-					t.Fatalf("writeLibrarianState() shoud fail")
+					t.Fatalf("writeLibrarianState() should fail")
 				}
 
 				if !strings.Contains(err.Error(), test.wantErrMsg) {

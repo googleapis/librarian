@@ -15,20 +15,16 @@
 package swift
 
 import (
-	"github.com/googleapis/librarian/internal/license"
+	"fmt"
+
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func (codec *codec) annotateModel() error {
-	annotations := &modelAnnotations{
-		CopyrightYear: codec.GenerationYear,
-		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   codec.PackageName,
+// lookupMessage finds a message in the model by its fully-qualified ID.
+func lookupMessage(model *api.API, id string) (*api.Message, error) {
+	m, ok := model.State.MessageByID[id]
+	if !ok {
+		return nil, fmt.Errorf("unable to lookup message %q", id)
 	}
-	codec.Model.Codec = annotations
-	for _, message := range codec.Model.Messages {
-		if _, err := codec.annotateMessage(message, annotations); err != nil {
-			return err
-		}
-	}
-	return nil
+	return m, nil
 }

@@ -216,11 +216,8 @@ func validateAPI(path string, language string, api *API) (*API, error) {
 	if api == nil {
 		return nil, fmt.Errorf("API %s is not in allowlist", path)
 	}
-	if len(api.Languages) == 0 {
-		return api, nil
-	}
 	for _, l := range api.Languages {
-		if l == language {
+		if l == config.LanguageAll || l == language {
 			return api, nil
 		}
 	}

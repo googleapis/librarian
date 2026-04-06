@@ -40,10 +40,11 @@ jobs:
       - name: Display Python version
         run: python3 --version
       - uses: ./.github/actions/install-protoc
+      - name: Download google-cloud-node-core
+        run: git clone --depth 1 https://github.com/googleapis/google-cloud-node-core.git /tmp/google-cloud-node-core
       - name: Install gapic-generator-typescript
+        working-directory: /tmp/google-cloud-node-core/generator/gapic-generator-typescript
         run: |
-          git clone --depth 1 https://github.com/googleapis/google-cloud-node-core.git /tmp/google-cloud-node-core
-          cd /tmp/google-cloud-node-core/generator/gapic-generator-typescript
           npm install
           npm run compile
           npm link

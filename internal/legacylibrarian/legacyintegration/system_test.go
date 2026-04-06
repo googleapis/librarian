@@ -153,7 +153,7 @@ func TestPullRequestSystem(t *testing.T) {
 	}
 	err = localRepository.AddAll()
 	if err != nil {
-		t.Fatalf("unexepected error in AddAll() %s", err)
+		t.Fatalf("unexpected error in AddAll() %s", err)
 	}
 	err = localRepository.Commit("build: add test file")
 	if err != nil {

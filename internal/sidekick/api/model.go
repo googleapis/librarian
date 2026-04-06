@@ -49,6 +49,36 @@ const (
 	SINT64_TYPE                 // 18
 )
 
+var _typez_name = [...]string{
+	"UNDEFINED",
+	"DOUBLE",
+	"FLOAT",
+	"INT64",
+	"UINT64",
+	"INT32",
+	"FIXED64",
+	"FIXED32",
+	"BOOL",
+	"STRING",
+	"GROUP",
+	"MESSAGE",
+	"BYTES",
+	"UINT32",
+	"ENUM",
+	"SFIXED32",
+	"SFIXED64",
+	"SINT32",
+	"SINT64",
+}
+
+// String returns the symbolic name for the Typez.
+func (t Typez) String() string {
+	if t < 0 || int(t) >= len(_typez_name) {
+		return fmt.Sprintf("Typez(%d)", t)
+	}
+	return _typez_name[t]
+}
+
 // FieldBehavior represents annotations for how the code generator handles a
 // field.
 //

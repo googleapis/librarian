@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -586,7 +587,7 @@ func TestModulePath(t *testing.T) {
 }
 
 func TestInitModule(t *testing.T) {
-	testhelper.RequireCommand(t, "go")
+	testhelper.RequireCommand(t, command.Go)
 	outDir := t.TempDir()
 	// Write an import so go mod tidy can generate a go.sum file.
 	content := []byte("package main\nimport _ \"golang.org/x/text\"\n")

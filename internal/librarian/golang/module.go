@@ -130,10 +130,10 @@ func modulePath(library *config.Library) string {
 
 // initModule initializes and tidies a Go module in the given directory.
 func initModule(ctx context.Context, dir, modPath string) error {
-	if err := command.RunInDir(ctx, dir, "go", "mod", "init", modPath); err != nil {
+	if err := command.RunInDir(ctx, dir, command.Go, "mod", "init", modPath); err != nil {
 		return err
 	}
-	return command.RunInDir(ctx, dir, "go", "mod", "tidy")
+	return command.RunInDir(ctx, dir, command.Go, "mod", "tidy")
 }
 
 // defaultImportPathAndClientPkg returns the default Go import path and client package name

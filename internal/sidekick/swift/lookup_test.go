@@ -18,23 +18,27 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestModelAnnotations(t *testing.T) {
-	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{},
-		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
-	if err := codec.annotateModel(); err != nil {
+func TestLookupMessage(t *testing.T) {
+	msg := &api.Message{Name: "Secret", ID: ".test.Secret"}
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+
+	got, err := lookupMessage(model, ".test.Secret")
+	if err != nil {
 		t.Fatal(err)
 	}
-	want := &modelAnnotations{
-		PackageName:   "GoogleCloudWorkflowsV1",
-		CopyrightYear: "2038",
+	if diff := cmp.Diff(msg, got); diff != "" {
+		t.Errorf("lookupMessage() mismatch (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+}
+
+func TestLookupMessage_Error(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+
+	_, err := lookupMessage(model, ".test.Missing")
+	if err == nil {
+		t.Errorf("lookupMessage() expected error, got nil")
 	}
 }

@@ -82,7 +82,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	if err := generatePomsIfMissing(library, outdir, monorepoVersion, metadata, transports); err != nil {
+	if err := syncPoms(library, outdir, monorepoVersion, metadata, transports); err != nil {
 		return fmt.Errorf("failed to generate poms: %w", err)
 	}
 

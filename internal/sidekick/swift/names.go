@@ -16,6 +16,8 @@ package swift
 
 import (
 	"fmt"
+	"strings"
+	"unicode"
 
 	"github.com/iancoleman/strcase"
 )
@@ -140,12 +142,40 @@ var keywords = map[string]bool{
 
 // escapeKeyword escapes a string if it is a keyword.
 func escapeKeyword(s string) string {
-	if _, ok := keywords[s]; ok {
+	// In Swift we can use backtick escaping for most keywords except `Type`, `Protocol`, and `self`:
+	//   https://docs.swift.org/swift-book/documentation/the-swift-programming-language/types/#Metatype-Type
+	// In an expression like `Foo.Type` that is *always* the metatype of `Foo` and not the nested type `Type` even if `Foo` has such a nested type.
+	if s == "Protocol" || s == "Type" || s == "self" {
+		return fmt.Sprintf("%s_", s)
+	}
+	if keywords[s] {
 		return fmt.Sprintf("`%s`", s)
 	}
 	return s
 }
 
+// camelCase converts an identifier to camelCase (note the leading lowercase) and, if needed, escapes it.
+//
+// This function is used for field names and method names, where the Swift style is `camelCase`.
 func camelCase(s string) string {
 	return escapeKeyword(strcase.ToLowerCamel(s))
+}
+
+// pascalCase converts an identifier to PascalCase (note the leading uppercase) and, if needed, escapes it.
+//
+// This function is used for services, messages, and enums, where the Swift style is `PascalCase`.
+func pascalCase(s string) string {
+	// In Swift, it is conventional to preserve ALL CAPS names:
+	//     https://www.swift.org/documentation/api-design-guidelines/#conventions
+	if strings.ToUpper(s) == s {
+		return escapeKeyword(s)
+	}
+	// Symbols that are already `PascalCase` should need no mapping. This works
+	// better than calling `strcase.ToCamel()` in cases like `IAMPolicy`, which
+	// would be converted to `Iampolicy`. We are trusting that the original
+	// name in API definition chose to keep the acronym for a reason.
+	if unicode.IsUpper(rune(s[0])) && !strings.ContainsRune(s, '_') {
+		return escapeKeyword(s)
+	}
+	return escapeKeyword(strcase.ToCamel(s))
 }

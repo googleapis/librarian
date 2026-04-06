@@ -1,0 +1,32 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# We use misspell via golangci-lint, but typos is a better spellchecker, so we
+# run this in CI as well. Since typos-cli is a Rust tool, it is harder to set
+# up with go test ./..., so it is only run as a GitHub Action.
+#
+# To run locally, install typos-cli (https://crates.io/crates/typos-cli#install)
+# and run: typos
+#
+# See https://github.com/googleapis/librarian/issues/5081 for context.
+name: Typos
+on: [push, pull_request, merge_group]
+permissions:
+  contents: read
+jobs:
+  typos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: crate-ci/typos@v1.45.0

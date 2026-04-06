@@ -16,6 +16,8 @@ package swift
 
 import (
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestEscapeKeyword(t *testing.T) {
@@ -31,6 +33,10 @@ func TestEscapeKeyword(t *testing.T) {
 		{input: "func", want: "`func`"},
 		{input: "if", want: "`if`"},
 		{input: "while", want: "`while`"},
+		// Metatype-related keywords, need custom escaping
+		{input: "Type", want: "Type_"},
+		{input: "Protocol", want: "Protocol_"},
+		{input: "self", want: "self_"},
 
 		// Non-keywords requested NOT to be escaped
 		{input: "secret", want: "secret"},
@@ -53,15 +59,42 @@ func TestCamelCase(t *testing.T) {
 		{input: "secret_version", want: "secretVersion"},
 		{input: "display_name", want: "displayName"},
 		{input: "iam_policy", want: "iamPolicy"},
+		{input: "Type", want: "type"},
 
 		// Keywords that should be escaped after camelCase
 		{input: "protocol", want: "`protocol`"},
 		{input: "will_set", want: "`willSet`"},
+		{input: "Self", want: "self_"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := camelCase(test.input)
-			if got != test.want {
-				t.Errorf("camelCase(%q) = %q, want %q", test.input, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPascalCase(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "SecretManagerService", want: "SecretManagerService"},
+		{input: "CreateSecretRequest", want: "CreateSecretRequest"},
+		{input: "IAMPolicy", want: "IAMPolicy"},
+		{input: "IAM", want: "IAM"},
+
+		// Keywords that should be escaped after pascalCase
+		{input: "Protocol", want: "Protocol_"},
+		{input: "Type", want: "Type_"},
+		{input: "Self", want: "`Self`"},
+		{input: "Any", want: "`Any`"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := pascalCase(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

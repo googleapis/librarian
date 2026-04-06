@@ -18,23 +18,33 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
+// codec represents the configuration for a Swift sidekick Codec.
+//
+// A sideckick Codec is a package that generates libraries from an `api.API`
+// model and some configuration. In the Swift codec, the `Generate()`
+// function  creates a `codec` object for each `api.API` that needs to be
+// generated. That lends naturally into a single object that carries all the
+// information needed to generate the library.
 type codec struct {
 	GenerationYear string
 	PackageName    string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
 	RootName string
+	Model    *api.API
 }
 
-func newCodec(cfg *parser.ModelConfig) *codec {
+func newCodec(model *api.API, cfg *parser.ModelConfig) *codec {
 	year, _, _ := time.Now().Date()
 	result := &codec{
 		GenerationYear: fmt.Sprintf("%04d", year),
-		PackageName:    "",
+		PackageName:    PackageName(model),
 		RootName:       "googleapis",
+		Model:          model,
 	}
 	for key, definition := range cfg.Codec {
 		switch key {
