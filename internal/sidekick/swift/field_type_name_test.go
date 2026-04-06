@@ -65,3 +65,70 @@ func TestScalarFieldTypeName(t *testing.T) {
 		})
 	}
 }
+
+func TestFieldTypeName_Message(t *testing.T) {
+	outer := &api.Message{
+		Name:    "OuterMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.OuterMessage",
+	}
+	nested := &api.Message{
+		Name:    "NestedMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.OuterMessage.NestedMessage",
+		Parent:  outer,
+	}
+	simple := &api.Message{
+		Name:    "SimpleMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.SimpleMessage",
+	}
+
+	c := &codec{
+		Model: &api.API{
+			PackageName: "google.cloud.test.v1",
+			State: &api.APIState{
+				MessageByID: map[string]*api.Message{
+					".google.cloud.test.v1.SimpleMessage":              simple,
+					".google.cloud.test.v1.OuterMessage":               outer,
+					".google.cloud.test.v1.OuterMessage.NestedMessage": nested,
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  string
+	}{
+		{
+			name: "simple message",
+			field: &api.Field{
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".google.cloud.test.v1.SimpleMessage",
+				ID:      ".test.field1",
+			},
+			want: "SimpleMessage",
+		},
+		{
+			name: "nested message",
+			field: &api.Field{
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".google.cloud.test.v1.OuterMessage.NestedMessage",
+				ID:      ".test.field2",
+			},
+			want: "OuterMessage.NestedMessage",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.fieldTypeName(test.field)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

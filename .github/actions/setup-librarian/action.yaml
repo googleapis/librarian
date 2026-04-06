@@ -1,0 +1,46 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Setup Librarian
+description: Set up Go with build caching, and optionally install protoc and Go tools.
+inputs:
+  install-protoc:
+    description: Whether to install protoc.
+    default: "true"
+  install-tools:
+    description: Whether to run `go install tool` and `go install ./cmd/librarian`.
+    default: "true"
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: "go.mod"
+        cache: false
+    - uses: actions/cache@v5
+      with:
+        path: |
+          ~/.cache/go-build
+          ~/go/pkg/mod
+        key: go-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('go.sum') }}
+        restore-keys: |
+          go-${{ github.workflow }}-${{ github.job }}-
+          go-
+    - if: inputs.install-protoc == 'true'
+      uses: ./.github/actions/install-protoc
+    - if: inputs.install-tools == 'true'
+      name: Install Go tools
+      run: |
+        go install tool
+        go install ./cmd/librarian
+      shell: bash

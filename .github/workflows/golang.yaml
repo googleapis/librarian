@@ -22,9 +22,7 @@ jobs:
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
-        with:
-          go-version-file: "go.mod"
+      - uses: ./.github/actions/setup-librarian
       - name: Install go tools
         run: |
           # TODO(https://github.com/googleapis/librarian/issues/4894), Use golangci-lint
@@ -33,9 +31,6 @@ jobs:
           # the vet check uses this tool.
           go install golang.org/x/lint/golint@latest
           go install honnef.co/go/tools/cmd/staticcheck@latest
-      - uses: ./.github/actions/install-protoc
-      - name: Install librarian
-        run: go install ./cmd/librarian
       - name: Checkout google-cloud-go
         uses: actions/checkout@v6
         with:
