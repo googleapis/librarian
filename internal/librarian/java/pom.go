@@ -195,25 +195,25 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		names := deriveModuleNames(gapicCoord, version)
+		moduleCoords := deriveModuleCoordinates(gapicCoord, version)
 
 		transport := transports[api.Path]
 		data := grpcProtoPomData{
-			Proto:          names.proto,
-			Grpc:           names.grpc,
+			Proto:          moduleCoords.proto,
+			Grpc:           moduleCoords.grpc,
 			Parent:         parentCoord,
 			MainArtifactID: gapicCoord.ArtifactID,
 			Version:        library.Version,
 		}
 
 		// Proto module
-		protoDir := filepath.Join(libraryDir, names.proto.ArtifactID)
+		protoDir := filepath.Join(libraryDir, moduleCoords.proto.ArtifactID)
 		isProtoMissing, err := isPomMissing(protoDir)
 		if err != nil {
 			return nil, err
 		}
 		modules = append(modules, javaModule{
-			artifactID:   names.proto.ArtifactID,
+			artifactID:   moduleCoords.proto.ArtifactID,
 			dir:          protoDir,
 			isMissing:    isProtoMissing,
 			templateData: data,
@@ -223,13 +223,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-			grpcDir := filepath.Join(libraryDir, names.grpc.ArtifactID)
+			grpcDir := filepath.Join(libraryDir, moduleCoords.grpc.ArtifactID)
 			isGrpcMissing, err := isPomMissing(grpcDir)
 			if err != nil {
 				return nil, err
 			}
 			modules = append(modules, javaModule{
-				artifactID:   names.grpc.ArtifactID,
+				artifactID:   moduleCoords.grpc.ArtifactID,
 				dir:          grpcDir,
 				isMissing:    isGrpcMissing,
 				templateData: data,

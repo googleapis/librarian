@@ -496,7 +496,7 @@ func TestDeriveModuleNames(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveModuleNames(test.gapic, test.version)
+			got := deriveModuleCoordinates(test.gapic, test.version)
 			if diff := cmp.Diff(test.wantProto, got.proto); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}

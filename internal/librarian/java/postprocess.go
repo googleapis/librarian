@@ -47,7 +47,7 @@ func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.
 func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) modules() javaModules {
-	return deriveModuleNames(deriveGAPICCoordinates(p.library), p.version)
+	return deriveModuleCoordinates(deriveGAPICCoordinates(p.library), p.version)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
@@ -149,7 +149,7 @@ func deriveGAPICCoordinates(library *config.Library) coordinates {
 	}
 }
 
-func deriveModuleNames(gapic coordinates, version string) javaModules {
+func deriveModuleCoordinates(gapic coordinates, version string) javaModules {
 	protoGrpcGroupID := protoGroupID(gapic.GroupID)
 	return javaModules{
 		gapic: gapic,
