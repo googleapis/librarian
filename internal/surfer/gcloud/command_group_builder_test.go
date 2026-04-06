@@ -17,6 +17,7 @@ package gcloud
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
@@ -33,14 +34,16 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 		},
 	}
 
-	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
-	if err != nil {
-		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
-	}
+	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.buildRoot()
 
 	if group.Name != "parallelstore" {
 		t.Errorf("group.Name = %q, want %q", group.Name, "parallelstore")
+	}
+
+	wantPath := []string{"parallelstore"}
+	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
+		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
 	}
 
 	wantHelp := "Manage Parallelstore resources."
@@ -62,28 +65,20 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		},
 	}
 
-	builder, err := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
-	if err != nil {
-		t.Fatalf("newCommandGroupBuilder() failed: %v", err)
-	}
-	group := builder.build([]string{"instances"}, 0)
+	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
+	group := builder.build([]string{"instances"}, 0, []string{"parallelstore"})
 
 	if group.Name != "instances" {
 		t.Errorf("group.Name = %q, want %q", group.Name, "instances")
 	}
 
-	wantHelp := "Manage Parallelstore instances resources." // Fallback singular is the segment name if no resource found
+	wantPath := []string{"parallelstore", "instances"}
+	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
+		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
+	}
+
+	wantHelp := "Manage Instances resources." // Fallback singular is the segment name if no resource found
 	if group.HelpText != wantHelp {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
-	}
-}
-
-func TestNewCommandGroupBuilder_EmptyDefaultHost(t *testing.T) {
-	model := &api.API{}
-	service := &api.Service{Name: "ParallelstoreService", DefaultHost: ""}
-
-	_, err := newCommandGroupBuilder(model, service, &provider.Config{})
-	if err == nil {
-		t.Fatal("newCommandGroupBuilder() passed when DefaultHost was empty")
 	}
 }

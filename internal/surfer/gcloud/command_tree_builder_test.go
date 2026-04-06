@@ -26,22 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
 
-func TestCommandTreeBuilder_Build_EmptyDefaultHost(t *testing.T) {
-	service := &api.Service{
-		Name:        "parallelstore.googleapis.com",
-		DefaultHost: "",
-		Package:     "google.cloud.parallelstore.v1",
-	}
-	model := &api.API{
-		Title:    "Parallelstore API",
-		Services: []*api.Service{service},
-	}
-
-	if _, err := newCommandTreeBuilder(model, &provider.Config{}).build(); err == nil {
-		t.Error("newCommandTreeBuilder().build() error = nil, want error")
-	}
-}
-
 func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com",
 		mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"),

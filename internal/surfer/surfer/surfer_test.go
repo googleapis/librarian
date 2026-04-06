@@ -47,6 +47,17 @@ func TestRun_Success(t *testing.T) {
 				"--service-config", "../gcloud/testdata/googleapis/google/cloud/parallelstore/v1/parallelstore_service.yaml",
 			},
 		},
+		{
+			name: "valid command with base-module",
+			args: []string{
+				"surfer",
+				"generate",
+				"../gcloud/testdata/parallelstore/gcloud.yaml",
+				"--googleapis", "../gcloud/testdata/googleapis",
+				"--out", "../gcloud/testdata/parallelstore/surface",
+				"--base-module", "customsdk",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Run(t.Context(), test.args...); err != nil {
