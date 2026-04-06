@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
@@ -40,6 +41,40 @@ type postProcessParams struct {
 	googleapisDir  string
 	apiProtos      []string
 	includeSamples bool
+}
+
+type libraryPostProcessParams struct {
+	cfg        *config.Config
+	library    *config.Library
+	outDir     string
+	metadata   *repoMetadata
+	transports map[string]serviceconfig.Transport
+}
+
+func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
+	// Check if owlbot.py exists in the library output directory.
+	// It is required for restructuring the output and generating README files.
+	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
+	}
+	bomVersion, err := findBomVersion(p.cfg)
+	if err != nil {
+		return err
+	}
+	if err := runOwlBot(ctx, p.library, p.outDir, bomVersion); err != nil {
+		return fmt.Errorf("failed to run owlbot.py: %w", err)
+	}
+
+	monorepoVersion, err := findMonorepoVersion(p.cfg)
+	if err != nil {
+		return err
+	}
+	if err := syncPoms(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
+		return fmt.Errorf("failed to generate poms: %w", err)
+	}
+
+	return nil
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }

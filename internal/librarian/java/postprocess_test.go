@@ -263,6 +263,148 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	}
 }
 
+func TestPostProcessLibrary(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	defaultCfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: rootLibrary, Version: "1.0.0"},
+		},
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBomVersion: "26.35.0",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		setup   func(t *testing.T, outDir string)
+		wantErr string
+	}{
+		{
+			name:    "owlbot.py missing",
+			cfg:     defaultCfg,
+			wantErr: "owlbot.py not found",
+		},
+		{
+			name: "findBomVersion failure",
+			cfg:  &config.Config{},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+			},
+			wantErr: "libraries bom version not found in config",
+		},
+		{
+			name: "runOwlBot failure (missing templates)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+			},
+			wantErr: "templates directory not found",
+		},
+		{
+			name: "findMonorepoVersion failure",
+			cfg: &config.Config{
+				Default: defaultCfg.Default,
+			},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "failed to find monorepo version",
+		},
+		{
+			name: "runOwlBot failure (non-zero exit status)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(1)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "failed to run owlbot.py",
+		},
+		{
+			name: "syncPoms failure (missing module directories)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: "target directory",
+		},
+		{
+			name: "success",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				libCoords := deriveLibCoords(library)
+				apiCoords := deriveAPICoords(libCoords, "v1")
+				for _, dir := range []string{
+					filepath.Join(outDir, apiCoords.proto.ArtifactID),
+					filepath.Join(outDir, apiCoords.grpc.ArtifactID),
+					filepath.Join(outDir, apiCoords.gapic.ArtifactID),
+					filepath.Join(outDir, apiCoords.parent.ArtifactID),
+					filepath.Join(outDir, apiCoords.bom.ArtifactID),
+				} {
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outDir)
+			}
+			params := libraryPostProcessParams{
+				cfg:      test.cfg,
+				library:  library,
+				outDir:   outDir,
+				metadata: &repoMetadata{NamePretty: "Secret Manager"},
+			}
+			err := postProcessLibrary(t.Context(), params)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatalf("unexpected error: %v", err)
+				}
+			} else {
+				if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+					t.Fatalf("expected error containing %q, got %v", test.wantErr, err)
+				}
+			}
+		})
+	}
+}
+
+func writeOwlBot(t *testing.T, outDir, script string) {
+	t.Helper()
+	content := "import sys; " + script
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(content), 0755); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRunOwlBot(t *testing.T) {
 	t.Parallel()
 	testhelper.RequireCommand(t, "python3")

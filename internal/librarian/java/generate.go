@@ -75,26 +75,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	// Check if owlbot.py exists in the library output directory.
-	// It is required for restructuring the output and generating README files.
-	owlbotPath := filepath.Join(outdir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("owlbot.py not found in %s: %w", outdir, err)
-	}
-	bomVersion, err := findBomVersion(cfg)
-	if err != nil {
+	if err := postProcessLibrary(ctx, libraryPostProcessParams{
+		cfg:        cfg,
+		library:    library,
+		outDir:     outdir,
+		metadata:   metadata,
+		transports: transports,
+	}); err != nil {
 		return err
-	}
-	if err := runOwlBot(ctx, library, outdir, bomVersion); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
-	}
-
-	monorepoVersion, err := findMonorepoVersion(cfg)
-	if err != nil {
-		return err
-	}
-	if err := syncPoms(library, outdir, monorepoVersion, metadata, transports); err != nil {
-		return fmt.Errorf("failed to generate poms: %w", err)
 	}
 
 	return nil
