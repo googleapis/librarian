@@ -6,13 +6,12 @@ sources:
 tools:
   npm:
     - name: gapic-generator-typescript
-      version: "2ac5cf7a0dfb759be33ce24a40aae5b543ee375c"
-      package: "https://github.com/googleapis/google-cloud-node/archive/2ac5cf7a0dfb759be33ce24a40aae5b543ee375c.tar.gz"
-      checksum: "1577eb76cd5fa5eb1298c8deaa190be073ae4160acedb87411c78a4df29fcc2f"
+      version: "76ba85a7f55c6e82943008b4eceb07a0f58b39e1"
+      package: "https://github.com/googleapis/google-cloud-node-core/archive/76ba85a7f55c6e82943008b4eceb07a0f58b39e1.tar.gz"
+      checksum: "9561a116203761bad63bf1a0abc7a4a0db67608683c3d67b45abfc394df612ac"
       build:
         - "npm install"
-        - "npx tsc"
-        - "cp -r templates protos build/"
+        - "npm run compile"
         - "npm link"
     - name: gapic-node-processing
       version: "0.1.7"
