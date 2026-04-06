@@ -18,6 +18,8 @@
 language: nodejs
 tools:
   npm:
+    # TODO(https://github.com/googleapis/librarian/issues/4904): use the version
+    # of gapic-generator-typescript in google-cloud-node.
     - name: gapic-generator-typescript
       version: "76ba85a7f55c6e82943008b4eceb07a0f58b39e1"
       package: "https://github.com/googleapis/google-cloud-node-core/archive/76ba85a7f55c6e82943008b4eceb07a0f58b39e1.tar.gz"
