@@ -135,7 +135,7 @@ class InstancesGa(base.Group):
 func TestWriteCommandGroupFile(t *testing.T) {
 	tmpDir := t.TempDir()
 	ga := &CommandGroup{Name: "instances", HelpText: "Manage instances"}
-	if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", groupBundle{ga: ga}); err != nil {
+	if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", groupTracks{ga: ga}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -147,7 +147,7 @@ func TestWriteCommandGroupFile(t *testing.T) {
 
 func TestWriteCommandGroupFile_Error(t *testing.T) {
 	ga := &CommandGroup{Name: "instances", HelpText: "Manage instances"}
-	err := writeCommandGroupFile("/dev/null/invalid/path", "googlecloudsdk.instances", "instances", groupBundle{ga: ga})
+	err := writeCommandGroupFile("/dev/null/invalid/path", "googlecloudsdk.instances", "instances", groupTracks{ga: ga})
 	if err == nil {
 		t.Error("expected error writing to invalid path, got nil")
 	}
@@ -230,7 +230,7 @@ func TestGroupName(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := groupName(groupBundle{ga: tt.ga, beta: tt.beta, alpha: tt.alpha}); got != tt.want {
+			if got := groupName(groupTracks{ga: tt.ga, beta: tt.beta, alpha: tt.alpha}); got != tt.want {
 				t.Errorf("groupName() = %v, want %v", got, tt.want)
 			}
 		})
@@ -272,7 +272,7 @@ func TestWriteCommandGroupFile_TrackCombinations(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", groupBundle{ga: tt.ga, beta: tt.beta, alpha: tt.alpha}); err != nil {
+			if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", groupTracks{ga: tt.ga, beta: tt.beta, alpha: tt.alpha}); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
@@ -306,7 +306,7 @@ func TestWriteGroup_DirError(t *testing.T) {
 	}
 
 	ga := &CommandGroup{Name: "instances"}
-	err := writeGroup(tmpDir, "googlecloudsdk", groupBundle{ga: ga})
+	err := writeGroup(tmpDir, "googlecloudsdk", groupTracks{ga: ga})
 	if err == nil {
 		t.Error("expected error when creating directory over an existing file, got nil")
 	}
@@ -314,7 +314,7 @@ func TestWriteGroup_DirError(t *testing.T) {
 
 func TestWriteGroup_NoName(t *testing.T) {
 	tmpDir := t.TempDir()
-	err := writeGroup(tmpDir, "googlecloudsdk", groupBundle{})
+	err := writeGroup(tmpDir, "googlecloudsdk", groupTracks{})
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

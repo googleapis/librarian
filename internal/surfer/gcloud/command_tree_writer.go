@@ -25,18 +25,18 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type groupBundle struct {
+type groupTracks struct {
 	ga    *CommandGroup
 	beta  *CommandGroup
 	alpha *CommandGroup
 }
 
 func writeCommandGroupTree(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
-	bundle := groupBundle{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
+	bundle := groupTracks{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
 	return writeGroup(outputDir, baseModule, bundle)
 }
 
-func writeGroup(outputDir string, baseModule string, b groupBundle) error {
+func writeGroup(outputDir string, baseModule string, b groupTracks) error {
 	name := groupName(b)
 	if name == "" {
 		return nil
@@ -59,7 +59,7 @@ func writeGroup(outputDir string, baseModule string, b groupBundle) error {
 	return writeGroupSubgroups(groupDir, baseModule, b)
 }
 
-func groupName(b groupBundle) string {
+func groupName(b groupTracks) string {
 	if b.ga != nil {
 		return b.ga.Name
 	}
@@ -72,7 +72,7 @@ func groupName(b groupBundle) string {
 	return ""
 }
 
-func writeGroupCommands(groupDir string, b groupBundle) error {
+func writeGroupCommands(groupDir string, b groupTracks) error {
 	cmdNames := make(map[string]bool)
 	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
 	for _, g := range tracks {
@@ -102,7 +102,7 @@ func writeGroupCommands(groupDir string, b groupBundle) error {
 	return nil
 }
 
-func writeGroupSubgroups(groupDir string, baseModule string, b groupBundle) error {
+func writeGroupSubgroups(groupDir string, baseModule string, b groupTracks) error {
 	subNames := make(map[string]bool)
 	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
 	for _, g := range tracks {
@@ -114,7 +114,7 @@ func writeGroupSubgroups(groupDir string, baseModule string, b groupBundle) erro
 	}
 
 	for sub := range subNames {
-		subBundle := groupBundle{}
+		subBundle := groupTracks{}
 		if b.ga != nil {
 			subBundle.ga = b.ga.Groups[sub]
 		}
@@ -132,7 +132,7 @@ func writeGroupSubgroups(groupDir string, baseModule string, b groupBundle) erro
 	return nil
 }
 
-func writeCommandGroupFile(dir string, baseModule string, name string, b groupBundle) error {
+func writeCommandGroupFile(dir string, baseModule string, name string, b groupTracks) error {
 	initPath := filepath.Join(dir, "__init__.py")
 	extPath := filepath.Join(dir, "_init_extensions.py")
 
