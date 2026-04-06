@@ -242,7 +242,7 @@ type API struct {
 	// The path to the API, relative to the root of the API definition repository (e.g., "google/storage/v1").
 	Path string `yaml:"path" json:"path"`
 	// The name of the service config file, relative to the API `path`.
-	ServiceConfig string `yaml:"service_config" json:"service_config"`
+	ServiceConfig string `yaml:"service_config,omitempty" json:"service_config,omitempty"`
 	// The status of the API, one of "new" or "existing".
 	// This field is ignored when writing to state.yaml.
 	Status string `yaml:"-" json:"status,omitempty"`
