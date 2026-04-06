@@ -45,30 +45,30 @@ const (
 
 // grpcProtoPomData holds the data for rendering POM templates.
 type grpcProtoPomData struct {
-	Proto          coordinates
-	Grpc           coordinates
-	Parent         coordinates
+	Proto          coordinate
+	Grpc           coordinate
+	Parent         coordinate
 	Version        string
 	MainArtifactID string
 }
 
 // clientPomData holds the data for rendering the client library POM template.
 type clientPomData struct {
-	Client       coordinates
+	Client       coordinate
 	Version      string
 	Name         string
 	Description  string
-	Parent       coordinates
-	ProtoModules []coordinates
-	GrpcModules  []coordinates
+	Parent       coordinate
+	ProtoModules []coordinate
+	GrpcModules  []coordinate
 }
 
 // bomParentPomData holds the data for rendering the BOM and Parent library POM template.
 type bomParentPomData struct {
-	MainModule      coordinates
+	MainModule      coordinate
 	Name            string
 	MonorepoVersion string
-	Modules         []coordinates
+	Modules         []coordinate
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -228,35 +228,35 @@ func detectIndentation(content string, index int) string {
 // to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
 	var modules []javaModule
-	libCoords := deriveLibCoords(library)
+	libCoord := deriveLibCoord(library)
 
-	protoModules := make([]coordinates, 0, len(library.APIs))
-	grpcModules := make([]coordinates, 0, len(library.APIs))
+	protoModules := make([]coordinate, 0, len(library.APIs))
+	grpcModules := make([]coordinate, 0, len(library.APIs))
 	for _, api := range library.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 		if version == "" {
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		coords := deriveAPICoords(libCoords, version)
+		apiCoord := deriveAPICoord(libCoord, version)
 
 		transport := transports[api.Path]
 		data := grpcProtoPomData{
-			Proto:          coords.proto,
-			Grpc:           coords.grpc,
-			Parent:         libCoords.parent,
-			MainArtifactID: libCoords.gapic.ArtifactID,
+			Proto:          apiCoord.proto,
+			Grpc:           apiCoord.grpc,
+			Parent:         libCoord.parent,
+			MainArtifactID: libCoord.gapic.ArtifactID,
 			Version:        library.Version,
 		}
 
 		// Proto module
-		protoDir := filepath.Join(libraryDir, coords.proto.ArtifactID)
+		protoDir := filepath.Join(libraryDir, apiCoord.proto.ArtifactID)
 		isProtoMissing, err := isPomMissing(protoDir)
 		if err != nil {
 			return nil, err
 		}
 		modules = append(modules, javaModule{
-			artifactID:   coords.proto.ArtifactID,
+			artifactID:   apiCoord.proto.ArtifactID,
 			dir:          protoDir,
 			isMissing:    isProtoMissing,
 			templateData: data,
@@ -266,13 +266,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-			grpcDir := filepath.Join(libraryDir, coords.grpc.ArtifactID)
+			grpcDir := filepath.Join(libraryDir, apiCoord.grpc.ArtifactID)
 			isGrpcMissing, err := isPomMissing(grpcDir)
 			if err != nil {
 				return nil, err
 			}
 			modules = append(modules, javaModule{
-				artifactID:   coords.grpc.ArtifactID,
+				artifactID:   apiCoord.grpc.ArtifactID,
 				dir:          grpcDir,
 				isMissing:    isGrpcMissing,
 				templateData: data,
@@ -283,43 +283,43 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	}
 
 	// Client module
-	clientDir := filepath.Join(libraryDir, libCoords.gapic.ArtifactID)
+	clientDir := filepath.Join(libraryDir, libCoord.gapic.ArtifactID)
 	isClientMissing, err := isPomMissing(clientDir)
 	if err != nil {
 		return nil, err
 	}
 	modules = append(modules, javaModule{
-		artifactID: libCoords.gapic.ArtifactID,
+		artifactID: libCoord.gapic.ArtifactID,
 		dir:        clientDir,
 		isMissing:  isClientMissing,
 		templateData: clientPomData{
-			Client:       libCoords.gapic,
+			Client:       libCoord.gapic,
 			Version:      library.Version,
 			Name:         metadata.NamePretty,
 			Description:  metadata.APIDescription,
-			Parent:       libCoords.parent,
+			Parent:       libCoord.parent,
 			ProtoModules: protoModules,
 			GrpcModules:  grpcModules,
 		},
 		template: clientPomTemplateName,
 	})
 
-	allModules := []coordinates{libCoords.gapic}
+	allModules := []coordinate{libCoord.gapic}
 	allModules = append(allModules, grpcModules...)
 	allModules = append(allModules, protoModules...)
 
 	// BOM module
-	bomDir := filepath.Join(libraryDir, libCoords.bom.ArtifactID)
+	bomDir := filepath.Join(libraryDir, libCoord.bom.ArtifactID)
 	isBomMissing, err := isPomMissing(bomDir)
 	if err != nil {
 		return nil, err
 	}
 	modules = append(modules, javaModule{
-		artifactID: libCoords.bom.ArtifactID,
+		artifactID: libCoord.bom.ArtifactID,
 		dir:        bomDir,
 		isMissing:  isBomMissing,
 		templateData: bomParentPomData{
-			MainModule:      libCoords.gapic,
+			MainModule:      libCoord.gapic,
 			Name:            metadata.NamePretty,
 			MonorepoVersion: monorepoVersion,
 			Modules:         allModules,
@@ -334,11 +334,11 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		return nil, err
 	}
 	modules = append(modules, javaModule{
-		artifactID: libCoords.parent.ArtifactID,
+		artifactID: libCoord.parent.ArtifactID,
 		dir:        parentDir,
 		isMissing:  isParentMissing,
 		templateData: bomParentPomData{
-			MainModule:      libCoords.gapic,
+			MainModule:      libCoord.gapic,
 			Name:            metadata.NamePretty,
 			MonorepoVersion: monorepoVersion,
 			Modules:         allModules,

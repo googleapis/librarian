@@ -35,25 +35,25 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
-type coordinates struct {
+type coordinate struct {
 	GroupID    string
 	ArtifactID string
 	Version    string
 }
 
-type libCoords struct {
-	gapic  coordinates
-	parent coordinates
-	bom    coordinates
+type libCoord struct {
+	gapic  coordinate
+	parent coordinate
+	bom    coordinate
 }
 
-type apiCoords struct {
-	libCoords
-	proto coordinates
-	grpc  coordinates
+type apiCoord struct {
+	libCoord
+	proto coordinate
+	grpc  coordinate
 }
 
-func deriveLibCoords(library *config.Library) libCoords {
+func deriveLibCoord(library *config.Library) libCoord {
 	distName := deriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	groupID := parts[0]
@@ -61,19 +61,19 @@ func deriveLibCoords(library *config.Library) libCoords {
 	if len(parts) == 2 {
 		artifactID = parts[1]
 	}
-	gapic := coordinates{
+	gapic := coordinate{
 		GroupID:    groupID,
 		ArtifactID: artifactID,
 		Version:    library.Version,
 	}
-	return libCoords{
+	return libCoord{
 		gapic: gapic,
-		parent: coordinates{
+		parent: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
 			Version:    gapic.Version,
 		},
-		bom: coordinates{
+		bom: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
 			Version:    gapic.Version,
@@ -81,16 +81,16 @@ func deriveLibCoords(library *config.Library) libCoords {
 	}
 }
 
-func deriveAPICoords(lc libCoords, version string) apiCoords {
+func deriveAPICoord(lc libCoord, version string) apiCoord {
 	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
-	return apiCoords{
-		libCoords: lc,
-		proto: coordinates{
+	return apiCoord{
+		libCoord: lc,
+		proto: coordinate{
 			GroupID:    protoGrpcGroupID,
 			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
 			Version:    lc.gapic.Version,
 		},
-		grpc: coordinates{
+		grpc: coordinate{
 			GroupID:    protoGrpcGroupID,
 			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
 			Version:    lc.gapic.Version,

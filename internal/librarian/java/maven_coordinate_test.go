@@ -103,7 +103,7 @@ func TestDeriveLibCoords(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		want    libCoords
+		want    libCoord
 	}{
 		{
 			name: "default case",
@@ -111,18 +111,18 @@ func TestDeriveLibCoords(t *testing.T) {
 				Name:    "secretmanager",
 				Version: "1.2.3",
 			},
-			want: libCoords{
-				gapic: coordinates{
+			want: libCoord{
+				gapic: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager",
 					Version:    "1.2.3",
 				},
-				parent: coordinates{
+				parent: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager-parent",
 					Version:    "1.2.3",
 				},
-				bom: coordinates{
+				bom: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager-bom",
 					Version:    "1.2.3",
@@ -138,18 +138,18 @@ func TestDeriveLibCoords(t *testing.T) {
 					DistributionNameOverride: "com.google.cloud:google-secretmanager",
 				},
 			},
-			want: libCoords{
-				gapic: coordinates{
+			want: libCoord{
+				gapic: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-secretmanager",
 					Version:    "1.2.3",
 				},
-				parent: coordinates{
+				parent: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-secretmanager-parent",
 					Version:    "1.2.3",
 				},
-				bom: coordinates{
+				bom: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-secretmanager-bom",
 					Version:    "1.2.3",
@@ -158,8 +158,8 @@ func TestDeriveLibCoords(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveLibCoords(test.library)
-			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(libCoords{}, coordinates{})); diff != "" {
+			got := deriveLibCoord(test.library)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(libCoord{}, coordinate{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -169,27 +169,27 @@ func TestDeriveLibCoords(t *testing.T) {
 func TestDeriveAPICoords(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		lc        libCoords
+		lc        libCoord
 		version   string
-		wantProto coordinates
-		wantGrpc  coordinates
+		wantProto coordinate
+		wantGrpc  coordinate
 	}{
 		{
 			name: "standard cloud mapping",
-			lc: libCoords{
-				gapic: coordinates{
+			lc: libCoord{
+				gapic: coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager",
 					Version:    "1.2.3",
 				},
 			},
 			version: "v1",
-			wantProto: coordinates{
+			wantProto: coordinate{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "proto-google-cloud-secretmanager-v1",
 				Version:    "1.2.3",
 			},
-			wantGrpc: coordinates{
+			wantGrpc: coordinate{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "grpc-google-cloud-secretmanager-v1",
 				Version:    "1.2.3",
@@ -197,20 +197,20 @@ func TestDeriveAPICoords(t *testing.T) {
 		},
 		{
 			name: "non-cloud mapping",
-			lc: libCoords{
-				gapic: coordinates{
+			lc: libCoord{
+				gapic: coordinate{
 					GroupID:    "com.google.maps",
 					ArtifactID: "google-maps-places",
 					Version:    "1.2.3",
 				},
 			},
 			version: "v1",
-			wantProto: coordinates{
+			wantProto: coordinate{
 				GroupID:    "com.google.maps.api.grpc",
 				ArtifactID: "proto-google-maps-places-v1",
 				Version:    "1.2.3",
 			},
-			wantGrpc: coordinates{
+			wantGrpc: coordinate{
 				GroupID:    "com.google.maps.api.grpc",
 				ArtifactID: "grpc-google-maps-places-v1",
 				Version:    "1.2.3",
@@ -218,11 +218,11 @@ func TestDeriveAPICoords(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveAPICoords(test.lc, test.version)
-			if diff := cmp.Diff(test.wantProto, got.proto, cmp.AllowUnexported(coordinates{})); diff != "" {
+			got := deriveAPICoord(test.lc, test.version)
+			if diff := cmp.Diff(test.wantProto, got.proto, cmp.AllowUnexported(coordinate{})); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantGrpc, got.grpc, cmp.AllowUnexported(coordinates{})); diff != "" {
+			if diff := cmp.Diff(test.wantGrpc, got.grpc, cmp.AllowUnexported(coordinate{})); diff != "" {
 				t.Errorf("grpc mismatch (-want +got):\n%s", diff)
 			}
 		})
