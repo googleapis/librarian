@@ -46,14 +46,14 @@
         required: false
         repeated: false
         type: str
-      - arg_name: string-field
-        api_field: visibleResource.hiddenMessageField.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: hidden-message-field
+        api_field: visibleResource.hiddenMessageField
+        help_text: Value for the `hidden-message-field` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
+        type: arg_object
       - arg_name: validate-only
         api_field: validateOnly
         help_text: Value for the `validate-only` field.

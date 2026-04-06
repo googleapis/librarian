@@ -158,14 +158,14 @@
         repeated: false
         resource_method_params:
           resource.globalReference: '{__relative_name__}'
-      - arg_name: string-field
-        api_field: resource.childResource.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: child-resource
+        api_field: resource.childResource
+        help_text: Value for the `child-resource` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
+        type: arg_object
       - arg_name: labels
         api_field: resource.labels
         help_text: Value for the `labels` field.

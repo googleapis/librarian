@@ -168,6 +168,17 @@ func (b *commandBuilder) requestMethod() string {
 	return ""
 }
 
+type fieldWithPrefix struct {
+	field  *api.Field
+	prefix string
+}
+
+type classifiedFields struct {
+	primaryField    *fieldWithPrefix
+	resourceIdField *fieldWithPrefix
+	other           []fieldWithPrefix
+}
+
 // newArguments generates the set of arguments for a command by parsing the
 // fields of the method's request message.
 func (b *commandBuilder) newArguments() ([]Argument, error) {
@@ -176,58 +187,85 @@ func (b *commandBuilder) newArguments() ([]Argument, error) {
 		return args, nil
 	}
 
-	for _, field := range b.method.InputType.Fields {
-		fieldArgs, err := b.argumentsFromField(field, field.JSONName)
-		if err != nil {
-			return nil, err
-		}
-		args = append(args, fieldArgs...)
-	}
-	return args, nil
-}
-
-// argumentsFromField recursively processes a field and its sub-fields to generate
-// command-line flags. It uses a dispatch pattern to classify each field:
-//  1. Primary resource arguments (positional resource identifiers).
-//  2. Ignored fields (implicit or framework-handled).
-//  3. Nested messages (flattened into top-level flags).
-//  4. Standard arguments (scalars, maps, enums, resource references).
-//
-// TODO(https://github.com/googleapis/librarian/issues/3413): Improve error
-// handling strategy (Error vs Skip) and messaging.
-func (b *commandBuilder) argumentsFromField(field *api.Field, prefix string) ([]Argument, error) {
-	// Primary resource args are checked first because fields like "parent"
-	// and "name" are primary resources in certain method types (e.g., List
-	// and Get/Delete/Update respectively) and must not be ignored.
-	if provider.IsPrimaryResource(field, b.method) {
-		arg := newArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).buildPrimaryResource()
-		return []Argument{arg}, nil
-	}
-
-	if isIgnored(field, b.method) {
-		return nil, nil
-	}
-
-	// Nested messages are flattened into top-level flags.
-	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg_groups.
-	if field.MessageType != nil && !field.Map {
-		var args []Argument
-		for _, f := range field.MessageType.Fields {
-			fieldArgs, err := b.argumentsFromField(f, fmt.Sprintf("%s.%s", prefix, f.JSONName))
-			if err != nil {
-				return nil, err
-			}
-			args = append(args, fieldArgs...)
-		}
-		return args, nil
-	}
-
-	// Standard arguments: scalars, maps, enums, and resource references.
-	param, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service, field, prefix).build()
+	cf, err := b.categorizeFields()
 	if err != nil {
 		return nil, err
 	}
-	return []Argument{param}, nil
+
+	if cf.primaryField != nil {
+		var idField *api.Field
+		if cf.resourceIdField != nil {
+			idField = cf.resourceIdField.field
+		}
+		arg := newArgumentBuilder(b.method, b.overrides, b.model, b.service, cf.primaryField.field, cf.primaryField.prefix).buildPrimaryResource(idField)
+		args = append(args, arg)
+	}
+
+	for _, fwp := range cf.other {
+		arg, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service, fwp.field, fwp.prefix).build()
+		if err != nil {
+			return nil, err
+		}
+		if arg == nil {
+			continue
+		}
+		args = append(args, *arg)
+	}
+
+	return args, nil
+}
+
+// categorizeFields gathers fields from the method input type, expanding the body field
+// if present, and separates them into at most one primary resource field, at most one
+// resource ID field, and other fields. Returns an error if multiple are found.
+func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
+	var cf classifiedFields
+	bodyFieldPath := ""
+	if b.method.PathInfo != nil {
+		bodyFieldPath = b.method.PathInfo.BodyFieldPath
+	}
+
+	var collected []fieldWithPrefix
+	for _, field := range b.method.InputType.Fields {
+		isExpandableMessage := field.MessageType != nil && !field.Map
+		isBodyField := bodyFieldPath != "" && (bodyFieldPath == field.Name || bodyFieldPath == "*")
+
+		if isExpandableMessage && isBodyField {
+			for _, f := range field.MessageType.Fields {
+				collected = append(collected, fieldWithPrefix{
+					field:  f,
+					prefix: fmt.Sprintf("%s.%s", field.JSONName, f.JSONName),
+				})
+			}
+			continue
+		}
+
+		collected = append(collected, fieldWithPrefix{
+			field:  field,
+			prefix: field.JSONName,
+		})
+	}
+
+	for _, fwp := range collected {
+		switch {
+		case provider.IsPrimaryResourceField(fwp.field, b.method, b.model):
+			if cf.primaryField != nil {
+				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", b.method.Name, cf.primaryField.field.Name, fwp.field.Name)
+			}
+			cf.primaryField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
+		case provider.IsResourceIdField(fwp.field, b.method, b.model):
+			if cf.resourceIdField != nil {
+				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", b.method.Name, cf.resourceIdField.field.Name, fwp.field.Name)
+			}
+			cf.resourceIdField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
+		case provider.IsCreate(b.method) && fwp.field.Name == "name":
+			// Ignore name field in Create methods as it's redundant with resource_id
+		default:
+			cf.other = append(cf.other, fwp)
+		}
+	}
+
+	return cf, nil
 }
 
 // collectionPath constructs the gcloud collection path(s) for a request or async operation.
@@ -317,24 +355,4 @@ func tableFormat(message *api.Message) string {
 		return ""
 	}
 	return fmt.Sprintf("table(\n%s)", sb.String())
-}
-
-// isIgnored determines if a field should be excluded from the generated command arguments.
-func isIgnored(field *api.Field, method *api.Method) bool {
-	if field.Name == "parent" || field.Name == "name" || field.Name == "update_mask" {
-		return true
-	}
-	if provider.IsList(method) {
-		switch field.Name {
-		case "page_size", "page_token", "filter", "order_by":
-			return true
-		}
-	}
-	if slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
-		return true
-	}
-	if provider.IsUpdate(method) && slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
-		return true
-	}
-	return false
 }

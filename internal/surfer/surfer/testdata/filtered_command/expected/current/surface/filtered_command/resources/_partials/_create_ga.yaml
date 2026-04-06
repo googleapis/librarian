@@ -44,22 +44,22 @@
         required: false
         repeated: false
         type: str
-      - arg_name: string-field
-        api_field: resource.resourceMessage.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: resource-message
+        api_field: resource.resourceMessage
+        help_text: Value for the `resource-message` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
-      - arg_name: string-field
-        api_field: resource.filteredResourceMessage.stringField
-        help_text: Value for the `string-field` field.
+        type: arg_object
+      - arg_name: filtered-resource-message
+        api_field: resource.filteredResourceMessage
+        help_text: Value for the `filtered-resource-message` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
+        type: arg_object
       - arg_name: labels
         api_field: resource.labels
         help_text: Value for the `labels` field.

@@ -15,6 +15,7 @@
 package gcloud
 
 import (
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -453,6 +454,12 @@ func TestNewCommand(t *testing.T) {
 			service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 			service.DefaultHost = "test.googleapis.com"
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+			model.ResourceDefinitions = []*api.Resource{
+				{
+					Type:     "test.googleapis.com/Parent",
+					Singular: "parent",
+				},
+			}
 			test.method.Service = service
 			test.method.Model = model
 
@@ -513,5 +520,307 @@ func TestTableFormat(t *testing.T) {
 				t.Errorf("tableFormat() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestCommandBuilderNewArguments(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		method        *api.Method
+		service       *api.Service
+		model         *api.API
+		wantAPIFields []string
+		wantErr       bool
+	}{
+		{
+			name: "Method with no InputType",
+			method: &api.Method{
+				Name:      "EmptyMethod",
+				InputType: nil,
+			},
+			service:       api.NewTestService("TestService"),
+			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
+			wantAPIFields: []string{},
+		},
+		{
+			name: "Identify name field",
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetResource").WithVerb("GET").WithInput(
+					api.NewTestMessage("GetRequest").WithFields(
+						api.NewTestField("name").WithType(api.STRING_TYPE),
+					),
+				)
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+						},
+					},
+				}
+				return m
+			}(),
+			service: api.NewTestService("TestService"),
+			model: func() *api.API {
+				s := api.NewTestService("TestService")
+				s.DefaultHost = "test.googleapis.com"
+				m := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{s})
+				m.ResourceDefinitions = []*api.Resource{
+					{
+						Type:     "test.googleapis.com/Resource",
+						Singular: "resource",
+						Plural:   "resources",
+					},
+				}
+				return m
+			}(),
+			wantAPIFields: []string{""},
+		},
+		{
+			name: "Identify parent field",
+			method: func() *api.Method {
+				f := api.NewTestField("parent").WithType(api.STRING_TYPE)
+				f.ResourceReference = &api.ResourceReference{Type: "test.googleapis.com/Resource"}
+
+				m := api.NewTestMethod("ListResources").WithVerb("GET").WithInput(
+					api.NewTestMessage("ListRequest").WithFields(f),
+				)
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
+						},
+					},
+				}
+				return m
+			}(),
+			service: api.NewTestService("TestService"),
+			model: func() *api.API {
+				s := api.NewTestService("TestService")
+				s.DefaultHost = "test.googleapis.com"
+				m := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{s})
+				m.ResourceDefinitions = []*api.Resource{
+					{
+						Type:     "test.googleapis.com/Resource",
+						Singular: "resource",
+						Plural:   "resources",
+					},
+				}
+				return m
+			}(),
+			wantAPIFields: []string{""},
+		},
+		{
+			name: "Flatten fields with body *",
+			method: func() *api.Method {
+				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
+					api.NewTestMessage("ArchiveRequest").WithFields(
+						api.NewTestField("root_field").WithType(api.STRING_TYPE),
+						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+							api.NewTestMessage("Resource").WithFields(
+								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("field1").WithType(api.STRING_TYPE),
+							),
+						),
+					),
+				)
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+						},
+					},
+					BodyFieldPath: "*",
+				}
+				return m
+			}(),
+			service:       api.NewTestService("TestService"),
+			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
+			wantAPIFields: []string{"", "rootField", "resource.field1"},
+		},
+		{
+			name: "Identify both parent and resource_id",
+			method: func() *api.Method {
+				m := api.NewTestMethod("CreateResource").WithVerb("POST").WithInput(
+					api.NewTestMessage("CreateRequest").WithFields(
+						api.NewTestField("parent").WithType(api.STRING_TYPE),
+						api.NewTestField("resource_id").WithType(api.STRING_TYPE),
+						api.NewTestField("top_level_string").WithType(api.STRING_TYPE),
+						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+							api.NewTestMessage("Resource").WithFields(
+								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("inner_string").WithType(api.STRING_TYPE),
+							).WithResource(api.NewTestResource("test.googleapis.com/Resource")),
+						),
+					),
+				)
+				m.PathInfo = &api.PathInfo{
+					BodyFieldPath: "resource",
+				}
+				return m
+			}(),
+			service: api.NewTestService("TestService"),
+			model: func() *api.API {
+				s := api.NewTestService("TestService")
+				s.DefaultHost = "test.googleapis.com"
+				m := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{s})
+				m.ResourceDefinitions = []*api.Resource{
+					{
+						Type:     "test.googleapis.com/Resource",
+						Singular: "resource",
+						Plural:   "resources",
+					},
+				}
+				return m
+			}(),
+			wantAPIFields: []string{"", "topLevelString", "resource.innerString"},
+		},
+		{
+			name: "Map suppression with body *",
+			method: func() *api.Method {
+				f := api.NewTestField("labels").WithType(api.MESSAGE_TYPE)
+				f.Map = true
+
+				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
+					api.NewTestMessage("ArchiveRequest").WithFields(
+						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+							api.NewTestMessage("Resource").WithFields(
+								api.NewTestField("name").WithType(api.STRING_TYPE),
+								f,
+							),
+						),
+					),
+				)
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+						},
+					},
+					BodyFieldPath: "*",
+				}
+				return m
+			}(),
+			service:       api.NewTestService("TestService"),
+			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
+			wantAPIFields: []string{"", "resource.labels"},
+		},
+		{
+			name: "Output-only exclusion with body *",
+			method: func() *api.Method {
+				f := api.NewTestField("create_time").WithType(api.STRING_TYPE)
+				f.Behavior = []api.FieldBehavior{api.FIELD_BEHAVIOR_OUTPUT_ONLY}
+
+				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
+					api.NewTestMessage("ArchiveRequest").WithFields(
+						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+							api.NewTestMessage("Resource").WithFields(
+								api.NewTestField("name").WithType(api.STRING_TYPE),
+								f,
+							),
+						),
+					),
+				)
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+						},
+					},
+					BodyFieldPath: "*",
+				}
+				return m
+			}(),
+			service:       api.NewTestService("TestService"),
+			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
+			wantAPIFields: []string{""},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			b := &commandBuilder{
+				method:    test.method,
+				service:   test.service,
+				model:     test.model,
+				overrides: &provider.Config{},
+			}
+			args, err := b.newArguments()
+			if (err != nil) != test.wantErr {
+				t.Fatalf("newArguments() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if test.wantErr {
+				return
+			}
+
+			var gotAPIFields []string
+			for _, arg := range args {
+				gotAPIFields = append(gotAPIFields, arg.APIField)
+			}
+			if diff := cmp.Diff(test.wantAPIFields, gotAPIFields, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("api_fields mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
+	m := api.NewTestMethod("CustomMethod").WithVerb("POST").WithInput(
+		api.NewTestMessage("CustomRequest").WithFields(
+			api.NewTestField("name").WithType(api.STRING_TYPE), // Top level name
+			api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+				api.NewTestMessage("Resource").WithFields(
+					api.NewTestField("name").WithType(api.STRING_TYPE), // Inner name
+				),
+			),
+		),
+	)
+	m.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{
+			{
+				PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+			},
+		},
+		BodyFieldPath: "*",
+	}
+
+	b := &commandBuilder{
+		method:    m,
+		service:   api.NewTestService("TestService"),
+		model:     api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
+		overrides: &provider.Config{},
+	}
+
+	_, err := b.newArguments()
+	if err == nil {
+		t.Errorf("newArguments() expected error for duplicate resource fields, got nil")
+	}
+}
+
+func TestCommandBuilderNewArgumentsResourceError(t *testing.T) {
+	service := api.NewTestService("TestService")
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+
+	badMethod := api.NewTestMethod("DoSomethingError").WithInput(
+		api.NewTestMessage("Request").WithFields(
+			api.NewTestField("bad_nested").WithType(api.MESSAGE_TYPE).WithMessageType(
+				api.NewTestMessage("Bad").WithFields(
+					api.NewTestField("bad_ref").WithResourceReference("unknown"),
+				),
+			),
+		),
+	)
+	badMethod.PathInfo.BodyFieldPath = "bad_nested"
+
+	b := &commandBuilder{
+		method:    badMethod,
+		service:   service,
+		model:     model,
+		overrides: &provider.Config{},
+	}
+
+	_, err := b.newArguments()
+	if err == nil {
+		t.Fatalf("newArguments() expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "resource definition not found") {
+		t.Errorf("newArguments() error = %v, want error containing %q", err, "resource definition not found")
 	}
 }

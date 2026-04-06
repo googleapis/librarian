@@ -6,14 +6,6 @@
     description: ""
   arguments:
     params:
-      - arg_name: uri
-        api_field: uri
-        help_text: Value for the `uri` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
       - help_text: The resource to create.
         is_positional: true
         is_primary_resource: true
@@ -36,6 +28,14 @@
           disable_auto_completers: false
         required: true
         repeated: false
+      - arg_name: uri
+        api_field: uri
+        help_text: Value for the `uri` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
       - arg_name: field-with-no-parent
         api_field: resource.fieldWithNoParent
         help_text: Value for the `field-with-no-parent` field.
@@ -44,30 +44,14 @@
         required: false
         repeated: false
         type: str
-      - arg_name: duplicate-message
-        api_field: resource.msg.duplicateMessage.duplicateMessage
-        help_text: Value for the `duplicate-message` field.
+      - arg_name: msg
+        api_field: resource.msg
+        help_text: Value for the `msg` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
-      - arg_name: redundant-string-field
-        api_field: resource.msg.redundantMessage.redundantStringField
-        help_text: Value for the `redundant-string-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
-      - arg_name: string-field
-        api_field: resource.msg.excluded.stringField
-        help_text: Value for the `string-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
+        type: arg_object
       - arg_name: quiet
         api_field: resource.quiet
         help_text: Value for the `quiet` field.
@@ -76,14 +60,14 @@
         required: false
         repeated: false
         type: str
-      - arg_name: project
-        api_field: resource.billingInfo.billing.project
-        help_text: Value for the `project` field.
+      - arg_name: billing-info
+        api_field: resource.billingInfo
+        help_text: Value for the `billing-info` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
+        type: arg_object
       - arg_name: labels
         api_field: resource.labels
         help_text: Value for the `labels` field.

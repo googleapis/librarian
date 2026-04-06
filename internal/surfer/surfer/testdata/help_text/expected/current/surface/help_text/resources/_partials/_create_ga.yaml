@@ -94,38 +94,22 @@
         required: false
         repeated: false
         type: float
-      - arg_name: seconds
-        api_field: resource.dateTime.seconds
-        help_text: Value for the `seconds` field.
+      - arg_name: date-time
+        api_field: resource.dateTime
+        help_text: Value for the `date-time` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: long
-      - arg_name: nanos
-        api_field: resource.dateTime.nanos
-        help_text: Value for the `nanos` field.
+        type: arg_object
+      - arg_name: my-duration
+        api_field: resource.myDuration
+        help_text: Value for the `my-duration` field.
         is_positional: false
         is_primary_resource: false
         required: false
-        repeated: false
-        type: int
-      - arg_name: seconds
-        api_field: resource.myDuration.seconds
-        help_text: Value for the `seconds` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: long
-      - arg_name: nanos
-        api_field: resource.myDuration.nanos
-        help_text: Value for the `nanos` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: int
+        repeated: true
+        type: arg_object
       - arg_name: labels
         api_field: resource.labels
         help_text: Value for the `labels` field.

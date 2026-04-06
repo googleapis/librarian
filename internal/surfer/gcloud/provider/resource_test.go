@@ -249,6 +249,94 @@ func TestIsPrimaryResource(t *testing.T) {
 		want   bool
 	}{
 		{
+			name:  "Create Method - Primary Resource Parent",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name:      "CreateInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Get Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "GetInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Delete Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "DeleteInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Update Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "UpdateInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "List Method - Primary Resource Parent",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name:      "ListInstances",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Non-Primary Field",
+			field: &api.Field{Name: "display_name"},
+			method: &api.Method{
+				Name:      "GetInstance",
+				InputType: &api.Message{},
+			},
+			want: false,
+		},
+		{
+			name:  "Nil InputType",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name: "GetInstance",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := IsPrimaryResourceField(test.field, test.method, nil)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsResourceIdField(t *testing.T) {
+	mockModel := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type: "example.googleapis.com/Instance",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name   string
+		field  *api.Field
+		method *api.Method
+		want   bool
+	}{
+		{
 			name:  "Create Method - Primary Resource ID",
 			field: &api.Field{Name: "instance_id"},
 			method: &api.Method{
@@ -269,7 +357,7 @@ func TestIsPrimaryResource(t *testing.T) {
 			want: true,
 		},
 		{
-			name:  "Create Method - Not Primary Resource",
+			name:  "Create Method - Not Resource ID",
 			field: &api.Field{Name: "parent"},
 			method: &api.Method{
 				Name: "CreateInstance",
@@ -288,54 +376,10 @@ func TestIsPrimaryResource(t *testing.T) {
 			},
 			want: false,
 		},
-		{
-			name:  "Get Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "GetInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "Delete Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "DeleteInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "Update Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "UpdateInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "List Method - Primary Resource",
-			field: &api.Field{Name: "parent"},
-			method: &api.Method{
-				Name: "ListInstances",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "parent"}},
-				},
-			},
-			want: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsPrimaryResource(test.field, test.method)
+			got := IsResourceIdField(test.field, test.method, mockModel)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

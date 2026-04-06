@@ -6,12 +6,12 @@
     description: ""
   arguments:
     params:
-      - help_text: The api_resource to create.
+      - help_text: The resource to create.
         is_positional: true
         is_primary_resource: true
         request_id_field: apiResourceId
         resource_spec:
-          name: api_resource
+          name: resource
           plural_name: resources
           collection: resourcenonstandard.projects.locations.apis.resources
           attributes:

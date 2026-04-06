@@ -6,6 +6,14 @@
     description: ""
   arguments:
     params:
+      - arg_name: name
+        api_field: name
+        help_text: Value for the `name` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: false
+        type: str
       - arg_name: return-partial-success
         api_field: returnPartialSuccess
         help_text: Value for the `return-partial-success` field.

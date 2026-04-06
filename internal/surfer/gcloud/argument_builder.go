@@ -16,6 +16,7 @@ package gcloud
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -47,9 +48,15 @@ func newArgumentBuilder(method *api.Method, overrides *provider.Config, model *a
 }
 
 // build creates a single command-line argument (a `Argument` struct) from the builder's state.
-func (b *argumentBuilder) build() (Argument, error) {
+// build creates a single command-line argument (a `Argument` struct) from the builder's state.
+// It returns nil if the field should be ignored.
+func (b *argumentBuilder) build() (*Argument, error) {
+	if b.isIgnored() {
+		return nil, nil
+	}
+
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
-	arg := Argument{
+	arg := &Argument{
 		ArgName:   strcase.ToKebab(b.field.Name),
 		APIField:  b.apiField,
 		Required:  b.field.DocumentAsRequired(),
@@ -61,7 +68,7 @@ func (b *argumentBuilder) build() (Argument, error) {
 	if b.field.ResourceReference != nil {
 		spec, err := b.resourceReferenceSpec()
 		if err != nil {
-			return Argument{}, err
+			return nil, err
 		}
 		arg.ResourceSpec = spec
 		arg.ResourceMethodParams = map[string]string{
@@ -76,6 +83,25 @@ func (b *argumentBuilder) build() (Argument, error) {
 	}
 
 	return arg, nil
+}
+
+func (b *argumentBuilder) isIgnored() bool {
+	if b.field.Name == "update_mask" {
+		return true
+	}
+	if provider.IsList(b.method) {
+		switch b.field.Name {
+		case "page_size", "page_token", "filter", "order_by":
+			return true
+		}
+	}
+	if slices.Contains(b.field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
+		return true
+	}
+	if provider.IsUpdate(b.method) && slices.Contains(b.field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+		return true
+	}
+	return false
 }
 
 func (b *argumentBuilder) repeated() bool {
@@ -115,7 +141,7 @@ func (b *argumentBuilder) mapSpec() []ArgSpec {
 
 // BuildPrimaryResource creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func (b *argumentBuilder) buildPrimaryResource() Argument {
+func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 	resource := provider.GetResourceForMethod(b.method, b.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
@@ -123,16 +149,16 @@ func (b *argumentBuilder) buildPrimaryResource() Argument {
 		segments = resource.Patterns[0]
 	}
 
-	// For List methods, the primary resource is the parent of the method's resource.
-	if provider.IsList(b.method) {
+	// Grab the parent if it is collection based method unless you have a resource id field.
+	if provider.IsCollectionMethod(b.method) && idField == nil {
 		segments = provider.GetParentFromSegments(segments)
 	}
 
-	resourceName := strings.TrimSuffix(b.field.Name, "_id")
-	if b.field.Name == "name" || provider.IsList(b.method) {
-		resourceName = provider.GetSingularFromSegments(segments)
-	}
+	// resourceName should always be GetSingularFromSegments.
+	resourceName := provider.GetSingularFromSegments(segments)
 
+	// Help text should be documentation of builder.field name.
+	// However, if you have resource id, then you actually want resource.name field.
 	var helpText string
 	switch {
 	case provider.IsCreate(b.method):
@@ -142,6 +168,24 @@ func (b *argumentBuilder) buildPrimaryResource() Argument {
 	default:
 		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
 	}
+	// if idField != nil {
+	// 	var nameField *api.Field
+	// 	if resource != nil && resource.Self != nil {
+	// 		for _, f := range resource.Self.Fields {
+	// 			if f.Name == "name" {
+	// 				nameField = f
+	// 				break
+	// 			}
+	// 		}
+	// 	}
+	// 	if nameField != nil {
+	// 		helpText = nameField.Documentation
+	// 	} else {
+	// 		helpText = b.field.Documentation // Fallback
+	// 	}
+	// } else {
+	// 	helpText = b.field.Documentation
+	// }
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
 	hostParts := strings.Split(b.service.DefaultHost, ".")
@@ -161,8 +205,8 @@ func (b *argumentBuilder) buildPrimaryResource() Argument {
 		},
 	}
 
-	if provider.IsCreate(b.method) {
-		param.RequestIDField = strcase.ToLowerCamel(b.field.Name)
+	if idField != nil {
+		param.RequestIDField = strcase.ToLowerCamel(idField.Name)
 	}
 
 	return param
