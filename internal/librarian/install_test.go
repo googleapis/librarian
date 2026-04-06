@@ -22,7 +22,29 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
+
+func TestInstallCommand_WithLanguage(t *testing.T) {
+	t.Chdir(t.TempDir())
+	if err := Run(t.Context(), "librarian", "install", "fake"); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestInstallCommand_FromConfig(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+	cfg := &config.Config{
+		Language: config.LanguageFake,
+	}
+	if err := yaml.Write(filepath.Join(tmpDir, config.LibrarianYAML), cfg); err != nil {
+		t.Fatal(err)
+	}
+	if err := Run(t.Context(), "librarian", "install"); err != nil {
+		t.Fatal(err)
+	}
+}
 
 func TestGenerate(t *testing.T) {
 	const (

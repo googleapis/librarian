@@ -69,145 +69,228 @@ func TestValidateLibraries(t *testing.T) {
 	}
 }
 
-func TestValidateTools_NoTools(t *testing.T) {
-	if err := validateTools(&config.Config{}); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestValidateTools(t *testing.T) {
-	cfg := &config.Config{
-		Tools: &config.Tools{
-			Cargo: []*config.CargoTool{
-				{Name: "taplo-cli", Version: "0.10.0"},
+	for _, test := range []struct {
+		name    string
+		config  *config.Config
+		wantErr error
+	}{
+		{
+			name:   "no tools",
+			config: &config.Config{},
+		},
+		{
+			name: "valid tools",
+			config: &config.Config{
+				Tools: &config.Tools{
+					Cargo: []*config.CargoTool{
+						{Name: "taplo-cli", Version: "0.10.0"},
+					},
+				},
 			},
 		},
-	}
-	if err := validateTools(cfg); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestValidateTools_MissingVersion(t *testing.T) {
-	cfg := &config.Config{
-		Tools: &config.Tools{
-			Cargo: []*config.CargoTool{
-				{Name: "taplo-cli"},
+		{
+			name: "missing version",
+			config: &config.Config{
+				Tools: &config.Tools{
+					Cargo: []*config.CargoTool{
+						{Name: "taplo-cli"},
+					},
+				},
 			},
+			wantErr: rust.ErrMissingToolVersion,
 		},
-	}
-	err := validateTools(cfg)
-	if !errors.Is(err, rust.ErrMissingToolVersion) {
-		t.Fatalf("got %v, want %v", err, rust.ErrMissingToolVersion)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateTools(test.config)
+			if test.wantErr == nil {
+				if err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			if err == nil {
+				t.Fatalf("expected %v, got nil", test.wantErr)
+			}
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected %v, got %v", test.wantErr, err)
+			}
+		})
 	}
 }
 
 func TestFormatConfig(t *testing.T) {
-	cfg := formatConfig(&config.Config{
-		Tools: &config.Tools{
-			Cargo: []*config.CargoTool{
-				{Name: "taplo-cli", Version: "0.10.0"},
-				{Name: "cargo-semver-checks", Version: "0.46.0"},
-			},
-		},
-		Default: &config.Default{
-			Rust: &config.RustDefault{
-				PackageDependencies: []*config.RustPackageDependency{
-					{Name: "z"},
-					{Name: "a"},
+	for _, test := range []struct {
+		name  string
+		input *config.Config
+		got   func(*config.Config) []string
+		want  []string
+	}{
+		{
+			name: "sorts libraries by name",
+			input: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "google-cloud-storage-v1"},
+					{Name: "google-cloud-bigquery-v1"},
+					{Name: "google-cloud-secretmanager-v1"},
 				},
 			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, lib := range c.Libraries {
+					names = append(names, lib.Name)
+				}
+				return names
+			},
+			want: []string{
+				"google-cloud-bigquery-v1",
+				"google-cloud-secretmanager-v1",
+				"google-cloud-storage-v1",
+			},
 		},
-		Libraries: []*config.Library{
-			{
-				Name:    "google-cloud-storage-v1",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/storage/v1"},
-					{Path: "google/cloud/storage/v2"},
-				},
-				Rust: &config.RustCrate{
-					RustDefault: config.RustDefault{
-						PackageDependencies: []*config.RustPackageDependency{
-							{Name: "y"},
-							{Name: "b"},
+		{
+			name: "sorts apis by version",
+			input: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "lib",
+						APIs: []*config.API{
+							{Path: "google/cloud/storage/v1"},
+							{Path: "google/cloud/storage/v2"},
 						},
 					},
 				},
 			},
-			{Name: "google-cloud-bigquery-v1", Version: "2.0.0"},
-			{Name: "google-cloud-secretmanager-v1", Version: "3.0.0"},
+			got: func(c *config.Config) []string {
+				var paths []string
+				for _, api := range c.Libraries[0].APIs {
+					paths = append(paths, api.Path)
+				}
+				return paths
+			},
+			want: []string{
+				"google/cloud/storage/v2",
+				"google/cloud/storage/v1",
+			},
 		},
-	})
-	t.Run("sorts libraries by name", func(t *testing.T) {
-		want := []string{
-			"google-cloud-bigquery-v1",
-			"google-cloud-secretmanager-v1",
-			"google-cloud-storage-v1",
-		}
-		var got []string
-		for _, lib := range cfg.Libraries {
-			got = append(got, lib.Name)
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	var storageLib *config.Library
-	for _, lib := range cfg.Libraries {
-		if lib.Name == "google-cloud-storage-v1" {
-			storageLib = lib
-			break
-		}
+		{
+			name: "sorts default rust dependencies by name",
+			input: &config.Config{
+				Default: &config.Default{
+					Rust: &config.RustDefault{
+						PackageDependencies: []*config.RustPackageDependency{
+							{Name: "z"},
+							{Name: "a"},
+						},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, dep := range c.Default.Rust.PackageDependencies {
+					names = append(names, dep.Name)
+				}
+				return names
+			},
+			want: []string{"a", "z"},
+		},
+		{
+			name: "sorts library rust dependencies by name",
+			input: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "lib",
+						Rust: &config.RustCrate{
+							RustDefault: config.RustDefault{
+								PackageDependencies: []*config.RustPackageDependency{
+									{Name: "y"},
+									{Name: "b"},
+								},
+							},
+						},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, dep := range c.Libraries[0].Rust.PackageDependencies {
+					names = append(names, dep.Name)
+				}
+				return names
+			},
+			want: []string{"b", "y"},
+		},
+		{
+			name: "sorts cargo tools by name",
+			input: &config.Config{
+				Tools: &config.Tools{
+					Cargo: []*config.CargoTool{
+						{Name: "taplo-cli", Version: "0.10.0"},
+						{Name: "cargo-semver-checks", Version: "0.46.0"},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, tool := range c.Tools.Cargo {
+					names = append(names, tool.Name)
+				}
+				return names
+			},
+			want: []string{"cargo-semver-checks", "taplo-cli"},
+		},
+		{
+			name: "sorts npm tools by name",
+			input: &config.Config{
+				Tools: &config.Tools{
+					NPM: []*config.NPMTool{
+						{Name: "gapic-tools", Version: "1.0.5"},
+						{Name: "gapic-generator-typescript", Version: "1.0.0"},
+						{Name: "gapic-node-processing", Version: "0.1.7"},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, tool := range c.Tools.NPM {
+					names = append(names, tool.Name)
+				}
+				return names
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"gapic-node-processing",
+				"gapic-tools",
+			},
+		},
+		{
+			name: "sorts pip tools by name",
+			input: &config.Config{
+				Tools: &config.Tools{
+					Pip: []*config.PipTool{
+						{Name: "synthtool", Version: "abc123"},
+						{Name: "nox", Version: "2024.1.1"},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, tool := range c.Tools.Pip {
+					names = append(names, tool.Name)
+				}
+				return names
+			},
+			want: []string{"nox", "synthtool"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := formatConfig(test.input)
+			got := test.got(cfg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if storageLib == nil {
-		t.Fatal("library google-cloud-storage-v1 not found after sorting")
-	}
-
-	t.Run("sorts apis by version", func(t *testing.T) {
-		want := []string{"google/cloud/storage/v2", "google/cloud/storage/v1"}
-		var got []string
-		for _, ch := range storageLib.APIs {
-			got = append(got, ch.Path)
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("sorts default rust dependencies by name", func(t *testing.T) {
-		want := []string{"a", "z"}
-		var got []string
-		for _, dep := range cfg.Default.Rust.PackageDependencies {
-			got = append(got, dep.Name)
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("sorts library rust dependencies by name", func(t *testing.T) {
-		want := []string{"b", "y"}
-		var got []string
-		for _, dep := range storageLib.Rust.PackageDependencies {
-			got = append(got, dep.Name)
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
-
-	t.Run("sorts cargo tools by name", func(t *testing.T) {
-		want := []string{"cargo-semver-checks", "taplo-cli"}
-		var got []string
-		for _, tool := range cfg.Tools.Cargo {
-			got = append(got, tool.Name)
-		}
-		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch (-want +got):\n%s", diff)
-		}
-	})
 }
 
 func TestTidyCommand(t *testing.T) {

@@ -71,16 +71,16 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 	}
 	var newAPIs []*serviceconfig.API
 	for _, path := range buildFilePaths {
-		noRESTNumericEnums := readRestNumericEnums(googleapisDir, path)
-		if len(noRESTNumericEnums) == 0 {
+		skip := readSkipRESTNumericEnums(googleapisDir, path)
+		if len(skip) == 0 {
 			// No need to change the default value.
 			continue
 		}
 		buildDir := filepath.Dir(path)
 		api, ok := apiMap[buildDir]
 		if ok {
-			// Add the NoRESTNumericEnums to an existing API, regardless a cloud API or not.
-			api.NoRESTNumericEnums = noRESTNumericEnums
+			// Add SkipRESTNumericEnums to an existing API, regardless a cloud API or not.
+			api.SkipRESTNumericEnums = skip
 			continue
 		}
 
@@ -88,7 +88,7 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 		if !strings.HasPrefix(buildDir, "google/cloud") {
 			continue
 		}
-		// Add the NoRESTNumericEnums to a cloud API.
+		// Add SkipRESTNumericEnums to a cloud API.
 		newAPIs = append(newAPIs, &serviceconfig.API{
 			// Add languages so they won't be blocked.
 			Languages: []string{
@@ -98,8 +98,8 @@ func runUpdateRestNumericEnums(sdkYaml, googleapisDir string) error {
 				config.LanguagePython,
 				config.LanguageRust,
 			},
-			Path:               buildDir,
-			NoRESTNumericEnums: noRESTNumericEnums,
+			Path:                 buildDir,
+			SkipRESTNumericEnums: skip,
 		})
 	}
 	finalAPIs := toSlice(apiMap)
@@ -145,7 +145,7 @@ func toSlice(apis map[string]*serviceconfig.API) []*serviceconfig.API {
 	return res
 }
 
-func readRestNumericEnums(googleapisDir, path string) map[string]bool {
+func readSkipRESTNumericEnums(googleapisDir, path string) []string {
 	buildPath := filepath.Join(googleapisDir, path)
 	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
 		return nil
@@ -155,18 +155,21 @@ func readRestNumericEnums(googleapisDir, path string) map[string]bool {
 		slog.Warn("failed to parse rest numeric enums", "path", buildPath, "error", err)
 		return nil
 	}
-	return simplifyRESTNumericEnums(numericEnums)
+	return collapseLanguages(numericEnums)
 }
 
-func simplifyRESTNumericEnums(restNumericEnums map[string]bool) map[string]bool {
+func collapseLanguages(noRestNumericEnums map[string]bool) []string {
 	for _, lang := range bazelLangs {
-		if _, ok := restNumericEnums[lang]; !ok {
-			// At least one language is not present,
-			// return as-is.
-			return restNumericEnums
+		if _, ok := noRestNumericEnums[lang]; !ok {
+			// At least one language is not present, return the specific languages.
+			var langs []string
+			for k := range noRestNumericEnums {
+				langs = append(langs, k)
+			}
+			sort.Strings(langs)
+			return langs
 		}
 	}
-	// All languages do not need rest_numeric_enums.
-	// Return all: true.
-	return map[string]bool{"all": true}
+	// All languages skip rest_numeric_enums.
+	return []string{"all"}
 }

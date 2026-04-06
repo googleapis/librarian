@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -67,20 +68,31 @@ func Run(ctx context.Context, args ...string) error {
 func installCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "install",
-		Usage:     "install dependencies for the current language",
-		UsageText: "librarian install",
+		Usage:     "install tool dependencies for a language",
+		UsageText: "librarian install [language]",
+		Description: `Install tool dependencies for the given language.
+If no language is provided, the language is determined
+from librarian.yaml in the current directory.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
+			lang := cmd.Args().First()
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-			if err != nil {
+			if err != nil && lang == "" {
 				return err
 			}
-			switch cfg.Language {
+			if lang == "" {
+				lang = cfg.Language
+			}
+			switch lang {
+			case config.LanguageFake:
+				return nil
 			case config.LanguageGo:
 				return golang.Install(ctx)
+			case config.LanguageNodejs:
+				return nodejs.Install(ctx)
 			case config.LanguageRust:
 				return rust.Install(ctx, cfg.Tools)
 			default:
-				return fmt.Errorf("language %q does not support install", cfg.Language)
+				return fmt.Errorf("language %q does not support install", lang)
 			}
 		},
 	}

@@ -22,9 +22,10 @@ jobs:
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-go@v6
+      - uses: ./.github/actions/setup-librarian
         with:
-          go-version-file: "go.mod"
+          install-protoc: "false"
+          install-tools: "false"
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4

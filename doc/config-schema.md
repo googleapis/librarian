@@ -55,6 +55,8 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+| `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
+| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 
 ## CargoTool Configuration
 
@@ -62,6 +64,24 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
+
+## NPMTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the npm package name. |
+| `version` | string | Is the version to install. |
+| `package` | string | Is the URL or path of the package to install. |
+| `checksum` | string | Is the SHA256 checksum of the package. |
+| `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## PipTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the pip package name. |
+| `version` | string | Is the version to install. |
+| `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
 
 ## Default Configuration
 

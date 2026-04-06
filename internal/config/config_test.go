@@ -271,6 +271,32 @@ func TestNodejsRead(t *testing.T) {
 				SHA256: "81e6057ffd85154af5268c2c3c8f2408745ca0f7fa03d43c68f4847f31eb5f98",
 			},
 		},
+		Tools: &Tools{
+			NPM: []*NPMTool{
+				{
+					Name:     "gapic-generator-typescript",
+					Version:  "2ac5cf7a0dfb759be33ce24a40aae5b543ee375c",
+					Package:  "https://github.com/googleapis/google-cloud-node/archive/2ac5cf7a0dfb759be33ce24a40aae5b543ee375c.tar.gz",
+					Checksum: "1577eb76cd5fa5eb1298c8deaa190be073ae4160acedb87411c78a4df29fcc2f",
+					Build:    []string{"npm install", "npx tsc", "cp -r templates protos build/", "npm link"},
+				},
+				{
+					Name:    "gapic-node-processing",
+					Version: "0.1.7",
+				},
+				{
+					Name:    "gapic-tools",
+					Version: "1.0.5",
+				},
+			},
+			Pip: []*PipTool{
+				{
+					Name:    "synthtool",
+					Version: "5aa438a342707842d11fbbb302c6277fbf9e4655",
+					Package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655",
+				},
+			},
+		},
 		Default: &Default{
 			Output: "packages",
 			Keep:   []string{"CHANGELOG.md"},

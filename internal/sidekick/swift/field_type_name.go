@@ -34,7 +34,7 @@ func (c *codec) fieldTypeName(field *api.Field) (string, error) {
 		if m.IsMap {
 			return "", fmt.Errorf("TODO(#5060) - map fields are not supported: %s", field.ID)
 		}
-		return "", fmt.Errorf("TODO(#5060) - message fields are not supported: %s", field.ID)
+		return c.messageTypeName(m)
 	case api.ENUM_TYPE:
 		return "", fmt.Errorf("TODO(#5060) - enum fields are not supported: %s", field.ID)
 	default:
@@ -77,4 +77,20 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
 	}
+}
+
+func (c *codec) messageTypeName(m *api.Message) (string, error) {
+	if m.Package != c.Model.PackageName {
+		return "", fmt.Errorf("TODO(#5060) - support external message types")
+	}
+	// Names can be qualified with nested objects.
+	name := pascalCase(m.Name)
+	if m.Parent == nil {
+		return name, nil
+	}
+	parent, err := c.messageTypeName(m.Parent)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", parent, name), nil
 }
