@@ -27,13 +27,13 @@ type serviceAnnotations struct {
 
 func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) *serviceAnnotations {
 	docLines := codec.formatDocumentation(service.Documentation)
-	messageAnnotations := &serviceAnnotations{
+	annotations := &serviceAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(service.Name),
 		DocLines:      docLines,
 	}
 
-	service.Codec = messageAnnotations
-	return messageAnnotations
+	service.Codec = annotations
+	return annotations
 }
