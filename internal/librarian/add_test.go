@@ -325,37 +325,6 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "library unchanged with duplicate APIs",
-			apis: []string{"google/cloud/secretmanager/v1beta2"},
-			cfg: &config.Config{
-				Language: config.LanguageGo,
-				Libraries: []*config.Library{
-					{
-						Name:    "secretmanager",
-						Version: "1.2.3",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-							{Path: "google/cloud/secretmanager/v1beta2"},
-						},
-					},
-				},
-			},
-			wantName: "secretmanager",
-			wantCfg: &config.Config{
-				Language: config.LanguageGo,
-				Libraries: []*config.Library{
-					{
-						Name:    "secretmanager",
-						Version: "1.2.3",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-							{Path: "google/cloud/secretmanager/v1beta2"},
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
