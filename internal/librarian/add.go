@@ -142,7 +142,15 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	}
 	name := deriveLibraryName(cfg.Language, paths[0].Path)
 	existingLib, err := FindLibrary(cfg, name)
-	exists := !errors.Is(err, ErrLibraryNotFound)
+	var exists bool
+	switch {
+	case err == nil:
+		exists = true
+	case errors.Is(err, ErrLibraryNotFound):
+		exists = false
+	default:
+		return "", nil, err
+	}
 	if isPreview {
 		if !exists {
 			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
