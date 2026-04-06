@@ -121,10 +121,10 @@ func TestValidateTools(t *testing.T) {
 
 func TestFormatConfig(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		input    *config.Config
-		got func(*config.Config) []string
-		want     []string
+		name  string
+		input *config.Config
+		got   func(*config.Config) []string
+		want  []string
 	}{
 		{
 			name: "sorts libraries by name",
