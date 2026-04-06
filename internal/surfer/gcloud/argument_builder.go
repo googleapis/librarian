@@ -160,32 +160,15 @@ func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 	// Help text should be documentation of builder.field name.
 	// However, if you have resource id, then you actually want resource.name field.
 	var helpText string
-	switch {
-	case provider.IsCreate(b.method):
-		helpText = fmt.Sprintf("The %s to create.", resourceName)
-	case provider.IsList(b.method):
-		helpText = fmt.Sprintf("The project and location for which to retrieve %s information.", provider.GetPluralFromSegments(segments))
-	default:
-		helpText = fmt.Sprintf("The %s to operate on.", resourceName)
+	if idField != nil {
+		if nameField := provider.FindNameField(resource); nameField != nil {
+			helpText = provider.CleanDocumentation(nameField.Documentation)
+		} else {
+			helpText = provider.CleanDocumentation(b.field.Documentation) // Fallback
+		}
+	} else {
+		helpText = provider.CleanDocumentation(b.field.Documentation)
 	}
-	// if idField != nil {
-	// 	var nameField *api.Field
-	// 	if resource != nil && resource.Self != nil {
-	// 		for _, f := range resource.Self.Fields {
-	// 			if f.Name == "name" {
-	// 				nameField = f
-	// 				break
-	// 			}
-	// 		}
-	// 	}
-	// 	if nameField != nil {
-	// 		helpText = nameField.Documentation
-	// 	} else {
-	// 		helpText = b.field.Documentation // Fallback
-	// 	}
-	// } else {
-	// 	helpText = b.field.Documentation
-	// }
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
 	hostParts := strings.Split(b.service.DefaultHost, ".")

@@ -335,7 +335,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 				},
 			},
 			want: Argument{
-				HelpText:          "The project and location for which to retrieve projects information.",
+				HelpText:          "The parent of the resource.",
 				IsPositional:      false,
 				IsPrimaryResource: true,
 				Required:          true,

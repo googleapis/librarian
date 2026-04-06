@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The location to operate on.
+      - help_text: The parent of the resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:

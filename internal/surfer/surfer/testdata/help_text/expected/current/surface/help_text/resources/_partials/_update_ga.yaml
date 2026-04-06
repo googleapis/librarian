@@ -6,7 +6,11 @@
     description: ""
   arguments:
     params:
-      - help_text: The resource to operate on.
+      - help_text: |-
+          Resource name in the format:
+          ```
+          projects/{project}/locations/{location}/resources/{resource}
+          ```
         is_positional: true
         is_primary_resource: true
         resource_spec:

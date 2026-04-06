@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The project and location for which to retrieve locations information.
+      - help_text: The parent of the resource.
         is_positional: false
         is_primary_resource: true
         resource_spec:

@@ -72,6 +72,30 @@ func TestIsSafeName(t *testing.T) {
 	}
 }
 
+func TestCleanDocumentation(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"NoPrefix", "This is help text.", "This is help text."},
+		{"Required", "Required. This is help text.", "This is help text."},
+		{"Identifier", "Identifier. This is help text.", "This is help text."},
+		{"Both_RequiredFirst", "Required. Identifier. This is help text.", "This is help text."},
+		{"Both_IdentifierFirst", "Identifier. Required. This is help text.", "This is help text."},
+		{"Repeated", "Required. Required. This is help text.", "This is help text."},
+		{"Empty", "", ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := CleanDocumentation(test.in)
+			if got != test.want {
+				t.Errorf("CleanDocumentation(%q) = %q, want %q", test.in, got, test.want)
+			}
+		})
+	}
+}
+
 func TestGetGcloudType_Panic(t *testing.T) {
 	t.Parallel()
 	defer func() {

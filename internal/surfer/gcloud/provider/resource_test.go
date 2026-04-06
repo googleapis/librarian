@@ -661,6 +661,56 @@ func TestGetResourceNameFromType(t *testing.T) {
 	}
 }
 
+func TestFindNameField(t *testing.T) {
+	nameField := api.NewTestField("name")
+	otherField := api.NewTestField("other")
+
+	for _, test := range []struct {
+		name     string
+		resource *api.Resource
+		want     *api.Field
+	}{
+		{
+			name: "HasNameField",
+			resource: &api.Resource{
+				Self: &api.Message{
+					Fields: []*api.Field{otherField, nameField},
+				},
+			},
+			want: nameField,
+		},
+		{
+			name: "NoNameField",
+			resource: &api.Resource{
+				Self: &api.Message{
+					Fields: []*api.Field{otherField},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "NilSelf",
+			resource: &api.Resource{
+				Self: nil,
+			},
+			want: nil,
+		},
+		{
+			name:     "NilResource",
+			resource: nil,
+			want:     nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := FindNameField(test.resource)
+			if got != test.want {
+				t.Errorf("FindNameField() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 // parseResourcePattern converts a resource pattern string into a
 // []api.PathSegment slice for testing. It handles AIP resource patterns
 // (e.g., "projects/{project}/locations/{location}"). Variables

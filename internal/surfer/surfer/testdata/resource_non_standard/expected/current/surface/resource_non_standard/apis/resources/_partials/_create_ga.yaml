@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The resource to create.
+      - help_text: ApiResource name.
         is_positional: true
         is_primary_resource: true
         request_id_field: apiResourceId

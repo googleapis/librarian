@@ -128,6 +128,19 @@ func GetResourceNameFromType(typeStr string) string {
 	return parts[len(parts)-1]
 }
 
+// FindNameField returns the field named "name" from the resource's message definition, if present.
+func FindNameField(resource *api.Resource) *api.Field {
+	if resource == nil || resource.Self == nil {
+		return nil
+	}
+	for _, f := range resource.Self.Fields {
+		if f.Name == "name" {
+			return f
+		}
+	}
+	return nil
+}
+
 // GetResourceForMethod finds the `api.Resource` definition associated with a method.
 // This is a crucial function for linking a method to the resource it operates on.
 func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
