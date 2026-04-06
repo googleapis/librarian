@@ -36,7 +36,5 @@ jobs:
         run: dart --version
       - name: Verify git is available
         run: git --version
-      - name: Run internal/sidekick/dart tests
-        run: go test -race ./internal/sidekick/dart
-      - name: Run internal/librarian/dart tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/librarian/dart
+      - name: Run tests and check coverage
+        run: go run ./tool/cmd/coverage ./internal/sidekick/dart ./internal/librarian/dart

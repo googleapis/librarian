@@ -56,9 +56,6 @@ jobs:
           key: nodejs-tools-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'
-        run: |
-          cp internal/librarian/nodejs/librarian.yaml librarian.yaml
-          librarian -v install
-          rm librarian.yaml
+        run: librarian -v install nodejs
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/nodejs

@@ -76,12 +76,10 @@ type API struct {
 	// publishing section.
 	NewIssueURI string `yaml:"new_issue_uri,omitempty"`
 
-	// NoRESTNumericEnums determines whether to use numeric enums in REST requests.
-	// The "No" prefix is used because the default behavior (when this field is `false` or omitted) is
-	// to generate numeric enums.
-	// Map key is the language name (e.g., "python", "rust").
-	// Optional. If omitted, the generator default is used.
-	NoRESTNumericEnums map[string]bool `yaml:"no_rest_numeric_enums,omitempty"`
+	// SkipRESTNumericEnums lists languages that should not pass the
+	// rest-numeric-enums flag to the generator. The special value "all"
+	// skips it for every language. If empty, all languages use numeric enums.
+	SkipRESTNumericEnums []string `yaml:"skip_rest_numeric_enums,omitempty"`
 
 	// OpenAPI is the file path to an OpenAPI spec, currently in internal/testdata.
 	// This is not an official spec yet and exists only for Rust to validate OpenAPI support.
@@ -132,18 +130,15 @@ func (api *API) Transport(language string) Transport {
 
 // HasRESTNumericEnums reports whether the generator should pass the
 // rest-numeric-enums option for the given language. The default (when
-// NoRESTNumericEnums is empty) is true.
+// SkipRESTNumericEnums is empty) is true.
 func (api *API) HasRESTNumericEnums(language string) bool {
-	if len(api.NoRESTNumericEnums) == 0 {
+	if len(api.SkipRESTNumericEnums) == 0 {
 		return true
 	}
-	if _, ok := api.NoRESTNumericEnums[config.LanguageAll]; ok {
+	if slices.Contains(api.SkipRESTNumericEnums, config.LanguageAll) {
 		return false
 	}
-	if _, ok := api.NoRESTNumericEnums[language]; ok {
-		return false
-	}
-	return true
+	return !slices.Contains(api.SkipRESTNumericEnums, language)
 }
 
 // ReleaseLevel gets the release level for a given language.
