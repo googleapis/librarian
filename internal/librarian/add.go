@@ -159,10 +159,10 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
-		if cfg.Language == config.LanguageGo {
-			return updateExistingLibrary(cfg, existingLib, paths)
+		if cfg.Language != config.LanguageGo {
+			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 		}
-		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		return updateExistingLibrary(cfg, existingLib, paths)
 	}
 	return addNewLibrary(cfg, paths, name)
 }
