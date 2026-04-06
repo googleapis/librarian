@@ -21,17 +21,29 @@ import (
 )
 
 func TestInstall(t *testing.T) {
-	bin := t.TempDir()
-	// The fake git stub creates the directory structure that
-	// installGapicGeneratorTypescript expects after cloning.
-	gitStub := `#!/bin/sh
-for last; do true; done
-mkdir -p "$last/generator/gapic-generator-typescript"
-`
-	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(gitStub), 0o755); err != nil {
-		t.Fatal(err)
+	// Pre-populate the fetch cache so fetch.Repo returns immediately
+	// without downloading the tarball over the network.
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	genDir := filepath.Join(cache,
+		"github.com/googleapis/google-cloud-node@2ac5cf7a0dfb759be33ce24a40aae5b543ee375c",
+		gapicGeneratorSubdir)
+	for _, sub := range []string{"templates", "protos"} {
+		if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+
+	// Stub npm so "npm install" and "npm link" are no-ops. The npm stub
+	// also creates node_modules/.bin/tsc in the working directory so the
+	// subsequent "./node_modules/.bin/tsc" build step finds an executable.
+	bin := t.TempDir()
+	npmStub := `#!/bin/sh
+mkdir -p node_modules/.bin
+printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
+chmod +x node_modules/.bin/tsc
+`
+	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {
