@@ -18,5 +18,4 @@ type modelAnnotations struct {
 	CopyrightYear string
 	BoilerPlate   []string
 	PackageName   string
-	Files         []string
 }

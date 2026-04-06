@@ -81,7 +81,7 @@ func runUpgrade(ctx context.Context, repoDir string) (string, error) {
 }
 
 func getLibrarianVersionAtMain(ctx context.Context) (string, error) {
-	output, err := command.Output(ctx, "go", "list", "-m", "-json", "github.com/googleapis/librarian@main")
+	output, err := command.Output(ctx, command.Go, "list", "-m", "-json", "github.com/googleapis/librarian@main")
 	if err != nil {
 		return "", fmt.Errorf("go list: %w", err)
 	}

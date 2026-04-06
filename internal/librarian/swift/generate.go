@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -42,6 +43,11 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return err
 	}
 	return sidekickswift.Generate(ctx, model, library.Output, modelConfig)
+}
+
+// Format formats a generated Swift library.
+func Format(ctx context.Context, library *config.Library) error {
+	return command.Run(ctx, "swift-format", "format", "--in-place", "--recursive", library.Output)
 }
 
 // DefaultLibraryName derives a library name from an API path.

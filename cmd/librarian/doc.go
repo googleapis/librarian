@@ -98,11 +98,17 @@ GLOBAL OPTIONS:
 
 NAME:
 
-	librarian install - install dependencies for the current language
+	librarian install - install tool dependencies for a language
 
 USAGE:
 
-	librarian install
+	librarian install [language]
+
+DESCRIPTION:
+
+	Install tool dependencies for the given language.
+	If no language is provided, the language is determined
+	from librarian.yaml in the current directory.
 
 OPTIONS:
 

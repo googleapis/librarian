@@ -43,10 +43,12 @@ type postProcessParams struct {
 	includeSamples      bool
 }
 
-func (p postProcessParams) gapicDir() string     { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string      { return filepath.Join(p.outDir, p.version, "grpc") }
-func (p postProcessParams) protoDir() string     { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) modules() javaModules { return DeriveModuleNames(p.library.Name, p.version) }
+func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
+func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
+func (p postProcessParams) coords() apiCoord {
+	return deriveAPICoord(deriveLibCoord(p.library), p.version)
+}
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
@@ -79,8 +81,8 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
-	modules := p.modules()
-	protoModuleRoot := filepath.Join(p.outDir, modules.Proto)
+	coords := p.coords()
+	protoModuleRoot := filepath.Join(p.outDir, coords.proto.ArtifactID)
 	if err := generateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
@@ -124,24 +126,6 @@ func buildLicenseText(year int) string {
 	}
 	b.WriteString(" */\n")
 	return b.String()
-}
-
-// javaModules contains the Maven artifact IDs for the GAPIC, Proto, and gRPC modules.
-type javaModules struct {
-	Gapic string // e.g., google-cloud-secretmanager
-	Proto string // e.g., proto-google-cloud-secretmanager-v1
-	Grpc  string // e.g., grpc-google-cloud-secretmanager-v1
-}
-
-// DeriveModuleNames returns the Maven artifact IDs for the library's modules.
-// TODO(https://github.com/googleapis/librarian/issues/5050): do not need to export after migrate is done.
-func DeriveModuleNames(libraryID, version string) javaModules {
-	name := ensureCloudPrefix(libraryID)
-	return javaModules{
-		Gapic: name,
-		Proto: fmt.Sprintf("%s%s-%s", protoPrefix, name, version),
-		Grpc:  fmt.Sprintf("%s%s-%s", grpcPrefix, name, version),
-	}
 }
 
 func removeConflictingFiles(protoSrcDir string) error {
@@ -192,7 +176,7 @@ func restructure(actions []moveAction) error {
 // tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
 // It also copies the relevant proto files into the proto module.
 func restructureModules(p postProcessParams, destRoot string) error {
-	modules := p.modules()
+	coords := p.coords()
 	tempProtoSrcDir := p.protoDir()
 	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 		return err
@@ -200,27 +184,27 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, modules.Proto, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
 			description: "proto source",
 		},
 		{
 			src:         p.grpcDir(),
-			dest:        filepath.Join(destRoot, modules.Grpc, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.grpc.ArtifactID, "src", "main", "java"),
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, modules.Gapic, "src", "main"),
+			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "main"),
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, modules.Gapic, "src", "test"),
+			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "test"),
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, modules.Proto, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
 			description: "resource name source",
 		},
 	}
@@ -235,7 +219,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, modules.Proto, "src", "main", "proto")
+	protoFilesDestDir := filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}

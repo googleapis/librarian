@@ -287,6 +287,131 @@ func TestAddLibrary(t *testing.T) {
 	}
 }
 
+func TestAddLibrary_ExistingLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		apis     []string
+		cfg      *config.Config
+		wantName string
+		wantCfg  *config.Config
+	}{
+		{
+			name: "update existing library",
+			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+				},
+			},
+			wantName: "secretmanager",
+			wantCfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			gotName, gotCfg, err := addLibrary(test.cfg, test.apis...)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantName, gotName); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantCfg, gotCfg); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		apis    []string
+		cfg     *config.Config
+		wantErr error
+	}{
+		{
+			name: "fail if api already exists",
+			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errAPIAlreadyExists,
+		},
+		{
+			name: "fail if api duplicated",
+			apis: []string{
+				"google/cloud/secretmanager/v1beta2",
+				"google/cloud/secretmanager/v1beta2",
+			},
+			wantErr: errAPIDuplicate,
+		},
+		{
+			name: "python doesn't support updating existing library",
+			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+			wantErr: errLibraryAlreadyExists,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			_, _, err := addLibrary(test.cfg, test.apis...)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("expected error %v, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
+
 func TestAddLibrary_Preview(t *testing.T) {
 	for _, test := range []struct {
 		name             string
@@ -448,7 +573,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.2.3",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
 						SourceRoots:   []string{"existing"},
 					},
 				},
@@ -480,7 +605,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.2.3",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
 						SourceRoots:   []string{"existing"},
 					},
 					{
@@ -488,7 +613,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "0.1.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/new/v1"}},
 						SourceRoots:   []string{"new"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -503,8 +628,8 @@ func TestSyncToStateYAML(t *testing.T) {
 			},
 			cfg: &config.Config{
 				Libraries: []*config.Library{
-					{Name: "lib-b", Version: "1.0.0"},
-					{Name: "lib-a", Version: "2.0.0"},
+					{Name: "lib-b", Version: "1.0.0", APIs: []*config.API{{Path: "google/cloud/lib-b/v1"}}},
+					{Name: "lib-a", Version: "2.0.0", APIs: []*config.API{{Path: "google/cloud/lib-a/v1"}}},
 				},
 			},
 			wantState: &legacyconfig.LibrarianState{
@@ -515,7 +640,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "2.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
 						SourceRoots:   []string{"lib-a"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -524,7 +649,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-b/v1"}},
 						SourceRoots:   []string{"lib-b"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -541,7 +666,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "2.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
 						SourceRoots:   []string{"lib-a"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -550,7 +675,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-b/v1"}},
 						SourceRoots:   []string{"lib-b"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -558,8 +683,8 @@ func TestSyncToStateYAML(t *testing.T) {
 			},
 			cfg: &config.Config{
 				Libraries: []*config.Library{
-					{Name: "lib-b", Version: "1.0.0"},
-					{Name: "lib-a", Version: "2.0.0"},
+					{Name: "lib-b", Version: "1.0.0", APIs: []*config.API{{Path: "google/cloud/lib-b/v1"}}},
+					{Name: "lib-a", Version: "2.0.0", APIs: []*config.API{{Path: "google/cloud/lib-a/v1"}}},
 				},
 			},
 			wantState: &legacyconfig.LibrarianState{
@@ -570,7 +695,7 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "2.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
 						SourceRoots:   []string{"lib-a"},
 						TagFormat:     "{id}/v{version}",
 					},
@@ -579,9 +704,51 @@ func TestSyncToStateYAML(t *testing.T) {
 						Version:       "1.0.0",
 						PreserveRegex: []string{},
 						RemoveRegex:   []string{},
-						APIs:          []*legacyconfig.API{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-b/v1"}},
 						SourceRoots:   []string{"lib-b"},
 						TagFormat:     "{id}/v{version}",
+					},
+				},
+			},
+		},
+		{
+			name: "add an api to an existing library",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/lib-a/v1"}},
+						SourceRoots:   []string{"lib-a"},
+						TagFormat:     "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name:    "lib-a",
+						Version: "2.0.0",
+						APIs:    []*config.API{{Path: "google/cloud/lib-a/v1"}, {Path: "google/cloud/lib-a/v2"}}},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "lib-a",
+						Version:       "2.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs: []*legacyconfig.API{
+							{Path: "google/cloud/lib-a/v1"},
+							{Path: "google/cloud/lib-a/v2"},
+						},
+						SourceRoots: []string{"lib-a"},
+						TagFormat:   "{id}/v{version}",
 					},
 				},
 			},

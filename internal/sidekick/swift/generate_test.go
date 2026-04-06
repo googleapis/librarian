@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
@@ -37,8 +38,8 @@ func TestFromProtobuf(t *testing.T) {
 
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
-		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-		SpecificationSource: "google/cloud/secretmanager/v1",
+		ServiceConfig:       "google/type/type.yaml",
+		SpecificationSource: "google/type",
 		Source: &sources.SourceConfig{
 			Sources: &sources.Sources{
 				Googleapis: filepath.Join(testdataDir, "googleapis"),
@@ -46,7 +47,7 @@ func TestFromProtobuf(t *testing.T) {
 			ActiveRoots: []string{"googleapis"},
 		},
 		Codec: map[string]string{
-			"copyright-year":      "2026",
+			"copyright-year":      "2038",
 			"not-for-publication": "true",
 			"version":             "0.1.0",
 			"skip-format":         "true",
@@ -66,5 +67,33 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	if stat.Mode().Perm()|0666 != 0666 {
 		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
+	}
+}
+
+func TestGenerateMessageFiles(t *testing.T) {
+	outDir := t.TempDir()
+
+	secret := &api.Message{Name: "Secret", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Secret"}
+	volume := &api.Message{Name: "Volume", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Volume"}
+
+	model := api.NewTestAPI([]*api.Message{secret, volume}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	for _, expected := range []string{"Secret.swift", "Volume.swift"} {
+		filename := filepath.Join(expectedDir, expected)
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
 	}
 }

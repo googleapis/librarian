@@ -802,7 +802,7 @@ func toPascal(symbol string) string {
 	if symbol == "" {
 		return ""
 	}
-	// The Rust style guide frowns on all upppercase for struct names, even if
+	// The Rust style guide frowns on all uppercase for struct names, even if
 	// they are acronyms (consider `IAM`). In such cases we must use the normal
 	// mapping.
 	if strings.ToUpper(symbol) == symbol {
@@ -845,7 +845,7 @@ func isMultiLineListItem(lines []string, index int) bool {
 }
 
 // fixSetextHeadings avoids [setext headers] that were intended to be list
-// items, which may result from the discovery documentation pipepline.
+// items, which may result from the discovery documentation pipeline.
 //
 // [setext headers]: https://spec.commonmark.org/0.20/#setext-header
 func fixSetextHeadings(input string) string {

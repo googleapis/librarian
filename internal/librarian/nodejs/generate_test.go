@@ -523,8 +523,8 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Error("expected owl-bot-staging to be removed after post-processing")
 	}
 
-	if _, err := os.Stat(filepath.Join(outDir, "librarian-ran.txt")); err != nil {
-		t.Errorf("expected librarian.js to run and create librarian-ran.txt: %v", err)
+	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {
+		t.Errorf("expected librarian.js to run and create librarian-ran.txt in repoRoot: %v", err)
 	}
 
 	content, err := os.ReadFile(readmePath)
@@ -1028,5 +1028,44 @@ func TestWriteRepoMetadata_NoAPIs(t *testing.T) {
 	library := &config.Library{Name: "google-cloud-test"}
 	if err := writeRepoMetadata(cfg, library, "", t.TempDir()); err != nil {
 		t.Errorf("expected nil error for library with no APIs, got: %v", err)
+	}
+}
+
+func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+	testhelper.RequireCommand(t, "node")
+	testhelper.RequireCommand(t, "npx")
+	repoRoot := t.TempDir()
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		Keep: []string{"librarian.js"},
+	}
+
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// This script uses a path relative to the repository root.
+	// This only works if the script is executed from repoRoot.
+	relPath := filepath.Join("packages", library.Name, "output.txt")
+	script := fmt.Sprintf("const fs = require('fs');\nfs.writeFileSync('%s', 'success');\n", relPath)
+
+	librarianJS := filepath.Join(outDir, "librarian.js")
+	if err := os.WriteFile(librarianJS, []byte(script), 0644); err != nil {
+		t.Fatal(err)
+	}
+	createStagingFixture(t, repoRoot, library.Name, []string{"v1"})
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	// The file should have been created at outDir/output.txt
+	if _, err := os.Stat(filepath.Join(outDir, "output.txt")); err != nil {
+		t.Errorf("expected librarian.js to create output.txt using root-relative path: %v", err)
 	}
 }

@@ -19,73 +19,22 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
-	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestModelAnnotations(t *testing.T) {
-	cfg := &parser.ModelConfig{
-		SpecificationFormat: libconfig.SpecProtobuf,
-		SpecificationSource: "../../testdata/googleapis/google/type",
-		Source: &sources.SourceConfig{
-			IncludeList: []string{"f1.proto", "f2.proto"},
-		},
-		Codec: map[string]string{
-			"copyright-year": "2026",
-		},
-	}
 	model := api.NewTestAPI(
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
-	codec := newCodec(cfg)
-	if err := codec.annotateModel(model, cfg); err != nil {
+	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
+	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{
 		PackageName:   "GoogleCloudWorkflowsV1",
-		CopyrightYear: "2026",
-		Files: []string{
-			"../../testdata/googleapis/google/type/f1.proto",
-			"../../testdata/googleapis/google/type/f2.proto",
-		},
+		CopyrightYear: "2038",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch in model annotations (-want, +got)\n:%s", diff)
-	}
-}
-
-func TestRelativeFilenames(t *testing.T) {
-	tests := []struct {
-		name       string
-		rootSource string
-		files      []string
-		want       []string
-	}{
-		{
-			name:       "empty root source",
-			rootSource: "",
-			files:      []string{"google/api/expr.proto", "google/api/test-only.proto"},
-			want:       []string{"google/api/expr.proto", "google/api/test-only.proto"},
-		},
-		{
-			name:       "non-empty root source",
-			rootSource: "/root/googleapis",
-			files:      []string{"/root/googleapis/google/api/expr.proto", "/root/googleapis/google/api/test-only.proto"},
-			want:       []string{"google/api/expr.proto", "google/api/test-only.proto"},
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := relativeFilenames(tt.rootSource, tt.files)
-			if err != nil {
-				t.Fatalf("relativeFilenames() error = %v", err)
-			}
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("relativeFilenames() mismatch (-want, +got):\n%s", diff)
-			}
-		})
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

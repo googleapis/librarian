@@ -1,0 +1,38 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# TODO(https://github.com/googleapis/librarian/issues/4848): move this file to
+# github.com/googleapis/google-cloud-node after the repository has migrated to
+# librarian.
+language: nodejs
+tools:
+  npm:
+    # TODO(https://github.com/googleapis/librarian/issues/4904): use the version
+    # of gapic-generator-typescript in google-cloud-node.
+    - name: gapic-generator-typescript
+      version: "76ba85a7f55c6e82943008b4eceb07a0f58b39e1"
+      package: "https://github.com/googleapis/google-cloud-node-core/archive/76ba85a7f55c6e82943008b4eceb07a0f58b39e1.tar.gz"
+      checksum: "9561a116203761bad63bf1a0abc7a4a0db67608683c3d67b45abfc394df612ac"
+      build:
+        - "npm install"
+        - "npm run compile"
+        - "npm link"
+    - name: gapic-node-processing
+      version: "0.1.7"
+    - name: gapic-tools
+      version: "1.0.5"
+  pip:
+    - name: synthtool
+      version: "5aa438a342707842d11fbbb302c6277fbf9e4655"
+      package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@5aa438a342707842d11fbbb302c6277fbf9e4655"

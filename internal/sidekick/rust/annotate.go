@@ -593,7 +593,7 @@ type enumAnnotation struct {
 	// this is basically `QualifiedName`. For messages in the current package
 	// this includes `modelAnnotations.PackageName`.
 	NameInExamples string
-	// There's a missmatch between the sidekick model representation of wkt::NullValue
+	// There's a mismatch between the sidekick model representation of wkt::NullValue
 	// and the representation in Rust. We us this for sample generation.
 	IsWktNullValue bool
 	// If set, this enum is only enabled when some features are enabled
@@ -1378,7 +1378,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		ann.OtherFieldsInGroup = language.FilterSlice(field.Group.Fields, func(f *api.Field) bool { return field != f })
 	}
 	ann.FieldTypeIsParentType = (field.MessageType == message || // Single or repeated field whose type is the same as the containing type.
-		// Map field whose value type is the same as the conaining type.
+		// Map field whose value type is the same as the containing type.
 		(ann.ValueField != nil && ann.ValueField.MessageType == message))
 	if !ann.FieldTypeIsParentType && // When the type of the field is the same as the containing type we don't import twice. No alias needed.
 		// Single or repeated field whose type's unqualified name is the same as the containing message's.

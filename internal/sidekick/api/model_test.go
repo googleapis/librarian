@@ -165,7 +165,7 @@ func TestRoutingCombosFull(t *testing.T) {
 	}
 }
 
-func TestRoutingInfoVarianFieldName(t *testing.T) {
+func TestRoutingInfoVariantFieldName(t *testing.T) {
 	variant := &RoutingInfoVariant{
 		FieldPath: []string{"request", "b", "c"},
 	}
@@ -249,5 +249,42 @@ func TestPathBindingHeuristic(t *testing.T) {
 
 	if binding.TargetResource.FieldPaths[0][0] != "project" {
 		t.Errorf("expected project, got %s", binding.TargetResource.FieldPaths[0][0])
+	}
+}
+
+func TestTypezString(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		t    Typez
+		want string
+	}{
+		{"UNDEFINED", UNDEFINED_TYPE, "UNDEFINED"},
+		{"DOUBLE", DOUBLE_TYPE, "DOUBLE"},
+		{"FLOAT", FLOAT_TYPE, "FLOAT"},
+		{"INT64", INT64_TYPE, "INT64"},
+		{"UINT64", UINT64_TYPE, "UINT64"},
+		{"INT32", INT32_TYPE, "INT32"},
+		{"FIXED64", FIXED64_TYPE, "FIXED64"},
+		{"FIXED32", FIXED32_TYPE, "FIXED32"},
+		{"BOOL", BOOL_TYPE, "BOOL"},
+		{"STRING", STRING_TYPE, "STRING"},
+		{"GROUP", GROUP_TYPE, "GROUP"},
+		{"MESSAGE", MESSAGE_TYPE, "MESSAGE"},
+		{"BYTES", BYTES_TYPE, "BYTES"},
+		{"UINT32", UINT32_TYPE, "UINT32"},
+		{"ENUM", ENUM_TYPE, "ENUM"},
+		{"SFIXED32", SFIXED32_TYPE, "SFIXED32"},
+		{"SFIXED64", SFIXED64_TYPE, "SFIXED64"},
+		{"SINT32", SINT32_TYPE, "SINT32"},
+		{"SINT64", SINT64_TYPE, "SINT64"},
+		{"Default", Typez(99), "Typez(99)"},
+		{"Negative", Typez(-1), "Typez(-1)"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.t.String()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

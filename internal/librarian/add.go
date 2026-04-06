@@ -38,6 +38,8 @@ import (
 
 var (
 	errLibraryAlreadyExists      = errors.New("library already exists in config")
+	errAPIAlreadyExists          = errors.New("api already exists in library")
+	errAPIDuplicate              = errors.New("api duplicate in input")
 	errMissingAPI                = errors.New("must provide at least one API")
 	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
 	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
@@ -133,44 +135,62 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	if mixed {
 		return "", nil, errMixedPreviewAndNonPreview
 	}
-
 	paths := make([]*config.API, 0, len(apis))
+	seen := make(map[string]bool)
 	for _, a := range apis {
 		if isPreview {
 			a = strings.TrimPrefix(a, "preview/")
 		}
+		if seen[a] {
+			return "", nil, fmt.Errorf("%w: %s", errAPIDuplicate, a)
+		}
+		seen[a] = true
 		paths = append(paths, &config.API{Path: a})
 	}
-
 	name := deriveLibraryName(cfg.Language, paths[0].Path)
-
+	existingLib, err := FindLibrary(cfg, name)
+	var exists bool
+	switch {
+	case err == nil:
+		exists = true
+	case errors.Is(err, ErrLibraryNotFound):
+		exists = false
+	default:
+		return "", nil, err
+	}
 	if isPreview {
-		lib, err := FindLibrary(cfg, name)
-		if err != nil {
+		if !exists {
 			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
 		}
-		if lib.Preview != nil {
-			return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
-		}
-		lib.Preview = &config.Library{
-			APIs: paths,
-		}
-		return name, cfg, nil
+		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
-
-	exists := slices.ContainsFunc(cfg.Libraries, func(lib *config.Library) bool {
-		return lib.Name == name
-	})
 	if exists {
-		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		if cfg.Language != config.LanguageGo {
+			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
+		}
+		return updateExistingLibrary(cfg, existingLib, paths)
 	}
+	return addNewLibrary(cfg, paths, name)
+}
 
+// addPreviewLibrary adds a new preview library to the config.
+func addPreviewLibrary(cfg *config.Config, lib *config.Library, apis []*config.API, name string) (string, *config.Config, error) {
+	if lib.Preview != nil {
+		return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
+	}
+	lib.Preview = &config.Library{
+		APIs: apis,
+	}
+	return name, cfg, nil
+}
+
+// addNewLibrary adds a new library to the config.
+func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string, *config.Config, error) {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-		APIs:          paths,
+		APIs:          apis,
 	}
-
 	switch cfg.Language {
 	case config.LanguageGo:
 		lib = golang.Add(lib)
@@ -179,12 +199,21 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 	case config.LanguageFake:
 		lib = fakeAdd(lib, defaultVersion)
 	}
-
 	cfg.Libraries = append(cfg.Libraries, lib)
 	sort.Slice(cfg.Libraries, func(i, j int) bool {
 		return cfg.Libraries[i].Name < cfg.Libraries[j].Name
 	})
 	return name, cfg, nil
+}
+
+func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
+	for _, api := range apis {
+		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
+			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
+		}
+	}
+	existingLib.APIs = append(existingLib.APIs, apis...)
+	return existingLib.Name, cfg, nil
 }
 
 // syncToStateYAML updates the .librarian/state.yaml with any new libraries.
@@ -195,10 +224,21 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 		return err
 	}
 	for _, lib := range cfg.Libraries {
-		if state.LibraryByID(lib.Name) != nil {
+		legacyLib := state.LibraryByID(lib.Name)
+		if legacyLib == nil {
+			// Add a new library
+			state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
 			continue
 		}
-		state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
+		existingAPIs := make(map[string]bool)
+		for _, api := range legacyLib.APIs {
+			existingAPIs[api.Path] = true
+		}
+		for _, api := range lib.APIs {
+			if !existingAPIs[api.Path] {
+				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
+			}
+		}
 	}
 	sort.Slice(state.Libraries, func(i, j int) bool {
 		return state.Libraries[i].ID < state.Libraries[j].ID
@@ -207,9 +247,14 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 }
 
 func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
+	for _, api := range lib.APIs {
+		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
+	}
 	return &legacyconfig.LibraryState{
 		ID:          lib.Name,
 		Version:     lib.Version,
+		APIs:        libAPIs,
 		SourceRoots: []string{lib.Name},
 		TagFormat:   "{id}/v{version}",
 	}

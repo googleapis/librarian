@@ -35,13 +35,13 @@ const (
 )
 
 func TestRun(t *testing.T) {
-	if err := Run(t.Context(), "go", "version"); err != nil {
+	if err := Run(t.Context(), Go, "version"); err != nil {
 		t.Fatal(err)
 	}
 }
 
 func TestRunError(t *testing.T) {
-	err := Run(t.Context(), "go", invalidSubcommand)
+	err := Run(t.Context(), Go, invalidSubcommand)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -52,7 +52,7 @@ func TestRunError(t *testing.T) {
 
 func TestRunInDir(t *testing.T) {
 	dir := t.TempDir()
-	if err := RunInDir(t.Context(), dir, "go", "mod", "init", "example.com/foo"); err != nil {
+	if err := RunInDir(t.Context(), dir, Go, "mod", "init", "example.com/foo"); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, "go.mod")); err != nil {
@@ -90,7 +90,7 @@ func TestRunWithEnv_VariableNotSetFailsValidation(t *testing.T) {
 }
 
 func TestOutput(t *testing.T) {
-	got, err := Output(t.Context(), "go", "version")
+	got, err := Output(t.Context(), Go, "version")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +100,7 @@ func TestOutput(t *testing.T) {
 }
 
 func TestOutput_Error(t *testing.T) {
-	_, err := Output(t.Context(), "go", invalidSubcommand)
+	_, err := Output(t.Context(), Go, invalidSubcommand)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}
@@ -179,7 +179,7 @@ func TestVerbose(t *testing.T) {
 			Verbose = test.verbose
 			var outBuf bytes.Buffer
 			stdout = &outBuf
-			if err := Run(t.Context(), "go", "version"); err != nil {
+			if err := Run(t.Context(), Go, "version"); err != nil {
 				t.Fatal(err)
 			}
 			got := outBuf.String()
@@ -246,7 +246,7 @@ func TestRunStreaming(t *testing.T) {
 }
 
 func TestRunStreaming_Error(t *testing.T) {
-	err := RunStreaming(t.Context(), "go", invalidSubcommand)
+	err := RunStreaming(t.Context(), Go, invalidSubcommand)
 	if err == nil {
 		t.Fatal("expected error, got nil")
 	}

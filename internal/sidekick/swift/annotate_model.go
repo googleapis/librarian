@@ -15,42 +15,20 @@
 package swift
 
 import (
-	"path/filepath"
-
 	"github.com/googleapis/librarian/internal/license"
-	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/parser"
-	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 )
 
-func (codec *codec) annotateModel(model *api.API, cfg *parser.ModelConfig) error {
-	rootSource := cfg.Source.Root(codec.RootName)
-	files, err := protobuf.DetermineInputFiles(cfg.SpecificationSource, cfg.Source)
-	if err != nil {
-		return err
-	}
-	files, err = relativeFilenames(rootSource, files)
-	if err != nil {
-		return err
-	}
-
+func (codec *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear: codec.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   PackageName(model, codec.PackageName),
-		Files:         files,
+		PackageName:   codec.PackageName,
 	}
-	model.Codec = annotations
-	return nil
-}
-
-func relativeFilenames(rootSource string, files []string) ([]string, error) {
-	for i, f := range files {
-		rel, err := filepath.Rel(rootSource, f)
-		if err != nil {
-			return nil, err
+	codec.Model.Codec = annotations
+	for _, message := range codec.Model.Messages {
+		if _, err := codec.annotateMessage(message, annotations); err != nil {
+			return err
 		}
-		files[i] = rel
 	}
-	return files, nil
+	return nil
 }

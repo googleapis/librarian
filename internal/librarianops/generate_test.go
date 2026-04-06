@@ -31,7 +31,7 @@ func TestGenerateCommand(t *testing.T) {
 	// Build the librarian binary from local source to avoid downloading
 	// a published module version during tests.
 	librarianBin := filepath.Join(t.TempDir(), "librarian")
-	if err := command.Run(t.Context(), "go", "build", "-o", librarianBin, "../../cmd/librarian"); err != nil {
+	if err := command.Run(t.Context(), command.Go, "build", "-o", librarianBin, "../../cmd/librarian"); err != nil {
 		t.Fatal(err)
 	}
 

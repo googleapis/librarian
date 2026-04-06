@@ -195,6 +195,12 @@ func formatConfig(cfg *config.Config) *config.Config {
 		slices.SortFunc(cfg.Tools.Cargo, func(a, b *config.CargoTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})
+		slices.SortFunc(cfg.Tools.NPM, func(a, b *config.NPMTool) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+		slices.SortFunc(cfg.Tools.Pip, func(a, b *config.PipTool) int {
+			return strings.Compare(a.Name, b.Name)
+		})
 	}
 	if cfg.Default != nil && cfg.Default.Rust != nil {
 		slices.SortFunc(cfg.Default.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {

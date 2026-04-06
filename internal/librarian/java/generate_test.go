@@ -89,9 +89,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageJava: serviceconfig.GRPCRest,
 				},
-				NoRESTNumericEnums: map[string]bool{
-					config.LanguageJava: true,
-				},
+				SkipRESTNumericEnums: []string{config.LanguageJava},
 			},
 			want: []string{
 				"metadata",
@@ -127,48 +125,6 @@ func TestResolveGAPICOptions(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDeriveDistributionName(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    string
-	}{
-		{
-			name:    "default case",
-			library: &config.Library{Name: "secretmanager"},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
-		{
-			name: "groupID override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.custom"},
-			},
-			want: "com.custom:google-cloud-secretmanager",
-		},
-		{
-			name: "distributionName override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
-			},
-			want: "com.google.cloud:google-cloud-secretmanager-v1",
-		},
-		{
-			name:    "library name already has prefix",
-			library: &config.Library{Name: "google-cloud-secretmanager"},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := DeriveDistributionName(test.library)
-			if got != test.want {
-				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
 			}
 		})
 	}

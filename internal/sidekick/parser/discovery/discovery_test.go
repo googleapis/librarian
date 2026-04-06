@@ -97,7 +97,7 @@ func TestBadParse(t *testing.T) {
 		{"unknown schema", `{"schemas": {"Bad": {"type": "unknown"}}}`},
 		{"schema must be object", `{"schemas": {"mustBeObject": {"type": "string"}}}`},
 		{"schema is ref", `{"schemas": {"cannotBeRef": {"$ref": "AnotherSchema"}}}`},
-		{"property parse", `{"schemas": {"badProperty": {"properties": {"typeShouldbeString": {"type": 123}}}}}`},
+		{"property parse", `{"schemas": {"badProperty": {"properties": {"typeShouldBeString": {"type": 123}}}}}`},
 		{"property with unknown schema", `{"schemas": {"badProperty": {"type": "object", "properties": {"bad": {"type": "unknown"}}}}}`},
 		{"property with bad array", `{"schemas": {"badProperty": {"type": "object", "properties": {"badArray": {"type": "array"}}}}}`},
 		{"property with bad array", `{"schemas": {"badProperty": {"type": "object", "properties": {"badItem": {"type": "array", "items": {"$ref": "notFound"}}}}}}`},

@@ -20,7 +20,19 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 )
 
-// Install installs Go tool dependencies defined in the go.mod tool directive.
+var tools = []string{
+	"github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.57.0",
+	"golang.org/x/tools/cmd/goimports@latest",
+	"google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0",
+	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
+}
+
+// Install installs the tools required for Go library generation.
 func Install(ctx context.Context) error {
-	return command.Run(ctx, "go", "install", "tool")
+	for _, tool := range tools {
+		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
+			return err
+		}
+	}
+	return nil
 }
