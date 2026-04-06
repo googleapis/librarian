@@ -70,6 +70,17 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "absolute library output with trailing slash is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager/",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace",
+			},
+		},
+		{
 			name: "root module does not change",
 			library: &config.Library{
 				Name:   "root-module",

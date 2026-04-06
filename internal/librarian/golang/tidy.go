@@ -27,8 +27,9 @@ func Tidy(library *config.Library) *config.Library {
 	if library.Name == rootModule {
 		return library
 	}
-	if strings.HasSuffix(library.Output, library.Name) {
-		library.Output = removeLibraryNameFromOutput(library.Output, library.Name)
+	cleanedOutput := filepath.ToSlash(filepath.Clean(library.Output))
+	if strings.HasSuffix(cleanedOutput, library.Name) {
+		library.Output = removeLibraryNameFromOutput(cleanedOutput, library.Name)
 	}
 	if library.Go == nil {
 		return library
