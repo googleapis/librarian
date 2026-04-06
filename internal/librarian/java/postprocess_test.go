@@ -405,11 +405,11 @@ func TestAddMissingHeaders(t *testing.T) {
 	}
 }
 
-func TestDeriveGAPICCoordinates(t *testing.T) {
+func TestDeriveLibCoords(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		want    coordinates
+		want    libCoords
 	}{
 		{
 			name: "default case",
@@ -417,10 +417,22 @@ func TestDeriveGAPICCoordinates(t *testing.T) {
 				Name:    "secretmanager",
 				Version: "1.2.3",
 			},
-			want: coordinates{
-				GroupID:    "com.google.cloud",
-				ArtifactID: "google-cloud-secretmanager",
-				Version:    "1.2.3",
+			want: libCoords{
+				gapic: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					Version:    "1.2.3",
+				},
+				parent: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager-parent",
+					Version:    "1.2.3",
+				},
+				bom: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager-bom",
+					Version:    "1.2.3",
+				},
 			},
 		},
 		{
@@ -432,36 +444,50 @@ func TestDeriveGAPICCoordinates(t *testing.T) {
 					DistributionNameOverride: "com.google.cloud:google-secretmanager",
 				},
 			},
-			want: coordinates{
-				GroupID:    "com.google.cloud",
-				ArtifactID: "google-secretmanager",
-				Version:    "1.2.3",
+			want: libCoords{
+				gapic: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-secretmanager",
+					Version:    "1.2.3",
+				},
+				parent: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-secretmanager-parent",
+					Version:    "1.2.3",
+				},
+				bom: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-secretmanager-bom",
+					Version:    "1.2.3",
+				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveGAPICCoordinates(test.library)
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			got := deriveLibCoords(test.library)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(libCoords{}, coordinates{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestDeriveModuleNames(t *testing.T) {
+func TestDeriveAPICoords(t *testing.T) {
 	for _, test := range []struct {
 		name      string
-		gapic     coordinates
+		lc        libCoords
 		version   string
 		wantProto coordinates
 		wantGrpc  coordinates
 	}{
 		{
 			name: "standard cloud mapping",
-			gapic: coordinates{
-				GroupID:    "com.google.cloud",
-				ArtifactID: "google-cloud-secretmanager",
-				Version:    "1.2.3",
+			lc: libCoords{
+				gapic: coordinates{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					Version:    "1.2.3",
+				},
 			},
 			version: "v1",
 			wantProto: coordinates{
@@ -477,10 +503,12 @@ func TestDeriveModuleNames(t *testing.T) {
 		},
 		{
 			name: "non-cloud mapping",
-			gapic: coordinates{
-				GroupID:    "com.google.maps",
-				ArtifactID: "google-maps-places",
-				Version:    "1.2.3",
+			lc: libCoords{
+				gapic: coordinates{
+					GroupID:    "com.google.maps",
+					ArtifactID: "google-maps-places",
+					Version:    "1.2.3",
+				},
 			},
 			version: "v1",
 			wantProto: coordinates{
@@ -496,11 +524,11 @@ func TestDeriveModuleNames(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveModuleCoordinates(test.gapic, test.version)
-			if diff := cmp.Diff(test.wantProto, got.proto); diff != "" {
+			got := deriveAPICoords(test.lc, test.version)
+			if diff := cmp.Diff(test.wantProto, got.proto, cmp.AllowUnexported(coordinates{})); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantGrpc, got.grpc); diff != "" {
+			if diff := cmp.Diff(test.wantGrpc, got.grpc, cmp.AllowUnexported(coordinates{})); diff != "" {
 				t.Errorf("grpc mismatch (-want +got):\n%s", diff)
 			}
 		})
