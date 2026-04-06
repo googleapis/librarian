@@ -150,7 +150,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
-		return "", nil, errLibraryAlreadyExists
+		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 	}
 	return addNewLibrary(cfg, paths, name)
 }
@@ -166,6 +166,7 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, apis []*config.A
 	return name, cfg, nil
 }
 
+// addNewLibrary adds a new library to the config.
 func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string, *config.Config, error) {
 	lib := &config.Library{
 		Name:          name,
