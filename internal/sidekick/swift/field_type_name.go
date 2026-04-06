@@ -29,16 +29,13 @@ func (c *codec) fieldTypeName(field *api.Field) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	switch {
-	case field.Typez == api.MESSAGE_TYPE && field.MessageType.IsMap:
-		return "/* ERROR: map types are not supported */", nil
-	case field.Optional:
+	if field.Optional {
 		return fmt.Sprintf("%s?", baseFieldType), nil
-	case field.Repeated:
-		return fmt.Sprintf("[%s]", baseFieldType), nil
-	default:
-		return baseFieldType, nil
 	}
+	if field.Repeated {
+		return fmt.Sprintf("[%s]", baseFieldType), nil
+	}
+	return baseFieldType, nil
 }
 
 // baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
