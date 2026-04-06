@@ -152,6 +152,30 @@ func TestValidate_Error(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "empty parts",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: ":",
+				},
+			},
+		},
+		{
+			name: "missing artifact id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:",
+				},
+			},
+		},
+		{
+			name: "missing group id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: ":part2",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Validate(test.lib); err == nil {
