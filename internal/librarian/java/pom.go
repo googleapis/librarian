@@ -45,30 +45,30 @@ const (
 
 // grpcProtoPomData holds the data for rendering POM templates.
 type grpcProtoPomData struct {
-	Proto          coordinate
-	Grpc           coordinate
-	Parent         coordinate
+	Proto          Coordinate
+	Grpc           Coordinate
+	Parent         Coordinate
 	Version        string
 	MainArtifactID string
 }
 
 // clientPomData holds the data for rendering the client library POM template.
 type clientPomData struct {
-	Client       coordinate
+	Client       Coordinate
 	Version      string
 	Name         string
 	Description  string
-	Parent       coordinate
-	ProtoModules []coordinate
-	GrpcModules  []coordinate
+	Parent       Coordinate
+	ProtoModules []Coordinate
+	GrpcModules  []Coordinate
 }
 
 // bomParentPomData holds the data for rendering the BOM and Parent library POM template.
 type bomParentPomData struct {
-	MainModule      coordinate
+	MainModule      Coordinate
 	Name            string
 	MonorepoVersion string
-	Modules         []coordinate
+	Modules         []Coordinate
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -230,8 +230,8 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	var modules []javaModule
 	libCoord := DeriveLibraryCoordinates(library)
 
-	protoModules := make([]coordinate, 0, len(library.APIs))
-	grpcModules := make([]coordinate, 0, len(library.APIs))
+	protoModules := make([]Coordinate, 0, len(library.APIs))
+	grpcModules := make([]Coordinate, 0, len(library.APIs))
 	for _, api := range library.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 		if version == "" {
@@ -304,7 +304,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		template: clientPomTemplateName,
 	})
 
-	allModules := []coordinate{libCoord.Gapic}
+	allModules := []Coordinate{libCoord.Gapic}
 	allModules = append(allModules, grpcModules...)
 	allModules = append(allModules, protoModules...)
 

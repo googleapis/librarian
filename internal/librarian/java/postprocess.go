@@ -46,7 +46,7 @@ type postProcessParams struct {
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
 func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) coords() apiCoordinate {
+func (p postProcessParams) coords() ApiCoordinate {
 	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
 }
 
