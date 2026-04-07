@@ -32,10 +32,8 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: go-${{ github.workflow }}-${{ github.job }}-${{ hashFiles('go.sum') }}
-        restore-keys: |
-          go-${{ github.workflow }}-${{ github.job }}-
-          go-
+        key: go-build-${{ hashFiles('go.sum') }}
+        restore-keys: go-build-
     - if: inputs.install-protoc == 'true'
       uses: ./.github/actions/install-protoc
     - if: inputs.install-tools == 'true'

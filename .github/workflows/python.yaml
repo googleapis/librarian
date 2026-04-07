@@ -23,15 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
-        with:
-          install-tools: "false"
-      - name: Display Go version
-        run: go version
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Display Python version
-        run: python3 --version
       - name: Install pandoc
         run: |
           set -e
@@ -40,8 +34,6 @@ jobs:
           pandoc --version
         env:
           VERSION: 3.8.2
-      - name: Install librarian
-        run: go install ./cmd/librarian
       - name: "Install Python dependencies (resolve cache paths)"
         id: tool-paths
         run: |
