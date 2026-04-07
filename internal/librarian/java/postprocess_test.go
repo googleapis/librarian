@@ -356,8 +356,8 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
 					t.Fatal(err)
 				}
-				libCoords := deriveLibCoords(library)
-				apiCoords := deriveAPICoords(libCoords, "v1")
+				libCoords := deriveLibCoord(library)
+				apiCoords := deriveAPICoord(libCoords, "v1")
 				for _, dir := range []string{
 					filepath.Join(outDir, apiCoords.proto.ArtifactID),
 					filepath.Join(outDir, apiCoords.grpc.ArtifactID),
