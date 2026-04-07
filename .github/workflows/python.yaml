@@ -34,19 +34,7 @@ jobs:
           pandoc --version
         env:
           VERSION: 3.8.2
-      - name: "Install Python dependencies (resolve cache paths)"
-        id: tool-paths
-        run: |
-          echo "pip=$(python3 -c 'import site; print(site.getsitepackages()[0])')" >> "$GITHUB_OUTPUT"
-      - name: "Install Python dependencies (restore cache)"
-        uses: actions/cache@v5
-        id: tools-cache
-        with:
-          path: |
-            ${{ steps.tool-paths.outputs.pip }}
-          key: python-tools-${{ hashFiles('internal/librarian/python/librarian.yaml') }}
-      - name: "Install Python dependencies (run librarian install)"
-        if: steps.tools-cache.outputs.cache-hit != 'true'
+      - name: Install Python dependencies
         run: librarian install python
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/python

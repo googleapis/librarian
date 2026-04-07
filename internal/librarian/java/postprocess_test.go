@@ -17,6 +17,7 @@ package java
 import (
 	"archive/zip"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -84,14 +85,6 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(srcjarPath, buf.Bytes(), 0644); err != nil {
 		t.Fatal(err)
 	}
-	// Create owlbot.py and templates dir
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	p := postProcessParams{
@@ -146,17 +139,6 @@ func TestPostProcessAPI(t *testing.T) {
 	// Verify that the version directory was cleaned up
 	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
 		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
-	}
-}
-
-func TestPostProcessAPI_MissingOwlBot_Error(t *testing.T) {
-	t.Parallel()
-	outdir := t.TempDir()
-	p := postProcessParams{
-		outDir: outdir,
-	}
-	if err := postProcessAPI(t.Context(), p); err == nil {
-		t.Error("expected error due to missing owlbot.py, got nil")
 	}
 }
 
@@ -282,6 +264,142 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	}
 }
 
+func TestPostProcessLibrary_ErrorCase(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	defaultCfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: rootLibrary, Version: "1.0.0"},
+		},
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "26.35.0",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		setup   func(t *testing.T, outDir string)
+		wantErr error
+	}{
+		{
+			name:    "owlbot.py missing",
+			cfg:     defaultCfg,
+			wantErr: errOwlBotMissing,
+		},
+		{
+			name: "findBOMVersion failure",
+			cfg:  &config.Config{},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+			},
+			wantErr: errBOMVersionMissing,
+		},
+		{
+			name: "runOwlBot failure (missing templates)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+			},
+			wantErr: errTemplatesMissing,
+		},
+		{
+			name: "findMonorepoVersion failure",
+			cfg: &config.Config{
+				Default: defaultCfg.Default,
+			},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errMonorepoVersion,
+		},
+		{
+			name: "runOwlBot failure (non-zero exit status)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(1)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errRunOwlBot,
+		},
+		{
+			name: "syncPOMs failure (missing module directories)",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errTargetDir,
+		},
+		{
+			name: "success",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				libCoords := DeriveLibraryCoordinates(library)
+				apiCoords := DeriveAPICoordinates(libCoords, "v1")
+				for _, dir := range []string{
+					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
+					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
+					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
+					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
+					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
+				} {
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outDir)
+			}
+			params := libraryPostProcessParams{
+				cfg:      test.cfg,
+				library:  library,
+				outDir:   outDir,
+				metadata: &repoMetadata{NamePretty: "Secret Manager"},
+			}
+			err := postProcessLibrary(t.Context(), params)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func writeOwlBot(t *testing.T, outDir, script string) {
+	t.Helper()
+	content := "import sys; " + script
+	if err := os.WriteFile(filepath.Join(outDir, "owlbot.py"), []byte(content), 0755); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRunOwlBot(t *testing.T) {
 	t.Parallel()
 	testhelper.RequireCommand(t, "python3")
@@ -320,12 +438,8 @@ with open("owlbot-ran.txt", "w") as f:
 		t.Fatal(err)
 	}
 
-	p := postProcessParams{
-		outDir:              outDir,
-		library:             &config.Library{Version: "1.2.3"},
-		librariesBomVersion: "4.5.6",
-	}
-	if err := runOwlBot(t.Context(), p); err != nil {
+	library := &config.Library{Version: "1.2.3"}
+	if err := runOwlBot(t.Context(), library, outDir, "4.5.6"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -341,11 +455,8 @@ func TestRunOwlBot_Error(t *testing.T) {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	p := postProcessParams{
-		outDir:  outDir,
-		library: &config.Library{},
-	}
-	if err := runOwlBot(t.Context(), p); err == nil {
+	library := &config.Library{}
+	if err := runOwlBot(t.Context(), library, outDir, ""); err == nil {
 		t.Error("expected error due to missing templates directory, got nil")
 	}
 }

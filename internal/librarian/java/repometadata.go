@@ -52,7 +52,7 @@ type repoMetadata struct {
 	// Java-specific field.
 	ExcludedDependencies string `json:"excluded_dependencies,omitempty"`
 	// Java-specific field.
-	ExcludedPoms string `json:"excluded_poms,omitempty"`
+	ExcludedPOMs string `json:"excluded_poms,omitempty"`
 	IssueTracker string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
 	RestDocumentation string `json:"rest_documentation,omitempty"`
@@ -139,7 +139,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
-		metadata.ExcludedPoms = library.Java.ExcludedPoms
+		metadata.ExcludedPOMs = library.Java.ExcludedPOMs
 		metadata.MinJavaVersion = library.Java.MinJavaVersion
 		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation

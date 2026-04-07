@@ -50,17 +50,17 @@ func TestPostGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
-	rootPom, err := os.ReadFile(filepath.Join(tmpDir, "pom.xml"))
+	rootPOM, err := os.ReadFile(filepath.Join(tmpDir, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	rootPomContent := string(rootPom)
-	if !strings.Contains(rootPomContent, "<version>0.201.0</version>") {
-		t.Errorf("root pom.xml missing correct version, got:\n%s", rootPomContent)
+	rootPOMContent := string(rootPOM)
+	if !strings.Contains(rootPOMContent, "<version>0.201.0</version>") {
+		t.Errorf("root pom.xml missing correct version, got:\n%s", rootPOMContent)
 	}
 	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification"}
 	for _, mod := range modules {
-		if !strings.Contains(rootPomContent, "<module>"+mod+"</module>") {
+		if !strings.Contains(rootPOMContent, "<module>"+mod+"</module>") {
 			t.Errorf("root pom.xml missing module %s", mod)
 		}
 	}
@@ -73,15 +73,15 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
-	verifyBOM(t, filepath.Join(tmpDir, gapicBom, "pom.xml"), "1.2.3", wantDeps)
+	verifyBOM(t, filepath.Join(tmpDir, gapicBOM, "pom.xml"), "1.2.3", wantDeps)
 	// Verify annotations are present in the raw XML
-	bomPom, err := os.ReadFile(filepath.Join(tmpDir, gapicBom, "pom.xml"))
+	bomPOM, err := os.ReadFile(filepath.Join(tmpDir, gapicBOM, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	bomPomContent := string(bomPom)
-	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
-		t.Errorf("%s/pom.xml missing annotation google-cloud-aiplatform", gapicBom)
+	bomPOMContent := string(bomPOM)
+	if !strings.Contains(bomPOMContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
+		t.Errorf("%s/pom.xml missing annotation google-cloud-aiplatform", gapicBOM)
 	}
 }
 
@@ -93,7 +93,7 @@ type bomDependency struct {
 	Scope      string `xml:"scope"`
 }
 
-type bomPom struct {
+type bomPOM struct {
 	Version      string          `xml:"version"`
 	Dependencies []bomDependency `xml:"dependencyManagement>dependencies>dependency"`
 }
@@ -104,7 +104,7 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 	if err != nil {
 		t.Fatal(err)
 	}
-	var p bomPom
+	var p bomPOM
 	if err := xml.Unmarshal(data, &p); err != nil {
 		t.Fatal(err)
 	}
@@ -142,7 +142,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		"module-b",
 		"module-a",
 		"not-a-module",
-		gapicBom,
+		gapicBOM,
 		"google-cloud-shared-deps",
 	}
 	for _, dir := range dirs {
@@ -151,7 +151,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		}
 	}
 	// Add pom.xml to modules (including an excluded one to verify filtering)
-	for _, mod := range []string{"module-a", "module-b", gapicBom} {
+	for _, mod := range []string{"module-a", "module-b", gapicBOM} {
 		if err := os.WriteFile(filepath.Join(tmpDir, mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -213,8 +213,8 @@ func TestPostGenerate_Error(t *testing.T) {
 		},
 	}
 	err := PostGenerate(t.Context(), tmpDir, cfg)
-	if !errors.Is(err, errRootPomGeneration) {
-		t.Errorf("got error %v, want %v", err, errRootPomGeneration)
+	if !errors.Is(err, errRootPOMGeneration) {
+		t.Errorf("got error %v, want %v", err, errRootPOMGeneration)
 	}
 }
 

@@ -210,7 +210,7 @@ func TestGRPCProtocArgs(t *testing.T) {
 	}
 }
 
-func TestGapicProtocArgs(t *testing.T) {
+func TestGAPICProtocArgs(t *testing.T) {
 	apiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
@@ -337,14 +337,6 @@ func TestGenerateAPI(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Create owlbot.py and templates dir as they are mandatory for postProcessAPI
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
 	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
 	if err != nil {
 		t.Fatal(err)
@@ -406,14 +398,6 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	// Create owlbot.py and templates dir as they are  mandatory for postProcessAPI
-	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
-		t.Fatal(err)
-	}
-	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
-	if err := os.MkdirAll(templatesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
 	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 	if err != nil {
 		t.Fatal(err)
@@ -432,14 +416,14 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	// Basic validation of GAPIC generation arguments (the 3rd call).
 	gapicArgs := calls[2]
-	foundGapicOut := false
+	foundGAPICOut := false
 	for _, arg := range gapicArgs {
 		if strings.HasPrefix(arg, "--java_gapic_out=") {
-			foundGapicOut = true
+			foundGAPICOut = true
 			break
 		}
 	}
-	if !foundGapicOut {
+	if !foundGAPICOut {
 		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
 	}
 }
@@ -527,7 +511,12 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				test.setup(t, test.library)
 			}
 			cfg := &config.Config{
-				Language:  config.LanguageJava,
+				Language: config.LanguageJava,
+				Default: &config.Default{
+					Java: &config.JavaModule{
+						LibrariesBOMVersion: "1.2.3",
+					},
+				},
 				Libraries: []*config.Library{test.library},
 			}
 			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
@@ -556,12 +545,17 @@ func TestGenerate_Logic(t *testing.T) {
 	cfg := &config.Config{
 		Language: config.LanguageJava,
 		Repo:     "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "1.2.3",
+			},
+		},
 		Libraries: []*config.Library{
 			library,
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	// Setup mandatory files for postProcessAPI and generatePomsIfMissing
+	// Setup mandatory files for postProcessAPI and syncPOMs
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)

@@ -495,8 +495,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedDependencies != "" {
 		res.ExcludedDependencies = src.ExcludedDependencies
 	}
-	if src.ExcludedPoms != "" {
-		res.ExcludedPoms = src.ExcludedPoms
+	if src.ExcludedPOMs != "" {
+		res.ExcludedPOMs = src.ExcludedPOMs
 	}
 	if src.ExtraVersionedModules != "" {
 		res.ExtraVersionedModules = src.ExtraVersionedModules
@@ -507,8 +507,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.IssueTrackerOverride != "" {
 		res.IssueTrackerOverride = src.IssueTrackerOverride
 	}
-	if src.LibrariesBomVersion != "" {
-		res.LibrariesBomVersion = src.LibrariesBomVersion
+	if src.LibrariesBOMVersion != "" {
+		res.LibrariesBOMVersion = src.LibrariesBOMVersion
 	}
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride

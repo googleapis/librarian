@@ -35,9 +35,10 @@ const (
 )
 
 var (
-	errExtractVersion  = errors.New("failed to extract version")
-	errNoProtos        = errors.New("no protos found")
-	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errExtractVersion    = errors.New("failed to extract version")
+	errNoProtos          = errors.New("no protos found")
+	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
 // Generate generates a Java client library.
@@ -75,12 +76,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	monorepoVersion, err := findMonorepoVersion(cfg)
-	if err != nil {
+	if err := postProcessLibrary(ctx, libraryPostProcessParams{
+		cfg:        cfg,
+		library:    library,
+		outDir:     outdir,
+		metadata:   metadata,
+		transports: transports,
+	}); err != nil {
 		return err
-	}
-	if err := syncPoms(library, outdir, monorepoVersion, metadata, transports); err != nil {
-		return fmt.Errorf("failed to generate poms: %w", err)
 	}
 
 	return nil
@@ -92,22 +95,14 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
 	javaAPI := resolveJavaAPI(library, api)
-	bomVersion := ""
-	if cfg.Default != nil && cfg.Default.Java != nil {
-		bomVersion = cfg.Default.Java.LibrariesBomVersion
-	}
-	if library.Java != nil && library.Java.LibrariesBomVersion != "" {
-		bomVersion = library.Java.LibrariesBomVersion
-	}
 	p := postProcessParams{
-		cfg:                 cfg,
-		library:             library,
-		metadata:            metadata,
-		outDir:              outdir,
-		librariesBomVersion: bomVersion,
-		version:             version,
-		googleapisDir:       googleapisDir,
-		includeSamples:      !javaAPI.NoSamples,
+		cfg:            cfg,
+		library:        library,
+		metadata:       metadata,
+		outDir:         outdir,
+		version:        version,
+		googleapisDir:  googleapisDir,
+		includeSamples: !javaAPI.NoSamples,
 	}
 	gapicDir := p.gapicDir()
 	gRPCDir := p.gRPCDir()
@@ -306,4 +301,13 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 		return res
 	}
 	return res
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/5152):
+// BOM version should be required and pre-validated, remove this and inline when done.
+func findBOMVersion(cfg *config.Config) (string, error) {
+	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBOMVersion != "" {
+		return cfg.Default.Java.LibrariesBOMVersion, nil
+	}
+	return "", errBOMVersionMissing
 }
