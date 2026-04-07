@@ -23,8 +23,8 @@ type methodAnnotations struct {
 	DocLines []string
 }
 
-func (c *codec) annotateMethod(method *api.Method) {
-	docLines := c.formatDocumentation(method.Documentation)
+func (codec *codec) annotateMethod(method *api.Method) {
+	docLines := codec.formatDocumentation(method.Documentation)
 	annotations := &methodAnnotations{
 		Name:     camelCase(method.Name),
 		DocLines: docLines,
