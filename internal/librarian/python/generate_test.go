@@ -379,8 +379,9 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T, repoRoot, outputDir string)
+		name      string
+		setup     func(t *testing.T, repoRoot, outputDir string)
+		wantFiles []string
 	}{
 		{
 			name: "no staging dir or scripts dir",
@@ -411,6 +412,7 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			wantFiles: []string{"scripts/test.txt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -424,8 +426,13 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 				t.Errorf("owl-bot-staging should have been removed")
 			}
-			if _, err := os.Stat(filepath.Join(outputDir, "scripts")); !os.IsNotExist(err) {
-				t.Errorf("scripts should have been removed")
+			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !os.IsNotExist(err) {
+				t.Errorf("client-post-processing should have been removed")
+			}
+			for _, wantFile := range test.wantFiles {
+				if _, err := os.Stat(filepath.Join(outputDir, wantFile)); err != nil {
+					t.Errorf("unable to stat %s which should still exist", wantFile)
+				}
 			}
 		})
 	}
@@ -1027,34 +1034,6 @@ func TestGenerate_APIOrder(t *testing.T) {
 	}
 	if strings.Contains(string(setupContent), "executions") {
 		t.Errorf("wanted setup.py to not mention executions; got %s", string(setupContent))
-	}
-}
-
-func TestGenerate_Handwritten(t *testing.T) {
-	repoRoot := t.TempDir()
-	cfg := &config.Config{
-		Language: config.LanguagePython,
-		Repo:     "googleapis/google-cloud-python",
-	}
-
-	library := &config.Library{
-		Name:   "bigframes",
-		Output: filepath.Join(repoRoot, "packages", "bigframes"),
-		Python: &config.PythonPackage{
-			PythonDefault: config.PythonDefault{
-				LibraryType: "INTEGRATION",
-			},
-		},
-	}
-	scriptsDir := filepath.Join(library.Output, "scripts")
-	if err := os.MkdirAll(scriptsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(scriptsDir, "test.sh"), []byte("test"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
-		t.Fatal(err)
 	}
 }
 

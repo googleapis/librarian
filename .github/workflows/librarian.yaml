@@ -39,9 +39,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
-        with:
-          install-protoc: "false"
-          install-tools: "false"
       - name: Run tests and check coverage
         run: go run ./tool/cmd/coverage ./internal/legacylibrarian/...
   test:

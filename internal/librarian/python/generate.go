@@ -431,9 +431,12 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
-	// Remove the scripts directory from the package root.
-	if err := os.RemoveAll(filepath.Join(outdir, "scripts")); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove scripts: %w", err)
+	// Remove the post-processing scripts. This will leave the "scripts"
+	// directory, but that's okay if it's empty - git ignores empty directories.
+	// If it's *not* empty, then there must have been files there before, which
+	// we'd want to keep anyway.
+	if err := os.RemoveAll(filepath.Join(outdir, "scripts", "client-post-processing")); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove client-post-processing directory: %w", err)
 	}
 	return nil
 }
