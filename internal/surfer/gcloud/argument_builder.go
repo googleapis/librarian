@@ -48,7 +48,6 @@ func newArgumentBuilder(method *api.Method, overrides *provider.Config, model *a
 }
 
 // build creates a single command-line argument (a `Argument` struct) from the builder's state.
-// build creates a single command-line argument (a `Argument` struct) from the builder's state.
 // It returns nil if the field should be ignored.
 func (b *argumentBuilder) build() (*Argument, error) {
 	if b.isIgnored() {
@@ -159,15 +158,9 @@ func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 
 	// Help text should be documentation of builder.field name.
 	// However, if you have resource id, then you actually want resource.name field.
-	var helpText string
-	if idField != nil {
-		if nameField := provider.FindNameField(resource); nameField != nil {
-			helpText = provider.CleanDocumentation(nameField.Documentation)
-		} else {
-			helpText = provider.CleanDocumentation(b.field.Documentation) // Fallback
-		}
-	} else {
-		helpText = provider.CleanDocumentation(b.field.Documentation)
+	fieldHelpText := b.field.Documentation
+	if nameField := provider.FindNameField(resource); idField != nil && nameField != nil {
+		fieldHelpText = nameField.Documentation
 	}
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
@@ -175,7 +168,7 @@ func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 	shortServiceName := hostParts[0]
 
 	param := Argument{
-		HelpText:          helpText,
+		HelpText:          provider.CleanDocumentation(fieldHelpText),
 		IsPositional:      !provider.IsList(b.method),
 		IsPrimaryResource: true,
 		Required:          true,
