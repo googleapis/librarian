@@ -35,26 +35,41 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/5050):
+// Exported selected functions and fields to use in migrate tool.
+// Unexport after migrate is done.
+// coordinate represents a Maven coordinate, uniquely identifies a project
+// artifact using its GroupID, ArtifactID, and Version.
 type coordinate struct {
-	GroupID    string
+	// GroupID is the Maven Group ID.
+	GroupID string
+	// ArtifactID is the Maven Artifact ID.
 	ArtifactID string
-	Version    string
+	// Version is the Maven version.
+	Version string
 }
 
-type libCoord struct {
-	gapic  coordinate
-	parent coordinate
-	bom    coordinate
+type libraryCoordinate struct {
+	// Gapic is the Maven coordinate for the GAPIC module.
+	Gapic coordinate
+	// Parent is the Maven coordinate for the parent module.
+	Parent coordinate
+	// Bom is the Maven coordinate for the BOM module.
+	Bom coordinate
 }
 
-type apiCoord struct {
-	libCoord
-	proto coordinate
-	grpc  coordinate
+type apiCoordinate struct {
+	libraryCoordinate
+	// Proto is the Maven coordinate for the proto module.
+	Proto coordinate
+	// GRPC is the Maven coordinate for the gRPC module.
+	GRPC coordinate
 }
 
-func deriveLibCoord(library *config.Library) libCoord {
-	distName := deriveDistributionName(library)
+// DeriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
+// its parent, and its BOM based on the library's configuration.
+func DeriveLibraryCoordinates(library *config.Library) libraryCoordinate {
+	distName := DeriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	groupID := parts[0]
 	artifactID := groupID
@@ -66,14 +81,14 @@ func deriveLibCoord(library *config.Library) libCoord {
 		ArtifactID: artifactID,
 		Version:    library.Version,
 	}
-	return libCoord{
-		gapic: gapic,
-		parent: coordinate{
+	return libraryCoordinate{
+		Gapic: gapic,
+		Parent: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
 			Version:    gapic.Version,
 		},
-		bom: coordinate{
+		Bom: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
 			Version:    gapic.Version,
@@ -81,19 +96,21 @@ func deriveLibCoord(library *config.Library) libCoord {
 	}
 }
 
-func deriveAPICoord(lc libCoord, version string) apiCoord {
-	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
-	return apiCoord{
-		libCoord: lc,
-		proto: coordinate{
+// DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
+// artifacts associated with a specific API version.
+func DeriveAPICoordinates(lc libraryCoordinate, version string) apiCoordinate {
+	protoGrpcGroupID := protoGroupID(lc.Gapic.GroupID)
+	return apiCoordinate{
+		libraryCoordinate: lc,
+		Proto: coordinate{
 			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
+			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.Gapic.ArtifactID, version),
+			Version:    lc.Gapic.Version,
 		},
-		grpc: coordinate{
+		GRPC: coordinate{
 			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
+			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.Gapic.ArtifactID, version),
+			Version:    lc.Gapic.Version,
 		},
 	}
 }
@@ -119,7 +136,9 @@ func ensureCloudPrefix(name string) string {
 	return name
 }
 
-func deriveDistributionName(library *config.Library) string {
+// DeriveDistributionName returns the Maven distribution name (GroupID:ArtifactID)
+// for the library, applying overrides and defaults as necessary.
+func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
