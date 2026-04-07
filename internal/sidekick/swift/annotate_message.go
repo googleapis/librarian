@@ -27,14 +27,14 @@ type messageAnnotations struct {
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
 	docLines := codec.formatDocumentation(message.Documentation)
-	messageAnnotations := &messageAnnotations{
+	annotations := &messageAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(message.Name),
 		DocLines:      docLines,
 	}
 
-	message.Codec = messageAnnotations
+	message.Codec = annotations
 	for _, field := range message.Fields {
 		if err := codec.annotateField(field); err != nil {
 			return err
