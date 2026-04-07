@@ -23,9 +23,9 @@ import (
 
 const (
 	googleGroupID   = "com.google"
-	protoGrpcSuffix = ".api.grpc"
+	protoGRPCSuffix = ".api.grpc"
 	cloudPrefix     = "google-cloud-"
-	grpcPrefix      = "grpc-"
+	gRPCPrefix      = "grpc-"
 	protoPrefix     = "proto-"
 )
 
@@ -38,32 +38,42 @@ var groupInclusions = map[string]bool{
 // TODO(https://github.com/googleapis/librarian/issues/5050):
 // Exported selected functions and fields to use in migrate tool.
 // Unexport after migrate is done.
-type coordinate struct {
-	// GroupID is the Maven Group ID (e.g., "com.google.cloud").
+
+// Coordinate represents a Maven Coordinate, uniquely identifies a project
+// artifact using its GroupID, ArtifactID, and Version.
+type Coordinate struct {
+	// GroupID is the Maven Group ID.
 	GroupID string
-	// ArtifactID is the Maven Artifact ID (e.g., "google-cloud-storage").
+	// ArtifactID is the Maven Artifact ID.
 	ArtifactID string
-	// Version is the Maven version string (e.g., "1.2.3").
+	// Version is the Maven version.
 	Version string
 }
 
-type libCoord struct {
-	gapic  coordinate
-	parent coordinate
-	bom    coordinate
+// LibraryCoordinate contains Maven coordinates for the library modules (GAPIC,
+// parent, and BOM).
+type LibraryCoordinate struct {
+	// GAPIC is the Maven coordinate for the GAPIC module.
+	GAPIC Coordinate
+	// Parent is the Maven coordinate for the parent module.
+	Parent Coordinate
+	// BOM is the Maven coordinate for the BOM module.
+	BOM Coordinate
 }
 
-type apiCoord struct {
-	libCoord
-	// Proto is the Maven coordinate for the generated proto artifact.
-	Proto coordinate
-	// Grpc is the Maven coordinate for the generated gRPC artifact.
-	Grpc coordinate
+// APICoordinate contains Maven coordinates for the library and its API-specific
+// modules (proto and gRPC).
+type APICoordinate struct {
+	LibraryCoordinate
+	// Proto is the Maven coordinate for the proto module.
+	Proto Coordinate
+	// GRPC is the Maven coordinate for the gRPC module.
+	GRPC Coordinate
 }
 
-// DeriveLibCoord returns the Maven coordinates for the GAPIC library, its
-// parent, and its BOM based on the library's configuration.
-func DeriveLibCoord(library *config.Library) libCoord {
+// DeriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
+// its parent, and its BOM based on the library's configuration.
+func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 	distName := DeriveDistributionName(library)
 	parts := strings.SplitN(distName, ":", 2)
 	groupID := parts[0]
@@ -71,19 +81,19 @@ func DeriveLibCoord(library *config.Library) libCoord {
 	if len(parts) == 2 {
 		artifactID = parts[1]
 	}
-	gapic := coordinate{
+	gapic := Coordinate{
 		GroupID:    groupID,
 		ArtifactID: artifactID,
 		Version:    library.Version,
 	}
-	return libCoord{
-		gapic: gapic,
-		parent: coordinate{
+	return LibraryCoordinate{
+		GAPIC: gapic,
+		Parent: Coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
 			Version:    gapic.Version,
 		},
-		bom: coordinate{
+		BOM: Coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
 			Version:    gapic.Version,
@@ -91,21 +101,21 @@ func DeriveLibCoord(library *config.Library) libCoord {
 	}
 }
 
-// DeriveAPICoord returns the Maven coordinates for the proto and gRPC
+// DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
-func DeriveAPICoord(lc libCoord, version string) apiCoord {
-	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
-	return apiCoord{
-		libCoord: lc,
-		Proto: coordinate{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
+func DeriveAPICoordinates(lc LibraryCoordinate, version string) APICoordinate {
+	protoGRPCGroupID := protoGroupID(lc.GAPIC.GroupID)
+	return APICoordinate{
+		LibraryCoordinate: lc,
+		Proto: Coordinate{
+			GroupID:    protoGRPCGroupID,
+			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version),
+			Version:    lc.GAPIC.Version,
 		},
-		Grpc: coordinate{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
+		GRPC: Coordinate{
+			GroupID:    protoGRPCGroupID,
+			ArtifactID: fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version),
+			Version:    lc.GAPIC.Version,
 		},
 	}
 }
@@ -119,7 +129,7 @@ func protoGroupID(mainArtifactGroupID string) string {
 	if groupInclusions[mainArtifactGroupID] {
 		prefix = googleGroupID
 	}
-	return prefix + protoGrpcSuffix
+	return prefix + protoGRPCSuffix
 }
 
 // ensureCloudPrefix returns name with the "google-cloud-" prefix,

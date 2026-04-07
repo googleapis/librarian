@@ -1461,6 +1461,9 @@ func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, vis
 		case api.MESSAGE_TYPE:
 			if fm, ok := model.State.MessageByID[f.TypezID]; ok {
 				usePackage(fm.Package, model, c)
+				if f.Map {
+					findUsedPackagesMessage(fm, model, c, visited)
+				}
 			}
 		case api.ENUM_TYPE:
 			if fe, ok := model.State.EnumByID[f.TypezID]; ok {

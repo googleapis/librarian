@@ -28,9 +28,9 @@ import (
 )
 
 // gapicGeneratorSubdir is the sub-directory within the
-// google-cloud-node-core repo that contains the gapic-generator-typescript
+// google-cloud-node repo that contains the gapic-generator-typescript
 // source.
-const gapicGeneratorSubdir = "generator/gapic-generator-typescript"
+const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
 //go:embed librarian.yaml
 var librarianYAML []byte
@@ -92,8 +92,8 @@ func installNPMToolFromSource(ctx context.Context, tool *config.NPMTool) error {
 }
 
 // repoFromPackageURL extracts the repository path (e.g.,
-// "github.com/googleapis/google-cloud-node-core") from a GitHub archive URL
-// like "https://github.com/googleapis/google-cloud-node-core/archive/<sha>.tar.gz".
+// "github.com/googleapis/google-cloud-node") from a GitHub archive URL
+// like "https://github.com/googleapis/google-cloud-node/archive/<sha>.tar.gz".
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {

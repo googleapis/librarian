@@ -110,9 +110,9 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		includeSamples:      !javaAPI.NoSamples,
 	}
 	gapicDir := p.gapicDir()
-	grpcDir := p.grpcDir()
+	gRPCDir := p.gRPCDir()
 	protoDir := p.protoDir()
-	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
+	for _, dir := range []string{gapicDir, gRPCDir, protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
@@ -139,8 +139,8 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
-		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {
-			return fmt.Errorf("failed to generate grpc: %w", err)
+		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, googleapisDir, gRPCDir)); err != nil {
+			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 	// 3. Generate GAPIC library.
@@ -180,9 +180,9 @@ func protoProtocArgs(apiProtos []string, googleapisDir, protoDir string) []strin
 	return args
 }
 
-func grpcProtocArgs(apiProtos []string, googleapisDir, grpcDir string) []string {
+func gRPCProtocArgs(apiProtos []string, googleapisDir, gRPCDir string) []string {
 	args := baseProtocArgs(googleapisDir)
-	args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
+	args = append(args, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
 	args = append(args, apiProtos...)
 	return args
 }
@@ -220,13 +220,13 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 		gapicOpts = append(gapicOpts, gapicOpt("gapic-config", filepath.Join(googleapisDir, gapicConfig)))
 	}
 
-	grpcServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
+	gRPCServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
-		return nil, fmt.Errorf("failed to find grpc service config: %w", err)
+		return nil, fmt.Errorf("failed to find gRPC service config: %w", err)
 	}
-	if grpcServiceConfig != "" {
+	if gRPCServiceConfig != "" {
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
-		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, grpcServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, gRPCServiceConfig)))
 	}
 
 	// transport specifies whether to generate gRPC, REST, or both types of clients.

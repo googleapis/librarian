@@ -14,7 +14,6 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
-{{^IsMap}}
 {{^ServicePlaceholder}}
 {{> /templates/common/feature_gate}}
 impl std::fmt::Debug for super::{{Codec.RelativeName}} {
@@ -33,7 +32,6 @@ impl std::fmt::Debug for super::{{Codec.RelativeName}} {
     }
 }
 {{/ServicePlaceholder}}
-{{/IsMap}}
 {{#Codec.HasNestedTypes}}
 {{#Messages}}
 {{> /templates/common/model/debug/message}}

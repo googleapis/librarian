@@ -31,7 +31,7 @@ func TestParseOptions(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	got := newCodec(model, cfg)
+	got := newCodec(model, cfg, nil)
 	want := &codec{
 		GenerationYear: "2038",
 		PackageName:    "GoogleCloudBigtable",
@@ -49,5 +49,5 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	return newCodec(model, cfg)
+	return newCodec(model, cfg, nil)
 }

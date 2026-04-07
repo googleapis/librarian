@@ -49,7 +49,25 @@ func TestDefaultOutput(t *testing.T) {
 			name:   "api path",
 			api:    "google/cloud/secretmanager/v1",
 			defOut: "generated",
-			want:   "generated/google/cloud/secretmanager/v1",
+			want:   "generated/google-cloud-secretmanager-v1",
+		},
+		{
+			name:   "api path with trailing slash",
+			api:    "google/cloud/secretmanager/v1/",
+			defOut: "generated",
+			want:   "generated/google-cloud-secretmanager-v1",
+		},
+		{
+			name:   "api path with leading slash",
+			api:    "/google/cloud/secretmanager/v1",
+			defOut: "generated",
+			want:   "generated/google-cloud-secretmanager-v1",
+		},
+		{
+			name:   "api path with both leading and trailing slash (weird)",
+			api:    "/google/cloud/secretmanager/v1/",
+			defOut: "generated",
+			want:   "generated/google-cloud-secretmanager-v1",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {

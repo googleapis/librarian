@@ -252,10 +252,16 @@ func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
 		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
 	}
 	return &legacyconfig.LibraryState{
-		ID:          lib.Name,
-		Version:     lib.Version,
-		APIs:        libAPIs,
-		SourceRoots: []string{lib.Name},
-		TagFormat:   "{id}/v{version}",
+		ID:      lib.Name,
+		Version: lib.Version,
+		APIs:    libAPIs,
+		SourceRoots: []string{
+			lib.Name,
+			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
+		},
+		ReleaseExcludePaths: []string{
+			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
+		},
+		TagFormat: "{id}/v{version}",
 	}
 }

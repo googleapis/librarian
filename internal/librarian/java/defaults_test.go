@@ -15,6 +15,7 @@
 package java
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -94,6 +95,93 @@ func TestTidy(t *testing.T) {
 			got := Tidy(test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+	}{
+		{
+			name: "valid distribution name override",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:part2",
+				},
+			},
+		},
+		{
+			name: "empty java config",
+			lib:  &config.Library{},
+		},
+		{
+			name: "empty distribution name override",
+			lib: &config.Library{
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Validate(test.lib); err != nil {
+				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
+			}
+		})
+	}
+}
+
+func TestValidate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+	}{
+		{
+			name: "missing colon",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "nocolon",
+				},
+			},
+		},
+		{
+			name: "too many colons",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:part2:part3",
+				},
+			},
+		},
+		{
+			name: "empty parts",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: ":",
+				},
+			},
+		},
+		{
+			name: "missing artifact id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: "part1:",
+				},
+			},
+		},
+		{
+			name: "missing group id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					DistributionNameOverride: ":part2",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Validate(test.lib)
+			if !errors.Is(err, ErrInvalidDistributionName) {
+				t.Errorf("expected %v, got %v", ErrInvalidDistributionName, err)
 			}
 		})
 	}

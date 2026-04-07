@@ -18,20 +18,54 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestInstall(t *testing.T) {
-	bin := t.TempDir()
-	// The fake git stub creates the directory structure that
-	// installGapicGeneratorTypescript expects after cloning.
-	gitStub := `#!/bin/sh
-for last; do true; done
-mkdir -p "$last/generator/gapic-generator-typescript"
-`
-	if err := os.WriteFile(filepath.Join(bin, "git"), []byte(gitStub), 0o755); err != nil {
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+	tool := cfg.Tools.NPM[0]
+	repo, err := repoFromPackageURL(tool.Package)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Pre-populate the fetch cache so fetch.Repo returns immediately
+	// without downloading the tarball over the network.
+	cache := t.TempDir()
+	t.Setenv("LIBRARIAN_CACHE", cache)
+	genDir := filepath.Join(cache,
+		repo+"@"+tool.Version,
+		gapicGeneratorSubdir)
+	for _, sub := range []string{"templates", "protos"} {
+		if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Stub npm so "npm install" and "npm link" are no-ops. The npm stub
+	// also creates node_modules/.bin/tsc in the working directory so the
+	// subsequent "./node_modules/.bin/tsc" build step finds an executable.
+	// Global installs (npm install -g) write into NPM_GLOBAL_PREFIX to
+	// avoid polluting the source tree.
+	bin := t.TempDir()
+	npmGlobalPrefix := t.TempDir()
+	t.Setenv("NPM_GLOBAL_PREFIX", npmGlobalPrefix)
+	npmStub := `#!/bin/sh
+case "$*" in *-g*)
+	mkdir -p "$NPM_GLOBAL_PREFIX/lib"
+	exit 0
+	;;
+esac
+mkdir -p node_modules/.bin
+printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
+chmod +x node_modules/.bin/tsc
+`
+	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {

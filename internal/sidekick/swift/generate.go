@@ -20,6 +20,7 @@ import (
 	"embed"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -29,8 +30,8 @@ import (
 var templates embed.FS
 
 // Generate generates code from the model.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
-	codec := newCodec(model, cfg)
+func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
+	codec := newCodec(model, cfg, swiftCfg)
 	if err := codec.annotateModel(); err != nil {
 		return err
 	}
@@ -44,6 +45,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := codec.generateMessages(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateServices(outdir, model, provider); err != nil {
+		return err
+	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
@@ -55,6 +59,19 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 			OutputPath:   filepath.Join("Sources", c.PackageName, m.Name+".swift"),
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *codec) generateServices(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, s := range model.Services {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/service.swift.mustache",
+			OutputPath:   filepath.Join("Sources", c.PackageName, s.Name+".swift"),
+		}
+		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 			return err
 		}
 	}

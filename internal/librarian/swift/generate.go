@@ -42,7 +42,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	return sidekickswift.Generate(ctx, model, library.Output, modelConfig)
+	return sidekickswift.Generate(ctx, model, library.Output, modelConfig, library.Swift)
 }
 
 // Format formats a generated Swift library.

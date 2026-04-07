@@ -34,12 +34,12 @@ func TestPostProcessAPI(t *testing.T) {
 	libraryName := "secretmanager"
 	version := "v1"
 	gapicDir := filepath.Join(outdir, version, "gapic")
-	grpcDir := filepath.Join(outdir, version, "grpc")
+	gRPCDir := filepath.Join(outdir, version, "grpc")
 	protoDir := filepath.Join(outdir, version, "proto")
 	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(grpcDir, 0755); err != nil {
+	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
@@ -48,7 +48,7 @@ func TestPostProcessAPI(t *testing.T) {
 		}
 	}
 	content := "package com.google.cloud.secretmanager.v1;"
-	grpcFile := filepath.Join(grpcDir, "GrpcFile.java")
+	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
 	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}

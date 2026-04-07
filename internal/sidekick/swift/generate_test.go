@@ -57,7 +57,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
 		t.Fatal(err)
 	}
 	filename := filepath.Join(outDir, "README.md")
@@ -85,12 +85,40 @@ func TestGenerateMessageFiles(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
 		t.Fatal(err)
 	}
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	for _, expected := range []string{"Secret.swift", "Volume.swift"} {
+		filename := filepath.Join(expectedDir, expected)
+		if _, err := os.Stat(filename); os.IsNotExist(err) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+	}
+}
+
+func TestGenerateServiceFiles(t *testing.T) {
+	outDir := t.TempDir()
+
+	iam := &api.Service{Name: "IAM"}
+	secretManager := &api.Service{Name: "SecretManagerService"}
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{iam, secretManager})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	for _, expected := range []string{"IAM.swift", "SecretManagerService.swift"} {
 		filename := filepath.Join(expectedDir, expected)
 		if _, err := os.Stat(filename); os.IsNotExist(err) {
 			t.Errorf("missing %s: %s", filename, err)

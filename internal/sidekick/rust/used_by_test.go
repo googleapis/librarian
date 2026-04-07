@@ -336,3 +336,69 @@ func TestFindUsedPackages(t *testing.T) {
 		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
 	}
 }
+
+func TestFindUsedPackages_MapFields(t *testing.T) {
+	externalMessage := &api.Message{
+		Name:    "ExternalMessage",
+		ID:      ".external.ExternalMessage",
+		Package: "external",
+	}
+
+	mapEntry := &api.Message{
+		Name:    "FakeMapEntry",
+		ID:      ".test.Fake.FakeMapEntry",
+		Package: "test",
+		IsMap:   true,
+		Fields: []*api.Field{
+			{
+				Name:    "key",
+				Typez:   api.STRING_TYPE,
+				TypezID: "string",
+			},
+			{
+				Name:    "value",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".external.ExternalMessage",
+			},
+		},
+	}
+
+	message := &api.Message{
+		Name:    "Fake",
+		ID:      ".test.Fake",
+		Package: "test",
+		Fields: []*api.Field{
+			{
+				Name:    "map_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".test.Fake.FakeMapEntry",
+				Map:     true,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	model.State.MessageByID[".external.ExternalMessage"] = externalMessage
+	model.State.MessageByID[".test.Fake.FakeMapEntry"] = mapEntry
+
+	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"package:external": "package=external-package,source=external",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	findUsedPackages(model, c)
+
+	want := []*packagez{
+		{
+			name:        "external",
+			packageName: "external-package",
+			used:        true,
+		},
+	}
+	less := func(a, b *packagez) bool { return a.name < b.name }
+	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
