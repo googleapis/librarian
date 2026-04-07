@@ -29,26 +29,26 @@ var (
 	rootFiles            = []string{"README.md", "internal/version.go"}
 	generatedClientFiles = []string{
 		".repo-metadata.json",
-		// Provides helper types for the main API clients, most notably Iterators.
+		// auxiliary.go provides helper types for the main API clients, most notably Iterators.
 		"auxiliary.go",
-		// Provides support for Go 1.23+ range-over-function iterators.
+		// auxiliary_go123.go provides support for Go 1.23+ range-over-function iterators.
 		"auxiliary_go123.go",
 		"doc.go",
 		"gapic_metadata.json",
-		// Serves as internal utility layers for API clients.
+		// helpers.go serves as internal utility layers for API clients.
 		"helpers.go",
-		// Manages Long-Running Operations (LROs).
+		// operations.go manages Long-Running Operations (LROs).
 		"operations.go",
 	}
 	generatedClientFileSuffixes = []string{
-		// Protobuf generated code for Go, containing the Go data structures (structs, enums)
+		// .pb.go contains Protobuf generated code for Go, containing the Go data structures (structs, enums)
 		// and gRPC/client interface definitions.
 		".pb.go",
-		// Defines the methods and business logic to interact with the API.
+		// _client.go defines the methods and business logic to interact with the API.
 		"_client.go",
-		// Contains auto-generated code snippet templates and examples.
+		// _client_example_go123_test.go contains auto-generated code snippet templates and examples.
 		"_client_example_go123_test.go",
-		// Contains auto-generated code snippet templates and examples.
+		// _client_example_test.go contains auto-generated code snippet templates and examples.
 		"_client_example_test.go",
 	}
 )
