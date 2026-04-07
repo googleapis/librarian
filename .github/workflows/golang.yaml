@@ -35,6 +35,7 @@ jobs:
         run: librarian generate --all
       - name: Verify generated code
         working-directory: google-cloud-go
+        # Run static checks against 5 libraries.
         run: ../.github/workflows/scripts/verify-go.sh
   create-issue-on-failure:
     needs: [integration]
