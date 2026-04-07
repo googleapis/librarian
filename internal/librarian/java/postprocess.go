@@ -259,6 +259,17 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	return nil
 }
 
+// runOwlBot executes the owlbot.py script located in outDir to restructure the
+// generated code and apply templates (e.g., for README.md).
+//
+// It assumes that:
+//  1. All APIs for the library have already been generated and staged into the
+//     "owl-bot-staging" directory (see restructureToStaging()).
+//  2. An owlbot.py file exists in the outDir.
+//  3. The SYNTHTOOL_TEMPLATES environment variable points to a valid templates
+//     directory in google-cloud-java/sdk-platform-java.
+//  4. python3 is available on the system PATH and has the synthtool package
+//     installed (from google-cloud-java/sdk-platform-java).
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
 	// Versions used to populate README.md file.
 	env := map[string]string{
