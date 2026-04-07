@@ -35,7 +35,7 @@ jobs:
         run: librarian generate --all
       - name: Run vet check
         working-directory: google-cloud-go
-        run: ./.github/workflows/scripts/vet.sh
+        run: .github/workflows/scripts/vet.sh
   create-issue-on-failure:
     needs: [integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
