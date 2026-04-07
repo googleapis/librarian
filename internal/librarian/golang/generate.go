@@ -23,6 +23,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -41,7 +42,6 @@ var (
 
 // Generate generates a Go client library.
 func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
-	googleapisDir := srcs.Googleapis
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return err
@@ -49,6 +49,15 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
+
+	// For preview libraries, the API protos are rooted in the
+	// googleapis/preview subdirectory, so change the googleapisDir to target
+	// that root.
+	googleapisDir := srcs.Googleapis
+	if strings.Contains(outDir, filepath.Join("preview", "internal")) {
+		googleapisDir = filepath.Join(googleapisDir, "preview")
+	}
+
 	for i, api := range library.APIs {
 		// TODO(https://github.com/googleapis/librarian/issues/4777): Generate APIs in a temp
 		// directory.

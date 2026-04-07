@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -75,7 +76,50 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	library.Go.GoAPIs = goAPIs
 
+	if library.Preview != nil {
+		fillGoPreview(library, library.Preview)
+	}
+
 	return library, nil
+}
+
+// fillGoPreview fills the [Library.Go] section of the [Library.Preview] and
+// returns the filled Library.Preview. This must be called after the containing
+// [Library] has been filled already.
+func fillGoPreview(stable, preview *config.Library) *config.Library {
+	if stable.Go == nil {
+		return preview
+	}
+	// The preview/internal subdirectory is almost a mirror of the repo root,
+	// so wherever a stable library would normally be placed, do the same under
+	// preview/internal.
+	if preview.Output == "" {
+		preview.Output = filepath.Join("preview", "internal", stable.Output)
+	}
+	if preview.Go == nil {
+		preview.Go = &config.GoModule{}
+	}
+	// GoAPIs explicitly set already, do not overwrite them.
+	if len(preview.Go.GoAPIs) > 0 {
+		return preview
+	}
+
+	// This assumes that the list of APIs to generate a Preview for is a subset
+	// of the APIs to generate a stable Go API for, which is typically the case.
+	preview.Go.GoAPIs = make([]*config.GoAPI, 0, len(preview.APIs))
+	for _, g := range stable.Go.GoAPIs {
+		shared := slices.ContainsFunc(preview.APIs, func(pa *config.API) bool {
+			return g.Path == pa.Path
+		})
+		if shared {
+			// Make a copy so that we can mutate it.
+			pga := *g
+			// Force disablement of snippet generation.
+			pga.NoSnippets = true
+			preview.Go.GoAPIs = append(preview.Go.GoAPIs, &pga)
+		}
+	}
+	return preview
 }
 
 // DefaultLibraryName derives a default library name from an API path.
@@ -109,6 +153,11 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 
 func repoRootPath(output, name string) string {
 	if name == rootModule {
+		return output
+	}
+	// For previews, the root is under preview/internal, not at the root of the
+	// entire repository.
+	if strings.Contains(output, "preview/internal") {
 		return output
 	}
 	path := []string{output}
@@ -160,6 +209,9 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 // It strips any module path version from the import path to get the correct filesystem path.
 func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string {
 	importPath := goAPI.ImportPath
+	if strings.Contains(library.Output, "preview/internal") {
+		importPath = strings.TrimPrefix(importPath, library.Name+"/")
+	}
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion := filepath.Join(string(filepath.Separator), library.Go.ModulePathVersion)
 		importPath = strings.Replace(importPath, modulePathVersion, "", 1)

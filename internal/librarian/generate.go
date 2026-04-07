@@ -38,6 +38,7 @@ var (
 	errMissingLibraryOrAllFlag = errors.New("must specify library name or use --all flag")
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errSkipGenerate            = errors.New("library has skip_generate set")
+	errNoPreviewVariant        = errors.New("library does not have a preview variant")
 )
 
 func generateCommand() *cli.Command {
@@ -75,16 +76,29 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return err
 	}
 
+	isPreview := isPreviewName(libraryName)
+	baseName := trimPreviewName(libraryName)
+
 	// Prepare the libraries to generate by skipping as specified and applying
 	// defaults.
 	var libraries []*config.Library
 	for _, lib := range cfg.Libraries {
+		if !all && isPreview && lib.Name == baseName && lib.Preview == nil {
+			return fmt.Errorf("%w: %q", errNoPreviewVariant, baseName)
+		}
 		if !shouldGenerate(lib, all, libraryName) {
 			continue
 		}
 		prepared, err := applyDefaults(cfg.Language, lib, cfg.Default)
 		if err != nil {
 			return err
+		}
+		if !all && isPreview {
+			prepared = ResolvePreview(prepared)
+		} else if all && lib.Preview != nil {
+			// Generate both stable and preview libraries by first appending the
+			// resolved library config for the preview variant.
+			libraries = append(libraries, ResolvePreview(prepared))
 		}
 		libraries = append(libraries, prepared)
 	}
@@ -93,7 +107,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 			return errors.New("no libraries to generate: all libraries have skip_generate set")
 		}
 		for _, lib := range cfg.Libraries {
-			if lib.Name == libraryName {
+			if lib.Name == baseName {
 				return fmt.Errorf("%w: %q", errSkipGenerate, libraryName)
 			}
 		}
@@ -291,8 +305,20 @@ func deriveAPIPath(language string, name string) string {
 }
 
 func shouldGenerate(lib *config.Library, all bool, libraryName string) bool {
-	if lib.SkipGenerate {
+	isPreview := isPreviewName(libraryName)
+	if lib.SkipGenerate && !isPreview {
 		return false
 	}
-	return all || lib.Name == libraryName
+	if isPreview && lib.Preview != nil && lib.Preview.SkipGenerate {
+		return false
+	}
+	return all || lib.Name == libraryName || (isPreview && lib.Name == trimPreviewName(libraryName))
+}
+
+func isPreviewName(libraryName string) bool {
+	return strings.HasSuffix(libraryName, "-preview")
+}
+
+func trimPreviewName(libraryName string) string {
+	return strings.TrimSuffix(libraryName, "-preview")
 }
