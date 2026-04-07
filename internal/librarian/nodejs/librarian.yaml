@@ -24,9 +24,9 @@ tools:
       checksum: "1577eb76cd5fa5eb1298c8deaa190be073ae4160acedb87411c78a4df29fcc2f"
       build:
         - "npm install"
-        - "npx tsc"
         # tsc only compiles TypeScript; the generator also needs templates/
         # and protos/ in build/ (resolved via __dirname at runtime).
+        - "./node_modules/.bin/tsc"
         - "cp -r templates protos build/"
         - "npm link"
     - name: gapic-node-processing

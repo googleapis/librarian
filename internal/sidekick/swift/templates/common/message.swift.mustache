@@ -31,6 +31,32 @@ public struct {{Codec.Name}}: Codable, Equatable {
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public let {{Codec.Name}}: String
+  public var {{Codec.Name}}: {{Codec.FieldType}}
   {{/Fields}}
+
+  {{! Provide a memberwise initializer, with defaults for each field. }}
+  /// Initialize a new instance of `{{Codec.Name}}`.
+  public init(
+    {{#Fields}}
+    {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
+    {{#Singular}}
+    {{^Optional}}
+    {{Codec.Name}}: {{Codec.FieldType}} = {{Codec.FieldType}}(),
+    {{/Optional}}
+    {{#Optional}}
+    {{Codec.Name}}: {{Codec.FieldType}} = nil,
+    {{/Optional}}
+    {{/Singular}}
+    {{#Repeated}}
+    {{Codec.Name}}: {{Codec.FieldType}} = [],
+    {{/Repeated}}
+    {{#Map}}
+    {{Codec.Name}}: {{Codec.FieldType}} = [:],
+    {{/Map}}
+    {{/Fields}}
+  ) {
+    {{#Fields}}
+    self.{{Codec.Name}} = {{Codec.Name}}
+    {{/Fields}}
+  }
 }

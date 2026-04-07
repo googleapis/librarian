@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,25 +12,33 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package golang
+package python
 
 import (
 	"context"
+	_ "embed"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
-var tools = []string{
-	"github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.58.0",
-	"golang.org/x/tools/cmd/goimports@latest",
-	"google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0",
-	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
-}
+//go:embed librarian.yaml
+var librarianYAML []byte
 
-// Install installs the tools required for Go library generation.
+// Install installs Python pip tool dependencies.
 func Install(ctx context.Context) error {
-	for _, tool := range tools {
-		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	if err != nil {
+		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
+	}
+	for _, tool := range cfg.Tools.Pip {
+		pkg := tool.Package
+		if pkg == "" {
+			pkg = fmt.Sprintf("%s==%s", tool.Name, tool.Version)
+		}
+		if err := command.RunStreaming(ctx, "pip", "install", pkg); err != nil {
 			return err
 		}
 	}

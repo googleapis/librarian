@@ -86,11 +86,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return err
 	}
 
-	// Run post processor (synthtool)
-	// The post processor needs to run from the repository root, not the package directory.
+	// Run post processor (synthtool) and then clean up afterwards.
+	// The post processor needs to run from the repository root, not the package
+	// directory.
 	if len(library.APIs) > 0 {
 		if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
 			return fmt.Errorf("failed to run post processor: %w", err)
+		}
+		if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
+			return fmt.Errorf("failed to cleanup after post processing: %w", err)
 		}
 	}
 
@@ -99,12 +103,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("failed to copy README to docs: %w", err)
 		}
 	}
-
-	// Clean up files that shouldn't be in the final output.
-	if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to cleanup after post processing: %w", err)
-	}
-
 	return nil
 }
 

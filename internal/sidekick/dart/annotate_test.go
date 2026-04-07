@@ -576,8 +576,21 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 		Package: "google.rpc",
 	}
 	message := &api.Message{
+		Name:    "HasMap",
+		ID:      ".some.package.HasMap",
+		Package: "some.package",
+		Fields: []*api.Field{
+			{
+				Name:    "map_field",
+				ID:      ".some.package.HasMap.map_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".some.package.HasMap.MapFieldEntry",
+			},
+		},
+	}
+	mapMessage := &api.Message{
 		Name:    "Entry",
-		ID:      ".some.package.Entry",
+		ID:      ".some.package.HasMap.MapFieldEntry",
 		Package: "some.package",
 		IsMap:   true,
 		Fields: []*api.Field{
@@ -594,6 +607,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	model.State.MessageByID[status.ID] = status
+	model.State.MessageByID[mapMessage.ID] = mapMessage
 	annotate := newAnnotateModel(model)
 
 	annotate.annotateModel(map[string]string{
@@ -602,7 +616,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 	annotate.annotateMessage(message)
 
 	codec := message.Codec.(*messageAnnotation)
-	if !codec.OmitGeneration {
+	if codec.OmitGeneration {
 		t.Errorf("Expected OmitGeneration to be true for map entry")
 	}
 
@@ -1804,7 +1818,8 @@ func TestAnnotateField(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{enumState}, []*api.Service{})
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumState}, []*api.Service{})
+			model.State.MessageByID[mapMessage.ID] = mapMessage
 			annotate := newAnnotateModel(model)
 			registerMissingWkt(annotate.state)
 

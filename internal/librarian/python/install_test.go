@@ -12,26 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swift
+package python
 
 import (
-	"github.com/googleapis/librarian/internal/license"
+	"os"
+	"path/filepath"
+	"testing"
 )
 
-func (codec *codec) annotateModel() error {
-	annotations := &modelAnnotations{
-		CopyrightYear: codec.GenerationYear,
-		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   codec.PackageName,
+func TestInstall(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+		t.Fatal(err)
 	}
-	codec.Model.Codec = annotations
-	for _, message := range codec.Model.Messages {
-		if _, err := codec.annotateMessage(message, annotations); err != nil {
-			return err
-		}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+
+	if err := Install(t.Context()); err != nil {
+		t.Fatal(err)
 	}
-	for _, service := range codec.Model.Services {
-		codec.annotateService(service, annotations)
-	}
-	return nil
 }

@@ -278,7 +278,7 @@ func TestNodejsRead(t *testing.T) {
 					Version:  "2ac5cf7a0dfb759be33ce24a40aae5b543ee375c",
 					Package:  "https://github.com/googleapis/google-cloud-node/archive/2ac5cf7a0dfb759be33ce24a40aae5b543ee375c.tar.gz",
 					Checksum: "1577eb76cd5fa5eb1298c8deaa190be073ae4160acedb87411c78a4df29fcc2f",
-					Build:    []string{"npm install", "npx tsc", "cp -r templates protos build/", "npm link"},
+					Build:    []string{"npm install", "./node_modules/.bin/tsc", "cp -r templates protos build/", "npm link"},
 				},
 				{
 					Name:    "gapic-node-processing",

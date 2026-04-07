@@ -130,48 +130,6 @@ func TestResolveGAPICOptions(t *testing.T) {
 	}
 }
 
-func TestDeriveDistributionName(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    string
-	}{
-		{
-			name:    "default case",
-			library: &config.Library{Name: "secretmanager"},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
-		{
-			name: "groupID override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.custom"},
-			},
-			want: "com.custom:google-cloud-secretmanager",
-		},
-		{
-			name: "distributionName override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
-			},
-			want: "com.google.cloud:google-cloud-secretmanager-v1",
-		},
-		{
-			name:    "library name already has prefix",
-			library: &config.Library{Name: "google-cloud-secretmanager"},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deriveDistributionName(test.library)
-			if got != test.want {
-				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
 func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 	for _, test := range []struct {
 		name    string

@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -32,6 +33,7 @@ func TestValidateLibraries(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		libraries []*config.Library
+		language  string
 		wantErr   error
 	}{
 		{
@@ -49,9 +51,25 @@ func TestValidateLibraries(t *testing.T) {
 			},
 			wantErr: errDuplicateLibraryName,
 		},
+		{
+			name: "invalid distribution name override for java",
+			libraries: []*config.Library{
+				{
+					Name: "lib",
+					Java: &config.JavaModule{
+						DistributionNameOverride: "invalid-name",
+					},
+				},
+			},
+			language: config.LanguageJava,
+			wantErr:  java.ErrInvalidDistributionName,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Libraries: test.libraries}
+			cfg := &config.Config{
+				Language:  test.language,
+				Libraries: test.libraries,
+			}
 			err := validateLibraries(cfg)
 			if test.wantErr == nil {
 				if err != nil {

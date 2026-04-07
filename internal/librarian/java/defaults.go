@@ -15,6 +15,9 @@
 package java
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -40,4 +43,24 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	return library
+}
+
+var (
+	// ErrInvalidDistributionName is returned when a distribution name override
+	// is incorrectly formatted.
+	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
+)
+
+// Validate checks that the Java-specific configuration for a library is
+// correctly formatted. It ensures that the distribution name override
+// contains exactly two parts separated by a colon.
+func Validate(library *config.Library) error {
+	if library.Java == nil || library.Java.DistributionNameOverride == "" {
+		return nil
+	}
+	parts := strings.Split(library.Java.DistributionNameOverride, ":")
+	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+		return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
+	}
+	return nil
 }

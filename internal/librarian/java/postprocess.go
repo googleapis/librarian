@@ -46,8 +46,8 @@ type postProcessParams struct {
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
 func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) coords() apiCoords {
-	return deriveAPICoords(deriveLibCoords(p.library), p.version)
+func (p postProcessParams) coords() apiCoord {
+	return deriveAPICoord(deriveLibCoord(p.library), p.version)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
@@ -126,63 +126,6 @@ func buildLicenseText(year int) string {
 	}
 	b.WriteString(" */\n")
 	return b.String()
-}
-
-type libCoords struct {
-	gapic  coordinates
-	parent coordinates
-	bom    coordinates
-}
-
-type apiCoords struct {
-	libCoords
-	proto coordinates
-	grpc  coordinates
-}
-
-func deriveLibCoords(library *config.Library) libCoords {
-	distName := deriveDistributionName(library)
-	parts := strings.SplitN(distName, ":", 2)
-	groupID := parts[0]
-	artifactID := groupID
-	if len(parts) == 2 {
-		artifactID = parts[1]
-	}
-	gapic := coordinates{
-		GroupID:    groupID,
-		ArtifactID: artifactID,
-		Version:    library.Version,
-	}
-	return libCoords{
-		gapic: gapic,
-		parent: coordinates{
-			GroupID:    gapic.GroupID,
-			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
-			Version:    gapic.Version,
-		},
-		bom: coordinates{
-			GroupID:    gapic.GroupID,
-			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
-			Version:    gapic.Version,
-		},
-	}
-}
-
-func deriveAPICoords(lc libCoords, version string) apiCoords {
-	protoGrpcGroupID := protoGroupID(lc.gapic.GroupID)
-	return apiCoords{
-		libCoords: lc,
-		proto: coordinates{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
-		},
-		grpc: coordinates{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.gapic.ArtifactID, version),
-			Version:    lc.gapic.Version,
-		},
-	}
 }
 
 func removeConflictingFiles(protoSrcDir string) error {
