@@ -33,10 +33,13 @@ var (
 	// the files as accurate as possible.
 	generatedClientFiles = []string{
 		".repo-metadata.json",
+		// Provides helper types for the main API clients, most notably Iterators.
 		"auxiliary.go",
+		// Provides support for Go 1.23+ range-over-function iterators.
 		"auxiliary_go123.go",
 		"doc.go",
 		"gapic_metadata.json",
+		// Serves as internal utility layers for API clients.
 		"helpers.go",
 		"operations.go",
 	}
