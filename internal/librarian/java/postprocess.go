@@ -78,7 +78,7 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	if err != nil {
 		return err
 	}
-	if err := syncPoms(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
+	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
 		return fmt.Errorf("%w: %w", errSyncPoms, err)
 	}
 

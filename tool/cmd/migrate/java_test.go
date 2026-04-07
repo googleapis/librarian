@@ -247,7 +247,7 @@ func TestBuildConfig(t *testing.T) {
 							CodeownerTeam:                "team-pubsub",
 							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
-							ExcludedPoms:                 "pom1,pom2",
+							ExcludedPOMs:                 "pom1,pom2",
 							ExtraVersionedModules:        "module1",
 							GroupID:                      "com.google.cloud",
 							IssueTrackerOverride:         "https://tracker.com",

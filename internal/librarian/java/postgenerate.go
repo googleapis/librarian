@@ -39,7 +39,7 @@ const (
 
 var (
 	errModuleDiscovery      = errors.New("failed to search for java modules")
-	errRootPomGeneration    = errors.New("failed to generate root pom")
+	errRootPOMGeneration    = errors.New("failed to generate root pom")
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
 )
@@ -72,7 +72,7 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
 	}
 	if err := generateRootPom(repoPath, modules); err != nil {
-		return fmt.Errorf("%w: %w", errRootPomGeneration, err)
+		return fmt.Errorf("%w: %w", errRootPOMGeneration, err)
 	}
 	bomConfigs, err := searchForBOMArtifacts(repoPath)
 	if err != nil {
@@ -259,7 +259,7 @@ func generateRootPom(repoPath string, modules []string) error {
 	}{
 		Modules: modules,
 	}
-	return writePom(filepath.Join(repoPath, "pom.xml"), "root-pom.xml.tmpl", data)
+	return writePOM(filepath.Join(repoPath, "pom.xml"), "root-pom.xml.tmpl", data)
 }
 
 // generateGAPICLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
@@ -276,5 +276,5 @@ func generateGAPICLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig
 		Version:    version,
 		BOMConfigs: bomConfigs,
 	}
-	return writePom(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
+	return writePOM(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
 }

@@ -31,7 +31,7 @@ import (
 // Usage: go test ./internal/librarian/java -v -update.
 var update = flag.Bool("update", false, "update golden files")
 
-func TestSyncPoms_Golden(t *testing.T) {
+func TestSyncPOMs_Golden(t *testing.T) {
 	testdataDir := filepath.Join("testdata", "syncpoms", "secretmanager-v1")
 	library := &config.Library{
 		Name:    "secretmanager",
@@ -45,7 +45,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		apiPath: serviceconfig.GRPC,
 	}
 	tmpDir := t.TempDir()
-	// Pre-create the directories that generatePomsIfMissing expects to exist.
+	// Pre-create the directories that generatePOMsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
 	gRPCArtifactID := "grpc-google-cloud-secretmanager-v1"
 	gapicArtifactID := "google-cloud-secretmanager"
@@ -59,7 +59,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 	artifacts := []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
@@ -92,7 +92,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 	}
 }
 
-func TestSyncPoms_Update(t *testing.T) {
+func TestSyncPOMs_Update(t *testing.T) {
 	testdataDir := filepath.Join("testdata", "syncpoms", "secretmanager-v1")
 	tmpDir := t.TempDir()
 
@@ -173,7 +173,7 @@ func TestSyncPoms_Update(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -231,7 +231,7 @@ func TestCollectModules_Error(t *testing.T) {
 	}
 }
 
-func TestIsPomMissing(t *testing.T) {
+func TestIsPOMMissing(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		setup func(t *testing.T) string
@@ -257,21 +257,21 @@ func TestIsPomMissing(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := test.setup(t)
-			got, err := isPomMissing(dir)
+			got, err := isPOMMissing(dir)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != test.want {
-				t.Errorf("isPomMissing(%q) = %v, want %v", dir, got, test.want)
+				t.Errorf("isPOMMissing(%q) = %v, want %v", dir, got, test.want)
 			}
 		})
 	}
 }
 
-func TestIsPomMissing_DirMissingError(t *testing.T) {
+func TestIsPOMMissing_DirMissingError(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
-	_, err := isPomMissing(dir)
+	_, err := isPOMMissing(dir)
 	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("isPomMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
+		t.Errorf("isPOMMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
 	}
 }

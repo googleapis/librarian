@@ -240,7 +240,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
-				ExcludedPoms:                 l.ExcludedPoms,
+				ExcludedPOMs:                 l.ExcludedPoms,
 				ExtraVersionedModules:        l.ExtraVersionedModules,
 				JavaAPIs:                     javaAPIs,
 				GroupID:                      l.GroupID,

@@ -495,8 +495,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedDependencies != "" {
 		res.ExcludedDependencies = src.ExcludedDependencies
 	}
-	if src.ExcludedPoms != "" {
-		res.ExcludedPoms = src.ExcludedPoms
+	if src.ExcludedPOMs != "" {
+		res.ExcludedPOMs = src.ExcludedPOMs
 	}
 	if src.ExtraVersionedModules != "" {
 		res.ExtraVersionedModules = src.ExtraVersionedModules
