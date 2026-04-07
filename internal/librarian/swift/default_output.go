@@ -22,6 +22,6 @@ import (
 // DefaultOutput derives an output path from an API path and a default
 // output directory.
 func DefaultOutput(api, defaultOutput string) string {
-	path := strings.ReplaceAll(api, "/", "-")
+	path := strings.ReplaceAll(strings.Trim(api, "/"), "/", "-")
 	return filepath.Join(defaultOutput, path)
 }
