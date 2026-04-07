@@ -379,8 +379,9 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T, repoRoot, outputDir string)
+		name      string
+		setup     func(t *testing.T, repoRoot, outputDir string)
+		wantFiles []string
 	}{
 		{
 			name: "no staging dir or scripts dir",
@@ -411,6 +412,7 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			wantFiles: []string{"scripts/test.txt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -424,8 +426,13 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
 				t.Errorf("owl-bot-staging should have been removed")
 			}
-			if _, err := os.Stat(filepath.Join(outputDir, "scripts")); !os.IsNotExist(err) {
-				t.Errorf("scripts should have been removed")
+			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !os.IsNotExist(err) {
+				t.Errorf("client-post-processing should have been removed")
+			}
+			for _, wantFile := range test.wantFiles {
+				if _, err := os.Stat(filepath.Join(outputDir, wantFile)); err != nil {
+					t.Errorf("unable to stat %s which should still exist", wantFile)
+				}
 			}
 		})
 	}

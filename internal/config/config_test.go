@@ -275,10 +275,10 @@ func TestNodejsRead(t *testing.T) {
 			NPM: []*NPMTool{
 				{
 					Name:     "gapic-generator-typescript",
-					Version:  "76ba85a7f55c6e82943008b4eceb07a0f58b39e1",
-					Package:  "https://github.com/googleapis/google-cloud-node-core/archive/76ba85a7f55c6e82943008b4eceb07a0f58b39e1.tar.gz",
-					Checksum: "9561a116203761bad63bf1a0abc7a4a0db67608683c3d67b45abfc394df612ac",
-					Build:    []string{"npm install", "npm run compile", "npm link"},
+					Version:  "2ac5cf7a0dfb759be33ce24a40aae5b543ee375c",
+					Package:  "https://github.com/googleapis/google-cloud-node/archive/2ac5cf7a0dfb759be33ce24a40aae5b543ee375c.tar.gz",
+					Checksum: "1577eb76cd5fa5eb1298c8deaa190be073ae4160acedb87411c78a4df29fcc2f",
+					Build:    []string{"npm install", "./node_modules/.bin/tsc", "cp -r templates protos build/", "npm link"},
 				},
 				{
 					Name:    "gapic-node-processing",

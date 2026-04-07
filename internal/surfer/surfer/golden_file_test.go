@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"testing"
 	"time"
@@ -369,8 +370,16 @@ func compareFiles(t *testing.T, expected, got, rel string) bool {
 			return false
 		}
 	} else {
-		if string(wantContent) != string(gotContent) {
-			t.Errorf("%s content mismatch", rel)
+		wantStr := string(wantContent)
+		gotStr := string(gotContent)
+
+		// Ignore copyright year differences.
+		re := regexp.MustCompile(`# Copyright \d{4} Google LLC`)
+		wantStr = re.ReplaceAllString(wantStr, `# Copyright <YEAR> Google LLC`)
+		gotStr = re.ReplaceAllString(gotStr, `# Copyright <YEAR> Google LLC`)
+
+		if diff := cmp.Diff(wantStr, gotStr); diff != "" {
+			t.Errorf("%s mismatch (-want +got):\n%s", rel, diff)
 			return false
 		}
 	}

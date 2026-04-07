@@ -18,6 +18,12 @@ import (
 	"github.com/googleapis/librarian/internal/license"
 )
 
+type modelAnnotations struct {
+	CopyrightYear string
+	BoilerPlate   []string
+	PackageName   string
+}
+
 func (codec *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear: codec.GenerationYear,
@@ -26,7 +32,7 @@ func (codec *codec) annotateModel() error {
 	}
 	codec.Model.Codec = annotations
 	for _, message := range codec.Model.Messages {
-		if _, err := codec.annotateMessage(message, annotations); err != nil {
+		if err := codec.annotateMessage(message, annotations); err != nil {
 			return err
 		}
 	}

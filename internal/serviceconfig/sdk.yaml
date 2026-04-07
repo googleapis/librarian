@@ -112,10 +112,8 @@
     java: preview
     python: preview
 - path: google/api
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/api/apikeys/v2
   documentation_uri: https://cloud.google.com/api-keys/docs
   languages:
@@ -163,7 +161,6 @@
   documentation_uri: https://cloud.google.com/logging/docs/reference/v2/rpc/google.appengine.logging.v1
   languages:
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   transports:
@@ -176,7 +173,6 @@
   documentation_uri: https://developers.google.com/chat
   languages:
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   release_level:
@@ -223,7 +219,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   release_level:
@@ -235,7 +230,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -245,7 +239,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -255,7 +248,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -265,7 +257,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -275,7 +266,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -285,7 +275,6 @@
   documentation_uri: https://developers.google.com/apps-script/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   title: Google Apps Script Types
@@ -818,7 +807,6 @@
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/auditlogs
   languages:
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   transports:
@@ -1147,7 +1135,6 @@
     - java
     - nodejs
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     java: preview
     python: preview
@@ -1163,7 +1150,6 @@
   documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - php
   release_level:
@@ -1398,7 +1384,6 @@
   languages:
     - java
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     java: preview
     python: preview
@@ -1788,10 +1773,8 @@
     java: preview
     python: preview
 - path: google/cloud/location
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/cloud/locationfinder/v1
   languages:
     - all
@@ -2866,7 +2849,6 @@
   documentation_uri: https://cloud.google.com/vmware-engine/
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     java: preview
     python: preview
@@ -3077,10 +3059,8 @@
   release_level:
     go: beta
 - path: google/devtools/source/v1
-  documentation_uri: https://cloud.google.com
   languages:
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   transports:
@@ -3134,7 +3114,6 @@
   documentation_uri: https://cloud.google.com/iam/docs/audit-logging
   languages:
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   skip_rest_numeric_enums:
     - python
   transports:
@@ -3176,20 +3155,16 @@
   documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: Access Context Manager Types
 - path: google/identity/accesscontextmanager/v1
   documentation_uri: https://cloud.google.com/access-context-manager/docs/overview
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     python: preview
 - path: google/logging/type
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: Logging types
 - path: google/logging/v2
   languages:
@@ -3214,7 +3189,6 @@
     - java
     - nodejs
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     java: preview
     python: preview
@@ -3302,7 +3276,6 @@
     - java
     - nodejs
     - python
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   release_level:
     python: preview
 - path: google/maps/solar/v1
@@ -3367,15 +3340,11 @@
   languages:
     - all
 - path: google/rpc
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: google/rpc/context
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
   title: RPC Audit and Logging Attributes
 - path: google/shopping/css/v1
   languages:
@@ -3635,10 +3604,8 @@
   release_level:
     go: beta
 - path: google/type
-  documentation_uri: https://github.com/googleapis/googleapis/tree/master/google
   languages:
     - all
-  new_issue_uri: https://github.com/googleapis/google-cloud-python/issues
 - path: grafeas/v1
   documentation_uri: https://grafeas.io
   languages:

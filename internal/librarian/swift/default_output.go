@@ -14,10 +14,14 @@
 
 package swift
 
-import "path/filepath"
+import (
+	"path/filepath"
+	"strings"
+)
 
 // DefaultOutput derives an output path from an API path and a default
 // output directory.
 func DefaultOutput(api, defaultOutput string) string {
-	return filepath.Join(defaultOutput, api)
+	path := strings.ReplaceAll(strings.Trim(api, "/"), "/", "-")
+	return filepath.Join(defaultOutput, path)
 }

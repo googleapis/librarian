@@ -25,7 +25,7 @@ type serviceAnnotations struct {
 	DocLines      []string
 }
 
-func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) *serviceAnnotations {
+func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) {
 	docLines := codec.formatDocumentation(service.Documentation)
 	annotations := &serviceAnnotations{
 		CopyrightYear: model.CopyrightYear,
@@ -35,5 +35,4 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 	}
 
 	service.Codec = annotations
-	return annotations
 }

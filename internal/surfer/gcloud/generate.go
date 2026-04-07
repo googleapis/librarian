@@ -30,6 +30,7 @@ type GenerateConfig struct {
 	DescriptorFilesToGenerate string
 	DescriptorFiles           string
 	Output                    string
+	BaseModule                string
 }
 
 // Generate generates gcloud commands for a service.
@@ -49,5 +50,5 @@ func Generate(_ context.Context, cfg GenerateConfig) error {
 		return err
 	}
 
-	return writeCommandGroupTree(cfg.Output, tree)
+	return writeCommandGroupTree(cfg.Output, cfg.BaseModule, tree)
 }

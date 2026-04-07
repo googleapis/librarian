@@ -23,15 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
-        with:
-          install-tools: "false"
-      - name: Display Go version
-        run: go version
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Display Python version
-        run: python3 --version
       - name: Install pandoc
         run: |
           set -e
@@ -40,17 +34,19 @@ jobs:
           pandoc --version
         env:
           VERSION: 3.8.2
-      - name: Install gapic-generator
-        run: pip install gapic-generator==1.30.9
-      - name: Install synthtool
+      - name: "Install Python dependencies (resolve cache paths)"
+        id: tool-paths
         run: |
-          pip install gcp-synthtool@git+https://github.com/googleapis/synthtool@afd7725f32d522a95e964884e0fba6d0d6b4cb6a
-      - name: Install nox
-        run: |
-          python -m pip install --upgrade setuptools pip wheel
-          python -m pip install nox
-          python -m pip install ruff==0.14.14
-      - name: Verify git is available
-        run: git --version
-      - name: Run internal/librarian/python tests and check coverage
+          echo "pip=$(python3 -c 'import site; print(site.getsitepackages()[0])')" >> "$GITHUB_OUTPUT"
+      - name: "Install Python dependencies (restore cache)"
+        uses: actions/cache@v5
+        id: tools-cache
+        with:
+          path: |
+            ${{ steps.tool-paths.outputs.pip }}
+          key: python-tools-${{ hashFiles('internal/librarian/python/librarian.yaml') }}
+      - name: "Install Python dependencies (run librarian install)"
+        if: steps.tools-cache.outputs.cache-hit != 'true'
+        run: librarian install python
+      - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/python

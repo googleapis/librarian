@@ -15,7 +15,6 @@
 package legacylibrarian
 
 import (
-	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -29,6 +28,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacygitrepo"
+	internalyaml "github.com/googleapis/librarian/internal/yaml"
 	"gopkg.in/yaml.v3"
 )
 
@@ -189,14 +189,7 @@ func findServiceConfigIn(path string) (string, error) {
 func saveLibrarianState(repoDir string, state *legacyconfig.LibrarianState) error {
 	sortByLibraryID(state)
 	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, librarianStateFile)
-	var buffer bytes.Buffer
-	encoder := yaml.NewEncoder(&buffer)
-	encoder.SetIndent(2)
-	err := encoder.Encode(state)
-	if err != nil {
-		return err
-	}
-	return os.WriteFile(stateFile, buffer.Bytes(), 0644)
+	return internalyaml.Write(stateFile, state)
 }
 
 // sortByLibraryID sorts legacyconfig.LibraryState with respect to ID.
