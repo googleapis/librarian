@@ -107,6 +107,17 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "relative library output is tidied when default is relative",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "workspace/secretmanager",
+			},
+			defaultOutput: "workspace",
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
 			name: "root module does not change",
 			library: &config.Library{
 				Name:   "root-module",
