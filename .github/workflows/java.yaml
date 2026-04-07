@@ -23,6 +23,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+        with:
+          install-protoc: "false"
+          install-tools: "false"
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4
