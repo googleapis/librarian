@@ -53,12 +53,12 @@ type Coordinate struct {
 // LibraryCoordinate contains Maven coordinates for the library modules (GAPIC,
 // parent, and BOM).
 type LibraryCoordinate struct {
-	// Gapic is the Maven coordinate for the GAPIC module.
-	Gapic Coordinate
+	// GAPIC is the Maven coordinate for the GAPIC module.
+	GAPIC Coordinate
 	// Parent is the Maven coordinate for the parent module.
 	Parent Coordinate
-	// Bom is the Maven coordinate for the BOM module.
-	Bom Coordinate
+	// BOM is the Maven coordinate for the BOM module.
+	BOM Coordinate
 }
 
 // APICoordinate contains Maven coordinates for the library and its API-specific
@@ -87,13 +87,13 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 		Version:    library.Version,
 	}
 	return LibraryCoordinate{
-		Gapic: gapic,
+		GAPIC: gapic,
 		Parent: Coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
 			Version:    gapic.Version,
 		},
-		Bom: Coordinate{
+		BOM: Coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
 			Version:    gapic.Version,
@@ -104,18 +104,18 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 // DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
 func DeriveAPICoordinates(lc LibraryCoordinate, version string) APICoordinate {
-	protoGRPCGroupID := protoGroupID(lc.Gapic.GroupID)
+	protoGRPCGroupID := protoGroupID(lc.GAPIC.GroupID)
 	return APICoordinate{
 		LibraryCoordinate: lc,
 		Proto: Coordinate{
 			GroupID:    protoGRPCGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.Gapic.ArtifactID, version),
-			Version:    lc.Gapic.Version,
+			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version),
+			Version:    lc.GAPIC.Version,
 		},
 		GRPC: Coordinate{
 			GroupID:    protoGRPCGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.Gapic.ArtifactID, version),
-			Version:    lc.Gapic.Version,
+			ArtifactID: fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version),
+			Version:    lc.GAPIC.Version,
 		},
 	}
 }

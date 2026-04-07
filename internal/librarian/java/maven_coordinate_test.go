@@ -112,7 +112,7 @@ func TestDeriveLibCoords(t *testing.T) {
 				Version: "1.2.3",
 			},
 			want: LibraryCoordinate{
-				Gapic: Coordinate{
+				GAPIC: Coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager",
 					Version:    "1.2.3",
@@ -122,7 +122,7 @@ func TestDeriveLibCoords(t *testing.T) {
 					ArtifactID: "google-cloud-secretmanager-parent",
 					Version:    "1.2.3",
 				},
-				Bom: Coordinate{
+				BOM: Coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager-bom",
 					Version:    "1.2.3",
@@ -139,7 +139,7 @@ func TestDeriveLibCoords(t *testing.T) {
 				},
 			},
 			want: LibraryCoordinate{
-				Gapic: Coordinate{
+				GAPIC: Coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-secretmanager",
 					Version:    "1.2.3",
@@ -149,7 +149,7 @@ func TestDeriveLibCoords(t *testing.T) {
 					ArtifactID: "google-secretmanager-parent",
 					Version:    "1.2.3",
 				},
-				Bom: Coordinate{
+				BOM: Coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-secretmanager-bom",
 					Version:    "1.2.3",
@@ -177,7 +177,7 @@ func TestDeriveAPICoords(t *testing.T) {
 		{
 			name: "standard cloud mapping",
 			lc: LibraryCoordinate{
-				Gapic: Coordinate{
+				GAPIC: Coordinate{
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-secretmanager",
 					Version:    "1.2.3",
@@ -198,7 +198,7 @@ func TestDeriveAPICoords(t *testing.T) {
 		{
 			name: "non-cloud mapping",
 			lc: LibraryCoordinate{
-				Gapic: Coordinate{
+				GAPIC: Coordinate{
 					GroupID:    "com.google.maps",
 					ArtifactID: "google-maps-places",
 					Version:    "1.2.3",

@@ -194,12 +194,12 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, coords.Gapic.ArtifactID, "src", "main"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main"),
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, coords.Gapic.ArtifactID, "src", "test"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test"),
 			description: "gapic test",
 		},
 		{
