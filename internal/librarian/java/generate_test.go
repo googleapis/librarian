@@ -197,7 +197,7 @@ func TestGrpcProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 	}
-	got := grpcProtocArgs(apiProtos, googleapisDir, "grpc-out")
+	got := gRPCProtocArgs(apiProtos, googleapisDir, "grpc-out")
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,

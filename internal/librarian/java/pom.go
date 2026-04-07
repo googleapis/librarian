@@ -27,15 +27,15 @@ import (
 
 const (
 	protoPomTemplateName  = "module_proto_pom.xml.tmpl"
-	grpcPomTemplateName   = "module_grpc_pom.xml.tmpl"
+	gRPCPomTemplateName   = "module_grpc_pom.xml.tmpl"
 	clientPomTemplateName = "module_client_pom.xml.tmpl"
 	parentPomTemplateName = "module_parent_pom.xml.tmpl"
 	bomPomTemplateName    = "module_bom_pom.xml.tmpl"
 	// Template markers for client pom.xml.
 	managedProtoStartMarker = "<!-- {x-generated-proto-dependencies-start} -->"
 	managedProtoEndMarker   = "<!-- {x-generated-proto-dependencies-end} -->"
-	managedGrpcStartMarker  = "<!-- {x-generated-grpc-dependencies-start} -->"
-	managedGrpcEndMarker    = "<!-- {x-generated-grpc-dependencies-end} -->"
+	managedGRPCStartMarker  = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGRPCEndMarker    = "<!-- {x-generated-grpc-dependencies-end} -->"
 	// Template markers for BOM and parent pom.xml.
 	managedDependenciesStartMarker = "<!-- {x-generated-dependencies-start} -->"
 	managedDependenciesEndMarker   = "<!-- {x-generated-dependencies-end} -->"
@@ -43,10 +43,10 @@ const (
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
-// grpcProtoPomData holds the data for rendering POM templates.
-type grpcProtoPomData struct {
+// gRPCProtoPomData holds the data for rendering POM templates.
+type gRPCProtoPomData struct {
 	Proto          coordinate
-	Grpc           coordinate
+	GRPC           coordinate
 	Parent         coordinate
 	Version        string
 	MainArtifactID string
@@ -60,7 +60,7 @@ type clientPomData struct {
 	Description  string
 	Parent       coordinate
 	ProtoModules []coordinate
-	GrpcModules  []coordinate
+	GRPCModules  []coordinate
 }
 
 // bomParentPomData holds the data for rendering the BOM and Parent library POM template.
@@ -125,7 +125,7 @@ func updateClientPom(pomPath string, data clientPomData) error {
 	if updated, err = updateManagedBlock(updated, "managed_proto_dependencies", managedProtoStartMarker, managedProtoEndMarker, data); err != nil {
 		return err
 	}
-	if updated, err = updateManagedBlock(updated, "managed_grpc_dependencies", managedGrpcStartMarker, managedGrpcEndMarker, data); err != nil {
+	if updated, err = updateManagedBlock(updated, "managed_grpc_dependencies", managedGRPCStartMarker, managedGRPCEndMarker, data); err != nil {
 		return err
 	}
 	// compare to avoid unnecessary I/O
@@ -231,7 +231,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	libCoord := deriveLibCoord(library)
 
 	protoModules := make([]coordinate, 0, len(library.APIs))
-	grpcModules := make([]coordinate, 0, len(library.APIs))
+	gRPCModules := make([]coordinate, 0, len(library.APIs))
 	for _, api := range library.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 		if version == "" {
@@ -241,9 +241,9 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		apiCoord := deriveAPICoord(libCoord, version)
 
 		transport := transports[api.Path]
-		data := grpcProtoPomData{
+		data := gRPCProtoPomData{
 			Proto:          apiCoord.proto,
-			Grpc:           apiCoord.grpc,
+			GRPC:           apiCoord.grpc,
 			Parent:         libCoord.parent,
 			MainArtifactID: libCoord.gapic.ArtifactID,
 			Version:        library.Version,
@@ -266,19 +266,19 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 
 		// gRPC module
 		if transport == serviceconfig.GRPC || transport == serviceconfig.GRPCRest {
-			grpcDir := filepath.Join(libraryDir, apiCoord.grpc.ArtifactID)
-			isGrpcMissing, err := isPomMissing(grpcDir)
+			gRPCDir := filepath.Join(libraryDir, apiCoord.grpc.ArtifactID)
+			isGRPCMissing, err := isPomMissing(gRPCDir)
 			if err != nil {
 				return nil, err
 			}
 			modules = append(modules, javaModule{
 				artifactID:   apiCoord.grpc.ArtifactID,
-				dir:          grpcDir,
-				isMissing:    isGrpcMissing,
+				dir:          gRPCDir,
+				isMissing:    isGRPCMissing,
 				templateData: data,
-				template:     grpcPomTemplateName,
+				template:     gRPCPomTemplateName,
 			})
-			grpcModules = append(grpcModules, data.Grpc)
+			gRPCModules = append(gRPCModules, data.GRPC)
 		}
 	}
 
@@ -299,13 +299,13 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			Description:  metadata.APIDescription,
 			Parent:       libCoord.parent,
 			ProtoModules: protoModules,
-			GrpcModules:  grpcModules,
+			GRPCModules:  gRPCModules,
 		},
 		template: clientPomTemplateName,
 	})
 
 	allModules := []coordinate{libCoord.gapic}
-	allModules = append(allModules, grpcModules...)
+	allModules = append(allModules, gRPCModules...)
 	allModules = append(allModules, protoModules...)
 
 	// BOM module

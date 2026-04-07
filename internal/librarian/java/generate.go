@@ -110,7 +110,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		includeSamples:      !javaAPI.NoSamples,
 	}
 	gapicDir := p.gapicDir()
-	grpcDir := p.grpcDir()
+	grpcDir := p.gRPCDir()
 	protoDir := p.protoDir()
 	for _, dir := range []string{gapicDir, grpcDir, protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -139,7 +139,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
-		if err := runProtoc(ctx, grpcProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {
+		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, googleapisDir, grpcDir)); err != nil {
 			return fmt.Errorf("failed to generate grpc: %w", err)
 		}
 	}
@@ -180,7 +180,7 @@ func protoProtocArgs(apiProtos []string, googleapisDir, protoDir string) []strin
 	return args
 }
 
-func grpcProtocArgs(apiProtos []string, googleapisDir, grpcDir string) []string {
+func gRPCProtocArgs(apiProtos []string, googleapisDir, grpcDir string) []string {
 	args := baseProtocArgs(googleapisDir)
 	args = append(args, fmt.Sprintf("--java_grpc_out=%s", grpcDir))
 	args = append(args, apiProtos...)
