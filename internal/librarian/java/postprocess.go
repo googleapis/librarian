@@ -16,6 +16,7 @@ package java
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -27,32 +28,73 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
 
+var (
+	errOwlBotMissing    = errors.New("owlbot.py not found")
+	errTemplatesMissing = errors.New("templates directory not found")
+	errRunOwlBot        = errors.New("failed to run owlbot.py")
+	errSyncPoms         = errors.New("failed to generate poms")
+)
+
 type postProcessParams struct {
-	cfg                 *config.Config
-	library             *config.Library
-	metadata            *repoMetadata
-	outDir              string
-	librariesBomVersion string
-	version             string
-	googleapisDir       string
-	apiProtos           []string
-	includeSamples      bool
+	cfg            *config.Config
+	library        *config.Library
+	metadata       *repoMetadata
+	outDir         string
+	version        string
+	googleapisDir  string
+	apiProtos      []string
+	includeSamples bool
+}
+
+type libraryPostProcessParams struct {
+	cfg        *config.Config
+	library    *config.Library
+	outDir     string
+	metadata   *repoMetadata
+	transports map[string]serviceconfig.Transport
+}
+
+func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
+	// Check if owlbot.py exists in the library output directory.
+	// It is required for restructuring the output and generating README files.
+	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
+	}
+	bomVersion, err := findBomVersion(p.cfg)
+	if err != nil {
+		return err
+	}
+	if err := runOwlBot(ctx, p.library, p.outDir, bomVersion); err != nil {
+		return fmt.Errorf("%w: %w", errRunOwlBot, err)
+	}
+
+	monorepoVersion, err := findMonorepoVersion(p.cfg)
+	if err != nil {
+		return err
+	}
+	if err := syncPoms(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
+		return fmt.Errorf("%w: %w", errSyncPoms, err)
+	}
+
+	return nil
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) coords() apiCoord {
-	return deriveAPICoord(deriveLibCoord(p.library), p.version)
+func (p postProcessParams) coords() APICoordinate {
+	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
-	grpcDir := p.grpcDir()
+	gRPCDir := p.gRPCDir()
 	protoDir := p.protoDir()
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -61,29 +103,22 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{grpcDir, protoDir} {
+	for _, dir := range []string{gRPCDir, protoDir} {
 		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
 
-	// Check if owlbot.py exists in the library output directory.
-	// It is required for restructuring the output and generating README files.
-	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("owlbot.py not found in %s: %w", p.outDir, err)
-	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
 	}
-	if err := runOwlBot(ctx, p); err != nil {
-		return fmt.Errorf("failed to run owlbot.py: %w", err)
-	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
+	// We target the staging directory because runOwlBot hasn't moved the files
+	// to their final destination yet.
 	coords := p.coords()
-	protoModuleRoot := filepath.Join(p.outDir, coords.proto.ArtifactID)
-	if err := generateClirr(protoModuleRoot); err != nil {
+	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
+	if err := generateClirrIfMissing(protoModuleStagingRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 
@@ -184,27 +219,27 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
 			description: "proto source",
 		},
 		{
-			src:         p.grpcDir(),
-			dest:        filepath.Join(destRoot, coords.grpc.ArtifactID, "src", "main", "java"),
+			src:         p.gRPCDir(),
+			dest:        filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java"),
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "main"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main"),
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "test"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test"),
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
 			description: "resource name source",
 		},
 	}
@@ -219,26 +254,37 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "proto")
+	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil
 }
 
-func runOwlBot(ctx context.Context, p postProcessParams) error {
+// runOwlBot executes the owlbot.py script located in outDir to restructure the
+// generated code and apply templates (e.g., for README.md).
+//
+// It assumes that:
+//  1. All APIs for the library have already been generated and staged into the
+//     "owl-bot-staging" directory (see restructureToStaging()).
+//  2. An owlbot.py file exists in the outDir.
+//  3. The SYNTHTOOL_TEMPLATES environment variable points to a valid templates
+//     directory in google-cloud-java/sdk-platform-java.
+//  4. python3 is available on the system PATH and has the synthtool package
+//     installed (from google-cloud-java/sdk-platform-java).
+func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       p.library.Version,
-		"SYNTHTOOL_LIBRARIES_BOM_VERSION": p.librariesBomVersion,
+		"SYNTHTOOL_LIBRARY_VERSION":       library.Version,
+		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
 	}
 	// Path to templates used for README.md file.
-	templatesDir := filepath.Join(filepath.Dir(p.outDir), owlbotTemplatesRelPath)
+	templatesDir := filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath)
 	if _, err := os.Stat(templatesDir); err != nil {
-		return fmt.Errorf("templates directory not found at %s: %w", templatesDir, err)
+		return fmt.Errorf("%w at %s: %w", errTemplatesMissing, templatesDir, err)
 	}
 	env["SYNTHTOOL_TEMPLATES"] = templatesDir
-	if err := command.RunInDirWithEnv(ctx, p.outDir, env, "python3", "owlbot.py"); err != nil {
+	if err := command.RunInDirWithEnv(ctx, outDir, env, "python3", "owlbot.py"); err != nil {
 		return err
 	}
 	// Staging dirs cleans up as part of owlbot.py

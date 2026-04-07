@@ -14,8 +14,20 @@
 
 package swift
 
-type modelAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	PackageName   string
+import (
+	"github.com/googleapis/librarian/internal/sidekick/api"
+)
+
+type methodAnnotations struct {
+	Name     string
+	DocLines []string
+}
+
+func (codec *codec) annotateMethod(method *api.Method) {
+	docLines := codec.formatDocumentation(method.Documentation)
+	annotations := &methodAnnotations{
+		Name:     camelCase(method.Name),
+		DocLines: docLines,
+	}
+	method.Codec = annotations
 }
