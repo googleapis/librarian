@@ -157,7 +157,7 @@ func repoRootPath(output, name string) string {
 	}
 	// For previews, the root is under preview/internal, not at the root of the
 	// entire repository.
-	if strings.Contains(output, "preview/internal") {
+	if isPreview(output) {
 		return output
 	}
 	path := []string{output}
@@ -209,7 +209,7 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 // It strips any module path version from the import path to get the correct filesystem path.
 func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string {
 	importPath := goAPI.ImportPath
-	if strings.Contains(library.Output, "preview/internal") {
+	if isPreview(library.Output) {
 		importPath = strings.TrimPrefix(importPath, library.Name+"/")
 	}
 	if library.Go != nil && library.Go.ModulePathVersion != "" {

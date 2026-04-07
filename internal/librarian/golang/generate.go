@@ -54,7 +54,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	// googleapis/preview subdirectory, so change the googleapisDir to target
 	// that root.
 	googleapisDir := srcs.Googleapis
-	if strings.Contains(outDir, filepath.Join("preview", "internal")) {
+	if isPreview(outDir) {
 		googleapisDir = filepath.Join(googleapisDir, "preview")
 	}
 
@@ -289,4 +289,11 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 		return sc.Transport(config.LanguageGo)
 	}
 	return serviceconfig.GRPCRest
+}
+
+// isPreview determines if the given output directory contains the canonical
+// preview subdirectory segments as a means of identifying the library as a
+// preview library.
+func isPreview(output string) bool {
+	return strings.Contains(output, "preview/internal")
 }
