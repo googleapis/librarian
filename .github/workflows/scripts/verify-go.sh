@@ -16,11 +16,11 @@
 set -xe
 # 5 libraries to check
 LIBS=(
-  "secretmanager"
-  "maps"
-  "shopping"
   "bigquery"
+  "maps"
   "orgpolicy"
+  "secretmanager"
+  "shopping"
 )
 
 # fail_on_output reads from stdin and fails if there is any output.
