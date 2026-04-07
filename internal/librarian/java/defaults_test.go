@@ -15,6 +15,7 @@
 package java
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -105,7 +106,7 @@ func TestValidate(t *testing.T) {
 		lib  *config.Library
 	}{
 		{
-			name: "valid",
+			name: "valid distribution name override",
 			lib: &config.Library{
 				Java: &config.JavaModule{
 					DistributionNameOverride: "part1:part2",
@@ -178,8 +179,12 @@ func TestValidate_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := Validate(test.lib); err == nil {
+			err := Validate(test.lib)
+			if err == nil {
 				t.Errorf("Validate(%+v) error = nil, want error", test.lib)
+			}
+			if !errors.Is(err, ErrInvalidDistributionName) {
+				t.Errorf("expected %v, got %v", ErrInvalidDistributionName, err)
 			}
 		})
 	}
