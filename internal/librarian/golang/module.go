@@ -81,7 +81,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 	return library, nil
 }
 
-// DefaultLibraryName derives a default library name from an API path.
+// DefaultLibraryName derives a default library name from an API path by stripping
+// known prefixes (e.g., "google/cloud/", "google/api/") and returning the first
+// segment of the remaining path.
 func DefaultLibraryName(api string) string {
 	api = strings.TrimPrefix(api, cloudAPIPrefix)
 	// Some non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
