@@ -90,7 +90,7 @@ func TestTidy(t *testing.T) {
 			},
 			defaultOutput: "/workspace",
 			want: &config.Library{
-				Name: "secretmanager",
+				Name:   "secretmanager",
 				Output: "/workspace/aRandomName",
 			},
 		},
