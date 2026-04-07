@@ -159,13 +159,16 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library
 		defOut = cfg.Default.Output
 	}
 
-	switch cfg.Language {
-	case config.LanguageGo:
-		return golang.Tidy(lib, defOut)
-	case config.LanguageJava:
-		return java.Tidy(lib)
-	case config.LanguageRust:
-		return tidyRustConfig(lib)
+	languageTidiers := map[string]func(*config.Library) *config.Library{
+		config.LanguageGo: func(l *config.Library) *config.Library {
+			return golang.Tidy(l, defOut)
+		},
+		config.LanguageJava: java.Tidy,
+		config.LanguageRust: tidyRustConfig,
+	}
+
+	if tidier, ok := languageTidiers[cfg.Language]; ok {
+		return tidier(lib)
 	}
 	return lib
 }

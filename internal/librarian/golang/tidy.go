@@ -53,8 +53,6 @@ func Tidy(library *config.Library, defaultOutput string) *config.Library {
 	return library
 }
 
-
-
 func isEmptyAPI(goAPI *config.GoAPI) bool {
 	return goAPI.ClientPackage == "" &&
 		!goAPI.DIREGAPIC &&
