@@ -385,14 +385,8 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
 			err := postProcessLibrary(t.Context(), params)
-			if test.wantErr == nil {
-				if err != nil {
-					t.Fatalf("unexpected error: %v", err)
-				}
-			} else {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
-				}
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
