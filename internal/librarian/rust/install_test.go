@@ -67,7 +67,7 @@ func TestInstall_NoCargoTools(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := Install(t.Context(), &config.Tools{}); err != nil {
+			if err := Install(t.Context(), test.tools); err != nil {
 				t.Fatal(err)
 			}
 		})
