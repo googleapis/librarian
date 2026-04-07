@@ -41,9 +41,12 @@ var (
 		"gapic_metadata.json",
 		// Serves as internal utility layers for API clients.
 		"helpers.go",
+		// Manages Long-Running Operations (LROs).
 		"operations.go",
 	}
 	generatedClientFileSuffixes = []string{
+		// Protobuf generated code for Go, containing the Go data structures (structs, enums)
+		// and gRPC/client interface definitions.
 		".pb.go",
 		"_client.go",
 		"_client_example_go123_test.go",
