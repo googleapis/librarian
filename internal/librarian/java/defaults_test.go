@@ -180,9 +180,6 @@ func TestValidate_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := Validate(test.lib)
-			if err == nil {
-				t.Errorf("Validate(%+v) error = nil, want error", test.lib)
-			}
 			if !errors.Is(err, ErrInvalidDistributionName) {
 				t.Errorf("expected %v, got %v", ErrInvalidDistributionName, err)
 			}
