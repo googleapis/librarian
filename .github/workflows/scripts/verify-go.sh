@@ -16,7 +16,7 @@
 set -xe
 # 5 libraries to check
 LIBS=(
-  "bigquery"
+  "aiplatform"
   "maps"
   "orgpolicy"
   "secretmanager"
