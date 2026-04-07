@@ -32,6 +32,7 @@ public class {{Codec.Name}} {
   /// {{{.}}}
   {{/Codec.DocLines}}
   public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
+    {{! TODO(#5138) - deal with `google.proto.Empty` and other complex return types }}
     -> {{OutputType.Codec.Name}}
   {
     fatalError("Unimplemented")
