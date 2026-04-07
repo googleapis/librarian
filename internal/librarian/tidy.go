@@ -169,19 +169,21 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 	return nil
 }
 
+// languageTidiers maps a language to a function that tidies the language-specific
+// configuration.
+var languageTidiers = map[string]func(*config.Library) *config.Library{
+	config.LanguageJava: java.Tidy,
+	config.LanguageRust: tidyRustConfig,
+}
+
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
 func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library {
-	var defaultOut string
-	if cfg.Default != nil {
-		defOut = cfg.Default.Output
-	}
-
-	languageTidiers := map[string]func(*config.Library) *config.Library{
-		config.LanguageGo: func(librart *config.Library) *config.Library {
-			return golang.Tidy(l, defOut)
-		},
-		config.LanguageJava: java.Tidy,
-		config.LanguageRust: tidyRustConfig,
+	if cfg.Language == config.LanguageGo {
+		var defOut string
+		if cfg.Default != nil {
+			defOut = cfg.Default.Output
+		}
+		return golang.Tidy(lib, defOut)
 	}
 
 	if tidier, ok := languageTidiers[cfg.Language]; ok {
