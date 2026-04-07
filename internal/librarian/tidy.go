@@ -177,7 +177,7 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library
 	}
 
 	languageTidiers := map[string]func(*config.Library) *config.Library{
-		config.LanguageGo: func(l *config.Library) *config.Library {
+		config.LanguageGo: func(librart *config.Library) *config.Library {
 			return golang.Tidy(l, defOut)
 		},
 		config.LanguageJava: java.Tidy,
