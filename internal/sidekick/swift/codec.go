@@ -48,6 +48,9 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	if err != nil {
 		return nil, err
 	}
+	// The generator must run at the root of the monorepo, because that is where we keep the `librarian.yaml` file and
+	// because all the `outdir` directories are computed relative to that location. So effectively this gets the root
+	// of the monorepo.
 	absRoot, err := filepath.Abs(".")
 	if err != nil {
 		return nil, err
