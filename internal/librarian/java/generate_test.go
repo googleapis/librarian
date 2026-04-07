@@ -210,7 +210,7 @@ func TestGRPCProtocArgs(t *testing.T) {
 	}
 }
 
-func TestGapicProtocArgs(t *testing.T) {
+func TestGAPICProtocArgs(t *testing.T) {
 	apiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
@@ -416,14 +416,14 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	// Basic validation of GAPIC generation arguments (the 3rd call).
 	gapicArgs := calls[2]
-	foundGapicOut := false
+	foundGAPICOut := false
 	for _, arg := range gapicArgs {
 		if strings.HasPrefix(arg, "--java_gapic_out=") {
-			foundGapicOut = true
+			foundGAPICOut = true
 			break
 		}
 	}
-	if !foundGapicOut {
+	if !foundGAPICOut {
 		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
 	}
 }
@@ -514,7 +514,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				Language: config.LanguageJava,
 				Default: &config.Default{
 					Java: &config.JavaModule{
-						LibrariesBomVersion: "1.2.3",
+						LibrariesBOMVersion: "1.2.3",
 					},
 				},
 				Libraries: []*config.Library{test.library},
@@ -547,7 +547,7 @@ func TestGenerate_Logic(t *testing.T) {
 		Repo:     "googleapis/google-cloud-java",
 		Default: &config.Default{
 			Java: &config.JavaModule{
-				LibrariesBomVersion: "1.2.3",
+				LibrariesBOMVersion: "1.2.3",
 			},
 		},
 		Libraries: []*config.Library{

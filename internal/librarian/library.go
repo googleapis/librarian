@@ -507,8 +507,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.IssueTrackerOverride != "" {
 		res.IssueTrackerOverride = src.IssueTrackerOverride
 	}
-	if src.LibrariesBomVersion != "" {
-		res.LibrariesBomVersion = src.LibrariesBomVersion
+	if src.LibrariesBOMVersion != "" {
+		res.LibrariesBOMVersion = src.LibrariesBOMVersion
 	}
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride

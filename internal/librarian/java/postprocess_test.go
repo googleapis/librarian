@@ -281,7 +281,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		},
 		Default: &config.Default{
 			Java: &config.JavaModule{
-				LibrariesBomVersion: "26.35.0",
+				LibrariesBOMVersion: "26.35.0",
 			},
 		},
 	}

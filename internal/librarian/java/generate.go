@@ -306,8 +306,8 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 // TODO(https://github.com/googleapis/librarian/issues/5152):
 // BOM version should be required and pre-validated, remove this and inline when done.
 func findBomVersion(cfg *config.Config) (string, error) {
-	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBomVersion != "" {
-		return cfg.Default.Java.LibrariesBomVersion, nil
+	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBOMVersion != "" {
+		return cfg.Default.Java.LibrariesBOMVersion, nil
 	}
 	return "", errBomVersionMissing
 }

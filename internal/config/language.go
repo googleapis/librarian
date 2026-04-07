@@ -527,8 +527,8 @@ type JavaModule struct {
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
 
-	// LibrariesBomVersion is the version of the libraries-bom to use for Java.
-	LibrariesBomVersion string `yaml:"libraries_bom_version,omitempty"`
+	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
+	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.

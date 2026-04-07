@@ -73,15 +73,15 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
-	verifyBOM(t, filepath.Join(tmpDir, gapicBom, "pom.xml"), "1.2.3", wantDeps)
+	verifyBOM(t, filepath.Join(tmpDir, gapicBOM, "pom.xml"), "1.2.3", wantDeps)
 	// Verify annotations are present in the raw XML
-	bomPom, err := os.ReadFile(filepath.Join(tmpDir, gapicBom, "pom.xml"))
+	bomPom, err := os.ReadFile(filepath.Join(tmpDir, gapicBOM, "pom.xml"))
 	if err != nil {
 		t.Fatal(err)
 	}
 	bomPomContent := string(bomPom)
 	if !strings.Contains(bomPomContent, "<!-- {x-version-update:google-cloud-aiplatform:current} -->") {
-		t.Errorf("%s/pom.xml missing annotation google-cloud-aiplatform", gapicBom)
+		t.Errorf("%s/pom.xml missing annotation google-cloud-aiplatform", gapicBOM)
 	}
 }
 
@@ -142,7 +142,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		"module-b",
 		"module-a",
 		"not-a-module",
-		gapicBom,
+		gapicBOM,
 		"google-cloud-shared-deps",
 	}
 	for _, dir := range dirs {
@@ -151,7 +151,7 @@ func TestSearchForJavaModules(t *testing.T) {
 		}
 	}
 	// Add pom.xml to modules (including an excluded one to verify filtering)
-	for _, mod := range []string{"module-a", "module-b", gapicBom} {
+	for _, mod := range []string{"module-a", "module-b", gapicBOM} {
 		if err := os.WriteFile(filepath.Join(tmpDir, mod, "pom.xml"), []byte("<project/>"), 0644); err != nil {
 			t.Fatal(err)
 		}

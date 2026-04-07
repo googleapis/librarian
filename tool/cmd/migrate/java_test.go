@@ -226,7 +226,7 @@ func TestBuildConfig(t *testing.T) {
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
 					Java: &config.JavaModule{
-						LibrariesBomVersion: "1.2.3",
+						LibrariesBOMVersion: "1.2.3",
 					},
 				},
 				Sources: &config.Sources{
