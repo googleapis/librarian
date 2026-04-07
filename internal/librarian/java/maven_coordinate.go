@@ -61,9 +61,9 @@ type LibraryCoordinate struct {
 	Bom Coordinate
 }
 
-// ApiCoordinate contains Maven coordinates for the library and its API-specific
+// APICoordinate contains Maven coordinates for the library and its API-specific
 // modules (proto and gRPC).
-type ApiCoordinate struct {
+type APICoordinate struct {
 	LibraryCoordinate
 	// Proto is the Maven coordinate for the proto module.
 	Proto Coordinate
@@ -103,9 +103,9 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 
 // DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
-func DeriveAPICoordinates(lc LibraryCoordinate, version string) ApiCoordinate {
+func DeriveAPICoordinates(lc LibraryCoordinate, version string) APICoordinate {
 	protoGRPCGroupID := protoGroupID(lc.Gapic.GroupID)
-	return ApiCoordinate{
+	return APICoordinate{
 		LibraryCoordinate: lc,
 		Proto: Coordinate{
 			GroupID:    protoGRPCGroupID,
