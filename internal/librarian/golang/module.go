@@ -28,13 +28,25 @@ import (
 
 const (
 	// rootModule is the name of the root module in the configuration.
-	rootModule = "root-module"
+	rootModule        = "root-module"
+	apiPrefix         = "google/api/"
+	cloudAPIPrefix    = "google/cloud/"
+	devtoolsAPIPrefix = "google/devtools/"
+	mapsAPIPrefix     = "google/maps/"
+	shoppingAPIPrefix = "google/shopping/"
 )
 
 var (
 	errGoAPINotFound         = errors.New("go API not found")
 	errImportPathNotFound    = errors.New("import path not found")
 	errClientPackageNotFound = errors.New("client package not found")
+	// prefixToName stores the API prefix to library name mapping.
+	// We only keep maps and shopping because these two libraries group all related
+	// APIs into one library.
+	prefixToName = map[string]string{
+		mapsAPIPrefix:     "maps",
+		shoppingAPIPrefix: "shopping",
+	}
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -79,15 +91,26 @@ func Fill(library *config.Library) (*config.Library, error) {
 }
 
 // DefaultLibraryName derives a default library name from an API path.
-// For a versioned API path, it returns the service name. For a non-versioned
-// API path, it returns the last path segment.
 func DefaultLibraryName(api string) string {
-	path := api
-	if serviceconfig.ExtractVersion(api) != "" {
-		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
-		path = filepath.Dir(api)
+	for prefix, name := range prefixToName {
+		if strings.HasPrefix(api, prefix) {
+			return name
+		}
 	}
-	return filepath.Base(path)
+
+	api = strings.TrimPrefix(api, cloudAPIPrefix)
+	// Other non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
+	// per API. The resulting library configurations need to set additional configurations,
+	// e.g., import_path, for the generation to work.
+	// We don't infer the configuration here and let the user set the configurations manually.
+	api = strings.TrimPrefix(api, apiPrefix)
+	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
+	api = strings.TrimPrefix(api, "google/")
+	idx := strings.Index(api, "/")
+	if idx == -1 {
+		return api
+	}
+	return api[:idx]
 }
 
 // DefaultOutput returns the default output directory for a Go library.
