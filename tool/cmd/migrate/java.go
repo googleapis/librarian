@@ -375,6 +375,8 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 				return err
 			}
 			totalInserts++
+		} else {
+			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
 		}
 	}
 	if totalInserts > 0 {
