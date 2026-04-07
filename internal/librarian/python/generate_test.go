@@ -1030,6 +1030,34 @@ func TestGenerate_APIOrder(t *testing.T) {
 	}
 }
 
+func TestGenerate_Handwritten(t *testing.T) {
+	repoRoot := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
+	library := &config.Library{
+		Name:   "bigframes",
+		Output: filepath.Join(repoRoot, "packages", "bigframes"),
+		Python: &config.PythonPackage{
+			PythonDefault: config.PythonDefault{
+				LibraryType: "INTEGRATION",
+			},
+		},
+	}
+	scriptsDir := filepath.Join(library.Output, "scripts")
+	if err := os.MkdirAll(scriptsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(scriptsDir, "test.sh"), []byte("test"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestDefaultOutput(t *testing.T) {
 	want := "packages/google-cloud-secret-manager"
 	got := DefaultOutput("google-cloud-secret-manager", "packages")
