@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"context"
 	"errors"
 	"io/fs"
 	"os"
@@ -858,7 +859,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
-			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir)
+			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir, outDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -877,3 +878,89 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerate_UsesTempDir(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	
+	// Override mkdirTemp
+	calledMkdirTemp := false
+	var tempDirUsed string
+	originalMkdirTemp := mkdirTemp
+	mkdirTemp = func(dir, pattern string) (string, error) {
+		calledMkdirTemp = true
+		tempDirUsed = filepath.Join(t.TempDir(), "mock-temp")
+		err := os.MkdirAll(tempDirUsed, 0755)
+		return tempDirUsed, err
+	}
+	defer func() { mkdirTemp = originalMkdirTemp }()
+
+	// Override commandRun to check args
+	calledCommandRun := false
+	var gotGoOut string
+	originalCommandRun := commandRun
+	commandRun = func(ctx context.Context, name string, args ...string) error {
+		calledCommandRun = true
+		for _, arg := range args {
+			if strings.HasPrefix(arg, "--go_out=") {
+				gotGoOut = strings.TrimPrefix(arg, "--go_out=")
+			}
+		}
+		// Create the directory structure that moveGeneratedFiles expects
+		srcDir := filepath.Join(gotGoOut, "cloud.google.com", "go", "secretmanager", "apiv1")
+		if err := os.MkdirAll(srcDir, 0755); err != nil {
+			return err
+		}
+		snippetDir := filepath.Join(gotGoOut, "cloud.google.com", "go", "internal", "generated", "snippets", "secretmanager", "apiv1")
+		if err := os.MkdirAll(snippetDir, 0755); err != nil {
+			return err
+		}
+		return nil // skip actual execution
+	}
+	defer func() { commandRun = originalCommandRun }()
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		CopyrightYear: "2025",
+		Output:        t.TempDir(),
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ClientPackage: "secretmanager",
+					ImportPath:    "secretmanager/apiv1",
+					Path:          "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+	}
+
+	err = Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if !calledCommandRun {
+		t.Error("expected commandRun to be called")
+	}
+	if !calledMkdirTemp {
+		t.Error("expected mkdirTemp to be called")
+	}
+	if gotGoOut != tempDirUsed {
+		t.Errorf("expected --go_out to be %s, got %s", tempDirUsed, gotGoOut)
+	}
+	// Check if temp directory was deleted
+	if _, err := os.Stat(tempDirUsed); !os.IsNotExist(err) {
+		t.Errorf("expected temp directory %s to be deleted", tempDirUsed)
+	}
+}
+
