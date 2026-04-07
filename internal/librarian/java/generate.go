@@ -38,7 +38,7 @@ var (
 	errExtractVersion    = errors.New("failed to extract version")
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
-	errBomVersionMissing = errors.New("libraries bom version not found in config")
+	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
 // Generate generates a Java client library.
@@ -305,9 +305,9 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):
 // BOM version should be required and pre-validated, remove this and inline when done.
-func findBomVersion(cfg *config.Config) (string, error) {
+func findBOMVersion(cfg *config.Config) (string, error) {
 	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBOMVersion != "" {
 		return cfg.Default.Java.LibrariesBOMVersion, nil
 	}
-	return "", errBomVersionMissing
+	return "", errBOMVersionMissing
 }

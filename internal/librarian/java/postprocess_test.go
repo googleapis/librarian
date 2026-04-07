@@ -298,12 +298,12 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			wantErr: errOwlBotMissing,
 		},
 		{
-			name: "findBomVersion failure",
+			name: "findBOMVersion failure",
 			cfg:  &config.Config{},
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")
 			},
-			wantErr: errBomVersionMissing,
+			wantErr: errBOMVersionMissing,
 		},
 		{
 			name: "runOwlBot failure (missing templates)",
@@ -338,7 +338,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			wantErr: errRunOwlBot,
 		},
 		{
-			name: "syncPoms failure (missing module directories)",
+			name: "syncPOMs failure (missing module directories)",
 			cfg:  defaultCfg,
 			setup: func(t *testing.T, outDir string) {
 				writeOwlBot(t, outDir, "sys.exit(0)")

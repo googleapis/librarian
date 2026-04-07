@@ -37,7 +37,7 @@ var (
 	errOwlBotMissing    = errors.New("owlbot.py not found")
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
-	errSyncPoms         = errors.New("failed to generate poms")
+	errSyncPOMs         = errors.New("failed to generate poms")
 )
 
 type postProcessParams struct {
@@ -66,7 +66,7 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	if _, err := os.Stat(owlbotPath); err != nil {
 		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
 	}
-	bomVersion, err := findBomVersion(p.cfg)
+	bomVersion, err := findBOMVersion(p.cfg)
 	if err != nil {
 		return err
 	}
@@ -79,7 +79,7 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 		return err
 	}
 	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
-		return fmt.Errorf("%w: %w", errSyncPoms, err)
+		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}
 
 	return nil
