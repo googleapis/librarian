@@ -762,9 +762,46 @@ func TestFillGoPreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := fillGoPreview(test.stable, test.preview)
+			got, err := fillGoPreview(test.stable, test.preview)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillGoPreview_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		stable  *config.Library
+		preview *config.Library
+		want    error
+	}{
+		{
+			name: "missing stable parent",
+			stable: &config.Library{
+				Name:   "foo",
+				Output: "foo",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "google/cloud/foo/v1", ClientPackage: "foo", ImportPath: "foo/apiv1"},
+					},
+				},
+			},
+			preview: &config.Library{
+				Name: "foo",
+				APIs: []*config.API{{Path: "google/cloud/foo/v2"}},
+			},
+			want: errPreviewMissingStableParent,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := fillGoPreview(test.stable, test.preview)
+			if !errors.Is(err, test.want) {
+				t.Errorf("got error %v, want error %v", err, test.want)
 			}
 		})
 	}

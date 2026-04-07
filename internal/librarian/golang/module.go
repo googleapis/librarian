@@ -33,9 +33,10 @@ const (
 )
 
 var (
-	errGoAPINotFound         = errors.New("go API not found")
-	errImportPathNotFound    = errors.New("import path not found")
-	errClientPackageNotFound = errors.New("client package not found")
+	errGoAPINotFound              = errors.New("go API not found")
+	errImportPathNotFound         = errors.New("import path not found")
+	errClientPackageNotFound      = errors.New("client package not found")
+	errPreviewMissingStableParent = errors.New("preview apis not found in stable apis")
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -77,7 +78,10 @@ func Fill(library *config.Library) (*config.Library, error) {
 	library.Go.GoAPIs = goAPIs
 
 	if library.Preview != nil {
-		fillGoPreview(library, library.Preview)
+		_, err := fillGoPreview(library, library.Preview)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return library, nil
@@ -86,9 +90,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 // fillGoPreview fills the [Library.Go] section of the [Library.Preview] and
 // returns the filled Library.Preview. This must be called after the containing
 // [Library] has been filled already.
-func fillGoPreview(stable, preview *config.Library) *config.Library {
+func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 	if stable.Go == nil {
-		return preview
+		return preview, nil
 	}
 	// The preview/internal subdirectory is almost a mirror of the repo root,
 	// so wherever a stable library would normally be placed, do the same under
@@ -101,7 +105,7 @@ func fillGoPreview(stable, preview *config.Library) *config.Library {
 	}
 	// GoAPIs explicitly set already, do not overwrite them.
 	if len(preview.Go.GoAPIs) > 0 {
-		return preview
+		return preview, nil
 	}
 
 	// This assumes that the list of APIs to generate a Preview for is a subset
@@ -119,7 +123,10 @@ func fillGoPreview(stable, preview *config.Library) *config.Library {
 			preview.Go.GoAPIs = append(preview.Go.GoAPIs, &pga)
 		}
 	}
-	return preview
+	if len(preview.Go.GoAPIs) == 0 {
+		return nil, fmt.Errorf("%w: %s", errPreviewMissingStableParent, stable.Name)
+	}
+	return preview, nil
 }
 
 // DefaultLibraryName derives a default library name from an API path.
