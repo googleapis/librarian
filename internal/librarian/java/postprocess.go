@@ -114,9 +114,11 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 
 	// Generate clirr-ignored-differences.xml for the proto module.
+	// We target the staging directory because runOwlBot hasn't moved the files
+	// to their final destination yet.
 	coords := p.coords()
-	protoModuleRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	if err := generateClirr(protoModuleRoot); err != nil {
+	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
+	if err := generateClirrIfMissing(protoModuleStagingRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 
