@@ -436,7 +436,7 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	// If it's *not* empty, then there must have been files there before, which
 	// we'd want to keep anyway.
 	if err := os.RemoveAll(filepath.Join(outdir, "scripts", "client-post-processing")); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove scripts: %w", err)
+		return fmt.Errorf("failed to remove client-post-processing directory: %w", err)
 	}
 	return nil
 }
