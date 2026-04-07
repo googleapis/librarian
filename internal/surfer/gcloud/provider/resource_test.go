@@ -313,7 +313,7 @@ func TestIsPrimaryResourceField(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsPrimaryResourceField(test.field, test.method, nil)
+			got := IsPrimaryResourceField(test.field, test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

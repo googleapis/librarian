@@ -248,7 +248,7 @@ func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
 
 	for _, fwp := range collected {
 		switch {
-		case provider.IsPrimaryResourceField(fwp.field, b.method, b.model):
+		case provider.IsPrimaryResourceField(fwp.field, b.method):
 			if cf.primaryField != nil {
 				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", b.method.Name, cf.primaryField.field.Name, fwp.field.Name)
 			}

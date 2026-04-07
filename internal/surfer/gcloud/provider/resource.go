@@ -89,7 +89,7 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 }
 
 // IsPrimaryResourceField determines if a field represents the primary resource of a method.
-func IsPrimaryResourceField(field *api.Field, method *api.Method, model *api.API) bool {
+func IsPrimaryResourceField(field *api.Field, method *api.Method) bool {
 	if method.InputType == nil {
 		return false
 	}
