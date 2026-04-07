@@ -47,10 +47,10 @@ func TestSyncPoms_Golden(t *testing.T) {
 	tmpDir := t.TempDir()
 	// Pre-create the directories that generatePomsIfMissing expects to exist.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
-	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
+	gRPCArtifactID := "grpc-google-cloud-secretmanager-v1"
 	gapicArtifactID := "google-cloud-secretmanager"
 	bomArtifactID := "google-cloud-secretmanager-bom"
-	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
+	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID} {
 		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -62,7 +62,7 @@ func TestSyncPoms_Golden(t *testing.T) {
 	if err := syncPoms(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
-	artifacts := []string{protoArtifactID, grpcArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
+	artifacts := []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
 	for _, artifact := range artifacts {
 		dir := artifact
 		if artifact == "google-cloud-secretmanager-parent" {
@@ -98,10 +98,10 @@ func TestSyncPoms_Update(t *testing.T) {
 
 	// Setup directory structure for all modules.
 	protoArtifactID := "proto-google-cloud-secretmanager-v1"
-	grpcArtifactID := "grpc-google-cloud-secretmanager-v1"
+	gRPCArtifactID := "grpc-google-cloud-secretmanager-v1"
 	gapicArtifactID := "google-cloud-secretmanager"
 	bomArtifactID := "google-cloud-secretmanager-bom"
-	for _, artifact := range []string{protoArtifactID, grpcArtifactID, gapicArtifactID, bomArtifactID} {
+	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID} {
 		if err := os.MkdirAll(filepath.Join(tmpDir, artifact), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -116,7 +116,7 @@ func TestSyncPoms_Update(t *testing.T) {
 			relPath: filepath.Join(gapicArtifactID, "pom.xml"),
 			markers: []struct{ start, end string }{
 				{managedProtoStartMarker, managedProtoEndMarker},
-				{managedGrpcStartMarker, managedGrpcEndMarker},
+				{managedGRPCStartMarker, managedGRPCEndMarker},
 			},
 		},
 		{

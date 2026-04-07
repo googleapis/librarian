@@ -292,6 +292,9 @@ type Library struct {
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
+
+	// Swift contains Swift-specific library configuration.
+	Swift *SwiftPackage `yaml:"swift,omitempty"`
 }
 
 // API describes an API to include in a library.

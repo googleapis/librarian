@@ -26,24 +26,31 @@ import (
 )
 
 var (
-	rootFiles = []string{"README.md", "internal/version.go"}
-	// TODO(https://github.com/googleapis/librarian/issues/4217), document each file about
-	// what are matched and why it is necessary.
-	// Separate generated files to filename and filename suffix allow us to match
-	// the files as accurate as possible.
+	rootFiles            = []string{"README.md", "internal/version.go"}
 	generatedClientFiles = []string{
 		".repo-metadata.json",
+		// auxiliary.go provides helper types for the main API clients, most notably Iterators.
 		"auxiliary.go",
+		// auxiliary_go123.go provides support for Go 1.23+ range-over-function iterators.
 		"auxiliary_go123.go",
+		// doc.go holds package-level documentation.
 		"doc.go",
+		// gapic_metadata.json maps proto services/RPCs to the corresponding library clients/methods.
 		"gapic_metadata.json",
+		// helpers.go serves as internal utility layers for API clients.
 		"helpers.go",
+		// operations.go manages Long-Running Operations (LROs).
 		"operations.go",
 	}
 	generatedClientFileSuffixes = []string{
+		// .pb.go contains Protobuf generated code for Go, containing the Go data structures (structs, enums)
+		// and gRPC/client interface definitions.
 		".pb.go",
+		// _client.go defines the methods and business logic to interact with the API.
 		"_client.go",
+		// _client_example_go123_test.go contains auto-generated code snippet templates and examples.
 		"_client_example_go123_test.go",
+		// _client_example_test.go contains auto-generated code snippet templates and examples.
 		"_client_example_test.go",
 	}
 )

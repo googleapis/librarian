@@ -172,7 +172,7 @@ func TestDeriveAPICoords(t *testing.T) {
 		lc        LibraryCoordinate
 		version   string
 		wantProto Coordinate
-		wantGrpc  Coordinate
+		wantGRPC  Coordinate
 	}{
 		{
 			name: "standard cloud mapping",
@@ -189,7 +189,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				ArtifactID: "proto-google-cloud-secretmanager-v1",
 				Version:    "1.2.3",
 			},
-			wantGrpc: Coordinate{
+			wantGRPC: Coordinate{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "grpc-google-cloud-secretmanager-v1",
 				Version:    "1.2.3",
@@ -210,7 +210,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				ArtifactID: "proto-google-maps-places-v1",
 				Version:    "1.2.3",
 			},
-			wantGrpc: Coordinate{
+			wantGRPC: Coordinate{
 				GroupID:    "com.google.maps.api.grpc",
 				ArtifactID: "grpc-google-maps-places-v1",
 				Version:    "1.2.3",
@@ -222,8 +222,8 @@ func TestDeriveAPICoords(t *testing.T) {
 			if diff := cmp.Diff(test.wantProto, got.Proto, cmp.AllowUnexported(Coordinate{})); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantGrpc, got.GRPC, cmp.AllowUnexported(Coordinate{})); diff != "" {
-				t.Errorf("grpc mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantGRPC, got.GRPC, cmp.AllowUnexported(Coordinate{})); diff != "" {
+				t.Errorf("gRPC mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

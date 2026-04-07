@@ -44,7 +44,7 @@ type postProcessParams struct {
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) coords() ApiCoordinate {
 	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
@@ -52,7 +52,7 @@ func (p postProcessParams) coords() ApiCoordinate {
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
-	grpcDir := p.grpcDir()
+	gRPCDir := p.gRPCDir()
 	protoDir := p.protoDir()
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -61,7 +61,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{grpcDir, protoDir} {
+	for _, dir := range []string{gRPCDir, protoDir} {
 		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
@@ -188,7 +188,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 			description: "proto source",
 		},
 		{
-			src:         p.grpcDir(),
+			src:         p.gRPCDir(),
 			dest:        filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java"),
 			description: "grpc source",
 		},
