@@ -23,9 +23,9 @@ import (
 
 const (
 	googleGroupID   = "com.google"
-	protoGrpcSuffix = ".api.grpc"
+	protoGRPCSuffix = ".api.grpc"
 	cloudPrefix     = "google-cloud-"
-	grpcPrefix      = "grpc-"
+	gRPCPrefix      = "grpc-"
 	protoPrefix     = "proto-"
 )
 
@@ -99,17 +99,17 @@ func DeriveLibraryCoordinates(library *config.Library) libraryCoordinate {
 // DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
 func DeriveAPICoordinates(lc libraryCoordinate, version string) apiCoordinate {
-	protoGrpcGroupID := protoGroupID(lc.Gapic.GroupID)
+	protoGRPCGroupID := protoGroupID(lc.Gapic.GroupID)
 	return apiCoordinate{
 		libraryCoordinate: lc,
 		Proto: coordinate{
-			GroupID:    protoGrpcGroupID,
+			GroupID:    protoGRPCGroupID,
 			ArtifactID: fmt.Sprintf("%s%s-%s", protoPrefix, lc.Gapic.ArtifactID, version),
 			Version:    lc.Gapic.Version,
 		},
 		GRPC: coordinate{
-			GroupID:    protoGrpcGroupID,
-			ArtifactID: fmt.Sprintf("%s%s-%s", grpcPrefix, lc.Gapic.ArtifactID, version),
+			GroupID:    protoGRPCGroupID,
+			ArtifactID: fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.Gapic.ArtifactID, version),
 			Version:    lc.Gapic.Version,
 		},
 	}
@@ -124,7 +124,7 @@ func protoGroupID(mainArtifactGroupID string) string {
 	if groupInclusions[mainArtifactGroupID] {
 		prefix = googleGroupID
 	}
-	return prefix + protoGrpcSuffix
+	return prefix + protoGRPCSuffix
 }
 
 // ensureCloudPrefix returns name with the "google-cloud-" prefix,
