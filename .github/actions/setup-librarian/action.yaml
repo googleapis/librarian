@@ -12,7 +12,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Setup Librarian
-description: Set up Go with build caching, install protoc and Go tools.
+description: Set up Go with build caching, and optionally install protoc and Go tools.
+inputs:
+  install-protoc:
+    description: Whether to install protoc.
+    default: "true"
+  install-tools:
+    description: Whether to run `go install tool` and `go install ./cmd/librarian`.
+    default: "true"
 runs:
   using: composite
   steps:
@@ -27,8 +34,10 @@ runs:
           ~/go/pkg/mod
         key: go-build-${{ hashFiles('go.sum') }}
         restore-keys: go-build-
-    - uses: ./.github/actions/install-protoc
-    - name: Install Go tools
+    - if: inputs.install-protoc == 'true'
+      uses: ./.github/actions/install-protoc
+    - if: inputs.install-tools == 'true'
+      name: Install Go tools
       run: |
         go install tool
         go install ./cmd/librarian
