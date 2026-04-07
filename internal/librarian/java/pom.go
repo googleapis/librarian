@@ -100,15 +100,15 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		}
 		switch m.template {
 		case clientPOMTemplateName:
-			if err := updateClientPom(pomPath, m.templateData.(clientPOMData)); err != nil {
+			if err := updateClientPOM(pomPath, m.templateData.(clientPOMData)); err != nil {
 				return fmt.Errorf("failed to update client pom %s: %w", m.artifactID, err)
 			}
 		case bomPOMTemplateName:
-			if err := updateBOMPom(pomPath, m.templateData.(bomParentPOMData)); err != nil {
+			if err := updateBOMPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
 				return fmt.Errorf("failed to update bom pom %s: %w", m.artifactID, err)
 			}
 		case parentPOMTemplateName:
-			if err := updateParentPom(pomPath, m.templateData.(bomParentPOMData)); err != nil {
+			if err := updateParentPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
 				return fmt.Errorf("failed to update parent pom %s: %w", m.artifactID, err)
 			}
 		}
@@ -116,10 +116,10 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 	return nil
 }
 
-// updateClientPom surgicially updates the client POM using template markers
+// updateClientPOM surgicially updates the client POM using template markers
 // to inject missing proto- and grpc- dependencies while preserving existing
 // formatting and metadata comments.
-func updateClientPom(pomPath string, data clientPOMData) error {
+func updateClientPOM(pomPath string, data clientPOMData) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
 		return err
@@ -138,10 +138,10 @@ func updateClientPom(pomPath string, data clientPOMData) error {
 	return nil
 }
 
-// updateBOMPom surgically updates the BOM POM using template markers to inject
+// updateBOMPOM surgically updates the BOM POM using template markers to inject
 // the dependencyManagement section while preserving existing formatting and
 // metadata comments.
-func updateBOMPom(pomPath string, data bomParentPOMData) error {
+func updateBOMPOM(pomPath string, data bomParentPOMData) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
 		return err
@@ -157,10 +157,10 @@ func updateBOMPom(pomPath string, data bomParentPOMData) error {
 	return nil
 }
 
-// updateParentPom surgically updates the Parent POM using template markers to inject
+// updateParentPOM surgically updates the Parent POM using template markers to inject
 // the modules and dependencyManagement sections while preserving existing formatting
 // and metadata comments.
-func updateParentPom(pomPath string, data bomParentPOMData) error {
+func updateParentPOM(pomPath string, data bomParentPOMData) error {
 	content, err := os.ReadFile(pomPath)
 	if err != nil {
 		return err

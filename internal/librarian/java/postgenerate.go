@@ -71,7 +71,7 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
 	}
-	if err := generateRootPom(repoPath, modules); err != nil {
+	if err := generateRootPOM(repoPath, modules); err != nil {
 		return fmt.Errorf("%w: %w", errRootPOMGeneration, err)
 	}
 	bomConfigs, err := searchForBOMArtifacts(repoPath)
@@ -251,9 +251,9 @@ func deriveVersionAnnotation(artifactID string) (string, error) {
 	return strings.TrimSuffix(artifactID, bomSuffix), nil
 }
 
-// generateRootPom writes the aggregator pom.xml for the monorepo root, including
+// generateRootPOM writes the aggregator pom.xml for the monorepo root, including
 // all discovered Java modules.
-func generateRootPom(repoPath string, modules []string) error {
+func generateRootPOM(repoPath string, modules []string) error {
 	data := struct {
 		Modules []string
 	}{
