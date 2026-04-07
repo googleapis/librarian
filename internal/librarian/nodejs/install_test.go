@@ -18,15 +18,28 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestInstall(t *testing.T) {
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	tool := cfg.Tools.NPM[0]
+	repo, err := repoFromPackageURL(tool.Package)
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Pre-populate the fetch cache so fetch.Repo returns immediately
 	// without downloading the tarball over the network.
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
 	genDir := filepath.Join(cache,
-		"github.com/googleapis/google-cloud-node@2ac5cf7a0dfb759be33ce24a40aae5b543ee375c",
+		repo+"@"+tool.Version,
 		gapicGeneratorSubdir)
 	for _, sub := range []string{"templates", "protos"} {
 		if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
@@ -37,8 +50,17 @@ func TestInstall(t *testing.T) {
 	// Stub npm so "npm install" and "npm link" are no-ops. The npm stub
 	// also creates node_modules/.bin/tsc in the working directory so the
 	// subsequent "./node_modules/.bin/tsc" build step finds an executable.
+	// Global installs (npm install -g) write into NPM_GLOBAL_PREFIX to
+	// avoid polluting the source tree.
 	bin := t.TempDir()
+	npmGlobalPrefix := t.TempDir()
+	t.Setenv("NPM_GLOBAL_PREFIX", npmGlobalPrefix)
 	npmStub := `#!/bin/sh
+case "$*" in *-g*)
+	mkdir -p "$NPM_GLOBAL_PREFIX/lib"
+	exit 0
+	;;
+esac
 mkdir -p node_modules/.bin
 printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
 chmod +x node_modules/.bin/tsc
