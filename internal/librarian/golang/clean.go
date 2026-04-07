@@ -35,6 +35,7 @@ var (
 		"auxiliary_go123.go",
 		// doc.go holds package-level documentation.
 		"doc.go",
+		// gapic_metadata.json maps proto services/RPCs to the corresponding library clients/methods.
 		"gapic_metadata.json",
 		// helpers.go serves as internal utility layers for API clients.
 		"helpers.go",
