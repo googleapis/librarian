@@ -571,7 +571,7 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 }
 
 func TestInsertMarkers(t *testing.T) {
-	for _, tt := range []struct {
+	for _, test := range []struct {
 		name         string
 		pomContent   string
 		protoIDs     []string
@@ -694,21 +694,21 @@ func TestInsertMarkers(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			// Setup test repo and call insertMarkers (simplified logic for test)
-			lines := strings.Split(tt.pomContent, "\n")
-			gotLines := wrapDependencies(lines, tt.protoIDs, managedProtoStart, managedProtoEnd)
-			gotLines = wrapDependencies(gotLines, tt.grpcIDs, managedGrpcStart, managedGrpcEnd)
+			lines := strings.Split(test.pomContent, "\n")
+			gotLines := wrapDependencies(lines, test.protoIDs, managedProtoStart, managedProtoEnd)
+			gotLines = wrapDependencies(gotLines, test.grpcIDs, managedGrpcStart, managedGrpcEnd)
 			got := strings.Join(gotLines, "\n")
 
-			for _, want := range tt.wantContains {
+			for _, want := range test.wantContains {
 				if !strings.Contains(got, want) {
-					t.Errorf("%s: expected %q in output, but not found\nOutput:\n%s", tt.name, want, got)
+					t.Errorf("%s: expected %q in output, but not found\nOutput:\n%s", test.name, want, got)
 				}
 			}
 
 			// In non-contiguous case, verify that junit is NOT wrapped by markers if we fix it.
-			if tt.name == "multiple-proto-non-contiguous" {
+			if test.name == "multiple-proto-non-contiguous" {
 				protoBlock := got[strings.Index(got, managedProtoStart):strings.Index(got, managedProtoEnd)]
 				if strings.Contains(protoBlock, "junit") {
 					t.Errorf("multiple-proto-non-contiguous: junit should NOT be inside proto markers, but found in block:\n%s", protoBlock)
