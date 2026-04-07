@@ -30,13 +30,16 @@ import (
 
 func TestGenerateCommand(t *testing.T) {
 	const (
-		lib1       = "library-one"
-		lib1Output = "output1"
-		lib2       = "library-two"
-		lib2Output = "output2"
-		lib3       = "library-three"
-		lib3Output = "output3"
+		lib1            = "library-one"
+		lib1PreviewName = "library-one-preview"
+		lib1Output      = "output1"
+		lib2            = "library-two"
+		lib2Output      = "output2"
+		lib3            = "library-three"
+		lib3PreviewName = "library-three-preview"
+		lib3Output      = "output3"
 	)
+	lib1PreviewOutput := filepath.Join("preview", "internal", "output1")
 	baseTempDir := t.TempDir()
 	googleapisDir := createGoogleapisServiceConfigs(t, baseTempDir, map[string]string{
 		"google/cloud/speech/v1":       "speech_v1.yaml",
@@ -45,9 +48,10 @@ func TestGenerateCommand(t *testing.T) {
 	})
 
 	allLibraries := map[string]string{
-		lib1: lib1Output,
-		lib2: lib2Output,
-		lib3: lib3Output,
+		lib1:            lib1Output,
+		lib1PreviewName: lib1PreviewOutput,
+		lib2:            lib2Output,
+		lib3:            lib3Output,
 	}
 
 	for _, test := range []struct {
@@ -73,6 +77,21 @@ func TestGenerateCommand(t *testing.T) {
 			want: []string{lib1},
 		},
 		{
+			name: "preview variant",
+			args: []string{"librarian", "generate", lib1PreviewName},
+			want: []string{lib1PreviewName},
+		},
+		{
+			name:    "preview variant missing",
+			args:    []string{"librarian", "generate", lib2 + "-preview"},
+			wantErr: errNoPreviewVariant,
+		},
+		{
+			name:    "preview variant skipped",
+			args:    []string{"librarian", "generate", lib3PreviewName},
+			wantErr: errSkipGenerate,
+		},
+		{
 			name:             "all flag",
 			args:             []string{"librarian", "generate", "--all"},
 			want:             []string{lib1, lib2},
@@ -93,6 +112,12 @@ func TestGenerateCommand(t *testing.T) {
 				{
 					Name:   lib1,
 					Output: lib1Output,
+					Preview: &config.Library{
+						Output: lib1PreviewOutput,
+						APIs: []*config.API{
+							{Path: "google/cloud/speech/v1"},
+						},
+					},
 					APIs: []*config.API{
 						{Path: "google/cloud/speech/v1"},
 						{Path: "grafeas/v1"},
@@ -111,6 +136,9 @@ func TestGenerateCommand(t *testing.T) {
 					SkipGenerate: true,
 					APIs: []*config.API{
 						{Path: "google/cloud/speech/v1"},
+					},
+					Preview: &config.Library{
+						SkipGenerate: true,
 					},
 				},
 			}

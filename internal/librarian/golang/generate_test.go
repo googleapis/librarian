@@ -69,6 +69,26 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
+			Name:          "secretmanager",
+			Version:       "0.1.0-preview.1",
+			CopyrightYear: "2025",
+			Output:        "preview/internal",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+			Go: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
 			Name:          "configdelivery",
 			Version:       "0.1.0",
 			CopyrightYear: "2025",
@@ -89,7 +109,7 @@ func TestGenerate(t *testing.T) {
 		},
 	}
 	for _, library := range libraries {
-		library.Output = filepath.Join(repoRoot, library.Name)
+		library.Output = filepath.Join(repoRoot, library.Output, library.Name)
 	}
 	for _, library := range libraries {
 		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}); err != nil {

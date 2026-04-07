@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -28,13 +29,17 @@ import (
 
 const (
 	// rootModule is the name of the root module in the configuration.
-	rootModule = "root-module"
+	rootModule        = "root-module"
+	apiPrefix         = "google/api/"
+	cloudAPIPrefix    = "google/cloud/"
+	devtoolsAPIPrefix = "google/devtools/"
 )
 
 var (
-	errGoAPINotFound         = errors.New("go API not found")
-	errImportPathNotFound    = errors.New("import path not found")
-	errClientPackageNotFound = errors.New("client package not found")
+	errGoAPINotFound              = errors.New("go API not found")
+	errImportPathNotFound         = errors.New("import path not found")
+	errClientPackageNotFound      = errors.New("client package not found")
+	errPreviewMissingStableParent = errors.New("preview apis not found in stable apis")
 )
 
 // Fill populates empty Go-specific fields from the api path.
@@ -75,19 +80,75 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	library.Go.GoAPIs = goAPIs
 
+	if library.Preview != nil {
+		_, err := fillGoPreview(library, library.Preview)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	return library, nil
 }
 
-// DefaultLibraryName derives a default library name from an API path.
-// For a versioned API path, it returns the service name. For a non-versioned
-// API path, it returns the last path segment.
-func DefaultLibraryName(api string) string {
-	path := api
-	if serviceconfig.ExtractVersion(api) != "" {
-		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
-		path = filepath.Dir(api)
+// fillGoPreview fills the [Library.Go] section of the [Library.Preview] and
+// returns the filled Library.Preview. This must be called after the containing
+// [Library] has been filled already.
+func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
+	if stable.Go == nil {
+		return preview, nil
 	}
-	return filepath.Base(path)
+	// The preview/internal subdirectory is almost a mirror of the repo root,
+	// so wherever a stable library would normally be placed, do the same under
+	// preview/internal.
+	if preview.Output == "" {
+		preview.Output = filepath.Join("preview", "internal", stable.Output)
+	}
+	if preview.Go == nil {
+		preview.Go = &config.GoModule{}
+	}
+	// GoAPIs explicitly set already, do not overwrite them.
+	if len(preview.Go.GoAPIs) > 0 {
+		return preview, nil
+	}
+
+	// This assumes that the list of APIs to generate a Preview for is a subset
+	// of the APIs to generate a stable Go API for, which is typically the case.
+	preview.Go.GoAPIs = make([]*config.GoAPI, 0, len(preview.APIs))
+	for _, g := range stable.Go.GoAPIs {
+		shared := slices.ContainsFunc(preview.APIs, func(pa *config.API) bool {
+			return g.Path == pa.Path
+		})
+		if shared {
+			// Make a copy so that we can mutate it.
+			pga := *g
+			// Force disablement of snippet generation.
+			pga.NoSnippets = true
+			preview.Go.GoAPIs = append(preview.Go.GoAPIs, &pga)
+		}
+	}
+	if len(preview.Go.GoAPIs) == 0 {
+		return nil, fmt.Errorf("%w: %s", errPreviewMissingStableParent, stable.Name)
+	}
+	return preview, nil
+}
+
+// DefaultLibraryName derives a default library name from an API path by stripping
+// known prefixes (e.g., "google/cloud/", "google/api/") and returning the first
+// segment of the remaining path.
+func DefaultLibraryName(api string) string {
+	api = strings.TrimPrefix(api, cloudAPIPrefix)
+	// Some non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
+	// per API. The resulting library configurations need to set additional configurations,
+	// e.g., import_path, for the generation to work.
+	// We don't infer the configuration here and let the user set the configurations manually.
+	api = strings.TrimPrefix(api, apiPrefix)
+	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
+	api = strings.TrimPrefix(api, "google/")
+	idx := strings.Index(api, "/")
+	if idx == -1 {
+		return api
+	}
+	return api[:idx]
 }
 
 // DefaultOutput returns the default output directory for a Go library.
@@ -109,6 +170,11 @@ func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
 
 func repoRootPath(output, name string) string {
 	if name == rootModule {
+		return output
+	}
+	// For previews, the root is under preview/internal, not at the root of the
+	// entire repository.
+	if isPreview(output) {
 		return output
 	}
 	path := []string{output}
@@ -160,6 +226,9 @@ func defaultImportPathAndClientPkg(apiPath string) (string, string) {
 // It strips any module path version from the import path to get the correct filesystem path.
 func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string {
 	importPath := goAPI.ImportPath
+	if isPreview(library.Output) {
+		importPath = strings.TrimPrefix(importPath, library.Name+"/")
+	}
 	if library.Go != nil && library.Go.ModulePathVersion != "" {
 		modulePathVersion := filepath.Join(string(filepath.Separator), library.Go.ModulePathVersion)
 		importPath = strings.Replace(importPath, modulePathVersion, "", 1)

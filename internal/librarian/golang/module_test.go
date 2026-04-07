@@ -201,6 +201,45 @@ func TestFill(t *testing.T) {
 				Go:     &config.GoModule{},
 			},
 		},
+		{
+			name: "fill preview library",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "secretmanager",
+				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Preview: &config.Library{
+					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "secretmanager",
+				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
+					},
+				},
+				Preview: &config.Library{
+					Output: filepath.Join("preview", "internal", "secretmanager"),
+					APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Go: &config.GoModule{
+						GoAPIs: []*config.GoAPI{
+							{
+								ClientPackage: "secretmanager",
+								ImportPath:    "secretmanager/apiv1",
+								Path:          "google/cloud/secretmanager/v1",
+								NoSnippets:    true,
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)
@@ -502,6 +541,12 @@ func TestRepoRootPath(t *testing.T) {
 			output:      "/home/anyone/repo/lib/v2",
 			want:        "/home/anyone/repo",
 		},
+		{
+			name:        "preview/internal output",
+			libraryName: "secretmanager",
+			output:      "preview/internal/secretmanager",
+			want:        "preview/internal/secretmanager",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := repoRootPath(test.output, test.libraryName)
@@ -612,20 +657,182 @@ func TestDefaultLibraryName(t *testing.T) {
 		want string
 	}{
 		{
-			name: "versioned api",
+			name: "cloud API",
 			api:  "google/cloud/secretmanager/v1",
 			want: "secretmanager",
 		},
 		{
-			name: "non versioned api",
+			name: "devtools API",
+			api:  "google/devtools/artifactregistry/v1",
+			want: "artifactregistry",
+		},
+		{
+			name: "google/api API",
+			api:  "google/api/cloudquotas/v1",
+			want: "cloudquotas",
+		},
+		{
+			name: "maps API",
+			api:  "google/maps/geocode/v4",
+			want: "maps",
+		},
+		{
+			name: "other API",
+			api:  "google/other/v4",
+			want: "other",
+		},
+		{
+			name: "shopping API",
 			api:  "google/shopping/type",
-			want: "type",
+			want: "shopping",
+		},
+		{
+			name: "non existent API",
+			api:  "google/random",
+			want: "random",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DefaultLibraryName(test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillGoPreview(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		stable  *config.Library
+		preview *config.Library
+		want    *config.Library
+	}{
+		{
+			name: "stable Go is nil",
+			stable: &config.Library{
+				Name: "foo",
+			},
+			preview: &config.Library{
+				Name: "foo",
+			},
+			want: &config.Library{
+				Name: "foo",
+			},
+		},
+		{
+			name: "preview output already set",
+			stable: &config.Library{
+				Name: "foo",
+				Go: &config.GoModule{GoAPIs: []*config.GoAPI{
+					{Path: "google/cloud/foo/v1"},
+				}},
+			},
+			preview: &config.Library{
+				Name:   "foo",
+				Output: "custom/output",
+				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+			},
+			want: &config.Library{
+				Name:   "foo",
+				Output: "custom/output",
+				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+				Go: &config.GoModule{GoAPIs: []*config.GoAPI{
+					{Path: "google/cloud/foo/v1", NoSnippets: true},
+				}},
+			},
+		},
+		{
+			name: "preview GoAPIs already set",
+			stable: &config.Library{
+				Name: "foo",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{{Path: "google/cloud/foo/v1"}},
+				},
+			},
+			preview: &config.Library{
+				Name: "foo",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{{Path: "google/cloud/foo/v2"}},
+				},
+			},
+			want: &config.Library{
+				Name:   "foo",
+				Output: "preview/internal",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{{Path: "google/cloud/foo/v2"}},
+				},
+			},
+		},
+		{
+			name: "subset of APIs",
+			stable: &config.Library{
+				Name:   "foo",
+				Output: "foo",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "google/cloud/foo/v1", ClientPackage: "foo", ImportPath: "foo/apiv1"},
+						{Path: "google/cloud/foo/v2", ClientPackage: "foo", ImportPath: "foo/apiv2"},
+					},
+				},
+			},
+			preview: &config.Library{
+				Name: "foo",
+				APIs: []*config.API{{Path: "google/cloud/foo/v1"}},
+			},
+			want: &config.Library{
+				Name:   "foo",
+				Output: filepath.Join("preview", "internal", "foo"),
+				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "google/cloud/foo/v1", ClientPackage: "foo", ImportPath: "foo/apiv1", NoSnippets: true},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := fillGoPreview(test.stable, test.preview)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillGoPreview_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		stable  *config.Library
+		preview *config.Library
+		want    error
+	}{
+		{
+			name: "missing stable parent",
+			stable: &config.Library{
+				Name:   "foo",
+				Output: "foo",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "google/cloud/foo/v1", ClientPackage: "foo", ImportPath: "foo/apiv1"},
+					},
+				},
+			},
+			preview: &config.Library{
+				Name: "foo",
+				APIs: []*config.API{{Path: "google/cloud/foo/v2"}},
+			},
+			want: errPreviewMissingStableParent,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := fillGoPreview(test.stable, test.preview)
+			if !errors.Is(err, test.want) {
+				t.Errorf("got error %v, want error %v", err, test.want)
 			}
 		})
 	}
