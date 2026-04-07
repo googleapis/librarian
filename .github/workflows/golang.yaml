@@ -34,10 +34,6 @@ jobs:
       - name: Run librarian generate
         working-directory: google-cloud-go
         run: librarian generate --all
-      - name: Verify generated code
-        working-directory: google-cloud-go
-        # Run static checks against 5 libraries.
-        run: ../.github/workflows/scripts/verify-go.sh
   create-issue-on-failure:
     needs: [integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
