@@ -171,7 +171,7 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
 func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library {
-	var defOut string
+	var defaultOut string
 	if cfg.Default != nil {
 		defOut = cfg.Default.Output
 	}
