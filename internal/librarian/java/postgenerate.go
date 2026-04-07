@@ -39,7 +39,7 @@ const (
 
 var (
 	errModuleDiscovery      = errors.New("failed to search for java modules")
-	errRootPOMGeneration    = errors.New("failed to generate root pom")
+	errRootPOMGeneration    = errors.New("failed to generate root pom.xml")
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
 )

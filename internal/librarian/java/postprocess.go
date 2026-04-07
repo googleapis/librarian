@@ -37,7 +37,7 @@ var (
 	errOwlBotMissing    = errors.New("owlbot.py not found")
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
-	errSyncPOMs         = errors.New("failed to generate poms")
+	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
 )
 
 type postProcessParams struct {

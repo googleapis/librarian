@@ -555,7 +555,7 @@ func TestGenerate_Logic(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	// Setup mandatory files for postProcessAPI and generatePOMsIfMissing
+	// Setup mandatory files for postProcessAPI and syncPOMs
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)

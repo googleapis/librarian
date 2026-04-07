@@ -94,22 +94,22 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		pomPath := filepath.Join(m.dir, "pom.xml")
 		if m.isMissing {
 			if err := writePOM(pomPath, m.template, m.templateData); err != nil {
-				return fmt.Errorf("failed to generate pom for %s: %w", m.artifactID, err)
+				return fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
 			}
 			continue
 		}
 		switch m.template {
 		case clientPOMTemplateName:
 			if err := updateClientPOM(pomPath, m.templateData.(clientPOMData)); err != nil {
-				return fmt.Errorf("failed to update client pom %s: %w", m.artifactID, err)
+				return fmt.Errorf("failed to update client pom.xml %s: %w", m.artifactID, err)
 			}
 		case bomPOMTemplateName:
 			if err := updateBOMPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
-				return fmt.Errorf("failed to update bom pom %s: %w", m.artifactID, err)
+				return fmt.Errorf("failed to update BOM pom.xml %s: %w", m.artifactID, err)
 			}
 		case parentPOMTemplateName:
 			if err := updateParentPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
-				return fmt.Errorf("failed to update parent pom %s: %w", m.artifactID, err)
+				return fmt.Errorf("failed to update parent pom.xml %s: %w", m.artifactID, err)
 			}
 		}
 	}
