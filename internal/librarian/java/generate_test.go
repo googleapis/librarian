@@ -192,7 +192,7 @@ func TestProtoProtocArgs(t *testing.T) {
 	}
 }
 
-func TestGrpcProtocArgs(t *testing.T) {
+func TestGRPCProtocArgs(t *testing.T) {
 	apiProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),

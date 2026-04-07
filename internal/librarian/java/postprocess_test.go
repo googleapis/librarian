@@ -48,7 +48,7 @@ func TestPostProcessAPI(t *testing.T) {
 		}
 	}
 	content := "package com.google.cloud.secretmanager.v1;"
-	grpcFile := filepath.Join(gRPCDir, "GrpcFile.java")
+	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
 	if err := os.WriteFile(grpcFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
