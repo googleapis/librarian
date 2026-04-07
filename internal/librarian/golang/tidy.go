@@ -16,20 +16,19 @@ package golang
 
 import (
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
 // Tidy tidies configuration for a library by removing default values and clearing
 // empty Go module or API entries.
-func Tidy(library *config.Library) *config.Library {
+func Tidy(library *config.Library, defaultOutput string) *config.Library {
 	if library.Name == rootModule {
 		return library
 	}
-	cleanedOutput := filepath.ToSlash(filepath.Clean(library.Output))
-	if strings.HasSuffix(cleanedOutput, library.Name) {
-		library.Output = removeLibraryNameFromOutput(cleanedOutput, library.Name)
+	derivedOutput := DefaultOutput(library.Name, defaultOutput)
+	if filepath.ToSlash(filepath.Clean(library.Output)) == filepath.ToSlash(filepath.Clean(derivedOutput)) {
+		library.Output = ""
 	}
 	if library.Go == nil {
 		return library
@@ -54,17 +53,7 @@ func Tidy(library *config.Library) *config.Library {
 	return library
 }
 
-// removeLibraryNameFromOutput removes the library name from the output path if it exists.
-// It normalizes paths to use '/' as a portable separator.
-func removeLibraryNameFromOutput(output, name string) string {
-	output = filepath.ToSlash(output)
-	prefix := strings.TrimSuffix(output, name)
-	// Removes file separators if they exist (e.g. "/" to "")
-	if prefix == "" || strings.HasSuffix(prefix, "/") {
-		return strings.TrimSuffix(prefix, "/")
-	}
-	return output
-}
+
 
 func isEmptyAPI(goAPI *config.GoAPI) bool {
 	return goAPI.ClientPackage == "" &&

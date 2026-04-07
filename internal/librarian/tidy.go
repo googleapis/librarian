@@ -100,7 +100,7 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
-	return tidyLanguageConfig(lib, cfg.Language)
+	return tidyLanguageConfig(lib, cfg)
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
@@ -152,18 +152,20 @@ func validateLibraries(cfg *config.Config) error {
 	return nil
 }
 
-// languageTidiers maps a language to a function that tidies the language-specific
-// configuration.
-var languageTidiers = map[string]func(*config.Library) *config.Library{
-	config.LanguageGo:   golang.Tidy,
-	config.LanguageJava: java.Tidy,
-	config.LanguageRust: tidyRustConfig,
-}
-
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
-func tidyLanguageConfig(lib *config.Library, language string) *config.Library {
-	if tidier, ok := languageTidiers[language]; ok {
-		return tidier(lib)
+func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library {
+	var defOut string
+	if cfg.Default != nil {
+		defOut = cfg.Default.Output
+	}
+
+	switch cfg.Language {
+	case config.LanguageGo:
+		return golang.Tidy(lib, defOut)
+	case config.LanguageJava:
+		return java.Tidy(lib)
+	case config.LanguageRust:
+		return tidyRustConfig(lib)
 	}
 	return lib
 }
