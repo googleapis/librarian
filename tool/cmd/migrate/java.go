@@ -20,7 +20,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -367,8 +366,8 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 			continue
 		}
 
-		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd, lib.Name, "proto")
-		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd, lib.Name, "grpc")
+		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
+		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd)
 
 		newContent := strings.Join(updatedLines, "\n")
 		if newContent != string(contentBytes) {
@@ -376,12 +375,10 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 				return err
 			}
 			totalInserts++
-		} else {
-			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
 		}
 	}
 	if totalInserts > 0 {
-		log.Printf("Inserted markers in %d Java pom.xml files", totalInserts)
+		log.Printf("Inserted markers in %d Java client pom.xml files", totalInserts)
 	}
 	return nil
 }
@@ -398,67 +395,94 @@ func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
 }
 
 // wrapDependencies inserts start and end markers around the block of dependencies
-// matching the provided artifact IDs. It returns the modified lines.
-func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string, libName, depType string) []string {
+// matching the provided artifact IDs. If the matching dependencies are not
+// contiguous, it moves them together to the position of the first matching block.
+// It returns the modified lines.
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
 	if len(artifactIDs) == 0 {
 		return lines
 	}
-	for _, line := range lines {
-		if strings.Contains(line, startMarker) {
-			log.Printf("Debug: library %s already has %s markers", libName, depType)
-			return lines
-		}
-	}
-	targets := make([]string, len(artifactIDs))
-	for i, id := range artifactIDs {
-		targets[i] = "<artifactId>" + id + "</artifactId>"
-	}
-	first, last := findMarkerBounds(lines, targets)
-	if first == -1 {
+
+	targets := toArtifactTags(artifactIDs)
+	kept, moved, insertAt := splitMatchingDependencies(lines, targets)
+
+	if insertAt == -1 {
 		return lines
 	}
-	// Use the same indentation as the first dependency line.
-	indent := lines[first][:len(lines[first])-len(strings.TrimLeft(lines[first], " \t"))]
-	return slices.Concat(
-		lines[:first],
-		[]string{indent + startMarker},
-		lines[first:last+1],
-		[]string{indent + endMarker},
-		lines[last+1:],
-	)
+
+	indent := getLineIndent(moved[0])
+
+	res := make([]string, 0, len(lines)+2)
+	res = append(res, kept[:insertAt]...)
+	res = append(res, indent+startMarker)
+	res = append(res, moved...)
+	res = append(res, indent+endMarker)
+	res = append(res, kept[insertAt:]...)
+	return res
 }
 
-// findMarkerBounds returns the starting line of the first <dependency> block
-// and the ending line of the last <dependency> block that contain any of the target artifact IDs.
-func findMarkerBounds(lines []string, targets []string) (first, last int) {
-	first, last = -1, -1
-	for i, line := range lines {
-		match := false
-		for _, t := range targets {
-			if strings.Contains(line, t) {
-				match = true
-				break
-			}
-		}
-		if !match {
+// toArtifactTags converts artifact IDs into Maven <artifactId> tags.
+func toArtifactTags(ids []string) []string {
+	tags := make([]string, 0, len(ids))
+	for _, id := range ids {
+		tags = append(tags, "<artifactId>"+id+"</artifactId>")
+	}
+	return tags
+}
+
+// splitMatchingDependencies partitions POM lines into 'kept' and 'moved' slices.
+// 'moved' contains all dependency blocks matching any target.
+// 'kept' contains all other lines in their original relative order.
+// 'insertAt' is the index in 'kept' where the first matching block was originally located,
+// serving as the insertion point for the relocated blocks.
+func splitMatchingDependencies(lines []string, targets []string) (kept, moved []string, insertAt int) {
+	insertAt = -1
+	for i := 0; i < len(lines); i++ {
+		if !strings.Contains(lines[i], "<dependency>") {
+			kept = append(kept, lines[i])
 			continue
 		}
-		// Find the start of this <dependency> block
-		start := i
-		for start > 0 && !strings.Contains(lines[start], "<dependency>") {
-			start--
+
+		block, nextIdx := nextDependencyBlock(lines, i)
+		if containsAny(block, targets) {
+			if insertAt == -1 {
+				insertAt = len(kept)
+			}
+			moved = append(moved, block...)
+		} else {
+			kept = append(kept, block...)
 		}
-		if first == -1 || start < first {
-			first = start
-		}
-		// Find the end of this <dependency> block
-		end := i
-		for end < len(lines) && !strings.Contains(lines[end], "</dependency>") {
-			end++
-		}
-		if end > last {
-			last = end
-		}
+		i = nextIdx
 	}
 	return
+}
+
+// nextDependencyBlock returns the full <dependency>...</dependency> block starting at index i.
+func nextDependencyBlock(lines []string, i int) (block []string, endIdx int) {
+	start := i
+	for i < len(lines) && !strings.Contains(lines[i], "</dependency>") {
+		i++
+	}
+	if i >= len(lines) { // Malformed XML
+		return lines[start:], len(lines) - 1
+	}
+	return lines[start : i+1], i
+}
+
+// containsAny returns true if any line in the block contains any of the target strings.
+func containsAny(block, targets []string) bool {
+	for _, line := range block {
+		for _, t := range targets {
+			if strings.Contains(line, t) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// getLineIndent returns the leading whitespace of a line.
+func getLineIndent(line string) string {
+	trimmed := strings.TrimLeft(line, " \t")
+	return line[:len(line)-len(trimmed)]
 }

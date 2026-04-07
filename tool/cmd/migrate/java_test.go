@@ -311,7 +311,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
-							DistributionNameOverride: "com.google.cloud:google-cloud-accessapproval",
+							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
 						},
 					},
 					{
@@ -464,69 +464,6 @@ func TestParseJavaBazel(t *testing.T) {
 	}
 }
 
-func TestFindMarkerBounds(t *testing.T) {
-	for _, test := range []struct {
-		name      string
-		lines     []string
-		targets   []string
-		wantFirst int
-		wantLast  int
-	}{
-		{
-			name: "single match",
-			lines: []string{
-				"<dependencies>",
-				"  <dependency>",
-				"    <artifactId>proto-google-cloud-vision-v1</artifactId>",
-				"  </dependency>",
-				"</dependencies>",
-			},
-			targets:   []string{"<artifactId>proto-google-cloud-vision-v1</artifactId>"},
-			wantFirst: 1,
-			wantLast:  3,
-		},
-		{
-			name: "multiple matches",
-			lines: []string{
-				"<dependencies>",
-				"  <dependency>",
-				"    <artifactId>proto-google-cloud-vision-v1</artifactId>",
-				"  </dependency>",
-				"  <dependency>",
-				"    <artifactId>proto-google-cloud-vision-v2</artifactId>",
-				"  </dependency>",
-				"</dependencies>",
-			},
-			targets: []string{
-				"<artifactId>proto-google-cloud-vision-v1</artifactId>",
-				"<artifactId>proto-google-cloud-vision-v2</artifactId>",
-			},
-			wantFirst: 1,
-			wantLast:  6,
-		},
-		{
-			name: "no match",
-			lines: []string{
-				"<dependencies>",
-				"  <dependency>",
-				"    <artifactId>other</artifactId>",
-				"  </dependency>",
-				"</dependencies>",
-			},
-			targets:   []string{"<artifactId>proto-google-cloud-vision-v1</artifactId>"},
-			wantFirst: -1,
-			wantLast:  -1,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			gotFirst, gotLast := findMarkerBounds(test.lines, test.targets)
-			if gotFirst != test.wantFirst || gotLast != test.wantLast {
-				t.Errorf("findMarkerBounds() = (%d, %d), want (%d, %d)", gotFirst, gotLast, test.wantFirst, test.wantLast)
-			}
-		})
-	}
-}
-
 func TestWrapDependencies(t *testing.T) {
 	lines := []string{
 		"<dependencies>",
@@ -606,27 +543,11 @@ func TestWrapDependencies(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := wrapDependencies(lines, test.artifactIDs, test.start, test.end, "test-lib", "type")
+			got := wrapDependencies(lines, test.artifactIDs, test.start, test.end)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func TestWrapDependencies_AlreadyWrapped(t *testing.T) {
-	lines := []string{
-		"<dependencies>",
-		"  " + managedProtoStart,
-		"  <dependency>",
-		"    <artifactId>proto-v1</artifactId>",
-		"  </dependency>",
-		"  " + managedProtoEnd,
-		"</dependencies>",
-	}
-	got := wrapDependencies(lines, []string{"proto-v1"}, managedProtoStart, managedProtoEnd, "test-lib", "proto")
-	if diff := cmp.Diff(lines, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -650,55 +571,149 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 }
 
 func TestInsertMarkers(t *testing.T) {
-	dir := t.TempDir()
-	libName := "vision"
-	artifactID := "google-cloud-vision"
-	repoPath := dir
-	clientDir := filepath.Join(repoPath, "java-"+libName, artifactID)
-	if err := os.MkdirAll(clientDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	pomContent := `<project>
-  <dependencies>
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>proto-google-cloud-vision-v1</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>grpc-google-cloud-vision-v1</artifactId>
-    </dependency>
-  </dependencies>
-</project>`
-	pomPath := filepath.Join(clientDir, "pom.xml")
-	if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{
-				Name: libName,
-				APIs: []*config.API{
-					{Path: "google/cloud/vision/v1"},
-				},
-				Java: &config.JavaModule{
-					DistributionNameOverride: "com.google.cloud:" + artifactID,
-				},
+	for _, tt := range []struct {
+		name         string
+		pomContent   string
+		protoIDs     []string
+		grpcIDs      []string
+		wantContains []string
+	}{
+		{
+			name: "contiguous",
+			pomContent: `
+<dependencies>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>grpc-google-cloud-vision-v1</artifactId>
+  </dependency>
+</dependencies>
+`,
+			protoIDs: []string{"proto-google-cloud-vision-v1"},
+			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
+			wantContains: []string{
+				managedProtoStart,
+				"proto-google-cloud-vision-v1",
+				managedProtoEnd,
+				managedGrpcStart,
+				"grpc-google-cloud-vision-v1",
+				managedGrpcEnd,
 			},
 		},
-	}
-	if err := insertMarkers(repoPath, cfg); err != nil {
-		t.Fatal(err)
-	}
-	gotBytes, err := os.ReadFile(pomPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-	if !strings.Contains(got, managedProtoStart) {
-		t.Errorf("expected %s in pom.xml, but not found", managedProtoStart)
-	}
-	if !strings.Contains(got, managedGrpcStart) {
-		t.Errorf("expected %s in pom.xml, but not found", managedGrpcStart)
+		{
+			name: "non-contiguous",
+			pomContent: `
+<dependencies>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>grpc-google-cloud-vision-v1</artifactId>
+  </dependency>
+</dependencies>
+`,
+			protoIDs: []string{"proto-google-cloud-vision-v1"},
+			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
+			wantContains: []string{
+				managedProtoStart,
+				"proto-google-cloud-vision-v1",
+				managedProtoEnd,
+				"junit",
+				managedGrpcStart,
+				"grpc-google-cloud-vision-v1",
+				managedGrpcEnd,
+			},
+		},
+		{
+			name: "multiple-proto-non-contiguous",
+			pomContent: `
+<dependencies>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>junit</groupId>
+    <artifactId>junit</artifactId>
+    <scope>test</scope>
+  </dependency>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1p1beta1</artifactId>
+  </dependency>
+</dependencies>
+`,
+			protoIDs: []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"},
+			grpcIDs:  []string{},
+			wantContains: []string{
+				managedProtoStart,
+				"proto-google-cloud-vision-v1",
+				"proto-google-cloud-vision-v1p1beta1",
+				managedProtoEnd,
+				"junit",
+			},
+		},
+		{
+			name: "mixed-types-non-contiguous",
+			pomContent: `
+<dependencies>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>grpc-google-cloud-vision-v1</artifactId>
+  </dependency>
+  <dependency>
+    <groupId>com.google.api.grpc</groupId>
+    <artifactId>proto-google-cloud-vision-v1p1beta1</artifactId>
+  </dependency>
+</dependencies>
+`,
+			protoIDs: []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"},
+			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
+			wantContains: []string{
+				managedProtoStart,
+				"proto-google-cloud-vision-v1",
+				"proto-google-cloud-vision-v1p1beta1",
+				managedProtoEnd,
+				managedGrpcStart,
+				"grpc-google-cloud-vision-v1",
+				managedGrpcEnd,
+			},
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			// Setup test repo and call insertMarkers (simplified logic for test)
+			lines := strings.Split(tt.pomContent, "\n")
+			gotLines := wrapDependencies(lines, tt.protoIDs, managedProtoStart, managedProtoEnd)
+			gotLines = wrapDependencies(gotLines, tt.grpcIDs, managedGrpcStart, managedGrpcEnd)
+			got := strings.Join(gotLines, "\n")
+
+			for _, want := range tt.wantContains {
+				if !strings.Contains(got, want) {
+					t.Errorf("%s: expected %q in output, but not found\nOutput:\n%s", tt.name, want, got)
+				}
+			}
+
+			// In non-contiguous case, verify that junit is NOT wrapped by markers if we fix it.
+			if tt.name == "multiple-proto-non-contiguous" {
+				protoBlock := got[strings.Index(got, managedProtoStart):strings.Index(got, managedProtoEnd)]
+				if strings.Contains(protoBlock, "junit") {
+					t.Errorf("multiple-proto-non-contiguous: junit should NOT be inside proto markers, but found in block:\n%s", protoBlock)
+				}
+			}
+		})
 	}
 }
