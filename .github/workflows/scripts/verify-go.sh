@@ -16,7 +16,7 @@
 set -xe
 # 5 libraries to check
 LIBS=(
-  "aiplatform"
+  "dataproc"
   "maps"
   "orgpolicy"
   "secretmanager"
