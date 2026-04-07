@@ -848,6 +848,7 @@
   languages:
     - go
     - python
+    - rust
   skip_rest_numeric_enums:
     - all
   transports:
