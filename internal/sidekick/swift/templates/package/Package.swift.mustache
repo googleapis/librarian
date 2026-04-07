@@ -29,9 +29,30 @@ let package = Package(
   products: [
     .library(name: "{{Codec.PackageName}}", targets: ["{{Codec.PackageName}}"])
   ],
+  {{#Codec.HasDependencies}}
+  dependencies: [
+    {{#Codec.Dependencies}}
+    {{#Path}}
+    .package(path: "{{Codec.MonorepoRoot}}/{{Path}}"),
+    {{/Path}}
+    {{^Path}}
+    .package(url: "{{URL}}", from: "{{Version}}"),
+    {{/Path}}
+    {{/Codec.Dependencies}}
+  ],
+  {{/Codec.HasDependencies}}
   targets: [
     .target(
-      name: "{{Codec.PackageName}}"
-    ),
+      name: "{{Codec.PackageName}}",
+      {{#Codec.HasDependencies}}
+      dependencies: [
+        {{#Codec.Dependencies}}
+        {{#Path}}
+        .product(name: "{{Name}}", package: "{{LocalName}}"),
+        {{/Path}}
+        {{/Codec.Dependencies}}
+      ],
+      {{/Codec.HasDependencies}}
+    )
   ]
 )
