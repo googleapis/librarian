@@ -26,11 +26,7 @@ import (
 )
 
 var (
-	rootFiles = []string{"README.md", "internal/version.go"}
-	// TODO(https://github.com/googleapis/librarian/issues/4217), document each file about
-	// what are matched and why it is necessary.
-	// Separate generated files to filename and filename suffix allow us to match
-	// the files as accurate as possible.
+	rootFiles            = []string{"README.md", "internal/version.go"}
 	generatedClientFiles = []string{
 		".repo-metadata.json",
 		// Provides helper types for the main API clients, most notably Iterators.
@@ -48,8 +44,11 @@ var (
 		// Protobuf generated code for Go, containing the Go data structures (structs, enums)
 		// and gRPC/client interface definitions.
 		".pb.go",
+		// Defines the methods and business logic to interact with the API.
 		"_client.go",
+		// Contains auto-generated code snippet templates and examples.
 		"_client_example_go123_test.go",
+		// Contains auto-generated code snippet templates and examples.
 		"_client_example_test.go",
 	}
 )
