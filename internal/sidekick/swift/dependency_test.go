@@ -12,43 +12,44 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+package swift
 
 import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestLocalName(t *testing.T) {
 	for _, test := range []struct {
 		name string
-		dep  SwiftDependency
+		dep  Dependency
 		want string
 	}{
 		{
 			name: "path simple",
-			dep:  SwiftDependency{Path: "packages/auth"},
+			dep:  Dependency{config.SwiftDependency{Path: "packages/auth"}},
 			want: "auth",
 		},
 		{
 			name: "path nested",
-			dep:  SwiftDependency{Path: "generated/google-cloud-location"},
+			dep:  Dependency{config.SwiftDependency{Path: "generated/google-cloud-location"}},
 			want: "google-cloud-location",
 		},
 		{
 			name: "path trailing slash",
-			dep:  SwiftDependency{Path: "packages/auth/"},
+			dep:  Dependency{config.SwiftDependency{Path: "packages/auth/"}},
 			want: "auth",
 		},
 		{
 			name: "url without git",
-			dep:  SwiftDependency{URL: "https://github.com/apple/swift-protobuf"},
+			dep:  Dependency{config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf"}},
 			want: "swift-protobuf",
 		},
 		{
 			name: "url with git",
-			dep:  SwiftDependency{URL: "https://github.com/apple/swift-protobuf.git"},
+			dep:  Dependency{config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf.git"}},
 			want: "swift-protobuf",
 		},
 	} {

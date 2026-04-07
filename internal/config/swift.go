@@ -14,8 +14,6 @@
 
 package config
 
-import "strings"
-
 // SwiftDefault contains the configuration shared by all Swift libraries.
 type SwiftDefault struct {
 	// Dependencies is a list of package dependencies.
@@ -81,23 +79,4 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
-}
-
-// LocalName returns the name of the dependency when used in a `Package.swift` file.
-//
-// For local dependencies this is the last directory in the path. For external dependencies this is
-// the last directory of the URL path.
-func (dep *SwiftDependency) LocalName() string {
-	var source string
-	if dep.Path != "" {
-		source = dep.Path
-	} else {
-		source = strings.TrimSuffix(dep.URL, ".git")
-	}
-	source = strings.Trim(source, "/")
-	idx := strings.LastIndex(source, "/")
-	if idx == -1 {
-		return source
-	}
-	return source[idx+1:]
 }
