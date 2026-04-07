@@ -65,10 +65,18 @@ type SwiftDependency struct {
 	// This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP
 	// and gRPC clients into separate libraries.
 	RequiredByServices bool `yaml:"required_by_services,omitempty"`
-	// SourcePackage is not empty, this is the name of the Protobuf package provided by this library.
+	// ApiPackage is the name of the API package provided by this library.
+	//
+	// In Swift a package contains at most one channel for one API. For packages that implement an
+	// API, this field contains the name of the package in the specification language of that API.
+	// At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are
+	// self-contained.
+	//
+	// Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is
+	// empty for such libraries.
 	//
 	// Examples:
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
-	SourcePackage string `yaml:"source_package,omitempty"`
+	ApiPackage string `yaml:"api_package,omitempty"`
 }
