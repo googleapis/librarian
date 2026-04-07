@@ -86,11 +86,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return err
 	}
 
-	// Run post processor (synthtool)
-	// The post processor needs to run from the repository root, not the package directory.
+	// Run post processor (synthtool) and then clean up afterwards.
+	// The post processor needs to run from the repository root, not the package
+	// directory.
 	if len(library.APIs) > 0 {
 		if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
 			return fmt.Errorf("failed to run post processor: %w", err)
+		}
+		if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
+			return fmt.Errorf("failed to cleanup after post processing: %w", err)
 		}
 	}
 
@@ -99,12 +103,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("failed to copy README to docs: %w", err)
 		}
 	}
-
-	// Clean up files that shouldn't be in the final output.
-	if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
-		return fmt.Errorf("failed to cleanup after post processing: %w", err)
-	}
-
 	return nil
 }
 
@@ -433,9 +431,12 @@ func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
 	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
-	// Remove the scripts directory from the package root.
-	if err := os.RemoveAll(filepath.Join(outdir, "scripts")); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("failed to remove scripts: %w", err)
+	// Remove the post-processing scripts. This will leave the "scripts"
+	// directory, but that's okay if it's empty - git ignores empty directories.
+	// If it's *not* empty, then there must have been files there before, which
+	// we'd want to keep anyway.
+	if err := os.RemoveAll(filepath.Join(outdir, "scripts", "client-post-processing")); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("failed to remove client-post-processing directory: %w", err)
 	}
 	return nil
 }

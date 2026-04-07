@@ -20,54 +20,70 @@ import (
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	"github.com/iancoleman/strcase"
 )
 
 type commandGroupBuilder struct {
 	model   *api.API
 	config  *provider.Config
 	service *api.Service
-	title   string
 }
 
-func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) (*commandGroupBuilder, error) {
-	if service != nil && service.DefaultHost == "" {
-		return nil, fmt.Errorf("service %q has empty default host", service.Name)
-	}
-
-	title := model.Name
-	if service != nil {
-		shortServiceName, _, _ := strings.Cut(service.DefaultHost, ".")
-		title = provider.GetServiceTitle(model, shortServiceName)
-	}
-
+func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) *commandGroupBuilder {
 	return &commandGroupBuilder{
 		model:   model,
 		config:  config,
 		service: service,
-		title:   title,
-	}, nil
+	}
 }
 
 func (b *commandGroupBuilder) buildRoot() *CommandGroup {
+	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
+	// to look up the help text from the gcloud config.
+	rootName := provider.ResolveRootPackage(b.model)
 	return &CommandGroup{
-		Name:     provider.ResolveRootPackage(b.model),
-		HelpText: fmt.Sprintf("Manage %s resources.", b.title),
+		Name:     rootName,
+		Path:     []string{rootName},
+		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
 }
 
-func (b *commandGroupBuilder) build(segments []string, idx int) *CommandGroup {
+func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []string) *CommandGroup {
 	seg := segments[idx]
 	singular := seg
 	if resName := provider.GetSingularResourceNameForPrefix(b.model, segments[:idx+1]); resName != "" {
 		singular = resName
 	}
 
+	path := make([]string, 0, len(parentPath)+1)
+	path = append(path, parentPath...)
+	path = append(path, seg)
+
 	return &CommandGroup{
 		Name:     seg,
-		HelpText: fmt.Sprintf("Manage %s %s resources.", b.title, singular),
+		Path:     path,
+		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(singular)),
 		Groups:   make(map[string]*CommandGroup),
 		Commands: make(map[string]*Command),
 	}
+}
+
+// TODO (https://github.com/googleapis/librarian/issues/3414): Move all of the magic
+// string manipulation into one location.
+//   - put all of these helpers in one place
+//   - make it clear when and where not to use them. Ideally, we shouldn't use
+//     them till the presentation layer but help text breaks that pattern.
+func toTitleCase(s string) string {
+	// Convert to CamelCase first to handle snake_case
+	camel := strcase.ToCamel(s)
+	var sb strings.Builder
+	for i, r := range camel {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			sb.WriteByte(' ')
+		}
+		sb.WriteRune(r)
+	}
+	return sb.String()
 }

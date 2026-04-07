@@ -117,7 +117,7 @@
 {{- end }}
 {{- end }}
 {{- define "managed_grpc_dependencies" }}
-{{- range .GrpcModules }}
+{{- range .GRPCModules }}
     <dependency>
       <groupId>{{ .GroupID }}</groupId>
       <artifactId>{{ .ArtifactID }}</artifactId>

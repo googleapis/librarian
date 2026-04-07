@@ -135,6 +135,9 @@ func validateLibraries(cfg *config.Config) error {
 				pathCount[ch.Path]++
 			}
 		}
+		if err := validateLanguageConfig(lib, cfg.Language); err != nil {
+			errs = append(errs, err)
+		}
 	}
 	for name, count := range nameCount {
 		if count > 1 {
@@ -148,6 +151,20 @@ func validateLibraries(cfg *config.Config) error {
 	}
 	if len(errs) > 0 {
 		return errors.Join(errs...)
+	}
+	return nil
+}
+
+// languageValidators maps a language to a function that validates the language-specific
+// configuration.
+var languageValidators = map[string]func(*config.Library) error{
+	config.LanguageJava: java.Validate,
+}
+
+// validateLanguageConfig finds and executes the language-specific validator for a library.
+func validateLanguageConfig(lib *config.Library, language string) error {
+	if validator, ok := languageValidators[language]; ok {
+		return validator(lib)
 	}
 	return nil
 }

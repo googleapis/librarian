@@ -44,15 +44,15 @@ type postProcessParams struct {
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) grpcDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
-func (p postProcessParams) coords() apiCoord {
-	return deriveAPICoord(deriveLibCoord(p.library), p.version)
+func (p postProcessParams) coords() APICoordinate {
+	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
-	grpcDir := p.grpcDir()
+	gRPCDir := p.gRPCDir()
 	protoDir := p.protoDir()
 	// Unzip the temp-codegen.srcjar into temporary version/ directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -61,7 +61,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{grpcDir, protoDir} {
+	for _, dir := range []string{gRPCDir, protoDir} {
 		if err := addMissingHeaders(dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
@@ -82,7 +82,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 
 	// Generate clirr-ignored-differences.xml for the proto module.
 	coords := p.coords()
-	protoModuleRoot := filepath.Join(p.outDir, coords.proto.ArtifactID)
+	protoModuleRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
 	if err := generateClirr(protoModuleRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
@@ -184,27 +184,27 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
 			description: "proto source",
 		},
 		{
-			src:         p.grpcDir(),
-			dest:        filepath.Join(destRoot, coords.grpc.ArtifactID, "src", "main", "java"),
+			src:         p.gRPCDir(),
+			dest:        filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java"),
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "main"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main"),
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, coords.gapic.ArtifactID, "src", "test"),
+			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test"),
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "java"),
+			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
 			description: "resource name source",
 		},
 	}
@@ -219,7 +219,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, coords.proto.ArtifactID, "src", "main", "proto")
+	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}

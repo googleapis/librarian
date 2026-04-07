@@ -26,6 +26,7 @@ type CommandGroupsByTrack struct {
 // It is used to generate the Python `__init__.py` registration files.
 type CommandGroup struct {
 	Name     string
+	Path     []string
 	HelpText string
 	Commands map[string]*Command
 	Groups   map[string]*CommandGroup
