@@ -724,16 +724,22 @@ func TestFillGoPreview(t *testing.T) {
 			name: "preview output already set",
 			stable: &config.Library{
 				Name: "foo",
-				Go:   &config.GoModule{},
+				Go: &config.GoModule{GoAPIs: []*config.GoAPI{
+					{Path: "google/cloud/foo/v1"},
+				}},
 			},
 			preview: &config.Library{
 				Name:   "foo",
 				Output: "custom/output",
+				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
 			},
 			want: &config.Library{
 				Name:   "foo",
 				Output: "custom/output",
-				Go:     &config.GoModule{GoAPIs: []*config.GoAPI{}},
+				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+				Go: &config.GoModule{GoAPIs: []*config.GoAPI{
+					{Path: "google/cloud/foo/v1", NoSnippets: true},
+				}},
 			},
 		},
 		{
