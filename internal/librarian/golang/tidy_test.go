@@ -23,9 +23,10 @@ import (
 
 func TestTidy(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    *config.Library
+		name          string
+		library       *config.Library
+		defaultOutput string
+		want          *config.Library
 	}{
 		{
 			name: "library output is removed",
@@ -46,6 +47,74 @@ func TestTidy(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "app/repo/secret-manager",
+			},
+		},
+		{
+			name: "absolute library output is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager",
+			},
+			defaultOutput: "/workspace",
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
+			name: "absolute library output at root is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/secretmanager",
+			},
+			defaultOutput: "/",
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
+			name: "absolute library output with trailing slash is tidied",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager/",
+			},
+			defaultOutput: "/workspace",
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
+			name: "library path is kept if it is totally different",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/aRandomName",
+			},
+			defaultOutput: "/workspace",
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/aRandomName",
+			},
+		},
+		{
+			name: "absolute library output kept when default is relative path matching suffix",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager",
+			},
+			defaultOutput: "workspace",
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "/workspace/secretmanager",
+			},
+		},
+		{
+			name: "relative library output is tidied when default is relative",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: "workspace/secretmanager",
+			},
+			defaultOutput: "workspace",
+			want: &config.Library{
+				Name: "secretmanager",
 			},
 		},
 		{
@@ -194,7 +263,7 @@ func TestTidy(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Tidy(test.library)
+			got := Tidy(test.library, test.defaultOutput)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
