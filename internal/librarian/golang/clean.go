@@ -33,6 +33,7 @@ var (
 		"auxiliary.go",
 		// auxiliary_go123.go provides support for Go 1.23+ range-over-function iterators.
 		"auxiliary_go123.go",
+		// doc.go holds package-level documentation.
 		"doc.go",
 		"gapic_metadata.json",
 		// helpers.go serves as internal utility layers for API clients.
