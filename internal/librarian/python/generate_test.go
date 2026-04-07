@@ -429,9 +429,9 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !os.IsNotExist(err) {
 				t.Errorf("client-post-processing should have been removed")
 			}
-			for _, expectedFile := range test.wantFiles {
-				if _, err := os.Stat(filepath.Join(outputDir, expectedFile)); err != nil {
-					t.Errorf("unable to stat %s which should still exist", expectedFile)
+			for _, wantFile := range test.wantFiles {
+				if _, err := os.Stat(filepath.Join(outputDir, wantFile)); err != nil {
+					t.Errorf("unable to stat %s which should still exist", wantFile)
 				}
 			}
 		})
