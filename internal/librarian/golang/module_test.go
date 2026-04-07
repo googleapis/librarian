@@ -657,14 +657,39 @@ func TestDefaultLibraryName(t *testing.T) {
 		want string
 	}{
 		{
-			name: "versioned api",
+			name: "cloud API",
 			api:  "google/cloud/secretmanager/v1",
 			want: "secretmanager",
 		},
 		{
-			name: "non versioned api",
+			name: "devtools API",
+			api:  "google/devtools/artifactregistry/v1",
+			want: "artifactregistry",
+		},
+		{
+			name: "google/api API",
+			api:  "google/api/cloudquotas/v1",
+			want: "cloudquotas",
+		},
+		{
+			name: "maps API",
+			api:  "google/maps/geocode/v4",
+			want: "maps",
+		},
+		{
+			name: "other API",
+			api:  "google/other/v4",
+			want: "other",
+		},
+		{
+			name: "shopping API",
 			api:  "google/shopping/type",
-			want: "type",
+			want: "shopping",
+		},
+		{
+			name: "non existent API",
+			api:  "google/random",
+			want: "random",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

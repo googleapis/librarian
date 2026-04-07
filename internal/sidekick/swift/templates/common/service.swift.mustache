@@ -26,5 +26,16 @@ import Foundation
 /// {{{.}}}
 {{/Codec.DocLines}}
 public class {{Codec.Name}} {
-  {{! TODO(#....) - add method generation }}
+  {{#Methods}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
+    {{! TODO(#5138) - deal with `google.proto.Empty` and other complex return types }}
+    -> {{OutputType.Codec.Name}}
+  {
+    fatalError("Unimplemented")
+  }
+  {{/Methods}}
 }

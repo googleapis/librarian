@@ -31,15 +31,15 @@ const (
 	// rootLibrary is the name of the monorepo library used to identify
 	// the version for all libraries in the repository.
 	rootLibrary = "google-cloud-java"
-	// gapicBom is the name of the directory and artifact ID for the
+	// gapicBOM is the name of the directory and artifact ID for the
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
-	gapicBom  = "gapic-libraries-bom"
+	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
 )
 
 var (
 	errModuleDiscovery      = errors.New("failed to search for java modules")
-	errRootPomGeneration    = errors.New("failed to generate root pom")
+	errRootPOMGeneration    = errors.New("failed to generate root pom.xml")
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
 )
@@ -53,9 +53,9 @@ type legacyBOM struct {
 }
 
 var (
-	dnsBom          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
-	notificationBom = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
-	grafeasBom      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
+	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
+	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
+	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
@@ -71,21 +71,21 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
 	}
-	if err := generateRootPom(repoPath, modules); err != nil {
-		return fmt.Errorf("%w: %w", errRootPomGeneration, err)
+	if err := generateRootPOM(repoPath, modules); err != nil {
+		return fmt.Errorf("%w: %w", errRootPOMGeneration, err)
 	}
 	bomConfigs, err := searchForBOMArtifacts(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to search for BOM artifacts: %w", err)
 	}
-	if err := generateGapicLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
-		return fmt.Errorf("failed to generate %s: %w", gapicBom, err)
+	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
+		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
 }
 
 var ignoredDirs = map[string]bool{
-	gapicBom:                   true,
+	gapicBOM:                   true,
 	"google-cloud-jar-parent":  true,
 	"google-cloud-pom-parent":  true,
 	"google-cloud-shared-deps": true,
@@ -138,7 +138,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	}
 	configs := make([]*bomConfig, 0, len(modules)+3)
 	for _, module := range modules {
-		if !module.IsDir() || module.Name() == gapicBom {
+		if !module.IsDir() || module.Name() == gapicBOM {
 			continue
 		}
 		moduleConfigs, err := searchModuleForBOM(repoPath, module.Name())
@@ -148,7 +148,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 		configs = append(configs, moduleConfigs...)
 	}
 
-	legacies, err := collectLegacyBOMs(repoPath, dnsBom, notificationBom)
+	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM)
 	if err != nil {
 		return nil, err
 	}
@@ -158,7 +158,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	})
 	// Add Grafeas last. This is done after sorting to match the current order in google-cloud-java.
 	// TODO(https://github.com/googleapis/librarian/issues/4706): Move this prior to sort.
-	grafeas, err := collectLegacyBOMs(repoPath, grafeasBom)
+	grafeas, err := collectLegacyBOMs(repoPath, grafeasBOM)
 	if err != nil {
 		return nil, err
 	}
@@ -251,21 +251,21 @@ func deriveVersionAnnotation(artifactID string) (string, error) {
 	return strings.TrimSuffix(artifactID, bomSuffix), nil
 }
 
-// generateRootPom writes the aggregator pom.xml for the monorepo root, including
+// generateRootPOM writes the aggregator pom.xml for the monorepo root, including
 // all discovered Java modules.
-func generateRootPom(repoPath string, modules []string) error {
+func generateRootPOM(repoPath string, modules []string) error {
 	data := struct {
 		Modules []string
 	}{
 		Modules: modules,
 	}
-	return writePom(filepath.Join(repoPath, "pom.xml"), "root-pom.xml.tmpl", data)
+	return writePOM(filepath.Join(repoPath, "pom.xml"), "root-pom.xml.tmpl", data)
 }
 
-// generateGapicLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
+// generateGAPICLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) error {
-	bomDir := filepath.Join(repoPath, gapicBom)
+func generateGAPICLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) error {
+	bomDir := filepath.Join(repoPath, gapicBOM)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
 	}
@@ -276,5 +276,5 @@ func generateGapicLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig
 		Version:    version,
 		BOMConfigs: bomConfigs,
 	}
-	return writePom(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
+	return writePOM(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
 }

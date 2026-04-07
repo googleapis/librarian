@@ -25,20 +25,20 @@ type messageAnnotations struct {
 	DocLines      []string
 }
 
-func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) (*messageAnnotations, error) {
+func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
 	docLines := codec.formatDocumentation(message.Documentation)
-	messageAnnotations := &messageAnnotations{
+	annotations := &messageAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(message.Name),
 		DocLines:      docLines,
 	}
 
-	message.Codec = messageAnnotations
+	message.Codec = annotations
 	for _, field := range message.Fields {
-		if _, err := codec.annotateField(field); err != nil {
-			return nil, err
+		if err := codec.annotateField(field); err != nil {
+			return err
 		}
 	}
-	return messageAnnotations, nil
+	return nil
 }

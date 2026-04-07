@@ -24,11 +24,17 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
 	generationConfigFileName = "generation_config.yaml"
+	managedProtoStart        = "<!-- {x-generated-proto-dependencies-start} -->"
+	managedProtoEnd          = "<!-- {x-generated-proto-dependencies-end} -->"
+	managedGrpcStart         = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGrpcEnd           = "<!-- {x-generated-grpc-dependencies-end} -->"
 )
 
 var (
@@ -151,6 +157,11 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
+
+	if err := insertMarkers(repoPath, cfg); err != nil {
+		return fmt.Errorf("failed to insert markers: %w", err)
+	}
+
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return errTidyFailed
 	}
@@ -240,7 +251,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
-				ExcludedPoms:                 l.ExcludedPoms,
+				ExcludedPOMs:                 l.ExcludedPoms,
 				ExtraVersionedModules:        l.ExtraVersionedModules,
 				JavaAPIs:                     javaAPIs,
 				GroupID:                      l.GroupID,
@@ -263,7 +274,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		Language: "java",
 		Default: &config.Default{
 			Java: &config.JavaModule{
-				LibrariesBomVersion: gen.LibrariesBomVersion,
+				LibrariesBOMVersion: gen.LibrariesBomVersion,
 			},
 		},
 		Sources: &config.Sources{
@@ -319,4 +330,161 @@ func parseArtifactID(distributionName, name string) string {
 
 func invertBoolPtr(p *bool) bool {
 	return p != nil && !*p
+}
+
+// insertMarkers updates the pom.xml of the main client module for each library
+// to include managed dependency markers for generated proto and gRPC dependencies.
+func insertMarkers(repoPath string, cfg *config.Config) error {
+	var totalInserts int
+	for _, lib := range cfg.Libraries {
+		if lib.SkipGenerate {
+			log.Printf("Debug: skipping library %s (SkipGenerate is true)", lib.Name)
+			continue
+		}
+		distName := java.DeriveDistributionName(lib)
+		parts := strings.SplitN(distName, ":", 2)
+		if len(parts) != 2 {
+			log.Printf("Debug: skipping library %s (invalid distribution name: %q)", lib.Name, distName)
+			continue
+		}
+		gapicArtifactID := parts[1]
+		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
+		if _, err := os.Stat(clientPomPath); err != nil {
+			log.Printf("Debug: skipping library %s (pom.xml not found at %s)", lib.Name, clientPomPath)
+			continue
+		}
+
+		contentBytes, err := os.ReadFile(clientPomPath)
+		if err != nil {
+			return err
+		}
+		lines := strings.Split(string(contentBytes), "\n")
+
+		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
+		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
+			log.Printf("Debug: skipping library %s (no proto or gRPC artifact IDs found)", lib.Name)
+			continue
+		}
+
+		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
+		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd)
+
+		newContent := strings.Join(updatedLines, "\n")
+		if newContent != string(contentBytes) {
+			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
+				return err
+			}
+			totalInserts++
+		} else {
+			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
+		}
+	}
+	if totalInserts > 0 {
+		log.Printf("Inserted markers in %d Java client pom.xml files", totalInserts)
+	}
+	return nil
+}
+
+// getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
+func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
+	for _, api := range lib.APIs {
+		version := serviceconfig.ExtractVersion(api.Path)
+		apiCoord := java.DeriveAPICoordinates(java.DeriveLibraryCoordinates(lib), version)
+		protoIDs = append(protoIDs, apiCoord.Proto.ArtifactID)
+		grpcIDs = append(grpcIDs, apiCoord.GRPC.ArtifactID)
+	}
+	return
+}
+
+// wrapDependencies inserts start and end markers around the block of dependencies
+// matching the provided artifact IDs. If the matching dependencies are not
+// contiguous, it moves them together to the position of the first matching block.
+// It returns the modified lines.
+func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
+	if len(artifactIDs) == 0 {
+		return lines
+	}
+
+	targets := toArtifactTags(artifactIDs)
+	kept, moved, insertAt := splitMatchingDependencies(lines, targets)
+
+	if insertAt == -1 {
+		return lines
+	}
+
+	indent := getLineIndent(moved[0])
+
+	res := make([]string, 0, len(lines)+2)
+	res = append(res, kept[:insertAt]...)
+	res = append(res, indent+startMarker)
+	res = append(res, moved...)
+	res = append(res, indent+endMarker)
+	res = append(res, kept[insertAt:]...)
+	return res
+}
+
+// toArtifactTags converts artifact IDs into Maven <artifactId> tags.
+func toArtifactTags(ids []string) []string {
+	tags := make([]string, 0, len(ids))
+	for _, id := range ids {
+		tags = append(tags, "<artifactId>"+id+"</artifactId>")
+	}
+	return tags
+}
+
+// splitMatchingDependencies partitions POM lines into 'kept' and 'moved' slices.
+// 'moved' contains all dependency blocks matching any target.
+// 'kept' contains all other lines in their original relative order.
+// 'insertAt' is the index in 'kept' where the first matching block was originally located,
+// serving as the insertion point for the relocated blocks.
+func splitMatchingDependencies(lines []string, targets []string) (kept, moved []string, insertAt int) {
+	insertAt = -1
+	for i := 0; i < len(lines); i++ {
+		if !strings.Contains(lines[i], "<dependency>") {
+			kept = append(kept, lines[i])
+			continue
+		}
+
+		block, nextIdx := nextDependencyBlock(lines, i)
+		if containsAny(block, targets) {
+			if insertAt == -1 {
+				insertAt = len(kept)
+			}
+			moved = append(moved, block...)
+		} else {
+			kept = append(kept, block...)
+		}
+		i = nextIdx
+	}
+	return
+}
+
+// nextDependencyBlock returns the full <dependency>...</dependency> block starting at index i.
+func nextDependencyBlock(lines []string, i int) (block []string, endIdx int) {
+	start := i
+	for i < len(lines) && !strings.Contains(lines[i], "</dependency>") {
+		i++
+	}
+	if i >= len(lines) { // Malformed XML
+		return lines[start:], len(lines) - 1
+	}
+	return lines[start : i+1], i
+}
+
+// containsAny returns true if any line in the block contains any of the target strings.
+func containsAny(block, targets []string) bool {
+	for _, line := range block {
+		for _, t := range targets {
+			if strings.Contains(line, t) {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+// getLineIndent returns the leading whitespace of a line.
+func getLineIndent(line string) string {
+	trimmed := strings.TrimLeft(line, " \t")
+	return line[:len(line)-len(trimmed)]
 }

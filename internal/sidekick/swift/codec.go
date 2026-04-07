@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -34,17 +35,21 @@ type codec struct {
 	PackageName    string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
-	RootName string
-	Model    *api.API
+	RootName     string
+	Model        *api.API
+	Dependencies []config.SwiftDependency
 }
 
-func newCodec(model *api.API, cfg *parser.ModelConfig) *codec {
+func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) *codec {
 	year, _, _ := time.Now().Date()
 	result := &codec{
 		GenerationYear: fmt.Sprintf("%04d", year),
 		PackageName:    PackageName(model),
 		RootName:       "googleapis",
 		Model:          model,
+	}
+	if swiftCfg != nil {
+		result.Dependencies = swiftCfg.Dependencies
 	}
 	for key, definition := range cfg.Codec {
 		switch key {

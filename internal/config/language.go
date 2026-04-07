@@ -514,8 +514,8 @@ type JavaModule struct {
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
 
-	// ExcludedPoms is a list of POM files to exclude.
-	ExcludedPoms string `yaml:"excluded_poms,omitempty"`
+	// ExcludedPOMs is a list of POM files to exclude.
+	ExcludedPOMs string `yaml:"excluded_poms,omitempty"`
 
 	// ExtraVersionedModules is a list of extra versioned modules.
 	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
@@ -527,8 +527,8 @@ type JavaModule struct {
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
 
-	// LibrariesBomVersion is the version of the libraries-bom to use for Java.
-	LibrariesBomVersion string `yaml:"libraries_bom_version,omitempty"`
+	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
+	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.

@@ -33,7 +33,7 @@ func TestGenerateClirr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := generateClirr(protoModulePath); err != nil {
+	if err := generateClirrIfMissing(protoModulePath); err != nil {
 		t.Fatal(err)
 	}
 
@@ -58,7 +58,7 @@ func TestGenerateClirr_SkipExisting(t *testing.T) {
 	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := generateClirr(tmpDir); err != nil {
+	if err := generateClirrIfMissing(tmpDir); err != nil {
 		t.Fatal(err)
 	}
 	newContent, err := os.ReadFile(outputPath)

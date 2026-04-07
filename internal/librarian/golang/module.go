@@ -29,7 +29,10 @@ import (
 
 const (
 	// rootModule is the name of the root module in the configuration.
-	rootModule = "root-module"
+	rootModule        = "root-module"
+	apiPrefix         = "google/api/"
+	cloudAPIPrefix    = "google/cloud/"
+	devtoolsAPIPrefix = "google/devtools/"
 )
 
 var (
@@ -129,16 +132,23 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 	return preview, nil
 }
 
-// DefaultLibraryName derives a default library name from an API path.
-// For a versioned API path, it returns the service name. For a non-versioned
-// API path, it returns the last path segment.
+// DefaultLibraryName derives a default library name from an API path by stripping
+// known prefixes (e.g., "google/cloud/", "google/api/") and returning the first
+// segment of the remaining path.
 func DefaultLibraryName(api string) string {
-	path := api
-	if serviceconfig.ExtractVersion(api) != "" {
-		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
-		path = filepath.Dir(api)
+	api = strings.TrimPrefix(api, cloudAPIPrefix)
+	// Some non-cloud APIs, e.g., google/api, google/devtools/, etc., create one library
+	// per API. The resulting library configurations need to set additional configurations,
+	// e.g., import_path, for the generation to work.
+	// We don't infer the configuration here and let the user set the configurations manually.
+	api = strings.TrimPrefix(api, apiPrefix)
+	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
+	api = strings.TrimPrefix(api, "google/")
+	idx := strings.Index(api, "/")
+	if idx == -1 {
+		return api
 	}
-	return filepath.Base(path)
+	return api[:idx]
 }
 
 // DefaultOutput returns the default output directory for a Go library.

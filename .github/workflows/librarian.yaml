@@ -20,7 +20,8 @@ jobs:
   go-generate:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # With a cold cache, this presubmit maybe take a little longer.
+    timeout-minutes: 6
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian

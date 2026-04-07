@@ -25,8 +25,8 @@ runs:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: go-build-${{ hashFiles('go.sum') }}
-        restore-keys: go-build-
+        key: setup-librarian-${{ runner.os }}-${{ hashFiles('go.sum', '.github/actions/setup-librarian/action.yaml') }}
+        restore-keys: setup-librarian-${{ runner.os }}-
     - uses: ./.github/actions/install-protoc
     - name: Install Go tools
       run: |
