@@ -75,18 +75,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateAPI(ctx, goAPI, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
-		if library.Go != nil {
-			for _, p := range library.Go.DeleteGenerationOutputPaths {
-				// Try deleting relative to tempDir
-				if err := os.RemoveAll(filepath.Join(tempDir, p)); err != nil {
-					return err
-				}
-				// Try deleting relative to the logical Go root in tempDir
-				if err := os.RemoveAll(filepath.Join(tempDir, "cloud.google.com", "go", p)); err != nil {
-					return err
-				}
-			}
-		}
+
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
 		}
@@ -105,6 +94,13 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		}
 		if err := generateREADME(library, api, outDir); err != nil {
 			return err
+		}
+	}
+	if library.Go != nil {
+		for _, p := range library.Go.DeleteGenerationOutputPaths {
+			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
+				return err
+			}
 		}
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
