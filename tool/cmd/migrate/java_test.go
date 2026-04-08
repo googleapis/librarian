@@ -841,6 +841,16 @@ func TestInsertMarkers_Full(t *testing.T) {
 		t.Error("parent pom missing proto module")
 	}
 
+	// Verify BOM is NOT inside module markers
+	modulesStart := strings.Index(string(parentGot), managedModulesStartMarker)
+	modulesEnd := strings.Index(string(parentGot), managedModulesEndMarker)
+	if modulesStart != -1 && modulesEnd != -1 {
+		modulesBlock := string(parentGot)[modulesStart:modulesEnd]
+		if strings.Contains(modulesBlock, artifactID+"-bom") {
+			t.Errorf("parent pom should not include BOM module %s inside markers", artifactID+"-bom")
+		}
+	}
+
 	// Verify BOM
 	bomGot, _ := os.ReadFile(filepath.Join(bomDir, "pom.xml"))
 	if !strings.Contains(string(bomGot), managedDepsStartMarker) {

@@ -433,7 +433,7 @@ func updatePOMMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bo
 			endTag:      "</dependency>",
 		})
 		// Modules
-		allModules := append([]string{ids.Client, ids.BOM}, ids.Protos...)
+		allModules := append([]string{ids.Client}, ids.Protos...)
 		allModules = append(allModules, ids.GRPCs...)
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
