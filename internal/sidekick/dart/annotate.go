@@ -1068,7 +1068,7 @@ func createToJsonElement(field *api.Field, state *api.APIState) string {
 		if field.Repeated || field.Map {
 			return fmt.Sprintf("'%s': %s", jsonName, nullAware)
 		}
-		return fmt.Sprintf("if (%s case final $1?) '%s': $1", nullAware, jsonName)
+		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
 	}
 }
 
@@ -1137,8 +1137,14 @@ func (annotate *annotateModel) buildQueryLines(
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.STRING_TYPE:
+			if codec.Nullable {
+				return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
+			}
 			return append(result, fmt.Sprintf("%s: $1", preamble))
 		case api.ENUM_TYPE:
+			if codec.Nullable {
+				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => e.value)", param, ref))
+			}
 			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preamble))
 		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
 			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
@@ -1177,8 +1183,14 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.STRING_TYPE:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.ENUM_TYPE:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||

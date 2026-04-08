@@ -726,7 +726,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 			[]string{"if (result.doubleOpt case final $1?) 'double': '${$1}'"},
 		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
-			[]string{"if (result.stringOpt case final $1?) 'string': $1"},
+			[]string{"'string': ?result.stringOpt"},
 		},
 
 		// one ofs
@@ -825,7 +825,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 				Typez:    api.ENUM_TYPE,
 				TypezID:  enum.ID,
 				Optional: true},
-			[]string{"if (result.optionalEnum case final $1?) 'optionalJsonEnum': $1.value"},
+			[]string{"'optionalJsonEnum': ?result.optionalEnum?.value"},
 		},
 		{
 			&api.Field{
@@ -1671,7 +1671,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
-				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1691,7 +1691,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1711,7 +1711,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1772,7 +1772,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (messageField?.toJson() case final $1?) 'messageField': $1",
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1793,7 +1793,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (messageField?.toJson() case final $1?) 'messageField': $1",
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1813,7 +1813,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
-				ToJsonElement:         "if (enumField?.toJson() case final $1?) 'enumField': $1",
+				ToJsonElement:         "'enumField': ?enumField?.toJson()",
 			},
 		},
 		{
@@ -1834,7 +1834,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (enumField?.toJson() case final $1?) 'enumField': $1",
+				ToJsonElement:         "'enumField': ?enumField?.toJson()",
 			},
 		},
 		{
@@ -1854,7 +1854,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (emptyField?.toJson() case final $1?) 'emptyField': $1",
+				ToJsonElement:         "'emptyField': ?emptyField?.toJson()",
 			},
 		},
 		{
