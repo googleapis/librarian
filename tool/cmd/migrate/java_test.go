@@ -842,10 +842,11 @@ func TestInsertMarkers_Full(t *testing.T) {
 	}
 
 	// Verify BOM is NOT inside module markers
-	modulesStart := strings.Index(string(parentGot), managedModulesStartMarker)
-	modulesEnd := strings.Index(string(parentGot), managedModulesEndMarker)
-	if modulesStart != -1 && modulesEnd != -1 {
-		modulesBlock := string(parentGot)[modulesStart:modulesEnd]
+	parentStr := string(parentGot)
+	modulesStart := strings.Index(parentStr, managedModulesStartMarker)
+	modulesEnd := strings.Index(parentStr, managedModulesEndMarker)
+	if modulesStart != -1 && modulesEnd != -1 && modulesStart < modulesEnd {
+		modulesBlock := parentStr[modulesStart:modulesEnd]
 		if strings.Contains(modulesBlock, artifactID+"-bom") {
 			t.Errorf("parent pom should not include BOM module %s inside markers", artifactID+"-bom")
 		}
