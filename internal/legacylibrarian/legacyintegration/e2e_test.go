@@ -19,8 +19,10 @@ package integration_test
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -230,23 +232,23 @@ func TestCleanAndCopy(t *testing.T) {
 	}
 
 	// Check that the file to remove is gone.
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "file_to_remove.txt")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "file_to_remove.txt")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("pubsub/file_to_remove.txt should have been removed")
 	}
 	// Check that the other file to remove is gone.
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "another_file_to_remove.txt")); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "another_file_to_remove.txt")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("pubsub/sub/another_file_to_remove.txt should have been removed")
 	}
 	// Check that the file to preserve is still there.
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "file_to_preserve.txt")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "sub", "file_to_preserve.txt")); errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("pubsub/sub/file_to_preserve.txt should have been preserved")
 	}
 	// Check that the file outside the source root is still there.
-	if _, err := os.Stat(filepath.Join(repo, "other_dir", "file_to_keep.txt")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(repo, "other_dir", "file_to_keep.txt")); errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("other_dir/file_to_keep.txt should have been preserved")
 	}
 	// check that the new files are copied. The fake generator creates a file called "example.txt".
-	if _, err := os.Stat(filepath.Join(repo, "pubsub", "example.txt")); os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(repo, "pubsub", "example.txt")); errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("pubsub/example.txt should have been copied")
 	}
 }
@@ -420,13 +422,13 @@ func TestRunGenerate_MultipleLibraries(t *testing.T) {
 			}
 
 			for _, f := range test.expectedFiles {
-				if _, err := os.Stat(filepath.Join(repo, f)); os.IsNotExist(err) {
+				if _, err := os.Stat(filepath.Join(repo, f)); errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("%s should have been copied", f)
 				}
 			}
 
 			for _, f := range test.unexpectedFiles {
-				if _, err := os.Stat(filepath.Join(repo, f)); !os.IsNotExist(err) {
+				if _, err := os.Stat(filepath.Join(repo, f)); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("%s should not have been copied", f)
 				}
 			}

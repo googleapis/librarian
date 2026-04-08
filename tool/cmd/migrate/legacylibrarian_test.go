@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -278,7 +279,7 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 			},
 			cfg:         &legacyconfig.LibrarianConfig{},
 			fetchSource: defaultFetchSource,
-			wantErr:     os.ErrNotExist,
+			wantErr:     fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -405,7 +406,7 @@ func TestBlockLegacyGeneration_Error(t *testing.T) {
 	tempDir := t.TempDir()
 	migratedConfig := &config.Config{}
 	gotErr := blockLegacyGeneration(tempDir, migratedConfig)
-	wantErr := os.ErrNotExist
+	wantErr := fs.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("blockLegacyGeneration error = %v, wantErr %v", gotErr, wantErr)
 	}
@@ -581,7 +582,7 @@ func TestAugmentLegacyReleaseExcludePaths_Error(t *testing.T) {
 		},
 	}
 	gotErr := augmentLegacyReleaseExcludePaths(repoDir, cfg)
-	wantErr := os.ErrNotExist
+	wantErr := fs.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("error = %v, wantErr %v", gotErr, wantErr)
 	}

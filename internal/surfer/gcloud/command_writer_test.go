@@ -16,6 +16,7 @@ package gcloud
 
 import (
 	"bytes"
+	"errors"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -133,7 +134,7 @@ func TestWriteCommandFiles(t *testing.T) {
 	}
 
 	for _, f := range expectedFiles {
-		if _, err := os.Stat(f); os.IsNotExist(err) {
+		if _, err := os.Stat(f); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected file %q to be generated", f)
 		}
 	}
@@ -178,7 +179,7 @@ func TestMapCommandToYAML(t *testing.T) {
 					PluralName: "pn",
 					Collection: "c",
 					Attributes: []Attribute{
-						{AttributeName: "an"},
+						{AttributeName: "attributeName"},
 					},
 					DisableAutoCompleters: true,
 				},
@@ -233,7 +234,7 @@ func TestMapCommandToYAML(t *testing.T) {
 						PluralName: "pn",
 						Collection: "c",
 						Attributes: []yamlAttribute{
-							{AttributeName: "an"},
+							{AttributeName: "attribute_name"},
 						},
 						DisableAutoCompleters: true,
 					},

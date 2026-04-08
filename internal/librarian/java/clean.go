@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -26,6 +27,7 @@ import (
 )
 
 var itTestRegexp = regexp.MustCompile(`src/test/java/com/google/cloud/.*/v.*/it/IT.*Test\.java$`)
+var versionRegexp = regexp.MustCompile(`src/main/java/com/google/cloud/.*/v.*/stub/Version\.java$`)
 
 // Clean removes files in the library's output directory that are not in the keep list.
 // It targets patterns like proto-*, grpc-*, and the main GAPIC module.
@@ -77,7 +79,8 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 		if err != nil {
 			return err
 		}
-		if keepSet[rel] || itTestRegexp.MatchString(filepath.ToSlash(rel)) {
+		relSlash := filepath.ToSlash(rel)
+		if keepSet[rel] || itTestRegexp.MatchString(relSlash) || versionRegexp.MatchString(relSlash) {
 			return nil
 		}
 		// Bypass clirr-ignored-differences.xml and pom.xml files as they are generated once and manually maintained.
@@ -86,7 +89,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 		}
 		return os.Remove(path)
 	})
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	// Remove empty directories in reverse order (bottom-up).
@@ -97,7 +100,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 			return err
 		}
 		if !keepSet[rel] {
-			if err := os.Remove(d); err != nil && !os.IsNotExist(err) && !isDirNotEmpty(err) {
+			if err := os.Remove(d); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
 				return err
 			}
 		}

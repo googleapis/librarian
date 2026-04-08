@@ -31,7 +31,10 @@ var templates embed.FS
 
 // Generate generates code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
-	codec := newCodec(model, cfg, swiftCfg)
+	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+	if err != nil {
+		return err
+	}
 	if err := codec.annotateModel(); err != nil {
 		return err
 	}

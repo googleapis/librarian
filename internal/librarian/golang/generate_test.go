@@ -887,7 +887,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				t.Errorf("expected main.go to exist, got err: %v", err)
 			}
 			if lib.Go.GoAPIs[0].NoSnippets {
-				if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); !errors.Is(err, os.ErrNotExist) {
+				if _, err := os.Stat(filepath.Join(snippetDir, "snippet.go")); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("expected snippet.go to not exist, got err: %v", err)
 				}
 			} else {

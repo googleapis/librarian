@@ -218,15 +218,17 @@ fi
 func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
-				{Name: "cargo-semver-checks", Version: "1.2.3"},
-				{Name: "cargo-workspaces", Version: "3.4.5"},
+	cfg := &config.Config{
+		Release: &config.Release{
+			Preinstalled: map[string]string{
+				"git":   "git",
+				"cargo": "/bin/echo",
+			},
+			Tools: map[string][]config.Tool{
+				"cargo": {
+					{Name: "cargo-semver-checks", Version: "1.2.3"},
+					{Name: "cargo-workspaces", Version: "3.4.5"},
+				},
 			},
 		},
 	}
@@ -241,15 +243,17 @@ func TestPublishSuccess(t *testing.T) {
 func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
-	config := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
-				{Name: "cargo-semver-checks", Version: "1.2.3"},
-				{Name: "cargo-workspaces", Version: "3.4.5"},
+	cfg := &config.Config{
+		Release: &config.Release{
+			Preinstalled: map[string]string{
+				"git":   "git",
+				"cargo": "/bin/echo",
+			},
+			Tools: map[string][]config.Tool{
+				"cargo": {
+					{Name: "cargo-semver-checks", Version: "1.2.3"},
+					{Name: "cargo-workspaces", Version: "3.4.5"},
+				},
 			},
 		},
 	}
@@ -258,18 +262,20 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
-	if err := Publish(t.Context(), config, true, false, false); err == nil {
+	if err := Publish(t.Context(), cfg, true, false, false); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
 
 func TestPublishPreflightError(t *testing.T) {
-	config := &config.Release{
-		Preinstalled: map[string]string{
-			"git": "git-not-found",
+	cfg := &config.Config{
+		Release: &config.Release{
+			Preinstalled: map[string]string{
+				"git": "git-not-found",
+			},
 		},
 	}
-	if err := Publish(t.Context(), config, true, false, false); err == nil {
+	if err := Publish(t.Context(), cfg, true, false, false); err == nil {
 		t.Errorf("expected a preflight error with a bad git command")
 	}
 }

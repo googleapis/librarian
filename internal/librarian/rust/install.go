@@ -28,7 +28,7 @@ var ErrMissingToolVersion = errors.New("cargo tool missing version")
 
 // Install installs cargo tool dependencies defined in the tools configuration.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if len(tools.Cargo) == 0 {
+	if tools == nil || len(tools.Cargo) == 0 {
 		return nil
 	}
 	for _, tool := range tools.Cargo {

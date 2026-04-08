@@ -17,6 +17,7 @@ package librarian
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,6 +30,7 @@ import (
 )
 
 func TestGenerateCommand(t *testing.T) {
+
 	const (
 		lib1            = "library-one"
 		lib1PreviewName = "library-one-preview"
@@ -94,7 +96,7 @@ func TestGenerateCommand(t *testing.T) {
 		{
 			name:             "all flag",
 			args:             []string{"librarian", "generate", "--all"},
-			want:             []string{lib1, lib2},
+			want:             []string{lib1, lib2, lib1PreviewName},
 			wantPostGenerate: true,
 		},
 		{
@@ -162,6 +164,9 @@ func TestGenerateCommand(t *testing.T) {
 				generated[libName] = true
 			}
 			for libName, outputDir := range allLibraries {
+				// Simply always attempt to trim off the preview suffix. The
+				// name used in the generated code is always sans -preview.
+				expectedName := trimPreviewName(libName)
 				readmePath := filepath.Join(tempDir, outputDir, "README.md")
 				shouldExist := generated[libName]
 				_, err = os.Stat(readmePath)
@@ -169,7 +174,7 @@ func TestGenerateCommand(t *testing.T) {
 					if err == nil {
 						t.Fatalf("expected file for %q to not be generated, but it exists", libName)
 					}
-					if !os.IsNotExist(err) {
+					if !errors.Is(err, fs.ErrNotExist) {
 						t.Fatalf("expected file for %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 					return
@@ -182,7 +187,7 @@ func TestGenerateCommand(t *testing.T) {
 				if err != nil {
 					t.Fatalf("could not read generated file for %q: %v", libName, err)
 				}
-				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", libName)
+				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", expectedName)
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
@@ -196,7 +201,7 @@ func TestGenerateCommand(t *testing.T) {
 				if err != nil {
 					t.Fatalf("could not read generated STARTER.md for %q: %v", libName, err)
 				}
-				wantStarter := fmt.Sprintf("# %s\n\nThis is a starter file.\n", libName)
+				wantStarter := fmt.Sprintf("# %s\n\nThis is a starter file.\n", expectedName)
 				if diff := cmp.Diff(wantStarter, string(gotStarter)); diff != "" {
 					t.Errorf("mismatch for STARTER.md for %q (-want +got):\n%s", libName, diff)
 				}
@@ -294,7 +299,7 @@ libraries:
 				if !shouldExist {
 					if err == nil {
 						t.Errorf("expected %q to not be generated, but it exists", libName)
-					} else if !os.IsNotExist(err) {
+					} else if !errors.Is(err, fs.ErrNotExist) {
 						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 				}

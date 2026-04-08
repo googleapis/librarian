@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The resource to operate on.
+      - help_text: Resource name.
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -44,46 +44,14 @@
           - arg_value: two
             enum_value: TWO
             help_text: Value for the `two` field.
-      - arg_name: string-field
-        api_field: resource.myMessage.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: my-message
+        api_field: resource.myMessage
+        help_text: Value for the `my-message` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
-      - arg_name: int-field
-        api_field: resource.myMessage.intField
-        help_text: Value for the `int-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: int
-      - arg_name: bool-field
-        api_field: resource.myMessage.boolField
-        help_text: Value for the `bool-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: bool
-      - arg_name: file-field
-        api_field: resource.myMessage.fileField
-        help_text: Value for the `file-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
-      - arg_name: string-field
-        api_field: resource.myMessage.nestedMessage.stringField
-        help_text: Value for the `string-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
+        type: arg_object
       - arg_name: repeated-field
         api_field: resource.repeatedField
         help_text: Value for the `repeated-field` field.
@@ -102,46 +70,15 @@
         repeated: true
         clearable: true
         type: str
-      - arg_name: string-field
-        api_field: resource.repeatedMessage.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: repeated-message
+        api_field: resource.repeatedMessage
+        help_text: Value for the `repeated-message` field.
         is_positional: false
         is_primary_resource: false
         required: false
-        repeated: false
-        type: str
-      - arg_name: int-field
-        api_field: resource.repeatedMessage.intField
-        help_text: Value for the `int-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: int
-      - arg_name: bool-field
-        api_field: resource.repeatedMessage.boolField
-        help_text: Value for the `bool-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: bool
-      - arg_name: file-field
-        api_field: resource.repeatedMessage.fileField
-        help_text: Value for the `file-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
-      - arg_name: string-field
-        api_field: resource.repeatedMessage.nestedMessage.stringField
-        help_text: Value for the `string-field` field.
-        is_positional: false
-        is_primary_resource: false
-        required: false
-        repeated: false
-        type: str
+        repeated: true
+        clearable: true
+        type: arg_object
       - arg_name: map-field
         api_field: resource.mapField
         help_text: Value for the `map-field` field.
@@ -175,6 +112,15 @@
         spec:
           - api_field: key
           - api_field: value
+      - arg_name: repeated-output-only-message
+        api_field: resource.repeatedOutputOnlyMessage
+        help_text: Value for the `repeated-output-only-message` field.
+        is_positional: false
+        is_primary_resource: false
+        required: false
+        repeated: true
+        clearable: true
+        type: arg_object
       - arg_name: complex-map
         api_field: resource.complexMap
         help_text: Value for the `complex-map` field.

@@ -15,7 +15,9 @@
 package pom
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -115,9 +117,9 @@ func TestGenerate(t *testing.T) {
 				goldenContent, err := os.ReadFile(goldenFile)
 				if err != nil {
 					// If golden files don't exist, create them.
-					if os.IsNotExist(err) {
+					if errors.Is(err, fs.ErrNotExist) {
 						goldenFileDir := filepath.Dir(goldenFile)
-						if _, err := os.Stat(goldenFileDir); os.IsNotExist(err) {
+						if _, err := os.Stat(goldenFileDir); errors.Is(err, fs.ErrNotExist) {
 							if err := os.MkdirAll(goldenFileDir, 0755); err != nil {
 								t.Fatalf("failed to create golden file directory %s: %v", goldenFileDir, err)
 							}

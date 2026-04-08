@@ -16,6 +16,7 @@ package python
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -805,7 +806,7 @@ func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []str
 	for _, file := range setupFiles {
 		fullPath := filepath.Join(dir, file)
 		_, err := os.Stat(fullPath)
-		if err != nil && !os.IsNotExist(err) {
+		if err != nil && !errors.Is(err, fs.ErrNotExist) {
 			t.Fatal(err)
 		}
 		got := err != nil

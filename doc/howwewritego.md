@@ -107,6 +107,10 @@ handling:
 - [Generics Tutorial](https://go.dev/doc/tutorial/generics)
 - [Error Handling with Generics](https://go.dev/blog/error-syntax)
 
+Prefer `errors.Is(err, fs.ErrNotExist)` over `os.IsNotExist(err)` as described
+in the [documentation for `os.IsNotExist`](https://pkg.go.dev/os#IsNotExist),
+and prefer `fs.ErrNotExist` over `os.ErrNotExist` in general.
+
 ### Wrapping errors
 
 Whether to wrap an error or not is discussed at length in the

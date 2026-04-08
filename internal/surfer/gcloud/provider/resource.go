@@ -15,7 +15,6 @@
 package provider
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -89,35 +88,18 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	return strings.Join(collectionParts, ".")
 }
 
-// IsPrimaryResource determines if a field represents the primary resource of a method.
-func IsPrimaryResource(field *api.Field, method *api.Method) bool {
+// IsPrimaryResourceField determines if a field represents the primary resource of a method.
+func IsPrimaryResourceField(field *api.Field, method *api.Method) bool {
 	if method.InputType == nil {
 		return false
 	}
-	// For `Create` methods, the primary resource is identified by a field named
-	// in the format "{resource}_id" (e.g., "instance_id").
-	if IsCreate(method) {
-		resource, err := GetResourceFromMethod(method)
-		if err == nil {
-			name := GetResourceNameFromType(resource.Type)
-			// Convert CamelCase resource name (e.g., "Instance") to snake_case
-			// to match the proto field naming convention (e.g., "instance_id").
-			if name != "" && field.Name == strcase.ToSnake(name)+"_id" {
-				return true
-			}
-		}
-	}
 
-	// For collection-based methods (List and custom collection methods),
-	// the primary resource scope is identified by the "parent" field.
-	// Note: Create is collection-based but uses the new resource ID (e.g. "instance_id")
-	// as the primary positional argument, so "parent" is not the primary resource arg.
-	if IsCollectionMethod(method) && !IsCreate(method) && field.Name == "parent" {
+	// If it's a collection method, field name is parent, return true.
+	if IsCollectionMethod(method) && field.Name == "parent" {
 		return true
 	}
 
-	// For resource-based methods (Get, Delete, Update, and custom resource methods),
-	// the primary resource is identified by the "name" field.
+	// If it is a resource method, field name "name", return true.
 	if IsResourceMethod(method) && field.Name == "name" {
 		return true
 	}
@@ -125,7 +107,20 @@ func IsPrimaryResource(field *api.Field, method *api.Method) bool {
 	return false
 }
 
-// GetResourceNameFromType extracts the singular resource name from a resource type string.
+// IsResourceIdField determines if a field represents the resource ID in a create method.
+func IsResourceIdField(field *api.Field, method *api.Method, model *api.API) bool {
+	if !IsCreate(method) {
+		return false
+	}
+	resource := GetResourceForMethod(method, model)
+	if resource == nil {
+		return false
+	}
+	resName := GetResourceNameFromType(resource.Type)
+	return resName != "" && field.Name == strcase.ToSnake(resName)+"_id"
+}
+
+// GetResourceNameFromType returns the singular form of the resource noun from a resource type string.
 // According to AIP-123, the format of a resource type is {Service Name}/{Type}, where
 // {Type} is the singular form of the resource noun.
 func GetResourceNameFromType(typeStr string) string {
@@ -133,27 +128,32 @@ func GetResourceNameFromType(typeStr string) string {
 	return parts[len(parts)-1]
 }
 
-// GetResourceFromMethod extracts the resource definition from a method's input message if it exists.
-func GetResourceFromMethod(method *api.Method) (*api.Resource, error) {
-	for _, f := range method.InputType.Fields {
-		if f.MessageType != nil && f.MessageType.Resource != nil {
-			return f.MessageType.Resource, nil
+// FindNameField returns the field named "name" from the resource's message definition, if present.
+func FindNameField(resource *api.Resource) *api.Field {
+	if resource == nil || resource.Self == nil {
+		return nil
+	}
+	for _, f := range resource.Self.Fields {
+		if f.Name == "name" {
+			return f
 		}
 	}
-	return nil, fmt.Errorf("resource message not found in input type for method %q", method.Name)
+	return nil
 }
 
 // GetResourceForMethod finds the `api.Resource` definition associated with a method.
 // This is a crucial function for linking a method to the resource it operates on.
 func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
-	if method.InputType == nil {
+	if method == nil || method.InputType == nil || model == nil {
 		return nil
 	}
 
 	// Strategy 1: For Create (AIP-133) and Update (AIP-134), the request message
 	// usually contains a field that *is* the resource message.
-	if resource, err := GetResourceFromMethod(method); err == nil {
-		return resource
+	for _, f := range method.InputType.Fields {
+		if f.MessageType != nil && f.MessageType.Resource != nil {
+			return f.MessageType.Resource
+		}
 	}
 
 	// Strategy 2: For Get (AIP-131), Delete (AIP-135), and List (AIP-132), the

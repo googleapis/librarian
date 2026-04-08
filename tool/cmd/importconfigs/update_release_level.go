@@ -16,7 +16,9 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -101,7 +103,7 @@ func runUpdateReleaseLevel(sdkYaml, googleapisDir string) error {
 
 func readReleaseLevel(googleapisDir, path string) map[string]string {
 	buildPath := filepath.Join(googleapisDir, path)
-	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
+	if _, err := os.Stat(buildPath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	releaseLevels, err := bazel.ParseReleaseLevel(buildPath)

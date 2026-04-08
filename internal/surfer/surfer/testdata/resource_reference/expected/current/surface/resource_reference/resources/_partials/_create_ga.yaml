@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The resource to create.
+      - help_text: Resource name.
         is_positional: true
         is_primary_resource: true
         request_id_field: resourceId
@@ -87,7 +87,7 @@
               help: The project id of the {resource} resource.
               property: core/project
             - parameter_name: multiReferencesId
-              attribute_name: multiReference
+              attribute_name: multi_reference
               help: The multiReference id of the {resource} resource.
           disable_auto_completers: true
         required: false
@@ -151,21 +151,21 @@
               attribute_name: parent
               help: The parent id of the {resource} resource.
             - parameter_name: globalReferencesId
-              attribute_name: globalReference
+              attribute_name: global_reference
               help: The globalReference id of the {resource} resource.
           disable_auto_completers: true
         required: false
         repeated: false
         resource_method_params:
           resource.globalReference: '{__relative_name__}'
-      - arg_name: string-field
-        api_field: resource.childResource.stringField
-        help_text: Value for the `string-field` field.
+      - arg_name: child-resource
+        api_field: resource.childResource
+        help_text: Value for the `child-resource` field.
         is_positional: false
         is_primary_resource: false
         required: false
         repeated: false
-        type: str
+        type: arg_object
       - arg_name: labels
         api_field: resource.labels
         help_text: Value for the `labels` field.

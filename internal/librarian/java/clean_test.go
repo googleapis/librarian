@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -47,6 +48,8 @@ func TestClean(t *testing.T) {
 	// Create files
 	files := []string{
 		filepath.Join(tmpDir, libraryName, "src", "Main.java"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "stub", "Version.java"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "Version.java"),
 		filepath.Join(tmpDir, libraryName, "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "it", "ITSecretManagerTest.java"),
 		filepath.Join(tmpDir, libraryName, "pom.xml"),
 		filepath.Join(tmpDir, "kept-file.txt"),
@@ -76,9 +79,10 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version)),
 		filepath.Join(tmpDir, fmt.Sprintf("grpc-%s-%s", libraryName, version)),
 		filepath.Join(tmpDir, "samples", "snippets", "generated"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "Version.java"),
 	}
 	for _, p := range cleanedPaths {
-		if _, err := os.Stat(p); !os.IsNotExist(err) {
+		if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected path %s to be removed, but it still exists", p)
 		}
 	}
@@ -87,6 +91,7 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "kept-file.txt"),
 		filepath.Join(tmpDir, "kept-dir", "file.txt"),
 		filepath.Join(tmpDir, libraryName, "pom.xml"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "stub", "Version.java"),
 		filepath.Join(tmpDir, libraryName, "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "it", "ITSecretManagerTest.java"),
 	}
 	for _, p := range keptPaths {

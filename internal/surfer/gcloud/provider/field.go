@@ -16,9 +16,23 @@ package provider
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
+
+// CleanDocumentation removes common prefixes like "Required. " and "Identifier. " from a help text string in any order.
+func CleanDocumentation(s string) string {
+	for {
+		original := s
+		s = strings.TrimPrefix(s, "Required. ")
+		s = strings.TrimPrefix(s, "Identifier. ")
+		if s == original {
+			break
+		}
+	}
+	return s
+}
 
 // GetGcloudType maps an API field type to the corresponding gcloud argparse type.
 func GetGcloudType(t api.Typez) string {

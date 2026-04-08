@@ -16,6 +16,8 @@ package rust
 
 import (
 	"context"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -199,7 +201,7 @@ func TestGenerateVeneerNoModules(t *testing.T) {
 		_, err := os.ReadFile(generatedFile)
 		if err == nil {
 			t.Errorf("want file %s to not exist, but it does", generatedFile)
-		} else if !os.IsNotExist(err) {
+		} else if !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("unexpected error for file %s: %v", generatedFile, err)
 		}
 	}

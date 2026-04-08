@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The zoneResource to operate on.
+      - help_text: The resource name of the resource within a service.
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -22,7 +22,7 @@
               attribute_name: zone
               help: The zone id of the {resource} resource.
             - parameter_name: zoneResourcesId
-              attribute_name: zoneResource
+              attribute_name: zone_resource
               help: The zoneResource id of the {resource} resource.
           disable_auto_completers: false
         required: true

@@ -20,6 +20,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -140,7 +141,7 @@ func findServiceConfig(googleapisDir, path string) (string, error) {
 	dir := filepath.Join(googleapisDir, path)
 	_, err := os.Stat(dir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return "", nil
 		}
 		return "", err

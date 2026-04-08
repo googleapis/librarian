@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -267,7 +268,7 @@ func TestDownload_ChecksumMismatch(t *testing.T) {
 	if !errors.Is(err, errChecksumMismatch) {
 		t.Fatalf("expected errChecksumMismatch, got: %v", err)
 	}
-	if _, err := os.Stat(target); !os.IsNotExist(err) {
+	if _, err := os.Stat(target); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("target file should not exist after checksum failure: %v", err)
 	}
 }

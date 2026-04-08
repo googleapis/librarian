@@ -241,7 +241,95 @@ func TestExtractPathFromSegments(t *testing.T) {
 	}
 }
 
-func TestIsPrimaryResource(t *testing.T) {
+func TestIsPrimaryResourceField(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		field  *api.Field
+		method *api.Method
+		want   bool
+	}{
+		{
+			name:  "Create Method - Primary Resource Parent",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name:      "CreateInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Get Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "GetInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Delete Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "DeleteInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Update Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:      "UpdateInstance",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "List Method - Primary Resource Parent",
+			field: &api.Field{Name: "parent"},
+			method: &api.Method{
+				Name:      "ListInstances",
+				InputType: &api.Message{},
+			},
+			want: true,
+		},
+		{
+			name:  "Non-Primary Field",
+			field: &api.Field{Name: "display_name"},
+			method: &api.Method{
+				Name:      "GetInstance",
+				InputType: &api.Message{},
+			},
+			want: false,
+		},
+		{
+			name:  "Nil InputType",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name: "GetInstance",
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := IsPrimaryResourceField(test.field, test.method)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestIsResourceIdField(t *testing.T) {
+	mockModel := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type: "example.googleapis.com/Instance",
+			},
+		},
+	}
+
 	for _, test := range []struct {
 		name   string
 		field  *api.Field
@@ -269,7 +357,7 @@ func TestIsPrimaryResource(t *testing.T) {
 			want: true,
 		},
 		{
-			name:  "Create Method - Not Primary Resource",
+			name:  "Create Method - Not Resource ID",
 			field: &api.Field{Name: "parent"},
 			method: &api.Method{
 				Name: "CreateInstance",
@@ -288,54 +376,10 @@ func TestIsPrimaryResource(t *testing.T) {
 			},
 			want: false,
 		},
-		{
-			name:  "Get Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "GetInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "Delete Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "DeleteInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "Update Method - Primary Resource Name",
-			field: &api.Field{Name: "name"},
-			method: &api.Method{
-				Name: "UpdateInstance",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "name"}},
-				},
-			},
-			want: true,
-		},
-		{
-			name:  "List Method - Primary Resource",
-			field: &api.Field{Name: "parent"},
-			method: &api.Method{
-				Name: "ListInstances",
-				InputType: &api.Message{
-					Fields: []*api.Field{{Name: "parent"}},
-				},
-			},
-			want: true,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := IsPrimaryResource(test.field, test.method)
+			got := IsResourceIdField(test.field, test.method, mockModel)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -612,6 +656,56 @@ func TestGetResourceNameFromType(t *testing.T) {
 			got := GetResourceNameFromType(test.typeStr)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindNameField(t *testing.T) {
+	nameField := api.NewTestField("name")
+	otherField := api.NewTestField("other")
+
+	for _, test := range []struct {
+		name     string
+		resource *api.Resource
+		want     *api.Field
+	}{
+		{
+			name: "HasNameField",
+			resource: &api.Resource{
+				Self: &api.Message{
+					Fields: []*api.Field{otherField, nameField},
+				},
+			},
+			want: nameField,
+		},
+		{
+			name: "NoNameField",
+			resource: &api.Resource{
+				Self: &api.Message{
+					Fields: []*api.Field{otherField},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "NilSelf",
+			resource: &api.Resource{
+				Self: nil,
+			},
+			want: nil,
+		},
+		{
+			name:     "NilResource",
+			resource: nil,
+			want:     nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := FindNameField(test.resource)
+			if got != test.want {
+				t.Errorf("FindNameField() = %v, want %v", got, test.want)
 			}
 		})
 	}

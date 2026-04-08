@@ -31,10 +31,14 @@ func TestParseOptions(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	got := newCodec(model, cfg, nil)
+	got, err := newCodec(model, cfg, nil, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := &codec{
 		GenerationYear: "2038",
 		PackageName:    "GoogleCloudBigtable",
+		MonorepoRoot:   ".",
 		RootName:       "test-root",
 		Model:          model,
 	}
@@ -49,5 +53,9 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	return newCodec(model, cfg, nil)
+	codec, err := newCodec(model, cfg, nil, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return codec
 }

@@ -23,6 +23,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -173,7 +174,7 @@ func download(ctx context.Context, target, url, expectedSha256 string) error {
 	_ = tempFile.Close()
 	defer func() {
 		cerr := os.Remove(tempPath)
-		if err == nil && cerr != nil && !os.IsNotExist(cerr) {
+		if err == nil && cerr != nil && !errors.Is(cerr, fs.ErrNotExist) {
 			err = cerr
 		}
 	}()

@@ -17,6 +17,7 @@ package legacygitrepo
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -1463,7 +1464,7 @@ func TestCleanUntracked(t *testing.T) {
 			for _, path := range test.paths {
 				// Verify the untracked files are removed.
 				untrackedFile := filepath.Join(dir, path, "untracked.txt")
-				if _, err := os.Stat(untrackedFile); !os.IsNotExist(err) {
+				if _, err := os.Stat(untrackedFile); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("untracked file, %s should be removed", untrackedFile)
 				}
 				// Verify the tracked files are untouched.
@@ -1852,7 +1853,7 @@ func TestResetHard(t *testing.T) {
 	}
 
 	// Check that the untracked file is gone.
-	if _, err := os.Stat(untrackedFilePath); !os.IsNotExist(err) {
+	if _, err := os.Stat(untrackedFilePath); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("untracked file should have been deleted by ResetHard(), but it still exists")
 	}
 

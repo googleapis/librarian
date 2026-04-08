@@ -54,7 +54,22 @@ func TestInstall_MissingVersion(t *testing.T) {
 }
 
 func TestInstall_NoCargoTools(t *testing.T) {
-	if err := Install(t.Context(), &config.Tools{}); err != nil {
-		t.Fatal(err)
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+	}{
+		{
+			name: "nil tools",
+		},
+		{
+			name:  "no Cargo tools",
+			tools: &config.Tools{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Install(t.Context(), test.tools); err != nil {
+				t.Fatal(err)
+			}
+		})
 	}
 }

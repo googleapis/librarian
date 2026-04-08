@@ -16,7 +16,7 @@ package main
 
 import (
 	"errors"
-	"os"
+	"io/fs"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -476,7 +476,7 @@ func TestParseBazelPythonInfo_Error(t *testing.T) {
 		{
 			name:    "missing BUILD.bazel file",
 			api:     "google/cloud/nobazel",
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name: "invalid BUILD.bazel file",

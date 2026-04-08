@@ -16,7 +16,7 @@ package main
 
 import (
 	"errors"
-	"os"
+	"io/fs"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -50,12 +50,12 @@ func TestRun_Error(t *testing.T) {
 		{
 			name:     "no state.yaml",
 			repoPath: "testdata/no-state",
-			wantErr:  os.ErrNotExist,
+			wantErr:  fs.ErrNotExist,
 		},
 		{
 			name:     "no librarian.yaml",
 			repoPath: "testdata/no-librarian",
-			wantErr:  os.ErrNotExist,
+			wantErr:  fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

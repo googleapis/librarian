@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -372,7 +373,7 @@ func TestRunDotnetMigration(t *testing.T) {
 		{
 			name:     "missing_file",
 			repoPath: "testdata/run/no-config",
-			wantErr:  os.ErrNotExist,
+			wantErr:  fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -401,7 +402,7 @@ func TestReadDotnetAPIsJSON(t *testing.T) {
 		{
 			name:     "missing file",
 			repoPath: "testdata/run/non-existent",
-			wantErr:  os.ErrNotExist,
+			wantErr:  fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

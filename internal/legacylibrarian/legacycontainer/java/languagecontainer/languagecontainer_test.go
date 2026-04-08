@@ -17,6 +17,7 @@ package languagecontainer
 import (
 	"context"
 	"encoding/json"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -89,13 +90,13 @@ func TestRun(t *testing.T) {
 			container := LanguageContainer{
 				Generate: func(ctx context.Context, c *generate.Config) error {
 					if test.wantErr {
-						return os.ErrNotExist
+						return fs.ErrNotExist
 					}
 					return nil
 				},
 				ReleaseStage: func(ctx context.Context, c *release.Config) (*message.ReleaseStageResponse, error) {
 					if test.wantErr {
-						return nil, os.ErrNotExist
+						return nil, fs.ErrNotExist
 					}
 					return &message.ReleaseStageResponse{}, nil
 				},
