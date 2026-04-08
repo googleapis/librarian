@@ -187,12 +187,10 @@ type fieldAnnotation struct {
 	// The default value for the string, e.g. "0" for an integer type.
 	DefaultValue string
 	// Whether the default value is constant or not, e.g. "0" is constant but "Uint8List(0)" is not.
-	ConstDefault    bool
-	FromJson        string
-	ToJson          string
-	ToJsonNullAware string
-	ToJsonWithValue string
-	ToJsonElement   string
+	ConstDefault  bool
+	FromJson      string
+	ToJson        string
+	ToJsonElement string
 }
 
 type enumAnnotation struct {
@@ -824,8 +822,6 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
 		ToJson:                createToJsonLine(field, state, fieldName(field)),
-		ToJsonNullAware:       createToJsonNullAwareLine(field, state),
-		ToJsonWithValue:       createToJsonLine(field, state, "$1"),
 		ToJsonElement:         createToJsonElement(field, state),
 		ConstDefault:          constDefault,
 	}
@@ -1090,7 +1086,10 @@ func createToJsonElement(field *api.Field, state *api.APIState) string {
 		return fmt.Sprintf("if (%s case final $1?) '%s': encodeBytes($1)", name, jsonName)
 	default:
 		nullAware := createToJsonNullAwareLine(field, state)
-		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
+		if field.Repeated || field.Map {
+			return fmt.Sprintf("'%s': %s", jsonName, nullAware)
+		}
+		return fmt.Sprintf("if (%s case final $1?) '%s': $1", nullAware, jsonName)
 	}
 }
 

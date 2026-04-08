@@ -1671,9 +1671,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
-				ToJsonNullAware:       "int32Field",
-				ToJsonWithValue:       "$1",
-				ToJsonElement:         "'int32Field': ?int32Field",
+				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
 			},
 		},
 		{
@@ -1693,9 +1691,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "int32Field",
-				ToJsonWithValue:       "$1",
-				ToJsonElement:         "'int32Field': ?int32Field",
+				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
 			},
 		},
 		{
@@ -1715,9 +1711,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "int32Field",
-				ToJsonWithValue:       "$1",
-				ToJsonElement:         "'int32Field': ?int32Field",
+				ToJsonElement:         "if (int32Field case final $1?) 'int32Field': $1",
 			},
 		},
 		{
@@ -1737,9 +1731,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const []",
 				ConstDefault:          true,
-				ToJsonNullAware:       "int32List",
-				ToJsonWithValue:       "$1",
-				ToJsonElement:         "'int32List': ?int32List",
+				ToJsonElement:         "'int32List': int32List",
 			},
 		},
 		{
@@ -1760,9 +1752,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const {}",
 				ConstDefault:          true,
-				ToJsonNullAware:       "mapField",
-				ToJsonWithValue:       "$1",
-				ToJsonElement:         "'mapField': ?mapField",
+				ToJsonElement:         "'mapField': mapField",
 			},
 		},
 		{
@@ -1782,9 +1772,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "messageField?.toJson()",
-				ToJsonWithValue:       "$1.toJson()",
-				ToJsonElement:         "'messageField': ?messageField?.toJson()",
+				ToJsonElement:         "if (messageField?.toJson() case final $1?) 'messageField': $1",
 			},
 		},
 		{
@@ -1805,9 +1793,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "messageField?.toJson()",
-				ToJsonWithValue:       "$1.toJson()",
-				ToJsonElement:         "'messageField': ?messageField?.toJson()",
+				ToJsonElement:         "if (messageField?.toJson() case final $1?) 'messageField': $1",
 			},
 		},
 		{
@@ -1827,9 +1813,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
-				ToJsonNullAware:       "enumField?.toJson()",
-				ToJsonWithValue:       "$1.toJson()",
-				ToJsonElement:         "'enumField': ?enumField?.toJson()",
+				ToJsonElement:         "if (enumField?.toJson() case final $1?) 'enumField': $1",
 			},
 		},
 		{
@@ -1850,14 +1834,10 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "enumField?.toJson()",
-				ToJsonWithValue:       "$1.toJson()",
-				ToJsonElement:         "'enumField': ?enumField?.toJson()",
+				ToJsonElement:         "if (enumField?.toJson() case final $1?) 'enumField': $1",
 			},
 		},
 		{
-			// `google.protobuf.Empty` is a special because, in some cases, it is
-			// converted to the `void` Dart type. `void` is not nullable in Dart.
 			name: "google.protobuf.Empty",
 			field: &api.Field{
 				Name:     "empty_field",
@@ -1874,9 +1854,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "emptyField?.toJson()",
-				ToJsonWithValue:       "$1.toJson()",
-				ToJsonElement:         "'emptyField': ?emptyField?.toJson()",
+				ToJsonElement:         "if (emptyField?.toJson() case final $1?) 'emptyField': $1",
 			},
 		},
 		{
@@ -1896,8 +1874,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonNullAware:       "floatField == null ? null : encodeDouble(floatField)",
-				ToJsonWithValue:       "encodeDouble($1)",
 				ToJsonElement:         "if (floatField case final $1?) 'floatField': encodeDouble($1)",
 			},
 		},
