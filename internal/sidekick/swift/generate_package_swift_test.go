@@ -27,11 +27,11 @@ import (
 )
 
 func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
-	outDir := "generated/google-cloud-workflows-v1"
+	outDir := filepath.Join(t.TempDir(), "generated", "google-cloud-workflows-v1")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll("generated")
+	defer os.RemoveAll(filepath.Join(t.TempDir(), "generated"))
 
 	service := &api.Service{Name: "Workflows", Package: "google.cloud.workflows.v1"}
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
