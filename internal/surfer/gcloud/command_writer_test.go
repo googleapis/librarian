@@ -179,7 +179,7 @@ func TestMapCommandToYAML(t *testing.T) {
 					PluralName: "pn",
 					Collection: "c",
 					Attributes: []Attribute{
-						{AttributeName: "an"},
+						{AttributeName: "attributeName"},
 					},
 					DisableAutoCompleters: true,
 				},
@@ -234,7 +234,7 @@ func TestMapCommandToYAML(t *testing.T) {
 						PluralName: "pn",
 						Collection: "c",
 						Attributes: []yamlAttribute{
-							{AttributeName: "an"},
+							{AttributeName: "attribute_name"},
 						},
 						DisableAutoCompleters: true,
 					},

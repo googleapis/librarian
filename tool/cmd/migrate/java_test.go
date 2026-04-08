@@ -465,7 +465,7 @@ func TestParseJavaBazel(t *testing.T) {
 	}
 }
 
-func TestWrapDependencies(t *testing.T) {
+func TestWrapBlocks(t *testing.T) {
 	lines := []string{
 		"<dependencies>",
 		"  <dependency>",
@@ -480,24 +480,24 @@ func TestWrapDependencies(t *testing.T) {
 		"</dependencies>",
 	}
 	for _, test := range []struct {
-		name        string
-		artifactIDs []string
-		start       string
-		end         string
-		want        []string
+		name    string
+		targets []string
+		start   string
+		end     string
+		want    []string
 	}{
 		{
-			name:        "wrap existing proto",
-			artifactIDs: []string{"proto-v1"},
-			start:       managedProtoStart,
-			end:         managedProtoEnd,
+			name:    "wrap existing proto",
+			targets: toArtifactTags([]string{"proto-v1"}),
+			start:   managedProtoStartMarker,
+			end:     managedProtoEndMarker,
 			want: []string{
 				"<dependencies>",
-				"  " + managedProtoStart,
+				"  " + managedProtoStartMarker,
 				"  <dependency>",
 				"    <artifactId>proto-v1</artifactId>",
 				"  </dependency>",
-				"  " + managedProtoEnd,
+				"  " + managedProtoEndMarker,
 				"  <dependency>",
 				"    <artifactId>grpc-v1</artifactId>",
 				"  </dependency>",
@@ -508,20 +508,20 @@ func TestWrapDependencies(t *testing.T) {
 			},
 		},
 		{
-			name:        "wrap existing grpc",
-			artifactIDs: []string{"grpc-v1"},
-			start:       managedGrpcStart,
-			end:         managedGrpcEnd,
+			name:    "wrap existing grpc",
+			targets: toArtifactTags([]string{"grpc-v1"}),
+			start:   managedGrpcStartMarker,
+			end:     managedGrpcEndMarker,
 			want: []string{
 				"<dependencies>",
 				"  <dependency>",
 				"    <artifactId>proto-v1</artifactId>",
 				"  </dependency>",
-				"  " + managedGrpcStart,
+				"  " + managedGrpcStartMarker,
 				"  <dependency>",
 				"    <artifactId>grpc-v1</artifactId>",
 				"  </dependency>",
-				"  " + managedGrpcEnd,
+				"  " + managedGrpcEndMarker,
 				"  <dependency>",
 				"    <artifactId>other</artifactId>",
 				"  </dependency>",
@@ -529,22 +529,29 @@ func TestWrapDependencies(t *testing.T) {
 			},
 		},
 		{
-			name:        "no match",
-			artifactIDs: []string{"non-existent"},
-			start:       managedProtoStart,
-			end:         managedProtoEnd,
-			want:        lines,
+			name:    "no match",
+			targets: toArtifactTags([]string{"non-existent"}),
+			start:   managedProtoStartMarker,
+			end:     managedProtoEndMarker,
+			want:    lines,
 		},
 		{
-			name:        "empty artifactIDs",
-			artifactIDs: []string{},
-			start:       managedProtoStart,
-			end:         managedProtoEnd,
-			want:        lines,
+			name:    "empty targets",
+			targets: []string{},
+			start:   managedProtoStartMarker,
+			end:     managedProtoEndMarker,
+			want:    lines,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := wrapDependencies(lines, test.artifactIDs, test.start, test.end)
+			got := wrapBlocks(wrapArgs{
+				lines:       lines,
+				targets:     test.targets,
+				startMarker: test.start,
+				endMarker:   test.end,
+				startTag:    "<dependency>",
+				endTag:      "</dependency>",
+			})
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -560,13 +567,13 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 			{Path: "google/cloud/vision/v1p1beta1"},
 		},
 	}
-	protoIDs, grpcIDs := getModuleArtifactIDs(lib)
+	ids := getModuleArtifactIDs(lib)
 	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"}
 	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1"}
-	if diff := cmp.Diff(wantProto, protoIDs); diff != "" {
+	if diff := cmp.Diff(wantProto, ids.Protos); diff != "" {
 		t.Errorf("mismatch in protoIDs (-want +got):\n%s", diff)
 	}
-	if diff := cmp.Diff(wantGrpc, grpcIDs); diff != "" {
+	if diff := cmp.Diff(wantGrpc, ids.GRPCs); diff != "" {
 		t.Errorf("mismatch in grpcIDs (-want +got):\n%s", diff)
 	}
 }
@@ -596,12 +603,12 @@ func TestInsertMarkers(t *testing.T) {
 			protoIDs: []string{"proto-google-cloud-vision-v1"},
 			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
 			wantContains: []string{
-				managedProtoStart,
+				managedProtoStartMarker,
 				"proto-google-cloud-vision-v1",
-				managedProtoEnd,
-				managedGrpcStart,
+				managedProtoEndMarker,
+				managedGrpcStartMarker,
 				"grpc-google-cloud-vision-v1",
-				managedGrpcEnd,
+				managedGrpcEndMarker,
 			},
 		},
 		{
@@ -626,13 +633,13 @@ func TestInsertMarkers(t *testing.T) {
 			protoIDs: []string{"proto-google-cloud-vision-v1"},
 			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
 			wantContains: []string{
-				managedProtoStart,
+				managedProtoStartMarker,
 				"proto-google-cloud-vision-v1",
-				managedProtoEnd,
+				managedProtoEndMarker,
 				"junit",
-				managedGrpcStart,
+				managedGrpcStartMarker,
 				"grpc-google-cloud-vision-v1",
-				managedGrpcEnd,
+				managedGrpcEndMarker,
 			},
 		},
 		{
@@ -657,10 +664,10 @@ func TestInsertMarkers(t *testing.T) {
 			protoIDs: []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"},
 			grpcIDs:  []string{},
 			wantContains: []string{
-				managedProtoStart,
+				managedProtoStartMarker,
 				"proto-google-cloud-vision-v1",
 				"proto-google-cloud-vision-v1p1beta1",
-				managedProtoEnd,
+				managedProtoEndMarker,
 				"junit",
 			},
 		},
@@ -685,21 +692,35 @@ func TestInsertMarkers(t *testing.T) {
 			protoIDs: []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"},
 			grpcIDs:  []string{"grpc-google-cloud-vision-v1"},
 			wantContains: []string{
-				managedProtoStart,
+				managedProtoStartMarker,
 				"proto-google-cloud-vision-v1",
 				"proto-google-cloud-vision-v1p1beta1",
-				managedProtoEnd,
-				managedGrpcStart,
+				managedProtoEndMarker,
+				managedGrpcStartMarker,
 				"grpc-google-cloud-vision-v1",
-				managedGrpcEnd,
+				managedGrpcEndMarker,
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			// Setup test repo and call insertMarkers (simplified logic for test)
 			lines := strings.Split(test.pomContent, "\n")
-			gotLines := wrapDependencies(lines, test.protoIDs, managedProtoStart, managedProtoEnd)
-			gotLines = wrapDependencies(gotLines, test.grpcIDs, managedGrpcStart, managedGrpcEnd)
+			gotLines := wrapBlocks(wrapArgs{
+				lines:       lines,
+				targets:     toArtifactTags(test.protoIDs),
+				startMarker: managedProtoStartMarker,
+				endMarker:   managedProtoEndMarker,
+				startTag:    "<dependency>",
+				endTag:      "</dependency>",
+			})
+			gotLines = wrapBlocks(wrapArgs{
+				lines:       gotLines,
+				targets:     toArtifactTags(test.grpcIDs),
+				startMarker: managedGrpcStartMarker,
+				endMarker:   managedGrpcEndMarker,
+				startTag:    "<dependency>",
+				endTag:      "</dependency>",
+			})
 			got := strings.Join(gotLines, "\n")
 
 			for _, want := range test.wantContains {
@@ -710,11 +731,130 @@ func TestInsertMarkers(t *testing.T) {
 
 			// In non-contiguous case, verify that junit is NOT wrapped by markers if we fix it.
 			if test.name == "multiple-proto-non-contiguous" {
-				protoBlock := got[strings.Index(got, managedProtoStart):strings.Index(got, managedProtoEnd)]
+				protoBlock := got[strings.Index(got, managedProtoStartMarker):strings.Index(got, managedProtoEndMarker)]
 				if strings.Contains(protoBlock, "junit") {
 					t.Errorf("multiple-proto-non-contiguous: junit should NOT be inside proto markers, but found in block:\n%s", protoBlock)
 				}
 			}
 		})
+	}
+}
+
+func TestInsertMarkers_Full(t *testing.T) {
+	dir := t.TempDir()
+	libName := "vision"
+	artifactID := "google-cloud-vision"
+	repoPath := dir
+	libDir := filepath.Join(repoPath, "java-"+libName)
+	clientDir := filepath.Join(libDir, artifactID)
+	bomDir := filepath.Join(libDir, artifactID+"-bom")
+
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(bomDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	clientPOM := `<project>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-vision-v1</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+
+	parentPOM := `<project>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-vision</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-vision-bom</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <modules>
+    <module>google-cloud-vision</module>
+    <module>google-cloud-vision-bom</module>
+    <module>proto-google-cloud-vision-v1</module>
+  </modules>
+</project>`
+
+	bomPOM := `<project>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>google-cloud-vision</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`
+
+	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(clientPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(libDir, "pom.xml"), []byte(parentPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bomDir, "pom.xml"), []byte(bomPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Libraries: []*config.Library{
+			{
+				Name: libName,
+				APIs: []*config.API{
+					{Path: "google/cloud/vision/v1"},
+				},
+				Java: &config.JavaModule{
+					DistributionNameOverride: "com.google.cloud:" + artifactID,
+				},
+			},
+		},
+	}
+	if err := insertMarkers(repoPath, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify Client
+	clientGot, _ := os.ReadFile(filepath.Join(clientDir, "pom.xml"))
+	if !strings.Contains(string(clientGot), managedProtoStartMarker) {
+		t.Error("client pom missing proto markers")
+	}
+
+	// Verify Parent
+	parentGot, _ := os.ReadFile(filepath.Join(libDir, "pom.xml"))
+	if !strings.Contains(string(parentGot), managedDepsStartMarker) {
+		t.Error("parent pom missing dependency markers")
+	}
+	if !strings.Contains(string(parentGot), managedModulesStartMarker) {
+		t.Error("parent pom missing module markers")
+	}
+	if !strings.Contains(string(parentGot), "proto-google-cloud-vision-v1") {
+		t.Error("parent pom missing proto module")
+	}
+
+	// Verify BOM is NOT inside module markers
+	parentStr := string(parentGot)
+	modulesStart := strings.Index(parentStr, managedModulesStartMarker)
+	modulesEnd := strings.Index(parentStr, managedModulesEndMarker)
+	if modulesStart != -1 && modulesEnd != -1 && modulesStart < modulesEnd {
+		modulesBlock := parentStr[modulesStart:modulesEnd]
+		if strings.Contains(modulesBlock, artifactID+"-bom") {
+			t.Errorf("parent pom should not include BOM module %s inside markers", artifactID+"-bom")
+		}
+	}
+
+	// Verify BOM
+	bomGot, _ := os.ReadFile(filepath.Join(bomDir, "pom.xml"))
+	if !strings.Contains(string(bomGot), managedDepsStartMarker) {
+		t.Error("bom pom missing dependency markers")
 	}
 }

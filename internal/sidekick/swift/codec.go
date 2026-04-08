@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"path/filepath"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -33,6 +34,7 @@ import (
 type codec struct {
 	GenerationYear string
 	PackageName    string
+	MonorepoRoot   string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
 	RootName     string
@@ -40,11 +42,27 @@ type codec struct {
 	Dependencies []config.SwiftDependency
 }
 
-func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) *codec {
+func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
 	year, _, _ := time.Now().Date()
+	absOutdir, err := filepath.Abs(outdir)
+	if err != nil {
+		return nil, err
+	}
+	// The generator must run at the root of the monorepo, because that is where we keep the `librarian.yaml` file and
+	// because all the `outdir` directories are computed relative to that location. So effectively this gets the root
+	// of the monorepo.
+	absRoot, err := filepath.Abs(".")
+	if err != nil {
+		return nil, err
+	}
+	rel, err := filepath.Rel(absOutdir, absRoot)
+	if err != nil {
+		return nil, err
+	}
 	result := &codec{
 		GenerationYear: fmt.Sprintf("%04d", year),
 		PackageName:    PackageName(model),
+		MonorepoRoot:   rel,
 		RootName:       "googleapis",
 		Model:          model,
 	}
@@ -63,5 +81,5 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 			// Ignore other options.
 		}
 	}
-	return result
+	return result, nil
 }

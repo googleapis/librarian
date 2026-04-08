@@ -31,10 +31,16 @@ import (
 
 const (
 	generationConfigFileName = "generation_config.yaml"
-	managedProtoStart        = "<!-- {x-generated-proto-dependencies-start} -->"
-	managedProtoEnd          = "<!-- {x-generated-proto-dependencies-end} -->"
-	managedGrpcStart         = "<!-- {x-generated-grpc-dependencies-start} -->"
-	managedGrpcEnd           = "<!-- {x-generated-grpc-dependencies-end} -->"
+	managedProtoStartMarker  = "<!-- {x-generated-proto-dependencies-start} -->"
+	managedProtoEndMarker    = "<!-- {x-generated-proto-dependencies-end} -->"
+	managedGrpcStartMarker   = "<!-- {x-generated-grpc-dependencies-start} -->"
+	managedGrpcEndMarker     = "<!-- {x-generated-grpc-dependencies-end} -->"
+
+	managedDepsStartMarker = "<!-- {x-generated-dependencies-start} -->"
+	managedDepsEndMarker   = "<!-- {x-generated-dependencies-end} -->"
+
+	managedModulesStartMarker = "<!-- {x-generated-modules-start} -->"
+	managedModulesEndMarker   = "<!-- {x-generated-modules-end} -->"
 )
 
 var (
@@ -332,93 +338,187 @@ func invertBoolPtr(p *bool) bool {
 	return p != nil && !*p
 }
 
-// insertMarkers updates the pom.xml of the main client module for each library
-// to include managed dependency markers for generated proto and gRPC dependencies.
+// insertMarkers updates pom.xml files for each library to include managed markers.
 func insertMarkers(repoPath string, cfg *config.Config) error {
-	var totalInserts int
+	var clientCount, parentCount, bomCount int
 	for _, lib := range cfg.Libraries {
 		if lib.SkipGenerate {
 			log.Printf("Debug: skipping library %s (SkipGenerate is true)", lib.Name)
 			continue
 		}
-		distName := java.DeriveDistributionName(lib)
-		parts := strings.SplitN(distName, ":", 2)
-		if len(parts) != 2 {
-			log.Printf("Debug: skipping library %s (invalid distribution name: %q)", lib.Name, distName)
-			continue
-		}
-		gapicArtifactID := parts[1]
-		clientPomPath := filepath.Join(repoPath, "java-"+lib.Name, gapicArtifactID, "pom.xml")
-		if _, err := os.Stat(clientPomPath); err != nil {
-			log.Printf("Debug: skipping library %s (pom.xml not found at %s)", lib.Name, clientPomPath)
-			continue
-		}
-
-		contentBytes, err := os.ReadFile(clientPomPath)
-		if err != nil {
+		libDir := filepath.Join(repoPath, "java-"+lib.Name)
+		ids := getModuleArtifactIDs(lib)
+		// 1. Client module pom.xml
+		clientPOMPath := filepath.Join(libDir, ids.Client, "pom.xml")
+		if updated, err := updatePOMMarkers(clientPOMPath, ids, "client"); err == nil {
+			if updated {
+				clientCount++
+			}
+		} else if os.IsNotExist(err) {
+			log.Printf("Debug: skipping library %s (client pom.xml not found at %s)", lib.Name, clientPOMPath)
+		} else {
 			return err
 		}
-		lines := strings.Split(string(contentBytes), "\n")
-
-		protoIDs, grpcIDs := getModuleArtifactIDs(lib)
-		if len(protoIDs) == 0 && len(grpcIDs) == 0 {
-			log.Printf("Debug: skipping library %s (no proto or gRPC artifact IDs found)", lib.Name)
-			continue
-		}
-
-		updatedLines := wrapDependencies(lines, protoIDs, managedProtoStart, managedProtoEnd)
-		updatedLines = wrapDependencies(updatedLines, grpcIDs, managedGrpcStart, managedGrpcEnd)
-
-		newContent := strings.Join(updatedLines, "\n")
-		if newContent != string(contentBytes) {
-			if err := os.WriteFile(clientPomPath, []byte(newContent), 0644); err != nil {
-				return err
+		// 2. Parent pom.xml
+		parentPOMPath := filepath.Join(libDir, "pom.xml")
+		if updated, err := updatePOMMarkers(parentPOMPath, ids, "parent"); err == nil {
+			if updated {
+				parentCount++
 			}
-			totalInserts++
+		} else if os.IsNotExist(err) {
+			log.Printf("Debug: skipping library %s (parent pom.xml not found at %s)", lib.Name, parentPOMPath)
 		} else {
-			log.Printf("Debug: no changes needed for library %s (markers may already exist or dependencies not found)", lib.Name)
+			return err
+		}
+		// 3. BOM pom.xml
+		bomPOMPath := filepath.Join(libDir, ids.BOM, "pom.xml")
+		if updated, err := updatePOMMarkers(bomPOMPath, ids, "bom"); err == nil {
+			if updated {
+				bomCount++
+			}
+		} else if os.IsNotExist(err) {
+			log.Printf("Debug: skipping library %s (BOM pom.xml not found at %s)", lib.Name, bomPOMPath)
+		} else {
+			return err
 		}
 	}
-	if totalInserts > 0 {
-		log.Printf("Inserted markers in %d Java client pom.xml files", totalInserts)
+
+	if clientCount > 0 {
+		log.Printf("Inserted markers in %d Java client pom.xml files", clientCount)
+	}
+	if parentCount > 0 {
+		log.Printf("Inserted markers in %d Java parent pom.xml files", parentCount)
+	}
+	if bomCount > 0 {
+		log.Printf("Inserted markers in %d Java BOM pom.xml files", bomCount)
 	}
 	return nil
 }
 
-// getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
-func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
-	for _, api := range lib.APIs {
-		version := serviceconfig.ExtractVersion(api.Path)
-		apiCoord := java.DeriveAPICoordinates(java.DeriveLibraryCoordinates(lib), version)
-		protoIDs = append(protoIDs, apiCoord.Proto.ArtifactID)
-		grpcIDs = append(grpcIDs, apiCoord.GRPC.ArtifactID)
+func updatePOMMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bool, error) {
+	contentBytes, err := os.ReadFile(pomPath)
+	if err != nil {
+		return false, err
 	}
-	return
+	lines := strings.Split(string(contentBytes), "\n")
+	origContent := string(contentBytes)
+	switch pomType {
+	case "client":
+		lines = wrapBlocks(wrapArgs{
+			lines:       lines,
+			targets:     toArtifactTags(ids.Protos),
+			startMarker: managedProtoStartMarker,
+			endMarker:   managedProtoEndMarker,
+			startTag:    "<dependency>",
+			endTag:      "</dependency>",
+		})
+		lines = wrapBlocks(wrapArgs{
+			lines:       lines,
+			targets:     toArtifactTags(ids.GRPCs),
+			startMarker: managedGrpcStartMarker,
+			endMarker:   managedGrpcEndMarker,
+			startTag:    "<dependency>",
+			endTag:      "</dependency>",
+		})
+	case "parent":
+		// Dependency Management
+		allDeps := append([]string{ids.Client, ids.BOM}, ids.Protos...)
+		allDeps = append(allDeps, ids.GRPCs...)
+		lines = wrapBlocks(wrapArgs{
+			lines:       lines,
+			targets:     toArtifactTags(allDeps),
+			startMarker: managedDepsStartMarker,
+			endMarker:   managedDepsEndMarker,
+			startTag:    "<dependency>",
+			endTag:      "</dependency>",
+		})
+		// Modules
+		allModules := append([]string{ids.Client}, ids.Protos...)
+		allModules = append(allModules, ids.GRPCs...)
+		lines = wrapBlocks(wrapArgs{
+			lines:       lines,
+			targets:     toModuleTags(allModules),
+			startMarker: managedModulesStartMarker,
+			endMarker:   managedModulesEndMarker,
+			startTag:    "<module>",
+			endTag:      "</module>",
+		})
+	case "bom":
+		allDeps := append([]string{ids.Client}, ids.Protos...)
+		allDeps = append(allDeps, ids.GRPCs...)
+		lines = wrapBlocks(wrapArgs{
+			lines:       lines,
+			targets:     toArtifactTags(allDeps),
+			startMarker: managedDepsStartMarker,
+			endMarker:   managedDepsEndMarker,
+			startTag:    "<dependency>",
+			endTag:      "</dependency>",
+		})
+	}
+
+	newContent := strings.Join(lines, "\n")
+	if newContent == origContent {
+		log.Printf("Debug: no changes made to %s pom: %s (no matching targets found)", pomType, pomPath)
+		return false, nil
+	}
+
+	if err := os.WriteFile(pomPath, []byte(newContent), 0644); err != nil {
+		return false, err
+	}
+	return true, nil
 }
 
-// wrapDependencies inserts start and end markers around the block of dependencies
-// matching the provided artifact IDs. If the matching dependencies are not
-// contiguous, it moves them together to the position of the first matching block.
-// It returns the modified lines.
-func wrapDependencies(lines []string, artifactIDs []string, startMarker, endMarker string) []string {
-	if len(artifactIDs) == 0 {
-		return lines
+type moduleArtifactIDs struct {
+	Client string
+	BOM    string
+	Protos []string
+	GRPCs  []string
+}
+
+// getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
+func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
+	lc := java.DeriveLibraryCoordinates(lib)
+	ids := moduleArtifactIDs{
+		Client: lc.GAPIC.ArtifactID,
+		BOM:    lc.BOM.ArtifactID,
 	}
+	for _, api := range lib.APIs {
+		version := serviceconfig.ExtractVersion(api.Path)
+		apiCoord := java.DeriveAPICoordinates(lc, version)
+		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
+		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
+	}
+	return ids
+}
 
-	targets := toArtifactTags(artifactIDs)
-	kept, moved, insertAt := splitMatchingDependencies(lines, targets)
+type wrapArgs struct {
+	lines       []string
+	targets     []string
+	startMarker string
+	endMarker   string
+	startTag    string
+	endTag      string
+}
 
+// wrapBlocks inserts start and end markers around a set of matching blocks.
+// If matching blocks are not contiguous, it moves them together to the
+// position of the first matching block.
+func wrapBlocks(args wrapArgs) []string {
+	if len(args.targets) == 0 {
+		return args.lines
+	}
+	kept, moved, insertAt := splitMatchingBlocks(args)
 	if insertAt == -1 {
-		return lines
+		return args.lines
 	}
 
 	indent := getLineIndent(moved[0])
 
-	res := make([]string, 0, len(lines)+2)
+	res := make([]string, 0, len(args.lines)+2)
 	res = append(res, kept[:insertAt]...)
-	res = append(res, indent+startMarker)
+	res = append(res, indent+args.startMarker)
 	res = append(res, moved...)
-	res = append(res, indent+endMarker)
+	res = append(res, indent+args.endMarker)
 	res = append(res, kept[insertAt:]...)
 	return res
 }
@@ -432,21 +532,30 @@ func toArtifactTags(ids []string) []string {
 	return tags
 }
 
-// splitMatchingDependencies partitions POM lines into 'kept' and 'moved' slices.
-// 'moved' contains all dependency blocks matching any target.
+// toModuleTags converts artifact IDs into Maven <module> tags.
+func toModuleTags(ids []string) []string {
+	tags := make([]string, 0, len(ids))
+	for _, id := range ids {
+		tags = append(tags, "<module>"+id+"</module>")
+	}
+	return tags
+}
+
+// splitMatchingBlocks partitions POM lines into 'kept' and 'moved' slices.
+// 'moved' contains all blocks matching any target.
 // 'kept' contains all other lines in their original relative order.
 // 'insertAt' is the index in 'kept' where the first matching block was originally located,
 // serving as the insertion point for the relocated blocks.
-func splitMatchingDependencies(lines []string, targets []string) (kept, moved []string, insertAt int) {
+func splitMatchingBlocks(args wrapArgs) (kept, moved []string, insertAt int) {
 	insertAt = -1
-	for i := 0; i < len(lines); i++ {
-		if !strings.Contains(lines[i], "<dependency>") {
-			kept = append(kept, lines[i])
+	for i := 0; i < len(args.lines); i++ {
+		if !strings.Contains(args.lines[i], args.startTag) {
+			kept = append(kept, args.lines[i])
 			continue
 		}
 
-		block, nextIdx := nextDependencyBlock(lines, i)
-		if containsAny(block, targets) {
+		block, nextIdx := nextBlock(args.lines, i, args.endTag)
+		if containsAny(block, args.targets) {
 			if insertAt == -1 {
 				insertAt = len(kept)
 			}
@@ -459,10 +568,10 @@ func splitMatchingDependencies(lines []string, targets []string) (kept, moved []
 	return
 }
 
-// nextDependencyBlock returns the full <dependency>...</dependency> block starting at index i.
-func nextDependencyBlock(lines []string, i int) (block []string, endIdx int) {
+// nextBlock returns the full block starting at index i and ending with endTag.
+func nextBlock(lines []string, i int, endTag string) (block []string, endIdx int) {
 	start := i
-	for i < len(lines) && !strings.Contains(lines[i], "</dependency>") {
+	for i < len(lines) && !strings.Contains(lines[i], endTag) {
 		i++
 	}
 	if i >= len(lines) { // Malformed XML

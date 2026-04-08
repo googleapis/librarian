@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The project and location for which to retrieve projects information.
+      - help_text: Parent value for ListZonesRequest
         is_positional: false
         is_primary_resource: true
         resource_spec:

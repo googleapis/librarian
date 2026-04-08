@@ -22,6 +22,7 @@ type modelAnnotations struct {
 	CopyrightYear string
 	BoilerPlate   []string
 	PackageName   string
+	MonorepoRoot  string
 }
 
 func (codec *codec) annotateModel() error {
@@ -29,6 +30,7 @@ func (codec *codec) annotateModel() error {
 		CopyrightYear: codec.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
 		PackageName:   codec.PackageName,
+		MonorepoRoot:  codec.MonorepoRoot,
 	}
 	codec.Model.Codec = annotations
 	for _, message := range codec.Model.Messages {

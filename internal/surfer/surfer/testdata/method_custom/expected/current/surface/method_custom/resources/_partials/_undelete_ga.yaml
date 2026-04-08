@@ -6,7 +6,9 @@
     description: ""
   arguments:
     params:
-      - help_text: The resource to operate on.
+      - help_text: |-
+          The name of the deleted book.
+          Format: publishers/{publisher}/books/{book}
         is_positional: true
         is_primary_resource: true
         resource_spec:

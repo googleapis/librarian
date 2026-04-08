@@ -21,6 +21,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/yaml"
+	"github.com/iancoleman/strcase"
 )
 
 // partialsHeader is the directive that tells gcloud to look in the `_partials` directory
@@ -157,7 +158,12 @@ func mapResourceSpecToYAML(spec *ResourceSpec) *yamlResourceSpec {
 	}
 	var attrs []yamlAttribute
 	for _, a := range spec.Attributes {
-		attrs = append(attrs, yamlAttribute(a))
+		attrs = append(attrs, yamlAttribute{
+			AttributeName: strcase.ToSnake(a.AttributeName),
+			ParameterName: a.ParameterName,
+			Help:          a.Help,
+			Property:      a.Property,
+		})
 	}
 	return &yamlResourceSpec{
 		Name:                  spec.Name,

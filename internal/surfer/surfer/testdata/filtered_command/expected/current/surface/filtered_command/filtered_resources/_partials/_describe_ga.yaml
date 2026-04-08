@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The filteredResource to operate on.
+      - help_text: The resource name of the resource within a service.
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -22,7 +22,7 @@
               attribute_name: location
               help: The location id of the {resource} resource.
             - parameter_name: filteredResourcesId
-              attribute_name: filteredResource
+              attribute_name: filtered_resource
               help: The filteredResource id of the {resource} resource.
           disable_auto_completers: false
         required: true

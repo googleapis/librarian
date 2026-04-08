@@ -6,13 +6,13 @@
     description: ""
   arguments:
     params:
-      - help_text: The parent to operate on.
+      - help_text: The parent of the resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:
-          name: parent
-          plural_name: resources
-          collection: methodcustom.projects.locations.resources
+          name: location
+          plural_name: locations
+          collection: methodcustom.projects.locations
           attributes:
             - parameter_name: projectsId
               attribute_name: project
@@ -21,9 +21,6 @@
             - parameter_name: locationsId
               attribute_name: location
               help: The location id of the {resource} resource.
-            - parameter_name: resourcesId
-              attribute_name: resource
-              help: The resource id of the {resource} resource.
           disable_auto_completers: false
         required: true
         repeated: false

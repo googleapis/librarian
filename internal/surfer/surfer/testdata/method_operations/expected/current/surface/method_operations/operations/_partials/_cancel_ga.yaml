@@ -6,7 +6,7 @@
     description: ""
   arguments:
     params:
-      - help_text: The  to operate on.
+      - help_text: ""
         is_positional: true
         is_primary_resource: true
         resource_spec:

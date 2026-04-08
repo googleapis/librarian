@@ -511,6 +511,16 @@
     go: beta
     java: preview
     python: preview
+- path: google/cloud/appoptimize/v1beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
+  release_level:
+    go: beta
+    java: preview
+    python: preview
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
@@ -554,6 +564,8 @@
     - python
   release_level:
     go: beta
+  transports:
+    java: grpc
 - path: google/cloud/assuredworkloads/v1
   documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
