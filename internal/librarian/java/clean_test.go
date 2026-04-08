@@ -47,6 +47,7 @@ func TestClean(t *testing.T) {
 	// Create files
 	files := []string{
 		filepath.Join(tmpDir, libraryName, "src", "Main.java"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "stub", "Version.java"),
 		filepath.Join(tmpDir, libraryName, "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "it", "ITSecretManagerTest.java"),
 		filepath.Join(tmpDir, libraryName, "pom.xml"),
 		filepath.Join(tmpDir, "kept-file.txt"),
@@ -87,6 +88,7 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "kept-file.txt"),
 		filepath.Join(tmpDir, "kept-dir", "file.txt"),
 		filepath.Join(tmpDir, libraryName, "pom.xml"),
+		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "stub", "Version.java"),
 		filepath.Join(tmpDir, libraryName, "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "it", "ITSecretManagerTest.java"),
 	}
 	for _, p := range keptPaths {

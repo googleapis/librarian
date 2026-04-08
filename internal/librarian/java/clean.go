@@ -26,6 +26,7 @@ import (
 )
 
 var itTestRegexp = regexp.MustCompile(`src/test/java/com/google/cloud/.*/v.*/it/IT.*Test\.java$`)
+var versionRegexp = regexp.MustCompile(`src/main/java/com/google/cloud/.*/v.*/stub/Version\.java$`)
 
 // Clean removes files in the library's output directory that are not in the keep list.
 // It targets patterns like proto-*, grpc-*, and the main GAPIC module.
@@ -77,7 +78,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 		if err != nil {
 			return err
 		}
-		if keepSet[rel] || itTestRegexp.MatchString(filepath.ToSlash(rel)) {
+		if keepSet[rel] || itTestRegexp.MatchString(filepath.ToSlash(rel)) || versionRegexp.MatchString(filepath.ToSlash(rel)) {
 			return nil
 		}
 		// Bypass clirr-ignored-differences.xml and pom.xml files as they are generated once and manually maintained.
