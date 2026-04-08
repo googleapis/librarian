@@ -511,6 +511,13 @@
     go: beta
     java: preview
     python: preview
+- path: google/cloud/appoptimize/v1beta
+  languages:
+    - all
+  release_level:
+    go: beta
+    java: preview
+    python: preview
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
