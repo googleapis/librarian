@@ -180,6 +180,92 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
+// TestGenerate_MkdirTempError tests that Generate returns a wrapped error
+// with the expected context when mkdirTemp fails.
+func TestGenerate_MkdirTempError(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	oldMkdirTemp := mkdirTemp
+	defer func() { mkdirTemp = oldMkdirTemp }()
+	
+	mockErr := errors.New("mocked mkdirTemp error")
+	mkdirTemp = func(dir, prefix string) (string, error) {
+		return "", mockErr
+	}
+
+	library := &config.Library{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		CopyrightYear: "2025",
+		Output:        t.TempDir(),
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+
+	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	if gotErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	wantStr := "failed to create temporary directory"
+	// Verify the error message contains the specific context we added.
+	// We use strings.Contains here to confirm the specific message context
+	// requested by the user, despite the general guidance to avoid string checks.
+	if !strings.Contains(gotErr.Error(), wantStr) {
+		t.Errorf("error string mismatch\ngot:  %q\nwant: %q", gotErr.Error(), wantStr)
+	}
+	
+	if !errors.Is(gotErr, mockErr) {
+		t.Errorf("error is not wrapping mockErr\ngot:  %v", gotErr)
+	}
+}
+
+// TestGenerate_MkdirAllError tests that Generate returns a wrapped error
+// with the expected context when os.MkdirAll fails because the path is a file.
+func TestGenerate_MkdirAllError(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "file_blocking_dir")
+	if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		CopyrightYear: "2025",
+		Output:        filePath,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+
+	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	if gotErr == nil {
+		t.Fatal("expected error, got nil")
+	}
+
+	wantStr := "failed to create output directory"
+	// Verify the error message contains the specific context we added.
+	// We use strings.Contains here to confirm the specific message context
+	// requested by the user, despite the general guidance to avoid string checks.
+	if !strings.Contains(gotErr.Error(), wantStr) {
+		t.Errorf("error string mismatch\ngot:  %q\nwant: %q", gotErr.Error(), wantStr)
+	}
+}
+
 func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")

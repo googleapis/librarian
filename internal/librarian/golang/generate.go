@@ -48,15 +48,15 @@ var (
 func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
 	}
 	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
 	tempDir, err := mkdirTemp("", "librarian-gen-")
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
 	defer os.RemoveAll(tempDir)
 	// For preview libraries, the API protos are rooted in the
@@ -77,34 +77,34 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		}
 
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
-			return err
+			return fmt.Errorf("failed to move generated files: %w", err)
 		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
-			return err
+			return fmt.Errorf("failed to generate client version file: %w", err)
 		}
 		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to find service configuration: %w", err)
 		}
 		if err := generateRepoMetadata(api, library, goAPI); err != nil {
-			return err
+			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
 		if i != 0 {
 			continue
 		}
 		if err := generateREADME(library, api, outDir); err != nil {
-			return err
+			return fmt.Errorf("failed to generate README: %w", err)
 		}
 	}
 	if library.Go != nil {
 		for _, p := range library.Go.DeleteGenerationOutputPaths {
 			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
-				return err
+				return fmt.Errorf("failed to delete generation output path %q: %w", p, err)
 			}
 		}
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
-		return err
+		return fmt.Errorf("failed to generate internal version file: %w", err)
 	}
 
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
@@ -112,7 +112,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			// New client, init the module.
 			return initModule(ctx, outDir, modulePath(library))
 		}
-		return err
+		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
 	return nil
 }
