@@ -349,35 +349,35 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		libDir := filepath.Join(repoPath, "java-"+lib.Name)
 		ids := getModuleArtifactIDs(lib)
 		// 1. Client module pom.xml
-		clientPomPath := filepath.Join(libDir, ids.Client, "pom.xml")
-		if updated, err := updatePomMarkers(clientPomPath, ids, "client"); err == nil {
+		clientPOMPath := filepath.Join(libDir, ids.Client, "pom.xml")
+		if updated, err := updatePOMMarkers(clientPOMPath, ids, "client"); err == nil {
 			if updated {
 				clientCount++
 			}
 		} else if os.IsNotExist(err) {
-			log.Printf("Debug: skipping library %s (client pom.xml not found at %s)", lib.Name, clientPomPath)
+			log.Printf("Debug: skipping library %s (client pom.xml not found at %s)", lib.Name, clientPOMPath)
 		} else {
 			return err
 		}
 		// 2. Parent pom.xml
-		parentPomPath := filepath.Join(libDir, "pom.xml")
-		if updated, err := updatePomMarkers(parentPomPath, ids, "parent"); err == nil {
+		parentPOMPath := filepath.Join(libDir, "pom.xml")
+		if updated, err := updatePOMMarkers(parentPOMPath, ids, "parent"); err == nil {
 			if updated {
 				parentCount++
 			}
 		} else if os.IsNotExist(err) {
-			log.Printf("Debug: skipping library %s (parent pom.xml not found at %s)", lib.Name, parentPomPath)
+			log.Printf("Debug: skipping library %s (parent pom.xml not found at %s)", lib.Name, parentPOMPath)
 		} else {
 			return err
 		}
 		// 3. BOM pom.xml
-		bomPomPath := filepath.Join(libDir, ids.BOM, "pom.xml")
-		if updated, err := updatePomMarkers(bomPomPath, ids, "bom"); err == nil {
+		bomPOMPath := filepath.Join(libDir, ids.BOM, "pom.xml")
+		if updated, err := updatePOMMarkers(bomPOMPath, ids, "bom"); err == nil {
 			if updated {
 				bomCount++
 			}
 		} else if os.IsNotExist(err) {
-			log.Printf("Debug: skipping library %s (BOM pom.xml not found at %s)", lib.Name, bomPomPath)
+			log.Printf("Debug: skipping library %s (BOM pom.xml not found at %s)", lib.Name, bomPOMPath)
 		} else {
 			return err
 		}
@@ -395,7 +395,7 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	return nil
 }
 
-func updatePomMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bool, error) {
+func updatePOMMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bool, error) {
 	contentBytes, err := os.ReadFile(pomPath)
 	if err != nil {
 		return false, err
@@ -458,7 +458,7 @@ func updatePomMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bo
 
 	newContent := strings.Join(lines, "\n")
 	if newContent == origContent {
-		log.Printf("Debug: no changes needed for %s pom: %s", pomType, pomPath)
+		log.Printf("Debug: no changes made to %s pom: %s (no matching targets found)", pomType, pomPath)
 		return false, nil
 	}
 
