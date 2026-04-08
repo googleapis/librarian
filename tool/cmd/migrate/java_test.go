@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -52,7 +53,7 @@ func TestRunJavaMigration(t *testing.T) {
 		{
 			name:     "no_generation_config",
 			repoPath: "testdata/run/no-config",
-			wantErr:  os.ErrNotExist,
+			wantErr:  fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

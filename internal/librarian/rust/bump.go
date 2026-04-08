@@ -89,7 +89,7 @@ edition                = "2021"
 func updateREADME(readmeFile, libraryName, version string) error {
 	content, err := os.ReadFile(readmeFile)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err

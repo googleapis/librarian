@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -209,7 +210,7 @@ func hasNodejsGapicLibrary(googleapisDir, apiPath string) (bool, error) {
 	buildPath := filepath.Join(googleapisDir, apiPath, "BUILD.bazel")
 	data, err := os.ReadFile(buildPath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return false, nil
 		}
 		return false, err

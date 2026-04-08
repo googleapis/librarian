@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -174,7 +175,7 @@ func TestBumpSingleGapicVersionFile_Error(t *testing.T) {
 			setup: func(string) error {
 				return nil
 			},
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name: "multiple version lines",

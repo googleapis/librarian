@@ -738,7 +738,7 @@ func separateFilesAndDirs(paths []string) ([]string, []string, error) {
 		info, err := os.Lstat(path)
 		if err != nil {
 			// The file or directory may have already been removed.
-			if errors.Is(err, os.ErrNotExist) {
+			if errors.Is(err, fs.ErrNotExist) {
 				slog.Warn("unable to find path", "path", path)
 				continue
 			}

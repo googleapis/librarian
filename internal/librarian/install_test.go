@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -99,7 +100,7 @@ func TestCleanLibraries(t *testing.T) {
 		t.Fatal(err)
 	}
 	_, err := os.Stat(filepath.Join(library.Output, "README.md"))
-	wantErr := os.ErrNotExist
+	wantErr := fs.ErrNotExist
 	if !errors.Is(err, wantErr) {
 		t.Errorf("after cleaning, checking for README.md error = %v, wantErr %v", err, wantErr)
 	}
@@ -120,7 +121,7 @@ func TestFakeClean_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	err := fakeClean(library)
-	wantErr := os.ErrNotExist
+	wantErr := fs.ErrNotExist
 	if !errors.Is(err, wantErr) {
 		t.Errorf("fakeClean(), error = %v, wantErr %v", err, wantErr)
 	}

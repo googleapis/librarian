@@ -235,7 +235,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
-	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, os.ErrNotExist) {
+	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove .OwlBot.yaml: %w", err)
 	}
 
@@ -428,7 +428,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 func copySamplesFromStaging(stagingDir, outDir string) error {
 	versions, err := os.ReadDir(stagingDir)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil // staging dir may not exist
 		}
 		return err
@@ -439,7 +439,7 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 		samplesDir := filepath.Join(stagingDir, v.Name(), "samples")
 		if _, err := os.Stat(samplesDir); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
 			return err

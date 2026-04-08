@@ -17,6 +17,7 @@ package rust
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -346,7 +347,7 @@ func TestUpdateREADME_NoFile(t *testing.T) {
 	if err := updateREADME(readmePath, "any", "1.0.0"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(readmePath); !errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(readmePath); !errors.Is(err, fs.ErrNotExist) {
 		t.Error("expected README.md to still be missing")
 	}
 }

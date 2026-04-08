@@ -16,6 +16,7 @@ package main
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -214,7 +215,7 @@ func TestRunUpdateRestNumericEnums_Error(t *testing.T) {
 		{
 			name:    "invalid yaml file",
 			sdkYaml: "non-existent.yaml",
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name:    "invalid googleapis dir",
@@ -224,7 +225,7 @@ func TestRunUpdateRestNumericEnums_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -16,6 +16,7 @@ package snippetmetadata
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -52,7 +53,7 @@ func TestUpdateLibraryVersion_Error(t *testing.T) {
 		{
 			name:    "no such file",
 			setup:   func(t *testing.T, path string) {},
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name: "invalid json",
@@ -198,7 +199,7 @@ func TestReformat_Error(t *testing.T) {
 		{
 			name:    "no such file",
 			setup:   func(t *testing.T, path string) {},
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 		{
 			name: "invalid json",
