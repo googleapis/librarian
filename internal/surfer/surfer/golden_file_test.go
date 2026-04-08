@@ -16,6 +16,7 @@ package surfer
 
 import (
 	"context"
+	"errors"
 	"flag"
 	"io/fs"
 	"os"
@@ -81,7 +82,7 @@ func TestGolden(t *testing.T) {
 			inputDir := filepath.Join(scenarioPath, "input")
 			configFile := filepath.Join(inputDir, "gcloud.yaml")
 			serviceFile := filepath.Join(inputDir, "service.yaml")
-			if _, err := os.Stat(configFile); os.IsNotExist(err) {
+			if _, err := os.Stat(configFile); errors.Is(err, fs.ErrNotExist) {
 				t.Fatalf("gcloud.yaml not found in scenario input directory: %s", configFile)
 			}
 
@@ -176,7 +177,7 @@ func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFi
 func updateGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceName string) {
 	t.Helper()
 	expectedServiceDir := filepath.Join(expectedRoot, gotServiceName)
-	if err := os.RemoveAll(expectedRoot); err != nil && !os.IsNotExist(err) {
+	if err := os.RemoveAll(expectedRoot); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		t.Fatal(err)
 	}
 	if err := os.MkdirAll(expectedServiceDir, 0755); err != nil {
@@ -189,7 +190,7 @@ func updateGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceNa
 
 func verifyGoldenOutputs(t *testing.T, expectedRoot, gotServiceDir, gotServiceName, testName string) {
 	t.Helper()
-	if _, err := os.Stat(expectedRoot); os.IsNotExist(err) {
+	if _, err := os.Stat(expectedRoot); errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("expected output directory not found in scenario directory: %s", expectedRoot)
 	}
 	expectedServiceDir := filepath.Join(expectedRoot, gotServiceName)
@@ -238,7 +239,7 @@ func copyProtos(t *testing.T, src, dst string) {
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				t.Fatalf("failed to create directory %q: %v", filepath.Dir(target), err)
 			}
-			if _, err := os.Stat(target); os.IsNotExist(err) {
+			if _, err := os.Stat(target); errors.Is(err, fs.ErrNotExist) {
 				if err := os.Symlink(filepath.Join(absSrc, entry.Name()), target); err != nil {
 					t.Fatalf("failed to create symlink for %q: %v", target, err)
 				}
@@ -311,7 +312,7 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 		relPath, _ := filepath.Rel(expectedDir, path)
 
 		gotPath := filepath.Join(gotDir, relPath)
-		if _, err := os.Stat(gotPath); os.IsNotExist(err) {
+		if _, err := os.Stat(gotPath); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("%s: missing in output", relPath)
 			allPass = false
 			return nil
@@ -333,7 +334,7 @@ func compareDirectories(t *testing.T, expectedDir, gotDir string) bool {
 		relPath, _ := filepath.Rel(gotDir, path)
 
 		expectedPath := filepath.Join(expectedDir, relPath)
-		if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+		if _, err := os.Stat(expectedPath); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("%s: extra file generated in output", relPath)
 			allPass = false
 		}

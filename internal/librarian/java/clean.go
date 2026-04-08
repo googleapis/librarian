@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -86,7 +87,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 		}
 		return os.Remove(path)
 	})
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	// Remove empty directories in reverse order (bottom-up).
@@ -97,7 +98,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 			return err
 		}
 		if !keepSet[rel] {
-			if err := os.Remove(d); err != nil && !os.IsNotExist(err) && !isDirNotEmpty(err) {
+			if err := os.Remove(d); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
 				return err
 			}
 		}

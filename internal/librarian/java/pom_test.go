@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"flag"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -271,7 +272,7 @@ func TestIsPOMMissing(t *testing.T) {
 func TestIsPOMMissing_DirMissingError(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
 	_, err := isPOMMissing(dir)
-	if !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("isPOMMissing(%q) error = %v, want %v", dir, err, os.ErrNotExist)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("isPOMMissing(%q) error = %v, want %v", dir, err, fs.ErrNotExist)
 	}
 }

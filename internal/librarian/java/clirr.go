@@ -16,6 +16,7 @@ package java
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -54,7 +55,7 @@ func generateClirrIfMissing(protoModulePath string) error {
 	switch {
 	case err == nil:
 		return nil
-	case !os.IsNotExist(err):
+	case !errors.Is(err, fs.ErrNotExist):
 		return fmt.Errorf("failed to check for %s: %w", outputPath, err)
 	}
 	protoPaths, err := findProtoPackages(protoModulePath)
@@ -84,7 +85,7 @@ func generateClirrIfMissing(protoModulePath string) error {
 
 func findProtoPackages(protoModulePath string) ([]string, error) {
 	srcDir := filepath.Join(protoModulePath, "src", "main", "java")
-	if _, err := os.Stat(srcDir); os.IsNotExist(err) {
+	if _, err := os.Stat(srcDir); errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	packageSet := make(map[string]bool)

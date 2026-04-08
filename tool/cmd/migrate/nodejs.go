@@ -17,7 +17,9 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -393,7 +395,7 @@ func extractCopyrightYear(pkgDir string) string {
 func nodejsSubdirKeep(pkgDir, subdir string) ([]string, error) {
 	dir := filepath.Join(pkgDir, subdir)
 	if _, err := os.Stat(dir); err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, err

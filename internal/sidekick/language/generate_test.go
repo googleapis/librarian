@@ -16,6 +16,8 @@ package language
 
 import (
 	"embed"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -39,7 +41,7 @@ func TestGenerate(t *testing.T) {
 	for _, expected := range []string{"README.md", "test001.txt"} {
 		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -104,7 +106,7 @@ func verifyElementOutput(t *testing.T, outDir string) {
 	for _, expected := range []string{"test002.txt"} {
 		filename := filepath.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Fatal(err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {

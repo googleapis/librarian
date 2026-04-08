@@ -18,6 +18,7 @@ package legacygitrepo
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net/url"
 	"os"
@@ -136,7 +137,7 @@ func newRepositoryWithoutUser(opts *RepositoryOptions) (*LocalRepository, error)
 	if err == nil {
 		return open(opts.Dir)
 	}
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		if opts.RemoteURL == "" {
 			return nil, fmt.Errorf("gitrepo: remote URL is required when cloning")
 		}

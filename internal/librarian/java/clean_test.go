@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"syscall"
@@ -78,7 +79,7 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "samples", "snippets", "generated"),
 	}
 	for _, p := range cleanedPaths {
-		if _, err := os.Stat(p); !os.IsNotExist(err) {
+		if _, err := os.Stat(p); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected path %s to be removed, but it still exists", p)
 		}
 	}

@@ -242,7 +242,7 @@ func TestStageProtoFiles_Error(t *testing.T) {
 		{
 			name:               "path doesn't exist",
 			relativeProtoPaths: []string{"google/cloud/bogus.proto"},
-			wantErr:            os.ErrNotExist,
+			wantErr:            fs.ErrNotExist,
 		},
 		{
 			name:               "can't create directory",
@@ -423,10 +423,10 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("owl-bot-staging should have been removed")
 			}
-			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("client-post-processing should have been removed")
 			}
 			for _, wantFile := range test.wantFiles {
@@ -975,7 +975,7 @@ func TestGenerate(t *testing.T) {
 			_, gotReadmeStatErr := os.Stat(filepath.Join(outdir, "docs", "README.rst"))
 			var wantReadmeStatErr error
 			if test.skipReadmeCopy {
-				wantReadmeStatErr = os.ErrNotExist
+				wantReadmeStatErr = fs.ErrNotExist
 			}
 			if !errors.Is(gotReadmeStatErr, wantReadmeStatErr) {
 				t.Errorf("stat error on readme = %v, want %v", gotReadmeStatErr, wantReadmeStatErr)

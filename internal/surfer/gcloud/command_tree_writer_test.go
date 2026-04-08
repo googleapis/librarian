@@ -16,6 +16,8 @@ package gcloud
 
 import (
 	"bytes"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -140,7 +142,7 @@ func TestWriteCommandGroupFile(t *testing.T) {
 	}
 
 	expectedPath := filepath.Join(tmpDir, "__init__.py")
-	if _, err := os.Stat(expectedPath); os.IsNotExist(err) {
+	if _, err := os.Stat(expectedPath); errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected file %q to be generated", expectedPath)
 	}
 }
@@ -187,7 +189,7 @@ func TestWriteCommandGroupTree(t *testing.T) {
 	}
 
 	for _, f := range expectedFiles {
-		if _, err := os.Stat(f); os.IsNotExist(err) {
+		if _, err := os.Stat(f); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("expected file %q to be generated", f)
 		}
 	}

@@ -19,6 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path"
@@ -108,7 +109,7 @@ func loadLibrarianStateFromBytes(data []byte, source string) (*legacyconfig.Libr
 func parseLibrarianConfig(path string) (*legacyconfig.LibrarianConfig, error) {
 	bytes, err := os.ReadFile(path)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			slog.Info("config.yaml not found, proceeding")
 			return nil, nil
 		}
@@ -209,7 +210,7 @@ func readLibraryState(jsonFilePath string) (*legacyconfig.LibraryState, error) {
 		if b, err := os.ReadFile(jsonFilePath); err == nil {
 			slog.Debug("container response", "content", string(b))
 		}
-		if err := os.Remove(jsonFilePath); err != nil && !errors.Is(err, os.ErrNotExist) {
+		if err := os.Remove(jsonFilePath); err != nil && !errors.Is(err, fs.ErrNotExist) {
 			slog.Warn("fail to remove file", slog.String("name", jsonFilePath), slog.Any("err", err))
 		}
 	}()
@@ -217,7 +218,7 @@ func readLibraryState(jsonFilePath string) (*legacyconfig.LibraryState, error) {
 		// If we only failed to read the file because it didn't exist, just succeed
 		// with a nil pointer.
 
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("failed to read response file, path: %s, error: %w", jsonFilePath, err)

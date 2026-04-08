@@ -19,6 +19,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -137,7 +138,7 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 
 	// Verify that the version directory was cleaned up
-	if _, err := os.Stat(filepath.Join(outdir, version)); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(outdir, version)); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
 	}
 }
@@ -237,7 +238,7 @@ func TestRestructureModules_NoSamples(t *testing.T) {
 	}
 	// Verify sample file location DOES NOT exist
 	wantSamplePath := filepath.Join(destRoot, "samples", "snippets", "generated", "Sample.java")
-	if _, err := os.Stat(wantSamplePath); !os.IsNotExist(err) {
+	if _, err := os.Stat(wantSamplePath); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected sample file at %s to be missing, but it exists", wantSamplePath)
 	}
 }

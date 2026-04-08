@@ -15,6 +15,8 @@
 package codec_sample
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -64,7 +66,7 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	filename := path.Join(outDir, "README.md")
 	stat, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("missing %s: %s", filename, err)
 	}
 	if stat.Mode().Perm()|0666 != 0666 {

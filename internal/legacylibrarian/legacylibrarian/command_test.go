@@ -17,6 +17,7 @@ package legacylibrarian
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -462,7 +463,7 @@ func TestCleanAndCopyLibrary(t *testing.T) {
 
 			for _, file := range test.shouldDelete {
 				fullPath := filepath.Join(repoDir, file)
-				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+				if _, err := os.Stat(fullPath); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("file %s should not be copied to %s", file, repoDir)
 				}
 			}
@@ -1722,7 +1723,7 @@ func TestWritePRBody(t *testing.T) {
 func gotPRBodyFile(t *testing.T, workRoot string) bool {
 	possibleFilePath := filepath.Join(workRoot, prBodyFile)
 	_, err := os.Stat(possibleFilePath)
-	if err != nil && !os.IsNotExist(err) {
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
 		t.Fatalf("error other than IsNotExist finding status of %s", possibleFilePath)
 	}
 	return err == nil
@@ -2058,7 +2059,7 @@ func TestCopyLibraryFiles(t *testing.T) {
 
 			for _, file := range test.skipFiles {
 				fullPath := filepath.Join(test.repoDir, file)
-				if _, err := os.Stat(fullPath); !os.IsNotExist(err) {
+				if _, err := os.Stat(fullPath); !errors.Is(err, fs.ErrNotExist) {
 					t.Errorf("file %s should not be copied to %s", file, test.repoDir)
 				}
 			}
@@ -2338,7 +2339,7 @@ func TestWriteTiming_EmptyMap(t *testing.T) {
 	if err := writeTiming(workRoot, timeByLibrary); err != nil {
 		t.Fatal("writeTiming() failed", err)
 	}
-	if _, err := os.Stat(filepath.Join(workRoot, timingFile)); !os.IsNotExist(err) {
+	if _, err := os.Stat(filepath.Join(workRoot, timingFile)); !errors.Is(err, fs.ErrNotExist) {
 		t.Error("writeTiming() should not have created a file")
 	}
 }

@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -88,7 +89,7 @@ func run(ctx context.Context, args []string) error {
 
 func parseBazel(googleapisDir, dir string) (*build.File, error) {
 	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
-	if _, err := os.Stat(path); errors.Is(err, os.ErrNotExist) {
+	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
 	data, err := os.ReadFile(path)

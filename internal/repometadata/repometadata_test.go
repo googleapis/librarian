@@ -16,6 +16,7 @@ package repometadata
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -229,7 +230,7 @@ func TestWrite_Error(t *testing.T) {
 	}
 	dir := t.TempDir()
 	gotErr := metadata.Write(filepath.Join(dir, "non-existent"))
-	wantErr := os.ErrNotExist
+	wantErr := fs.ErrNotExist
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Write() error = %v, wantErr %v", gotErr, wantErr)
 	}
@@ -253,7 +254,7 @@ func TestRead_Error(t *testing.T) {
 		{
 			name:    "no file",
 			setup:   func(t *testing.T, dir string) {},
-			wantErr: os.ErrNotExist,
+			wantErr: fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

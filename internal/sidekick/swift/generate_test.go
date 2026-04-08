@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -62,7 +64,7 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	filename := filepath.Join(outDir, "README.md")
 	stat, err := os.Stat(filename)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("missing %s: %s", filename, err)
 	}
 	if stat.Mode().Perm()|0666 != 0666 {
@@ -92,7 +94,7 @@ func TestGenerateMessageFiles(t *testing.T) {
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	for _, expected := range []string{"Secret.swift", "Volume.swift"} {
 		filename := filepath.Join(expectedDir, expected)
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
+		if _, err := os.Stat(filename); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 	}
@@ -120,7 +122,7 @@ func TestGenerateServiceFiles(t *testing.T) {
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	for _, expected := range []string{"IAM.swift", "SecretManagerService.swift"} {
 		filename := filepath.Join(expectedDir, expected)
-		if _, err := os.Stat(filename); os.IsNotExist(err) {
+		if _, err := os.Stat(filename); errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 	}

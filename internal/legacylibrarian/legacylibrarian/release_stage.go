@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -380,7 +381,7 @@ func (r *stageRunner) updateLibrarianYAML(ctx context.Context) error {
 	librarianYAMLPath := filepath.Join(r.repo.GetDir(), config.LibrarianYAML)
 	cfg, err := yaml.Read[config.Config](librarianYAMLPath)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err
