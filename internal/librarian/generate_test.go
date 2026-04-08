@@ -30,7 +30,6 @@ import (
 )
 
 func TestGenerateCommand(t *testing.T) {
-	t.Skip("TODO(https://github.com/googleapis/librarian/issues/5202): fix flaky test")
 
 	const (
 		lib1            = "library-one"
@@ -97,7 +96,7 @@ func TestGenerateCommand(t *testing.T) {
 		{
 			name:             "all flag",
 			args:             []string{"librarian", "generate", "--all"},
-			want:             []string{lib1, lib2},
+			want:             []string{lib1, lib2, lib1PreviewName},
 			wantPostGenerate: true,
 		},
 		{
@@ -165,6 +164,9 @@ func TestGenerateCommand(t *testing.T) {
 				generated[libName] = true
 			}
 			for libName, outputDir := range allLibraries {
+				// Simply always attempt to trim off the preview suffix. The
+				// name used in the generated code is always sans -preview.
+				expectedName := trimPreviewName(libName)
 				readmePath := filepath.Join(tempDir, outputDir, "README.md")
 				shouldExist := generated[libName]
 				_, err = os.Stat(readmePath)
@@ -185,7 +187,7 @@ func TestGenerateCommand(t *testing.T) {
 				if err != nil {
 					t.Fatalf("could not read generated file for %q: %v", libName, err)
 				}
-				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", libName)
+				want := fmt.Sprintf("# %s\n\nGenerated library\n\n---\nFormatted\n", expectedName)
 				if diff := cmp.Diff(want, string(got)); diff != "" {
 					t.Errorf("mismatch for %q (-want +got):\n%s", libName, diff)
 				}
@@ -199,7 +201,7 @@ func TestGenerateCommand(t *testing.T) {
 				if err != nil {
 					t.Fatalf("could not read generated STARTER.md for %q: %v", libName, err)
 				}
-				wantStarter := fmt.Sprintf("# %s\n\nThis is a starter file.\n", libName)
+				wantStarter := fmt.Sprintf("# %s\n\nThis is a starter file.\n", expectedName)
 				if diff := cmp.Diff(wantStarter, string(gotStarter)); diff != "" {
 					t.Errorf("mismatch for STARTER.md for %q (-want +got):\n%s", libName, diff)
 				}
