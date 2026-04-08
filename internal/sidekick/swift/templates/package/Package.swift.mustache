@@ -47,9 +47,7 @@ let package = Package(
       {{#Codec.HasDependencies}}
       dependencies: [
         {{#Codec.Dependencies}}
-        {{#Path}}
         .product(name: "{{Name}}", package: "{{LocalName}}"),
-        {{/Path}}
         {{/Codec.Dependencies}}
       ],
       {{/Codec.HasDependencies}}

@@ -27,11 +27,13 @@ import (
 )
 
 func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
-	outDir := filepath.Join(t.TempDir(), "generated", "google-cloud-workflows-v1")
+	root := t.TempDir()
+	t.Chdir(root)
+	outDir := filepath.Join("generated", "google-cloud-workflows-v1")
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	defer os.RemoveAll(filepath.Join(t.TempDir(), "generated"))
+	defer os.RemoveAll("generated")
 
 	service := &api.Service{Name: "Workflows", Package: "google.cloud.workflows.v1"}
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
@@ -47,6 +49,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
 				{Name: "gax", Path: "packages/gax", RequiredByServices: true},
+				{Name: "proto", URL: "https://github.com/apple/swift-protobuf", Version: "1.36.1", RequiredByServices: true},
 			},
 		},
 	}
@@ -65,6 +68,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	gotPackageDeps := extractBlock(t, contentStr, "  dependencies: [", "\n  ],")
 	wantPackageDeps := `  dependencies: [
     .package(path: "../../packages/gax"),
+    .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1"),
   ],`
 	if diff := cmp.Diff(wantPackageDeps, gotPackageDeps); diff != "" {
 		t.Errorf("mismatch in package dependencies (-want +got):\n%s", diff)
@@ -73,6 +77,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	gotTargetDeps := extractBlock(t, contentStr, "      dependencies: [", "\n      ]")
 	wantTargetDeps := `      dependencies: [
         .product(name: "gax", package: "gax"),
+        .product(name: "proto", package: "swift-protobuf"),
       ]`
 	if diff := cmp.Diff(wantTargetDeps, gotTargetDeps); diff != "" {
 		t.Errorf("mismatch in target dependencies (-want +got):\n%s", diff)

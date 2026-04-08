@@ -15,9 +15,9 @@
 package swift
 
 import (
+	"cmp"
 	"maps"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/license"
 )
@@ -41,7 +41,7 @@ func (ann *modelAnnotations) HasDependencies() bool {
 // Dependencies returns the list of dependencies for this package.
 func (ann *modelAnnotations) Dependencies() []*Dependency {
 	deps := slices.Collect(maps.Values(ann.DependsOn))
-	slices.SortFunc(deps, func(a, b *Dependency) int { return strings.Compare(a.Name, b.Name) })
+	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
 	return deps
 }
 
