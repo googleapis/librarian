@@ -63,11 +63,12 @@ var errSemverCheck = errors.New("semver check failed")
 
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
-func Publish(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
-	if err := preFlight(ctx, cfg.Preinstalled, cfg.Tools[command.Cargo]); err != nil {
+func Publish(ctx context.Context, cfg *config.Config, dryRun, dryRunKeepGoing, skipSemverChecks bool) error {
+	release := cfg.Release
+	if err := preFlight(ctx, release.Preinstalled, cargoTools(cfg)); err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
+	gitExe := command.GetExecutablePath(release.Preinstalled, command.Git)
 	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
@@ -75,11 +76,29 @@ func Publish(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, 
 	if err := git.MatchesBranchPoint(ctx, gitExe, config.RemoteUpstream, config.BranchMain); err != nil {
 		return err
 	}
-	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, cfg.IgnoredChanges)
+	files, err := git.FilesChangedSince(ctx, gitExe, lastTag, release.IgnoredChanges)
 	if err != nil {
 		return err
 	}
-	return publishCrates(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, lastTag, files)
+	return publishCrates(ctx, release, dryRun, dryRunKeepGoing, skipSemverChecks, lastTag, files)
+}
+
+// cargoTools returns cargo tools from Config.Tools if available,
+// falling back to Release.Tools for backwards compatibility.
+//
+// TODO(https://github.com/googleapis/librarian/issues/4910): delete when Release is removed.
+func cargoTools(cfg *config.Config) []config.Tool {
+	if cfg.Tools != nil && len(cfg.Tools.Cargo) > 0 {
+		tools := make([]config.Tool, len(cfg.Tools.Cargo))
+		for i, t := range cfg.Tools.Cargo {
+			tools[i] = config.Tool{Name: t.Name, Version: t.Version}
+		}
+		return tools
+	}
+	if cfg.Release != nil {
+		return cfg.Release.Tools["cargo"]
+	}
+	return nil
 }
 
 // publishCrates publishes the crates that have changed.
