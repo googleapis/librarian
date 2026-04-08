@@ -21,6 +21,7 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
+import GoogleCloudAuth
 import GoogleCloudGax
 
 {{#Codec.DocLines}}
@@ -35,7 +36,7 @@ public class {{Codec.Name}} {
     credentials: GoogleCloudAuth.Credentials? = nil,
     session: URLSession? = nil,
   ) throws {
-    let endpoint = endpoint ?? "{{DefaultHost}}"
+    let endpoint = endpoint ?? "https://{{DefaultHost}}"
     self.inner = try HTTPClient(endpoint: endpoint, credentials: credentials, session: session)
   }
   {{#Codec.RestMethods}}
