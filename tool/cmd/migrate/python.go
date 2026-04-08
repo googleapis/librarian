@@ -67,7 +67,7 @@ var (
 	}
 
 	pythonExtraKeepLists = map[string][]string{
-		"google-cloud-firestore": []string{
+		"google-cloud-firestore": {
 			"docs/firestore_admin_v1/admin_client.rst",
 			"docs/firestore_v1/aggregation.rst",
 			"docs/firestore_v1/batch.rst",
@@ -81,7 +81,7 @@ var (
 			"docs/firestore_v1/transforms.rst",
 			"docs/firestore_v1/types.rst",
 		},
-		"google-cloud-spanner": []string{
+		"google-cloud-spanner": {
 			"docs/spanner_v1/batch.rst",
 			"docs/spanner_v1/client.rst",
 			"docs/spanner_v1/database.rst",
