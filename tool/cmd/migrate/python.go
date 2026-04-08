@@ -16,6 +16,7 @@ package main
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -148,7 +149,7 @@ func buildPythonLibraries(input *MigrationInput, googleapisDir string) ([]*confi
 		// Skip copying the readme file if it doesn't already exist.
 		_, err = os.Stat(filepath.Join(input.repoPath, "packages", library.Name, "docs", "README.rst"))
 		if err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				library.Python.SkipReadmeCopy = true
 			} else {
 				return nil, err

@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"errors"
 	"io/fs"
 	"maps"
 	"os"
@@ -73,7 +74,7 @@ func TestFromProtobuf(t *testing.T) {
 	for _, expected := range []string{"pubspec.yaml", "lib/secretmanager.dart", "README.md"} {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {

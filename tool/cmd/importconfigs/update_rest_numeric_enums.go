@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log/slog"
@@ -147,7 +148,7 @@ func toSlice(apis map[string]*serviceconfig.API) []*serviceconfig.API {
 
 func readSkipRESTNumericEnums(googleapisDir, path string) []string {
 	buildPath := filepath.Join(googleapisDir, path)
-	if _, err := os.Stat(buildPath); os.IsNotExist(err) {
+	if _, err := os.Stat(buildPath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	numericEnums, err := bazel.ParseRESTNumericEnums(buildPath)

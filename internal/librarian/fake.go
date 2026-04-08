@@ -15,7 +15,9 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +35,7 @@ func fakeBumpLibrary(output, version string) error {
 
 func fakeGenerate(library *config.Library) error {
 	if _, err := os.Stat(library.Output); err != nil {
-		if !os.IsNotExist(err) {
+		if !errors.Is(err, fs.ErrNotExist) {
 			return fmt.Errorf("cannot access output directory %q: %w", library.Output, err)
 		}
 		if err := fakeCreateSkeleton(library); err != nil {
@@ -46,7 +48,7 @@ func fakeGenerate(library *config.Library) error {
 		return err
 	}
 	versionPath := filepath.Join(library.Output, "VERSION")
-	if _, err := os.Stat(versionPath); os.IsNotExist(err) {
+	if _, err := os.Stat(versionPath); errors.Is(err, fs.ErrNotExist) {
 		return os.WriteFile(versionPath, []byte("0.0.0"), 0644)
 	}
 	return nil
@@ -92,7 +94,7 @@ func fakeClean(library *config.Library) error {
 	// does not exist. Clean should not treat that as an error. Otherwise we
 	// need to check the directory existence before calling clean, only to check
 	// it again because `clean()` typically walks the directory.
-	if _, err := os.Stat(library.Output); os.IsNotExist(err) {
+	if _, err := os.Stat(library.Output); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	// We always generate a README.md file, so it's fine to delete that.

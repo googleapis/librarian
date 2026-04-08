@@ -17,8 +17,10 @@ package generate
 import (
 	"archive/zip"
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -176,7 +178,7 @@ func restructureOutput(outputDir, libraryID, version string) error {
 
 	// The resource name directory is not created if there are no resource names
 	// to generate. We create it here to avoid errors later.
-	if _, err := os.Stat(resourceNameSrcDir); os.IsNotExist(err) {
+	if _, err := os.Stat(resourceNameSrcDir); errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(resourceNameSrcDir, 0755); err != nil {
 			return err
 		}
@@ -224,7 +226,7 @@ func restructureOutput(outputDir, libraryID, version string) error {
 // copyAndMerge recursively copies the contents of src to dest, merging directories.
 func copyAndMerge(src, dest string) error {
 	entries, err := os.ReadDir(src)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 	if err != nil {

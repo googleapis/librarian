@@ -423,10 +423,10 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 			if err != nil {
 				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v", err)
 			}
-			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("owl-bot-staging should have been removed")
 			}
-			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !os.IsNotExist(err) {
+			if _, err := os.Stat(filepath.Join(outputDir, "scripts", "client-post-processing")); !errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("client-post-processing should have been removed")
 			}
 			for _, wantFile := range test.wantFiles {

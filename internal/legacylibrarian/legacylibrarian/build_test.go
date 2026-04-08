@@ -16,6 +16,7 @@ package legacylibrarian
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -125,7 +126,7 @@ func TestBuildSingleLibrary(t *testing.T) {
 						}
 
 						newFile := filepath.Join(repoDir, srcPath, "another_example.txt")
-						if _, err := os.Stat(newFile); !os.IsNotExist(err) {
+						if _, err := os.Stat(newFile); !errors.Is(err, fs.ErrNotExist) {
 							t.Fatal(err)
 						}
 					}

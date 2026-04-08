@@ -17,6 +17,7 @@ package librarian
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -169,7 +170,7 @@ func TestGenerateCommand(t *testing.T) {
 					if err == nil {
 						t.Fatalf("expected file for %q to not be generated, but it exists", libName)
 					}
-					if !os.IsNotExist(err) {
+					if !errors.Is(err, fs.ErrNotExist) {
 						t.Fatalf("expected file for %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 					return
@@ -294,7 +295,7 @@ libraries:
 				if !shouldExist {
 					if err == nil {
 						t.Errorf("expected %q to not be generated, but it exists", libName)
-					} else if !os.IsNotExist(err) {
+					} else if !errors.Is(err, fs.ErrNotExist) {
 						t.Errorf("expected %q to not be generated, but got unexpected error: %v", libName, err)
 					}
 				}

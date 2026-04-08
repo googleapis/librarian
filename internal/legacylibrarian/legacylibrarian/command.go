@@ -344,7 +344,7 @@ func copyLibraryFiles(state *legacyconfig.LibrarianState, dest, libraryID, src s
 func getDirectoryFilenames(dir string) ([]string, error) {
 	if _, err := os.Stat(dir); err != nil {
 		// Skip dirs that don't exist
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil
 		}
 		return nil, err
@@ -505,7 +505,7 @@ func copyGlobalAllowlist(cfg *legacyconfig.LibrarianConfig, dst, src string, cop
 		}
 
 		srcPath := filepath.Join(src, globalFile.Path)
-		if _, err := os.Lstat(srcPath); os.IsNotExist(err) {
+		if _, err := os.Lstat(srcPath); errors.Is(err, fs.ErrNotExist) {
 			slog.Info("skip copying a non-existent global allowlist file", "source", srcPath)
 			continue
 		}
@@ -576,7 +576,7 @@ func clean(rootDir string, sourceRoots, removePatterns, preservePatterns []strin
 	for _, sourceRoot := range sourceRoots {
 		sourceRootPath := filepath.Join(rootDir, sourceRoot)
 		if _, err := os.Lstat(sourceRootPath); err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				// If a source root does not exist, continue searching other source roots.
 				slog.Debug("unable to find source root. It may be an initial generation request", "source root", sourceRoot)
 				continue

@@ -21,6 +21,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -166,7 +167,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("owlbot.py failed: %w", err)
 		}
 		return nil
-	} else if !os.IsNotExist(err) {
+	} else if !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to check for owlbot.py: %w", err)
 	}
 
@@ -293,7 +294,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		}
 	}
 
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !os.IsNotExist(err) {
+	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
 	}
 	return nil
@@ -310,7 +311,7 @@ func restoreCopyrightYear(outDir, year string) error {
 	for _, dir := range []string{"src", "test"} {
 		d := filepath.Join(outDir, dir)
 		if _, err := os.Stat(d); err != nil {
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				continue
 			}
 			return err

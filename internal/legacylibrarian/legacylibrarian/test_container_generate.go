@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -386,7 +387,7 @@ func (r *testGenerateRunner) validateGenerateTest(generateErr error, protoFileTo
 		fullPath := filepath.Join(repoDir, filePath)
 		content, err := os.ReadFile(fullPath)
 		if err != nil {
-			if os.IsNotExist(err) { // The file was deleted, ignoring if not checkUnexpectedChanges
+			if errors.Is(err, fs.ErrNotExist) { // The file was deleted, ignoring if not checkUnexpectedChanges
 				continue
 			}
 			return fmt.Errorf("failed to read changed file %s: %w", filePath, err)

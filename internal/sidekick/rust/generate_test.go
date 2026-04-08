@@ -15,7 +15,9 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"os/exec"
 	"path"
@@ -136,7 +138,7 @@ func TestRustFromOpenAPI(t *testing.T) {
 	for _, expected := range expectedInCrate {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -168,7 +170,7 @@ func TestRustFromDiscovery(t *testing.T) {
 	for _, expected := range expectedInCrate {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -211,7 +213,7 @@ func TestRustFromProtobuf(t *testing.T) {
 	for _, expected := range expectedInCrate {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -256,7 +258,7 @@ func TestRustClient(t *testing.T) {
 		for _, expected := range expectedInClient {
 			filename := path.Join(outDir, expected)
 			stat, err := os.Stat(filename)
-			if os.IsNotExist(err) {
+			if errors.Is(err, fs.ErrNotExist) {
 				t.Errorf("missing %s: %s", filename, err)
 			}
 			if stat.Mode().Perm()|0666 != 0666 {
@@ -307,7 +309,7 @@ func TestRustNosvc(t *testing.T) {
 	for _, expected := range expectedInNosvc {
 		filename := path.Join(outDir, expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -348,7 +350,7 @@ func TestRustModuleRpc(t *testing.T) {
 	for _, expected := range expectedInModule {
 		filename := path.Join(outDir, "rpc", expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {
@@ -389,7 +391,7 @@ func TestRustBootstrapWkt(t *testing.T) {
 	for _, expected := range expectedInModule {
 		filename := path.Join(outDir, "wkt", expected)
 		stat, err := os.Stat(filename)
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("missing %s: %s", filename, err)
 		}
 		if stat.Mode().Perm()|0666 != 0666 {

@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -57,9 +58,9 @@ func writeVersion(library *config.Library, output, versionString string) error {
 	cargoFile := filepath.Join(output, "Cargo.toml")
 	_, err = os.Stat(cargoFile)
 	switch {
-	case err != nil && !os.IsNotExist(err):
+	case err != nil && !errors.Is(err, fs.ErrNotExist):
 		return err
-	case os.IsNotExist(err):
+	case errors.Is(err, fs.ErrNotExist):
 		cargo := fmt.Sprintf(`[package]
 name                   = "%s"
 version                = "%s"
@@ -78,7 +79,7 @@ edition                = "2021"
 		return err
 	}
 	// Update the workspace manifest if it exists.
-	if err := updateWorkspaceVersion("Cargo.toml", library.Name, version); err != nil && !os.IsNotExist(err) {
+	if err := updateWorkspaceVersion("Cargo.toml", library.Name, version); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return err
 	}
 	library.Version = version.String()

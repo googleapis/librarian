@@ -18,6 +18,7 @@ import (
 	"archive/zip"
 	"context"
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -544,7 +545,7 @@ func TestUnzip(t *testing.T) {
 
 		// Check that the malicious file was not created.
 		pwnedFile := filepath.Join(e.tmpDir, "pwned.txt")
-		if _, err := os.Stat(pwnedFile); !os.IsNotExist(err) {
+		if _, err := os.Stat(pwnedFile); !errors.Is(err, fs.ErrNotExist) {
 			t.Errorf("malicious file was created at %s", pwnedFile)
 		}
 	})

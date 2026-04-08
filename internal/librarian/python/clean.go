@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"slices"
@@ -64,7 +65,7 @@ var (
 // function is a no-op.
 func Clean(lib *config.Library) error {
 	_, err := os.Stat(lib.Output)
-	if os.IsNotExist(err) {
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
 
@@ -101,7 +102,7 @@ func cleanProtoOnly(api *config.API, lib *config.Library) error {
 	dir := filepath.Join(lib.Output, api.Path)
 	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return fmt.Errorf("can't find files under %s: %w", dir, err)
@@ -185,7 +186,7 @@ func deleteUnlessKept(lib *config.Library, path string) error {
 	fullPath := filepath.Join(lib.Output, path)
 	stat, err := os.Stat(fullPath)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if errors.Is(err, fs.ErrNotExist) {
 			return nil
 		}
 		return err

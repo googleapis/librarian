@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -357,7 +358,7 @@ func isPOMMissing(dir string) (bool, error) {
 	if _, err := os.Stat(pomPath); err == nil {
 		return false, nil
 	}
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
+	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
 		return false, fmt.Errorf("%w: %s does not exist: %w", errTargetDir, dir, err)
 	}
 	return true, nil

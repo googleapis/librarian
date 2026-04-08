@@ -17,7 +17,9 @@ package pom
 
 import (
 	"embed"
+	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -236,7 +238,7 @@ func renderCloudPom(modulePath string, mainModule *Module, protoModules, grpcMod
 }
 
 func renderBomPom(modulePath string, mainModule *Module, modules map[string]*Module, libraryID string) error {
-	if _, err := os.Stat(modulePath); os.IsNotExist(err) {
+	if _, err := os.Stat(modulePath); errors.Is(err, fs.ErrNotExist) {
 		if err := os.MkdirAll(modulePath, 0755); err != nil {
 			return err
 		}
