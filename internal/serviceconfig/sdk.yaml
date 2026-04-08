@@ -564,6 +564,8 @@
     - python
   release_level:
     go: beta
+  transports:
+    java: grpc
 - path: google/cloud/assuredworkloads/v1
   documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
