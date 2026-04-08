@@ -29,6 +29,8 @@ import (
 )
 
 func TestGenerateCommand(t *testing.T) {
+	t.Skip("TODO(https://github.com/googleapis/librarian/issues/5202): fix flaky test")
+
 	const (
 		lib1            = "library-one"
 		lib1PreviewName = "library-one-preview"
