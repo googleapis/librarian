@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ettle/strcase"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/iancoleman/strcase"
 )
 
 // CleanDocumentation removes common prefixes like "Required. " and "Identifier. " from a help text string in any order.
