@@ -513,7 +513,10 @@
     python: preview
 - path: google/cloud/appoptimize/v1beta
   languages:
-    - all
+    - go
+    - java
+    - nodejs
+    - python
   release_level:
     go: beta
     java: preview
