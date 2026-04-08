@@ -66,9 +66,6 @@ public class {{Codec.Name}} {
     {{/Codec.HasBody}}
     let (data, response) = try await self.inner.data(for: req)
     if !(200..<300).contains(response.statusCode) {
-      if let contents = String(data: data, encoding: .utf8) {
-        print( "ERRROR = \(contents)")
-      }
       throw RequestError.http(HTTPDetails(
         http_status_code: response.statusCode,
         headers: [:],
