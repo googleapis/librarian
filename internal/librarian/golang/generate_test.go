@@ -899,9 +899,11 @@ func TestMoveGeneratedFiles(t *testing.T) {
 	}
 }
 
+// TestGenerate_UsesTempDir verifies that the generation process uses a temporary
+// directory for intermediate files and cleans it up afterwards.
 func TestGenerate_UsesTempDir(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
-	
+
 	// Override mkdirTemp
 	calledMkdirTemp := false
 	var tempDirUsed string
@@ -925,7 +927,9 @@ func TestGenerate_UsesTempDir(t *testing.T) {
 				gotGoOut = strings.TrimPrefix(arg, "--go_out=")
 			}
 		}
-		// Create the directory structure that moveGeneratedFiles expects
+		// Create the directory structure that moveGeneratedFiles expects.
+		// This simulates protoc generating files into the temporary directory
+		// so that moveGeneratedFiles has files to move.
 		srcDir := filepath.Join(gotGoOut, "cloud.google.com", "go", "secretmanager", "apiv1")
 		if err := os.MkdirAll(srcDir, 0755); err != nil {
 			return err
@@ -979,8 +983,7 @@ func TestGenerate_UsesTempDir(t *testing.T) {
 		t.Errorf("expected --go_out to be %s, got %s", tempDirUsed, gotGoOut)
 	}
 	// Check if temp directory was deleted
-	if _, err := os.Stat(tempDirUsed); !os.IsNotExist(err) {
+	if _, err := os.Stat(tempDirUsed); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected temp directory %s to be deleted", tempDirUsed)
 	}
 }
-
