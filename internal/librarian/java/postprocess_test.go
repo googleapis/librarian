@@ -401,7 +401,6 @@ func TestReleasedVersion(t *testing.T) {
 	}{
 		{"1.2.0-SNAPSHOT", "1.1.0"},
 		{"1.10.0-SNAPSHOT", "1.9.0"},
-		{"1.10.1-SNAPSHOT", "1.10.0"},
 		{"0.87.0-SNAPSHOT", "0.86.0"},
 		{"1.2.3", "1.2.3"},
 		{"invalid", "invalid"},

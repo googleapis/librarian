@@ -294,10 +294,10 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 }
 
 // releasedVersion derives the last released version from a snapshot version
-// (e.g., x.y.z-SNAPSHOT).
+// (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
 //
-// If the patch version (z) is greater than 0, it resets the patch to 0.
-// Otherwise, it decrements the minor version (y).
+// It assumes that the patch version is always 0 for snapshot releases,
+// because google-cloud-java always bumps minor.
 func releasedVersion(v string) string {
 	if !strings.HasSuffix(v, "-SNAPSHOT") {
 		return v
@@ -306,11 +306,8 @@ func releasedVersion(v string) string {
 	if err != nil {
 		return v
 	}
-	if sv.Patch > 0 {
-		sv.Patch = 0
-	} else {
-		sv.Minor--
-	}
+	sv.Minor--
+	sv.Patch = 0
 	return sv.String()
 }
 
