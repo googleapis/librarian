@@ -542,6 +542,10 @@ func toModuleTags(ids []string) []string {
 }
 
 // splitMatchingBlocks partitions POM lines into 'kept' and 'moved' slices.
+// 'moved' contains all blocks matching any target.
+// 'kept' contains all other lines in their original relative order.
+// 'insertAt' is the index in 'kept' where the first matching block was originally located,
+// serving as the insertion point for the relocated blocks.
 func splitMatchingBlocks(args wrapArgs) (kept, moved []string, insertAt int) {
 	insertAt = -1
 	for i := 0; i < len(args.lines); i++ {
