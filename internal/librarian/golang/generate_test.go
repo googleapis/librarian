@@ -69,6 +69,47 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 		{
+			Name:          "secretmanager-multi",
+			Version:       "0.1.0",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{Path: "google/cloud/secretmanager/v1"},
+				{Path: "google/cloud/secretmanager/v1beta2"}, // Different path to avoid file collision
+			},
+			Go: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager-multi/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
+					},
+					{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager-multi/apiv1beta2",
+						Path:          "google/cloud/secretmanager/v1beta2",
+					},
+				},
+			},
+		},
+		{
+			Name:          "secretmanager-delete",
+			Version:       "0.1.0",
+			CopyrightYear: "2025",
+			APIs: []*config.API{
+				{Path: "google/cloud/secretmanager/v1"},
+			},
+			Go: &config.GoModule{
+				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
+				GoAPIs: []*config.GoAPI{
+					{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager-delete/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
 			Name:          "secretmanager",
 			Version:       "0.1.0-preview.1",
 			CopyrightYear: "2025",
@@ -265,6 +306,11 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 		t.Errorf("error string mismatch\ngot:  %q\nwant: %q", gotErr.Error(), wantStr)
 	}
 }
+
+// TestGenerate_LogicBranches tests logic branches in Generate function:
+// - isPreview triggered by path containing "preview/internal"
+// - continue in API loop triggered by multiple APIs
+// - DeleteGenerationOutputPaths triggered by non-empty list
 
 func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
