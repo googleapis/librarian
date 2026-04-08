@@ -675,6 +675,18 @@ type NodejsPackage struct {
 	// Mixins controls mixin behavior (e.g., "none" to disable).
 	Mixins string `yaml:"mixins,omitempty"`
 
+	// NodejsAPIs is a list of Node.js-specific API configurations.
+	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
+
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
+}
+
+// NodejsAPI represents configuration for a single API within a Node.js package.
+type NodejsAPI struct {
+	// ExtraProtos is a list of additional proto files to include in generation.
+	ExtraProtos []string `yaml:"extra_protos,omitempty"`
+
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
 }

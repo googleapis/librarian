@@ -37,6 +37,10 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+const (
+	commonProtos = "google/cloud/common_resources.proto"
+)
+
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
@@ -66,6 +70,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return err
 	}
 
+	nodejsAPI := resolveNodejsAPI(library, api)
+
 	googleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
@@ -80,12 +86,42 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
 
+	// Add extra protos from configuration.
+	for _, extra := range nodejsAPI.ExtraProtos {
+		protos = append(protos, filepath.Join(googleapisDir, extra))
+	}
+
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir)
 	if err != nil {
 		return err
 	}
 	cmdArgs := append(args[1:], protos...)
 	return command.Run(ctx, args[0], cmdArgs...)
+}
+
+// resolveNodejsAPI returns the Node.js-specific configuration for the given API,
+// applying default values if no explicit configuration is found in the library.
+func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
+	res := &config.NodejsAPI{
+		Path:        api.Path,
+		ExtraProtos: []string{commonProtos},
+	}
+	if library.Nodejs == nil {
+		return res
+	}
+	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
+		if nodejsAPI.Path != api.Path {
+			continue
+		}
+		// Copy explicit config
+		res.Path = nodejsAPI.Path
+		res.ExtraProtos = nodejsAPI.ExtraProtos
+		if len(res.ExtraProtos) == 0 {
+			res.ExtraProtos = []string{commonProtos}
+		}
+		return res
+	}
+	return res
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
