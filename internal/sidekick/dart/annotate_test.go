@@ -1671,7 +1671,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
-				ToJsonElement:         "'int32Field': ?int32Field",
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1691,7 +1691,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'int32Field': ?int32Field",
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1731,7 +1731,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const []",
 				ConstDefault:          true,
-				ToJsonElement:         "'int32List': int32List",
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1752,7 +1752,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const {}",
 				ConstDefault:          true,
-				ToJsonElement:         "'mapField': mapField",
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1813,7 +1813,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
-				ToJsonElement:         "'enumField': ?enumField?.toJson()",
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1834,7 +1834,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'enumField': ?enumField?.toJson()",
+				ToJsonElement:         "",
 			},
 		},
 		{

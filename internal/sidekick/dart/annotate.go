@@ -812,6 +812,10 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		}
 	}
 	state := annotate.state
+	var toJsonElement string
+	if !implicitPresence {
+		toJsonElement = createToJsonElement(field)
+	}
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
@@ -822,7 +826,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
 		ToJson:                createToJsonLine(field, state, fieldName(field)),
-		ToJsonElement:         createToJsonElement(field, state),
+		ToJsonElement:         toJsonElement,
 		ConstDefault:          constDefault,
 	}
 }
@@ -1036,25 +1040,24 @@ func createToJsonLine(field *api.Field, state *api.APIState, name string) string
 }
 
 // createToJsonNullAwareLine creates a null-aware expression for JSON serialization.
-func createToJsonNullAwareLine(field *api.Field, state *api.APIState) string {
+func createToJsonNullAwareLine(field *api.Field) string {
 	name := fieldName(field)
 
-	if field.Repeated || field.Map {
-		return createToJsonLine(field, state, name)
-	}
-
-	switch field.Typez {
-	case api.MESSAGE_TYPE, api.ENUM_TYPE:
-		return fmt.Sprintf("%s?.toJson()", name)
-	case api.INT64_TYPE, api.SINT64_TYPE, api.SFIXED64_TYPE, api.FIXED64_TYPE, api.UINT64_TYPE:
-		return fmt.Sprintf("%s?.toString()", name)
-	default:
+	// Check if the type requires encoding.
+	_, required := encoder(field.Typez, name)
+	if !required {
 		return name
 	}
+
+	// For types that require encoding (like Messages or 64-bit ints),
+	// encoder appends ".toJson()" or ".toString()".
+	// Passing "name?" results in "name?.toJson()" or "name?.toString()".
+	enc, _ := encoder(field.Typez, name+"?")
+	return enc
 }
 
 // createToJsonElement creates a JSON element expression for map literals.
-func createToJsonElement(field *api.Field, state *api.APIState) string {
+func createToJsonElement(field *api.Field) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
 
@@ -1064,10 +1067,7 @@ func createToJsonElement(field *api.Field, state *api.APIState) string {
 	case api.BYTES_TYPE:
 		return fmt.Sprintf("if (%s case final $1?) '%s': encodeBytes($1)", name, jsonName)
 	default:
-		nullAware := createToJsonNullAwareLine(field, state)
-		if field.Repeated || field.Map {
-			return fmt.Sprintf("'%s': %s", jsonName, nullAware)
-		}
+		nullAware := createToJsonNullAwareLine(field)
 		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
 	}
 }
