@@ -1035,30 +1035,12 @@ func createToJsonLine(field *api.Field, state *api.APIState, name string) string
 	return enc
 }
 
+// createToJsonNullAwareLine creates a null-aware expression for JSON serialization.
 func createToJsonNullAwareLine(field *api.Field, state *api.APIState) string {
 	name := fieldName(field)
 
-	switch {
-	case field.Repeated:
-		if encoder, encodingRequired := encoder(field.Typez, "i"); encodingRequired {
-			return fmt.Sprintf(
-				"[for (final i in %s) %s]",
-				name, encoder)
-		}
-		return name
-	case field.Map:
-		message := state.MessageByID[field.TypezID]
-		keyType := message.Fields[0].Typez
-		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
-		valueType := message.Fields[1].Typez
-		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
-
-		if keyEncodingRequired || valueEncodingRequired {
-			return fmt.Sprintf(
-				"{for (final e in %s.entries) %s: %s}",
-				name, keyEncoder, valueEncoder)
-		}
-		return name
+	if field.Repeated || field.Map {
+		return createToJsonLine(field, state, name)
 	}
 
 	switch field.Typez {
@@ -1066,15 +1048,12 @@ func createToJsonNullAwareLine(field *api.Field, state *api.APIState) string {
 		return fmt.Sprintf("%s?.toJson()", name)
 	case api.INT64_TYPE, api.SINT64_TYPE, api.SFIXED64_TYPE, api.FIXED64_TYPE, api.UINT64_TYPE:
 		return fmt.Sprintf("%s?.toString()", name)
-	case api.FLOAT_TYPE, api.DOUBLE_TYPE:
-		return fmt.Sprintf("%s == null ? null : encodeDouble(%s)", name, name)
-	case api.BYTES_TYPE:
-		return fmt.Sprintf("%s == null ? null : encodeBytes(%s)", name, name)
 	default:
 		return name
 	}
 }
 
+// createToJsonElement creates a JSON element expression for map literals.
 func createToJsonElement(field *api.Field, state *api.APIState) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
