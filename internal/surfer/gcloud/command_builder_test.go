@@ -42,7 +42,7 @@ func TestOutputFormat(t *testing.T) {
 					),
 				),
 			),
-			want: "table(\nname,\ndescription)",
+			want: "",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -379,7 +379,6 @@ func TestNewCommand(t *testing.T) {
 				Name:            "list",
 				Hidden:          false,
 				ResponseIDField: "name",
-				OutputFormat:    "table(\nname)",
 			},
 		},
 		{
@@ -417,9 +416,11 @@ func TestNewCommand(t *testing.T) {
 				},
 			},
 			want: &Command{
-				Name:             "update",
-				Hidden:           true,
-				ReadModifyUpdate: true,
+				Name:                 "update",
+				Hidden:               true,
+				ReadModifyUpdate:     true,
+				StarUpdateMask:       true,
+				DisableAutoFieldMask: true,
 			},
 		},
 		{
