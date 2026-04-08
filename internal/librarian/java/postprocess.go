@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -276,7 +277,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       library.Version,
+		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion(library.Version),
 		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
 	}
 	// Path to templates used for README.md file.
@@ -290,6 +291,27 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 	}
 	// Staging dirs cleans up as part of owlbot.py
 	return nil
+}
+
+// releasedVersion derives the last released version from a snapshot version
+// (e.g., x.y.z-SNAPSHOT).
+//
+// If the patch version (z) is greater than 0, it resets the patch to 0.
+// Otherwise, it decrements the minor version (y).
+func releasedVersion(v string) string {
+	if !strings.HasSuffix(v, "-SNAPSHOT") {
+		return v
+	}
+	sv, err := semver.Parse(strings.TrimSuffix(v, "-SNAPSHOT"))
+	if err != nil {
+		return v
+	}
+	if sv.Patch > 0 {
+		sv.Patch = 0
+	} else {
+		sv.Minor--
+	}
+	return sv.String()
 }
 
 func copyProtos(googleapisDir string, protos []string, destDir string) error {

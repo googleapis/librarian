@@ -26,6 +26,7 @@ import (
 
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -388,6 +389,28 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			err := postProcessLibrary(t.Context(), params)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestReleasedVersion(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{"1.2.0-SNAPSHOT", "1.1.0"},
+		{"1.10.0-SNAPSHOT", "1.9.0"},
+		{"1.10.1-SNAPSHOT", "1.10.0"},
+		{"0.87.0-SNAPSHOT", "0.86.0"},
+		{"1.2.3", "1.2.3"},
+		{"invalid", "invalid"},
+		{"1.invalid.0-SNAPSHOT", "1.invalid.0-SNAPSHOT"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := releasedVersion(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
