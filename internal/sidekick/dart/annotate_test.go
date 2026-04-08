@@ -531,7 +531,40 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 	}
 }
 
-// Tests that messages that are allowlisted as not being generated are, in fact, not generated.
+func TestAnnotateMessage_HasFields(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{sample.Secret()},
+		[]*api.Enum{},
+		[]*api.Service{},
+	)
+	annotate := newAnnotateModel(model)
+	annotate.annotateModel(map[string]string{})
+
+	emptyMessage := &api.Message{
+		Name:    "EmptyMessage",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.EmptyMessage",
+		Fields:  []*api.Field{},
+	}
+
+	t.Run("has fields", func(t *testing.T) {
+		secret := sample.Secret()
+		annotate.annotateMessage(secret)
+		codec := secret.Codec.(*messageAnnotation)
+		if !codec.HasFields() {
+			t.Errorf("Expected HasFields() to be true")
+		}
+	})
+
+	t.Run("no fields", func(t *testing.T) {
+		annotate.annotateMessage(emptyMessage)
+		codec := emptyMessage.Codec.(*messageAnnotation)
+		if codec.HasFields() {
+			t.Errorf("Expected HasFields() to be false")
+		}
+	})
+}
+
 func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	status := &api.Message{
 		Name:    "Status",
@@ -1500,7 +1533,7 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model.State)
+			got := createToJsonLine(test.field, model.State, fieldName(test.field))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
@@ -1638,6 +1671,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
+				ToJsonNullAware:       "int32Field",
+				ToJsonWithValue:       "$1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1657,6 +1693,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "int32Field",
+				ToJsonWithValue:       "$1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1676,6 +1715,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "int32Field",
+				ToJsonWithValue:       "$1",
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1695,6 +1737,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const []",
 				ConstDefault:          true,
+				ToJsonNullAware:       "int32List",
+				ToJsonWithValue:       "$1",
+				ToJsonElement:         "'int32List': ?int32List",
 			},
 		},
 		{
@@ -1715,6 +1760,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const {}",
 				ConstDefault:          true,
+				ToJsonNullAware:       "mapField",
+				ToJsonWithValue:       "$1",
+				ToJsonElement:         "'mapField': ?mapField",
 			},
 		},
 		{
@@ -1734,6 +1782,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "messageField?.toJson()",
+				ToJsonWithValue:       "$1.toJson()",
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1754,6 +1805,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "messageField?.toJson()",
+				ToJsonWithValue:       "$1.toJson()",
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1773,6 +1827,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
+				ToJsonNullAware:       "enumField?.toJson()",
+				ToJsonWithValue:       "$1.toJson()",
+				ToJsonElement:         "'enumField': ?enumField?.toJson()",
 			},
 		},
 		{
@@ -1793,6 +1850,9 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "enumField?.toJson()",
+				ToJsonWithValue:       "$1.toJson()",
+				ToJsonElement:         "'enumField': ?enumField?.toJson()",
 			},
 		},
 		{
@@ -1814,6 +1874,31 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonNullAware:       "emptyField?.toJson()",
+				ToJsonWithValue:       "$1.toJson()",
+				ToJsonElement:         "'emptyField': ?emptyField?.toJson()",
+			},
+		},
+		{
+			name: "float",
+			field: &api.Field{
+				Name:     "float_field",
+				JSONName: "floatField",
+				Typez:    api.FLOAT_TYPE,
+				Optional: true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "floatField",
+				Type:                  "double",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+				ToJsonNullAware:       "floatField == null ? null : encodeDouble(floatField)",
+				ToJsonWithValue:       "encodeDouble($1)",
+				ToJsonElement:         "if (floatField case final $1?) 'floatField': encodeDouble($1)",
 			},
 		},
 	} {

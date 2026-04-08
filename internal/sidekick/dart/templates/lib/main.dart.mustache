@@ -25,7 +25,6 @@ limitations under the License.
 {{/Codec.DocLines}}
 library;
 
-// ignore_for_file: avoid_unused_constructor_parameters {{! `fromJson` may not use its arguments if the message is empty }}
 // ignore_for_file: camel_case_types {{! Nested messages have the parent/child separated by an underscore }}
 // ignore_for_file: comment_references {{! TODO(#25): improve the generated dartdocs }}
 // ignore_for_file: constant_identifier_names {{! enum values may not follow Dart naming conventions if there are multiple values that differ only in case }}
@@ -33,7 +32,6 @@ library;
 // ignore_for_file: lines_longer_than_80_chars {{! TODO(#25): improve the generated dartdocs }}
 // ignore_for_file: non_constant_identifier_names {{! field names may not follow Dart naming conventions if there are multiple fields that differ only in case }}
 // ignore_for_file: unintended_html_in_doc_comment {{! TODO(#25): improve the generated dartdocs }}
-// ignore_for_file: use_null_aware_elements {{! When serializing `NullValue`, we need to explicitly serialize `null` and it isn't worth special-casing that  }}
 
 {{#Codec.Imports}}
 {{{.}}}

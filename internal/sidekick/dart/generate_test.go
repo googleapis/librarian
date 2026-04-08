@@ -125,6 +125,66 @@ func TestTemplatesAvailable(t *testing.T) {
 	}
 }
 
+func TestGenerate_EmptyMessage(t *testing.T) {
+	emptyMessage := &api.Message{
+		Name:    "EmptyMessage",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.EmptyMessage",
+		Fields:  []*api.Field{},
+	}
+
+	model := api.NewTestAPI([]*api.Message{emptyMessage}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.foo"
+
+	outDir := t.TempDir()
+
+	// Skip format to make test faster and avoid dependency on dart sdk in minimal environments.
+	codec := map[string]string{
+		"skip-format":                    "true",
+		"package:google_cloud_rpc":       "^1.2.3",
+		"package:http":                   "^4.5.6",
+		"package:google_cloud_protobuf":  "^0.1.2",
+		"proto:google.protobuf":          "package:google_cloud_protobuf/protobuf.dart",
+		"api-keys-environment-variables": "GOOGLE_API_KEY",
+		"copyright-year":                 "2026",
+		"issue-tracker-url":              "http://www.example.com/issues",
+	}
+
+	if err := Generate(t.Context(), model, outDir, codec); err != nil {
+		t.Fatal(err)
+	}
+
+	// The file name is derived from package name.
+	// google.cloud.foo -> google_cloud_foo.dart
+	// Let's find it dynamically.
+	libDir := filepath.Join(outDir, "lib")
+	files, err := os.ReadDir(libDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	var targetFile string
+	for _, f := range files {
+		if strings.HasSuffix(f.Name(), ".dart") {
+			targetFile = filepath.Join(libDir, f.Name())
+			break
+		}
+	}
+
+	if targetFile == "" {
+		t.Fatal("No .dart file generated in lib/")
+	}
+
+	content, err := os.ReadFile(targetFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expected := "factory EmptyMessage.fromJson(Object? _)"
+	if !strings.Contains(string(content), expected) {
+		t.Errorf("Expected content to contain %q, but it didn't.\nContent:\n%s", expected, string(content))
+	}
+}
 func requireProtoc(t *testing.T) {
 	t.Helper()
 	if _, err := exec.LookPath("protoc"); err != nil {
