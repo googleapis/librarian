@@ -32,8 +32,13 @@ import (
 )
 
 var (
-	runAutogenComparison = flag.Bool("run-with-autogen-comparison", false, "if true, run integration tests that compare generated output with autogen golden files")
-	updateGolden         = flag.Bool("update", false, "update surfer golden files")
+	runTargetComparison = flag.Bool("run-target", false, "if true, run integration tests that compare generated output with target (gen_sfc) golden files")
+	updateGolden        = flag.Bool("update", false, "update surfer golden files")
+
+	// Tests that are enabled by default because they are expected to pass against the target.
+	enabledTargetTests = map[string]bool{
+		"resource_standard": true,
+	}
 )
 
 func TestGolden(t *testing.T) {
@@ -107,8 +112,8 @@ func TestGolden(t *testing.T) {
 			})
 
 			t.Run("target", func(t *testing.T) {
-				if !*runAutogenComparison {
-					t.Skip("skipping autogen comparison; use --run-with-autogen-comparison to enable")
+				if !*runTargetComparison && !enabledTargetTests[test.name] {
+					t.Skip("skipping target comparison; use --run-target to enable")
 				}
 				targetExpectedRoot := filepath.Join(scenarioPath, "expected", "target", "surface")
 				verifyGoldenOutputs(t, targetExpectedRoot, gotServiceDir, gotServiceName, test.name)
