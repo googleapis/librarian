@@ -346,20 +346,11 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 			log.Printf("Debug: skipping library %s (SkipGenerate is true)", lib.Name)
 			continue
 		}
-
 		libDir := filepath.Join(repoPath, "java-"+lib.Name)
-		distName := java.DeriveDistributionName(lib)
-		parts := strings.SplitN(distName, ":", 2)
-		if len(parts) != 2 {
-			log.Printf("Debug: skipping library %s (invalid distribution name: %q)", lib.Name, distName)
-			continue
-		}
-		clientArtifactID := parts[1]
-		bomArtifactID := clientArtifactID + "-bom"
-
+		ids := getModuleArtifactIDs(lib)
 		// 1. Client module pom.xml
-		clientPomPath := filepath.Join(libDir, clientArtifactID, "pom.xml")
-		if updated, err := updatePomMarkers(clientPomPath, lib, "client"); err == nil {
+		clientPomPath := filepath.Join(libDir, ids.Client, "pom.xml")
+		if updated, err := updatePomMarkers(clientPomPath, ids, "client"); err == nil {
 			if updated {
 				clientCount++
 			}
@@ -368,10 +359,9 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		} else {
 			return err
 		}
-
 		// 2. Parent pom.xml
 		parentPomPath := filepath.Join(libDir, "pom.xml")
-		if updated, err := updatePomMarkers(parentPomPath, lib, "parent"); err == nil {
+		if updated, err := updatePomMarkers(parentPomPath, ids, "parent"); err == nil {
 			if updated {
 				parentCount++
 			}
@@ -380,10 +370,9 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		} else {
 			return err
 		}
-
 		// 3. BOM pom.xml
-		bomPomPath := filepath.Join(libDir, bomArtifactID, "pom.xml")
-		if updated, err := updatePomMarkers(bomPomPath, lib, "bom"); err == nil {
+		bomPomPath := filepath.Join(libDir, ids.BOM, "pom.xml")
+		if updated, err := updatePomMarkers(bomPomPath, ids, "bom"); err == nil {
 			if updated {
 				bomCount++
 			}
@@ -406,23 +395,18 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 	return nil
 }
 
-func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool, error) {
+func updatePomMarkers(pomPath string, ids moduleArtifactIDs, pomType string) (bool, error) {
 	contentBytes, err := os.ReadFile(pomPath)
 	if err != nil {
 		return false, err
 	}
 	lines := strings.Split(string(contentBytes), "\n")
 	origContent := string(contentBytes)
-
-	protoIDs, grpcIDs := getModuleArtifactIDs(lib)
-	clientArtifactID := strings.SplitN(java.DeriveDistributionName(lib), ":", 2)[1]
-	bomArtifactID := clientArtifactID + "-bom"
-
 	switch pomType {
 	case "client":
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
-			targets:     toArtifactTags(protoIDs),
+			targets:     toArtifactTags(ids.Protos),
 			startMarker: managedProtoStartMarker,
 			endMarker:   managedProtoEndMarker,
 			startTag:    "<dependency>",
@@ -430,7 +414,7 @@ func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool
 		})
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
-			targets:     toArtifactTags(grpcIDs),
+			targets:     toArtifactTags(ids.GRPCs),
 			startMarker: managedGrpcStartMarker,
 			endMarker:   managedGrpcEndMarker,
 			startTag:    "<dependency>",
@@ -438,8 +422,8 @@ func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool
 		})
 	case "parent":
 		// Dependency Management
-		allDeps := append([]string{clientArtifactID, bomArtifactID}, protoIDs...)
-		allDeps = append(allDeps, grpcIDs...)
+		allDeps := append([]string{ids.Client, ids.BOM}, ids.Protos...)
+		allDeps = append(allDeps, ids.GRPCs...)
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
 			targets:     toArtifactTags(allDeps),
@@ -448,10 +432,9 @@ func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool
 			startTag:    "<dependency>",
 			endTag:      "</dependency>",
 		})
-
 		// Modules
-		allModules := append([]string{clientArtifactID, bomArtifactID}, protoIDs...)
-		allModules = append(allModules, grpcIDs...)
+		allModules := append([]string{ids.Client, ids.BOM}, ids.Protos...)
+		allModules = append(allModules, ids.GRPCs...)
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
 			targets:     toModuleTags(allModules),
@@ -461,8 +444,8 @@ func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool
 			endTag:      "</module>",
 		})
 	case "bom":
-		allDeps := append([]string{clientArtifactID}, protoIDs...)
-		allDeps = append(allDeps, grpcIDs...)
+		allDeps := append([]string{ids.Client}, ids.Protos...)
+		allDeps = append(allDeps, ids.GRPCs...)
 		lines = wrapBlocks(wrapArgs{
 			lines:       lines,
 			targets:     toArtifactTags(allDeps),
@@ -485,15 +468,27 @@ func updatePomMarkers(pomPath string, lib *config.Library, pomType string) (bool
 	return true, nil
 }
 
+type moduleArtifactIDs struct {
+	Client string
+	BOM    string
+	Protos []string
+	GRPCs  []string
+}
+
 // getModuleArtifactIDs returns the proto and gRPC artifact IDs for all APIs in the library.
-func getModuleArtifactIDs(lib *config.Library) (protoIDs, grpcIDs []string) {
+func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
+	lc := java.DeriveLibraryCoordinates(lib)
+	ids := moduleArtifactIDs{
+		Client: lc.GAPIC.ArtifactID,
+		BOM:    lc.BOM.ArtifactID,
+	}
 	for _, api := range lib.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
-		apiCoord := java.DeriveAPICoordinates(java.DeriveLibraryCoordinates(lib), version)
-		protoIDs = append(protoIDs, apiCoord.Proto.ArtifactID)
-		grpcIDs = append(grpcIDs, apiCoord.GRPC.ArtifactID)
+		apiCoord := java.DeriveAPICoordinates(lc, version)
+		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
+		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
 	}
-	return
+	return ids
 }
 
 type wrapArgs struct {
