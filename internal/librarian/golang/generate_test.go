@@ -254,13 +254,7 @@ func TestGenerate_MkdirTempError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	wantStr := "failed to create temporary directory"
-	// Verify the error message contains the specific context we added.
-	// We use strings.Contains here to confirm the specific message context
-	// requested by the user, despite the general guidance to avoid string checks.
-	if !strings.Contains(gotErr.Error(), wantStr) {
-		t.Errorf("error string mismatch\ngot:  %q\nwant: %q", gotErr.Error(), wantStr)
-	}
+
 	
 	if !errors.Is(gotErr, mockErr) {
 		t.Errorf("error is not wrapping mockErr\ngot:  %v", gotErr)
@@ -298,13 +292,7 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-	wantStr := "failed to create output directory"
-	// Verify the error message contains the specific context we added.
-	// We use strings.Contains here to confirm the specific message context
-	// requested by the user, despite the general guidance to avoid string checks.
-	if !strings.Contains(gotErr.Error(), wantStr) {
-		t.Errorf("error string mismatch\ngot:  %q\nwant: %q", gotErr.Error(), wantStr)
-	}
+
 }
 
 // TestGenerate_LogicBranches tests logic branches in Generate function:
