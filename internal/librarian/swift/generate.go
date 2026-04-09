@@ -77,11 +77,16 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 		return nil, err
 	}
 
+	sourceConfig := sources.NewSourceConfig(src, library.Roots)
+	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
+		sourceConfig.IncludeList = library.Swift.IncludeList
+	}
+
 	return &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: api.Path,
-		Source:              sources.NewSourceConfig(src, library.Roots),
+		Source:              sourceConfig,
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,

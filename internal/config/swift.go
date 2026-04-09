@@ -25,6 +25,9 @@ type SwiftDefault struct {
 // It inherits from SwiftDefault, allowing library-specific overrides of global settings.
 type SwiftPackage struct {
 	SwiftDefault `yaml:",inline"`
+
+	// IncludeList is a list of proto files to include (e.g., ["date.proto", "expr.proto"]).
+	IncludeList []string `yaml:"include_list,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.

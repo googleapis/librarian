@@ -403,3 +403,34 @@ func TestConfigReadAndWrite(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestSwiftConfig_IncludeList(t *testing.T) {
+	yamlData := `
+language: swift
+version: 1.0.0
+libraries:
+  - name: GoogleType
+    apis:
+      - path: google/type
+    copyright_year: "2026"
+    swift:
+      include_list:
+        - expr.proto
+`
+	got, err := yaml.Unmarshal[Config]([]byte(yamlData))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(got.Libraries) != 1 {
+		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
+	}
+	lib := got.Libraries[0]
+	if lib.Swift == nil {
+		t.Fatal("expected library.Swift to be set")
+	}
+	wantInclude := []string{"expr.proto"}
+	if diff := cmp.Diff(wantInclude, lib.Swift.IncludeList); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
