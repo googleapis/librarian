@@ -21,6 +21,10 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
+{{! On Linux we need this additional import for `URLSession`. }}
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
 import GoogleCloudAuth
 import GoogleCloudGax
 
