@@ -397,25 +397,52 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 
 func TestDeriveLastReleasedVersion(t *testing.T) {
 	for _, test := range []struct {
-		input   string
-		want    string
-		wantErr error
+		input string
+		want  string
 	}{
 		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
 		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
 		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
 		{input: "1.2.3", want: "1.2.3"},
-		{input: "1.invalid.0-SNAPSHOT", want: "", wantErr: semver.ErrInvalidVersion},
-		{input: "1.0.0-SNAPSHOT", wantErr: errInvalidVersion},
-		{input: "1.10.1-SNAPSHOT", wantErr: errInvalidVersion},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got, err := deriveLastReleasedVersion(test.input)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveLastReleasedVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{
+			name:    "invalid version",
+			input:   "1.invalid.0-SNAPSHOT",
+			wantErr: semver.ErrInvalidVersion,
+		},
+		{
+			name:    "v1.0.0 snapshot",
+			input:   "1.0.0-SNAPSHOT",
+			wantErr: errInvalidVersion,
+		},
+		{
+			name:    "patch version snapshot",
+			input:   "1.10.1-SNAPSHOT",
+			wantErr: errInvalidVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := deriveLastReleasedVersion(test.input)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
