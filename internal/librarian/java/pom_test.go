@@ -199,6 +199,57 @@ func TestSyncPOMs_Update(t *testing.T) {
 	}
 }
 
+func TestSyncPOMs_NoUpdate(t *testing.T) {
+	tmpDir := t.TempDir()
+
+	// Setup directory structure and existing POMs for ALL modules.
+	protoArtifactID := "proto-google-cloud-secretmanager-v1"
+	gRPCArtifactID := "grpc-google-cloud-secretmanager-v1"
+	gapicArtifactID := "google-cloud-secretmanager"
+	bomArtifactID := "google-cloud-secretmanager-bom"
+	for _, artifact := range []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, bomArtifactID, ""} {
+		dir := filepath.Join(tmpDir, artifact)
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		// Write a dummy pom.xml to ensure isMissing is false for all modules.
+		if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<!-- {x-generated-dependencies-start} -->\n      <mangled>true</mangled>\n<!-- {x-generated-dependencies-end} -->"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	transports := map[string]serviceconfig.Transport{
+		"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+	}
+	metadata := &repoMetadata{
+		NamePretty:     "Secret Manager",
+		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+	}
+
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that the mangled POMs were NOT updated.
+	for _, artifact := range []string{gapicArtifactID, bomArtifactID, ""} {
+		got, err := os.ReadFile(filepath.Join(tmpDir, artifact, "pom.xml"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		want := "<!-- {x-generated-dependencies-start} -->\n      <mangled>true</mangled>\n<!-- {x-generated-dependencies-end} -->"
+		if diff := cmp.Diff(string(want), string(got)); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	}
+}
+
 func TestCollectModules_Error(t *testing.T) {
 
 	for _, test := range []struct {
@@ -225,7 +276,7 @@ func TestCollectModules_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.transports); err == nil {
+			if _, _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.transports); err == nil {
 				t.Error("collectModules() error = nil, want non-nil")
 			}
 		})

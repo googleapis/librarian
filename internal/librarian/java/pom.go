@@ -84,10 +84,10 @@ type javaModule struct {
 	template     string
 }
 
-// syncPOMs generates missing proto-*, grpc-*, and client POMs, and surgically updates
-// existing client library POMs to include new dependencies.
+// syncPOMs generates missing POMs and surgically updates existing client, BOM,
+// and parent POMs when new proto or gRPC modules are added.
 func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
-	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
+	modules, anyMissingProtoGrpc, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
 		return err
 	}
@@ -97,6 +97,9 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 			if err := writePOM(pomPath, m.template, m.templateData); err != nil {
 				return fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
 			}
+			continue
+		}
+		if !anyMissingProtoGrpc {
 			continue
 		}
 		switch m.template {
@@ -230,8 +233,9 @@ func detectIndentation(content string, index int) string {
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
+func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, bool, error) {
 	var modules []javaModule
+	var anyMissingProtoGrpc bool
 	libCoord := DeriveLibraryCoordinates(library)
 
 	protoModules := make([]Coordinate, 0, len(library.APIs))
@@ -239,7 +243,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	for _, api := range library.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 		if version == "" {
-			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
+			return nil, false, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
 		apiCoord := DeriveAPICoordinates(libCoord, version)
@@ -257,7 +261,10 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
 		isProtoMissing, err := isPOMMissing(protoDir)
 		if err != nil {
-			return nil, err
+			return nil, false, err
+		}
+		if isProtoMissing {
+			anyMissingProtoGrpc = true
 		}
 		modules = append(modules, javaModule{
 			artifactID:   apiCoord.Proto.ArtifactID,
@@ -273,7 +280,10 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
 			isGRPCMissing, err := isPOMMissing(gRPCDir)
 			if err != nil {
-				return nil, err
+				return nil, false, err
+			}
+			if isGRPCMissing {
+				anyMissingProtoGrpc = true
 			}
 			modules = append(modules, javaModule{
 				artifactID:   apiCoord.GRPC.ArtifactID,
@@ -290,7 +300,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
 	isClientMissing, err := isPOMMissing(clientDir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	modules = append(modules, javaModule{
 		artifactID: libCoord.GAPIC.ArtifactID,
@@ -316,7 +326,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
 	isBOMMissing, err := isPOMMissing(bomDir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	modules = append(modules, javaModule{
 		artifactID: libCoord.BOM.ArtifactID,
@@ -335,7 +345,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	parentDir := libraryDir
 	isParentMissing, err := isPOMMissing(parentDir)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
 	modules = append(modules, javaModule{
 		artifactID: libCoord.Parent.ArtifactID,
@@ -350,7 +360,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		template: parentPOMTemplateName,
 	})
 
-	return modules, nil
+	return modules, anyMissingProtoGrpc, nil
 }
 
 func isPOMMissing(dir string) (bool, error) {
