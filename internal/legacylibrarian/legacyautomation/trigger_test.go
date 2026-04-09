@@ -49,22 +49,6 @@ func TestRunCommandWithClient(t *testing.T) {
 		wantTriggersRun []string
 	}{
 		{
-			name:    "runs generate trigger",
-			command: "generate",
-			push:    true,
-			buildTriggers: []*cloudbuildpb.BuildTrigger{
-				{
-					Name: "generate",
-					Id:   "generate-trigger-id",
-				},
-				{
-					Name: "prepare-release",
-					Id:   "prepare-release-trigger-id",
-				},
-			},
-			wantTriggersRun: []string{"generate-trigger-id"},
-		},
-		{
 			name:    "runs prepare-release trigger",
 			command: "stage-release",
 			push:    true,
@@ -99,7 +83,7 @@ func TestRunCommandWithClient(t *testing.T) {
 		},
 		{
 			name:     "error triggering",
-			command:  "generate",
+			command:  "stage-release",
 			push:     true,
 			runError: fmt.Errorf("some-error"),
 			wantErr:  true,
