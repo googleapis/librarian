@@ -120,7 +120,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 	return nil
 }
 
-// updateClientPOM surgicially updates the client POM using template markers
+// updateClientPOM surgically updates the client POM using template markers
 // to inject missing proto- and grpc- dependencies while preserving existing
 // formatting and metadata comments.
 func updateClientPOM(pomPath string, data clientPOMData) error {
@@ -228,14 +228,15 @@ func detectIndentation(content string, index int) string {
 
 // collectModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
 // for the given library based on its configuration and checks a pom.xml presence
-// on the filesystem.
+// on the filesystem. It returns the list of modules and a boolean indicating
+// if any proto or gRPC modules are missing.
 //
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, bool, error) {
 	var modules []javaModule
-	var anyMissingProtoGrpc bool
+	var anyMissingProtoGRPC bool
 	libCoord := DeriveLibraryCoordinates(library)
 
 	protoModules := make([]Coordinate, 0, len(library.APIs))
@@ -264,7 +265,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, false, err
 		}
 		if isProtoMissing {
-			anyMissingProtoGrpc = true
+			anyMissingProtoGRPC = true
 		}
 		modules = append(modules, javaModule{
 			artifactID:   apiCoord.Proto.ArtifactID,
@@ -283,7 +284,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 				return nil, false, err
 			}
 			if isGRPCMissing {
-				anyMissingProtoGrpc = true
+				anyMissingProtoGRPC = true
 			}
 			modules = append(modules, javaModule{
 				artifactID:   apiCoord.GRPC.ArtifactID,
@@ -360,7 +361,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		template: parentPOMTemplateName,
 	})
 
-	return modules, anyMissingProtoGrpc, nil
+	return modules, anyMissingProtoGRPC, nil
 }
 
 func isPOMMissing(dir string) (bool, error) {
