@@ -39,9 +39,6 @@ var (
 	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 
-	// Overridable for testing.
-	mkdirTemp  = os.MkdirTemp
-	commandRun = command.Run
 )
 
 // Generate generates a Go client library.
@@ -53,10 +50,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	tempDir, err := mkdirTemp("", "librarian-gen-")
-	if err != nil {
-		return fmt.Errorf("failed to create temporary directory: %w", err)
-	}
+	tempDir, err := os.MkdirTemp("", "librarian-gen-")
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
 			err = errors.Join(err, removeErr)
@@ -104,6 +98,9 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 				return fmt.Errorf("failed to delete generation output path %q: %w", p, err)
 			}
 		}
+	}
+	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
+		return fmt.Errorf("failed to generate internal version file: %w", err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
