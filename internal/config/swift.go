@@ -26,7 +26,7 @@ type SwiftDefault struct {
 type SwiftPackage struct {
 	SwiftDefault `yaml:",inline"`
 
-	// IncludeList is a list of proto files to include (e.g., ["date.proto", "expr.proto"]).
+	// IncludeList is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]).
 	IncludeList []string `yaml:"include_list,omitempty"`
 }
 
