@@ -23,19 +23,24 @@ type serviceAnnotations struct {
 	BoilerPlate   []string
 	Name          string
 	DocLines      []string
+	RestMethods   []*api.Method
 }
 
 func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) {
 	docLines := codec.formatDocumentation(service.Documentation)
+	var restMethods []*api.Method
+	for _, method := range service.Methods {
+		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+			codec.annotateMethod(method)
+			restMethods = append(restMethods, method)
+		}
+	}
 	annotations := &serviceAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(service.Name),
 		DocLines:      docLines,
+		RestMethods:   restMethods,
 	}
-
 	service.Codec = annotations
-	for _, method := range service.Methods {
-		codec.annotateMethod(method)
-	}
 }

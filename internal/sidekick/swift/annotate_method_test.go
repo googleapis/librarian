@@ -22,28 +22,94 @@ import (
 )
 
 func TestAnnotateMethod(t *testing.T) {
-	method := &api.Method{
-		Name:          "CreateSecret",
-		Documentation: "Creates a secret.",
-	}
-	service := &api.Service{
-		Name:    "SecretManagerService",
-		Methods: []*api.Method{method},
-	}
-	model := api.NewTestAPI(nil, nil, []*api.Service{service})
-	codec := newTestCodec(t, model, nil)
-
-	if err := codec.annotateModel(); err != nil {
-		t.Fatal(err)
-	}
-
-	want := &methodAnnotations{
-		Name:     "createSecret",
-		DocLines: []string{"Creates a secret."},
-	}
-
-	if diff := cmp.Diff(want, method.Codec); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   *methodAnnotations
+	}{
+		{
+			name: "GET request",
+			method: &api.Method{
+				Name:          "GetOperation",
+				Documentation: "Gets a thing.\n\nTest multiple comment lines.\n",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "GET",
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("operations"),
+						},
+					},
+				},
+			},
+			want: &methodAnnotations{
+				Name:       "getOperation",
+				Path:       "/v1/operations",
+				DocLines:   []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+				HTTPMethod: "GET",
+				HasBody:    false,
+			},
+		},
+		{
+			name: "POST request with body field",
+			method: &api.Method{
+				Name: "CreateKey",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("keys"),
+						},
+					},
+					BodyFieldPath: "key",
+				},
+			},
+			want: &methodAnnotations{
+				Name:           "createKey",
+				Path:           "/v1/keys",
+				HTTPMethod:     "POST",
+				HasBody:        true,
+				IsBodyWildcard: false,
+				BodyField:      "key",
+			},
+		},
+		{
+			name: "POST request with wildcard body",
+			method: &api.Method{
+				Name: "UploadData",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("data"),
+						},
+					},
+					BodyFieldPath: "*",
+				},
+			},
+			want: &methodAnnotations{
+				Name:           "uploadData",
+				Path:           "/v1/data",
+				HTTPMethod:     "POST",
+				HasBody:        true,
+				IsBodyWildcard: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := &api.Service{
+				Name:    "TestService",
+				Methods: []*api.Method{test.method},
+			}
+			model := api.NewTestAPI(nil, nil, []*api.Service{service})
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := test.method.Codec.(*methodAnnotations)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -61,6 +127,9 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			method := &api.Method{
 				Name:          test.methodName,
 				Documentation: "Test documentation.",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
 			}
 			service := &api.Service{
 				Name:    "TestService",
@@ -74,8 +143,10 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:     test.wantName,
-				DocLines: []string{"Test documentation."},
+				Name:       test.wantName,
+				DocLines:   []string{"Test documentation."},
+				Path:       "/",
+				HTTPMethod: "GET",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
