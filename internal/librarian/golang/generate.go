@@ -50,10 +50,11 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		return err
 	}
 	tempDir, err := os.MkdirTemp("", "librarian-gen-")
-	if err != nil {
-		return err
-	}
-	defer os.RemoveAll(tempDir)
+	defer func() {
+		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
+			err = errors.Join(err, removeErr)
+		}
+	}()
 	// For preview libraries, the API protos are rooted in the
 	// googleapis/preview subdirectory, so change the googleapisDir to target
 	// that root.
