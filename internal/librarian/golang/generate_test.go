@@ -220,8 +220,6 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
-
-
 // TestGenerate_MkdirAllError tests that Generate returns a wrapped error
 // with the expected context when os.MkdirAll fails because the path is a file.
 func TestGenerate_MkdirAllError(t *testing.T) {
