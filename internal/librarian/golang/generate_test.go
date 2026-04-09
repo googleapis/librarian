@@ -228,10 +228,10 @@ func TestGenerate_MkdirTempError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	oldMkdirTemp := mkdirTemp
 	defer func() { mkdirTemp = oldMkdirTemp }()
-	
+
 	mockErr := errors.New("mocked mkdirTemp error")
 	mkdirTemp = func(dir, prefix string) (string, error) {
 		return "", mockErr
@@ -254,8 +254,6 @@ func TestGenerate_MkdirTempError(t *testing.T) {
 		t.Fatal("expected error, got nil")
 	}
 
-
-	
 	if !errors.Is(gotErr, mockErr) {
 		t.Errorf("error is not wrapping mockErr\ngot:  %v", gotErr)
 	}
@@ -268,7 +266,7 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	
+
 	tmpDir := t.TempDir()
 	filePath := filepath.Join(tmpDir, "file_blocking_dir")
 	if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
@@ -291,7 +289,6 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 	if gotErr == nil {
 		t.Fatal("expected error, got nil")
 	}
-
 
 }
 

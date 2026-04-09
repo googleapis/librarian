@@ -53,21 +53,15 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-<<<<<<< HEAD
-
 	tempDir, err := mkdirTemp("", "librarian-gen-")
 	if err != nil {
 		return fmt.Errorf("failed to create temporary directory: %w", err)
 	}
-	defer os.RemoveAll(tempDir)
-=======
-	tempDir, err := os.MkdirTemp("", "librarian-gen-")
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
 			err = errors.Join(err, removeErr)
 		}
 	}()
->>>>>>> main
 	// For preview libraries, the API protos are rooted in the
 	// googleapis/preview subdirectory, so change the googleapisDir to target
 	// that root.
@@ -84,14 +78,8 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateAPI(ctx, goAPI, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
-<<<<<<< HEAD
-
-		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
-			return fmt.Errorf("failed to move generated files: %w", err)
-=======
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
->>>>>>> main
 		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate client version file: %w", err)
@@ -117,13 +105,6 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			}
 		}
 	}
-<<<<<<< HEAD
-	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
-		return fmt.Errorf("failed to generate internal version file: %w", err)
-	}
-
-=======
->>>>>>> main
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// New client, init the module.
@@ -160,7 +141,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, outDir
 		return err
 	}
 	args = append(args, protoFiles...)
-	return commandRun(ctx, args[0], args[1:]...)
+	return command.Run(ctx, args[0], args[1:]...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
