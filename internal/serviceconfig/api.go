@@ -144,20 +144,38 @@ func (api *API) HasRESTNumericEnums(language string) bool {
 // ReleaseLevel gets the release level for a given language.
 //
 // If language-specific release level is not defined, it falls back to the "all" language setting,
-// and then to "stable".
-func (api *API) ReleaseLevel(language string) string {
+// and then it is derived based on the library version and API path maturity.
+func (api *API) ReleaseLevel(language, version string) string {
 	if rl, ok := api.ReleaseLevels[language]; ok {
 		return rl
 	}
 	if rl, ok := api.ReleaseLevels[config.LanguageAll]; ok {
 		return rl
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across languages.
-	if language == config.LanguageGo {
-		return "ga"
+
+	apiVersion := ExtractVersion(api.Path)
+	isAlpha := strings.Contains(apiVersion, "alpha")
+	isBeta := strings.Contains(apiVersion, "beta")
+
+	level := "stable"
+	if isAlpha || isBeta || strings.HasPrefix(version, "0.") {
+		level = "preview"
 	}
-	return "stable"
+
+	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
+	// release level vocabulary across languages
+	if language == config.LanguageGo {
+		if isAlpha {
+			return "alpha"
+		}
+		if isBeta {
+			return "beta"
+		}
+		if level == "stable" {
+			return "ga"
+		}
+	}
+	return level
 }
 
 // RepoMetadataReleaseLevel returns the release level for repo metadata.
@@ -166,18 +184,14 @@ func (api *API) ReleaseLevel(language string) string {
 // function once the issue is resolved.
 // For Go, it maps the raw release level to "stable" or "preview".
 // For other languages, it returns the raw release level.
-func (api *API) RepoMetadataReleaseLevel(language string) string {
+func (api *API) RepoMetadataReleaseLevel(language, version string) string {
 	if language == config.LanguageGo {
-		version := ExtractVersion(api.Path)
-		if strings.Contains(version, "alpha") || strings.Contains(version, "beta") {
-			return "preview"
+		if api.ReleaseLevel(language, version) == "ga" {
+			return "stable"
 		}
-		if api.ReleaseLevel(language) != "ga" {
-			return "preview"
-		}
-		return "stable"
+		return "preview"
 	}
-	return api.ReleaseLevel(language)
+	return api.ReleaseLevel(language, version)
 }
 
 // RepoMetadataTransport returns the transport for repo metadata.

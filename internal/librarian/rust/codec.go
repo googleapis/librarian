@@ -57,7 +57,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 		SpecificationSource: specSource,
 		Source:              src,
 		ServiceConfig:       svcConfig.ServiceConfig,
-		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust)),
+		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust, library.Version)),
 		Override: api.ModelOverride{
 			Description: library.DescriptionOverride,
 			Title:       svcConfig.Title,
