@@ -684,9 +684,13 @@ type NodejsPackage struct {
 
 // NodejsAPI represents configuration for a single API within a Node.js package.
 type NodejsAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 
-	// ProtoDependencies is a list of additional proto files to include in generation.
-	ProtoDependencies []string `yaml:"proto_dependencies,omitempty"`
+	// SkipDefaultAdditionalProtos determines whether to exclude the default
+	// additional protos (e.g. common_resources.proto).
+	SkipDefaultAdditionalProtos bool `yaml:"skip_default_additional_protos,omitempty"`
 }

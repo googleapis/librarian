@@ -1083,8 +1083,8 @@ func TestResolveNodejsAPI(t *testing.T) {
 			library: &config.Library{},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:              "google/cloud/secretmanager/v1",
-				ProtoDependencies: []string{commonProtos},
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
 			},
 		},
 		{
@@ -1093,20 +1093,20 @@ func TestResolveNodejsAPI(t *testing.T) {
 				Nodejs: &config.NodejsPackage{
 					NodejsAPIs: []*config.NodejsAPI{
 						{
-							Path:              "google/cloud/secretmanager/v1",
-							ProtoDependencies: []string{"other.proto"},
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto"},
 						},
 					},
 				},
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:              "google/cloud/secretmanager/v1",
-				ProtoDependencies: []string{"other.proto"},
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{"other.proto"},
 			},
 		},
 		{
-			name: "found in config, nil proto dependencies defaults to commonProtos",
+			name: "found in config, empty additional protos defaults to commonProtos",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					NodejsAPIs: []*config.NodejsAPI{
@@ -1118,26 +1118,26 @@ func TestResolveNodejsAPI(t *testing.T) {
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:              "google/cloud/secretmanager/v1",
-				ProtoDependencies: []string{commonProtos},
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
 			},
 		},
 		{
-			name: "found in config, explicitly empty list overrides default",
+			name: "found in config, explicitly skip defaults",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					NodejsAPIs: []*config.NodejsAPI{
 						{
-							Path:              "google/cloud/secretmanager/v1",
-							ProtoDependencies: []string{},
+							Path:                        "google/cloud/secretmanager/v1",
+							SkipDefaultAdditionalProtos: true,
 						},
 					},
 				},
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:              "google/cloud/secretmanager/v1",
-				ProtoDependencies: []string{},
+				Path:                        "google/cloud/secretmanager/v1",
+				SkipDefaultAdditionalProtos: true,
 			},
 		},
 	} {
