@@ -32,6 +32,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -178,8 +179,18 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, apis []*config.A
 	if lib.Preview != nil {
 		return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
 	}
+	// Derive an initial version for the preview client, starting from the
+	// containing stable client's version as if it were a preview, then
+	// determining the actual preview version relative from the current stable
+	// version. For example, if the stable was 1.0.0, the initial preview would
+	// be 1.1.0-preview.1.
+	v, err := semver.DeriveNextPreview(lib.Version+"-preview.1", lib.Version, languageVersioningOptions[cfg.Language])
+	if err != nil {
+		return "", nil, err
+	}
 	lib.Preview = &config.Library{
-		APIs: apis,
+		Version: v,
+		APIs:    apis,
 	}
 	return name, cfg, nil
 }

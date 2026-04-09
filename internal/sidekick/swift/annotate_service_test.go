@@ -68,3 +68,43 @@ func TestAnnotateService(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateService_SkipNoBindings(t *testing.T) {
+	service := &api.Service{
+		Name: "TestService",
+		Methods: []*api.Method{
+			{
+				Name: "ValidMethod",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+			{
+				Name: "NoBindingMethod",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{},
+				},
+			},
+			{
+				Name:     "NilPathInfoMethod",
+				PathInfo: nil,
+			},
+		},
+	}
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	serviceCodec := service.Codec.(*serviceAnnotations)
+	var gotNames []string
+	for _, m := range serviceCodec.RestMethods {
+		gotNames = append(gotNames, m.Name)
+	}
+	wantNames := []string{"ValidMethod"}
+	if diff := cmp.Diff(wantNames, gotNames); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

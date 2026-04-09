@@ -19,15 +19,32 @@ import (
 )
 
 type methodAnnotations struct {
-	Name     string
-	DocLines []string
+	Name           string
+	DocLines       []string
+	Path           string
+	HTTPMethod     string
+	HasBody        bool
+	IsBodyWildcard bool
+	BodyField      string
 }
 
 func (codec *codec) annotateMethod(method *api.Method) {
 	docLines := codec.formatDocumentation(method.Documentation)
-	annotations := &methodAnnotations{
-		Name:     camelCase(method.Name),
-		DocLines: docLines,
+	binding := method.PathInfo.Bindings[0]
+	path := formatPath(binding.PathTemplate)
+	hasBody := method.PathInfo.BodyFieldPath != ""
+	isBodyWildcard := method.PathInfo.BodyFieldPath == "*"
+	var bodyField string
+	if hasBody && !isBodyWildcard {
+		bodyField = camelCase(method.PathInfo.BodyFieldPath)
 	}
-	method.Codec = annotations
+	method.Codec = &methodAnnotations{
+		Name:           camelCase(method.Name),
+		DocLines:       docLines,
+		Path:           path,
+		HTTPMethod:     binding.Verb,
+		HasBody:        hasBody,
+		IsBodyWildcard: isBodyWildcard,
+		BodyField:      bodyField,
+	}
 }

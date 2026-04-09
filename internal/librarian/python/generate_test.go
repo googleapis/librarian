@@ -614,6 +614,8 @@ func TestGenerateAPI(t *testing.T) {
 }
 
 func TestGenerateAPI_Error(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-python_gapic")
 	for _, test := range []struct {
 		name    string
 		setup   func(t *testing.T, repoRoot, outputDir string)
