@@ -22,7 +22,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// CleanDocumentation removes common prefixes like "Required. " and "Identifier. " from a help text string in any order.
+// CleanDocumentation removes common prefixes like "Required. ", "Identifier. ", etc from a help text string in any order.
 func CleanDocumentation(s string) string {
 	for {
 		original := s
