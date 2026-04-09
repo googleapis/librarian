@@ -92,10 +92,10 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		return err
 	}
 
-	var anyMissingProtoGrpc bool
+	var anyMissingProtoGRPC bool
 	for _, m := range modules {
 		if m.isMissing && (m.template == protoPOMTemplateName || m.template == gRPCPOMTemplateName) {
-			anyMissingProtoGrpc = true
+			anyMissingProtoGRPC = true
 			break
 		}
 	}
@@ -108,7 +108,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 			}
 			continue
 		}
-		if !anyMissingProtoGrpc {
+		if !anyMissingProtoGRPC {
 			continue
 		}
 		switch m.template {
