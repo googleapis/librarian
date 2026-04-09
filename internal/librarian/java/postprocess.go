@@ -40,6 +40,7 @@ var (
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
 	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
+	errInvalidVersion   = errors.New("invalid java library version")
 )
 
 type postProcessParams struct {
@@ -275,9 +276,13 @@ func restructureModules(p postProcessParams, destRoot string) error {
 //  4. python3 is available on the system PATH and has the synthtool package
 //     installed (from google-cloud-java/sdk-platform-java).
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
+	releasedVersion, err := releasedVersion(library.Version)
+	if err != nil {
+		return fmt.Errorf("%w: %s", errInvalidVersion, library.Version)
+	}
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion(library.Version),
+		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion,
 		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
 	}
 	// Path to templates used for README.md file.
@@ -296,19 +301,22 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 // releasedVersion derives the last released version from a snapshot version
 // (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
 //
-// It assumes that the patch version is always 0 for snapshot releases,
-// because google-cloud-java always bumps minor.
-func releasedVersion(v string) string {
+// It returns an error if the snapshot version has a non-zero patch or a zero
+// minor version, as this repository is assumed to always bump the minor version.
+func releasedVersion(v string) (string, error) {
 	if !strings.HasSuffix(v, "-SNAPSHOT") {
-		return v
+		return v, nil
 	}
 	sv, err := semver.Parse(strings.TrimSuffix(v, "-SNAPSHOT"))
 	if err != nil {
-		return v
+		return "", err
+	}
+	if sv.Patch > 0 || (sv.Minor == 0 && sv.Patch == 0) {
+		return "", errInvalidVersion
 	}
 	sv.Minor--
 	sv.Patch = 0
-	return sv.String()
+	return sv.String(), nil
 }
 
 func copyProtos(googleapisDir string, protos []string, destDir string) error {

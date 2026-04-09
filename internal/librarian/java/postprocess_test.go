@@ -28,6 +28,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -396,18 +397,23 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 
 func TestReleasedVersion(t *testing.T) {
 	for _, test := range []struct {
-		input string
-		want  string
+		input   string
+		want    string
+		wantErr error
 	}{
-		{"1.2.0-SNAPSHOT", "1.1.0"},
-		{"1.10.0-SNAPSHOT", "1.9.0"},
-		{"0.87.0-SNAPSHOT", "0.86.0"},
-		{"1.2.3", "1.2.3"},
-		{"invalid", "invalid"},
-		{"1.invalid.0-SNAPSHOT", "1.invalid.0-SNAPSHOT"},
+		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
+		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
+		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
+		{input: "1.2.3", want: "1.2.3"},
+		{input: "1.invalid.0-SNAPSHOT", want: "", wantErr: semver.ErrInvalidVersion},
+		{input: "1.0.0-SNAPSHOT", wantErr: errInvalidVersion},
+		{input: "1.10.1-SNAPSHOT", wantErr: errInvalidVersion},
 	} {
 		t.Run(test.input, func(t *testing.T) {
-			got := releasedVersion(test.input)
+			got, err := releasedVersion(test.input)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
