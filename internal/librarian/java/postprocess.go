@@ -278,7 +278,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
 	releasedVersion, err := releasedVersion(library.Version)
 	if err != nil {
-		return fmt.Errorf("%w: %s", errInvalidVersion, library.Version)
+		return fmt.Errorf("%w %q: %w", errInvalidVersion, library.Version, err)
 	}
 	// Versions used to populate README.md file.
 	env := map[string]string{
@@ -304,18 +304,19 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 // It returns an error if the snapshot version has a non-zero patch or a zero
 // minor version, as this repository is assumed to always bump the minor version.
 func releasedVersion(v string) (string, error) {
-	if !strings.HasSuffix(v, "-SNAPSHOT") {
-		return v, nil
-	}
-	sv, err := semver.Parse(strings.TrimSuffix(v, "-SNAPSHOT"))
+	sv, err := semver.Parse(v)
 	if err != nil {
 		return "", err
 	}
-	if sv.Patch > 0 || (sv.Minor == 0 && sv.Patch == 0) {
+	if sv.Prerelease != "SNAPSHOT" {
+		return sv.String(), nil
+	}
+	if sv.Patch > 0 || sv.Minor == 0 {
 		return "", errInvalidVersion
 	}
 	sv.Minor--
 	sv.Patch = 0
+	sv.Prerelease = ""
 	return sv.String(), nil
 }
 
