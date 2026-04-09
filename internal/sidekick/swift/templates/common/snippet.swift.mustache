@@ -25,7 +25,7 @@ limitations under the License.
 import {{Codec.PackageName}}
 import Foundation
 
-func sample(projectId: String) async throws {
+func sample() async throws {
     let client = try {{Codec.Name}}()
     {{#Codec.QuickstartMethod}}
     let response = try await client.{{Codec.Name}}(
@@ -43,7 +43,7 @@ func sample(projectId: String) async throws {
 struct SnippetRunner {
     static func main() async throws {
         do {
-            try await sample(projectId: "my-project")
+            try await sample()
         } catch {
             print("Error: \(error)")
         }
