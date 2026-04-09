@@ -207,6 +207,9 @@ type Default struct {
 
 	// Python contains Python-specific default configuration.
 	Python *PythonDefault `yaml:"python,omitempty"`
+
+	// Swift contains Swift-specific default configuration.
+	Swift *SwiftDefault `yaml:"swift,omitempty"`
 }
 
 // Library represents a library configuration.
