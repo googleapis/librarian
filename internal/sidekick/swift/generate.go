@@ -48,6 +48,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := codec.generateMessages(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateEnums(outdir, model, provider); err != nil {
+		return err
+	}
 	if err := codec.generateServices(outdir, model, provider); err != nil {
 		return err
 	}
@@ -62,6 +65,19 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 			OutputPath:   filepath.Join("Sources", c.PackageName, m.Name+".swift"),
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *codec) generateEnums(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, e := range model.Enums {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/enum.swift.mustache",
+			OutputPath:   filepath.Join("Sources", c.PackageName, e.Name+".swift"),
+		}
+		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
 			return err
 		}
 	}

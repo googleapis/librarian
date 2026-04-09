@@ -127,3 +127,31 @@ func TestGenerateServiceFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateEnumFiles(t *testing.T) {
+	outDir := t.TempDir()
+
+	color := &api.Enum{Name: "Color", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Color"}
+	kind := &api.Enum{Name: "Kind", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Kind"}
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color, kind}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	for _, expected := range []string{"Color.swift", "Kind.swift"} {
+		filename := filepath.Join(expectedDir, expected)
+		if _, err := os.Stat(filename); errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+	}
+}

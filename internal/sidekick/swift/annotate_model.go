@@ -59,6 +59,9 @@ func (codec *codec) annotateModel() error {
 			return err
 		}
 	}
+	for _, enum := range codec.Model.Enums {
+		codec.annotateEnum(enum, annotations)
+	}
 	for _, service := range codec.Model.Services {
 		codec.annotateService(service, annotations)
 	}
