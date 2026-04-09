@@ -38,10 +38,6 @@ var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
-
-	// Overridable for testing.
-	mkdirTemp  = os.MkdirTemp
-	commandRun = command.Run
 )
 
 // Generate generates a Go client library.
@@ -53,8 +49,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
-
-	tempDir, err := mkdirTemp("", "librarian-gen-")
+	tempDir, err := os.MkdirTemp("", "librarian-gen-")
 	if err != nil {
 		return err
 	}
@@ -75,7 +70,6 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateAPI(ctx, goAPI, googleapisDir, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
-
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
 			return err
 		}
@@ -96,6 +90,9 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return err
 		}
 	}
+	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
+		return err
+	}
 	if library.Go != nil {
 		for _, p := range library.Go.DeleteGenerationOutputPaths {
 			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
@@ -103,10 +100,6 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			}
 		}
 	}
-	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
-		return err
-	}
-
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			// New client, init the module.
@@ -143,7 +136,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, outDir
 		return err
 	}
 	args = append(args, protoFiles...)
-	return commandRun(ctx, args[0], args[1:]...)
+	return command.Run(ctx, args[0], args[1:]...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
