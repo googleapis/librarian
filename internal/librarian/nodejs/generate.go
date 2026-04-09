@@ -86,9 +86,9 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
 
-	// Add extra protos from configuration.
-	for _, extra := range nodejsAPI.ExtraProtos {
-		protos = append(protos, filepath.Join(googleapisDir, extra))
+	// Add dependent protos from configuration.
+	for _, dep := range nodejsAPI.ProtoDependencies {
+		protos = append(protos, filepath.Join(googleapisDir, dep))
 	}
 
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir)
@@ -103,8 +103,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 // applying default values if no explicit configuration is found in the library.
 func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
 	res := &config.NodejsAPI{
-		Path:        api.Path,
-		ExtraProtos: []string{commonProtos},
+		Path:              api.Path,
+		ProtoDependencies: []string{commonProtos},
 	}
 	if library.Nodejs == nil {
 		return res
@@ -115,9 +115,11 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		// Copy explicit config
 		res.Path = nodejsAPI.Path
-		res.ExtraProtos = nodejsAPI.ExtraProtos
-		if len(res.ExtraProtos) == 0 {
-			res.ExtraProtos = []string{commonProtos}
+		res.ProtoDependencies = nodejsAPI.ProtoDependencies
+		// If ProtoDependencies is missing (nil), use the default.
+		// An explicitly empty list [] will override the default and include nothing.
+		if nodejsAPI.ProtoDependencies == nil {
+			res.ProtoDependencies = []string{commonProtos}
 		}
 		return res
 	}
