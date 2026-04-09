@@ -50,7 +50,6 @@ var (
 type javaGAPICInfo struct {
 	NoSamples        bool
 	AdditionalProtos []string
-	Transport        string
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -66,10 +65,6 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
-		}
-		rule := rules[0]
-		if attr := rule.Attr("transport"); attr != nil {
-			info.Transport = rule.AttrString("transport")
 		}
 	}
 	// 2. From java_gapic_assembly_gradle_pkg
