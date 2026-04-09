@@ -477,8 +477,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		{
 			name: "missing monorepo version",
 			library: &config.Library{
-				Name:   "secretmanager",
-				Output: t.TempDir(),
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				Output:  t.TempDir(),
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},
