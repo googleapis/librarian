@@ -32,15 +32,14 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 	docLines := codec.formatDocumentation(service.Documentation)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
-		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+		if isGeneratedMethod(method) {
 			codec.annotateMethod(method)
 			restMethods = append(restMethods, method)
 		}
 	}
-	if service.QuickstartMethod != nil && service.QuickstartMethod.Codec == nil {
-		if service.QuickstartMethod.PathInfo != nil && len(service.QuickstartMethod.PathInfo.Bindings) > 0 {
-			codec.annotateMethod(service.QuickstartMethod)
-		}
+	var quickstartMethod *api.Method
+	if service.QuickstartMethod != nil && isGeneratedMethod(service.QuickstartMethod) {
+		quickstartMethod = service.QuickstartMethod
 	}
 	annotations := &serviceAnnotations{
 		CopyrightYear:    model.CopyrightYear,
@@ -49,7 +48,11 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 		DocLines:         docLines,
 		RestMethods:      restMethods,
 		PackageName:      codec.PackageName,
-		QuickstartMethod: service.QuickstartMethod,
+		QuickstartMethod: quickstartMethod,
 	}
 	service.Codec = annotations
+}
+
+func isGeneratedMethod(method *api.Method) bool {
+	return method.PathInfo != nil && len(method.PathInfo.Bindings) != 0
 }
