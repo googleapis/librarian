@@ -276,7 +276,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 //  4. python3 is available on the system PATH and has the synthtool package
 //     installed (from google-cloud-java/sdk-platform-java).
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
-	releasedVersion, err := releasedVersion(library.Version)
+	releasedVersion, err := deriveLastReleasedVersion(library.Version)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", errInvalidVersion, library.Version, err)
 	}
@@ -298,12 +298,12 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 	return nil
 }
 
-// releasedVersion derives the last released version from a snapshot version
+// deriveLastReleasedVersion derives the last released version from a snapshot version
 // (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
 //
 // It returns an error if the snapshot version has a non-zero patch or a zero
 // minor version, as this repository is assumed to always bump the minor version.
-func releasedVersion(v string) (string, error) {
+func deriveLastReleasedVersion(v string) (string, error) {
 	sv, err := semver.Parse(v)
 	if err != nil {
 		return "", err

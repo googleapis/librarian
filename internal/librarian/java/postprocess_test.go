@@ -395,7 +395,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	}
 }
 
-func TestReleasedVersion(t *testing.T) {
+func TestDeriveLastReleasedVersion(t *testing.T) {
 	for _, test := range []struct {
 		input   string
 		want    string
@@ -410,7 +410,7 @@ func TestReleasedVersion(t *testing.T) {
 		{input: "1.10.1-SNAPSHOT", wantErr: errInvalidVersion},
 	} {
 		t.Run(test.input, func(t *testing.T) {
-			got, err := releasedVersion(test.input)
+			got, err := deriveLastReleasedVersion(test.input)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}
