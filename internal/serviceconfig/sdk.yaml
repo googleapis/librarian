@@ -894,6 +894,8 @@
     - all
   release_level:
     go: beta
+  transports:
+    java: grpc
 - path: google/cloud/bigquery/storage/v1beta2
   languages:
     - go
@@ -1843,6 +1845,8 @@
     - python
   release_level:
     go: beta
+  transports:
+    java: grpc
 - path: google/cloud/managedkafka/schemaregistry/v1
   languages:
     - all
@@ -2253,6 +2257,7 @@
     - ruby
   transports:
     go: grpc
+    java: grpc
     python: grpc
 - path: google/cloud/rapidmigrationassessment/v1
   languages:
@@ -2464,6 +2469,8 @@
   release_level:
     go: beta
     java: preview
+  transports:
+    java: grpc
 - path: google/cloud/securitycenter/v1
   languages:
     - go
@@ -2565,6 +2572,8 @@
     - python
   release_level:
     go: beta
+  transports:
+    java: grpc
 - path: google/cloud/storagebatchoperations/v1
   languages:
     - all
@@ -3140,6 +3149,8 @@
   languages:
     - java
     - nodejs
+  transports:
+    java: grpc
 - path: google/iam/v2
   documentation_uri: https://cloud.google.com/iam/docs/
   languages:
