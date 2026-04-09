@@ -155,3 +155,31 @@ func TestGenerateEnumFiles(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateSnippetFiles(t *testing.T) {
+	outDir := t.TempDir()
+
+	iam := &api.Service{Name: "IAM"}
+	secretManager := &api.Service{Name: "SecretManagerService"}
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{iam, secretManager})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Snippets")
+	for _, expected := range []string{"IAMQuickstart.swift", "SecretManagerServiceQuickstart.swift"} {
+		filename := filepath.Join(expectedDir, expected)
+		if _, err := os.Stat(filename); errors.Is(err, fs.ErrNotExist) {
+			t.Errorf("missing %s: %s", filename, err)
+		}
+	}
+}

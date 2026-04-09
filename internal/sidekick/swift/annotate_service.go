@@ -19,11 +19,13 @@ import (
 )
 
 type serviceAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
-	RestMethods   []*api.Method
+	CopyrightYear    string
+	BoilerPlate      []string
+	Name             string
+	DocLines         []string
+	RestMethods      []*api.Method
+	PackageName      string
+	QuickstartMethod *api.Method
 }
 
 func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) {
@@ -35,12 +37,19 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 			restMethods = append(restMethods, method)
 		}
 	}
+	if service.QuickstartMethod != nil && service.QuickstartMethod.Codec == nil {
+		if service.QuickstartMethod.PathInfo != nil && len(service.QuickstartMethod.PathInfo.Bindings) > 0 {
+			codec.annotateMethod(service.QuickstartMethod)
+		}
+	}
 	annotations := &serviceAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          pascalCase(service.Name),
-		DocLines:      docLines,
-		RestMethods:   restMethods,
+		CopyrightYear:    model.CopyrightYear,
+		BoilerPlate:      model.BoilerPlate,
+		Name:             pascalCase(service.Name),
+		DocLines:         docLines,
+		RestMethods:      restMethods,
+		PackageName:      codec.PackageName,
+		QuickstartMethod: service.QuickstartMethod,
 	}
 	service.Codec = annotations
 }
