@@ -254,12 +254,6 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 	}
 
 }
-
-// TestGenerate_LogicBranches tests logic branches in Generate function:
-// - isPreview triggered by path containing "preview/internal"
-// - continue in API loop triggered by multiple APIs
-// - DeleteGenerationOutputPaths triggered by non-empty list
-
 func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
@@ -978,5 +972,3 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		})
 	}
 }
-
-

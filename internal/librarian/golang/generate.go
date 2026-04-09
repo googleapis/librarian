@@ -38,7 +38,6 @@ var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
-
 )
 
 // Generate generates a Go client library.
@@ -92,15 +91,15 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return fmt.Errorf("failed to generate README: %w", err)
 		}
 	}
+	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
+		return fmt.Errorf("failed to generate internal version file: %w", err)
+	}
 	if library.Go != nil {
 		for _, p := range library.Go.DeleteGenerationOutputPaths {
 			if err := os.RemoveAll(filepath.Join(outDir, p)); err != nil {
 				return fmt.Errorf("failed to delete generation output path %q: %w", p, err)
 			}
 		}
-	}
-	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
-		return fmt.Errorf("failed to generate internal version file: %w", err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
