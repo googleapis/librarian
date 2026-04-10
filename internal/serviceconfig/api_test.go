@@ -155,6 +155,13 @@ func TestReleaseLevel(t *testing.T) {
 			version:  "1.0.0",
 			want:     "ga",
 		},
+		{
+			name:     "go beta for stable path with 0.x version",
+			sc:       &API{Path: "google/cloud/secretmanager/v1"},
+			language: config.LanguageGo,
+			version:  "0.1.0",
+			want:     "beta",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.ReleaseLevel(test.language, test.version)

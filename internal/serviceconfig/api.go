@@ -168,7 +168,7 @@ func (api *API) ReleaseLevel(language, version string) string {
 		if isAlpha {
 			return "alpha"
 		}
-		if isBeta {
+		if isBeta || level == "preview" {
 			return "beta"
 		}
 		if level == "stable" {
