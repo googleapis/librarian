@@ -208,8 +208,8 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 	}
 
 	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
-	if gotErr == nil {
-		t.Fatal("expected error, got nil")
+	if !errors.Is(gotErr, syscall.ENOTDIR) {
+		t.Errorf("Generate error = %v, want %v", gotErr, syscall.ENOTDIR)
 	}
 
 }
