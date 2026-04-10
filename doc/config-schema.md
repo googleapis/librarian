@@ -96,6 +96,7 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
+| `swift` | [SwiftDefault](#swiftdefault-configuration) (optional) | Contains Swift-specific default configuration. |
 
 ## Library Configuration
 
