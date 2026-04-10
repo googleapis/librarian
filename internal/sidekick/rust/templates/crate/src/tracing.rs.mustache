@@ -87,8 +87,11 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             pending.await
         }
         #[cfg(not(google_cloud_unstable_tracing))]
-        {{/Codec.DetailedTracingAttributes }}
         self.inner.{{Codec.Name}}(req, options).await
+        {{/Codec.DetailedTracingAttributes}}
+        {{^Codec.DetailedTracingAttributes}}
+        self.inner.{{Codec.Name}}(req, options).await
+        {{/Codec.DetailedTracingAttributes}}
     }
     {{/Codec.Methods}}
     {{#Codec.HasLROs}}
