@@ -336,6 +336,60 @@ func TestBuildConfig(t *testing.T) {
 	}
 }
 
+func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
+	gen := &GenerationConfig{
+		Libraries: []LibraryConfig{
+			{
+				LibraryName: "datastore",
+				GAPICs: []GAPICConfig{
+					{ProtoPath: "google/datastore/admin/v1"},
+				},
+			},
+		},
+	}
+	srcDir := t.TempDir()
+	buildFile := filepath.Join(srcDir, "google/datastore/admin/v1", "BUILD.bazel")
+	if err := os.MkdirAll(filepath.Dir(buildFile), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(buildFile, []byte(`java_gapic_library(name = "datastore_java_gapic")`), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	want := &config.Config{
+		Language: "java",
+		Repo:     "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{Dir: srcDir},
+		},
+		Libraries: []*config.Library{
+			{
+				Name: "datastore",
+				APIs: []*config.API{
+					{Path: "google/datastore/admin/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:                    "google/datastore/admin/v1",
+							ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
+							GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
+						},
+					},
+				},
+			},
+		},
+	}
+
+	got := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestBuildConfig_OwlBotKeep(t *testing.T) {
 	repoPath := "testdata/google-cloud-java"
 	gen := &GenerationConfig{
