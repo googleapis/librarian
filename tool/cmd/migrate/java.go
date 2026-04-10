@@ -241,6 +241,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				AdditionalProtos: info.AdditionalProtos,
 				NoSamples:        info.NoSamples,
 			}
+			applyJavaArtifactOverrides(name, javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		libs = append(libs, &config.Library{
@@ -332,6 +333,31 @@ func parseArtifactID(distributionName, name string) string {
 		artifactID = artifactID[i+1:]
 	}
 	return artifactID
+}
+
+// applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
+// they don't follow the standard pattern.
+func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
+	switch {
+	case name == "datastore" && api.Path == "google/datastore/admin/v1":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
+	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
+	case name == "spanner" && api.Path == "google/spanner/admin/instance/v1":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-instance-v1"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-instance-v1"
+	case name == "spanner" && api.Path == "google/spanner/executor/v1":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-executor-v1"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-executor-v1"
+	case name == "errorreporting" && api.Path == "google/devtools/clouderrorreporting/v1beta1":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-error-reporting-v1beta1"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-error-reporting-v1beta1"
+	case name == "storage" && api.Path == "google/storage/control/v2":
+		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
+		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+	}
 }
 
 func invertBoolPtr(p *bool) bool {

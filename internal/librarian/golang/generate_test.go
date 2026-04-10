@@ -67,6 +67,7 @@ func TestGenerate(t *testing.T) {
 				},
 			},
 		},
+
 		{
 			Name:          "secretmanager",
 			Version:       "0.1.0-preview.1",
@@ -179,6 +180,38 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
+// TestGenerate_MkdirAllError tests that Generate returns a wrapped error
+// with the expected context when os.MkdirAll fails because the path is a file.
+func TestGenerate_MkdirAllError(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tmpDir := t.TempDir()
+	filePath := filepath.Join(tmpDir, "file_blocking_dir")
+	if err := os.WriteFile(filePath, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		CopyrightYear: "2025",
+		Output:        filePath,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+
+	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	if !errors.Is(gotErr, syscall.ENOTDIR) {
+		t.Errorf("Generate error = %v, want %v", gotErr, syscall.ENOTDIR)
+	}
+
+}
 func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
@@ -255,6 +288,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 			want: []string{
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/README.md",
 			},
 			removed: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
@@ -355,6 +389,40 @@ func TestGenerateLibrary(t *testing.T) {
 			want: []string{
 				"firestore/apiv1/firestorepb/firestore.pb.go",
 				"firestore/apiv1/admin/adminpb/firestore_admin.pb.go",
+			},
+		},
+		{
+			name: "multi api",
+			library: &config.Library{
+				Name: "secretmanager-multi",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta2"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager-multi/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager-multi/apiv1beta2",
+							Path:          "google/cloud/secretmanager/v1beta2",
+						},
+					},
+				},
+			},
+			want: []string{
+				"secretmanager-multi/apiv1/secret_manager_client.go",
+				"secretmanager-multi/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager-multi/apiv1/version.go",
+				"secretmanager-multi/apiv1beta2/secret_manager_client.go",
+				"secretmanager-multi/apiv1beta2/secretmanagerpb/service.pb.go",
+				"secretmanager-multi/apiv1beta2/version.go",
+				"secretmanager-multi/internal/version.go",
+				"secretmanager-multi/README.md",
 			},
 		},
 		{
