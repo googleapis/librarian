@@ -106,11 +106,11 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.JavaAPI) APICoordinate {
 	protoGRPCGroupID := protoGroupID(lc.GAPIC.GroupID)
 	protoArtifactID := fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version)
-	if javaAPI != nil && javaAPI.ProtoArtifactIDOverride != "" {
+	if javaAPI.ProtoArtifactIDOverride != "" {
 		protoArtifactID = javaAPI.ProtoArtifactIDOverride
 	}
 	grpcArtifactID := fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version)
-	if javaAPI != nil && javaAPI.GRPCArtifactIDOverride != "" {
+	if javaAPI.GRPCArtifactIDOverride != "" {
 		grpcArtifactID = javaAPI.GRPCArtifactIDOverride
 	}
 

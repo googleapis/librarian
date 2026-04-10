@@ -485,7 +485,7 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 	for _, api := range lib.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
 
-		var javaAPI *config.JavaAPI
+		javaAPI := &config.JavaAPI{Path: api.Path}
 		if lib.Java != nil {
 			for _, ja := range lib.Java.JavaAPIs {
 				if ja.Path == api.Path {

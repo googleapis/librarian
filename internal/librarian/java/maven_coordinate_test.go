@@ -99,7 +99,7 @@ func TestProtoGroupID(t *testing.T) {
 	}
 }
 
-func TestDeriveLibCoords(t *testing.T) {
+func TestDeriveLibraryCoordinates(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -166,7 +166,7 @@ func TestDeriveLibCoords(t *testing.T) {
 	}
 }
 
-func TestDeriveAPICoords(t *testing.T) {
+func TestDeriveAPICoordinates(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		lc        LibraryCoordinate
@@ -185,6 +185,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				},
 			},
 			version: "v1",
+			javaAPI: &config.JavaAPI{},
 			wantProto: Coordinate{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "proto-google-cloud-secretmanager-v1",
@@ -206,6 +207,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				},
 			},
 			version: "v1",
+			javaAPI: &config.JavaAPI{},
 			wantProto: Coordinate{
 				GroupID:    "com.google.maps.api.grpc",
 				ArtifactID: "proto-google-maps-places-v1",
