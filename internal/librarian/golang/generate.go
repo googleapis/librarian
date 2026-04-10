@@ -40,6 +40,8 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
+var mkdirTempFunc = os.MkdirTemp
+
 // Generate generates a Go client library.
 func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
 	outDir, err := filepath.Abs(library.Output)
@@ -49,7 +51,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
-	tempDir, err := os.MkdirTemp("", "librarian-gen-")
+	tempDir, err := mkdirTempFunc(outDir, "librarian-gen-")
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
 			err = errors.Join(err, removeErr)

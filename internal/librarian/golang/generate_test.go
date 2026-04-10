@@ -179,6 +179,64 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
+func TestGenerate_TempDirLocation(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-go")
+	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
+	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:          "secretmanager",
+		Version:       "0.1.0",
+		CopyrightYear: "2025",
+		Output:        outDir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ClientPackage: "secretmanager",
+					ImportPath:    "secretmanager/apiv1",
+					Path:          "google/cloud/secretmanager/v1",
+				},
+			},
+		},
+	}
+
+	// Mock mkdirTempFunc
+	oldMkdirTemp := mkdirTempFunc
+	defer func() { mkdirTempFunc = oldMkdirTemp }()
+
+	var capturedDir string
+	mkdirTempFunc = func(dir, pattern string) (string, error) {
+		capturedDir = dir
+		return os.MkdirTemp(dir, pattern)
+	}
+
+	err = Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify that the temp dir was created inside outDir
+	absOutDir, err := filepath.Abs(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if capturedDir != absOutDir {
+		t.Errorf("capturedDir = %q, want %q", capturedDir, absOutDir)
+	}
+}
+
 func TestGenerateLibrary(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
