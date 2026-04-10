@@ -27,30 +27,46 @@ func TestAnnotateEnum(t *testing.T) {
 		name          string
 		enumName      string
 		documentation string
+		values        []*api.EnumValue
 		wantName      string
 		wantDocs      []string
+		wantDefault   string
 	}{
 		{
 			name:          "basic enum",
 			enumName:      "Color",
 			documentation: "A color enum.\nWith two lines.",
-			wantName:      "Color",
-			wantDocs:      []string{"A color enum.", "With two lines."},
+			values: []*api.EnumValue{
+				{Name: "COLOR_UNSPECIFIED", Number: 0},
+				{Name: "COLOR_RED", Number: 1},
+			},
+			wantName:    "Color",
+			wantDocs:    []string{"A color enum.", "With two lines."},
+			wantDefault: "unspecified",
 		},
 		{
 			name:          "escaped name",
 			enumName:      "Protocol",
 			documentation: "An enum named Protocol.",
-			wantName:      "Protocol_",
-			wantDocs:      []string{"An enum named Protocol."},
+			values: []*api.EnumValue{
+				{Name: "PROTOCOL_UNSPECIFIED", Number: 0},
+			},
+			wantName:    "Protocol_",
+			wantDocs:    []string{"An enum named Protocol."},
+			wantDefault: "unspecified",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			enum := &api.Enum{
-				Name:          test.enumName,
-				Documentation: test.documentation,
-				ID:            ".test." + test.enumName,
-				Package:       "test",
+				Name:               test.enumName,
+				Documentation:      test.documentation,
+				ID:                 ".test." + test.enumName,
+				Package:            "test",
+				Values:             test.values,
+				UniqueNumberValues: test.values,
+			}
+			for _, ev := range enum.Values {
+				ev.Parent = enum
 			}
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 			codec := newTestCodec(t, model, map[string]string{})
@@ -58,8 +74,9 @@ func TestAnnotateEnum(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &enumAnnotations{
-				Name:     test.wantName,
-				DocLines: test.wantDocs,
+				Name:            test.wantName,
+				DocLines:        test.wantDocs,
+				DefaultCaseName: test.wantDefault,
 			}
 
 			if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {

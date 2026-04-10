@@ -32,6 +32,10 @@ public enum {{Codec.Name}}: Int, Codable, Equatable {
     case {{Codec.CaseName}} = {{Number}}
     {{/UniqueNumberValues}}
 
+    public init() {
+        self = .{{Codec.DefaultCaseName}}
+    }
+
     public var stringValue: String {
         switch self {
         {{#UniqueNumberValues}}

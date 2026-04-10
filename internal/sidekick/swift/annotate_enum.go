@@ -19,17 +19,26 @@ import (
 )
 
 type enumAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
+	CopyrightYear   string
+	BoilerPlate     []string
+	Name            string
+	DocLines        []string
+	DefaultCaseName string
 }
 
 func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	existing := map[int32]*enumValueAnnotations{}
+	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
 		codec.annotateUniqueEnumValue(ev)
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+		if ev.Number == 0 {
+			defaultCaseName = ev.Codec.(*enumValueAnnotations).CaseName
+		}
+	}
+	// Fallback to first case if no 0 value found (should not happen in proto3)
+	if defaultCaseName == "" && len(enum.UniqueNumberValues) > 0 {
+		defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
 	}
 	for _, ev := range enum.Values {
 		if err := codec.annotateEnumValue(ev, existing); err != nil {
@@ -40,10 +49,11 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 
 	docLines := codec.formatDocumentation(enum.Documentation)
 	annotations := &enumAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          pascalCase(enum.Name),
-		DocLines:      docLines,
+		CopyrightYear:   model.CopyrightYear,
+		BoilerPlate:     model.BoilerPlate,
+		Name:            pascalCase(enum.Name),
+		DocLines:        docLines,
+		DefaultCaseName: defaultCaseName,
 	}
 
 	enum.Codec = annotations
