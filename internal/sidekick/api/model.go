@@ -17,6 +17,8 @@ package api
 
 import (
 	"fmt"
+	"iter"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -225,6 +227,111 @@ func (api *API) HasMessages() bool {
 // *if* the name is unique.
 func (a *API) ModelCodec() any {
 	return a.Codec
+}
+
+// Service returns a service that is associated with the API.
+func (a *API) Service(id string) *Service {
+	return a.State.ServiceByID[id]
+}
+
+// AllServices returns an iterator over the services in the API.
+func (a *API) AllServices() iter.Seq[*Service] {
+	return maps.Values(a.State.ServiceByID)
+}
+
+// AddService adds a service to the API.
+func (a *API) AddService(s *Service) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.ServiceByID == nil {
+		a.State.ServiceByID = make(map[string]*Service)
+	}
+	a.State.ServiceByID[s.ID] = s
+}
+
+// Method returns a method that is associated with the API.
+func (a *API) Method(id string) *Method {
+	return a.State.MethodByID[id]
+}
+
+// AllMethods returns an iterator over the methods in the API.
+func (a *API) AllMethods() iter.Seq[*Method] {
+	return maps.Values(a.State.MethodByID)
+}
+
+// AddMethod adds a method to the API.
+func (a *API) AddMethod(m *Method) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.MethodByID == nil {
+		a.State.MethodByID = make(map[string]*Method)
+	}
+	a.State.MethodByID[m.ID] = m
+}
+
+// Message returns a message that is associated with the API.
+func (a *API) Message(id string) *Message {
+	return a.State.MessageByID[id]
+}
+
+// AllMessages returns an iterator over the messages in the API.
+func (a *API) AllMessages() iter.Seq[*Message] {
+	return maps.Values(a.State.MessageByID)
+}
+
+// AddMessage adds a message to the API.
+func (a *API) AddMessage(m *Message) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.MessageByID == nil {
+		a.State.MessageByID = make(map[string]*Message)
+	}
+	a.State.MessageByID[m.ID] = m
+}
+
+// Enum returns a message that is associated with the API.
+func (a *API) Enum(id string) *Enum {
+	return a.State.EnumByID[id]
+}
+
+// AllEnums returns an iterator over the enums in the API.
+func (a *API) AllEnums() iter.Seq[*Enum] {
+	return maps.Values(a.State.EnumByID)
+}
+
+// AddEnum adds an enum to the API.
+func (a *API) AddEnum(e *Enum) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.EnumByID == nil {
+		a.State.EnumByID = make(map[string]*Enum)
+	}
+	a.State.EnumByID[e.ID] = e
+}
+
+// Resource returns a resource that is associated with the API.
+func (a *API) Resource(typ string) *Resource {
+	return a.State.ResourceByType[typ]
+}
+
+// AllResources returns an iterator over the resources in the API.
+func (a *API) AllResources() iter.Seq[*Resource] {
+	return maps.Values(a.State.ResourceByType)
+}
+
+// AddResource adds a resource to the API.
+func (a *API) AddResource(r *Resource) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.ResourceByType == nil {
+		a.State.ResourceByType = make(map[string]*Resource)
+	}
+	a.State.ResourceByType[r.Type] = r
 }
 
 // APIState contains helpful information that can be used when generating
