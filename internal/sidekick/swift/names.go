@@ -142,6 +142,9 @@ var keywords = map[string]bool{
 	"willSet":       true,
 }
 
+// For enum value names.
+var trimNumbers = regexp.MustCompile(`_([0-9])`)
+
 // escapeKeyword escapes a string if it is a keyword.
 func escapeKeyword(s string) string {
 	// In Swift we can use backtick escaping for most keywords except `Type`, `Protocol`, and `self`:
@@ -189,7 +192,6 @@ func enumValueCaseName(e *api.EnumValue) string {
 	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
-	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
 	trimmed = strings.TrimPrefix(e.Name, prefix)
 	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
