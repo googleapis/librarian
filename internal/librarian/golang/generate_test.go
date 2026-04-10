@@ -179,6 +179,8 @@ func TestGenerate_Error(t *testing.T) {
 	}
 }
 
+// TestGenerate_TempDirLocation verifies that the temporary directory is created
+// inside the output directory.
 func TestGenerate_TempDirLocation(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-go")
@@ -232,8 +234,8 @@ func TestGenerate_TempDirLocation(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if capturedDir != absOutDir {
-		t.Errorf("capturedDir = %q, want %q", capturedDir, absOutDir)
+	if diff := cmp.Diff(absOutDir, capturedDir); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

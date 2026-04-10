@@ -40,6 +40,7 @@ var (
 	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 )
 
+// mkdirTempFunc allows overriding os.MkdirTemp for testing.
 var mkdirTempFunc = os.MkdirTemp
 
 // Generate generates a Go client library.
