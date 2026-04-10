@@ -573,13 +573,16 @@ type JavaAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 
-	// ProtoArtifactIDOverride is to override the artifact ID for the proto module.
+	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
+	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// GRPCArtifactIDOverride is to override the artifact ID for the gRPC module.
+	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
+	// The artifact ID is also used as the name for the module's directory.
 	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
 
-	// GAPICArtifactIDOverride is to override the artifact ID for the GAPIC module.
+	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
+	// The artifact ID is also used as the name for the module's directory.
 	GAPICArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
 }
 
