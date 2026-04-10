@@ -273,17 +273,28 @@ This document describes the schema for the librarian.yaml.
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 
+## NodejsAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `path` | string | Is the source path. |
+| `skip_default_additional_protos` | bool | Determines whether to exclude the default additional protos (e.g. common_resources.proto). |
+
 ## NodejsPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
+| `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+| `skip_default_additional_protos` | bool | Determines whether to exclude the default additional protos (e.g. common_resources.proto). This can be overridden at the API level. |
 
 ## PythonDefault Configuration
 
