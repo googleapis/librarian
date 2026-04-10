@@ -241,6 +241,27 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				AdditionalProtos: info.AdditionalProtos,
 				NoSamples:        info.NoSamples,
 			}
+			// Hardcoded overrides for specific cases where artifact IDs don't follow the pattern
+			switch {
+			case name == "datastore" && g.ProtoPath == "google/datastore/admin/v1":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
+			case name == "spanner" && g.ProtoPath == "google/spanner/admin/database/v1":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
+			case name == "spanner" && g.ProtoPath == "google/spanner/admin/instance/v1":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-instance-v1"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-instance-v1"
+			case name == "spanner" && g.ProtoPath == "google/spanner/executor/v1":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-spanner-executor-v1"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-executor-v1"
+			case name == "errorreporting" && g.ProtoPath == "google/devtools/clouderrorreporting/v1beta1":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-error-reporting-v1beta1"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-error-reporting-v1beta1"
+			case name == "storage" && g.ProtoPath == "google/storage/control/v2":
+				javaAPI.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
+				javaAPI.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		libs = append(libs, &config.Library{
