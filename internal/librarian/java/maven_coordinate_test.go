@@ -99,7 +99,7 @@ func TestProtoGroupID(t *testing.T) {
 	}
 }
 
-func TestDeriveLibCoords(t *testing.T) {
+func TestDeriveLibraryCoordinates(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
@@ -166,11 +166,12 @@ func TestDeriveLibCoords(t *testing.T) {
 	}
 }
 
-func TestDeriveAPICoords(t *testing.T) {
+func TestDeriveAPICoordinates(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		lc        LibraryCoordinate
 		version   string
+		javaAPI   *config.JavaAPI
 		wantProto Coordinate
 		wantGRPC  Coordinate
 	}{
@@ -184,6 +185,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				},
 			},
 			version: "v1",
+			javaAPI: &config.JavaAPI{},
 			wantProto: Coordinate{
 				GroupID:    "com.google.api.grpc",
 				ArtifactID: "proto-google-cloud-secretmanager-v1",
@@ -205,6 +207,7 @@ func TestDeriveAPICoords(t *testing.T) {
 				},
 			},
 			version: "v1",
+			javaAPI: &config.JavaAPI{},
 			wantProto: Coordinate{
 				GroupID:    "com.google.maps.api.grpc",
 				ArtifactID: "proto-google-maps-places-v1",
@@ -216,9 +219,34 @@ func TestDeriveAPICoords(t *testing.T) {
 				Version:    "1.2.3",
 			},
 		},
+		{
+			name: "with proto and grpc artifact overrides",
+			lc: LibraryCoordinate{
+				GAPIC: Coordinate{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-datastore",
+					Version:    "1.2.3",
+				},
+			},
+			version: "v1",
+			javaAPI: &config.JavaAPI{
+				ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
+				GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
+			},
+			wantProto: Coordinate{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "proto-google-cloud-datastore-admin-v1",
+				Version:    "1.2.3",
+			},
+			wantGRPC: Coordinate{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "grpc-google-cloud-datastore-admin-v1",
+				Version:    "1.2.3",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DeriveAPICoordinates(test.lc, test.version)
+			got := DeriveAPICoordinates(test.lc, test.version, test.javaAPI)
 			if diff := cmp.Diff(test.wantProto, got.Proto, cmp.AllowUnexported(Coordinate{})); diff != "" {
 				t.Errorf("proto mismatch (-want +got):\n%s", diff)
 			}

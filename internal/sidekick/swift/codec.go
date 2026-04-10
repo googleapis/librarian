@@ -39,7 +39,8 @@ type codec struct {
 	// gapic-showcase, or a different root.
 	RootName     string
 	Model        *api.API
-	Dependencies []config.SwiftDependency
+	Dependencies []*Dependency
+	ApiPackages  map[string]*Dependency
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -65,9 +66,16 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		MonorepoRoot:   rel,
 		RootName:       "googleapis",
 		Model:          model,
+		ApiPackages:    map[string]*Dependency{},
 	}
 	if swiftCfg != nil {
-		result.Dependencies = swiftCfg.Dependencies
+		for _, d := range swiftCfg.Dependencies {
+			dependency := Dependency{d}
+			result.Dependencies = append(result.Dependencies, &dependency)
+			if d.ApiPackage != "" {
+				result.ApiPackages[d.ApiPackage] = &dependency
+			}
+		}
 	}
 	for key, definition := range cfg.Codec {
 		switch key {

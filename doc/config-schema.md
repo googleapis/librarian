@@ -243,6 +243,8 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `no_samples` | bool | Determines whether to generate samples for the API. |
 | `path` | string | Is the source path. |
+| `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
+| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 
 ## JavaModule Configuration
 
@@ -437,3 +439,4 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
+| `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |

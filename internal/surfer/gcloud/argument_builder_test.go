@@ -59,6 +59,24 @@ func TestNewArgument(t *testing.T) {
 			},
 		},
 		{
+			name: "String Field with Documentation",
+			field: func() *api.Field {
+				f := api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL)
+				f.Documentation = "My proto comment"
+				return f
+			}(),
+			apiField: "description",
+			method:   api.NewTestMethod("CreateInstance"),
+			want: Argument{
+				ArgName:  "description",
+				APIField: "description",
+				Type:     "str",
+				HelpText: "My proto comment",
+				Required: false,
+				Repeated: false,
+			},
+		},
+		{
 			name:     "Resource Reference Field",
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
@@ -78,6 +96,32 @@ func TestNewArgument(t *testing.T) {
 					DisableAutoCompleters: true,
 				},
 				ResourceMethodParams: map[string]string{"network": "{__relative_name__}"},
+			},
+		},
+		{
+			name:     "Boolean Field in Create Command",
+			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			apiField: "validateOnly",
+			method:   api.NewTestMethod("CreateInstance").WithVerb("POST"),
+			want: Argument{
+				ArgName:  "validate-only",
+				APIField: "validateOnly",
+				Type:     "bool",
+				Action:   "store_true",
+				HelpText: "Value for the `validate-only` field.",
+			},
+		},
+		{
+			name:     "Boolean Field in Update Command",
+			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			apiField: "validateOnly",
+			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
+			want: Argument{
+				ArgName:  "validate-only",
+				APIField: "validateOnly",
+				Type:     "bool",
+				Action:   "store_true_false",
+				HelpText: "Value for the `validate-only` field.",
 			},
 		},
 		{
@@ -303,6 +347,54 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			},
 		},
 		{
+			name:  "List Instances (DisableAutoCompleters)",
+			field: api.NewTestField("name").WithType(api.STRING_TYPE),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
+					api.NewTestMessage("ListRequest").WithFields(
+						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
+					),
+				)
+				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
+				return m
+			}(),
+			resourceDefs: []*api.Resource{
+				{
+					Type:     "test.googleapis.com/Thing",
+					Singular: "thing",
+					Plural:   "things",
+					Patterns: []api.ResourcePattern{
+						{
+							*api.NewPathSegment().WithLiteral("projects"),
+							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+							*api.NewPathSegment().WithLiteral("things"),
+							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+						},
+					},
+				},
+			},
+			want: Argument{
+				HelpText:          "",
+				IsPositional:      false,
+				IsPrimaryResource: true,
+				Required:          true,
+				ResourceSpec: &ResourceSpec{
+					Name:                  "project",
+					PluralName:            "projects",
+					Collection:            "test.projects",
+					DisableAutoCompleters: true,
+					Attributes: []Attribute{
+						{
+							ParameterName: "projectsId",
+							AttributeName: "project",
+							Help:          "The project id of the {resource} resource.",
+							Property:      "core/project",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "List Instances (Not Positional, Parent)",
 			field: func() *api.Field {
 				f := api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing")
@@ -340,9 +432,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 				IsPrimaryResource: true,
 				Required:          true,
 				ResourceSpec: &ResourceSpec{
-					Name:       "project",
-					PluralName: "projects",
-					Collection: "test.projects",
+					Name:                  "project",
+					PluralName:            "projects",
+					Collection:            "test.projects",
+					DisableAutoCompleters: true,
 					Attributes: []Attribute{
 						{
 							ParameterName: "projectsId",

@@ -62,8 +62,118 @@ func TestAnnotateService(t *testing.T) {
 				DocLines: test.wantDocs,
 			}
 
-			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "BoilerPlate", "CopyrightYear", "PackageName", "QuickstartMethod")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateService_SkipNoBindings(t *testing.T) {
+	service := &api.Service{
+		Name: "TestService",
+		Methods: []*api.Method{
+			{
+				Name: "ValidMethod",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+			{
+				Name: "NoBindingMethod",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{},
+				},
+			},
+			{
+				Name:     "NilPathInfoMethod",
+				PathInfo: nil,
+			},
+		},
+	}
+
+	model := api.NewTestAPI(nil, nil, []*api.Service{service})
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	serviceCodec := service.Codec.(*serviceAnnotations)
+	var gotNames []string
+	for _, m := range serviceCodec.RestMethods {
+		gotNames = append(gotNames, m.Name)
+	}
+	wantNames := []string{"ValidMethod"}
+	if diff := cmp.Diff(wantNames, gotNames); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateService_Quickstart(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		quickstartMethod *api.Method
+		wantQuickstart   bool
+	}{
+		{
+			name:             "nil quickstart",
+			quickstartMethod: nil,
+			wantQuickstart:   false,
+		},
+		{
+			name: "non-generated quickstart (nil PathInfo)",
+			quickstartMethod: &api.Method{
+				Name:     "Quickstart",
+				PathInfo: nil,
+			},
+			wantQuickstart: false,
+		},
+		{
+			name: "non-generated quickstart (empty bindings)",
+			quickstartMethod: &api.Method{
+				Name: "Quickstart",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{},
+				},
+			},
+			wantQuickstart: false,
+		},
+		{
+			name: "generated quickstart",
+			quickstartMethod: &api.Method{
+				Name: "Quickstart",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+			wantQuickstart: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			service := &api.Service{
+				Name:             "TestService",
+				QuickstartMethod: test.quickstartMethod,
+			}
+
+			model := api.NewTestAPI(nil, nil, []*api.Service{service})
+			codec := newTestCodec(t, model, nil)
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			annotations, ok := service.Codec.(*serviceAnnotations)
+			if !ok {
+				t.Fatal("service.Codec is not *serviceAnnotations")
+			}
+
+			if test.wantQuickstart {
+				if annotations.QuickstartMethod == nil {
+					t.Error("expected QuickstartMethod to be set, got nil")
+				}
+			} else {
+				if annotations.QuickstartMethod != nil {
+					t.Errorf("expected QuickstartMethod to be nil, got %v", annotations.QuickstartMethod)
+				}
 			}
 		})
 	}

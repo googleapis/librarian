@@ -484,7 +484,9 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 	}
 	for _, api := range lib.APIs {
 		version := serviceconfig.ExtractVersion(api.Path)
-		apiCoord := java.DeriveAPICoordinates(lc, version)
+		// Find Java-specific API config to handle artifact ID overrides.
+		javaAPI := java.ResolveJavaAPI(lib, api)
+		apiCoord := java.DeriveAPICoordinates(lc, version, javaAPI)
 		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
 		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
 	}

@@ -572,6 +572,14 @@ type JavaAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+
+	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
+	// The artifact ID is also used as the name for the module's directory.
+	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
+
+	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
+	// The artifact ID is also used as the name for the module's directory.
+	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

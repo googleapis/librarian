@@ -79,6 +79,13 @@ func (b *argumentBuilder) build() (*Argument, error) {
 		arg.Choices = b.choices()
 	} else {
 		arg.Type = provider.GetGcloudType(b.field.Typez)
+		if b.field.Typez == api.BOOL_TYPE {
+			if provider.IsUpdate(b.method) {
+				arg.Action = "store_true_false"
+			} else {
+				arg.Action = "store_true"
+			}
+		}
 	}
 
 	return arg, nil
@@ -112,11 +119,7 @@ func (b *argumentBuilder) clearable() bool {
 }
 
 func (b *argumentBuilder) helpText() string {
-	if rule := provider.FindFieldHelpTextRule(b.overrides, b.field.ID); rule != nil {
-		return rule.HelpText.Brief
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/3033): improve default help text inference
-	return fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(b.field.Name))
+	return provider.GetFieldHelpText(b.overrides, b.field)
 }
 
 func (b *argumentBuilder) choices() []Choice {
@@ -176,7 +179,7 @@ func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 			Name:                  resourceName,
 			PluralName:            provider.GetPluralFromSegments(segments),
 			Collection:            fmt.Sprintf("%s.%s", shortServiceName, collectionPath),
-			DisableAutoCompleters: false,
+			DisableAutoCompleters: provider.IsList(b.method),
 			Attributes:            newAttributesFromSegments(segments),
 		},
 	}

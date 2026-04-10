@@ -305,7 +305,7 @@ func TestResolveJavaAPI(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := resolveJavaAPI(test.library, test.api)
+			got := ResolveJavaAPI(test.library, test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -477,8 +477,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		{
 			name: "missing monorepo version",
 			library: &config.Library{
-				Name:   "secretmanager",
-				Output: t.TempDir(),
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				Output:  t.TempDir(),
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},

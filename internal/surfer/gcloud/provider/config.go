@@ -225,7 +225,7 @@ type ResourcePattern struct {
 
 // FindHelpTextRule finds the help text rule from the config that applies to the given method ID.
 func FindHelpTextRule(c *Config, methodID string) *HelpTextRule {
-	if c.APIs == nil {
+	if c == nil || c.APIs == nil {
 		return nil
 	}
 	for _, api := range c.APIs {
@@ -243,7 +243,7 @@ func FindHelpTextRule(c *Config, methodID string) *HelpTextRule {
 
 // FindFieldHelpTextRule finds the help text rule from the config that applies to the given field ID.
 func FindFieldHelpTextRule(c *Config, fieldID string) *HelpTextRule {
-	if c.APIs == nil {
+	if c == nil || c.APIs == nil {
 		return nil
 	}
 	for _, api := range c.APIs {

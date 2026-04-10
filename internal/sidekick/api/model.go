@@ -24,29 +24,28 @@ import (
 // Typez represent different field types that may be found in messages.
 type Typez int
 
+// These are the different field types as defined in
+// descriptorpb.FieldDescriptorProto_Type.
 const (
-	// These are the different field types as defined in
-	// descriptorpb.FieldDescriptorProto_Type.
-
-	UNDEFINED_TYPE Typez = iota // 0
-	DOUBLE_TYPE                 // 1
-	FLOAT_TYPE                  // 2
-	INT64_TYPE                  // 3
-	UINT64_TYPE                 // 4
-	INT32_TYPE                  // 5
-	FIXED64_TYPE                // 6
-	FIXED32_TYPE                // 7
-	BOOL_TYPE                   // 8
-	STRING_TYPE                 // 9
-	GROUP_TYPE                  // 10
-	MESSAGE_TYPE                // 11
-	BYTES_TYPE                  // 12
-	UINT32_TYPE                 // 13
-	ENUM_TYPE                   // 14
-	SFIXED32_TYPE               // 15
-	SFIXED64_TYPE               // 16
-	SINT32_TYPE                 // 17
-	SINT64_TYPE                 // 18
+	UNDEFINED_TYPE Typez = 0
+	DOUBLE_TYPE    Typez = 1
+	FLOAT_TYPE     Typez = 2
+	INT64_TYPE     Typez = 3
+	UINT64_TYPE    Typez = 4
+	INT32_TYPE     Typez = 5
+	FIXED64_TYPE   Typez = 6
+	FIXED32_TYPE   Typez = 7
+	BOOL_TYPE      Typez = 8
+	STRING_TYPE    Typez = 9
+	GROUP_TYPE     Typez = 10
+	MESSAGE_TYPE   Typez = 11
+	BYTES_TYPE     Typez = 12
+	UINT32_TYPE    Typez = 13
+	ENUM_TYPE      Typez = 14
+	SFIXED32_TYPE  Typez = 15
+	SFIXED64_TYPE  Typez = 16
+	SINT32_TYPE    Typez = 17
+	SINT64_TYPE    Typez = 18
 )
 
 var _typez_name = [...]string{
