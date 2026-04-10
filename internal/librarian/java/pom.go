@@ -254,7 +254,8 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			return nil, fmt.Errorf("failed to extract version from API path %q", api.Path)
 		}
 
-		apiCoord := DeriveAPICoordinates(libCoord, version)
+		javaAPI := resolveJavaAPI(library, api)
+		apiCoord := DeriveAPICoordinates(libCoord, version, javaAPI)
 
 		transport := transports[api.Path]
 		data := gRPCProtoPOMData{
