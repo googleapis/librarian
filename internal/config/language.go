@@ -580,10 +580,6 @@ type JavaAPI struct {
 	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
 	// The artifact ID is also used as the name for the module's directory.
 	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
-
-	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
-	// The artifact ID is also used as the name for the module's directory.
-	GAPICArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

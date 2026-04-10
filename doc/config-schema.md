@@ -245,7 +245,6 @@ This document describes the schema for the librarian.yaml.
 | `path` | string | Is the source path. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
-| `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. The artifact ID is also used as the name for the module's directory. |
 
 ## JavaModule Configuration
 
