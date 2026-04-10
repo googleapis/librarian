@@ -84,19 +84,31 @@ type javaModule struct {
 	template     string
 }
 
-// syncPOMs generates missing proto-*, grpc-*, and client POMs, and surgically updates
-// existing client library POMs to include new dependencies.
+// syncPOMs generates missing POMs and surgically updates existing client, BOM,
+// and parent POMs when new proto or gRPC modules are added.
 func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
 	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
 		return err
 	}
+
+	var anyMissingProtoGRPC bool
+	for _, m := range modules {
+		if m.isMissing && (m.template == protoPOMTemplateName || m.template == gRPCPOMTemplateName) {
+			anyMissingProtoGRPC = true
+			break
+		}
+	}
+
 	for _, m := range modules {
 		pomPath := filepath.Join(m.dir, "pom.xml")
 		if m.isMissing {
 			if err := writePOM(pomPath, m.template, m.templateData); err != nil {
 				return fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
 			}
+			continue
+		}
+		if !anyMissingProtoGRPC {
 			continue
 		}
 		switch m.template {
@@ -117,7 +129,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 	return nil
 }
 
-// updateClientPOM surgicially updates the client POM using template markers
+// updateClientPOM surgically updates the client POM using template markers
 // to inject missing proto- and grpc- dependencies while preserving existing
 // formatting and metadata comments.
 func updateClientPOM(pomPath string, data clientPOMData) error {

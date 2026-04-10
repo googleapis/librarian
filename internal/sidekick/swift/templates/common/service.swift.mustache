@@ -21,12 +21,25 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
+import GoogleCloudAuth
+import GoogleCloudGax
 
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
 public class {{Codec.Name}} {
-  {{#Methods}}
+  let inner: GoogleCloudGax.HTTPClient
+
+  /// Creates a new `{{Codec.Name}}` instance.
+  public init(
+    endpoint: String? = nil,
+    credentials: GoogleCloudAuth.Credentials? = nil,
+    session: URLSession? = nil,
+  ) throws {
+    let endpoint = endpoint ?? "https://{{DefaultHost}}"
+    self.inner = try HTTPClient(endpoint: endpoint, credentials: credentials, session: session)
+  }
+  {{#Codec.RestMethods}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
@@ -35,7 +48,32 @@ public class {{Codec.Name}} {
     {{! TODO(#5138) - deal with `google.proto.Empty` and other complex return types }}
     -> {{OutputType.Codec.Name}}
   {
-    fatalError("Unimplemented")
+    let query = [
+      URLQueryItem(name: "$alt", value: "json")
+    ]
+    var req = try await self.inner.Request(path: "{{{Codec.Path}}}", query: query)
+    req.httpMethod = "{{Codec.HTTPMethod}}"
+    {{#Codec.HasBody}}
+    {{#Codec.IsBodyWildcard}}
+    req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+    req.httpBody = try JSONEncoder().encode(request)
+    {{/Codec.IsBodyWildcard}}
+    {{^Codec.IsBodyWildcard}}
+    if let body = request.{{Codec.BodyField}} {
+      req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+      req.httpBody = try JSONEncoder().encode(body)
+    }
+    {{/Codec.IsBodyWildcard}}
+    {{/Codec.HasBody}}
+    let (data, response) = try await self.inner.data(for: req)
+    if !(200..<300).contains(response.statusCode) {
+      throw RequestError.http(HTTPDetails(
+        http_status_code: response.statusCode,
+        headers: [:],
+        payload: data,
+      ))
+    }
+    return try JSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
   }
-  {{/Methods}}
+  {{/Codec.RestMethods}}
 }

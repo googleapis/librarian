@@ -19,14 +19,16 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/iancoleman/strcase"
 )
 
-// CleanDocumentation removes common prefixes like "Required. " and "Identifier. " from a help text string in any order.
+// CleanDocumentation removes common prefixes like "Required. ", "Identifier. ", etc from a help text string in any order.
 func CleanDocumentation(s string) string {
 	for {
 		original := s
 		s = strings.TrimPrefix(s, "Required. ")
 		s = strings.TrimPrefix(s, "Identifier. ")
+		s = strings.TrimPrefix(s, "Optional. ")
 		if s == original {
 			break
 		}
@@ -70,4 +72,15 @@ func IsSafeName(name string) bool {
 		}
 	}
 	return true
+}
+
+// GetFieldHelpText returns the help text for a field, using overrides or documentation if available.
+func GetFieldHelpText(overrides *Config, field *api.Field) string {
+	if rule := FindFieldHelpTextRule(overrides, field.ID); rule != nil {
+		return rule.HelpText.Brief
+	}
+	if field.Documentation != "" {
+		return CleanDocumentation(strings.TrimSpace(field.Documentation))
+	}
+	return fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(field.Name))
 }
