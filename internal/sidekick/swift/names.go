@@ -16,9 +16,11 @@ package swift
 
 import (
 	"fmt"
+	"regexp"
 	"strings"
 	"unicode"
 
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/iancoleman/strcase"
 )
 
@@ -178,4 +180,20 @@ func pascalCase(s string) string {
 		return escapeKeyword(s)
 	}
 	return escapeKeyword(strcase.ToCamel(s))
+}
+
+// enumValueCaseName returns the name of the Swift enumeration case for a given enumeration value.
+func enumValueCaseName(e *api.EnumValue) string {
+	prefix := strcase.ToScreamingSnake(e.Parent.Name) + "_"
+	trimmed := strings.TrimPrefix(e.Name, prefix)
+	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+		return camelCase(trimmed)
+	}
+	trimNumbers := regexp.MustCompile(`_([0-9])`)
+	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
+	trimmed = strings.TrimPrefix(e.Name, prefix)
+	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+		return camelCase(trimmed)
+	}
+	return camelCase(e.Name)
 }
