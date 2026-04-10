@@ -68,7 +68,6 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 
-
 		{
 			Name:          "secretmanager",
 			Version:       "0.1.0-preview.1",
