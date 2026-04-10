@@ -23,30 +23,29 @@ type enumAnnotations struct {
 	BoilerPlate   []string
 	Name          string
 	DocLines      []string
-	Values        []*enumValueAnnotations
 }
 
-func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) {
-	docLines := codec.formatDocumentation(enum.Documentation)
-
-	seen := map[string]*api.EnumValue{}
-	var unique []*enumValueAnnotations
+func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+	existing := map[int32]*enumValueAnnotations{}
 	for _, ev := range enum.UniqueNumberValues {
-		codec.annotateEnumValue(ev)
-		ann := ev.Codec.(*enumValueAnnotations)
-		if _, ok := seen[ann.Name]; !ok {
-			unique = append(unique, ann)
-			seen[ann.Name] = ev
+		codec.annotateUniqueEnumValue(ev)
+		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+	}
+	for _, ev := range enum.Values {
+		if err := codec.annotateEnumValue(ev, existing); err != nil {
+			return err
 		}
+		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 	}
 
+	docLines := codec.formatDocumentation(enum.Documentation)
 	annotations := &enumAnnotations{
 		CopyrightYear: model.CopyrightYear,
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(enum.Name),
 		DocLines:      docLines,
-		Values:        unique,
 	}
 
 	enum.Codec = annotations
+	return nil
 }

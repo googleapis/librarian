@@ -24,10 +24,14 @@ import (
 func TestAnnotateEnumValue(t *testing.T) {
 	enum := &api.Enum{Name: "Color"}
 	ev := &api.EnumValue{Name: "COLOR_RED", Number: 1, Documentation: "Red color", Parent: enum}
+	enum.Values = []*api.EnumValue{ev}
+	enum.UniqueNumberValues = enum.Values
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	codec.annotateEnumValue(ev)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
 
 	ann, ok := ev.Codec.(*enumValueAnnotations)
 	if !ok {
@@ -35,7 +39,7 @@ func TestAnnotateEnumValue(t *testing.T) {
 	}
 
 	want := &enumValueAnnotations{
-		Name:        "red",
+		CaseName:    "red",
 		Number:      1,
 		StringValue: "COLOR_RED",
 		DocLines:    []string{"Red color"},
@@ -46,43 +50,43 @@ func TestAnnotateEnumValue(t *testing.T) {
 }
 
 func TestAnnotateEnum_Duplicates(t *testing.T) {
-	enum := &api.Enum{
-		Name: "Color",
-	}
+	enum := &api.Enum{Name: "Color"}
 	enum.Values = []*api.EnumValue{
 		{Name: "COLOR_RED", Number: 1, Parent: enum},
-		{Name: "RED", Number: 2, Parent: enum},
+		{Name: "COLOR_GREEN", Number: 2, Parent: enum},
 	}
 	enum.UniqueNumberValues = enum.Values
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 
-	ann, ok := enum.Codec.(*enumAnnotations)
-	if !ok {
-		t.Fatal("expected enumAnnotations")
+	var got []*enumValueAnnotations
+	for _, ev := range enum.Values {
+		got = append(got, ev.Codec.(*enumValueAnnotations))
 	}
 
 	want := []*enumValueAnnotations{
 		{
-			Name:        "red",
+			CaseName:    "red",
 			Number:      1,
 			StringValue: "COLOR_RED",
 		},
+		{
+			CaseName:    "green",
+			Number:      2,
+			StringValue: "COLOR_GREEN",
+		},
 	}
-	if diff := cmp.Diff(want, ann.Values); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestAnnotateEnum_Aliases(t *testing.T) {
-	enum := &api.Enum{
-		Name: "Color",
-	}
+	enum := &api.Enum{Name: "Color"}
 	enum.Values = []*api.EnumValue{
 		{Name: "RED_NEW", Number: 1, Parent: enum},
 		{Name: "RED_OLD", Number: 1, Parent: enum}, // Alias with same number
@@ -91,24 +95,28 @@ func TestAnnotateEnum_Aliases(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
 
-	ann, ok := enum.Codec.(*enumAnnotations)
-	if !ok {
-		t.Fatal("expected enumAnnotations")
+	var got []*enumValueAnnotations
+	for _, ev := range enum.Values {
+		got = append(got, ev.Codec.(*enumValueAnnotations))
 	}
 
 	want := []*enumValueAnnotations{
 		{
-			Name:        "redNew",
+			CaseName:    "redNew",
 			Number:      1,
 			StringValue: "RED_NEW",
 		},
+		{
+			CaseName:    "redNew",
+			Number:      1,
+			StringValue: "RED_OLD",
+		},
 	}
-	if diff := cmp.Diff(want, ann.Values); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in Values (-want +got):\n%s", diff)
 	}
 }

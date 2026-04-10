@@ -25,26 +25,26 @@ import Foundation
 /// {{{.}}}
 {{/Codec.DocLines}}
 public enum {{Codec.Name}}: Int, Codable, Equatable {
-    {{#Codec.Values}}
+    {{#UniqueNumberValues}}
     {{#DocLines}}
     /// {{{.}}}
     {{/DocLines}}
-    case {{Name}} = {{Number}}
-    {{/Codec.Values}}
+    case {{Codec.CaseName}} = {{Number}}
+    {{/UniqueNumberValues}}
 
     public var stringValue: String {
         switch self {
-        {{#Codec.Values}}
-        case .{{Name}}: return "{{StringValue}}"
-        {{/Codec.Values}}
+        {{#UniqueNumberValues}}
+        case .{{Codec.CaseName}}: return "{{Name}}"
+        {{/UniqueNumberValues}}
         }
     }
 
     public init?(stringValue: String) {
         switch stringValue {
-        {{#Codec.Values}}
-        case "{{StringValue}}": self = .{{Name}}
-        {{/Codec.Values}}
+        {{#Values}}
+        case "{{Name}}": self = .{{Codec.CaseName}}
+        {{/Values}}
         default: return nil
         }
     }
