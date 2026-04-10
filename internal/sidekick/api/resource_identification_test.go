@@ -528,3 +528,26 @@ func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource)
 	}
 }
+
+func TestIdentifyTargetResources_FallbackHeuristic(t *testing.T) {
+	path := NewPathTemplate().WithLiteral("v2").WithLiteral("DeleteBucket")
+	fields := []*Field{
+		{Name: "name", Typez: STRING_TYPE},
+	}
+
+	model, binding := setupTestModel("storage.googleapis.com", path, fields)
+	// Override method name to match CRUD prefix
+	model.Services[0].Methods[0].Name = "DeleteBucket"
+
+	IdentifyTargetResources(model, true)
+
+	got := binding.TargetResource
+	want := &TargetResource{
+		FieldPaths: [][]string{{"name"}},
+		Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
