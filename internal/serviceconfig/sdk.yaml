@@ -303,6 +303,7 @@
 - path: google/bigtable/v2
   languages:
     - go
+    - python
 - path: google/chat/v1
   languages:
     - go
