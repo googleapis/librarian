@@ -109,25 +109,35 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	if library.Nodejs == nil {
 		return res
 	}
+
+	// Start with package-level defaults
+	res.AdditionalProtos = library.Nodejs.AdditionalProtos
+	res.SkipDefaultAdditionalProtos = library.Nodejs.SkipDefaultAdditionalProtos
+
 	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 		if nodejsAPI.Path != api.Path {
 			continue
 		}
-		// Copy explicit config
+		// Apply API-level overrides if specified
 		res.Path = nodejsAPI.Path
-		res.AdditionalProtos = nodejsAPI.AdditionalProtos
-		res.SkipDefaultAdditionalProtos = nodejsAPI.SkipDefaultAdditionalProtos
-
-		// If user wants to skip defaults, don't add commonProtos.
-		if res.SkipDefaultAdditionalProtos {
-			return res
+		if len(nodejsAPI.AdditionalProtos) > 0 {
+			res.AdditionalProtos = nodejsAPI.AdditionalProtos
 		}
-
-		// If AdditionalProtos is empty, use the default.
-		if len(res.AdditionalProtos) == 0 {
-			res.AdditionalProtos = []string{commonProtos}
+		// API-level true always wins.
+		if nodejsAPI.SkipDefaultAdditionalProtos {
+			res.SkipDefaultAdditionalProtos = true
 		}
+		break
+	}
+
+	// If user wants to skip defaults, just return what we have.
+	if res.SkipDefaultAdditionalProtos {
 		return res
+	}
+
+	// If AdditionalProtos is empty, use the default commonProtos.
+	if len(res.AdditionalProtos) == 0 {
+		res.AdditionalProtos = []string{commonProtos}
 	}
 	return res
 }
