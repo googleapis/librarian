@@ -36,8 +36,13 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 			if method.PathInfo == nil {
 				continue
 			}
+			if len(method.PathInfo.Bindings) == 0 && enableHeuristics {
+				method.PathInfo.Bindings = []*PathBinding{{
+					PathTemplate: NewPathTemplate().WithLiteral("grpc").WithLiteral(method.InputTypeID),
+				}}
+			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
+				if err := identifyTargetResourceForBinding(model, method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
 			}
@@ -47,7 +52,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
+func identifyTargetResourceForBinding(model *API, method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -72,7 +77,82 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 		binding.TargetResource = target
 		return nil
 	}
+
+	// Fallback heuristic for methods without variable path templates
+	if enableHeuristics {
+		target, err := identifyFallbackHeuristicTarget(model, method)
+		if err != nil {
+			return err
+		}
+		if target != nil {
+			binding.TargetResource = target
+			return nil
+		}
+	}
+
 	return nil
+}
+
+func identifyFallbackHeuristicTarget(model *API, method *Method) (*TargetResource, error) {
+	if method.InputType == nil {
+		return nil, nil
+	}
+
+	var targetPath []string
+
+	// Rule 1: Direct String Fields in priority order
+	priorities := []string{"name", "bucket", "parent", "resource", "destination_name", "parent_id", "target_resource", "destinationName", "parentId", "targetResource"}
+	for _, priority := range priorities {
+		for _, f := range method.InputType.Fields {
+			if f.Name == priority && f.Typez == STRING_TYPE {
+				targetPath = []string{f.Name}
+				break
+			}
+		}
+		if targetPath != nil {
+			break
+		}
+	}
+
+	// Rule 2: Nested Fields
+	if targetPath == nil {
+		for _, f := range method.InputType.Fields {
+			if f.Typez == MESSAGE_TYPE && f.TypezID != "" {
+				if msg, ok := model.State.MessageByID[f.TypezID]; ok {
+					for _, nf := range msg.Fields {
+						if nf.Name == "name" && nf.Typez == STRING_TYPE {
+							targetPath = []string{f.Name, nf.Name}
+							break
+						}
+					}
+				}
+			}
+			if targetPath != nil {
+				break
+			}
+		}
+	}
+
+	if targetPath == nil {
+		return nil, nil
+	}
+
+	fieldPaths := [][]string{targetPath}
+
+	host, err := getServiceHost(method)
+	if err != nil {
+		return nil, err
+	}
+	h := "//" + host
+	template := []PathSegment{
+		{Literal: &h},
+		{Variable: &PathVariable{FieldPath: targetPath}},
+	}
+
+	return &TargetResource{
+		FieldPaths: fieldPaths,
+		Template:   template,
+	}, nil
 }
 
 func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
