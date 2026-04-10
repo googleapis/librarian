@@ -49,12 +49,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
-	tempDir, err := os.MkdirTemp("", "librarian-gen-")
-	defer func() {
-		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
-			err = errors.Join(err, removeErr)
-		}
-	}()
+
 	// For preview libraries, the API protos are rooted in the
 	// googleapis/preview subdirectory, so change the googleapisDir to target
 	// that root.
@@ -64,14 +59,16 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 
 	for i, api := range library.APIs {
+		// TODO(https://github.com/googleapis/librarian/issues/4777): Generate APIs in a temp
+		// directory.
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
-		if err := generateAPI(ctx, goAPI, googleapisDir, library.Version, tempDir); err != nil {
+		if err := generateAPI(ctx, goAPI, googleapisDir, library.Version, outDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
-		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
+		if err := moveGeneratedFiles(library, goAPI, outDir); err != nil {
 			return err
 		}
 		if err := generateClientVersionFile(library, goAPI); err != nil {
@@ -100,6 +97,9 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 				return fmt.Errorf("failed to delete generation output path %q: %w", p, err)
 			}
 		}
+	}
+	if err := os.RemoveAll(filepath.Join(outDir, "cloud.google.com")); err != nil {
+		return err
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
@@ -189,17 +189,17 @@ func buildGAPICImportPath(goAPI *config.GoAPI) string {
 
 // moveGeneratedFiles moves generated API and snippet files from the protoc output
 // directory to their destination in the repository.
-func moveGeneratedFiles(library *config.Library, goAPI *config.GoAPI, srcDir, outDir string) error {
-	if err := moveAPIDirectory(library, goAPI, srcDir, outDir); err != nil {
+func moveGeneratedFiles(library *config.Library, goAPI *config.GoAPI, outDir string) error {
+	if err := moveAPIDirectory(library, goAPI, outDir); err != nil {
 		return err
 	}
-	return moveAndUpdateSnippets(library, goAPI, srcDir, outDir)
+	return moveAndUpdateSnippets(library, goAPI, outDir)
 }
 
 // moveAPIDirectory moves the generated API directory from the temporary location to its
 // final destination in the repository.
-func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, srcDir, outDir string) error {
-	libraryDirPrefix := filepath.Join(srcDir, "cloud.google.com", "go")
+func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, outDir string) error {
+	libraryDirPrefix := filepath.Join(outDir, "cloud.google.com", "go")
 	librarySrc := filepath.Join(libraryDirPrefix, goAPI.ImportPath)
 	libraryDest := filepath.Join(repoRootPath(outDir, library.Name), clientPathFromRepoRoot(library, goAPI))
 	if err := os.MkdirAll(libraryDest, 0755); err != nil {
@@ -210,7 +210,7 @@ func moveAPIDirectory(library *config.Library, goAPI *config.GoAPI, srcDir, outD
 
 // moveAndUpdateSnippets moves the generated snippets from the temporary location to their final
 // destination and updates their library versions.
-func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, srcDir, outDir string) error {
+func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, outDir string) error {
 	snippetDest := findSnippetDirectory(library, goAPI, outDir)
 	if snippetDest == "" {
 		return nil
@@ -218,7 +218,7 @@ func moveAndUpdateSnippets(library *config.Library, goAPI *config.GoAPI, srcDir,
 	if err := os.MkdirAll(snippetDest, 0755); err != nil {
 		return err
 	}
-	snippetDirPrefix := filepath.Join(srcDir, "cloud.google.com", "go", "internal", "generated", "snippets")
+	snippetDirPrefix := filepath.Join(outDir, "cloud.google.com", "go", "internal", "generated", "snippets")
 	snippetSrc := filepath.Join(snippetDirPrefix, goAPI.ImportPath)
 	if err := filesystem.MoveAndMerge(snippetSrc, snippetDest); err != nil {
 		return err
