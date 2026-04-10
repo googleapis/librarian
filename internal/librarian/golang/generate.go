@@ -44,15 +44,20 @@ var (
 var mkdirTempFunc = os.MkdirTemp
 
 // Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
-	outDir, err := filepath.Abs(library.Output)
+func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) (err error) {
+	var outDir string
+	outDir, err = filepath.Abs(library.Output)
 	if err != nil {
 		return err
 	}
-	if err := os.MkdirAll(outDir, 0755); err != nil {
+	if err = os.MkdirAll(outDir, 0755); err != nil {
 		return err
 	}
-	tempDir, err := mkdirTempFunc(outDir, "librarian-gen-")
+	var tempDir string
+	tempDir, err = mkdirTempFunc(outDir, "librarian-gen-")
+	if err != nil {
+		return err
+	}
 	defer func() {
 		if removeErr := os.RemoveAll(tempDir); removeErr != nil {
 			err = errors.Join(err, removeErr)
