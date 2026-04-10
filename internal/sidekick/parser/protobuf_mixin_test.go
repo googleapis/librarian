@@ -61,11 +61,11 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
 		}
 	}
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	if _, ok := test.State.MethodByID[".test.TestService.GetLocation"]; !ok {
+	if test.Method(".test.TestService.GetLocation") == nil {
 		t.Fatal("Cannot find .test.TestService.GetLocation")
 	}
 
@@ -133,11 +133,11 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 		}
 	}
 
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	if _, ok := test.State.MethodByID[".test.TestService.GetIamPolicy"]; !ok {
+	if test.Method(".test.TestService.GetIamPolicy") == nil {
 		t.Fatal("Cannot find .test.TestService.GetIamPolicy")
 	}
 	apitest.CheckMethod(t, service, "GetIamPolicy", &api.Method{
@@ -209,11 +209,11 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
 		}
 	}
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	if _, ok := test.State.MethodByID[".test.TestService.GetOperation"]; !ok {
+	if test.Method(".test.TestService.GetOperation") == nil {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
@@ -296,11 +296,11 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
 		}
 	}
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
-	if _, ok := test.State.MethodByID[".test.TestService.GetOperation"]; !ok {
+	if test.Method(".test.TestService.GetOperation") == nil {
 		t.Fatal("Cannot find .test.TestService.GetOperation")
 	}
 
@@ -327,8 +327,8 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			BodyFieldPath: "*",
 		},
 	})
-	got, ok := test.State.MessageByID[".google.protobuf.Empty"]
-	if !ok {
+	got := test.Message(".google.protobuf.Empty")
+	if got == nil {
 		t.Fatal("Cannot find .google.protobuf.Empty")
 	}
 	apitest.CheckMessage(t, got, &api.Message{
@@ -382,11 +382,11 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
 		}
 	}
-	service, ok := test.State.ServiceByID[".test.LroService"]
-	if !ok {
+	service := test.Service(".test.LroService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
 	}
-	if _, ok := test.State.MethodByID[".test.LroService.GetOperation"]; !ok {
+	if test.Method(".test.LroService.GetOperation") == nil {
 		t.Fatal("Cannot find .test.LroService.GetOperation")
 	}
 

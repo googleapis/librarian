@@ -69,7 +69,7 @@ func TestOpenAPI_AllOf(t *testing.T) {
 
 	want := sample.Automatic()
 	want.Package = ""
-	message := test.State.MessageByID[want.ID]
+	message := test.Message(want.ID)
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -119,7 +119,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	message := test.State.MessageByID["..Fake"]
+	message := test.Message("..Fake")
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -251,7 +251,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	message := test.State.MessageByID["..Fake"]
+	message := test.Message("..Fake")
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -544,7 +544,7 @@ func openapiSecretManagerAPI(t *testing.T) *api.API {
 func TestOpenAPI_MakeAPI(t *testing.T) {
 	test := openapiSecretManagerAPI(t)
 
-	location := test.State.MessageByID["..Location"]
+	location := test.Message("..Location")
 	if location == nil {
 		t.Errorf("missing message (Location) in MessageByID index")
 		return
@@ -598,7 +598,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 		},
 	})
 
-	listLocationsResponse := test.State.MessageByID["..ListLocationsResponse"]
+	listLocationsResponse := test.Message("..ListLocationsResponse")
 	if listLocationsResponse == nil {
 		t.Errorf("missing message (ListLocationsResponse) in MessageByID index")
 		return
@@ -690,8 +690,8 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			},
 		},
 	}
-	listLocationsRequest, ok := test.State.MessageByID[want.ID]
-	if !ok {
+	listLocationsRequest := test.Message(want.ID)
+	if listLocationsRequest == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -699,15 +699,15 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 	// This message has a weirdly named field that gets tricky to serialize.
 	sp := sample.SecretPayload()
-	got, ok := test.State.MessageByID[sp.ID]
-	if !ok {
+	got := test.Message(sp.ID)
+	if got == nil {
 		t.Errorf("missing message (SecretPayload) in MessageByID index")
 		return
 	}
 	apitest.CheckMessage(t, got, sp)
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
@@ -769,8 +769,8 @@ func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 		Documentation:      "Synthetic messages for the [Service][.Service] service.",
 		ServicePlaceholder: true,
 	}
-	got, ok := test.State.MessageByID["..Service"]
-	if !ok {
+	got := test.Message("..Service")
+	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
 		return
 	}
@@ -840,8 +840,8 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		Documentation:      "Synthetic messages for the [Service][.Service] service.",
 		ServicePlaceholder: true,
 	}
-	got, ok := test.State.MessageByID[want.ID]
-	if !ok {
+	got := test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -888,8 +888,8 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 		},
 	}
-	got, ok = test.State.MessageByID[want.ID]
-	if !ok {
+	got = test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -927,8 +927,8 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 			},
 		},
 	}
-	got, ok = test.State.MessageByID[want.ID]
-	if !ok {
+	got = test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -950,8 +950,8 @@ func TestOpenAPI_Pagination(t *testing.T) {
 	}
 	api.UpdateMethodPagination(nil, test)
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
@@ -988,8 +988,8 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			},
 		},
 	})
-	resp, ok := test.State.MessageByID["..ListFoosResponse"]
-	if !ok {
+	resp := test.Message("..ListFoosResponse")
+	if resp == nil {
 		t.Errorf("missing message (ListFoosResponse) in MessageByID index")
 		return
 	}
@@ -1144,14 +1144,14 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			},
 		},
 	}
-	message, ok := test.State.MessageByID[wantMessage.ID]
-	if !ok {
+	message := test.Message(wantMessage.ID)
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
 	}
 	apitest.CheckMessage(t, message, wantMessage)
 
-	method, ok := test.State.MethodByID[".test.TestService.CreateFoo"]
-	if !ok {
+	method := test.Method(".test.TestService.CreateFoo")
+	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{request_id, request_id_explicit}
@@ -1174,8 +1174,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("cannot find service %s in model", "..Service.ListFoos")
 		return
 	}
@@ -1222,8 +1222,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		},
 	})
 
-	response, ok := test.State.MessageByID["..Response"]
-	if !ok {
+	response := test.Message("..Response")
+	if response == nil {
 		t.Errorf("cannot find message %s", "..Response")
 		return
 	}
@@ -1249,8 +1249,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		},
 	})
 
-	deprecatedMessage, ok := test.State.MessageByID["..DeprecatedMessage"]
-	if !ok {
+	deprecatedMessage := test.Message("..DeprecatedMessage")
+	if deprecatedMessage == nil {
 		t.Errorf("cannot find message %s", "..DeprecatedMessage")
 		return
 	}

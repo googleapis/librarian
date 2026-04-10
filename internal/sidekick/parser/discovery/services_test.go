@@ -28,8 +28,8 @@ func TestService(t *testing.T) {
 	}
 
 	id := "..zones"
-	got, ok := model.State.ServiceByID[id]
-	if !ok {
+	got := model.Service(id)
+	if got == nil {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
@@ -114,8 +114,8 @@ func TestServiceDeprecated(t *testing.T) {
 		Documentation: "Service for the `TestDeprecated` resource.",
 		Deprecated:    true,
 	}
-	got, ok := model.State.ServiceByID[want.ID]
-	if !ok {
+	got := model.Service(want.ID)
+	if got == nil {
 		t.Fatalf("missing service %s", want.ID)
 	}
 	apitest.CheckService(t, got, want)

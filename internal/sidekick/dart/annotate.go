@@ -829,7 +829,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		case field.Typez == api.ENUM_TYPE:
 			// The default value for enums are the generated MyEnum.$default field,
 			// always set to the first value of that enum.
-			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez].Value
@@ -875,7 +875,7 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
 	case api.BYTES_TYPE:
 		return "decodeBytes"
 	case api.ENUM_TYPE:
-		typeName := annotate.resolveEnumName(annotate.state.EnumByID[typeid])
+		typeName := annotate.resolveEnumName(annotate.model.Enum(typeid))
 		return fmt.Sprintf("%s.fromJson", typeName)
 	case api.MESSAGE_TYPE:
 		typeName := annotate.resolveMessageName(annotate.state.MessageByID[typeid], false)
@@ -996,7 +996,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 			defaultValue = "{}"
 		case field.Typez == api.ENUM_TYPE:
 			// 'ExecutableCode_Language.$default'
-			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez].Value
@@ -1272,8 +1272,8 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 			out = annotate.resolveMessageName(message, false)
 		}
 	case api.ENUM_TYPE:
-		e, ok := annotate.state.EnumByID[f.TypezID]
-		if !ok {
+		e := annotate.model.Enum(f.TypezID)
+		if e == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}

@@ -132,8 +132,8 @@ func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.Pa
 }
 
 func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, model *api.API) (map[string]bool, error) {
-	msg, ok := model.State.MessageByID[msgID]
-	if !ok {
+	msg := model.Message(msgID)
+	if msg == nil {
 		return nil, fmt.Errorf("unable to lookup type %s", msgID)
 	}
 	params := map[string]bool{}

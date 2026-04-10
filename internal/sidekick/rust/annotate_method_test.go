@@ -81,8 +81,8 @@ func TestAnnotateMethodNames(t *testing.T) {
 			},
 		},
 	} {
-		gotMethod, ok := model.State.MethodByID[test.MethodID]
-		if !ok {
+		gotMethod := model.Method(test.MethodID)
+		if gotMethod == nil {
 			t.Errorf("missing method %s", test.MethodID)
 			continue
 		}
@@ -108,8 +108,8 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	}
 
 	methodID := ".test.v1.ResourceService.Delete"
-	gotMethod, ok := model.State.MethodByID[methodID]
-	if !ok {
+	gotMethod := model.Method(methodID)
+	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
 	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
@@ -136,8 +136,8 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 
 	// Inject an APIVersion to the existing model.
 	methodID := ".test.v1.ResourceService.Delete"
-	gotMethod, ok := model.State.MethodByID[methodID]
-	if !ok {
+	gotMethod := model.Method(methodID)
+	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
 	gotMethod.APIVersion = "v1_20260205"
@@ -174,8 +174,8 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 	}
 
 	methodID := ".test.v1.ResourceService.Delete"
-	gotMethod, ok := model.State.MethodByID[methodID]
-	if !ok {
+	gotMethod := model.Method(methodID)
+	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
 	}
 	got := gotMethod.Codec.(*methodAnnotation)
@@ -288,8 +288,8 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 	// Helper to inject TargetResource
 	injectTargetResource := func(methodID string, template string, fields [][]string) {
-		m, ok := model.State.MethodByID[methodID]
-		if !ok {
+		m := model.Method(methodID)
+		if m == nil {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
@@ -315,7 +315,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	})
 
 	// Setup: Inject multiple bindings for the "Self" method
-	mSelf := model.State.MethodByID[".test.v1.ResourceService.Self"]
+	mSelf := model.Method(".test.v1.ResourceService.Self")
 	mSelf.PathInfo.Bindings = []*api.PathBinding{
 		{
 			Verb: "GET",
@@ -404,8 +404,8 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			m, ok := model.State.MethodByID[tc.id]
-			if !ok {
+			m := model.Method(tc.id)
+			if m == nil {
 				t.Fatalf("missing method %s", tc.id)
 			}
 			got := m.Codec.(*methodAnnotation)

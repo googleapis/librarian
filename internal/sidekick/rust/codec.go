@@ -502,15 +502,15 @@ func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSp
 func (c *codec) mapType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	switch f.Typez {
 	case api.MESSAGE_TYPE:
-		m, ok := model.State.MessageByID[f.TypezID]
-		if !ok {
+		m := model.Message(f.TypezID)
+		if m == nil {
 			return "", fmt.Errorf("unable to lookup type (%q) for message field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 
 	case api.ENUM_TYPE:
-		e, ok := model.State.EnumByID[f.TypezID]
-		if !ok {
+		e := model.Enum(f.TypezID)
+		if e == nil {
 			return "", fmt.Errorf("unable to lookup type (%q) for enum field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
@@ -524,8 +524,8 @@ func (c *codec) mapType(f *api.Field, model *api.API, sourceSpecificationPackage
 func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	switch f.Typez {
 	case api.MESSAGE_TYPE:
-		m, ok := model.State.MessageByID[f.TypezID]
-		if !ok {
+		m := model.Message(f.TypezID)
+		if m == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
 		}
 		if m.IsMap {
@@ -541,8 +541,8 @@ func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationP
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 	case api.ENUM_TYPE:
-		e, ok := model.State.EnumByID[f.TypezID]
-		if !ok {
+		e := model.Enum(f.TypezID)
+		if e == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
@@ -603,8 +603,8 @@ func (c *codec) methodInOutTypeName(id string, model *api.API, sourceSpecificati
 	if id == "" {
 		return "", nil
 	}
-	m, ok := model.State.MessageByID[id]
-	if !ok {
+	m := model.Message(id)
+	if m == nil {
 		return "", fmt.Errorf("unable to lookup message %q", id)
 	}
 	return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
@@ -1316,20 +1316,16 @@ func (c *codec) docLink(link string, model *api.API, scopes []string) (string, e
 }
 
 func (c *codec) tryDocLinkWithId(id string, model *api.API, scope string) (string, error) {
-	m, ok := model.State.MessageByID[id]
-	if ok {
+	if m := model.Message(id); m != nil {
 		return c.fullyQualifiedMessageName(m, scope)
 	}
-	e, ok := model.State.EnumByID[id]
-	if ok {
+	if e := model.Enum(id); e != nil {
 		return c.fullyQualifiedEnumName(e, scope)
 	}
-	me, ok := model.State.MethodByID[id]
-	if ok {
+	if me := model.Method(id); me != nil {
 		return c.methodRustdocLink(me, model), nil
 	}
-	s, ok := model.State.ServiceByID[id]
-	if ok {
+	if s := model.Service(id); s != nil {
 		return c.serviceRustdocLink(s), nil
 	}
 	rdLink, err := c.tryFieldRustdocLink(id, model, scope)
@@ -1356,8 +1352,8 @@ func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (st
 	}
 	messageId := id[0:idx]
 	fieldName := id[idx+1:]
-	m, ok := model.State.MessageByID[messageId]
-	if !ok {
+	m := model.Message(messageId)
+	if m == nil {
 		return "", nil
 	}
 	for _, f := range m.Fields {
@@ -1406,8 +1402,8 @@ func (c *codec) tryEnumValueRustdocLink(id string, model *api.API, scope string)
 	}
 	enumId := id[0:idx]
 	valueName := id[idx+1:]
-	e, ok := model.State.EnumByID[enumId]
-	if !ok {
+	e := model.Enum(enumId)
+	if e == nil {
 		return "", nil
 	}
 	for _, v := range e.Values {
@@ -1429,8 +1425,8 @@ func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 		return ""
 	}
 	serviceId := m.ID[0:idx]
-	s, ok := model.State.ServiceByID[serviceId]
-	if !ok {
+	s := model.Service(serviceId)
+	if s == nil {
 		return ""
 	}
 	return fmt.Sprintf("%s::%s", c.serviceRustdocLink(s), toSnake(m.Name))
@@ -1467,14 +1463,14 @@ func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, vis
 	for _, f := range message.Fields {
 		switch f.Typez {
 		case api.MESSAGE_TYPE:
-			if fm, ok := model.State.MessageByID[f.TypezID]; ok {
+			if fm := model.Message(f.TypezID); fm != nil {
 				usePackage(fm.Package, model, c)
 				if f.Map {
 					findUsedPackagesMessage(fm, model, c, visited)
 				}
 			}
 		case api.ENUM_TYPE:
-			if fe, ok := model.State.EnumByID[f.TypezID]; ok {
+			if fe := model.Enum(f.TypezID); fe != nil {
 				usePackage(fe.Package, model, c)
 			}
 		}
@@ -1490,17 +1486,17 @@ func findUsedPackages(model *api.API, c *codec) {
 	}
 	for _, s := range model.Services {
 		for _, method := range s.Methods {
-			if m, ok := model.State.MessageByID[method.InputTypeID]; ok {
+			if m := model.Message(method.InputTypeID); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
-			if m, ok := model.State.MessageByID[method.OutputTypeID]; ok {
+			if m := model.Message(method.OutputTypeID); m != nil {
 				usePackage(m.Package, model, c)
 			}
 			if method.OperationInfo != nil {
-				if m, ok := model.State.MessageByID[method.OperationInfo.MetadataTypeID]; ok {
+				if m := model.Message(method.OperationInfo.MetadataTypeID); m != nil {
 					usePackage(m.Package, model, c)
 				}
-				if m, ok := model.State.MessageByID[method.OperationInfo.ResponseTypeID]; ok {
+				if m := model.Message(method.OperationInfo.ResponseTypeID); m != nil {
 					usePackage(m.Package, model, c)
 				}
 			}

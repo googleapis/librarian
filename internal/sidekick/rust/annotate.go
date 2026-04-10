@@ -614,7 +614,7 @@ type enumValueAnnotation struct {
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
-	codec.hasServices = len(model.State.ServiceByID) > 0
+	codec.hasServices = len(model.Services) > 0
 
 	resolveUsedPackages(model, codec.extraPackages)
 	// Annotate enums and messages that we intend to generate. In the
@@ -766,9 +766,9 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		allFeatures = append(allFeatures, svcAnn.FeatureName())
 		deps := api.FindServiceDependencies(model, service.ID)
 		for _, id := range deps.Enums {
-			enum, ok := model.State.EnumByID[id]
+			enum := model.Enum(id)
 			// Some messages are not annotated (e.g. external messages).
-			if !ok || enum.Codec == nil {
+			if enum == nil || enum.Codec == nil {
 				continue
 			}
 			annotation := enum.Codec.(*enumAnnotation)
@@ -777,9 +777,9 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 			annotation.FeatureGatesOp = "any"
 		}
 		for _, id := range deps.Messages {
-			msg, ok := model.State.MessageByID[id]
+			msg := model.Message(id)
 			// Some messages are not annotated (e.g. external messages).
-			if !ok || msg.Codec == nil {
+			if msg == nil || msg.Codec == nil {
 				continue
 			}
 			annotation := msg.Codec.(*messageAnnotation)
@@ -849,11 +849,11 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		if m.OperationInfo != nil {
 			if _, ok := seenLROTypes[m.OperationInfo.MetadataTypeID]; !ok {
 				seenLROTypes[m.OperationInfo.MetadataTypeID] = true
-				lroTypes = append(lroTypes, s.Model.State.MessageByID[m.OperationInfo.MetadataTypeID])
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.MetadataTypeID))
 			}
 			if _, ok := seenLROTypes[m.OperationInfo.ResponseTypeID]; !ok {
 				seenLROTypes[m.OperationInfo.ResponseTypeID] = true
-				lroTypes = append(lroTypes, s.Model.State.MessageByID[m.OperationInfo.ResponseTypeID])
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.ResponseTypeID))
 			}
 		}
 	}
@@ -1073,7 +1073,7 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
 		if field.Typez == api.MESSAGE_TYPE {
-			if fieldMessage, ok := m.Model.State.MessageByID[field.TypezID]; ok {
+			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -1342,7 +1342,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	ann.MapToBoxed = mapToBoxed(field, message, model)
 	field.Codec = ann
 	if field.Typez == api.MESSAGE_TYPE {
-		if msg, ok := model.State.MessageByID[field.TypezID]; ok && msg.IsMap {
+		if msg := model.Message(field.TypezID); msg != nil && msg.IsMap {
 			if len(msg.Fields) != 2 {
 				return nil, fmt.Errorf("expected exactly two fields for field's map message (%q), fieldId=%s", field.TypezID, field.ID)
 			}
@@ -1605,8 +1605,8 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 			return false
 		}
 		visited[typezID] = true
-		msg, ok := model.State.MessageByID[typezID]
-		if !ok {
+		msg := model.Message(typezID)
+		if msg == nil {
 			return false
 		}
 		for _, f := range msg.Fields {

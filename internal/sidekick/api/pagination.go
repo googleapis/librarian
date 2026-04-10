@@ -45,13 +45,13 @@ type PaginationInfo struct {
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
 func UpdateMethodPagination(overrides []PaginationOverride, a *API) {
 	for _, m := range a.State.MethodByID {
-		reqMsg := a.State.MessageByID[m.InputTypeID]
+		reqMsg := a.Message(m.InputTypeID)
 		pageTokenField := paginationRequestInfo(reqMsg)
 		if pageTokenField == nil {
 			continue
 		}
 
-		respMsg := a.State.MessageByID[m.OutputTypeID]
+		respMsg := a.Message(m.OutputTypeID)
 		paginationInfo := paginationResponseInfo(overrides, m.ID, respMsg)
 		if paginationInfo == nil {
 			continue

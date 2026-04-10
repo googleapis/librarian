@@ -334,7 +334,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Messages
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if msg, ok := state.MessageByID[mFQN]; ok {
+			if msg := result.Message(mFQN); msg != nil {
 				result.Messages = append(result.Messages, msg)
 			} else {
 				slog.Warn("missing message in symbol table", "message", mFQN)
@@ -344,7 +344,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Enums
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
-			if e, ok := state.EnumByID[eFQN]; ok {
+			if e := result.Enum(eFQN); e != nil {
 				result.Enums = append(result.Enums, e)
 			} else {
 				slog.Warn("missing enum in symbol table", "message", eFQN)
@@ -414,7 +414,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 					if !enabledMixinMethods[originalFQN] {
 						continue
 					}
-					if _, ok := state.MethodByID[mFQN]; ok {
+					if result.Method(mFQN) != nil {
 						// The method already exists. This happens when services
 						// require a mixin in the service config yaml *and* also
 						// define the mixin method in the code.
@@ -494,7 +494,7 @@ func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field
 		// Repeated fields are not optional, they can be empty, but always have
 		// presence.
 		field.Optional = !field.Repeated
-		if message, ok := model.State.MessageByID[field.TypezID]; ok && message.IsMap {
+		if message := model.Message(field.TypezID); message != nil && message.IsMap {
 			// Map fields appear as repeated in Protobuf. This is confusing,
 			// as they typically are represented by a single `map<k, v>`-like
 			// datatype. Protobuf leaks the wire-representation of maps, i.e.,
@@ -783,10 +783,10 @@ func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string)
 	switch {
 	case len(p) == 0:
 		// This is a comment for a service
-		model.State.ServiceByID[sFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
 		// This is a comment for a method
-		model.State.ServiceByID[sFQN].Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Service(sFQN).Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == serviceDescriptorProtoMethod:
 		// A comment for something within a method (options, arguments, etc).
 		// Ignored, as these comments do not refer to any artifact in the
@@ -805,18 +805,18 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 	switch {
 	case len(p) == 0:
 		// This is a comment for a top level message
-		model.State.MessageByID[mFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorNestedType:
 		nmsg := m.GetNestedType()[p[1]]
 		nmFQN := mFQN + "." + nmsg.GetName()
 		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
 	case p[0] == messageDescriptorField && len(p) == 2:
-		model.State.MessageByID[mFQN].Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorEnum:
 		eFQN := mFQN + "." + m.GetEnumType()[p[1]].GetName()
 		addEnumDocumentation(model, p[2:], doc, eFQN)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
-		model.State.MessageByID[mFQN].OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
 	case p[0] == messageDescriptorExtension:
@@ -833,9 +833,9 @@ func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p 
 func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
 	if len(p) == 0 {
 		// This is a comment for an enum
-		model.State.EnumByID[eFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	} else if len(p) == 2 && p[0] == enumDescriptorValue {
-		model.State.EnumByID[eFQN].Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Enum(eFQN).Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	} else {
 		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}

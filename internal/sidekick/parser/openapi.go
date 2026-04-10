@@ -301,8 +301,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 			return nil, "", err
 		}
 		bid := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-		_, ok := a.State.MessageByID[bid]
-		if !ok {
+		if a.Message(bid) == nil {
 			return nil, "", fmt.Errorf("cannot find referenced type (%s) in API messages", reference)
 		}
 		name, err := openapiBodyFieldName(fieldNames)
@@ -357,7 +356,7 @@ func makeResponseMessage(api *api.API, operation *v3.Operation, packageName stri
 		return nil, err
 	}
 	id := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-	if message, ok := api.State.MessageByID[id]; ok {
+	if message := api.Message(id); message != nil {
 		return message, nil
 	}
 	return nil, fmt.Errorf("cannot find response message ref=%s", reference)
@@ -571,7 +570,7 @@ func makeMapMessage(model *api.API, messageName, name string, schema *base.Schem
 	}
 
 	id := fmt.Sprintf("$map<string, %s>", value.TypezID)
-	message := model.State.MessageByID[id]
+	message := model.Message(id)
 	if message == nil {
 		// The map was not found, insert the type.
 		key := &api.Field{

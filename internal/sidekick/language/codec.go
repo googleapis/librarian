@@ -39,8 +39,8 @@ type TemplateProvider func(templateName string) (string, error)
 
 // PathParams returns the path parameters for a method.
 func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
-	msg, ok := model.State.MessageByID[m.InputTypeID]
-	if !ok {
+	msg := model.Message(m.InputTypeID)
+	if msg == nil {
 		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
 	}
 	pathNames := []string{}
@@ -115,7 +115,7 @@ func FieldIsMap(f *api.Field, model *api.API) bool {
 	if f.Typez != api.MESSAGE_TYPE {
 		return false
 	}
-	if m, ok := model.State.MessageByID[f.TypezID]; ok {
+	if m := model.Message(f.TypezID); m != nil {
 		return m.IsMap
 	}
 	return false

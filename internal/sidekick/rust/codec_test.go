@@ -499,7 +499,7 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
-		if _, ok := model.State.MessageByID[fmt.Sprintf(".google.protobuf.%s", name)]; !ok {
+		if model.Message(fmt.Sprintf(".google.protobuf.%s", name)) == nil {
 			t.Errorf("cannot find well-known message %s in API", name)
 		}
 	}
@@ -722,8 +722,8 @@ func rustFieldTypesCases() *api.API {
 
 func TestFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 	expectedTypes := map[string]string{
@@ -786,8 +786,8 @@ func TestFieldType(t *testing.T) {
 
 func TestOneOfFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 
