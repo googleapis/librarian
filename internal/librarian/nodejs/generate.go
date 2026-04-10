@@ -91,6 +91,14 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		protos = append(protos, filepath.Join(googleapisDir, p))
 	}
 
+		return fmt.Errorf("no protos found in api %q", api.Path)
+	}
+
+	// Add additional protos from configuration.
+	for _, p := range nodejsAPI.AdditionalProtos {
+		protos = append(protos, filepath.Join(googleapisDir, p))
+	}
+
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir)
 	if err != nil {
 		return err
