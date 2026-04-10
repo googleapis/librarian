@@ -46,6 +46,7 @@ var (
 type postProcessParams struct {
 	cfg            *config.Config
 	library        *config.Library
+	javaAPI        *config.JavaAPI
 	metadata       *repoMetadata
 	outDir         string
 	version        string
@@ -92,7 +93,7 @@ func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.
 func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) coords() APICoordinate {
-	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
+	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version, p.javaAPI)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {

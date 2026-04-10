@@ -54,18 +54,22 @@ func (b *commandBuilder) build() (*Command, error) {
 		return nil, err
 	}
 
+	useUpdateMask := b.updateMask()
+
 	return &Command{
-		Name:             b.name(),
-		Hidden:           b.hidden(),
-		HelpText:         b.helpText(),
-		APIVersion:       provider.APIVersion(b.overrides),
-		Collection:       b.collectionPath(false),
-		Method:           b.requestMethod(),
-		Arguments:        args,
-		ResponseIDField:  b.responseIDField(),
-		OutputFormat:     b.outputFormat(),
-		ReadModifyUpdate: provider.IsUpdate(b.method),
-		Async:            b.async(),
+		Name:                 b.name(),
+		Hidden:               b.hidden(),
+		HelpText:             b.helpText(),
+		APIVersion:           provider.APIVersion(b.overrides),
+		Collection:           b.collectionPath(false),
+		Method:               b.requestMethod(),
+		Arguments:            args,
+		ResponseIDField:      b.responseIDField(),
+		OutputFormat:         b.outputFormat(),
+		ReadModifyUpdate:     provider.IsUpdate(b.method),
+		StarUpdateMask:       useUpdateMask,
+		DisableAutoFieldMask: useUpdateMask,
+		Async:                b.async(),
 	}, nil
 }
 
@@ -86,17 +90,10 @@ func (b *commandBuilder) responseIDField() string {
 }
 
 // outputFormat generates the string output format for List commands.
+// TODO(https://github.com/googleapis/librarian/issues/5231): Make this default configurable by gcloud.yaml.
+// Use tableFormat if specified.
 func (b *commandBuilder) outputFormat() string {
-	if !provider.IsList(b.method) {
-		return ""
-	}
-
-	resourceMsg := provider.FindResourceMessage(b.method.OutputType)
-	if resourceMsg == nil {
-		return ""
-	}
-
-	return tableFormat(resourceMsg)
+	return ""
 }
 
 // async creates the `Async` part of the command definition for long-running operations.
@@ -142,15 +139,12 @@ func (b *commandBuilder) hidden() bool {
 }
 
 func (b *commandBuilder) helpText() HelpText {
-	rule := provider.FindHelpTextRule(b.overrides, strings.TrimPrefix(b.method.ID, "."))
-	if rule != nil {
-		return HelpText{
-			Brief:       rule.HelpText.Brief,
-			Description: rule.HelpText.Description,
-			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
-		}
+	h := provider.GetMethodHelpText(b.overrides, b.method, b.model)
+	return HelpText{
+		Brief:       h.Brief,
+		Description: h.Description,
+		Examples:    h.Examples,
 	}
-	return HelpText{}
 }
 
 // requestMethod determines the API method name for the command execution.
@@ -307,6 +301,18 @@ func (b *commandBuilder) collectionPath(isAsync bool) []string {
 	// Remove duplicates if any.
 	slices.Sort(collections)
 	return slices.Compact(collections)
+}
+
+func (b *commandBuilder) updateMask() bool {
+	if !provider.IsUpdate(b.method) || b.method.InputType == nil {
+		return false
+	}
+	for _, f := range b.method.InputType.Fields {
+		if f.Name == "update_mask" {
+			return true
+		}
+	}
+	return false
 }
 
 // tableFormat generates a gcloud table format string from a message definition.

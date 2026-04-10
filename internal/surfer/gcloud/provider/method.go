@@ -212,3 +212,66 @@ func IsSingletonResourceMethod(method *api.Method, model *api.API) bool {
 	resource := GetResourceForMethod(method, model)
 	return isSingletonResource(resource)
 }
+
+// HelpText holds the brief and detailed help text for the command.
+type HelpText struct {
+	Brief       string
+	Description string
+	Examples    string
+}
+
+// GetMethodHelpText extracts help text from overrides or generates fallbacks.
+func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) HelpText {
+	rule := FindHelpTextRule(overrides, strings.TrimPrefix(method.ID, "."))
+	if rule != nil {
+		return HelpText{
+			Brief:       rule.HelpText.Brief,
+			Description: rule.HelpText.Description,
+			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
+		}
+	}
+
+	commandName, _ := GetCommandName(method)
+	singular := GetSingularResourceNameForMethod(method, model)
+	plural := GetPluralResourceNameForMethod(method, model)
+
+	if singular == "" {
+		singular = "resource"
+	}
+	if plural == "" {
+		plural = "resources"
+	}
+
+	brief := ""
+	description := ""
+	examples := ""
+
+	switch commandName {
+	case "describe":
+		brief = fmt.Sprintf("Describe %s", plural)
+		description = fmt.Sprintf("Describe a %s", singular)
+		examples = fmt.Sprintf("To describe the %s, run:\n\n    $ {command}", singular)
+	case "list":
+		brief = fmt.Sprintf("List %s", plural)
+		description = fmt.Sprintf("List %s", plural)
+		examples = fmt.Sprintf("To list all %s, run:\n\n    $ {command}", plural)
+	case "create":
+		brief = fmt.Sprintf("Create %s", plural)
+		description = fmt.Sprintf("Create a %s", singular)
+		examples = fmt.Sprintf("To create the %s, run:\n\n    $ {command}", singular)
+	case "delete":
+		brief = fmt.Sprintf("Delete %s", plural)
+		description = fmt.Sprintf("Delete a %s", singular)
+		examples = fmt.Sprintf("To delete the %s, run:\n\n    $ {command}", singular)
+	case "update":
+		brief = fmt.Sprintf("Update %s", plural)
+		description = fmt.Sprintf("Update a %s", singular)
+		examples = fmt.Sprintf("To update the %s, run:\n\n    $ {command}", singular)
+	}
+
+	return HelpText{
+		Brief:       brief,
+		Description: description,
+		Examples:    examples,
+	}
+}

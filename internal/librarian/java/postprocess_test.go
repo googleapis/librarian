@@ -109,6 +109,7 @@ func TestPostProcessAPI(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
+		javaAPI:        &config.JavaAPI{},
 	}
 	if err := postProcessAPI(t.Context(), p); err != nil {
 		t.Fatal(err)
@@ -182,6 +183,7 @@ func TestRestructureModules(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
+		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -233,6 +235,7 @@ func TestRestructureModules_NoSamples(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
+		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -360,7 +363,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 					t.Fatal(err)
 				}
 				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1")
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
 				for _, dir := range []string{
 					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
 					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),

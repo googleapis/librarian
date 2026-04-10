@@ -305,7 +305,7 @@ func TestResolveJavaAPI(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := resolveJavaAPI(test.library, test.api)
+			got := ResolveJavaAPI(test.library, test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

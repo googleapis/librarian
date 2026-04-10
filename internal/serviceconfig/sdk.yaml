@@ -303,6 +303,7 @@
 - path: google/bigtable/v2
   languages:
     - go
+    - python
 - path: google/chat/v1
   languages:
     - go
@@ -859,6 +860,7 @@
 - path: google/cloud/bigquery/storage/v1
   languages:
     - go
+    - java
     - python
     - rust
   skip_rest_numeric_enums:
@@ -871,6 +873,7 @@
 - path: google/cloud/bigquery/storage/v1alpha
   languages:
     - go
+    - java
     - python
   release_level:
     go: beta
@@ -879,6 +882,7 @@
 - path: google/cloud/bigquery/storage/v1beta
   languages:
     - go
+    - java
     - python
   release_level:
     go: beta
@@ -899,6 +903,7 @@
 - path: google/cloud/bigquery/storage/v1beta2
   languages:
     - go
+    - java
     - python
   skip_rest_numeric_enums:
     - csharp
@@ -1993,6 +1998,7 @@
   documentation_uri: https://cloud.google.com/network-connectivity/
   languages:
     - go
+    - java
     - nodejs
     - python
   release_level:
@@ -3017,6 +3023,7 @@
 - path: google/datastore/v1
   languages:
     - go
+    - java
     - python
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
@@ -3260,6 +3267,7 @@
 - path: google/maps/geocode/v4
   languages:
     - go
+    - java
     - python
   release_level:
     python: preview
@@ -3604,6 +3612,7 @@
 - path: google/spanner/executor/v1
   languages:
     - go
+    - java
   release_level:
     go: beta
   transports:

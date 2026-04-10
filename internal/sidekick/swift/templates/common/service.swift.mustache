@@ -21,12 +21,18 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 import Foundation
+{{! On Linux we need this additional import for `URLSession`. }}
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
 import GoogleCloudAuth
 import GoogleCloudGax
 
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
+///
+/// @Snippet(id: "{{Name}}Quickstart")
 public class {{Codec.Name}} {
   let inner: GoogleCloudGax.HTTPClient
 
