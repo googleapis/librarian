@@ -220,7 +220,7 @@ func TestDeriveAPICoordinates(t *testing.T) {
 			},
 		},
 		{
-			name: "with overrides",
+			name: "with proto and grpc artifact overrides",
 			lc: LibraryCoordinate{
 				GAPIC: Coordinate{
 					GroupID:    "com.google.cloud",
