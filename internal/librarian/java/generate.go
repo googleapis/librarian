@@ -94,7 +94,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
-	javaAPI := resolveJavaAPI(library, api)
+	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
 		cfg:            cfg,
 		library:        library,
@@ -281,9 +281,11 @@ func collectJavaFiles(root string) ([]string, error) {
 	return files, err
 }
 
-// resolveJavaAPI returns the Java-specific configuration for the given API,
+// ResolveJavaAPI returns the Java-specific configuration for the given API,
 // applying default values if no explicit configuration is found in the library.
-func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+// TODO(https://github.com/googleapis/librarian/issues/5050):
+// Exported to use in migrate tool, unexport after migrate is done.
+func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 	res := &config.JavaAPI{
 		Path:             api.Path,
 		AdditionalProtos: []string{commonProtos},
