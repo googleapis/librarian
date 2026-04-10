@@ -98,6 +98,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p := postProcessParams{
 		cfg:            cfg,
 		library:        library,
+		javaAPI:        javaAPI,
 		metadata:       metadata,
 		outDir:         outdir,
 		version:        version,
