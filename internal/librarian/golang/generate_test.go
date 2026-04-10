@@ -67,47 +67,8 @@ func TestGenerate(t *testing.T) {
 				},
 			},
 		},
-		{
-			Name:          "secretmanager-multi",
-			Version:       "0.1.0",
-			CopyrightYear: "2025",
-			APIs: []*config.API{
-				{Path: "google/cloud/secretmanager/v1"},
-				{Path: "google/cloud/secretmanager/v1beta2"}, // Different path to avoid file collision
-			},
-			Go: &config.GoModule{
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager-multi/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
-					},
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager-multi/apiv1beta2",
-						Path:          "google/cloud/secretmanager/v1beta2",
-					},
-				},
-			},
-		},
-		{
-			Name:          "secretmanager-delete",
-			Version:       "0.1.0",
-			CopyrightYear: "2025",
-			APIs: []*config.API{
-				{Path: "google/cloud/secretmanager/v1"},
-			},
-			Go: &config.GoModule{
-				DeleteGenerationOutputPaths: []string{"apiv1/secret_manager_client.go"},
-				GoAPIs: []*config.GoAPI{
-					{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager-delete/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
-					},
-				},
-			},
-		},
+
+
 		{
 			Name:          "secretmanager",
 			Version:       "0.1.0-preview.1",
@@ -328,6 +289,7 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 			want: []string{
 				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/README.md",
 			},
 			removed: []string{
 				"secretmanager/apiv1/secret_manager_client.go",
@@ -428,6 +390,40 @@ func TestGenerateLibrary(t *testing.T) {
 			want: []string{
 				"firestore/apiv1/firestorepb/firestore.pb.go",
 				"firestore/apiv1/admin/adminpb/firestore_admin.pb.go",
+			},
+		},
+		{
+			name: "multi api",
+			library: &config.Library{
+				Name: "secretmanager-multi",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta2"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager-multi/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager-multi/apiv1beta2",
+							Path:          "google/cloud/secretmanager/v1beta2",
+						},
+					},
+				},
+			},
+			want: []string{
+				"secretmanager-multi/apiv1/secret_manager_client.go",
+				"secretmanager-multi/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager-multi/apiv1/version.go",
+				"secretmanager-multi/apiv1beta2/secret_manager_client.go",
+				"secretmanager-multi/apiv1beta2/secretmanagerpb/service.pb.go",
+				"secretmanager-multi/apiv1beta2/version.go",
+				"secretmanager-multi/internal/version.go",
+				"secretmanager-multi/README.md",
 			},
 		},
 		{
