@@ -17,6 +17,7 @@ package swift
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -24,7 +25,8 @@ func TestAnnotateEnumValue(t *testing.T) {
 	enum := &api.Enum{Name: "Color"}
 	ev := &api.EnumValue{Name: "COLOR_RED", Number: 1, Documentation: "Red color", Parent: enum}
 
-	codec := &codec{}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
 	codec.annotateEnumValue(ev)
 
 	ann, ok := ev.Codec.(*enumValueAnnotations)
@@ -32,14 +34,14 @@ func TestAnnotateEnumValue(t *testing.T) {
 		t.Fatal("expected enumValueAnnotations")
 	}
 
-	if ann.Name != "red" {
-		t.Errorf("ann.Name = %q, want %q", ann.Name, "red")
+	want := &enumValueAnnotations{
+		Name:        "red",
+		Number:      1,
+		StringValue: "COLOR_RED",
+		DocLines:    []string{"Red color"},
 	}
-	if ann.Number != 1 {
-		t.Errorf("ann.Number = %d, want %d", ann.Number, 1)
-	}
-	if ann.StringValue != "COLOR_RED" {
-		t.Errorf("ann.StringValue = %q, want %q", ann.StringValue, "COLOR_RED")
+	if diff := cmp.Diff(want, ann); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -51,20 +53,62 @@ func TestAnnotateEnum_Duplicates(t *testing.T) {
 		{Name: "COLOR_RED", Number: 1, Parent: enum},
 		{Name: "RED", Number: 2, Parent: enum},
 	}
+	enum.UniqueNumberValues = enum.Values
 
-	codec := &codec{}
-	codec.annotateEnum(enum, &modelAnnotations{})
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
 
 	ann, ok := enum.Codec.(*enumAnnotations)
 	if !ok {
 		t.Fatal("expected enumAnnotations")
 	}
 
-	if len(ann.Values) != 1 {
-		t.Errorf("len(ann.Values) = %d, want 1", len(ann.Values))
+	want := []*enumValueAnnotations{
+		{
+			Name:        "red",
+			Number:      1,
+			StringValue: "COLOR_RED",
+		},
+	}
+	if diff := cmp.Diff(want, ann.Values); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateEnum_Aliases(t *testing.T) {
+	enum := &api.Enum{
+		Name: "Color",
+	}
+	enum.Values = []*api.EnumValue{
+		{Name: "RED_NEW", Number: 1, Parent: enum},
+		{Name: "RED_OLD", Number: 1, Parent: enum}, // Alias with same number
+	}
+	enum.UniqueNumberValues = []*api.EnumValue{enum.Values[0]}
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
 	}
 
-	if ann.Values[0].Name != "red" {
-		t.Errorf("ann.Values[0].Name = %q, want %q", ann.Values[0].Name, "red")
+	ann, ok := enum.Codec.(*enumAnnotations)
+	if !ok {
+		t.Fatal("expected enumAnnotations")
+	}
+
+	want := []*enumValueAnnotations{
+		{
+			Name:        "redNew",
+			Number:      1,
+			StringValue: "RED_NEW",
+		},
+	}
+	if diff := cmp.Diff(want, ann.Values); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

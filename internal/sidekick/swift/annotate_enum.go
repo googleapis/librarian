@@ -31,7 +31,7 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) {
 
 	seen := map[string]*api.EnumValue{}
 	var unique []*enumValueAnnotations
-	for _, ev := range enum.Values {
+	for _, ev := range enum.UniqueNumberValues {
 		codec.annotateEnumValue(ev)
 		ann := ev.Codec.(*enumValueAnnotations)
 		if _, ok := seen[ann.Name]; !ok {
