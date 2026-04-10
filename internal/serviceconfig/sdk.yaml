@@ -2788,6 +2788,8 @@
     - csharp
     - go
     - php
+  release_level:
+    go: ga
 - path: google/maps/addressvalidation/v1
   documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
   languages:
