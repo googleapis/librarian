@@ -392,9 +392,9 @@ func TestGenerateLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "multi api",
+			name: "multiple apis",
 			library: &config.Library{
-				Name: "secretmanager-multi",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secretmanager/v1beta2"},
@@ -403,26 +403,26 @@ func TestGenerateLibrary(t *testing.T) {
 					GoAPIs: []*config.GoAPI{
 						{
 							ClientPackage: "secretmanager",
-							ImportPath:    "secretmanager-multi/apiv1",
+							ImportPath:    "secretmanager/apiv1",
 							Path:          "google/cloud/secretmanager/v1",
 						},
 						{
 							ClientPackage: "secretmanager",
-							ImportPath:    "secretmanager-multi/apiv1beta2",
+							ImportPath:    "secretmanager/apiv1beta2",
 							Path:          "google/cloud/secretmanager/v1beta2",
 						},
 					},
 				},
 			},
 			want: []string{
-				"secretmanager-multi/apiv1/secret_manager_client.go",
-				"secretmanager-multi/apiv1/secretmanagerpb/service.pb.go",
-				"secretmanager-multi/apiv1/version.go",
-				"secretmanager-multi/apiv1beta2/secret_manager_client.go",
-				"secretmanager-multi/apiv1beta2/secretmanagerpb/service.pb.go",
-				"secretmanager-multi/apiv1beta2/version.go",
-				"secretmanager-multi/internal/version.go",
-				"secretmanager-multi/README.md",
+				"secretmanager/apiv1/secret_manager_client.go",
+				"secretmanager/apiv1/secretmanagerpb/service.pb.go",
+				"secretmanager/apiv1/version.go",
+				"secretmanager/apiv1beta2/secret_manager_client.go",
+				"secretmanager/apiv1beta2/secretmanagerpb/service.pb.go",
+				"secretmanager/apiv1beta2/version.go",
+				"secretmanager/internal/version.go",
+				"secretmanager/README.md",
 			},
 		},
 		{
