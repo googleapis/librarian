@@ -152,6 +152,10 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// IncludeStreamingMethods indicates whether to include gRPC streaming
+	// methods.
+	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -250,6 +254,10 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IncludeStreamingMethods indicates whether to include gRPC streaming
+	// methods.
+	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
