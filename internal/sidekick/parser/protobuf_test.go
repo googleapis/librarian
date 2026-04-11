@@ -1473,10 +1473,10 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.longrunning.Operations.GetOperation",
-					Pattern: &annotations.HttpRule_Get{
+					Pattern: &httpRuleGet{
 						Get: "/v2/{name=operations/*}",
 					},
 					Body: "*",

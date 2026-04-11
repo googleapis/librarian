@@ -18,8 +18,8 @@ import (
 	"fmt"
 	"strings"
 
-	"cloud.google.com/go/iam/apiv1/iampb"
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
+
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	locationpb "google.golang.org/genproto/googleapis/cloud/location"
@@ -82,9 +82,9 @@ func loadMixins(serviceConfig *serviceconfig.Service, withLongrunning bool) (mix
 		case iamService:
 			appendIfNew(fieldmaskpb.File_google_protobuf_field_mask_proto)
 			appendIfNew(exprpb.File_google_type_expr_proto)
-			appendIfNew(iampb.File_google_iam_v1_iam_policy_proto)
-			appendIfNew(iampb.File_google_iam_v1_policy_proto)
-			appendIfNew(iampb.File_google_iam_v1_options_proto)
+			appendIfNew(fileGoogleIamV1IamPolicyProto)
+			appendIfNew(fileGoogleIamV1PolicyProto)
+			appendIfNew(fileGoogleIamV1OptionsProto)
 		case longrunningService:
 			appendIfNew(anypb.File_google_protobuf_any_proto)
 			appendIfNew(durationpb.File_google_protobuf_duration_proto)

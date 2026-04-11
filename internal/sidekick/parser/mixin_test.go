@@ -25,16 +25,16 @@ import (
 func TestProtobuf_ForceLongrunning(t *testing.T) {
 	sc := sample.ServiceConfig()
 	sc.Http = &annotations.Http{
-		Rules: []*annotations.HttpRule{
+		Rules: []*httpRule{
 			{
 				Selector: "google.longrunning.Operations.CancelOperation",
-				Pattern: &annotations.HttpRule_Post{
+				Pattern: &httpRulePost{
 					Post: "/v2/{name=operations/**}:cancel",
 				},
 			},
 			{
 				Selector: "google.longrunning.Operations.GetOperation",
-				Pattern: &annotations.HttpRule_Get{
+				Pattern: &httpRuleGet{
 					Get: "/v2/{name=operations/**}:cancel",
 				},
 			},
