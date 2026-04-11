@@ -110,34 +110,33 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		return res
 	}
 
-	// Start with package-level defaults
-	res.AdditionalProtos = library.Nodejs.AdditionalProtos
-	res.SkipDefaultAdditionalProtos = library.Nodejs.SkipDefaultAdditionalProtos
+	// Always include commonProtos as a base.
+	protos := []string{commonProtos}
+
+	// Add package-level additional protos.
+	protos = append(protos, library.Nodejs.AdditionalProtos...)
 
 	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 		if nodejsAPI.Path != api.Path {
 			continue
 		}
-		// Apply API-level overrides if specified
-		res.Path = nodejsAPI.Path
-		if len(nodejsAPI.AdditionalProtos) > 0 {
-			res.AdditionalProtos = nodejsAPI.AdditionalProtos
-		}
-		// API-level true always wins.
-		if nodejsAPI.SkipDefaultAdditionalProtos {
-			res.SkipDefaultAdditionalProtos = true
-		}
+		// Add API-level additional protos.
+		protos = append(protos, nodejsAPI.AdditionalProtos...)
 		break
 	}
 
-	// If user wants to skip defaults, just return what we have.
-	if res.SkipDefaultAdditionalProtos {
-		return res
-	}
+	res.AdditionalProtos = unique(protos)
+	return res
+}
 
-	// If AdditionalProtos is empty, use the default commonProtos.
-	if len(res.AdditionalProtos) == 0 {
-		res.AdditionalProtos = []string{commonProtos}
+func unique(ss []string) []string {
+	m := make(map[string]bool)
+	var res []string
+	for _, s := range ss {
+		if _, ok := m[s]; !ok {
+			m[s] = true
+			res = append(res, s)
+		}
 	}
 	return res
 }

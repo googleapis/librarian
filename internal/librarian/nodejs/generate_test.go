@@ -1088,7 +1088,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "found in config",
+			name: "found in config, appends to defaults",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
 					NodejsAPIs: []*config.NodejsAPI{
@@ -1102,16 +1102,18 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{"other.proto"},
+				AdditionalProtos: []string{commonProtos, "other.proto"},
 			},
 		},
 		{
-			name: "found in config, empty additional protos defaults to commonProtos",
+			name: "found in config, package and api level union",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
-							Path: "google/cloud/secretmanager/v1",
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"api.proto"},
 						},
 					},
 				},
@@ -1119,25 +1121,26 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{commonProtos, "pkg.proto", "api.proto"},
 			},
 		},
 		{
-			name: "found in config, explicitly skip defaults",
+			name: "deduplicates protos",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{commonProtos, "other.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
-							Path:                        "google/cloud/secretmanager/v1",
-							SkipDefaultAdditionalProtos: true,
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto", "more.proto"},
 						},
 					},
 				},
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:                        "google/cloud/secretmanager/v1",
-				SkipDefaultAdditionalProtos: true,
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
 			},
 		},
 	} {
