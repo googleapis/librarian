@@ -253,6 +253,7 @@ This document describes the schema for the librarian.yaml.
 | `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
+| `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
