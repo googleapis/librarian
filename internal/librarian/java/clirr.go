@@ -39,7 +39,8 @@ const (
 	templateName = "clirr-ignored-differences.xml.tmpl"
 )
 
-// generateClirrIfMissing generates the clirr-ignored-differences.xml file if it doesn't exist.
+// generateClirrIfMissing generates the clirr-ignored-differences.xml file in the protoModulePath
+// if it doesn't already exist in the checkPath.
 //
 // It identifies Java packages containing Protobuf-generated code by searching for
 // files ending in "OrBuilder.java" under "src/main/java". The "OrBuilder" suffix
@@ -49,14 +50,16 @@ const (
 // The generated file contains a set of whitelist rules that tell the Clirr tool
 // to ignore specific changes (like method additions to interfaces) to
 // prevent false-positive binary compatibility failures in the build.
-func generateClirrIfMissing(protoModulePath string) error {
-	outputPath := filepath.Join(protoModulePath, clirrIgnoreFile)
-	_, err := os.Stat(outputPath)
-	switch {
-	case err == nil:
-		return nil
-	case !errors.Is(err, fs.ErrNotExist):
-		return fmt.Errorf("failed to check for %s: %w", outputPath, err)
+func generateClirrIfMissing(protoModulePath, checkPath string) error {
+	if checkPath != "" {
+		repoFilePath := filepath.Join(checkPath, clirrIgnoreFile)
+		_, err := os.Stat(repoFilePath)
+		if err == nil {
+			return nil
+		}
+		if !errors.Is(err, fs.ErrNotExist) {
+			return fmt.Errorf("failed to check for %s: %w", repoFilePath, err)
+		}
 	}
 	protoPaths, err := findProtoPackages(protoModulePath)
 	if err != nil {
@@ -65,6 +68,7 @@ func generateClirrIfMissing(protoModulePath string) error {
 	if len(protoPaths) == 0 {
 		return nil
 	}
+	outputPath := filepath.Join(protoModulePath, clirrIgnoreFile)
 	f, err := os.Create(outputPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", outputPath, err)
