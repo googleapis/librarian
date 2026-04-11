@@ -100,10 +100,10 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	}
 	s := sample.RepoMetadata()
 	want := &repoMetadata{
+		APIShortname:         "custom-shortname",
 		NamePretty:           "Custom Pretty Name",
 		ProductDocumentation: "https://custom.docs",
 		APIDescription:       "Custom description",
-		APIShortname:         "custom-shortname",
 		ClientDocumentation:  "https://custom.client.docs",
 		ReleaseLevel:         s.ReleaseLevel,
 		Transport:            "both",
