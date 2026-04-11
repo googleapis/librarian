@@ -1,7 +1,7 @@
 package main
 
 var (
-	apiShortNameOverride = map[string]string{
+	apiShortnameOverrides = map[string]string{
 		"beyondcorp-appconnections":          "beyondcorp-appconnections",
 		"beyondcorp-appconnectors":           "beyondcorp-appconnectors",
 		"beyondcorp-appgateways":             "beyondcorp-appgateways",

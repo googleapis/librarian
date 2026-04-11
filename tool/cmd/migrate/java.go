@@ -273,7 +273,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				RpcDocumentation:             l.RpcDocumentation,
 			},
 		}
-		if shortnameOverride, ok := apiShortNameOverride[lib.Name]; ok {
+		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
 			lib.Java.APIShortnameOverride = shortnameOverride
 		}
 		libs = append(libs, lib)
