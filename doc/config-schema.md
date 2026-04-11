@@ -279,7 +279,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `path` | string | Is the source path. |
-| `skip_default_additional_protos` | bool | Determines whether to exclude the default additional protos (e.g. common_resources.proto). |
 
 ## NodejsPackage Configuration
 
@@ -294,7 +293,6 @@ This document describes the schema for the librarian.yaml.
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
-| `skip_default_additional_protos` | bool | Determines whether to exclude the default additional protos (e.g. common_resources.proto). This can be overridden at the API level. |
 
 ## PythonDefault Configuration
 
