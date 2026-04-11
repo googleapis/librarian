@@ -30,10 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-const (
-	commonProtos = "google/cloud/common_resources.proto"
-)
-
 var (
 	errExtractVersion    = errors.New("failed to extract version")
 	errNoProtos          = errors.New("no protos found")
@@ -287,8 +283,7 @@ func collectJavaFiles(root string) ([]string, error) {
 // Exported to use in migrate tool, unexport after migrate is done.
 func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 	res := &config.JavaAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
+		Path: api.Path,
 	}
 	if library.Java == nil {
 		return res
@@ -298,9 +293,6 @@ func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 			continue
 		}
 		*res = *javaAPI
-		if len(res.AdditionalProtos) == 0 {
-			res.AdditionalProtos = []string{commonProtos}
-		}
 		return res
 	}
 	return res

@@ -245,8 +245,7 @@ func TestResolveJavaAPI(t *testing.T) {
 			library: &config.Library{},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 		{
@@ -270,23 +269,6 @@ func TestResolveJavaAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "found in config, empty additional protos defaults to commonProtos",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path: "google/cloud/secretmanager/v1",
-						},
-					},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
-			},
-		},
-		{
 			name: "Java module exists but API not found",
 			library: &config.Library{
 				Java: &config.JavaModule{
@@ -299,8 +281,7 @@ func TestResolveJavaAPI(t *testing.T) {
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 	} {
