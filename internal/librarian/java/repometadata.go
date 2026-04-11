@@ -110,14 +110,15 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 
 	// Java-specific overrides and optional fields
 	if library.Java != nil {
+		if library.Java.APIShortnameOverride != "" {
+			metadata.APIShortname = library.Java.APIShortnameOverride
+			metadata.APIID = fmt.Sprintf("%s.googleapis.com", library.Java.APIShortnameOverride)
+		}
 		if library.Java.APIIDOverride != "" {
 			metadata.APIID = library.Java.APIIDOverride
 		}
 		if library.Java.APIDescriptionOverride != "" {
 			metadata.APIDescription = library.Java.APIDescriptionOverride
-		}
-		if library.Java.APIShortnameOverride != "" {
-			metadata.APIShortname = library.Java.APIShortnameOverride
 		}
 		if library.Java.DistributionNameOverride != "" {
 			metadata.DistributionName = library.Java.DistributionNameOverride
