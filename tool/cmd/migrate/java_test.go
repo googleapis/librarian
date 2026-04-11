@@ -326,6 +326,32 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "api shortname overrides",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{APIShortName: "beyondcorp-appconnections"},
+				},
+			},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "beyondcorp-appconnections",
+						Java: &config.JavaModule{
+							APIShortnameOverride: "beyondcorp-appconnections",
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"}, test.versions)
