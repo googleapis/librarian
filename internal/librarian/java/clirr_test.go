@@ -15,6 +15,8 @@
 package java
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -71,7 +73,7 @@ func TestGenerateClirr_SkipExistingInCheckPath(t *testing.T) {
 	}
 
 	targetPath := filepath.Join(targetDir, "clirr-ignored-differences.xml")
-	if _, err := os.Stat(targetPath); !os.IsNotExist(err) {
+	if _, err := os.Stat(targetPath); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected %s NOT to exist because it exists in checkPath", targetPath)
 	}
 }
