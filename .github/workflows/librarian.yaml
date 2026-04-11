@@ -51,7 +51,7 @@ jobs:
       - uses: ./.github/actions/setup-librarian
       - name: Install tools
         run: |
-          go run ./cmd/librarian install
+          go run ./cmd/librarian install go
       - name: Run tests and check coverage
         run: |
           go run ./tool/cmd/coverage \
