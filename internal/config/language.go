@@ -496,6 +496,10 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
 
+	// APIShortnameOverride allows the "api_shortname" field in
+	// .repo-metadata.json to be overridden.
+	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
+
 	// ClientDocumentationOverride allows the "client_documentation" field in
 	// .repo-metadata.json to be overridden.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
