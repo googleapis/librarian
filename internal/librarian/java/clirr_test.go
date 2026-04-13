@@ -87,4 +87,3 @@ func TestClirrIgnoreExists(t *testing.T) {
 		})
 	}
 }
-
