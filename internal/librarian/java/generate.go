@@ -277,8 +277,7 @@ func collectJavaFiles(root string) ([]string, error) {
 	return files, err
 }
 
-// ResolveJavaAPI returns the Java-specific configuration for the given API,
-// applying default values if no explicit configuration is found in the library.
+// ResolveJavaAPI returns the Java-specific configuration for the given API.
 // TODO(https://github.com/googleapis/librarian/issues/5050):
 // Exported to use in migrate tool, unexport after migrate is done.
 func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
