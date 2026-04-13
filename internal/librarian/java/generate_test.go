@@ -354,6 +354,62 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
+func TestGenerateAPI_ProtoOnly(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	outdir := t.TempDir()
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	library := &config.Library{
+		Name:   "gkehub",
+		Output: outdir,
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
+			},
+		},
+	}
+	for _, artifact := range []string{"proto-google-cloud-gkehub-v1beta", "google-cloud-gkehub-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/gkehub/policycontroller/v1beta", config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(
+		t.Context(),
+		cfg,
+		&config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		library,
+		googleapisDir,
+		outdir,
+		&repoMetadata{
+			NamePretty: "GKE Hub API",
+		},
+		apiCfg,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restructuredPath := filepath.Join(outdir, "owl-bot-staging", "v1beta", "proto-google-cloud-gkehub-v1beta", "src", "main", "java")
+	if _, err := os.Stat(restructuredPath); err != nil {
+		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
+	}
+}
+
 func TestGenerateAPI_NoTools(t *testing.T) {
 	// Temporarily mock runProtoc to avoid external tool requirements.
 	oldRunProtoc := runProtoc
