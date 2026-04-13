@@ -16,18 +16,17 @@ package parser
 
 import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func protobufFieldBehavior(field *descriptorpb.FieldDescriptorProto) []api.FieldBehavior {
-	extensionId := annotations.E_FieldBehavior
+	extensionId := eFieldBehavior
 	if !proto.HasExtension(field.GetOptions(), extensionId) {
 		return nil
 	}
 	var behavior []api.FieldBehavior
-	for _, b := range proto.GetExtension(field.GetOptions(), extensionId).([]annotations.FieldBehavior) {
+	for _, b := range proto.GetExtension(field.GetOptions(), extensionId).([]fieldBehavior) {
 		behavior = append(behavior, api.FieldBehavior(b))
 	}
 	return behavior

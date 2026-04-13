@@ -32,6 +32,7 @@ Before submitting changes, run the full test suite:
 - `internal/config`: **Pure data types only.** Structs and constants here are a direct 1:1 mapping with `librarian.yaml`. Do not add functions or methods to this package.
 - `internal/testhelper`: **ALWAYS** check here for existing utilities before creating new test tools.
 - `internal/yaml`: **ALWAYS** use this package instead of `gopkg.in/yaml.v3`.
+- `internal/sidekick/parser`: **ALWAYS** check `protobuf_imports_oss.go` for existing bridged types. If they exist, do not import the corresponding protobuf packages (like `"google.golang.org/genproto/googleapis/api/annotations"` or `"cloud.google.com/go/iam/apiv1/iampb"`) directly. Use the centralized aliases in `protobuf_imports_oss.go` and `protobuf_imports_google3.go` to ensure compatibility across environments.
 
 ## Additional Context
 

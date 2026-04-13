@@ -1,5 +1,5 @@
 {{!
-Copyright 2025 Google LLC
+Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,24 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-# Copyright {{Codec.CopyrightYear}} Google LLC
+// Copyright {{Codec.CopyrightYear}} Google LLC
 {{#Codec.BoilerPlate}}
-#{{{.}}}
+//{{{.}}}
 {{/Codec.BoilerPlate}}
 
-[package]
-name        = "{{Codec.PackageName}}-code-generation"
-version     = "0.0.0"
-description = "Prost and Tonic generator for {{Codec.PackageName}}"
-publish     = false
-build       = "build.rs"
-edition     = "2021"
+//! Placeholder to support `build.rs`.
 
-[build-dependencies]
-prost-build = { version = "0.14", optional = true }
-
-[features]
-_generate-protos = ["dep:prost-build"]
-
-# This is unrelated to the top-level workspace
-[workspace]

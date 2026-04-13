@@ -152,6 +152,10 @@ type RustModule struct {
 	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
 	IncludeList string `yaml:"include_list,omitempty"`
 
+	// IncludeStreamingMethods indicates whether to include gRPC streaming
+	// methods.
+	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
+
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
@@ -250,6 +254,10 @@ type RustCrate struct {
 
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
+
+	// IncludeStreamingMethods indicates whether to include gRPC streaming
+	// methods.
+	IncludeStreamingMethods bool `yaml:"include_streaming_methods,omitempty"`
 
 	// PostProcessProtos indicates whether to post-process protos.
 	PostProcessProtos string `yaml:"post_process_protos,omitempty"`
@@ -496,6 +504,10 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	APIDescriptionOverride string `yaml:"api_description_override,omitempty"`
 
+	// APIShortnameOverride allows the "api_shortname" field in
+	// .repo-metadata.json to be overridden.
+	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
+
 	// ClientDocumentationOverride allows the "client_documentation" field in
 	// .repo-metadata.json to be overridden.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
@@ -663,6 +675,10 @@ type DotnetCsprojSnippets struct {
 
 // NodejsPackage contains Node.js-specific library configuration.
 type NodejsPackage struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	// This can be overridden at the API level.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
 	// BundleConfig is the path to a GAPIC bundle config file.
 	BundleConfig string `yaml:"bundle_config,omitempty"`
 
@@ -683,6 +699,18 @@ type NodejsPackage struct {
 	// Mixins controls mixin behavior (e.g., "none" to disable).
 	Mixins string `yaml:"mixins,omitempty"`
 
+	// NodejsAPIs is a list of Node.js-specific API configurations.
+	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
+
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
+}
+
+// NodejsAPI represents configuration for a single API within a Node.js package.
+type NodejsAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
 }

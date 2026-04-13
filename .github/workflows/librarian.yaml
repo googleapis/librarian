@@ -49,6 +49,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+      - name: Install tools
+        run: |
+          go run ./cmd/librarian install go
       - name: Run tests and check coverage
         run: |
           go run ./tool/cmd/coverage \
