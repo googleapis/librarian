@@ -527,7 +527,7 @@ func TestParseJavaBazel(t *testing.T) {
 			name:          "no GAPIC rules",
 			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
 			want: &javaGAPICInfo{
-				Samples: true,
+				Samples: false,
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},
