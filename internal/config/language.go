@@ -398,7 +398,7 @@ type PythonPackage struct {
 
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
-	// default it's the package name, but older packages use the API short name
+	// default, it's the package name, but older packages use the API short name
 	// instead.
 	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
 
@@ -589,6 +589,8 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
 	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
