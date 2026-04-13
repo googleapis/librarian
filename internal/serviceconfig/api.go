@@ -153,6 +153,7 @@ func (api *API) ReleaseLevel(language, version string) string {
 		return rl
 	}
 
+	// Not explicitly set, derive release level from API and client stability.
 	apiVersion := ExtractVersion(api.Path)
 	isAlpha := strings.Contains(apiVersion, "alpha")
 	isBeta := strings.Contains(apiVersion, "beta")
@@ -163,7 +164,7 @@ func (api *API) ReleaseLevel(language, version string) string {
 	}
 
 	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across languages
+	// release level vocabulary across languages.
 	if language == config.LanguageGo {
 		if isAlpha {
 			return "alpha"
