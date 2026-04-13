@@ -127,6 +127,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `include-grpc-only-methods` value %q to boolean: %w", definition, err)
 			}
 			codec.includeGrpcOnlyMethods = value
+		case key == "include-streaming-methods":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `include-streaming-methods` value %q to boolean: %w", definition, err)
+			}
+			codec.includeStreamingMethods = value
 		case key == "per-service-features":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -293,6 +299,8 @@ type codec struct {
 	// If true, this includes gRPC-only methods, such as methods without HTTP
 	// annotations.
 	includeGrpcOnlyMethods bool
+	// If true, this includes gRPC streaming methods.
+	includeStreamingMethods bool
 	// If true, the generator will produce per-client features.
 	perServiceFeatures bool
 	// If not empty, and if `perServiceFeatures` is true, the default features
@@ -1590,7 +1598,7 @@ func (c *codec) generateMethod(m *api.Method) bool {
 	// TODO(#499) - switch to explicitly excluding such functions. Easier to
 	//     find them and fix them that way.
 	if m.ClientSideStreaming || m.ServerSideStreaming {
-		return false
+		return c.includeStreamingMethods
 	}
 	if c.includeGrpcOnlyMethods {
 		return true

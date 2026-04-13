@@ -338,6 +338,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
+| `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -385,6 +386,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |

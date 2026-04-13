@@ -244,7 +244,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			applyJavaArtifactOverrides(name, javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
-		libs = append(libs, &config.Library{
+		lib := &config.Library{
 			Name:    name,
 			Version: version,
 			Keep:    parseOwlBotKeep(repoPath, output),
@@ -272,7 +272,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
 			},
-		})
+		}
+		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
+			lib.Java.APIShortnameOverride = shortnameOverride
+		}
+		libs = append(libs, lib)
 	}
 	if len(libs) == 0 {
 		return nil

@@ -130,6 +130,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.IncludeGrpcOnlyMethods {
 		codec["include-grpc-only-methods"] = "true"
 	}
+	if rust.IncludeStreamingMethods {
+		codec["include-streaming-methods"] = "true"
+	}
 	if rust.PerServiceFeatures {
 		codec["per-service-features"] = "true"
 	}
@@ -302,6 +305,9 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if module.IncludeGrpcOnlyMethods {
 		codec["include-grpc-only-methods"] = "true"
+	}
+	if module.IncludeStreamingMethods {
+		codec["include-streaming-methods"] = "true"
 	}
 	detailedTracingAttributes := library.Rust != nil && library.Rust.DetailedTracingAttributes != nil && *library.Rust.DetailedTracingAttributes
 	if module.DetailedTracingAttributes != nil {
