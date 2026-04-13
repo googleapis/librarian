@@ -33,6 +33,18 @@ func Fill(library *config.Library) (*config.Library, error) {
 	if library.Output == "" {
 		library.Output = deriveOutput(library.Name)
 	}
+	if library.Java == nil {
+		library.Java = &config.JavaModule{}
+	}
+	var javaAPIs []*config.JavaAPI
+	for _, api := range library.APIs {
+		javaAPI := ResolveJavaAPI(library, api)
+		if javaAPI.Samples == nil {
+			javaAPI.Samples = new(true)
+		}
+		javaAPIs = append(javaAPIs, javaAPI)
+	}
+	library.Java.JavaAPIs = javaAPIs
 	return library, nil
 }
 

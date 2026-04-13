@@ -382,6 +382,9 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 			api,
 		},
 	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
@@ -492,6 +495,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if _, err := Fill(test.library); err != nil {
+				t.Fatal(err)
+			}
 			// Temporarily mock runProtoc to avoid external tool requirements.
 			oldRunProtoc := runProtoc
 			defer func() { runProtoc = oldRunProtoc }()
@@ -531,6 +537,9 @@ func TestGenerate_Logic(t *testing.T) {
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
 	}
 	cfg := &config.Config{
 		Language: config.LanguageJava,

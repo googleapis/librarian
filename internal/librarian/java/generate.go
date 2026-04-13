@@ -99,7 +99,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		outDir:         outdir,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		includeSamples: javaAPI.Samples == nil || *javaAPI.Samples,
+		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := p.gapicDir()
 	gRPCDir := p.gRPCDir()
@@ -288,11 +288,9 @@ func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 		return res
 	}
 	for _, javaAPI := range library.Java.JavaAPIs {
-		if javaAPI.Path != api.Path {
-			continue
+		if javaAPI.Path == api.Path {
+			return javaAPI
 		}
-		*res = *javaAPI
-		return res
 	}
 	return res
 }
