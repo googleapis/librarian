@@ -1,0 +1,99 @@
+{
+  "auth": {},
+  "basePath": "/compute/v1/",
+  "baseUrl": "https://compute.googleapis.com/compute/v1/",
+  "description": "Small",
+  "discoveryVersion": "v1",
+  "documentationLink": "",
+  "id": "compute:v1",
+  "kind": "discovery#restDescription",
+  "name": "compute",
+  "ownerDomain": "google.com",
+  "ownerName": "Google",
+  "parameters": {},
+  "protocol": "rest",
+  "revision": "20250810",
+  "rootUrl": "https://compute.googleapis.com/",
+  "servicePath": "compute/v1/",
+  "title": "Compute Engine API",
+  "version": "v1",
+  "resources": {
+    "AcceleratorTypes": {
+      "description": "Represents an Accelerator Type resource. Google Cloud Platform provides graphics processing units (accelerators) that you can add to VM instances to improve or accelerate performance when working with intensive workloads. For more information, read GPUs on Compute Engine.",
+      "id": "AcceleratorType",
+      "methods": {
+        "list": {
+          "apiVersion": "v1_20260131",
+          "path": "p/{project}/z/{zone}/acceleratorTypes",
+          "httpMethod": "GET",
+          "parameters": {
+            "project": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "zone": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "Addresses": {
+      "description": "Represents an IP Address resource. Google Compute Engine has two IP Address resources: * [Global (external and internal)](https://cloud.google.com/compute/docs/reference/rest/v1/globalAddresses) * [Regional (external and internal)](https://cloud.google.com/compute/docs/reference/rest/v1/addresses) For more information, see Reserving a static external IP address.",
+      "id": "Address",
+      "methods": {
+        "delete": {
+          "apiVersion": "v1_20260205",
+          "path": "p/{project}/r/{region}/addresses/{address}",
+          "httpMethod": "DELETE",
+          "parameters": {
+            "project": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "region": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "address": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "instances": {
+      "methods": {
+        "get": {
+          "path": "p/{project}/z/{zone}/instances/{instance}",
+          "httpMethod": "GET",
+          "parameters": {
+            "project": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "zone": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            },
+            "instance": {
+              "location": "path",
+              "required": true,
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  },
+  "schemas": {}
+}
