@@ -30,7 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser/svcconfig"
 	"github.com/googleapis/librarian/internal/sidekick/protobuf"
 	"github.com/googleapis/librarian/internal/sources"
-	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 	"google.golang.org/protobuf/types/pluginpb"
@@ -483,14 +482,11 @@ var descriptorpbToTypez = map[descriptorpb.FieldDescriptorProto_Type]api.Typez{
 }
 
 func normalizeTypes(state *api.APIState, in *descriptorpb.FieldDescriptorProto, field *api.Field) {
-	typez := in.GetType()
-	field.Typez = api.UNDEFINED_TYPE
-	if tz, ok := descriptorpbToTypez[typez]; ok {
-		field.Typez = tz
-	}
+	field.Typez = descriptorpbToTypez[in.GetType()]
+	field.TypezID = in.GetTypeName()
 	field.Repeated = in.Label != nil && *in.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
 
-	switch typez {
+	switch in.GetType() {
 	case descriptorpb.FieldDescriptorProto_TYPE_GROUP:
 		field.TypezID = in.GetTypeName()
 	case descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:
@@ -657,13 +653,13 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 }
 
 func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, state *api.APIState) error {
-	if !proto.HasExtension(opts, annotations.E_Resource) {
+	if !proto.HasExtension(opts, eResource) {
 		return nil
 	}
-	ext := proto.GetExtension(opts, annotations.E_Resource)
-	res, ok := ext.(*annotations.ResourceDescriptor)
+	ext := proto.GetExtension(opts, eResource)
+	res, ok := ext.(*resourceDescriptor)
 	if !ok {
-		return fmt.Errorf("in message %q: unexpected type for E_Resource extension: %T", message.ID, ext)
+		return fmt.Errorf("in message %q: unexpected type for eResource extension: %T", message.ID, ext)
 	}
 
 	patterns, err := parseResourcePatterns(res.GetPattern())
@@ -687,14 +683,14 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 // This must be called for all files (including dependencies) to ensure that
 // resources referenced but not defined in the source files are available.
 func processFileResourceDefinitions(f *descriptorpb.FileDescriptorProto) ([]*api.Resource, error) {
-	if f.Options == nil || !proto.HasExtension(f.Options, annotations.E_ResourceDefinition) {
+	if f.Options == nil || !proto.HasExtension(f.Options, eResourceDefinition) {
 		return nil, nil
 	}
 
-	ext := proto.GetExtension(f.Options, annotations.E_ResourceDefinition)
-	res, ok := ext.([]*annotations.ResourceDescriptor)
+	ext := proto.GetExtension(f.Options, eResourceDefinition)
+	res, ok := ext.([]*resourceDescriptor)
 	if !ok {
-		return nil, fmt.Errorf("unexpected type for E_ResourceDefinition extension: %T", ext)
+		return nil, fmt.Errorf("unexpected type for eResourceDefinition extension: %T", ext)
 	}
 
 	var resources []*api.Resource
@@ -731,13 +727,13 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	if f.Options == nil {
 		return nil
 	}
-	if !proto.HasExtension(f.Options, annotations.E_ResourceReference) {
+	if !proto.HasExtension(f.Options, eResourceReference) {
 		return nil
 	}
-	ext := proto.GetExtension(f.Options, annotations.E_ResourceReference)
-	ref, ok := ext.(*annotations.ResourceReference)
+	ext := proto.GetExtension(f.Options, eResourceReference)
+	ref, ok := ext.(*resourceReference)
 	if !ok {
-		return fmt.Errorf("in field %q: unexpected type for E_ResourceReference extension: %T", field.ID, ext)
+		return fmt.Errorf("in field %q: unexpected type for eResourceReference extension: %T", field.ID, ext)
 	}
 	field.ResourceReference = &api.ResourceReference{
 		Type:      ref.Type,

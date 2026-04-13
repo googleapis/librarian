@@ -42,10 +42,10 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.cloud.location.Locations.GetLocation",
-					Pattern: &annotations.HttpRule_Get{
+					Pattern: &httpRuleGet{
 						Get: "/v1/{name=projects/*/locations/*}",
 					},
 				},
@@ -112,10 +112,10 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.iam.v1.IAMPolicy.GetIamPolicy",
-					Pattern: &annotations.HttpRule_Post{
+					Pattern: &httpRulePost{
 						Post: "/v1/{resource=services/*}:getIamPolicy",
 					},
 					Body: "*",
@@ -189,10 +189,10 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.longrunning.Operations.GetOperation",
-					Pattern: &annotations.HttpRule_Get{
+					Pattern: &httpRuleGet{
 						Get: "/v2/{name=operations/*}",
 					},
 					Body: "*",
@@ -269,17 +269,17 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.longrunning.Operations.GetOperation",
-					Pattern: &annotations.HttpRule_Get{
+					Pattern: &httpRuleGet{
 						Get: "/v2/{name=operations/*}",
 					},
 					Body: "*",
 				},
 				{
 					Selector: "google.longrunning.Operations.CancelOperation",
-					Pattern: &annotations.HttpRule_Delete{
+					Pattern: &httpRuleDelete{
 						Delete: "/v2/{name=operations/*}",
 					},
 					Body: "*",
@@ -362,10 +362,10 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			},
 		},
 		Http: &annotations.Http{
-			Rules: []*annotations.HttpRule{
+			Rules: []*httpRule{
 				{
 					Selector: "google.longrunning.Operations.GetOperation",
-					Pattern: &annotations.HttpRule_Get{
+					Pattern: &httpRuleGet{
 						Get: "/v2/{name=operations/*}",
 					},
 					Body: "*",

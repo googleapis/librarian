@@ -22,7 +22,6 @@ import (
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
-	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
@@ -56,12 +55,12 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 }
 
 func parsePathInfo(m *descriptorpb.MethodDescriptorProto, state *api.APIState) (*api.PathInfo, error) {
-	eHTTP := proto.GetExtension(m.GetOptions(), annotations.E_Http)
-	httpRule := eHTTP.(*annotations.HttpRule)
+	eHTTP := proto.GetExtension(m.GetOptions(), eHttp)
+	httpRule := eHTTP.(*httpRule)
 	return processRule(httpRule, state, m.GetInputType())
 }
 
-func processRule(httpRule *annotations.HttpRule, state *api.APIState, mID string) (*api.PathInfo, error) {
+func processRule(httpRule *httpRule, state *api.APIState, mID string) (*api.PathInfo, error) {
 	binding, body, err := processRuleShallow(httpRule, state, mID)
 	if err != nil {
 		return nil, err
@@ -91,23 +90,23 @@ func processRule(httpRule *annotations.HttpRule, state *api.APIState, mID string
 	return pathInfo, nil
 }
 
-func processRuleShallow(httpRule *annotations.HttpRule, state *api.APIState, mID string) (*api.PathBinding, string, error) {
+func processRuleShallow(httpRule *httpRule, state *api.APIState, mID string) (*api.PathBinding, string, error) {
 	var verb string
 	var rawPath string
 	switch httpRule.GetPattern().(type) {
-	case *annotations.HttpRule_Get:
+	case *httpRuleGet:
 		verb = "GET"
 		rawPath = httpRule.GetGet()
-	case *annotations.HttpRule_Post:
+	case *httpRulePost:
 		verb = "POST"
 		rawPath = httpRule.GetPost()
-	case *annotations.HttpRule_Put:
+	case *httpRulePut:
 		verb = "PUT"
 		rawPath = httpRule.GetPut()
-	case *annotations.HttpRule_Delete:
+	case *httpRuleDelete:
 		verb = "DELETE"
 		rawPath = httpRule.GetDelete()
-	case *annotations.HttpRule_Patch:
+	case *httpRulePatch:
 		verb = "PATCH"
 		rawPath = httpRule.GetPatch()
 	default:
@@ -159,7 +158,7 @@ func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, 
 }
 
 func parseDefaultHost(m proto.Message) string {
-	eDefaultHost := proto.GetExtension(m, annotations.E_DefaultHost)
+	eDefaultHost := proto.GetExtension(m, eDefaultHost)
 	defaultHost := eDefaultHost.(string)
 	if defaultHost == "" {
 		slog.Warn("missing default host for service", "service", m.ProtoReflect().Descriptor().FullName())
@@ -168,7 +167,7 @@ func parseDefaultHost(m proto.Message) string {
 }
 
 func parseAPIVersion(serviceID string, m proto.Message) string {
-	apiVersion := proto.GetExtension(m, annotations.E_ApiVersion)
+	apiVersion := proto.GetExtension(m, eApiVersion)
 	if version, ok := apiVersion.(string); ok {
 		return version
 	}
@@ -177,23 +176,24 @@ func parseAPIVersion(serviceID string, m proto.Message) string {
 
 func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {
 	if field.GetType() != descriptorpb.FieldDescriptorProto_TYPE_STRING {
+
 		return false
 	}
-	extensionId := annotations.E_FieldInfo
+	extensionId := eFieldInfo
 	if !proto.HasExtension(field.GetOptions(), extensionId) {
 		return false
 	}
-	fieldInfo := proto.GetExtension(field.GetOptions(), extensionId).(*annotations.FieldInfo)
-	if fieldInfo.GetFormat() != annotations.FieldInfo_UUID4 {
+	fieldInfo := proto.GetExtension(field.GetOptions(), extensionId).(*fieldInfo)
+	if fieldInfo.GetFormat() != fieldInfoUUID4 {
 		return false
 	}
-	extensionId = annotations.E_FieldBehavior
+	extensionId = eFieldBehavior
 	if !proto.HasExtension(field.GetOptions(), extensionId) {
 		return true
 	}
-	fieldBehavior := proto.GetExtension(field.GetOptions(), extensionId).([]annotations.FieldBehavior)
+	fieldBehavior := proto.GetExtension(field.GetOptions(), extensionId).([]fieldBehavior)
 	for _, b := range fieldBehavior {
-		if b == annotations.FieldBehavior_REQUIRED {
+		if b == fieldBehaviorRequired {
 			return false
 		}
 	}
