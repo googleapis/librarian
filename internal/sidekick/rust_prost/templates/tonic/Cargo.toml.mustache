@@ -1,5 +1,5 @@
 {{!
-Copyright 2025 Google LLC
+Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -28,9 +28,10 @@ edition     = "2021"
 
 [build-dependencies]
 prost-build = { version = "0.14", optional = true }
+tonic-prost-build = { version = "0.14", optional = true }
 
 [features]
-_generate-protos = ["dep:prost-build"]
+_generate-protos = ["dep:prost-build", "dep:tonic-prost-build"]
 
 # This is unrelated to the top-level workspace
 [workspace]

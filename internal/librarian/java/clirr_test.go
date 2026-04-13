@@ -15,6 +15,8 @@
 package java
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,7 +35,7 @@ func TestGenerateClirr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := generateClirrIfMissing(protoModulePath); err != nil {
+	if err := generateClirrIfMissing(protoModulePath, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -51,21 +53,27 @@ func TestGenerateClirr(t *testing.T) {
 	}
 }
 
-func TestGenerateClirr_SkipExisting(t *testing.T) {
+func TestGenerateClirr_SkipExistingInCheckPath(t *testing.T) {
 	tmpDir := t.TempDir()
-	outputPath := filepath.Join(tmpDir, "clirr-ignored-differences.xml")
-	initialContent := "manual content"
-	if err := os.WriteFile(outputPath, []byte(initialContent), 0644); err != nil {
+	targetDir := filepath.Join(tmpDir, "target")
+	checkDir := filepath.Join(tmpDir, "check")
+	if err := os.MkdirAll(targetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := generateClirrIfMissing(tmpDir); err != nil {
+	if err := os.MkdirAll(checkDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	newContent, err := os.ReadFile(outputPath)
-	if err != nil {
+	outputPath := filepath.Join(checkDir, "clirr-ignored-differences.xml")
+	if err := os.WriteFile(outputPath, []byte("exists"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	if string(newContent) != initialContent {
-		t.Errorf("expected generateClirr to skip existing file, but content changed from %q to %q", initialContent, string(newContent))
+
+	if err := generateClirrIfMissing(targetDir, checkDir); err != nil {
+		t.Fatal(err)
+	}
+
+	targetPath := filepath.Join(targetDir, "clirr-ignored-differences.xml")
+	if _, err := os.Stat(targetPath); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected %s NOT to exist because it exists in checkPath", targetPath)
 	}
 }

@@ -153,8 +153,8 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		}
 		switch modelConfig.Language {
 		case config.LanguageRust:
-			if module.Template == "prost" {
-				err = rust_prost.Generate(ctx, model, module.Output, modelConfig)
+			if module.Template == "prost" || module.Template == "tonic" {
+				err = rust_prost.Generate(ctx, model, module.Output, module.Template, modelConfig)
 			} else {
 				err = sidekickrust.Generate(ctx, model, module.Output, modelConfig)
 			}

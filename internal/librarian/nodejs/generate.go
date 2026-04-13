@@ -37,6 +37,10 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+const (
+	commonProtos = "google/cloud/common_resources.proto"
+)
+
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
@@ -66,6 +70,8 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return err
 	}
 
+	nodejsAPI := resolveNodejsAPI(library, api)
+
 	googleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
@@ -80,12 +86,59 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
 
+	// Add additional protos from configuration.
+	for _, p := range nodejsAPI.AdditionalProtos {
+		protos = append(protos, filepath.Join(googleapisDir, p))
+	}
+
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir)
 	if err != nil {
 		return err
 	}
 	cmdArgs := append(args[1:], protos...)
 	return command.Run(ctx, args[0], cmdArgs...)
+}
+
+// resolveNodejsAPI returns the Node.js-specific configuration for the given API,
+// applying default values if no explicit configuration is found in the library.
+func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
+	res := &config.NodejsAPI{
+		Path:             api.Path,
+		AdditionalProtos: []string{commonProtos},
+	}
+	if library.Nodejs == nil {
+		return res
+	}
+
+	// Always include commonProtos as a base.
+	protos := []string{commonProtos}
+
+	// Add package-level additional protos.
+	protos = append(protos, library.Nodejs.AdditionalProtos...)
+
+	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
+		if nodejsAPI.Path != api.Path {
+			continue
+		}
+		// Add API-level additional protos.
+		protos = append(protos, nodejsAPI.AdditionalProtos...)
+		break
+	}
+
+	res.AdditionalProtos = unique(protos)
+	return res
+}
+
+func unique(ss []string) []string {
+	m := make(map[string]bool)
+	var res []string
+	for _, s := range ss {
+		if _, ok := m[s]; !ok {
+			m[s] = true
+			res = append(res, s)
+		}
+	}
+	return res
 }
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,

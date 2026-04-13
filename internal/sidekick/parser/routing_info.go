@@ -22,18 +22,17 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/descriptorpb"
 )
 
 func parseRoutingAnnotations(methodID string, m *descriptorpb.MethodDescriptorProto) ([]*api.RoutingInfo, error) {
-	extensionId := annotations.E_Routing
+	extensionId := eRouting
 	if !proto.HasExtension(m.GetOptions(), extensionId) {
 		return nil, nil
 	}
 
-	rule := proto.GetExtension(m.GetOptions(), extensionId).(*annotations.RoutingRule)
+	rule := proto.GetExtension(m.GetOptions(), extensionId).(*routingRule)
 	var errs []error
 	collect := map[string]*api.RoutingInfo{}
 	for _, routing := range rule.GetRoutingParameters() {
@@ -59,7 +58,7 @@ func parseRoutingAnnotations(methodID string, m *descriptorpb.MethodDescriptorPr
 	return info, nil
 }
 
-func parseRoutingInfo(methodID string, routing *annotations.RoutingParameter) (*api.RoutingInfo, error) {
+func parseRoutingInfo(methodID string, routing *routingParameter) (*api.RoutingInfo, error) {
 	pathTemplate := routing.GetPathTemplate()
 	fieldName := routing.GetField()
 	info, err := parseRoutingPathTemplate(fieldName, pathTemplate)

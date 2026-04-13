@@ -122,7 +122,8 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// to their final destination yet.
 	coords := p.coords()
 	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
-	if err := generateClirrIfMissing(protoModuleStagingRoot); err != nil {
+	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
+	if err := generateClirrIfMissing(protoModuleStagingRoot, protoModuleRepoRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 

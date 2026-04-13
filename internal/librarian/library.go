@@ -690,6 +690,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	if src.IncludeGrpcOnlyMethods {
 		res.IncludeGrpcOnlyMethods = src.IncludeGrpcOnlyMethods
 	}
+	if src.IncludeStreamingMethods {
+		res.IncludeStreamingMethods = src.IncludeStreamingMethods
+	}
 	if src.PostProcessProtos != "" {
 		res.PostProcessProtos = src.PostProcessProtos
 	}
