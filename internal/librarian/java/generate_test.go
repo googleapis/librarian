@@ -256,7 +256,7 @@ func TestResolveJavaAPI(t *testing.T) {
 						{
 							Path:             "google/cloud/secretmanager/v1",
 							AdditionalProtos: []string{"other.proto"},
-							NoSamples:        true,
+							Samples:          boolPtr(false),
 						},
 					},
 				},
@@ -265,7 +265,7 @@ func TestResolveJavaAPI(t *testing.T) {
 			want: &config.JavaAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{"other.proto"},
-				NoSamples:        true,
+				Samples:          boolPtr(false),
 			},
 		},
 		{
@@ -671,4 +671,8 @@ func TestCollectJavaFiles(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }
