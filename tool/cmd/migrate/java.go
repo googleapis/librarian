@@ -241,7 +241,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				AdditionalProtos: info.AdditionalProtos,
 			}
 			if !info.Samples {
-				javaAPI.Samples = boolPtr(false)
+				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(name, javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
@@ -364,10 +364,6 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
 
 func invertBoolPtr(p *bool) bool {
