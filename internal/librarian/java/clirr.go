@@ -39,28 +39,31 @@ const (
 	templateName = "clirr-ignored-differences.xml.tmpl"
 )
 
-// generateClirrIfMissing generates the clirr-ignored-differences.xml file in the protoModulePath
-// if it doesn't already exist in the checkPath.
+// clirrIgnoreExists checks if the clirr-ignored-differences.xml file exists in the
+// specified directory.
+func clirrIgnoreExists(dir string) (bool, error) {
+	path := filepath.Join(dir, clirrIgnoreFile)
+	_, err := os.Stat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, fs.ErrNotExist) {
+		return false, nil
+	}
+	return false, fmt.Errorf("failed to check for %s: %w", path, err)
+}
+
+// generateClirrIgnore identifies Java packages containing Protobuf-generated code
+// and generates the clirr-ignored-differences.xml file in the protoModulePath.
 //
-// It identifies Java packages containing Protobuf-generated code by searching for
-// files ending in "OrBuilder.java" under "src/main/java". The "OrBuilder" suffix
-// is used as a reliable marker because it is consistently generated for every
-// Protobuf message.
+// It identifies Java packages by searching for files ending in "OrBuilder.java"
+// under "src/main/java". The "OrBuilder" suffix is used as a reliable marker
+// because it is consistently generated for every Protobuf message.
 //
 // The generated file contains a set of whitelist rules that tell the Clirr tool
 // to ignore specific changes (like method additions to interfaces) to
 // prevent false-positive binary compatibility failures in the build.
-func generateClirrIfMissing(protoModulePath, checkPath string) error {
-	if checkPath != "" {
-		repoFilePath := filepath.Join(checkPath, clirrIgnoreFile)
-		_, err := os.Stat(repoFilePath)
-		if err == nil {
-			return nil
-		}
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("failed to check for %s: %w", repoFilePath, err)
-		}
-	}
+func generateClirrIgnore(protoModulePath string) error {
 	protoPaths, err := findProtoPackages(protoModulePath)
 	if err != nil {
 		return fmt.Errorf("failed to find proto packages in %s: %w", protoModulePath, err)
