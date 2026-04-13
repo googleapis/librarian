@@ -315,11 +315,17 @@ func TestGenerateAPI(t *testing.T) {
 	library := &config.Library{
 		Name:   "secretmanager",
 		Output: outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
 				{Path: "google/cloud/secretmanager/v1", AdditionalProtos: []string{"google/cloud/common_resources.proto"}},
 			},
 		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
