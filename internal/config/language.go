@@ -579,7 +579,7 @@ type JavaAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
-	// Samples determines whether to generate samples for all APIs in this module.
+	// Samples determines whether to generate samples for the API.
 	Samples *bool `yaml:"samples,omitempty"`
 
 	// Path is the source path.
