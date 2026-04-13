@@ -31,7 +31,10 @@ var templates embed.FS
 
 // Generate generates code from the model.
 func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
-	codec := newCodec(model, cfg, swiftCfg)
+	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+	if err != nil {
+		return err
+	}
 	if err := codec.annotateModel(); err != nil {
 		return err
 	}
@@ -45,7 +48,13 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := codec.generateMessages(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateEnums(outdir, model, provider); err != nil {
+		return err
+	}
 	if err := codec.generateServices(outdir, model, provider); err != nil {
+		return err
+	}
+	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
 	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
@@ -65,11 +74,37 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 	return nil
 }
 
+func (c *codec) generateEnums(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, e := range model.Enums {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/enum.swift.mustache",
+			OutputPath:   filepath.Join("Sources", c.PackageName, e.Name+".swift"),
+		}
+		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (c *codec) generateServices(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.mustache",
 			OutputPath:   filepath.Join("Sources", c.PackageName, s.Name+".swift"),
+		}
+		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (c *codec) generateSnippets(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, s := range model.Services {
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/snippet.swift.mustache",
+			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
 		}
 		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 			return err

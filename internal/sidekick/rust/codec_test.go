@@ -219,6 +219,15 @@ func TestParseOptions(t *testing.T) {
 		{
 			Format: libconfig.SpecProtobuf,
 			Options: map[string]string{
+				"include-streaming-methods": "true",
+			},
+			Update: func(c *codec) {
+				c.includeStreamingMethods = true
+			},
+		},
+		{
+			Format: libconfig.SpecProtobuf,
+			Options: map[string]string{
 				"per-service-features": "true",
 			},
 			Update: func(c *codec) {
@@ -363,6 +372,7 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"not-for-publication": ""}},
 		{Options: map[string]string{"package:": ""}},
 		{Options: map[string]string{"include-grpc-only-methods": ""}},
+		{Options: map[string]string{"include-streaming-methods": ""}},
 		{Options: map[string]string{"per-service-features": ""}},
 		{Options: map[string]string{"detailed-tracing-attributes": ""}},
 		{Options: map[string]string{"has-veneer": ""}},
@@ -2275,5 +2285,70 @@ func TestParseOptionsGenerateRpcSamples(t *testing.T) {
 	}
 	if !got.generateRpcSamples {
 		t.Errorf("generateRpcSamples should be true")
+	}
+}
+
+func TestGenerateMethod_Streaming(t *testing.T) {
+	for _, test := range []struct {
+		name                    string
+		includeStreamingMethods bool
+		method                  *api.Method
+		want                    bool
+	}{
+		{
+			name:                    "skips client-side streaming by default",
+			includeStreamingMethods: false,
+			method: &api.Method{
+				Name:                "ClientStreaming",
+				ClientSideStreaming: true,
+			},
+			want: false,
+		},
+		{
+			name:                    "includes client-side streaming when enabled",
+			includeStreamingMethods: true,
+			method: &api.Method{
+				Name:                "ClientStreaming",
+				ClientSideStreaming: true,
+			},
+			want: true,
+		},
+		{
+			name:                    "skips server-side streaming by default",
+			includeStreamingMethods: false,
+			method: &api.Method{
+				Name:                "ServerStreaming",
+				ServerSideStreaming: true,
+			},
+			want: false,
+		},
+		{
+			name:                    "includes server-side streaming when enabled",
+			includeStreamingMethods: true,
+			method: &api.Method{
+				Name:                "ServerStreaming",
+				ServerSideStreaming: true,
+			},
+			want: true,
+		},
+		{
+			name:                    "includes bidirectional streaming when enabled",
+			includeStreamingMethods: true,
+			method: &api.Method{
+				Name:                "BidiStreaming",
+				ClientSideStreaming: true,
+				ServerSideStreaming: true,
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			c := &codec{
+				includeStreamingMethods: test.includeStreamingMethods,
+			}
+			if got := c.generateMethod(test.method); got != test.want {
+				t.Errorf("generateMethod() = %v, want %v", got, test.want)
+			}
+		})
 	}
 }

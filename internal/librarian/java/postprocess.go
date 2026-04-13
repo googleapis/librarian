@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -39,11 +40,13 @@ var (
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
 	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
+	errInvalidVersion   = errors.New("invalid java library version")
 )
 
 type postProcessParams struct {
 	cfg            *config.Config
 	library        *config.Library
+	javaAPI        *config.JavaAPI
 	metadata       *repoMetadata
 	outDir         string
 	version        string
@@ -90,7 +93,7 @@ func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.
 func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
 func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) coords() APICoordinate {
-	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version)
+	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version, p.javaAPI)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
@@ -119,7 +122,8 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// to their final destination yet.
 	coords := p.coords()
 	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
-	if err := generateClirrIfMissing(protoModuleStagingRoot); err != nil {
+	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
+	if err := generateClirrIfMissing(protoModuleStagingRoot, protoModuleRepoRoot); err != nil {
 		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 	}
 
@@ -274,9 +278,13 @@ func restructureModules(p postProcessParams, destRoot string) error {
 //  4. python3 is available on the system PATH and has the synthtool package
 //     installed (from google-cloud-java/sdk-platform-java).
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
+	releasedVersion, err := deriveLastReleasedVersion(library.Version)
+	if err != nil {
+		return fmt.Errorf("%w %q: %w", errInvalidVersion, library.Version, err)
+	}
 	// Versions used to populate README.md file.
 	env := map[string]string{
-		"SYNTHTOOL_LIBRARY_VERSION":       library.Version,
+		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion,
 		"SYNTHTOOL_LIBRARIES_BOM_VERSION": bomVersion,
 	}
 	// Path to templates used for README.md file.
@@ -290,6 +298,28 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 	}
 	// Staging dirs cleans up as part of owlbot.py
 	return nil
+}
+
+// deriveLastReleasedVersion derives the last released version from a snapshot version
+// (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
+//
+// It returns an error if the snapshot version has a non-zero patch or a zero
+// minor version, as this repository is assumed to always bump the minor version.
+func deriveLastReleasedVersion(v string) (string, error) {
+	sv, err := semver.Parse(v)
+	if err != nil {
+		return "", err
+	}
+	if sv.Prerelease != "SNAPSHOT" {
+		return sv.String(), nil
+	}
+	if sv.Patch > 0 || sv.Minor == 0 {
+		return "", errInvalidVersion
+	}
+	sv.Minor--
+	sv.Patch = 0
+	sv.Prerelease = ""
+	return sv.String(), nil
 }
 
 func copyProtos(googleapisDir string, protos []string, destDir string) error {

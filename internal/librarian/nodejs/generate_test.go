@@ -1070,3 +1070,85 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 		t.Errorf("expected librarian.js to create output.txt using root-relative path: %v", err)
 	}
 }
+
+func TestResolveNodejsAPI(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		api     *config.API
+		want    *config.NodejsAPI
+	}{
+		{
+			name:    "not found, returns defaults",
+			library: &config.Library{},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+			},
+		},
+		{
+			name: "found in config, appends to defaults",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos, "other.proto"},
+			},
+		},
+		{
+			name: "found in config, package and api level union",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos, "pkg.proto", "api.proto"},
+			},
+		},
+		{
+			name: "deduplicates protos",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{commonProtos, "other.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:             "google/cloud/secretmanager/v1",
+							AdditionalProtos: []string{"other.proto", "more.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveNodejsAPI(test.library, test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

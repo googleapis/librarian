@@ -430,3 +430,118 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 		})
 	}
 }
+
+func TestGetMethodHelpText(t *testing.T) {
+	model := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type:     "test.googleapis.com/Instance",
+				Plural:   "instances",
+				Singular: "instance",
+			},
+		},
+	}
+
+	methodMock := func(name string) *api.Method {
+		m := api.NewTestMethod(name)
+		m.ID = "." + name
+		m.InputType = &api.Message{
+			Fields: []*api.Field{{
+				Name: "name",
+				ResourceReference: &api.ResourceReference{
+					Type: "test.googleapis.com/Instance",
+				},
+			}},
+		}
+		return m
+	}
+
+	overrides := &Config{
+		APIs: []API{
+			{
+				HelpText: &HelpTextRules{
+					MethodRules: []*HelpTextRule{
+						{
+							Selector: "GetInstance",
+							HelpText: &HelpTextElement{
+								Brief:       "Override Brief",
+								Description: "Override Desc",
+								Examples:    []string{"Override Ex1", "Override Ex2"},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		method    *api.Method
+		want      HelpText
+	}{
+		{
+			name:   "Describe Fallback",
+			method: methodMock("GetInstance"),
+			want: HelpText{
+				Brief:       "Describe instances",
+				Description: "Describe a instance",
+				Examples:    "To describe the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name:   "List Fallback",
+			method: methodMock("ListInstances"),
+			want: HelpText{
+				Brief:       "List instances",
+				Description: "List instances",
+				Examples:    "To list all instances, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name:   "Create Fallback",
+			method: methodMock("CreateInstance"),
+			want: HelpText{
+				Brief:       "Create instances",
+				Description: "Create a instance",
+				Examples:    "To create the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name:   "Delete Fallback",
+			method: methodMock("DeleteInstance"),
+			want: HelpText{
+				Brief:       "Delete instances",
+				Description: "Delete a instance",
+				Examples:    "To delete the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name:   "Update Fallback",
+			method: methodMock("UpdateInstance"),
+			want: HelpText{
+				Brief:       "Update instances",
+				Description: "Update a instance",
+				Examples:    "To update the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name:      "Override Found",
+			overrides: overrides,
+			method:    methodMock("GetInstance"),
+			want: HelpText{
+				Brief:       "Override Brief",
+				Description: "Override Desc",
+				Examples:    "Override Ex1\n\nOverride Ex2",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := GetMethodHelpText(test.overrides, test.method, model)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

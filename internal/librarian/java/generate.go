@@ -30,10 +30,6 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-const (
-	commonProtos = "google/cloud/common_resources.proto"
-)
-
 var (
 	errExtractVersion    = errors.New("failed to extract version")
 	errNoProtos          = errors.New("no protos found")
@@ -94,10 +90,11 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	if version == "" {
 		return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
 	}
-	javaAPI := resolveJavaAPI(library, api)
+	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
 		cfg:            cfg,
 		library:        library,
+		javaAPI:        javaAPI,
 		metadata:       metadata,
 		outDir:         outdir,
 		version:        version,
@@ -280,12 +277,12 @@ func collectJavaFiles(root string) ([]string, error) {
 	return files, err
 }
 
-// resolveJavaAPI returns the Java-specific configuration for the given API,
-// applying default values if no explicit configuration is found in the library.
-func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
+// ResolveJavaAPI returns the Java-specific configuration for the given API.
+// TODO(https://github.com/googleapis/librarian/issues/5050):
+// Exported to use in migrate tool, unexport after migrate is done.
+func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 	res := &config.JavaAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
+		Path: api.Path,
 	}
 	if library.Java == nil {
 		return res
@@ -295,9 +292,6 @@ func resolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 			continue
 		}
 		*res = *javaAPI
-		if len(res.AdditionalProtos) == 0 {
-			res.AdditionalProtos = []string{commonProtos}
-		}
 		return res
 	}
 	return res

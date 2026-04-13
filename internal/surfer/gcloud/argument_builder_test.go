@@ -15,7 +15,6 @@
 package gcloud
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -23,83 +22,6 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
-
-func TestNewArguments(t *testing.T) {
-	service := api.NewTestService("TestService")
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
-
-	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   int
-	}{
-		{
-			name: "Method with input fields",
-			method: api.NewTestMethod("DoSomething").WithInput(
-				api.NewTestMessage("Request").WithFields(
-					api.NewTestField("field_one").WithType(api.STRING_TYPE),
-					api.NewTestField("field_two").WithType(api.INT32_TYPE),
-				),
-			),
-			want: 2,
-		},
-		{
-			name: "Method with no InputType",
-			method: &api.Method{
-				Name:      "EmptyMethod",
-				InputType: nil,
-			},
-			want: 0,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			got, err := newCommandBuilder(test.method, &provider.Config{}, model, service).newArguments()
-			if err != nil {
-				t.Fatalf("newArguments() unexpected error = %v", err)
-			}
-			if len(got) != test.want {
-				t.Errorf("newArguments() generated %d params, want %d", len(got), test.want)
-			}
-		})
-	}
-}
-
-func TestNewArguments_Error(t *testing.T) {
-	service := api.NewTestService("TestService")
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
-
-	for _, test := range []struct {
-		name    string
-		method  *api.Method
-		wantErr string
-	}{
-		{
-			name: "Error mapping input fields",
-			method: api.NewTestMethod("DoSomethingError").WithInput(
-				api.NewTestMessage("Request").WithFields(
-					api.NewTestField("bad_nested").WithType(api.MESSAGE_TYPE).WithMessageType(
-						api.NewTestMessage("Bad").WithFields(
-							api.NewTestField("bad_ref").WithResourceReference("unknown"),
-						),
-					),
-				),
-			),
-			wantErr: "resource definition not found",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := newCommandBuilder(test.method, &provider.Config{}, model, service).newArguments()
-			if err == nil {
-				t.Fatalf("newArguments() expected error, got nil")
-			}
-			if !strings.Contains(err.Error(), test.wantErr) {
-				t.Errorf("newArguments() error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
 
 func TestNewArgument(t *testing.T) {
 	model := &api.API{
@@ -137,6 +59,24 @@ func TestNewArgument(t *testing.T) {
 			},
 		},
 		{
+			name: "String Field with Documentation",
+			field: func() *api.Field {
+				f := api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL)
+				f.Documentation = "My proto comment"
+				return f
+			}(),
+			apiField: "description",
+			method:   api.NewTestMethod("CreateInstance"),
+			want: Argument{
+				ArgName:  "description",
+				APIField: "description",
+				Type:     "str",
+				HelpText: "My proto comment",
+				Required: false,
+				Repeated: false,
+			},
+		},
+		{
 			name:     "Resource Reference Field",
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
 			apiField: "network",
@@ -156,6 +96,32 @@ func TestNewArgument(t *testing.T) {
 					DisableAutoCompleters: true,
 				},
 				ResourceMethodParams: map[string]string{"network": "{__relative_name__}"},
+			},
+		},
+		{
+			name:     "Boolean Field in Create Command",
+			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			apiField: "validateOnly",
+			method:   api.NewTestMethod("CreateInstance").WithVerb("POST"),
+			want: Argument{
+				ArgName:  "validate-only",
+				APIField: "validateOnly",
+				Type:     "bool",
+				Action:   "store_true",
+				HelpText: "Value for the `validate-only` field.",
+			},
+		},
+		{
+			name:     "Boolean Field in Update Command",
+			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			apiField: "validateOnly",
+			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
+			want: Argument{
+				ArgName:  "validate-only",
+				APIField: "validateOnly",
+				Type:     "bool",
+				Action:   "store_true_false",
+				HelpText: "Value for the `validate-only` field.",
 			},
 		},
 		{
@@ -197,7 +163,11 @@ func TestNewArgument(t *testing.T) {
 				t.Errorf("newArgument(%s) unexpected error: %v", test.name, err)
 				return
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			if got == nil {
+				t.Errorf("newArgument(%s) returned nil, want non-nil", test.name)
+				return
+			}
+			if diff := cmp.Diff(test.want, *got); diff != "" {
 				t.Errorf("newArgument() mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -226,30 +196,6 @@ func TestIsIgnored(t *testing.T) {
 			want: false,
 		},
 		{
-			name:   "Name Field",
-			field:  api.NewTestField("name").WithType(api.STRING_TYPE),
-			method: api.NewTestMethod("DeleteThing").WithVerb("DELETE"),
-			want:   true,
-		},
-		{
-			name:   "Parent Field (List)",
-			field:  api.NewTestField("parent").WithType(api.STRING_TYPE),
-			method: api.NewTestMethod("ListThings").WithVerb("GET"),
-			want:   true,
-		},
-		{
-			name:  "Parent Field (Skipped in Create)",
-			field: api.NewTestField("parent").WithType(api.STRING_TYPE),
-			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
-				api.NewTestMessage("CreateRequest").WithFields(
-					api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
-						api.NewTestMessage("Thing").WithResource(api.NewTestResource("test.googleapis.com/Thing")),
-					),
-				),
-			),
-			want: true,
-		},
-		{
 			name:  "Update Mask",
 			field: api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
 			method: api.NewTestMethod("UpdateThing").WithVerb("PATCH").WithInput(
@@ -258,6 +204,16 @@ func TestIsIgnored(t *testing.T) {
 				),
 			),
 			want: true,
+		},
+		{
+			name: "Immutable field in Update",
+			field: func() *api.Field {
+				f := api.NewTestField("immutable_field").WithType(api.STRING_TYPE)
+				f.Behavior = []api.FieldBehavior{api.FIELD_BEHAVIOR_IMMUTABLE}
+				return f
+			}(),
+			method: api.NewTestMethod("UpdateThing").WithVerb("PATCH"),
+			want:   true,
 		},
 		{
 			name:  "Page Size (List)",
@@ -297,7 +253,8 @@ func TestIsIgnored(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := isIgnored(test.field, test.method)
+			builder := newArgumentBuilder(test.method, nil, nil, nil, test.field, "")
+			got := builder.isIgnored()
 			if got != test.want {
 				t.Errorf("isIgnored() = %v, want %v", got, test.want)
 			}
@@ -314,14 +271,22 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 		want         Argument
 	}{
 		{
-			name:  "Create Instance (Positional)",
-			field: api.NewTestField("thing_id").WithType(api.STRING_TYPE),
+			name: "Create Instance (Positional)",
+			field: &api.Field{
+				Name:          "thing_id",
+				Typez:         api.STRING_TYPE,
+				Documentation: "The thing to create.",
+			},
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
 							api.NewTestMessage("Thing").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
+								&api.Field{
+									Name:          "name",
+									Typez:         api.STRING_TYPE,
+									Documentation: "The thing to create.",
+								},
 							).WithResource(&api.Resource{
 								Type:     "test.googleapis.com/Thing",
 								Singular: "thing",
@@ -382,10 +347,59 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			},
 		},
 		{
+			name:  "List Instances (DisableAutoCompleters)",
+			field: api.NewTestField("name").WithType(api.STRING_TYPE),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
+					api.NewTestMessage("ListRequest").WithFields(
+						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
+					),
+				)
+				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
+				return m
+			}(),
+			resourceDefs: []*api.Resource{
+				{
+					Type:     "test.googleapis.com/Thing",
+					Singular: "thing",
+					Plural:   "things",
+					Patterns: []api.ResourcePattern{
+						{
+							*api.NewPathSegment().WithLiteral("projects"),
+							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+							*api.NewPathSegment().WithLiteral("things"),
+							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+						},
+					},
+				},
+			},
+			want: Argument{
+				HelpText:          "",
+				IsPositional:      false,
+				IsPrimaryResource: true,
+				Required:          true,
+				ResourceSpec: &ResourceSpec{
+					Name:                  "project",
+					PluralName:            "projects",
+					Collection:            "test.projects",
+					DisableAutoCompleters: true,
+					Attributes: []Attribute{
+						{
+							ParameterName: "projectsId",
+							AttributeName: "project",
+							Help:          "The project id of the {resource} resource.",
+							Property:      "core/project",
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "List Instances (Not Positional, Parent)",
 			field: func() *api.Field {
 				f := api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing")
 				f.ResourceReference.ChildType = "test.googleapis.com/Thing"
+				f.Documentation = "The parent of the resource."
 				return f
 			}(),
 			method: func() *api.Method {
@@ -413,14 +427,15 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 				},
 			},
 			want: Argument{
-				HelpText:          "The project and location for which to retrieve projects information.",
+				HelpText:          "The parent of the resource.",
 				IsPositional:      false,
 				IsPrimaryResource: true,
 				Required:          true,
 				ResourceSpec: &ResourceSpec{
-					Name:       "project",
-					PluralName: "projects",
-					Collection: "test.projects",
+					Name:                  "project",
+					PluralName:            "projects",
+					Collection:            "test.projects",
+					DisableAutoCompleters: true,
 					Attributes: []Attribute{
 						{
 							ParameterName: "projectsId",
@@ -443,7 +458,11 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got := newArgumentBuilder(test.method, nil, model, service, test.field, "").buildPrimaryResource()
+			var idField *api.Field
+			if provider.IsCreate(test.method) {
+				idField = test.field
+			}
+			got := newArgumentBuilder(test.method, nil, model, service, test.field, "").buildPrimaryResource(idField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceArgument() mismatch (-want +got):\n%s", diff)
 			}
@@ -451,21 +470,13 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 	}
 }
 
-func TestArgumentsFromField(t *testing.T) {
+func TestArgumentBuilder_Build(t *testing.T) {
 	service := api.NewTestService("TestService")
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
 	createMethod := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
 		api.NewTestMessage("CreateRequest").WithFields(
 			api.NewTestField("thing_id").WithType(api.STRING_TYPE),
-			api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
-				api.NewTestMessage("Thing").WithFields(
-					api.NewTestField("name").WithType(api.STRING_TYPE),
-				).WithResource(&api.Resource{
-					Type:     "test.googleapis.com/Thing",
-					Singular: "thing",
-				}),
-			),
 		),
 	)
 	createMethod.Service = service
@@ -475,106 +486,38 @@ func TestArgumentsFromField(t *testing.T) {
 		name    string
 		field   *api.Field
 		prefix  string
-		want    []Argument
+		want    *Argument
 		wantErr bool
 	}{
 		{
 			name:   "Skips skipped fields",
-			field:  api.NewTestField("parent"),
-			prefix: "parent",
+			field:  api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
+			prefix: "update_mask",
 			want:   nil,
 		},
 		{
-			name:   "Handles Primary Resource ID",
-			field:  createMethod.InputType.Fields[0],
-			prefix: "thingId",
-			want: []Argument{
-				{
-					ArgName:           "",
-					APIField:          "",
-					HelpText:          "The thing to create.",
-					IsPositional:      true,
-					IsPrimaryResource: true,
-					Required:          true,
-					RequestIDField:    "thingId",
-				},
-			},
-		},
-		{
-			name: "Handles Nested Message",
-			field: &api.Field{
-				Name:     "subnetwork",
-				JSONName: "subnetwork",
-				Typez:    api.MESSAGE_TYPE,
-				MessageType: &api.Message{
-					Fields: []*api.Field{
-						{
-							Name:     "foo",
-							JSONName: "foo",
-							Typez:    api.STRING_TYPE,
-						},
-					},
-				},
-			},
-			prefix: "networkConfig",
-			want: []Argument{
-				{
-					ArgName:  "foo",
-					APIField: "networkConfig.foo",
-					Type:     "str",
-					HelpText: "Value for the `foo` field.",
-				},
+			name:   "Handles Simple String Field",
+			field:  api.NewTestField("display_name").WithType(api.STRING_TYPE),
+			prefix: "displayName",
+			want: &Argument{
+				ArgName:  "display-name",
+				APIField: "displayName",
+				HelpText: "Value for the `display-name` field.",
+				Required: false,
+				Repeated: false,
+				Type:     "str",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			args, err := newCommandBuilder(createMethod, &provider.Config{}, model, service).argumentsFromField(test.field, test.prefix)
-			if err != nil {
-				t.Fatalf("argumentsFromField() unexpected error = %v", err)
+			builder := newArgumentBuilder(createMethod, &provider.Config{}, model, service, test.field, test.prefix)
+			got, err := builder.build()
+			if (err != nil) != test.wantErr {
+				t.Fatalf("build() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if diff := cmp.Diff(test.want, args, cmpopts.IgnoreUnexported(Argument{}), cmpopts.IgnoreFields(Argument{}, "ResourceSpec")); diff != "" {
-				t.Errorf("argumentsFromField() mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestArgumentsFromField_Error(t *testing.T) {
-	service := api.NewTestService("TestService")
-	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
-
-	createMethod := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
-		api.NewTestMessage("CreateRequest").WithFields(
-			api.NewTestField("thing_id").WithType(api.STRING_TYPE),
-		),
-	)
-
-	for _, test := range []struct {
-		name   string
-		field  *api.Field
-		prefix string
-	}{
-		{
-			name: "Error mapping subfield",
-			field: &api.Field{
-				Name:     "bad_nested",
-				JSONName: "badNested",
-				Typez:    api.MESSAGE_TYPE,
-				MessageType: &api.Message{
-					Fields: []*api.Field{
-						api.NewTestField("bad").WithResourceReference("unknown"),
-					},
-				},
-			},
-			prefix: "bad",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			_, err := newCommandBuilder(createMethod, &provider.Config{}, model, service).argumentsFromField(test.field, test.prefix)
-			if err == nil {
-				t.Fatalf("argumentsFromField() expected error, got nil")
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(Argument{}), cmpopts.IgnoreFields(Argument{}, "ResourceSpec")); diff != "" {
+				t.Errorf("build() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

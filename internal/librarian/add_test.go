@@ -424,12 +424,14 @@ func TestAddLibrary_Preview(t *testing.T) {
 			apis: []string{"preview/google/cloud/secretmanager/v1"},
 			initialLibraries: []*config.Library{
 				{
-					Name: "secretmanager",
-					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Name:    "secretmanager",
+					Version: "1.0.0",
+					APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				},
 			},
 			wantPreview: &config.Library{
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Version: "1.1.0-preview.1",
 			},
 		},
 		{
@@ -440,8 +442,9 @@ func TestAddLibrary_Preview(t *testing.T) {
 			},
 			initialLibraries: []*config.Library{
 				{
-					Name: "secretmanager",
-					APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					Name:    "secretmanager",
+					Version: "1.0.0",
+					APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				},
 			},
 			wantPreview: &config.Library{
@@ -449,6 +452,7 @@ func TestAddLibrary_Preview(t *testing.T) {
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secretmanager/v2"},
 				},
+				Version: "1.1.0-preview.1",
 			},
 		},
 	} {

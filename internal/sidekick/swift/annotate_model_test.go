@@ -33,8 +33,9 @@ func TestModelAnnotations(t *testing.T) {
 	want := &modelAnnotations{
 		PackageName:   "GoogleCloudWorkflowsV1",
 		CopyrightYear: "2038",
+		MonorepoRoot:  ".",
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
+	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -31,15 +32,52 @@ func TestParseOptions(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	got := newCodec(model, cfg, nil)
+	got, err := newCodec(model, cfg, nil, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
 	want := &codec{
 		GenerationYear: "2038",
 		PackageName:    "GoogleCloudBigtable",
+		MonorepoRoot:   ".",
 		RootName:       "test-root",
 		Model:          model,
+		ApiPackages:    map[string]*Dependency{},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestNewCodec_WithSwiftCfg(t *testing.T) {
+	swiftCfg := &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: "gax", Path: "packages/gax"},
+				{Name: "google-cloud-location", Path: "generated/google-cloud-location", ApiPackage: "google.cloud.location"},
+			},
+		},
+	}
+	cfg := &parser.ModelConfig{}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	got, err := newCodec(model, cfg, swiftCfg, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	wantDeps := []*Dependency{
+		{swiftCfg.Dependencies[0]},
+		{swiftCfg.Dependencies[1]},
+	}
+	if diff := cmp.Diff(wantDeps, got.Dependencies); diff != "" {
+		t.Errorf("mismatch in Dependencies (-want +got):\n%s", diff)
+	}
+
+	wantApiPackages := map[string]*Dependency{
+		"google.cloud.location": {swiftCfg.Dependencies[1]},
+	}
+	if diff := cmp.Diff(wantApiPackages, got.ApiPackages); diff != "" {
+		t.Errorf("mismatch in ApiPackages (-want +got):\n%s", diff)
 	}
 }
 
@@ -49,5 +87,9 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	return newCodec(model, cfg, nil)
+	codec, err := newCodec(model, cfg, nil, ".")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return codec
 }

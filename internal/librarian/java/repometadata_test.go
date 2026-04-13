@@ -78,42 +78,78 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	cfg := sample.Config()
 	cfg.Language = config.LanguageJava
 	cfg.Repo = "googleapis/google-cloud-java"
-	library := &config.Library{
-		Name: "secretmanager",
-		APIs: []*config.API{{Path: apiPath}},
-		Java: &config.JavaModule{
-			GroupID:                      "com.custom",
-			DistributionNameOverride:     "com.custom:custom-artifact",
-			APIIDOverride:                "custom.googleapis.com",
-			APIDescriptionOverride:       "Custom description",
-			NamePrettyOverride:           "Custom Pretty Name",
-			ProductDocumentationOverride: "https://custom.docs",
-			ClientDocumentationOverride:  "https://custom.client.docs",
-			BillingNotRequired:           true,
-			LibraryTypeOverride:          "OTHER",
-		},
-	}
-	got, err := deriveRepoMetadata(cfg, library, googleapis)
-	if err != nil {
-		t.Fatalf("deriveRepoMetadata failed: %v", err)
-	}
 	s := sample.RepoMetadata()
-	want := &repoMetadata{
-		NamePretty:           "Custom Pretty Name",
-		ProductDocumentation: "https://custom.docs",
-		APIDescription:       "Custom description",
-		ClientDocumentation:  "https://custom.client.docs",
-		ReleaseLevel:         s.ReleaseLevel,
-		Transport:            "both",
-		Language:             cfg.Language,
-		Repo:                 cfg.Repo,
-		RepoShort:            "java-secretmanager",
-		DistributionName:     "com.custom:custom-artifact",
-		APIID:                "custom.googleapis.com",
-		LibraryType:          "OTHER",
-		RequiresBilling:      false,
+	for _, test := range []struct {
+		name string
+		java *config.JavaModule
+		want *repoMetadata
+	}{
+		{
+			name: "all overrides",
+			java: &config.JavaModule{
+				GroupID:                      "com.custom",
+				DistributionNameOverride:     "com.custom:custom-artifact",
+				APIIDOverride:                "custom.googleapis.com",
+				APIDescriptionOverride:       "Custom description",
+				APIShortnameOverride:         "custom-shortname",
+				NamePrettyOverride:           "Custom Pretty Name",
+				ProductDocumentationOverride: "https://custom.docs",
+				ClientDocumentationOverride:  "https://custom.client.docs",
+				BillingNotRequired:           true,
+				LibraryTypeOverride:          "OTHER",
+			},
+			want: &repoMetadata{
+				APIShortname:         "custom-shortname",
+				NamePretty:           "Custom Pretty Name",
+				ProductDocumentation: "https://custom.docs",
+				APIDescription:       "Custom description",
+				ClientDocumentation:  "https://custom.client.docs",
+				ReleaseLevel:         s.ReleaseLevel,
+				Transport:            "both",
+				Language:             cfg.Language,
+				Repo:                 cfg.Repo,
+				RepoShort:            "java-secretmanager",
+				DistributionName:     "com.custom:custom-artifact",
+				APIID:                "custom.googleapis.com",
+				LibraryType:          "OTHER",
+				RequiresBilling:      false,
+			},
+		},
+		{
+			name: "only overrides api shortname",
+			java: &config.JavaModule{
+				APIShortnameOverride: "custom-shortname",
+			},
+			want: &repoMetadata{
+				APIShortname:        "custom-shortname",
+				ClientDocumentation: "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
+				ReleaseLevel:        "stable",
+				Transport:           "both",
+				Language:            "java",
+				Repo:                "googleapis/google-cloud-java",
+				RepoShort:           "java-secretmanager",
+				DistributionName:    "com.google.cloud:google-cloud-secretmanager",
+				// API ID is also override.
+				APIID:           "custom-shortname.googleapis.com",
+				LibraryType:     "GAPIC_AUTO",
+				RequiresBilling: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			library := &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: apiPath}},
+				Java: test.java,
+			}
+			got, err := deriveRepoMetadata(cfg, library, googleapis)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(repoMetadata{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if diff := cmp.Diff(want, got, cmp.AllowUnexported(repoMetadata{})); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+
 }

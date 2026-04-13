@@ -72,6 +72,32 @@ func TestIsSafeName(t *testing.T) {
 	}
 }
 
+func TestCleanDocumentation(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		in   string
+		want string
+	}{
+		{"NoPrefix", "This is help text.", "This is help text."},
+		{"Required", "Required. This is help text.", "This is help text."},
+		{"Identifier", "Identifier. This is help text.", "This is help text."},
+		{"Optional", "Optional. This is help text.", "This is help text."},
+		{"Both_RequiredFirst", "Required. Identifier. This is help text.", "This is help text."},
+		{"Both_IdentifierFirst", "Identifier. Required. This is help text.", "This is help text."},
+		{"OptionalAndRequired", "Optional. Required. This is help text.", "This is help text."},
+		{"Repeated", "Required. Required. This is help text.", "This is help text."},
+		{"Empty", "", ""},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := CleanDocumentation(test.in)
+			if got != test.want {
+				t.Errorf("CleanDocumentation(%q) = %q, want %q", test.in, got, test.want)
+			}
+		})
+	}
+}
+
 func TestGetGcloudType_Panic(t *testing.T) {
 	t.Parallel()
 	defer func() {
@@ -80,4 +106,71 @@ func TestGetGcloudType_Panic(t *testing.T) {
 		}
 	}()
 	GetGcloudType(api.Typez(999))
+}
+
+func TestGetFieldHelpText(t *testing.T) {
+	overrides := &Config{
+		APIs: []API{
+			{
+				HelpText: &HelpTextRules{
+					FieldRules: []*HelpTextRule{
+						{
+							Selector: "test.googleapis.com/Instance.name",
+							HelpText: &HelpTextElement{
+								Brief: "Override Brief",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		field     *api.Field
+		want      string
+	}{
+		{
+			name:      "Override",
+			overrides: overrides,
+			field: &api.Field{
+				ID:   "test.googleapis.com/Instance.name",
+				Name: "name",
+			},
+			want: "Override Brief",
+		},
+		{
+			name: "Documentation",
+			field: &api.Field{
+				Name:          "description",
+				Documentation: "My proto comment.",
+			},
+			want: "My proto comment.",
+		},
+		{
+			name: "CleanDocumentation",
+			field: &api.Field{
+				Name:          "description",
+				Documentation: "Required. My proto comment.",
+			},
+			want: "My proto comment.",
+		},
+		{
+			name: "Fallback",
+			field: &api.Field{
+				Name: "description",
+			},
+			want: "Value for the `description` field.",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := GetFieldHelpText(test.overrides, test.field)
+			if got != test.want {
+				t.Errorf("GetFieldHelpText() = %q, want %q", got, test.want)
+			}
+		})
+	}
 }

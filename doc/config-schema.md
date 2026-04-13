@@ -243,6 +243,8 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `no_samples` | bool | Determines whether to generate samples for the API. |
 | `path` | string | Is the source path. |
+| `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
+| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 
 ## JavaModule Configuration
 
@@ -251,6 +253,7 @@ This document describes the schema for the librarian.yaml.
 | `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
+| `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
@@ -271,16 +274,25 @@ This document describes the schema for the librarian.yaml.
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 
+## NodejsAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `path` | string | Is the source path. |
+
 ## NodejsPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
+| `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 
 ## PythonDefault Configuration
@@ -326,6 +338,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether the crate has a veneer. |
 | `routing_required` | bool | Indicates whether routing is required. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
+| `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `post_process_protos` | string | Indicates whether to post-process protos. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
@@ -373,6 +386,7 @@ This document describes the schema for the librarian.yaml.
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
 | `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
@@ -437,3 +451,4 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
+| `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |

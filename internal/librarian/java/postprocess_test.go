@@ -26,7 +26,9 @@ import (
 
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -107,6 +109,7 @@ func TestPostProcessAPI(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
+		javaAPI:        &config.JavaAPI{},
 	}
 	if err := postProcessAPI(t.Context(), p); err != nil {
 		t.Fatal(err)
@@ -180,6 +183,7 @@ func TestRestructureModules(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
+		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -231,6 +235,7 @@ func TestRestructureModules_NoSamples(t *testing.T) {
 		googleapisDir:  googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
+		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -358,7 +363,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 					t.Fatal(err)
 				}
 				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1")
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
 				for _, dir := range []string{
 					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
 					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
@@ -388,6 +393,59 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			err := postProcessLibrary(t.Context(), params)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeriveLastReleasedVersion(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
+		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
+		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
+		{input: "1.2.3", want: "1.2.3"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got, err := deriveLastReleasedVersion(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveLastReleasedVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{
+			name:    "invalid version",
+			input:   "1.invalid.0-SNAPSHOT",
+			wantErr: semver.ErrInvalidVersion,
+		},
+		{
+			name:    "v1.0.0 snapshot",
+			input:   "1.0.0-SNAPSHOT",
+			wantErr: errInvalidVersion,
+		},
+		{
+			name:    "patch version snapshot",
+			input:   "1.10.1-SNAPSHOT",
+			wantErr: errInvalidVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := deriveLastReleasedVersion(test.input)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

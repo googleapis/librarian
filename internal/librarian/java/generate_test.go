@@ -245,8 +245,7 @@ func TestResolveJavaAPI(t *testing.T) {
 			library: &config.Library{},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 		{
@@ -270,23 +269,6 @@ func TestResolveJavaAPI(t *testing.T) {
 			},
 		},
 		{
-			name: "found in config, empty additional protos defaults to commonProtos",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path: "google/cloud/secretmanager/v1",
-						},
-					},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
-			},
-		},
-		{
 			name: "Java module exists but API not found",
 			library: &config.Library{
 				Java: &config.JavaModule{
@@ -299,13 +281,12 @@ func TestResolveJavaAPI(t *testing.T) {
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				Path: "google/cloud/secretmanager/v1",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := resolveJavaAPI(test.library, test.api)
+			got := ResolveJavaAPI(test.library, test.api)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -331,7 +312,15 @@ func TestGenerateAPI(t *testing.T) {
 			{Name: "google-cloud-java", Version: "1.2.3"},
 		},
 	}
-	library := &config.Library{Name: "secretmanager", Output: outdir}
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: outdir,
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{Path: "google/cloud/secretmanager/v1", AdditionalProtos: []string{"google/cloud/common_resources.proto"}},
+			},
+		},
+	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
@@ -477,8 +466,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		{
 			name: "missing monorepo version",
 			library: &config.Library{
-				Name:   "secretmanager",
-				Output: t.TempDir(),
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				Output:  t.TempDir(),
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 				},

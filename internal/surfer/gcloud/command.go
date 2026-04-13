@@ -76,6 +76,9 @@ type Command struct {
 	// DisableAutoFieldMask disables the field mask auto generation.
 	DisableAutoFieldMask bool
 
+	// StarUpdateMask indicates whether to add updateMask="*" to static_fields in request.
+	StarUpdateMask bool
+
 	// OutputFormat is the output format for the command (e.g., "table(name, ...)").
 	OutputFormat string
 }

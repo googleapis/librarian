@@ -34,7 +34,7 @@ import (
 var templates embed.FS
 
 // Generate generates Rust code from the model using prost.
-func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig) error {
+func Generate(ctx context.Context, model *api.API, outdir string, template string, cfg *parser.ModelConfig) error {
 	if cfg.SpecificationFormat != libconfig.SpecProtobuf {
 		return fmt.Errorf("the `rust+prost` generator only supports `protobuf` as a specification source, outdir=%s", outdir)
 	}
@@ -48,7 +48,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	codec := newCodec(cfg)
 	codec.annotateModel(model, cfg)
 	provider := templatesProvider()
-	generatedFiles := language.WalkTemplatesDir(templates, "templates/prost")
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/"+template)
 	tmpDir, err := os.MkdirTemp("", "rust-prost-*")
 	if err != nil {
 		return fmt.Errorf("cannot create temporary directory for rust+prost output: %w", err)
