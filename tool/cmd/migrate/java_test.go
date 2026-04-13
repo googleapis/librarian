@@ -362,6 +362,40 @@ func TestBuildConfig(t *testing.T) {
 	}
 }
 
+func TestShouldExcludeSamples(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  string
+		info *javaGAPICInfo
+		want bool
+	}{
+		{
+			name: "exclude if info.Samples is false",
+			lib:  "any-lib",
+			info: &javaGAPICInfo{Samples: false},
+			want: true,
+		},
+		{
+			name: "exclude if lib is in excludedSamplesLibraries",
+			lib:  "datastore",
+			info: &javaGAPICInfo{Samples: true},
+			want: true,
+		},
+		{
+			name: "include if info.Samples is true and lib not in map",
+			lib:  "any-lib",
+			info: &javaGAPICInfo{Samples: true},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := shouldExcludeSamples(test.lib, test.info); got != test.want {
+				t.Errorf("shouldExcludeSamples(%q, %+v) = %v, want %v", test.lib, test.info, got, test.want)
+			}
+		})
+	}
+}
+
 func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 	gen := &GenerationConfig{
 		Libraries: []LibraryConfig{
@@ -401,6 +435,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 					JavaAPIs: []*config.JavaAPI{
 						{
 							Path:                    "google/datastore/admin/v1",
+							Samples:                 func(b bool) *bool { return &b }(false),
 							ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
 							GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
 						},

@@ -25,4 +25,11 @@ var (
 		"distributedcloudedge":               "distributedcloudedge",
 		"gke-backup":                         "gke-backup",
 	}
+
+	excludedSamplesLibraries = map[string]bool{
+		"bigquerystorage": true,
+		"datastore":       true,
+		"storage":         true,
+		"spanner":         true,
+	}
 )

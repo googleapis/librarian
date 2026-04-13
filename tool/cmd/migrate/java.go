@@ -240,7 +240,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				Path:             g.ProtoPath,
 				AdditionalProtos: info.AdditionalProtos,
 			}
-			if !info.Samples {
+			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(name, javaAPI)
@@ -364,6 +364,10 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
 	}
+}
+
+func shouldExcludeSamples(name string, info *javaGAPICInfo) bool {
+	return !info.Samples || excludedSamplesLibraries[name]
 }
 
 func invertBoolPtr(p *bool) bool {
