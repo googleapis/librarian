@@ -589,6 +589,8 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
+
 	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
 	// The artifact ID is also used as the name for the module's directory.
 	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
