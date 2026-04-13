@@ -75,14 +75,12 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         options: crate::RequestOptions,
     ) -> Result<crate::Response<{{Codec.ReturnType}}>> {
         {{#Codec.DetailedTracingAttributes}}
-        {
-            let (_span, pending) = gaxi::client_request_signals!(
-                metric: self.duration.clone(),
-                info: *info::INSTRUMENTATION_CLIENT_INFO,
-                method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
-                self.inner.{{Codec.Name}}(req, options));
-            pending.await
-        }
+        let (_span, pending) = gaxi::client_request_signals!(
+            metric: self.duration.clone(),
+            info: *info::INSTRUMENTATION_CLIENT_INFO,
+            method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
+            self.inner.{{Codec.Name}}(req, options));
+        pending.await
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         self.inner.{{Codec.Name}}(req, options).await
