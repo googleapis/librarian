@@ -29,6 +29,7 @@ var (
 	excludedSamplesLibraries = map[string]bool{
 		"bigquerystorage": true,
 		"datastore":       true,
+		"logging":         true,
 		"storage":         true,
 		"spanner":         true,
 	}
