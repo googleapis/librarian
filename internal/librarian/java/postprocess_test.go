@@ -207,7 +207,7 @@ func TestRestructureModules(t *testing.T) {
 	}
 }
 
-func TestRestructureModules_NoSamples(t *testing.T) {
+func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	version := "v1"

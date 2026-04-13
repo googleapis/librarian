@@ -123,8 +123,14 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	coords := p.coords()
 	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	if err := generateClirrIfMissing(protoModuleStagingRoot, protoModuleRepoRoot); err != nil {
-		return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+	exists, err := clirrIgnoreExists(protoModuleRepoRoot)
+	if err != nil {
+		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
+	}
+	if !exists {
+		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
+			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+		}
 	}
 
 	// Cleanup intermediate protoc output directory after restructuring

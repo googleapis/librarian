@@ -15,15 +15,13 @@
 package java
 
 import (
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 )
 
-func TestGenerateClirr(t *testing.T) {
+func TestGenerateClirrIgnore(t *testing.T) {
 	tmpDir := t.TempDir()
 	protoModulePath := filepath.Join(tmpDir, "proto-google-cloud-test-v1")
 	srcDir := filepath.Join(protoModulePath, "src", "main", "java", "com", "google", "cloud", "test", "v1")
@@ -35,7 +33,7 @@ func TestGenerateClirr(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := generateClirrIfMissing(protoModulePath, ""); err != nil {
+	if err := generateClirrIgnore(protoModulePath); err != nil {
 		t.Fatal(err)
 	}
 
@@ -53,27 +51,39 @@ func TestGenerateClirr(t *testing.T) {
 	}
 }
 
-func TestGenerateClirr_SkipExistingInCheckPath(t *testing.T) {
-	tmpDir := t.TempDir()
-	targetDir := filepath.Join(tmpDir, "target")
-	checkDir := filepath.Join(tmpDir, "check")
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(checkDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	outputPath := filepath.Join(checkDir, "clirr-ignored-differences.xml")
-	if err := os.WriteFile(outputPath, []byte("exists"), 0644); err != nil {
-		t.Fatal(err)
-	}
+func TestClirrIgnoreExists(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, dir string)
+		want  bool
+	}{
+		{
+			name:  "not exists",
+			setup: func(t *testing.T, dir string) {},
+			want:  false,
+		},
+		{
+			name: "exists",
+			setup: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, clirrIgnoreFile)
+				if err := os.WriteFile(path, []byte("exists"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setup(t, dir)
 
-	if err := generateClirrIfMissing(targetDir, checkDir); err != nil {
-		t.Fatal(err)
-	}
-
-	targetPath := filepath.Join(targetDir, "clirr-ignored-differences.xml")
-	if _, err := os.Stat(targetPath); !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("expected %s NOT to exist because it exists in checkPath", targetPath)
+			got, err := clirrIgnoreExists(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("clirrIgnoreExists(%q) = %v, want %v", dir, got, test.want)
+			}
+		})
 	}
 }

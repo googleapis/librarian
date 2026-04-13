@@ -60,7 +60,7 @@ we operate with a limited contribution model.
 ## Becoming a contributor
 
 Review the guide for
-[Onboarding to Librarian](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md).
+[Onboarding to Librarian](/doc/legacylibrarian/onboarding.md).
 
 To contribute to this repository, ask a member of
 [cloud-sdk-librarian-admin](https://github.com/orgs/googleapis/teams/cloud-sdk-librarian-admin)

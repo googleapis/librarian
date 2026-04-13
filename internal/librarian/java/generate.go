@@ -99,7 +99,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		outDir:         outdir,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		includeSamples: !javaAPI.NoSamples,
+		includeSamples: javaAPI.Samples == nil || *javaAPI.Samples,
 	}
 	gapicDir := p.gapicDir()
 	gRPCDir := p.gRPCDir()

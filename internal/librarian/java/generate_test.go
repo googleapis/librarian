@@ -256,7 +256,7 @@ func TestResolveJavaAPI(t *testing.T) {
 						{
 							Path:             "google/cloud/secretmanager/v1",
 							AdditionalProtos: []string{"other.proto"},
-							NoSamples:        true,
+							Samples:          new(false),
 						},
 					},
 				},
@@ -265,7 +265,7 @@ func TestResolveJavaAPI(t *testing.T) {
 			want: &config.JavaAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{"other.proto"},
-				NoSamples:        true,
+				Samples:          new(false),
 			},
 		},
 		{
