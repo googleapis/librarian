@@ -860,7 +860,7 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 	serviceName := c.ServiceName(s)
 	moduleName := toSnake(serviceName)
 	docLines, err := c.formatDocComments(
-		s.Documentation, s.ID, s.Model.State, []string{s.ID, s.Package})
+		s.Documentation, s.ID, s.Model, []string{s.ID, s.Package})
 	if err != nil {
 		return nil, err
 	}
@@ -935,7 +935,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		return !f.IsOneOf
 	})
 
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, model, m.Scopes())
 	if err != nil {
 		return err
 	}
@@ -965,7 +965,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			variant.Codec = routingVariantAnnotations
 		}
 	}
-	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model.State, m.Model.PackageName)
+	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
 	if err != nil {
 		return nil, err
 	}
@@ -980,7 +980,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			Value: m.APIVersion,
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Service.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -1011,11 +1011,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
 	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model.State, m.Model.PackageName)
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model.State, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
@@ -1207,7 +1207,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
+	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, message.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -1310,15 +1310,15 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocComments(field.Documentation, field.ID, model.State, message.Scopes())
+	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, message.Scopes())
 	if err != nil {
 		return nil, err
 	}
-	fieldType, err := c.fieldType(field, model.State, false, model.PackageName)
+	fieldType, err := c.fieldType(field, model, false, model.PackageName)
 	if err != nil {
 		return nil, err
 	}
-	primitiveFieldType, err := c.fieldType(field, model.State, true, model.PackageName)
+	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName)
 	if err != nil {
 		return nil, err
 	}
@@ -1346,11 +1346,11 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			if len(msg.Fields) != 2 {
 				return nil, fmt.Errorf("expected exactly two fields for field's map message (%q), fieldId=%s", field.TypezID, field.ID)
 			}
-			keyType, err := c.mapType(msg.Fields[0], model.State, model.PackageName)
+			keyType, err := c.mapType(msg.Fields[0], model, model.PackageName)
 			if err != nil {
 				return nil, err
 			}
-			valueType, err := c.mapType(msg.Fields[1], model.State, model.PackageName)
+			valueType, err := c.mapType(msg.Fields[1], model, model.PackageName)
 			if err != nil {
 				return nil, err
 			}
@@ -1446,7 +1446,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		return nil
 	}
 
-	lines, err := c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+	lines, err := c.formatDocComments(e.Documentation, e.ID, model, e.Scopes())
 	if err != nil {
 		return err
 	}
@@ -1468,7 +1468,7 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 		// We have basic annotations, we are done.
 		return nil
 	}
-	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
+	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model, ev.Scopes())
 	if err != nil {
 		return err
 	}
