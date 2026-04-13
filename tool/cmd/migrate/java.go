@@ -60,7 +60,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	if file == nil {
 		return nil, nil
 	}
-	info := &javaGAPICInfo{Samples: true}
+	info := &javaGAPICInfo{Samples: false}
 	// 1. From java_gapic_library
 	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
 		if len(rules) > 1 {
@@ -73,7 +73,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 			log.Printf("Warning: multiple java_gapic_assembly_gradle_pkg in %s/BUILD.bazel, using first", dir)
 		}
 		rule := rules[0]
-		info.Samples = rule.AttrLiteral("include_samples") != "False"
+		info.Samples = rule.AttrLiteral("include_samples") == "True"
 	}
 	// 3. From proto_library_with_info
 	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
@@ -240,7 +240,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				Path:             g.ProtoPath,
 				AdditionalProtos: info.AdditionalProtos,
 			}
-			if !info.Samples {
+			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(name, javaAPI)
@@ -364,6 +364,10 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
 	}
+}
+
+func shouldExcludeSamples(name string, info *javaGAPICInfo) bool {
+	return !info.Samples || excludedSamplesLibraries[name]
 }
 
 func invertBoolPtr(p *bool) bool {
