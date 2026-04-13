@@ -153,8 +153,8 @@ func TestRustFromDiscovery(t *testing.T) {
 
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: libconfig.SpecDiscovery,
-		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/compute/v1/compute-small_v1.yaml"),
-		SpecificationSource: path.Join(testdataDir, "discovery/compute-small.v1.json"),
+		ServiceConfig:       path.Join(testdataDir, "googleapis/google/cloud/compute/v1/small-compute_v1.yaml"),
+		SpecificationSource: path.Join(testdataDir, "discovery/small-compute.v1.json"),
 		Codec: map[string]string{
 			"package:wkt":          "source=google.protobuf,package=google-cloud-wkt",
 			"per-service-features": "true",
