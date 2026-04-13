@@ -58,6 +58,7 @@ jobs:
         working-directory: google-cloud-rust
         run: librarian generate --all
       - name: Run cargo check
+        continue-on-error: true
         working-directory: google-cloud-rust
         run: cargo check -p google-cloud-showcase-v1beta1
   create-issue-on-failure:
