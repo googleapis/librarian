@@ -55,19 +55,25 @@
         required: true
       - arg_name: role
         api_field: contents.role
-        help_text: Value for the `role` field.
+        help_text: |-
+          The producer of the content. Must be either 'user' or 'model'.
+
+          Useful to set for multi-turn conversations, otherwise can be left blank
+          or unset.
         is_positional: false
         required: false
       - arg_name: parts
         api_field: contents.parts
-        help_text: Value for the `parts` field.
+        help_text: |-
+          Ordered `Parts` that constitute a single message. Parts may have
+          different IANA MIME types.
         is_positional: false
         required: true
         repeated: true
         type: arg_object
       - arg_name: category
         api_field: safetySettings.category
-        help_text: Value for the `category` field.
+        help_text: The category for this setting.
         is_positional: false
         required: true
         choices:
@@ -85,7 +91,7 @@
             help_text: Value for the `harm-category-sexually-explicit` field.
       - arg_name: threshold
         api_field: safetySettings.threshold
-        help_text: Value for the `threshold` field.
+        help_text: Controls the probability threshold at which harm is blocked.
         is_positional: false
         required: true
         choices:
