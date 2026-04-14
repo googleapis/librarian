@@ -107,7 +107,11 @@ func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.
 	protoGRPCGroupID := protoGroupID(lc.GAPIC.GroupID)
 	protoArtifactID := javaAPI.ProtoArtifactIDOverride
 	if protoArtifactID == "" {
-		protoArtifactID = fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version)
+		suffix := version
+		if suffix == "" {
+			suffix = "protos"
+		}
+		protoArtifactID = fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, suffix)
 	}
 	grpcArtifactID := javaAPI.GRPCArtifactIDOverride
 	if grpcArtifactID == "" {
