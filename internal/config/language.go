@@ -197,7 +197,7 @@ type RustModule struct {
 	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
-	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
+	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage".
 	Template string `yaml:"template"`
 }
 

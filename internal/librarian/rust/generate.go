@@ -143,6 +143,9 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		return nil
 	}
 	for _, module := range library.Rust.Modules {
+		if module.Template == "storage" {
+			return generateRustStorage(ctx, library, module.Output, sources)
+		}
 		modelConfig, err := moduleToModelConfig(library, module, sources)
 		if err != nil {
 			return fmt.Errorf("moduleToModelConfig %q: %w", module.Output, err)
@@ -150,9 +153,6 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 		model, err := parser.CreateModel(modelConfig)
 		if err != nil {
 			return fmt.Errorf("CreateModel %q: %w", module.Output, err)
-		}
-		if module.Template == "storage" {
-			return generateRustStorage(ctx, library, module.Output, sources)
 		}
 		if module.Template == "prost" || module.Template == "tonic" {
 			err = rust_prost.Generate(ctx, model, module.Output, module.Template, modelConfig)
