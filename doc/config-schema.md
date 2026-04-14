@@ -390,7 +390,6 @@ This document describes the schema for the librarian.yaml.
 | `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
-| `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |

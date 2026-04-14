@@ -240,10 +240,6 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 		}
 	}
 
-	language := config.LanguageRust
-	if module.Language != "" {
-		language = module.Language
-	}
 	specificationFormat := config.SpecProtobuf
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
@@ -257,7 +253,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 	}
 
 	modelCfg := &parser.ModelConfig{
-		Language:            language,
+		Language:            config.LanguageRust,
 		SpecificationFormat: specificationFormat,
 		ServiceConfig:       module.ServiceConfig,
 		SpecificationSource: module.APIPath,

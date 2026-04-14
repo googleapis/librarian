@@ -765,7 +765,7 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 							Modules: []*config.RustModule{
 								{
 									Output:   "src/storage/src/generated/protos/storage",
-									Language: config.LanguageRustStorage,
+									Template: "storage",
 								},
 							},
 						},
