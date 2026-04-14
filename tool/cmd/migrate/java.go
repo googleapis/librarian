@@ -48,8 +48,9 @@ var (
 )
 
 type javaGAPICInfo struct {
-	Samples          bool
 	AdditionalProtos []string
+	ProtoOnly        bool
+	Samples          bool
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -62,7 +63,10 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	}
 	info := &javaGAPICInfo{Samples: false}
 	// 1. From java_gapic_library
-	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
+	rules := file.Rules("java_gapic_library")
+	if len(rules) == 0 {
+		info.ProtoOnly = true
+	} else {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
 		}
@@ -239,6 +243,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			javaAPI := &config.JavaAPI{
 				Path:             g.ProtoPath,
 				AdditionalProtos: info.AdditionalProtos,
+			}
+			if info.ProtoOnly {
+				javaAPI.ProtoOnly = true
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
