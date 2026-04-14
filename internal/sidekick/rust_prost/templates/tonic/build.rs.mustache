@@ -48,7 +48,6 @@ fn main() {
                 {{/Services}}
             ])
             .type_attribute(".", "#[allow(clippy::large_enum_variant)]")
-            .bytes(".")
             .out_dir(&destination)
             .compile_with_config(config, files, includes)
             .expect("error compiling protos");
