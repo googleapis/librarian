@@ -380,6 +380,9 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	library := &config.Library{
 		Name:   "gkehub",
 		Output: outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
 				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
