@@ -965,3 +965,99 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateSnippetsModule(t *testing.T) {
+	testhelper.RequireCommand(t, "go")
+	repoRoot := t.TempDir()
+
+	// Create internal/generated/snippets/go.mod
+	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
+	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
+	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name: "secretmanager",
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					Path:       "google/cloud/secretmanager/v1",
+					NoSnippets: false,
+				},
+			},
+		},
+	}
+	outDir := filepath.Join(repoRoot, "secretmanager")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check if go.mod was updated with require and replace.
+	content, err := os.ReadFile(snippetsGoMod)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	wantRequire := "require cloud.google.com/go/secretmanager v0.0.0"
+	wantReplace := "replace cloud.google.com/go/secretmanager => ../../../secretmanager"
+
+	if !strings.Contains(got, wantRequire) {
+		t.Errorf("snippets/go.mod missing expected require:\n%s", got)
+	}
+	if !strings.Contains(got, wantReplace) {
+		t.Errorf("snippets/go.mod missing expected replace:\n%s", got)
+	}
+}
+
+func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
+	testhelper.RequireCommand(t, "go")
+	repoRoot := t.TempDir()
+
+	// Create internal/generated/snippets/go.mod
+	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
+	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
+	initialContent := "module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"
+	if err := os.WriteFile(snippetsGoMod, []byte(initialContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	library := &config.Library{
+		Name: "secretmanager",
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					Path:       "google/cloud/secretmanager/v1",
+					NoSnippets: true,
+				},
+			},
+		},
+	}
+	outDir := filepath.Join(repoRoot, "secretmanager")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check if go.mod was NOT updated.
+	content, err := os.ReadFile(snippetsGoMod)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != initialContent {
+		t.Errorf("snippets/go.mod was updated unexpectedly:\ngot:\n%s\nwant:\n%s", string(content), initialContent)
+	}
+}
