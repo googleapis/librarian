@@ -43,6 +43,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
 	repoRoot := t.TempDir()
+	setupSnippets(t, repoRoot)
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -435,6 +436,7 @@ func TestGenerateLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			repoRoot := t.TempDir()
+			setupSnippets(t, repoRoot)
 			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 				t.Fatal(err)
 			}
@@ -969,16 +971,8 @@ func TestMoveGeneratedFiles(t *testing.T) {
 func TestUpdateSnippetsModule(t *testing.T) {
 	testhelper.RequireCommand(t, "go")
 	repoRoot := t.TempDir()
-
-	// Create internal/generated/snippets/go.mod
-	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
-	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
-	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	setupSnippets(t, repoRoot)
+	snippetsGoMod := filepath.Join(repoRoot, "internal", "generated", "snippets", "go.mod")
 
 	library := &config.Library{
 		Name: "secretmanager",
@@ -1020,17 +1014,10 @@ func TestUpdateSnippetsModule(t *testing.T) {
 func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
 	testhelper.RequireCommand(t, "go")
 	repoRoot := t.TempDir()
+	setupSnippets(t, repoRoot)
+	snippetsGoMod := filepath.Join(repoRoot, "internal", "generated", "snippets", "go.mod")
 
-	// Create internal/generated/snippets/go.mod
-	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
-	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
 	initialContent := "module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"
-	if err := os.WriteFile(snippetsGoMod, []byte(initialContent), 0644); err != nil {
-		t.Fatal(err)
-	}
 
 	library := &config.Library{
 		Name: "secretmanager",
@@ -1059,5 +1046,16 @@ func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
 	}
 	if string(content) != initialContent {
 		t.Errorf("snippets/go.mod was updated unexpectedly:\ngot:\n%s\nwant:\n%s", string(content), initialContent)
+	}
+}
+
+func setupSnippets(t *testing.T, repoRoot string) {
+	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
+	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
+	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
+		t.Fatal(err)
 	}
 }
