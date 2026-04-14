@@ -58,7 +58,7 @@ Sources use dot notation to refer to subsources.
 
 Examples:
   librarian update googleapis.subsystem
-`, 
+`,
 		UsageText: "librarian update <sources...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()

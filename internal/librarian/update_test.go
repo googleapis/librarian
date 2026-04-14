@@ -186,7 +186,7 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
 			},
 			wantCounts: map[string]int{
-				"/repos/googleapis/googleapis/commits/master": 1,
+				"/repos/googleapis/googleapis/commits/master":                        1,
 				"/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz": 1,
 			},
 		},
