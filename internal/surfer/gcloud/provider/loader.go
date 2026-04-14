@@ -29,8 +29,10 @@ import (
 // CreateAPIModel parses the service specification and creates the API model.
 func CreateAPIModel(googleapisPath, includeList, serviceConfig, descriptorFiles, descriptorFilesToGenerate string) (*api.API, error) {
 	var includeListSlice []string
-	if includeList != "" {
-		includeListSlice = strings.Split(includeList, ",")
+	for _, s := range strings.Split(includeList, ",") {
+		if trimmed := strings.TrimSpace(s); trimmed != "" {
+			includeListSlice = append(includeListSlice, strings.ReplaceAll(trimmed, "\\", "/"))
+		}
 	}
 	parserConfig := &parser.ModelConfig{
 		SpecificationFormat:       libconfig.SpecProtobuf,
