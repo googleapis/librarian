@@ -56,7 +56,7 @@ func run(ctx context.Context, args []string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
-	insertMarkers := flagSet.Bool("insert-markers", false, "whether to insert markers in Java pom.xml files")
+	insertMarkersFlag := flagSet.Bool("insert-markers", false, "whether to insert markers in Java pom.xml files")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -78,7 +78,7 @@ func run(ctx context.Context, args []string) error {
 		parts := strings.SplitN(base, "-", 3)
 		return runLibrarianMigration(ctx, parts[2], abs, flagSet.Args()[1:])
 	case "google-cloud-java":
-		return runJavaMigration(ctx, abs, *insertMarkers)
+		return runJavaMigration(ctx, abs, *insertMarkersFlag)
 	case "google-cloud-node":
 		return runNodejsMigration(ctx, abs)
 	case "google-cloud-dotnet":
