@@ -43,7 +43,7 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 		if len(enum.UniqueNumberValues) != 0 {
 			defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
 		} else {
-			return fmt.Errorf("cannot determined a default value for enum: %s", enum.ID)
+			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
 		}
 	}
 	for _, ev := range enum.Values {
