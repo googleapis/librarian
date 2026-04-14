@@ -749,3 +749,76 @@ func TestCollectJavaFiles(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGatherProtos(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	files := []string{
+		"root.proto",
+		"sub/nested.proto",
+		"sub/deep/deep.proto",
+		"google/api/api.proto",
+		"google/api/sub/sub.proto",
+		"google/cloud/location/locations.proto",
+		"google/cloud/location/sub/sub.proto",
+	}
+	for _, f := range files {
+		path := filepath.Join(tmpDir, f)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, test := range []struct {
+		name    string
+		relPath string
+		want    []string
+	}{
+		{
+			name:    "recursive",
+			relPath: "google/cloud/aiplatform/v1",
+			want: []string{
+				filepath.Join(tmpDir, "google/api/api.proto"),
+				filepath.Join(tmpDir, "google/api/sub/sub.proto"),
+				filepath.Join(tmpDir, "google/cloud/location/locations.proto"),
+				filepath.Join(tmpDir, "google/cloud/location/sub/sub.proto"),
+				filepath.Join(tmpDir, "root.proto"),
+				filepath.Join(tmpDir, "sub/deep/deep.proto"),
+				filepath.Join(tmpDir, "sub/nested.proto"),
+			},
+		},
+		{
+			name:    "non-recursive google/api",
+			relPath: "google/api",
+			want: []string{
+				filepath.Join(tmpDir, "google/api/api.proto"),
+			},
+		},
+		{
+			name:    "recursive google/cloud/location",
+			relPath: "google/cloud/location",
+			want: []string{
+				filepath.Join(tmpDir, "google/cloud/location/locations.proto"),
+				filepath.Join(tmpDir, "google/cloud/location/sub/sub.proto"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := filepath.Join(tmpDir, test.relPath)
+			if test.relPath == "google/cloud/aiplatform/v1" {
+				// Special case for recursive test to use tmpDir as root
+				root = tmpDir
+			}
+			got, err := gatherProtos(root, test.relPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

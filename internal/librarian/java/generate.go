@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -29,6 +30,12 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )
+
+var nonRecursivePaths = map[string]bool{
+	"google/api":   true,
+	"google/cloud": true,
+	"google/rpc":   true,
+}
 
 var (
 	errExtractVersion    = errors.New("failed to extract version")
@@ -111,11 +118,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	}
 
 	apiDir := filepath.Join(googleapisDir, api.Path)
-	// TODO(https://github.com/googleapis/librarian/issues/4198):
-	// Consider recursive gathering and explicit sorting
-	// of proto files to match the behavior of the hermetic build, ensuring
-	// a deterministic order in the generated gapic_metadata.json.
-	apiProtos, err := filepath.Glob(apiDir + "/*.proto")
+	apiProtos, err := gatherProtos(apiDir, api.Path)
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
@@ -304,4 +307,38 @@ func findBOMVersion(cfg *config.Config) (string, error) {
 		return cfg.Default.Java.LibrariesBOMVersion, nil
 	}
 	return "", errBOMVersionMissing
+}
+
+// gatherProtos returns a sorted list of proto files in the given root directory,
+// ensuring that subpackage protos (e.g., in a "schema" directory) are included
+// in the generation.
+//
+// recursion is disabled for certain base paths (google/api, google/cloud, google/rpc).
+func gatherProtos(root, relPath string) ([]string, error) {
+	if _, err := os.Stat(root); os.IsNotExist(err) {
+		return nil, errNoProtos
+	}
+	var protos []string
+	recursive := !nonRecursivePaths[relPath]
+
+	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if !recursive && path != root {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if d.Type().IsRegular() && filepath.Ext(path) == ".proto" {
+			protos = append(protos, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	sort.Strings(protos)
+	return protos, nil
 }
