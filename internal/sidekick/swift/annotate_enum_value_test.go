@@ -21,7 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestAnnotateEnumValue(t *testing.T) {
+func TestAnnotateEnumValue_WithDocs(t *testing.T) {
 	enum := &api.Enum{Name: "Color"}
 	ev := &api.EnumValue{Name: "COLOR_RED", Number: 1, Documentation: "Red color", Parent: enum}
 	enum.Values = []*api.EnumValue{ev}
@@ -49,7 +49,7 @@ func TestAnnotateEnumValue(t *testing.T) {
 	}
 }
 
-func TestAnnotateEnum_Duplicates(t *testing.T) {
+func TestAnnotateEnumValue_Multiple(t *testing.T) {
 	enum := &api.Enum{Name: "Color"}
 	enum.Values = []*api.EnumValue{
 		{Name: "COLOR_RED", Number: 1, Parent: enum},
@@ -85,8 +85,10 @@ func TestAnnotateEnum_Duplicates(t *testing.T) {
 	}
 }
 
-func TestAnnotateEnum_Aliases(t *testing.T) {
+func TestAnnotateEnumValue_Aliases(t *testing.T) {
 	enum := &api.Enum{Name: "Color"}
+	// This may seem weird, but they do happen in Google Cloud APIs, see:
+	//     https://github.com/search?q=repo%3Agoogleapis%2Fgoogleapis+%22option+allow_alias+%3D+true%3B%22&type=code
 	enum.Values = []*api.EnumValue{
 		{Name: "RED_NEW", Number: 1, Parent: enum},
 		{Name: "RED_OLD", Number: 1, Parent: enum}, // Alias with same number
