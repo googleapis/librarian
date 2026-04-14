@@ -27,6 +27,8 @@ import (
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 )
 
 const (
@@ -43,6 +45,9 @@ var (
 	errFetchSource  = errors.New("cannot fetch source")
 
 	fetchSource = fetchGoogleapis
+
+	flagCommit     string
+	flagGoogleapis string
 )
 
 func main() {
@@ -56,6 +61,9 @@ func run(ctx context.Context, args []string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
+	flagSet.StringVar(&flagCommit, "commit", "", "Commit hash for googleapis")
+	flagSet.StringVar(&flagGoogleapis, "googleapis", "", "Local path to googleapis directory")
+
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -68,6 +76,28 @@ func run(ctx context.Context, args []string) error {
 	if err != nil {
 		return err
 	}
+
+	if flagGoogleapis != "" {
+		googleapisAbs, err := filepath.Abs(flagGoogleapis)
+		if err != nil {
+			return err
+		}
+		fetchSource = func(ctx context.Context) (*config.Source, error) {
+			return &config.Source{Dir: googleapisAbs}, nil
+		}
+		fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+			return &config.Source{Dir: googleapisAbs}, nil
+		}
+	} else if flagCommit != "" {
+		fetchSource = func(ctx context.Context) (*config.Source, error) {
+			return fetchGoogleapisWithCommit(ctx, githubEndpoints, flagCommit)
+		}
+		fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+			// Override the requested commitish with the explicit flag
+			return fetchGoogleapisWithCommit(ctx, endpoints, flagCommit)
+		}
+	}
+
 	base := filepath.Base(abs)
 	// TODO(https://github.com/googleapis/librarian/issues/4566): implement
 	// selective and incremental migration for languages other than Go and
