@@ -85,3 +85,18 @@ func TestAnnotateEnum(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateEnum_Error(t *testing.T) {
+	enum := &api.Enum{
+		Name:    "Empty",
+		ID:      ".test.Empty",
+		Package: "test",
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{})
+
+	err := codec.annotateModel()
+	if err == nil {
+		t.Errorf("annotateModel() expected error for enum with no values, got nil")
+	}
+}

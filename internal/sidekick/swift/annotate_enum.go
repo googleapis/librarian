@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -37,8 +39,12 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 		}
 	}
 	// Fallback to first case if no 0 value found (should not happen in proto3)
-	if defaultCaseName == "" && len(enum.UniqueNumberValues) > 0 {
-		defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
+	if defaultCaseName == "" {
+		if len(enum.UniqueNumberValues) != 0 {
+			defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
+		} else {
+			return fmt.Errorf("cannot determined a default value for enum: %s", enum.ID)
+		}
 	}
 	for _, ev := range enum.Values {
 		if err := codec.annotateEnumValue(ev, existing); err != nil {
