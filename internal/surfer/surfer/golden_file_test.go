@@ -48,6 +48,10 @@ func TestGolden(t *testing.T) {
 		name string
 		skip string // Reason for skipping.
 	}{
+		{name: "apis/developerconnect", skip: "circular import path"},
+		{name: "apis/iam"},
+		{name: "apis/parallelstore"},
+		{name: "apis/seclm"},
 		{name: "confirmation_prompt"},
 		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
 		{name: "field_attributes"},
@@ -234,7 +238,7 @@ func copyProtos(t *testing.T, src, dst string) {
 	}
 	for _, entry := range entries {
 		if entry.IsDir() {
-			if entry.Name() != "expected" && entry.Name() != "tests" && entry.Name() != "google" {
+			if entry.Name() != "expected" && entry.Name() != "tests" {
 				copyProtos(t, filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name()))
 			}
 			continue
@@ -258,9 +262,6 @@ func findProtos(root string) []string {
 	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
-		}
-		if d.IsDir() && d.Name() == "google" {
-			return filepath.SkipDir
 		}
 		if !d.IsDir() && filepath.Ext(path) == ".proto" {
 			rel, _ := filepath.Rel(root, path)
