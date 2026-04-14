@@ -269,6 +269,14 @@ type Service struct {
 	Codec any
 }
 
+// HasClientSideStreaming returns true if the service contains any methods
+// that support client-side streaming.
+func (s *Service) HasClientSideStreaming() bool {
+	return slices.ContainsFunc(s.Methods, func(m *Method) bool {
+		return m.ClientSideStreaming
+	})
+}
+
 // Method defines a RPC belonging to a Service.
 type Method struct {
 	// Documentation is the documentation for the method.
