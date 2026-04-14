@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 var nonRecursivePaths = map[string]bool{
 	"google/api":   true,
 	"google/cloud": true,
@@ -315,11 +316,8 @@ func findBOMVersion(cfg *config.Config) (string, error) {
 //
 // recursion is disabled for certain base paths (google/api, google/cloud, google/rpc).
 func gatherProtos(root, relPath string) ([]string, error) {
-	if _, err := os.Stat(root); os.IsNotExist(err) {
-		return nil, errNoProtos
-	}
 	var protos []string
-	recursive := !nonRecursivePaths[relPath]
+	recursive := !nonRecursivePaths[filepath.ToSlash(relPath)]
 
 	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
@@ -336,6 +334,9 @@ func gatherProtos(root, relPath string) ([]string, error) {
 		}
 		return nil
 	})
+	if errors.Is(err, os.ErrNotExist) {
+		return nil, errNoProtos
+	}
 	if err != nil {
 		return nil, err
 	}
