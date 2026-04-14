@@ -48,7 +48,7 @@ func TestGolden(t *testing.T) {
 		name string
 		skip string // Reason for skipping.
 	}{
-		{name: "apis/developerconnect", skip: "circular import path"},
+		{name: "apis/developerconnect"},
 		{name: "apis/iam"},
 		{name: "apis/parallelstore"},
 		{name: "apis/seclm"},
@@ -237,17 +237,8 @@ func copyProtos(t *testing.T, src, dst string) {
 		t.Fatalf("failed to read directory %q: %v", src, err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() {
-			if entry.Name() != "expected" && entry.Name() != "tests" {
-				copyProtos(t, filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name()))
-			}
-			continue
-		}
 		if filepath.Ext(entry.Name()) == ".proto" {
 			target := filepath.Join(dst, entry.Name())
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				t.Fatalf("failed to create directory %q: %v", filepath.Dir(target), err)
-			}
 			if _, err := os.Stat(target); errors.Is(err, fs.ErrNotExist) {
 				if err := os.Symlink(filepath.Join(absSrc, entry.Name()), target); err != nil {
 					t.Fatalf("failed to create symlink for %q: %v", target, err)

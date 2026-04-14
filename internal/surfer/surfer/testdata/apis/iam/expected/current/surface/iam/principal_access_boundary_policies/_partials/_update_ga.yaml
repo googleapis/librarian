@@ -28,7 +28,11 @@
       $ {command} my-policy --organization=123 --location=global --display-name=new-display-name
   arguments:
     params:
-      - help_text: ""
+      - help_text: |-
+          The resource name of the principal access boundary policy.
+
+          The following format is supported:
+          `organizations/{organization_id}/locations/{location}/principalAccessBoundaryPolicies/{policy_id}`
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -49,17 +53,24 @@
         required: true
       - arg_name: etag
         api_field: principalAccessBoundaryPolicy.etag
-        help_text: Value for the `etag` field.
+        help_text: |-
+          The etag for the principal access boundary.
+          If this is provided on update, it must match the server's etag.
         is_positional: false
         required: false
       - arg_name: display-name
         api_field: principalAccessBoundaryPolicy.displayName
-        help_text: Value for the `display-name` field.
+        help_text: |-
+          The description of the principal access boundary policy. Must be
+          less than or equal to 63 characters.
         is_positional: false
         required: false
       - arg_name: annotations
         api_field: principalAccessBoundaryPolicy.annotations
-        help_text: Value for the `annotations` field.
+        help_text: |-
+          User defined annotations. See
+          https://google.aip.dev/148#annotations for more details such as format and
+          size limitations
         is_positional: false
         required: false
         repeated: true
@@ -69,7 +80,7 @@
           - api_field: value
       - arg_name: details
         api_field: principalAccessBoundaryPolicy.details
-        help_text: Value for the `details` field.
+        help_text: The details for the principal access boundary policy.
         is_positional: false
         required: false
         type: arg_object
