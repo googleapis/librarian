@@ -1,0 +1,126 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+// Copyright {{Codec.CopyrightYear}} Google LLC
+{{#Codec.BoilerPlate}}
+//{{{.}}}
+{{/Codec.BoilerPlate}}
+
+{{#Codec.QuickstartService}}
+//! End-to-end mocks for the `{{Package}}.{{Name}}` gRPC service.
+//!
+//! Use this crate for end-to-end client library tests. Start a local server
+//! implementing the `{{Package}}.{{Name}}` API, with the implementation
+//! defined by a mock. Then test the client library against this mock.
+//!
+//! # Example
+//! ```no_rust
+//! use {{Model.Codec.PackageNamespace}}::{start, Mock{{Codec.Name}}};
+//! use google_cloud_{{Codec.ModuleName}}::client::{{Codec.Name}};
+//! use google_cloud_auth::credentials::anonymous::Builder as Anonymous;
+//!
+//! # async fn test() -> anyhow::Result<()> {
+//! let mut mock = Mock{{Codec.Name}}::new();
+{{#QuickstartMethod}}
+//! mock.expect_{{Codec.Name}}()
+{{/QuickstartMethod}}
+//!     .return_once(|_| Err(tonic::Status::invalid_argument("test message")));
+//! // Starts a service using `mock` and a random port.
+//! let (endpoint, server) = start("0.0.0.0:0", mock).await?;
+//! // Use the service in a test.
+//! let client = {{Codec.Name}}::builder()
+//!     .with_endpoint(endpoint)
+//!     .with_credentials(Anonymous::default().build())
+//!     .build()
+//!     .await?;
+//! let err = client
+{{#QuickstartMethod}}
+//!     .{{Codec.Name}}()
+{{/QuickstartMethod}}
+//!     .send()
+//!     .unwrap_err("mock returns an error");
+//! assert_eq!(err.status().is_some(), "{err:?}");
+//! # Ok(()) }
+//! ```
+{{/Codec.QuickstartService}}
+
+mod mocks;
+use std::net::SocketAddr;
+use tokio::task::JoinHandle;
+
+{{#Codec.Services}}
+/// A mock for the `{{Package}}.{{Name}}` gRPC service.
+///
+/// # Example
+{{! We build samples marked `ignore`, so use `no_rust` instead. }}
+/// ```no_rust
+/// use {{Model.Codec.PackageNamespace}}::Mock{{Codec.Name}};
+/// let mut mock = Mock{{Codec.Name}}::new();
+/// let (tx, rx) = tokio::sync::mpsc::channel(128);
+/// mock.expect_streaming_rpc() // Made up bidirectional streaming RPC.
+///     .return_once(|_request| Ok(tonic::Response::from(rx)));
+/// // use `tx` to mock streaming responses.
+/// ```
+pub use mocks::Mock{{Codec.Name}};
+
+{{! TODO(#5333) - `start()` should be scoped to a service. }}
+/// Starts a mock `{{Package}}.{{Name}}` gRPC service.
+///
+/// # Example
+/// ```
+/// use {{Model.Codec.PackageNamespace}}::{start, Mock{{Codec.Name}}};
+/// # async fn test() -> anyhow::Result<()> {
+/// let mut mock = Mock{{Codec.Name}}::new();
+{{#QuickstartMethod}}
+/// mock.expect_{{Codec.Name}}()
+{{/QuickstartMethod}}
+///     .return_once(|_| Err(tonic::Status::invalid_argument("test message")));
+/// // starts a service using `mock` and a random port.
+/// let (address, server) = start("0.0.0.0:0", mock).await?;
+/// // ... ... test goes here ... ...
+/// # Ok(()) }
+/// ```
+pub async fn start<T>(address: &str, service: T) -> anyhow::Result<(String, JoinHandle<()>)>
+where
+    T: {{Codec.PackageModuleName}}::{{Codec.ModuleName}}_server::{{Codec.Name}},
+{
+    let listener = tokio::net::TcpListener::bind(address).await?;
+    let addr = listener.local_addr()?;
+
+    let server = tokio::spawn(async {
+        let stream = tokio_stream::wrappers::TcpListenerStream::new(listener);
+
+        let _ = tonic::transport::Server::builder()
+            .add_service({{Codec.PackageModuleName}}::{{Codec.ModuleName}}_server::{{Codec.Name}}Server::new(
+                service,
+            ))
+            .serve_with_incoming(stream)
+            .await;
+    });
+
+    Ok((to_uri(addr), server))
+}
+{{/Codec.Services}}
+
+// This function is public only for the sake of unit testing
+pub fn to_uri(addr: SocketAddr) -> String {
+    if addr.is_ipv6() {
+        format!("http://[{}]:{}", addr.ip(), addr.port())
+    } else {
+        format!("http://{}:{}", addr.ip(), addr.port())
+    }
+}
+
+include!("generated/protos/includes.rs");

@@ -36,6 +36,7 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
+				Java:   &config.JavaModule{},
 			},
 		},
 		{
@@ -47,6 +48,63 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "custom-output",
+				Java:   &config.JavaModule{},
+			},
+		},
+		{
+			name: "fill samples default",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:    "google/cloud/secretmanager/v1",
+							Samples: new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "do not overwrite samples override",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:    "google/cloud/secretmanager/v1",
+							Samples: new(false),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:    "google/cloud/secretmanager/v1",
+							Samples: new(false),
+						},
+					},
+				},
 			},
 		},
 	} {

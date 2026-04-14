@@ -73,7 +73,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if goAPI == nil {
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
-		if err := generateAPI(ctx, goAPI, googleapisDir, tempDir); err != nil {
+		if err := generateAPI(ctx, goAPI, googleapisDir, library.Version, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
@@ -116,7 +116,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	return nil
 }
 
-func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, outDir string) error {
+func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {
 	nestedProtos := goAPI.NestedProtos
 	args := []string{
 		"protoc",
@@ -127,7 +127,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, outDir
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
 	if !goAPI.ProtoOnly {
-		gapicOpts, err := buildGAPICOpts(goAPI.Path, goAPI, googleapisDir)
+		gapicOpts, err := buildGAPICOpts(goAPI.Path, goAPI, version, googleapisDir)
 		if err != nil {
 			return err
 		}
@@ -145,7 +145,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, outDir
 	return command.Run(ctx, args[0], args[1:]...)
 }
 
-func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) ([]string, error) {
+func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {
 	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGo)
 	if err != nil {
 		return nil, err
@@ -183,7 +183,7 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, googleapisDir string) (
 	if trans := transport(sc); trans != "" {
 		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
-	opts = append(opts, "release-level="+sc.ReleaseLevel(config.LanguageGo))
+	opts = append(opts, "release-level="+sc.ReleaseLevel(config.LanguageGo, version))
 	return opts, nil
 }
 

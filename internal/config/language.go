@@ -45,8 +45,6 @@ const (
 	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
 	LanguageRust = "rust"
-	// LanguageRustStorage is a variation of the Rust generator for storage.
-	LanguageRustStorage = "rust_storage"
 	// LanguageSwift is the language identifier for Swift.
 	LanguageSwift = "swift"
 )
@@ -159,10 +157,6 @@ type RustModule struct {
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
-	// Language can be used to select a variation of the Rust generator.
-	// For example, `rust_storage` enables special handling for the storage client.
-	Language string `yaml:"language,omitempty"`
-
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
@@ -203,7 +197,7 @@ type RustModule struct {
 	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
-	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
+	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage".
 	Template string `yaml:"template"`
 }
 
@@ -398,7 +392,7 @@ type PythonPackage struct {
 
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
-	// default it's the package name, but older packages use the API short name
+	// default, it's the package name, but older packages use the API short name
 	// instead.
 	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
 
@@ -579,7 +573,8 @@ type JavaAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
-	// Samples determines whether to generate samples for the API.
+	// Samples determines whether to generate samples for the API,
+	// default is true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
 
 	// Path is the source path.
@@ -588,6 +583,10 @@ type JavaAPI struct {
 	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
+
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
 	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
 	// The artifact ID is also used as the name for the module's directory.

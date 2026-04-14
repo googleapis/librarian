@@ -99,7 +99,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		outDir:         outdir,
 		version:        version,
 		googleapisDir:  googleapisDir,
-		includeSamples: javaAPI.Samples == nil || *javaAPI.Samples,
+		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := p.gapicDir()
 	gRPCDir := p.gRPCDir()
@@ -136,16 +136,18 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 	// 3. Generate GAPIC library.
-	gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
-	if err != nil {
-		return fmt.Errorf("failed to resolve gapic options: %w", err)
-	}
-	var additionalProtos []string
-	for _, p := range javaAPI.AdditionalProtos {
-		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-	}
-	if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
-		return fmt.Errorf("failed to generate gapic: %w", err)
+	if !javaAPI.ProtoOnly {
+		gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
+		if err != nil {
+			return fmt.Errorf("failed to resolve gapic options: %w", err)
+		}
+		var additionalProtos []string
+		for _, p := range javaAPI.AdditionalProtos {
+			additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+		}
+		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
+			return fmt.Errorf("failed to generate gapic: %w", err)
+		}
 	}
 
 	if err := postProcessAPI(ctx, p); err != nil {
@@ -288,11 +290,9 @@ func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
 		return res
 	}
 	for _, javaAPI := range library.Java.JavaAPIs {
-		if javaAPI.Path != api.Path {
-			continue
+		if javaAPI.Path == api.Path {
+			return javaAPI
 		}
-		*res = *javaAPI
-		return res
 	}
 	return res
 }
