@@ -628,11 +628,6 @@ func TestModuleToModelConfig(t *testing.T) {
 					RustDefault: config.RustDefault{
 						ResourceNameHeuristic: ptr(false),
 					},
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRust,
-						},
-					},
 				},
 			},
 			want: &parser.ModelConfig{
@@ -651,11 +646,6 @@ func TestModuleToModelConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						ResourceNameHeuristic: ptr(true),
-					},
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRust,
-						},
 					},
 				},
 			},
@@ -711,26 +701,6 @@ func TestModuleToModelConfig(t *testing.T) {
 						Match:   "bucket id",
 						Replace: "the id of the bucket",
 					},
-				},
-			},
-		},
-		{
-			name: "with custom module language",
-			library: &config.Library{
-				Name: "google-cloud-showcase",
-				Rust: &config.RustCrate{
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRustStorage,
-						},
-					},
-				},
-			},
-			want: &parser.ModelConfig{
-				Language:            config.LanguageRustStorage,
-				SpecificationFormat: config.SpecProtobuf,
-				Source: &sources.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
 				},
 			},
 		},
