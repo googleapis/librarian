@@ -1051,6 +1051,7 @@ func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
 }
 
 func setupSnippets(t *testing.T, repoRoot string) {
+	t.Helper()
 	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
 	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
 		t.Fatal(err)
