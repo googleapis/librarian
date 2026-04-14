@@ -45,8 +45,6 @@ const (
 	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
 	LanguageRust = "rust"
-	// LanguageRustStorage is a variation of the Rust generator for storage.
-	LanguageRustStorage = "rust_storage"
 	// LanguageSwift is the language identifier for Swift.
 	LanguageSwift = "swift"
 )
@@ -159,10 +157,6 @@ type RustModule struct {
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
 
-	// Language can be used to select a variation of the Rust generator.
-	// For example, `rust_storage` enables special handling for the storage client.
-	Language string `yaml:"language,omitempty"`
-
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
 	ModulePath string `yaml:"module_path,omitempty"`
@@ -203,7 +197,7 @@ type RustModule struct {
 	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
-	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
+	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage".
 	Template string `yaml:"template"`
 }
 

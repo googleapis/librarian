@@ -24,5 +24,28 @@ import Foundation
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public enum {{Codec.Name}}: Codable, Equatable {
+public enum {{Codec.Name}}: Int, Codable, Equatable {
+    {{#UniqueNumberValues}}
+    {{#DocLines}}
+    /// {{{.}}}
+    {{/DocLines}}
+    case {{Codec.CaseName}} = {{Number}}
+    {{/UniqueNumberValues}}
+
+    public var stringValue: String {
+        switch self {
+        {{#UniqueNumberValues}}
+        case .{{Codec.CaseName}}: return "{{Name}}"
+        {{/UniqueNumberValues}}
+        }
+    }
+
+    public init?(stringValue: String) {
+        switch stringValue {
+        {{#Values}}
+        case "{{Name}}": self = .{{Codec.CaseName}}
+        {{/Values}}
+        default: return nil
+        }
+    }
 }
