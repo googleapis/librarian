@@ -566,6 +566,7 @@ func TestParseJavaBazel(t *testing.T) {
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},
+				ProtoOnly: true,
 			},
 		},
 	} {
