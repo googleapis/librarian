@@ -32,6 +32,7 @@ import (
 type updateTestSetup struct {
 	server     *httptest.Server
 	configPath string
+	counts     map[string]int
 }
 
 const (
@@ -68,7 +69,9 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	protobufBranch := determineBranch("protobuf", conf.Sources.ProtobufSrc)
 	showcaseBranch := determineBranch("showcase", conf.Sources.Showcase)
 
+	counts := make(map[string]int)
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		counts[r.URL.Path]++
 		switch r.URL.Path {
 		case "/repos/googleapis/googleapis/commits/" + googleapisBranch:
 			w.Write([]byte(googleapisTestCommit))
@@ -103,6 +106,7 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	return &updateTestSetup{
 		server:     ts,
 		configPath: cp,
+		counts:     counts,
 	}
 }
 
@@ -132,6 +136,7 @@ func TestUpdateCommand(t *testing.T) {
 		args       []string
 		setup      func(*config.Config)
 		wantConfig func(*config.Config)
+		wantCounts map[string]int
 	}{
 		{
 			name: "googleapis",
@@ -167,6 +172,22 @@ func TestUpdateCommand(t *testing.T) {
 			wantConfig: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = googleapisTestCommit
 				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
+			},
+		},
+		{
+			name: "redundant sources",
+			args: []string{"librarian", "update", "googleapis", "sources.googleapis"},
+			setup: func(cfg *config.Config) {
+				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
+				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
+			},
+			wantConfig: func(cfg *config.Config) {
+				cfg.Sources.Googleapis.Commit = googleapisTestCommit
+				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
+			},
+			wantCounts: map[string]int{
+				"/repos/googleapis/googleapis/commits/master": 1,
+				"/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz": 1,
 			},
 		},
 		{
@@ -271,6 +292,12 @@ func TestUpdateCommand(t *testing.T) {
 
 			if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			if test.wantCounts != nil {
+				if diff := cmp.Diff(test.wantCounts, setup.counts); diff != "" {
+					t.Errorf("request counts mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}

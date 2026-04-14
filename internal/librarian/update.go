@@ -52,7 +52,13 @@ func updateCommand() *cli.Command {
   - discovery
   - googleapis
   - protobuf
-  - showcase`,
+  - showcase
+
+Sources use dot notation to refer to subsources.
+
+Examples:
+  librarian update googleapis.subsystem
+`, 
 		UsageText: "librarian update <sources...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()
@@ -60,6 +66,7 @@ func updateCommand() *cli.Command {
 				return errNoSourcesProvided
 			}
 			var sourcesToUpdate []string
+			seen := make(map[string]bool)
 			for _, arg := range args {
 				parts := strings.Split(arg, ".")
 				var matchedSource string
@@ -72,7 +79,10 @@ func updateCommand() *cli.Command {
 				if matchedSource == "" {
 					return fmt.Errorf("%w: %s", errUnknownSource, arg)
 				}
-				sourcesToUpdate = append(sourcesToUpdate, matchedSource)
+				if !seen[matchedSource] {
+					sourcesToUpdate = append(sourcesToUpdate, matchedSource)
+					seen[matchedSource] = true
+				}
 			}
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
