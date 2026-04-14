@@ -607,6 +607,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 		name          string
 		apiPath       string
 		goAPI         *config.GoAPI
+		version       string
 		googleapisDir string
 		want          []string
 	}{
@@ -762,7 +763,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
+			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.version, test.googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -803,7 +804,7 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
+			_, err := buildGAPICOpts(test.apiPath, test.goAPI, "", test.googleapisDir)
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -946,7 +947,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
-			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir)
+			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir, outDir)
 			if err != nil {
 				t.Fatal(err)
 			}
