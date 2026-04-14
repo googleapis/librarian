@@ -33,7 +33,7 @@ func generateRepoMetadata(api *serviceconfig.API, library *config.Library, goAPI
 		DistributionName:    distributionName(goAPI.ImportPath),
 		Language:            config.LanguageGo,
 		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        api.RepoMetadataReleaseLevel(config.LanguageGo),
+		ReleaseLevel:        api.RepoMetadataReleaseLevel(config.LanguageGo, library.Version),
 	}
 	return metadata.Write(filepath.Join(repoRootPath(library.Output, library.Name), clientPathFromRepoRoot(library, goAPI)))
 }
