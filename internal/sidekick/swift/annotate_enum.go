@@ -25,7 +25,19 @@ type enumAnnotations struct {
 	DocLines      []string
 }
 
-func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) {
+func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+	existing := map[int32]*enumValueAnnotations{}
+	for _, ev := range enum.UniqueNumberValues {
+		codec.annotateUniqueEnumValue(ev)
+		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+	}
+	for _, ev := range enum.Values {
+		if err := codec.annotateEnumValue(ev, existing); err != nil {
+			return err
+		}
+		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+	}
+
 	docLines := codec.formatDocumentation(enum.Documentation)
 	annotations := &enumAnnotations{
 		CopyrightYear: model.CopyrightYear,
@@ -35,4 +47,5 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) {
 	}
 
 	enum.Codec = annotations
+	return nil
 }

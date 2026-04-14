@@ -45,6 +45,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Python != nil {
 		return fillPython(lib, d)
 	}
+	if d.Swift != nil {
+		return fillSwift(lib, d)
+	}
 	return lib
 }
 
@@ -114,6 +117,36 @@ func fillPython(lib *config.Library, d *config.Default) *config.Library {
 		lib.Python.LibraryType = d.Python.LibraryType
 	}
 	return lib
+}
+
+// fillSwift populates empty Swift-specific fields in lib from the provided default.
+func fillSwift(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Swift == nil {
+		lib.Swift = &config.SwiftPackage{}
+	}
+	lib.Swift.Dependencies = mergeSwiftDependencies(
+		d.Swift.Dependencies,
+		lib.Swift.Dependencies,
+	)
+	return lib
+}
+
+// mergeSwiftDependencies merges library dependencies with default dependencies,
+// with library dependencies taking precedence for duplicates.
+func mergeSwiftDependencies(defaults, lib []config.SwiftDependency) []config.SwiftDependency {
+	seen := make(map[string]bool)
+	var result []config.SwiftDependency
+	for _, dep := range lib {
+		seen[dep.Name] = true
+		result = append(result, dep)
+	}
+	for _, dep := range defaults {
+		if seen[dep.Name] {
+			continue
+		}
+		result = append(result, dep)
+	}
+	return result
 }
 
 // mergeDartDependencies merges library dependencies with default dependencies.

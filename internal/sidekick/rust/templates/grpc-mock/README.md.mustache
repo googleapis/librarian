@@ -1,0 +1,38 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+# A mockable {{Title}} service implementation
+
+This crate provides a mockable implementation of the {{Title}} service over
+gRPC, analogous to the `httptest` crate but specific to this service. It is used
+in the client library tests, and not intended for any other use.
+
+## On streaming RPCs
+
+Streaming RPCs in Tonic use generics for the output (server-side) streams. To
+simplify the mocks, this crate only supports `tokio::sync::mpsc::Receiver<>` as
+the output type. These are easy to create in tests and good enough for that
+purpose.
+
+Streaming RPCs in Tonic use `tonic::Streaming<>` as the input (client-side)
+streams. It seemed easier to reason about the mock if it always used
+`Receiver<>`. If this proves to be a bad decision we can change the code.
+
+## Usage
+
+Create a `mocks::Mock{{QuickstartService.Name}}` and call `start()` to launch a (local) server
+using the mock. Then connect your test to this mock server.
+
+The types have comments with trivial examples.

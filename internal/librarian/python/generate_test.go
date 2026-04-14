@@ -1111,7 +1111,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 		{
 			name: "non-cloud API",
 			library: &config.Library{
-				Name: "google-apps-meet",
+				Name:    "google-apps-meet",
+				Version: "0.4.0",
 				APIs: []*config.API{
 					{
 						Path: "google/apps/meet/v2",

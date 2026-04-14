@@ -627,20 +627,17 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: config.LanguageRust,
-							Output:   "target-output",
+							Output: "target-output",
 						},
 						{
-							Language: config.LanguageRustStorage,
-							Output:   "other-output",
+							Output: "other-output",
 						},
 					},
 				},
 			},
 			output: "target-output",
 			want: &config.RustModule{
-				Language: config.LanguageRust,
-				Output:   "target-output",
+				Output: "target-output",
 			},
 		},
 		{
@@ -650,8 +647,7 @@ func TestFindModuleByOutput(t *testing.T) {
 				Rust: &config.RustCrate{
 					Modules: []*config.RustModule{
 						{
-							Language: config.LanguageRust,
-							Output:   "other-output",
+							Output: "other-output",
 						},
 					},
 				},
@@ -710,7 +706,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				ReleaseLevel:         "stable",
+				ReleaseLevel:         "preview",
 				LibraryType:          "GAPIC_AUTO",
 			},
 		},
@@ -737,7 +733,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				DistributionName:    "google-cloud-showcase-v1beta1",
 				APIID:               "showcase.googleapis.com",
 				APIShortname:        "showcase",
-				ReleaseLevel:        "stable",
+				ReleaseLevel:        "preview",
 				LibraryType:         "GAPIC_AUTO",
 			},
 		},
