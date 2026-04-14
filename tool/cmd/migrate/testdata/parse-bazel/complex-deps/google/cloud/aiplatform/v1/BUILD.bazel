@@ -1,0 +1,13 @@
+_PROTO_SUBPACKAGE_DEPS = [
+    "//google/cloud/aiplatform/v1/schema/predict/instance:instance_proto",
+]
+
+proto_library_with_info(
+    name = "aiplatform_proto_with_info",
+    deps = [
+        ":aiplatform_proto",
+        "//google/cloud:common_resources_proto",
+        "//google/cloud/location:location_proto",
+        "//google/iam/v1:iam_policy_proto",
+    ] + _PROTO_SUBPACKAGE_DEPS,
+)
