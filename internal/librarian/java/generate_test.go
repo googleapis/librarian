@@ -386,6 +386,9 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 			},
 		},
 	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
 	for _, artifact := range []string{"proto-google-cloud-gkehub-v1beta", "google-cloud-gkehub-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
 			t.Fatal(err)
