@@ -87,9 +87,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	version := serviceconfig.ExtractVersion(api.Path)
-	//if version == "" {
-	//	return fmt.Errorf("%s: %w", api.Path, errExtractVersion)
-	//}
 	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
 		cfg:            cfg,
