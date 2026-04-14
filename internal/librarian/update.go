@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -58,16 +59,26 @@ func updateCommand() *cli.Command {
 			if len(args) == 0 {
 				return errNoSourcesProvided
 			}
+			var sourcesToUpdate []string
 			for _, arg := range args {
-				if _, ok := sourceRepos[arg]; !ok {
+				parts := strings.Split(arg, ".")
+				var matchedSource string
+				for _, part := range parts {
+					if _, ok := sourceRepos[part]; ok {
+						matchedSource = part
+						break
+					}
+				}
+				if matchedSource == "" {
 					return fmt.Errorf("%w: %s", errUnknownSource, arg)
 				}
+				sourcesToUpdate = append(sourcesToUpdate, matchedSource)
 			}
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
-			return runUpdate(cfg, args)
+			return runUpdate(cfg, sourcesToUpdate)
 		},
 	}
 }
