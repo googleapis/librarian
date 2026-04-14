@@ -239,6 +239,53 @@ func TestFormatConfig(t *testing.T) {
 			want: []string{"b", "y"},
 		},
 		{
+			name: "sorts default swift dependencies by name",
+			input: &config.Config{
+				Default: &config.Default{
+					Swift: &config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: "z"},
+							{Name: "a"},
+						},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, dep := range c.Default.Swift.Dependencies {
+					names = append(names, dep.Name)
+				}
+				return names
+			},
+			want: []string{"a", "z"},
+		},
+		{
+			name: "sorts library swift dependencies by name",
+			input: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: "lib",
+						Swift: &config.SwiftPackage{
+							SwiftDefault: config.SwiftDefault{
+								Dependencies: []config.SwiftDependency{
+									{Name: "y"},
+									{Name: "b"},
+								},
+							},
+						},
+					},
+				},
+			},
+			got: func(c *config.Config) []string {
+				var names []string
+				for _, dep := range c.Libraries[0].Swift.Dependencies {
+					names = append(names, dep.Name)
+				}
+				return names
+			},
+			want: []string{"b", "y"},
+		},
+		{
 			name: "sorts cargo tools by name",
 			input: &config.Config{
 				Tools: &config.Tools{

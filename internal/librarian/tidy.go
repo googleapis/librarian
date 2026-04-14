@@ -231,6 +231,11 @@ func formatConfig(cfg *config.Config) *config.Config {
 			return strings.Compare(a.Name, b.Name)
 		})
 	}
+	if cfg.Default != nil && cfg.Default.Swift != nil {
+		slices.SortFunc(cfg.Default.Swift.Dependencies, func(a, b config.SwiftDependency) int {
+			return strings.Compare(a.Name, b.Name)
+		})
+	}
 
 	slices.SortFunc(cfg.Libraries, func(a, b *config.Library) int {
 		return strings.Compare(a.Name, b.Name)
@@ -239,6 +244,11 @@ func formatConfig(cfg *config.Config) *config.Config {
 		serviceconfig.SortAPIs(lib.APIs)
 		if lib.Rust != nil {
 			slices.SortFunc(lib.Rust.PackageDependencies, func(a, b *config.RustPackageDependency) int {
+				return strings.Compare(a.Name, b.Name)
+			})
+		}
+		if lib.Swift != nil {
+			slices.SortFunc(lib.Swift.Dependencies, func(a, b config.SwiftDependency) int {
 				return strings.Compare(a.Name, b.Name)
 			})
 		}
