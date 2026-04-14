@@ -155,6 +155,11 @@ DESCRIPTION:
 	  - protobuf
 	  - showcase
 
+	Sources use dot notation to refer to subsources.
+
+	Examples:
+	  librarian update googleapis.subsystem
+
 OPTIONS:
 
 	--help, -h  show help
