@@ -627,6 +627,7 @@ func TestParseJavaBazel(t *testing.T) {
 					"google/cloud/location/locations.proto",
 					"google/iam/v1/iam_policy.proto",
 				},
+				ProtoOnly: true,
 			},
 		},
 	} {
