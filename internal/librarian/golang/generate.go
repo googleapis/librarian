@@ -114,6 +114,8 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	return nil
 }
 
+// updateSnippetsModule updates the snippets module's go.mod file with a requirement
+// and a local replacement for the newly generated library.
 func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string) error {
 	if library.Go == nil {
 		return nil
