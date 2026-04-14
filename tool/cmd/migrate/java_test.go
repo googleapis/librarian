@@ -111,6 +111,7 @@ func TestBuildConfig(t *testing.T) {
 		name     string
 		gen      *GenerationConfig
 		versions map[string]string
+		src      *config.Source
 		want     *config.Config
 	}{
 		{
@@ -126,6 +127,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -158,6 +160,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -196,6 +199,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -259,6 +263,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -326,6 +331,7 @@ func TestBuildConfig(t *testing.T) {
 				"google-cloud-accessapproval": "2.86.0",
 				"google-cloud-aiplatform":     "3.86.0",
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -369,6 +375,7 @@ func TestBuildConfig(t *testing.T) {
 					{APIShortName: "beyondcorp-appconnections"},
 				},
 			},
+			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -388,9 +395,50 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "proto-only API",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName: "gkehub",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/gkehub/policycontroller/v1beta"},
+						},
+					},
+				},
+			},
+			src: &config.Source{Dir: "../../../internal/testdata/googleapis"},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "gkehub",
+						APIs: []*config.API{
+							{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+						},
+						Java: &config.JavaModule{
+							JavaAPIs: []*config.JavaAPI{
+								{
+									Path:      "google/cloud/gkehub/policycontroller/v1beta",
+									Samples:   new(false),
+									ProtoOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, ".", &config.Source{Dir: "../../internal/testdata/googleapis"}, test.versions)
+			got := buildConfig(test.gen, ".", test.src, test.versions)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -602,6 +650,20 @@ func TestParseJavaBazel(t *testing.T) {
 				AdditionalProtos: []string{
 					"google/cloud/common_resources.proto",
 				},
+				ProtoOnly: true,
+			},
+		},
+		{
+			name:          "complex-deps",
+			googleapisDir: "testdata/parse-bazel/complex-deps",
+			buildPath:     "google/cloud/aiplatform/v1",
+			want: &javaGAPICInfo{
+				AdditionalProtos: []string{
+					"google/cloud/common_resources.proto",
+					"google/cloud/location/locations.proto",
+					"google/iam/v1/iam_policy.proto",
+				},
+				ProtoOnly: true,
 			},
 		},
 	} {
