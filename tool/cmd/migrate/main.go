@@ -96,19 +96,15 @@ func (r *runner) run(ctx context.Context, args []string) error {
 		r.fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 			return &config.Source{Dir: googleapisAbs}, nil
 		}
-		// Update the global package-level variables for other files.
-		fetchSource = r.fetchSource
-		fetchSourceWithCommit = r.fetchSourceWithCommit
 	} else if flagCommit != "" {
 		r.fetchSource = func(ctx context.Context) (*config.Source, error) {
 			return r.fetchSourceWithCommit(ctx, githubEndpoints, flagCommit)
 		}
-		// In this specific block, we don't need to re-override fetchSourceWithCommit
-		// because the default or mock is already there.
-		// We just need to ensure the globals are updated if we are NOT in a test.
-		fetchSource = r.fetchSource
-		fetchSourceWithCommit = r.fetchSourceWithCommit
 	}
+
+	// Update the global package-level variables for other files.
+	fetchSource = r.fetchSource
+	fetchSourceWithCommit = r.fetchSourceWithCommit
 
 	base := filepath.Base(abs)
 	// TODO(https://github.com/googleapis/librarian/issues/4566): implement
