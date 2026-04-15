@@ -50,4 +50,12 @@ public struct {{Codec.Name}}: Codable, Equatable {
     self.{{Codec.Name}} = {{Codec.Name}}
     {{/Fields}}
   }
+  {{#Messages}}
+
+  {{> /templates/common/message}}
+  {{/Messages}}
+  {{#Enums}}
+
+  {{> /templates/common/enum}}
+  {{/Enums}}
 }

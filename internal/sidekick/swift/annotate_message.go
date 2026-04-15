@@ -40,5 +40,15 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 			return err
 		}
 	}
+	for _, nested := range message.Messages {
+		if err := codec.annotateMessage(nested, model); err != nil {
+			return err
+		}
+	}
+	for _, enum := range message.Enums {
+		if err := codec.annotateEnum(enum, model); err != nil {
+			return err
+		}
+	}
 	return nil
 }
