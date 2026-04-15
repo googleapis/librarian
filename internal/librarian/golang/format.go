@@ -23,7 +23,7 @@ import (
 )
 
 // Format formats a generated Go library.
-func Format(ctx context.Context, library *config.Library) error {
+func Format(ctx context.Context, library *config.Library, tools *config.Tools) error {
 	// No need to format the root module because it does not
 	// have generated code.
 	if library.Name == rootModule {
@@ -33,7 +33,18 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	return command.Run(ctx, "goimports", args...)
+
+	binary := "goimports"
+	if tools != nil {
+		for _, t := range tools.Go {
+			if (t.Name == "golang.org/x/tools/cmd/goimports" || t.Name == "goimports") && t.Exec != "" {
+				binary = t.Exec
+				break
+			}
+		}
+	}
+
+	return command.Run(ctx, binary, args...)
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {
