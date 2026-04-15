@@ -182,14 +182,8 @@ type PipTool struct {
 
 // GoTool defines a tool to install via go.
 type GoTool struct {
-	// Name is the go module name.
-	Name string `yaml:"name"`
-
-	// Version is the version to install.
+	Name    string `yaml:"name"`
 	Version string `yaml:"version,omitempty"`
-
-	// Exec is the binary name of the tool.
-	Exec string `yaml:"exec,omitempty"`
 }
 
 // Default contains default settings for all libraries.
