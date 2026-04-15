@@ -36,10 +36,10 @@ func TestPostProcessAPI(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	libraryName := "secretmanager"
-	version := "v1"
-	gapicDir := filepath.Join(outdir, version, "gapic")
-	gRPCDir := filepath.Join(outdir, version, "grpc")
-	protoDir := filepath.Join(outdir, version, "proto")
+	apiBase := "v1"
+	gapicDir := filepath.Join(outdir, apiBase, "gapic")
+	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
+	protoDir := filepath.Join(outdir, apiBase, "proto")
 	if err := os.MkdirAll(filepath.Join(gapicDir, "src", "main", "java"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -105,7 +105,7 @@ func TestPostProcessAPI(t *testing.T) {
 			Name: libraryName,
 			APIs: []*config.API{api},
 		},
-		version:        version,
+		apiBase:        apiBase,
 		googleapisDir:  googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
@@ -116,7 +116,7 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 
 	// Verify that the file from srcjar was unzipped and moved, but NO header was added.
-	unzippedPath := filepath.Join(outdir, "owl-bot-staging", version, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
+	unzippedPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "google-cloud-secretmanager", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeFile.java")
 	gotContent, err := os.ReadFile(unzippedPath)
 	if err != nil {
 		t.Errorf("expected unzipped file at %s, but it was not found: %v", unzippedPath, err)
@@ -126,7 +126,7 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 
 	// Verify that the proto file HAS a header added.
-	protoDestPath := filepath.Join(outdir, "owl-bot-staging", version, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "ProtoFile.java")
+	protoDestPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "ProtoFile.java")
 	gotProtoContent, err := os.ReadFile(protoDestPath)
 	if err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", protoDestPath, err)
@@ -135,29 +135,29 @@ func TestPostProcessAPI(t *testing.T) {
 		t.Errorf("expected header to be prepended to %s, but it was not found", protoDestPath)
 	}
 
-	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", version, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
+	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
 	}
 
-	// Verify that the version directory was cleaned up
-	if _, err := os.Stat(filepath.Join(outdir, version)); !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, version))
+	// Verify that the apiBase directory was cleaned up
+	if _, err := os.Stat(filepath.Join(outdir, apiBase)); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected directory %s to be removed", filepath.Join(outdir, apiBase))
 	}
 }
 
 func TestRestructureModules(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-	version := "v1"
+	apiBase := "v1"
 	libraryID := "secretmanager"
 	libraryName := "google-cloud-secretmanager"
 	// Create a dummy structure to mimic generator output
 	dirs := []string{
-		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
-		filepath.Join(tmpDir, version, "gapic", "src", "main", "resources", "META-INF", "native-image"),
-		filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
-		filepath.Join(tmpDir, version, "proto"),
+		filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "resources", "META-INF", "native-image"),
+		filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "proto"),
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -165,12 +165,12 @@ func TestRestructureModules(t *testing.T) {
 		}
 	}
 	// Create a dummy sample file
-	sampleFile := filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
+	sampleFile := filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
 	// Create a dummy reflect-config.json
-	reflectConfigPath := filepath.Join(tmpDir, version, "gapic", "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
+	reflectConfigPath := filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "resources", "META-INF", "native-image", "reflect-config.json")
 	if err := os.WriteFile(reflectConfigPath, []byte("{}"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -179,7 +179,7 @@ func TestRestructureModules(t *testing.T) {
 	p := postProcessParams{
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
-		version:        version,
+		apiBase:        apiBase,
 		googleapisDir:  googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
@@ -201,7 +201,7 @@ func TestRestructureModules(t *testing.T) {
 		t.Errorf("expected reflect-config.json at %s, but it was not found: %v", wantReflectPath, err)
 	}
 	// Verify proto file location
-	wantProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, version), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
+	wantProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, apiBase), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
 	}
@@ -210,12 +210,12 @@ func TestRestructureModules(t *testing.T) {
 func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
-	version := "v1"
+	apiBase := "v1"
 	libraryID := "secretmanager"
 	// Create a dummy structure to mimic generator output
 	dirs := []string{
-		filepath.Join(tmpDir, version, "gapic", "src", "main", "java"),
-		filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java"),
 	}
 	for _, dir := range dirs {
 		if err := os.MkdirAll(dir, 0755); err != nil {
@@ -223,7 +223,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		}
 	}
 	// Create a dummy sample file
-	sampleFile := filepath.Join(tmpDir, version, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
+	sampleFile := filepath.Join(tmpDir, apiBase, "gapic", "samples", "snippets", "generated", "src", "main", "java", "Sample.java")
 	if err := os.WriteFile(sampleFile, []byte("public class Sample {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -231,7 +231,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	p := postProcessParams{
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
-		version:        version,
+		apiBase:        apiBase,
 		googleapisDir:  googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,

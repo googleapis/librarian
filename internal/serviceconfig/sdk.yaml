@@ -2567,6 +2567,8 @@
 - path: google/cloud/workstations/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/workstations/v1beta
   languages:
     - go

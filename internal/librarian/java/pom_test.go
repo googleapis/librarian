@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
@@ -247,6 +248,195 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 		if diff := cmp.Diff(string(want), string(got)); diff != "" {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
+	}
+}
+
+func TestCollectModules(t *testing.T) {
+	for _, test := range []struct {
+		name            string
+		library         *config.Library
+		monorepoVersion string
+		metadata        *repoMetadata
+		transports      map[string]serviceconfig.Transport
+		setup           func(t *testing.T, libraryDir string)
+		want            []javaModule
+	}{
+		{
+			name: "single api, grpc transport",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata: &repoMetadata{
+				NamePretty:     "Secret Manager",
+				APIDescription: "Secret Manager API",
+			},
+			transports: map[string]serviceconfig.Transport{
+				"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-secretmanager-v1", isMissing: true, template: protoPOMTemplateName},
+				{artifactID: "grpc-google-cloud-secretmanager-v1", isMissing: true, template: gRPCPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager", isMissing: true, template: clientPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-bom", isMissing: true, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-parent", isMissing: true, template: parentPOMTemplateName},
+			},
+		},
+		{
+			name: "single api, rest transport skips grpc module",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata: &repoMetadata{
+				NamePretty: "Secret Manager",
+			},
+			transports: map[string]serviceconfig.Transport{
+				"google/cloud/secretmanager/v1": serviceconfig.Rest,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-secretmanager-v1", isMissing: true, template: protoPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager", isMissing: true, template: clientPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-bom", isMissing: true, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-parent", isMissing: true, template: parentPOMTemplateName},
+			},
+		},
+		{
+			name: "single api, proto only skips grpc module",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "google/cloud/secretmanager/v1", ProtoOnly: true},
+					},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata: &repoMetadata{
+				NamePretty: "Secret Manager",
+			},
+			transports: map[string]serviceconfig.Transport{
+				"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-secretmanager-v1", isMissing: true, template: protoPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager", isMissing: true, template: clientPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-bom", isMissing: true, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-parent", isMissing: true, template: parentPOMTemplateName},
+			},
+		},
+		{
+			name: "existing poms",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata: &repoMetadata{
+				NamePretty: "Secret Manager",
+			},
+			transports: map[string]serviceconfig.Transport{
+				"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					dir := filepath.Join(libraryDir, d)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-secretmanager-v1", isMissing: false, template: protoPOMTemplateName},
+				{artifactID: "grpc-google-cloud-secretmanager-v1", isMissing: false, template: gRPCPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager", isMissing: false, template: clientPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-bom", isMissing: false, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-parent", isMissing: false, template: parentPOMTemplateName},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			got, err := collectModules(test.library, tmpDir, test.monorepoVersion, test.metadata, test.transports)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(
+				test.want,
+				got,
+				cmp.AllowUnexported(javaModule{}),
+				cmpopts.IgnoreFields(javaModule{}, "dir", "templateData")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

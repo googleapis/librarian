@@ -573,6 +573,11 @@ type JavaAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
+	// ExcludedProtos is a list of proto files to exclude from generation.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
+	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
+
 	// Samples determines whether to generate samples for the API,
 	// default is true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`

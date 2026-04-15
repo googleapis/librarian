@@ -28,3 +28,12 @@ func lookupMessage(model *api.API, id string) (*api.Message, error) {
 	}
 	return m, nil
 }
+
+// lookupEnum finds an enum in the model by its fully-qualified ID.
+func lookupEnum(model *api.API, id string) (*api.Enum, error) {
+	e, ok := model.State.EnumByID[id]
+	if !ok {
+		return nil, fmt.Errorf("unable to lookup enum %q", id)
+	}
+	return e, nil
+}
