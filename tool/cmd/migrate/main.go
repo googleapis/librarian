@@ -44,18 +44,27 @@ var (
 	errTidyFailed   = errors.New("librarian tidy failed")
 	errFetchSource  = errors.New("cannot fetch source")
 
-	fetchSource           = fetchGoogleapis
-	fetchSourceWithCommit = fetchGoogleapisWithCommit
+	fetchSource           func(ctx context.Context) (*config.Source, error)
+	fetchSourceWithCommit func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error)
 )
+
+type runner struct {
+	fetchSource           func(ctx context.Context) (*config.Source, error)
+	fetchSourceWithCommit func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error)
+}
 
 func main() {
 	ctx := context.Background()
-	if err := run(ctx, os.Args[1:]); err != nil {
+	r := &runner{
+		fetchSource:           fetchGoogleapis,
+		fetchSourceWithCommit: fetchGoogleapisWithCommit,
+	}
+	if err := r.run(ctx, os.Args[1:]); err != nil {
 		log.Fatal(err)
 	}
 }
 
-func run(ctx context.Context, args []string) error {
+func (r *runner) run(ctx context.Context, args []string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	var flagCommit, flagGoogleapis string
@@ -81,19 +90,24 @@ func run(ctx context.Context, args []string) error {
 		if err != nil {
 			return err
 		}
-		fetchSource = func(ctx context.Context) (*config.Source, error) {
+		r.fetchSource = func(ctx context.Context) (*config.Source, error) {
 			return &config.Source{Dir: googleapisAbs}, nil
 		}
-		fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+		r.fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 			return &config.Source{Dir: googleapisAbs}, nil
 		}
+		// Update the global package-level variables for other files.
+		fetchSource = r.fetchSource
+		fetchSourceWithCommit = r.fetchSourceWithCommit
 	} else if flagCommit != "" {
-		fetchSource = func(ctx context.Context) (*config.Source, error) {
-			return fetchGoogleapisWithCommit(ctx, githubEndpoints, flagCommit)
+		r.fetchSource = func(ctx context.Context) (*config.Source, error) {
+			return r.fetchSourceWithCommit(ctx, githubEndpoints, flagCommit)
 		}
-		fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
-			return fetchGoogleapisWithCommit(ctx, endpoints, flagCommit)
-		}
+		// In this specific block, we don't need to re-override fetchSourceWithCommit
+		// because the default or mock is already there. 
+		// We just need to ensure the globals are updated if we are NOT in a test.
+		fetchSource = r.fetchSource
+		fetchSourceWithCommit = r.fetchSourceWithCommit
 	}
 
 	base := filepath.Base(abs)
