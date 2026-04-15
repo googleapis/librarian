@@ -803,3 +803,32 @@ func TestGatherProtos(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterProtos(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		fullPaths   []string
+		relExcludes []string
+		want        []string
+	}{
+		{
+			name: "aiplatform exclusion",
+			fullPaths: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/aiplatform.proto"),
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/schema/io_format.proto"),
+			},
+			relExcludes: []string{"google/cloud/aiplatform/v1beta1/schema/io_format.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/aiplatform.proto"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterProtos(test.fullPaths, test.relExcludes, googleapisDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

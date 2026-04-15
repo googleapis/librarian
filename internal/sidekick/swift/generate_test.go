@@ -132,7 +132,12 @@ func TestGenerateEnumFiles(t *testing.T) {
 	outDir := t.TempDir()
 
 	color := &api.Enum{Name: "Color", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Color"}
+	color.Values = []*api.EnumValue{{Name: "COLOR_UNSPECIFIED", Number: 0, Parent: color}}
+	color.UniqueNumberValues = color.Values
+
 	kind := &api.Enum{Name: "Kind", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Kind"}
+	kind.Values = []*api.EnumValue{{Name: "KIND_UNSPECIFIED", Number: 0, Parent: kind}}
+	kind.UniqueNumberValues = kind.Values
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color, kind}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"

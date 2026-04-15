@@ -51,7 +51,11 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 		}
 		return c.messageTypeName(m)
 	case api.ENUM_TYPE:
-		return "", fmt.Errorf("TODO(#5060) - enum fields are not supported: %s", field.ID)
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return "", err
+		}
+		return c.enumTypeName(e)
 	default:
 		return scalarFieldTypeName(field)
 	}
@@ -104,6 +108,22 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 		return name, nil
 	}
 	parent, err := c.messageTypeName(m.Parent)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", parent, name), nil
+}
+
+func (c *codec) enumTypeName(e *api.Enum) (string, error) {
+	if e.Package != c.Model.PackageName {
+		return "", fmt.Errorf("TODO(#5060) - support external enum types")
+	}
+	// Names can be qualified with nested objects.
+	name := pascalCase(e.Name)
+	if e.Parent == nil {
+		return name, nil
+	}
+	parent, err := c.messageTypeName(e.Parent)
 	if err != nil {
 		return "", err
 	}

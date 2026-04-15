@@ -133,6 +133,75 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 	}
 }
 
+func TestFieldTypeName_BaseEnum(t *testing.T) {
+	outer := &api.Message{
+		Name:    "OuterMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.OuterMessage",
+	}
+	nested := &api.Enum{
+		Name:    "NestedEnum",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.OuterMessage.NestedEnum",
+		Parent:  outer,
+	}
+	simple := &api.Enum{
+		Name:    "SimpleEnum",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.SimpleEnum",
+	}
+
+	c := &codec{
+		Model: &api.API{
+			PackageName: "google.cloud.test.v1",
+			State: &api.APIState{
+				EnumByID: map[string]*api.Enum{
+					".google.cloud.test.v1.SimpleEnum":              simple,
+					".google.cloud.test.v1.OuterMessage.NestedEnum": nested,
+				},
+				MessageByID: map[string]*api.Message{
+					".google.cloud.test.v1.OuterMessage": outer,
+				},
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		field *api.Field
+		want  string
+	}{
+		{
+			name: "simple enum",
+			field: &api.Field{
+				Typez:   api.ENUM_TYPE,
+				TypezID: ".google.cloud.test.v1.SimpleEnum",
+				ID:      ".test.field1",
+			},
+			want: "SimpleEnum",
+		},
+		{
+			name: "nested enum",
+			field: &api.Field{
+				Typez:   api.ENUM_TYPE,
+				TypezID: ".google.cloud.test.v1.OuterMessage.NestedEnum",
+				ID:      ".test.field2",
+			},
+			want: "OuterMessage.NestedEnum",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := c.baseFieldTypeName(test.field)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFieldTypeName_Optional(t *testing.T) {
 	secret := &api.Message{
 		Name:    "Secret",
