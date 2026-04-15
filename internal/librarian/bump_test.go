@@ -758,26 +758,6 @@ func TestDeriveNextVersion_Error(t *testing.T) {
 	}
 }
 
-func TestLoadBranchLibraryVersion(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
-
-	want := sample.InitialVersion
-	testhelper.Setup(t, testhelper.SetupOptions{
-		Clone: true,
-		Config: &config.Config{
-			Libraries: []*config.Library{{Name: sample.Lib1Name, Version: want}},
-		},
-	})
-
-	got, err := loadBranchLibraryVersion(t.Context(), "git", config.RemoteUpstream, config.BranchMain, sample.Lib1Name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if got != want {
-		t.Errorf("got version %s, want %s", got, want)
-	}
-}
-
 func TestFindReleasedLibraries(t *testing.T) {
 	cfgBefore := &config.Config{
 		Libraries: []*config.Library{
