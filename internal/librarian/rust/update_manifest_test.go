@@ -20,6 +20,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
+	"github.com/google/go-cmp/cmp"
 
 	"github.com/googleapis/librarian/internal/semver"
 
@@ -100,114 +101,116 @@ func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
 }
 
 func TestUpdateCargoVersion(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		dir := t.TempDir()
-		filePath := path.Join(dir, "Cargo.toml")
-		content := []byte("[package]\nname = \"test-crate\"\nversion = \"1.0.0\"\n")
-		if err := os.WriteFile(filePath, content, 0644); err != nil {
-			t.Fatal(err)
-		}
+	dir := t.TempDir()
+	filePath := path.Join(dir, "Cargo.toml")
+	content := []byte("[package]\nname = \"test-crate\"\nversion = \"1.0.0\"\n")
+	if err := os.WriteFile(filePath, content, 0644); err != nil {
+		t.Fatal(err)
+	}
 
-		newVersion, err := semver.Parse("2.0.0")
-		if err != nil {
-			t.Fatal(err)
-		}
+	newVersion, err := semver.Parse("2.0.0")
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		if err := updateCargoVersion(filePath, newVersion); err != nil {
-			t.Fatal(err)
-		}
+	if err := updateCargoVersion(filePath, newVersion); err != nil {
+		t.Fatal(err)
+	}
 
-		updatedContent, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Fatal(err)
-		}
+	updatedContent, err := os.ReadFile(filePath)
+	if err != nil {
+		t.Fatal(err)
+	}
 
-		expected := "[package]\nname = \"test-crate\"\nversion                = \"2.0.0\"\n"
-		if string(updatedContent) != expected {
-			t.Errorf("expected %q, got %q", expected, string(updatedContent))
-		}
-	})
+	expected := "[package]\nname = \"test-crate\"\nversion                = \"2.0.0\"\n"
+	if diff := cmp.Diff(expected, string(updatedContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
-	t.Run("no version field", func(t *testing.T) {
-		dir := t.TempDir()
-		filePath := path.Join(dir, "Cargo.toml")
-		content := []byte("[package]\nname = \"test-crate\"\n")
-		if err := os.WriteFile(filePath, content, 0644); err != nil {
-			t.Fatal(err)
-		}
+func TestUpdateCargoVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+	}{
+		{
+			name:    "no version field",
+			content: "[package]\nname = \"test-crate\"\n",
+		},
+		{
+			name:    "file not found",
+			content: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			var filePath string
+			if test.content != "" {
+				dir := t.TempDir()
+				filePath = path.Join(dir, "Cargo.toml")
+				if err := os.WriteFile(filePath, []byte(test.content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				filePath = "non-existent-file"
+			}
 
-		newVersion, _ := semver.Parse("2.0.0")
+			newVersion, _ := semver.Parse("2.0.0")
 
-		if err := updateCargoVersion(filePath, newVersion); err == nil {
-			t.Error("expected an error, got nil")
-		}
-	})
-
-	t.Run("file not found", func(t *testing.T) {
-		newVersion, _ := semver.Parse("2.0.0")
-		if err := updateCargoVersion("non-existent-file", newVersion); err == nil {
-			t.Error("expected an error, got nil")
-		}
-	})
+			if err := updateCargoVersion(filePath, newVersion); err == nil {
+				t.Error("expected an error, got nil")
+			}
+		})
+	}
 }
 
 func TestUpdateWorkspaceVersion(t *testing.T) {
-	t.Run("success", func(t *testing.T) {
-		dir := t.TempDir()
-		filePath := path.Join(dir, "Cargo.toml")
-		content := []byte("[workspace.dependencies]\ntest-crate = { version = \"1.0.0\", path = \"src/test-crate\" }\n")
-		if err := os.WriteFile(filePath, content, 0644); err != nil {
-			t.Fatal(err)
-		}
+	for _, test := range []struct {
+		name      string
+		content   string
+		crateName string
+		want      string
+	}{
+		{
+			name:      "success",
+			content:   "[workspace.dependencies]\ntest-crate = { version = \"1.0.0\", path = \"src/test-crate\" }\n",
+			crateName: "test-crate",
+			want:      "[workspace.dependencies]\ntest-crate = { version = \"2.0.0\", path = \"src/test-crate\" }\n",
+		},
+		{
+			name:      "no-op",
+			content:   "[workspace.dependencies]\nother-crate = { version = \"1.0.0\", path = \"src/other-crate\" }\n",
+			crateName: "test-crate",
+			want:      "[workspace.dependencies]\nother-crate = { version = \"1.0.0\", path = \"src/other-crate\" }\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			filePath := path.Join(dir, "Cargo.toml")
+			if err := os.WriteFile(filePath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
 
-		newVersion, err := semver.Parse("2.0.0")
-		if err != nil {
-			t.Fatal(err)
-		}
+			newVersion, _ := semver.Parse("2.0.0")
 
-		if err := updateWorkspaceVersion(filePath, "test-crate", newVersion); err != nil {
-			t.Fatal(err)
-		}
+			if err := updateWorkspaceVersion(filePath, test.crateName, newVersion); err != nil {
+				t.Fatal(err)
+			}
 
-		updatedContent, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Fatal(err)
-		}
+			updatedContent, err := os.ReadFile(filePath)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-		expected := "[workspace.dependencies]\ntest-crate = { version = \"2.0.0\", path = \"src/test-crate\" }\n"
-		if string(updatedContent) != expected {
-			t.Errorf("expected %q, got %q", expected, string(updatedContent))
-		}
-	})
+			if diff := cmp.Diff(test.want, string(updatedContent)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
 
-	t.Run("no-op", func(t *testing.T) {
-		dir := t.TempDir()
-		filePath := path.Join(dir, "Cargo.toml")
-		content := []byte("[workspace.dependencies]\nother-crate = { version = \"1.0.0\", path = \"src/other-crate\" }\n")
-		if err := os.WriteFile(filePath, content, 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		newVersion, _ := semver.Parse("2.0.0")
-
-		if err := updateWorkspaceVersion(filePath, "test-crate", newVersion); err != nil {
-			t.Fatal(err)
-		}
-
-		updatedContent, err := os.ReadFile(filePath)
-		if err != nil {
-			t.Fatal(err)
-		}
-
-		if string(updatedContent) != string(content) {
-			t.Errorf("expected no change, got %q", string(updatedContent))
-		}
-	})
-
-	t.Run("file not found", func(t *testing.T) {
-		newVersion, _ := semver.Parse("2.0.0")
-		if err := updateWorkspaceVersion("non-existent-file", "test-crate", newVersion); err == nil {
-			t.Error("expected an error, got nil")
-		}
-	})
+func TestUpdateWorkspaceVersion_Error(t *testing.T) {
+	newVersion, _ := semver.Parse("2.0.0")
+	if err := updateWorkspaceVersion("non-existent-file", "test-crate", newVersion); err == nil {
+		t.Error("expected an error, got nil")
+	}
 }
