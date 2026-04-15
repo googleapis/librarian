@@ -87,7 +87,10 @@ from librarian.yaml in the current directory.`,
 			case config.LanguageFake:
 				return nil
 			case config.LanguageGo:
-				return golang.Install(ctx)
+				if err := golang.Install(ctx, cfg.Tools); err != nil {
+					return fmt.Errorf("install go dependencies: %w", err)
+				}
+				return nil
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx)
 			case config.LanguagePython:
