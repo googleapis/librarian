@@ -88,8 +88,9 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string |  |
-| `version` | string |  |
+| `name` | string | Is the go module name. |
+| `version` | string | Is the version to install. |
+| `exec` | string | Is the binary name of the tool. |
 
 ## Default Configuration
 
