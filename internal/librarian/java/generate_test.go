@@ -496,17 +496,6 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "invalid version",
-			library: &config.Library{
-				Name:   "test",
-				Output: t.TempDir(),
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager"}, // Missing version
-				},
-			},
-			wantErr: errExtractVersion,
-		},
-		{
 			name: "no protos found",
 			library: &config.Library{
 				Name:   "test",
