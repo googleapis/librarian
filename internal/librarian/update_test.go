@@ -296,7 +296,7 @@ func TestUpdateCommand(t *testing.T) {
 
 			if test.wantCounts != nil {
 				if diff := cmp.Diff(test.wantCounts, setup.counts); diff != "" {
-	t.Errorf("mismatch (-want +got):\n%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			}
 		})
