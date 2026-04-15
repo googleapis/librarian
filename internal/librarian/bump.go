@@ -50,7 +50,7 @@ var (
 		},
 	}
 	// ignoredChangesInBump defines the list of the files that are
-	// to be ignored as changes during the bump and release commands.
+	// to be ignored as changes during the bump and publish commands.
 	// It is norm that a repository does not have all the files listed here.
 	ignoredChangesInBump = []string{
 		".repo-metadata.json",
