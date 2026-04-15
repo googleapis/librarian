@@ -73,6 +73,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if goAPI == nil {
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
+		
 		if err := generateAPI(ctx, goAPI, googleapisDir, library.Version, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
