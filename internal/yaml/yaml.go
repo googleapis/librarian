@@ -63,11 +63,22 @@ func (s FlexibleStringSlice) IsZero() bool {
 // from either a single comma-separated string or a YAML sequence of strings.
 func (s *FlexibleStringSlice) UnmarshalYAML(value *yaml.Node) error {
 	if value.Kind == yaml.ScalarNode {
-		parts := strings.Split(value.Value, ",")
-		for i := range parts {
-			parts[i] = strings.TrimSpace(parts[i])
+		if strings.TrimSpace(value.Value) == "" {
+			*s = nil
+			return nil
 		}
-		*s = parts
+		parts := strings.Split(value.Value, ",")
+		var res []string
+		for _, p := range parts {
+			if p = strings.TrimSpace(p); p != "" {
+				res = append(res, p)
+			}
+		}
+		if len(res) == 0 {
+			*s = nil
+			return nil
+		}
+		*s = res
 		return nil
 	}
 	var slice []string

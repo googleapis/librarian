@@ -169,7 +169,7 @@ func TestFlexibleStringSlice_Unmarshal(t *testing.T) {
 		{
 			name:  "empty",
 			input: "list: \"\"\n",
-			want:  []string{""},
+			want:  nil,
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
