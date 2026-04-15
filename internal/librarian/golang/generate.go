@@ -69,7 +69,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		googleapisDir = filepath.Join(googleapisDir, "preview")
 	}
 
-	for i, api := range library.APIs {
+	for _, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
@@ -91,12 +91,10 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateRepoMetadata(api, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
-		if i != 0 {
-			continue
-		}
-		if err := generateREADME(library, api, outDir); err != nil {
-			return fmt.Errorf("failed to generate README: %w", err)
-		}
+
+	}
+	if err := generateREADME(library, googleapisDir, outDir); err != nil {
+		return fmt.Errorf("failed to generate README: %w", err)
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
 		return fmt.Errorf("failed to generate internal version file: %w", err)
@@ -288,7 +286,9 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 	return files, nil
 }
 
-func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot string) error {
+// generateREADME generates the top-level README for the library.
+// We only generate one README for the entire library.
+func generateREADME(library *config.Library, googleapisDir string, moduleRoot string) error {
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.
@@ -304,8 +304,21 @@ func generateREADME(library *config.Library, api *serviceconfig.API, moduleRoot 
 	if err != nil {
 		return err
 	}
+	title := library.TitleOverride
+	if title == "" {
+		if len(library.APIs) == 0 {
+			f.Close()
+			return fmt.Errorf("no APIs in library %s", library.Name)
+		}
+		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
+		if err != nil {
+			f.Close()
+			return err
+		}
+		title = api.Title
+	}
 	err = readmeTmplParsed.Execute(f, map[string]string{
-		"Name":       api.Title,
+		"Name":       title,
 		"ModulePath": modulePath(library),
 	})
 	cerr := f.Close()
