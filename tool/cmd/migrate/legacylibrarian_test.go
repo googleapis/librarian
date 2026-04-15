@@ -178,7 +178,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
-				Release: &config.Release{},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,
@@ -217,7 +216,6 @@ func TestBuildConfigFromLibrarian(t *testing.T) {
 						SHA256: "sha123",
 					},
 				},
-				Release: &config.Release{},
 				Default: &config.Default{
 					Output:    "packages",
 					TagFormat: pythonTagFormat,
@@ -476,9 +474,6 @@ func TestAugmentLegacyReleaseExcludePaths(t *testing.T) {
 				Default: &config.Default{
 					Output: "packages",
 				},
-				Release: &config.Release{
-					IgnoredChanges: []string{"metadata", "docs/readme"},
-				},
 			},
 			initialState: &legacyconfig.LibrarianState{
 				Image: "test-image",
@@ -572,9 +567,6 @@ func TestAugmentLegacyReleaseExcludePaths_Error(t *testing.T) {
 		},
 		Default: &config.Default{
 			Output: "packages",
-		},
-		Release: &config.Release{
-			IgnoredChanges: []string{"irrelevant"},
 		},
 	}
 	gotErr := augmentLegacyReleaseExcludePaths(repoDir, cfg)
