@@ -87,7 +87,11 @@ from librarian.yaml in the current directory.`,
 			case config.LanguageFake:
 				return nil
 			case config.LanguageGo:
-				if err := golang.Install(ctx, cfg.Tools); err != nil {
+				var tools *config.Tools
+				if cfg != nil {
+					tools = cfg.Tools
+				}
+				if err := golang.Install(ctx, tools); err != nil {
 					return fmt.Errorf("install go dependencies: %w", err)
 				}
 				return nil
@@ -96,7 +100,11 @@ from librarian.yaml in the current directory.`,
 			case config.LanguagePython:
 				return python.Install(ctx)
 			case config.LanguageRust:
-				return rust.Install(ctx, cfg.Tools)
+				var tools *config.Tools
+				if cfg != nil {
+					tools = cfg.Tools
+				}
+				return rust.Install(ctx, tools)
 			default:
 				return fmt.Errorf("language %q does not support install", lang)
 			}
