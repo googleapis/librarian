@@ -136,7 +136,7 @@ func TestFilterNoFilter(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/model.rs",
 	}
 
-	got := filesFilter([]string{}, input)
+	got := filesFilter(nil, input)
 	want := input
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

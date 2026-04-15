@@ -50,11 +50,9 @@ var (
 		},
 	}
 	// ignoredChangesInBump defines the list of the files that are
-	// to be ignored as changes during the bump command. This applies to
-	// all languages and repositories.
+	// to be ignored as changes during the bump and release commands.
+	// It is norm that a repository does not have all the files listed here.
 	ignoredChangesInBump = []string{
-		// Changes to these files are do not affect the library version
-		// bump for releases, regardless of the languages or repositories.
 		".repo-metadata.json",
 		"docs/README.rst",
 	}
