@@ -15,8 +15,6 @@
 package swift
 
 import (
-	"errors"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -52,8 +50,8 @@ func TestGenerateEnum_Files(t *testing.T) {
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	for _, expected := range []string{"Color.swift", "Kind.swift"} {
 		filename := filepath.Join(expectedDir, expected)
-		if _, err := os.Stat(filename); errors.Is(err, fs.ErrNotExist) {
-			t.Errorf("missing %s: %s", filename, err)
+		if _, err := os.Stat(filename); err != nil {
+			t.Error(err)
 		}
 	}
 }
