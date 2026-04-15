@@ -949,8 +949,6 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
-			// The srcDir and destDir are both outDir because we generate the temp directory
-			// within the same general outDir in order to avoid cross-linking across filesystems.
 			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir, outDir)
 			if err != nil {
 				t.Fatal(err)
