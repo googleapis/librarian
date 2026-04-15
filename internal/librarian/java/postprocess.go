@@ -89,22 +89,9 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	return nil
 }
 
-func (p postProcessParams) gapicDir() string {
-	return filepath.Join(p.tempDir(), "gapic")
-}
-func (p postProcessParams) gRPCDir() string {
-	return filepath.Join(p.tempDir(), "grpc")
-}
-func (p postProcessParams) protoDir() string {
-	return filepath.Join(p.tempDir(), "proto")
-}
-func (p postProcessParams) tempDir() string {
-	tempDir := p.version
-	if tempDir == "" {
-		tempDir = "temp"
-	}
-	return filepath.Join(p.outDir, tempDir)
-}
+func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
+func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
+func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
 func (p postProcessParams) coords() APICoordinate {
 	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version, p.javaAPI)
 }
@@ -147,7 +134,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 
 	// Cleanup intermediate protoc output directory after restructuring
-	if err := os.RemoveAll(p.tempDir()); err != nil {
+	if err := os.RemoveAll(filepath.Join(p.outDir, p.version)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
 	}
 	return nil
