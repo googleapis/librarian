@@ -43,9 +43,6 @@ const (
 	managedModulesEndMarker   = "<!-- {x-generated-modules-end} -->"
 )
 
-var (
-	fetchSourceWithCommit = fetchGoogleapisWithCommit
-)
 
 type javaGAPICInfo struct {
 	AdditionalProtos []string

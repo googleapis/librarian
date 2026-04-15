@@ -96,7 +96,7 @@ type nodejsGapicInfo struct {
 // or /some_path-nodejs.
 var owlBotSourceRegex = regexp.MustCompile(`^/(?:(.+?)/(?:\(|v\d|[^/]+-nodejs)|([^/]+)-nodejs)`)
 
-func runNodejsMigration(ctx context.Context, repoPath string) error {
+func runNodejsMigration(ctx context.Context, repoPath, flagGoogleapis string) error {
 	src, err := fetchSource(ctx)
 	if err != nil {
 		return errFetchSource
@@ -122,7 +122,9 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 		},
 		Libraries: libraries,
 	}
-	cfg.Sources.Googleapis.Dir = ""
+	if flagGoogleapis == "" {
+		cfg.Sources.Googleapis.Dir = ""
+	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("librarian tidy failed: %w", err)

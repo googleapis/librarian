@@ -44,10 +44,8 @@ var (
 	errTidyFailed   = errors.New("librarian tidy failed")
 	errFetchSource  = errors.New("cannot fetch source")
 
-	fetchSource = fetchGoogleapis
-
-	flagCommit     string
-	flagGoogleapis string
+	fetchSource           = fetchGoogleapis
+	fetchSourceWithCommit = fetchGoogleapisWithCommit
 )
 
 func main() {
@@ -60,6 +58,7 @@ func main() {
 func run(ctx context.Context, args []string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
+	var flagCommit, flagGoogleapis string
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	flagSet.StringVar(&flagCommit, "commit", "", "Commit hash for googleapis")
 	flagSet.StringVar(&flagGoogleapis, "googleapis", "", "Local path to googleapis directory")
@@ -93,7 +92,6 @@ func run(ctx context.Context, args []string) error {
 			return fetchGoogleapisWithCommit(ctx, githubEndpoints, flagCommit)
 		}
 		fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
-			// Override the requested commitish with the explicit flag
 			return fetchGoogleapisWithCommit(ctx, endpoints, flagCommit)
 		}
 	}
@@ -109,7 +107,7 @@ func run(ctx context.Context, args []string) error {
 	case "google-cloud-java":
 		return runJavaMigration(ctx, abs)
 	case "google-cloud-node":
-		return runNodejsMigration(ctx, abs)
+		return runNodejsMigration(ctx, abs, flagGoogleapis)
 	case "google-cloud-dotnet":
 		return runDotnetMigration(ctx, abs)
 	default:
