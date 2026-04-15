@@ -754,9 +754,9 @@ func TestGatherProtos(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	files := []string{
-		"root.proto",
-		"sub/nested.proto",
-		"sub/deep/deep.proto",
+		"google/cloud/aiplatform/v1/aiplatform.proto",
+		"google/cloud/aiplatform/v1/sub/nested.proto",
+		"google/cloud/aiplatform/v1/sub/deep/deep.proto",
 		"google/api/api.proto",
 		"google/api/sub/sub.proto",
 		"google/cloud/location/locations.proto",
@@ -781,13 +781,9 @@ func TestGatherProtos(t *testing.T) {
 			name:    "recursive",
 			relPath: "google/cloud/aiplatform/v1",
 			want: []string{
-				filepath.Join(tmpDir, "google/api/api.proto"),
-				filepath.Join(tmpDir, "google/api/sub/sub.proto"),
-				filepath.Join(tmpDir, "google/cloud/location/locations.proto"),
-				filepath.Join(tmpDir, "google/cloud/location/sub/sub.proto"),
-				filepath.Join(tmpDir, "root.proto"),
-				filepath.Join(tmpDir, "sub/deep/deep.proto"),
-				filepath.Join(tmpDir, "sub/nested.proto"),
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/aiplatform.proto"),
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/sub/deep/deep.proto"),
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/sub/nested.proto"),
 			},
 		},
 		{
@@ -808,10 +804,6 @@ func TestGatherProtos(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := filepath.Join(tmpDir, test.relPath)
-			if test.relPath == "google/cloud/aiplatform/v1" {
-				// Special case for recursive test to use tmpDir as root
-				root = tmpDir
-			}
 			got, err := gatherProtos(root, test.relPath)
 			if err != nil {
 				t.Fatal(err)

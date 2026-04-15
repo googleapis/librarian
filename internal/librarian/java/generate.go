@@ -314,7 +314,7 @@ func findBOMVersion(cfg *config.Config) (string, error) {
 // ensuring that subpackage protos (e.g., in a "schema" directory) are included
 // in the generation.
 //
-// recursion is disabled for certain base paths (google/api, google/cloud, google/rpc).
+// recursion is disabled for certain base paths in nonRecursivePaths.
 func gatherProtos(root, relPath string) ([]string, error) {
 	var protos []string
 	recursive := !nonRecursivePaths[filepath.ToSlash(relPath)]
