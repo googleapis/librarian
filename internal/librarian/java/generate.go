@@ -118,7 +118,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
-	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos)
+	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, googleapisDir)
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", api.Path, errNoProtos)
 	}
@@ -340,22 +340,22 @@ func gatherProtos(root, relPath string) ([]string, error) {
 	return protos, nil
 }
 
-// filterProtos applies path-specific exclusions to the list of proto files.
-func filterProtos(protos []string, excludedProtos []string) []string {
-	if len(excludedProtos) == 0 {
-		return protos
+// filterProtos removes entries from fullPaths that match root + relPath in relExcludes.
+func filterProtos(fullPaths []string, relExcludes []string, root string) []string {
+	if len(relExcludes) == 0 {
+		return fullPaths
 	}
 	excludedSet := make(map[string]bool)
-	for _, e := range excludedProtos {
-		excludedSet[filepath.ToSlash(e)] = true
+	for _, e := range relExcludes {
+		fullPath := filepath.ToSlash(filepath.Join(root, filepath.FromSlash(e)))
+		excludedSet[fullPath] = true
 	}
 	var filtered []string
-	for _, p := range protos {
+	for _, p := range fullPaths {
 		if excludedSet[filepath.ToSlash(p)] {
 			continue
 		}
 		filtered = append(filtered, p)
 	}
-
 	return filtered
 }
