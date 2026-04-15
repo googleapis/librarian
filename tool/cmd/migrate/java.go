@@ -360,6 +360,18 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 	case name == "datastore" && api.Path == "google/datastore/admin/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/docs":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/drive":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/gmail":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/sheets":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/slides":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
 	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"

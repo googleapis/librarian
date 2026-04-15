@@ -436,6 +436,48 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "proto artifact overrides",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName: "gsuite-addons",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/apps/script/type"},
+						},
+					},
+				},
+			},
+			src: &config.Source{Dir: "testdata/googleapis"},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "gsuite-addons",
+						APIs: []*config.API{
+							{Path: "google/apps/script/type"},
+						},
+						Java: &config.JavaModule{
+							JavaAPIs: []*config.JavaAPI{
+								{
+									Path:                    "google/apps/script/type",
+									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
+									ProtoOnly:               true,
+									Samples:                 new(false),
+								},
+							},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := buildConfig(test.gen, ".", test.src, test.versions)
