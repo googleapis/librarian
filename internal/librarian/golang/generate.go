@@ -23,6 +23,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"text/template"
 
@@ -107,14 +108,41 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			}
 		}
 	}
-	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			// New client, init the module.
-			return initModule(ctx, outDir, modulePath(library))
+	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
+		// New client, init the module.
+		if err := initModule(ctx, outDir, modulePath(library)); err != nil {
+			return err
 		}
+		return updateSnippetsModule(ctx, library, outDir)
+	} else if err != nil {
 		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
 	return nil
+}
+
+// updateSnippetsModule updates the snippets module's go.mod file with a requirement
+// and a local replacement for the newly generated library.
+func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string) error {
+	if library.Go == nil {
+		return nil
+	}
+	hasSnippets := slices.ContainsFunc(library.Go.GoAPIs, func(api *config.GoAPI) bool {
+		return !api.NoSnippets
+	})
+	if !hasSnippets {
+		return nil
+	}
+	// Note: Previews won't have snippets, so no need to handle preview clients.
+	repoRoot := repoRootPath(outDir, library.Name)
+	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
+	modDir, err := filepath.Rel(repoRoot, outDir)
+	if err != nil {
+		return fmt.Errorf("failed to get relative path of module: %w", err)
+	}
+	modPath := modulePath(library)
+	return command.RunInDir(ctx, snippetsDir, command.Go, "mod", "edit",
+		"-require="+modPath+"@v0.0.0",
+		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }
 
 func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {

@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/java"
@@ -81,14 +82,16 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 			log.Printf("Warning: multiple proto_library_with_info in %s/BUILD.bazel, using first", dir)
 		}
 		rule := rules[0]
-		// Search for specific common resource targets in deps
-		if deps := rule.AttrStrings("deps"); len(deps) > 0 {
+		// Search for specific common resource targets in deps.
+		// We use Attr instead of AttrStrings to handle cases where deps is
+		// a variable or an addition of lists.
+		if attr := rule.Attr("deps"); attr != nil {
 			protoMappings := map[string]string{
 				"//google/cloud:common_resources_proto":  "google/cloud/common_resources.proto",
 				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 			}
-			for _, dep := range deps {
+			for _, dep := range extractStrings(attr) {
 				if protoPath, ok := protoMappings[dep]; ok {
 					info.AdditionalProtos = append(info.AdditionalProtos, protoPath)
 				}
@@ -637,4 +640,15 @@ func containsAny(block, targets []string) bool {
 func getLineIndent(line string) string {
 	trimmed := strings.TrimLeft(line, " \t")
 	return line[:len(line)-len(trimmed)]
+}
+
+// extractStrings returns all string literals found within a Bazel expression.
+func extractStrings(expr build.Expr) []string {
+	var res []string
+	build.Walk(expr, func(e build.Expr, _ []build.Expr) {
+		if s, ok := e.(*build.StringExpr); ok {
+			res = append(res, s.Value)
+		}
+	})
+	return res
 }
