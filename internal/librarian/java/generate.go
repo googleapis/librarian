@@ -340,7 +340,7 @@ func gatherProtos(root, relPath string) ([]string, error) {
 	return protos, nil
 }
 
-// filterProtos removes entries from fullPaths that match root + relPath in relExcludes.
+// filterProtos returns entries from fullPaths that excludes root + relPath in relExcludes.
 func filterProtos(fullPaths []string, relExcludes []string, root string) []string {
 	if len(relExcludes) == 0 {
 		return fullPaths
