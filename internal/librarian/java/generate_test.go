@@ -803,3 +803,32 @@ func TestGatherProtos(t *testing.T) {
 		})
 	}
 }
+
+func TestFilterProtos(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name           string
+		protos         []string
+		excludedProtos []string
+		want           []string
+	}{
+		{
+			name: "aiplatform exclusion",
+			protos: []string{
+				"google/cloud/aiplatform/v1beta1/aiplatform.proto",
+				"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+			},
+			excludedProtos: []string{"google/cloud/aiplatform/v1beta1/schema/io_format.proto"},
+			want: []string{
+				"google/cloud/aiplatform/v1beta1/aiplatform.proto",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterProtos(test.protos, test.excludedProtos)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
