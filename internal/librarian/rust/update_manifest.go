@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/semver"
 )
 
+// ErrNoVersionField indicates that the version field was not found in Cargo.toml.
 var ErrNoVersionField = errors.New("no version field found")
 
 // CrateInfo contains the package information.
