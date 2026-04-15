@@ -41,7 +41,11 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 
 	for _, tool := range tools.Go {
-		t := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
+		version := tool.Version
+		if version == "" {
+			version = "latest"
+		}
+		t := fmt.Sprintf("%s@%s", tool.Name, version)
 		if err := command.Run(ctx, command.Go, "install", t); err != nil {
 			return fmt.Errorf("install %s: %w", t, err)
 		}
