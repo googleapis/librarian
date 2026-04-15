@@ -31,7 +31,6 @@ import (
 )
 
 var (
-	errExtractVersion    = errors.New("failed to extract version")
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
