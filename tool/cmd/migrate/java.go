@@ -142,7 +142,7 @@ type GenerationConfig struct {
 	Libraries           []LibraryConfig `yaml:"libraries"`
 }
 
-func runJavaMigration(ctx context.Context, repoPath string) error {
+func runJavaMigration(ctx context.Context, repoPath string, insert bool) error {
 	gen, err := readGenerationConfig(repoPath)
 	if err != nil {
 		return err
@@ -167,8 +167,10 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
 
-	if err := insertMarkers(repoPath, cfg); err != nil {
-		return fmt.Errorf("failed to insert markers: %w", err)
+	if insert {
+		if err := insertMarkers(repoPath, cfg); err != nil {
+			return fmt.Errorf("failed to insert markers: %w", err)
+		}
 	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {

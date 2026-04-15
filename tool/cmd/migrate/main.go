@@ -71,7 +71,7 @@ func (r *runner) run(ctx context.Context, args []string) error {
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
 	flagSet.StringVar(&flagCommit, "commit", "", "Commit hash for googleapis")
 	flagSet.StringVar(&flagGoogleapis, "googleapis", "", "Local path to googleapis directory")
-
+	insertMarkersFlag := flagSet.Bool("insert-markers", false, "whether to insert markers in Java pom.xml files")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -119,7 +119,7 @@ func (r *runner) run(ctx context.Context, args []string) error {
 		parts := strings.SplitN(base, "-", 3)
 		return runLibrarianMigration(ctx, parts[2], abs, flagSet.Args()[1:])
 	case "google-cloud-java":
-		return runJavaMigration(ctx, abs)
+		return runJavaMigration(ctx, abs, *insertMarkersFlag)
 	case "google-cloud-node":
 		return runNodejsMigration(ctx, abs, flagGoogleapis)
 	case "google-cloud-dotnet":
