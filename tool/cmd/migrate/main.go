@@ -69,7 +69,7 @@ func (r *runner) run(ctx context.Context, args []string) error {
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	var flagCommit, flagGoogleapis string
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
-	flagSet.StringVar(&flagCommit, "commit", "", "Commit hash for googleapis")
+	flagSet.StringVar(&flagCommit, "commit", "", "Commit hash for googleapis (ignored for java)")
 	flagSet.StringVar(&flagGoogleapis, "googleapis", "", "Local path to googleapis directory")
 	insertMarkersFlag := flagSet.Bool("insert-markers", false, "whether to insert markers in Java pom.xml files")
 	if err := flagSet.Parse(args); err != nil {
