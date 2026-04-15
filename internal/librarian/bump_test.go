@@ -33,12 +33,6 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// testUnusedStringParam is used to fill the spot with a string parameter that
-// won't be provided in the test, because the test does not exercise the
-// functionality related to said parameter. It is an intentional signal
-// rather than an ambiguous empty string.
-const testUnusedStringParam = ""
-
 func TestBumpCommand(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
@@ -330,7 +324,7 @@ func TestBumpLibrary(t *testing.T) {
 			testhelper.Setup(t, opts)
 
 			targetLibCfg := test.cfg.Libraries[0]
-			err := bumpLibrary(test.cfg, targetLibCfg, test.versionOverride)
+			err := bumpLibrary(t.Context(), test.cfg, targetLibCfg, test.versionOverride, "git")
 			if err != nil {
 				t.Fatalf("bumpLibrary() error = %v", err)
 			}
@@ -369,7 +363,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 			name: "unsupported language",
 			cfg: func() *config.Config {
 				c := sample.Config()
-				c.Language = config.LanguageRust
+				c.Language = "unsupported"
 				return c
 			}(),
 			versionOverride: "2.0.0",
@@ -386,7 +380,7 @@ func TestBumpLibrary_Error(t *testing.T) {
 			testhelper.Setup(t, opts)
 
 			targetLibCfg := test.cfg.Libraries[0]
-			gotErr := bumpLibrary(test.cfg, targetLibCfg, test.versionOverride)
+			gotErr := bumpLibrary(t.Context(), test.cfg, targetLibCfg, test.versionOverride, "git")
 			if gotErr == nil {
 				t.Fatal("expected error; got nil")
 			}
@@ -1004,54 +998,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 	}
 }
 
-func TestLegacyRustBumpLibrary(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
-
-	tests := []struct {
-		name            string
-		cfg             *config.Config
-		versionOverride string
-		wantVersion     string
-	}{
-		{
-			name:        "library released",
-			cfg:         sample.Config(),
-			wantVersion: sample.NextVersion,
-		},
-		{
-			name: "version override",
-			cfg: func() *config.Config {
-				c := sample.Config()
-				c.Libraries[0].Version = "1.3.0"
-				return c
-			}(),
-			versionOverride: "2.0.0",
-			wantVersion:     "2.0.0",
-		},
-	}
-
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			opts := testhelper.SetupOptions{
-				Clone:  true,
-				Config: test.cfg,
-			}
-			testhelper.Setup(t, opts)
-
-			targetLibCfg := test.cfg.Libraries[0]
-			// Unused string param: lastTag.
-			err := legacyRustBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride)
-			if err != nil {
-				t.Fatalf("legacyRustBumpLibrary() error = %v", err)
-			}
-			if targetLibCfg.Version != test.wantVersion {
-				t.Errorf("library %q version mismatch: want %q, got %q", targetLibCfg.Name, test.wantVersion, targetLibCfg.Version)
-			}
-		})
-	}
-}
-
-func TestLegacyRustBump(t *testing.T) {
+func TestRustBump(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 
 	lib1Change := filepath.Join(sample.Lib1Output, "src", "lib.rs")
@@ -1096,15 +1043,26 @@ func TestLegacyRustBump(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := sample.Config()
+			cfg.Language = config.LanguageRust
+			fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
+			script := "#!/bin/sh\nexit 0"
+			if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
+				t.Fatal(err)
+			}
+			cfg.Release = &config.Release{
+				Preinstalled: map[string]string{
+					"cargo": fakeCargo,
+				},
+			}
 			opts := testhelper.SetupOptions{
 				Clone:       true,
 				Config:      cfg,
-				Tags:        []string{sample.InitialLegacyRustTag},
+				Tags:        []string{sample.InitialLib1Tag, sample.InitialLib2Tag},
 				WithChanges: test.withChanges,
 			}
 			testhelper.Setup(t, opts)
 
-			if err := legacyRustBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride, "git"); err != nil {
+			if err := runBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1118,63 +1076,6 @@ func TestLegacyRustBump(t *testing.T) {
 						t.Errorf("library %s: got version %q, want %q", lib.Name, lib.Version, want)
 					}
 				}
-			}
-		})
-	}
-}
-
-func TestLegacyRustBumpAll(t *testing.T) {
-	testhelper.RequireCommand(t, "git")
-
-	for _, test := range []struct {
-		name        string
-		cfg         *config.Config
-		withChanges []string
-		skipPublish bool
-		wantVersion string
-	}{
-		{
-			name:        "library has changes",
-			cfg:         sample.Config(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantVersion: sample.NextVersion,
-		},
-		{
-			name:        "library does not have any changes",
-			cfg:         sample.Config(),
-			wantVersion: sample.InitialVersion,
-		},
-		{
-			name: "library has changes but skipPublish is true",
-			cfg: func() *config.Config {
-				c := sample.Config()
-				c.Libraries[0].SkipRelease = true
-				return c
-			}(),
-			withChanges: []string{filepath.Join(sample.Lib1Output, "src", "lib.rs")},
-			wantVersion: sample.InitialVersion,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			targetCfg := test.cfg
-			sinceTag := sample.InitialLegacyRustTag
-			opts := testhelper.SetupOptions{
-				Clone:       true,
-				Config:      test.cfg,
-				Tags:        []string{sample.InitialLegacyRustTag},
-				WithChanges: test.withChanges,
-			}
-			testhelper.Setup(t, opts)
-
-			err := legacyRustBumpAll(t.Context(), targetCfg, sinceTag, "git")
-			if err != nil {
-				t.Fatal(err)
-			}
-			// releaseAll directly modifies the config provided, so we use it as
-			// our "got".
-			gotVersion := targetCfg.Libraries[0].Version
-			if gotVersion != test.wantVersion {
-				t.Errorf("got version %s, want %s", gotVersion, test.wantVersion)
 			}
 		})
 	}

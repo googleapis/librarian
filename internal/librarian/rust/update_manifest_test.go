@@ -19,89 +19,12 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"slices"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/googleapis/librarian/internal/semver"
-
-	"github.com/googleapis/librarian/internal/testhelper"
 )
-
-func TestShouldBumpManifestVersionSuccess(t *testing.T) {
-	const tag = "manifest-version-update-success"
-	testhelper.RequireCommand(t, "git")
-	testhelper.SetupForVersionBump(t, tag)
-
-	name := path.Join("src", "storage", "Cargo.toml")
-	contents, err := os.ReadFile(name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	lines := strings.Split(string(contents), "\n")
-	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
-	if idx == -1 {
-		t.Fatalf("expected a line starting with `version ` in %v", lines)
-	}
-	lines[idx] = `version = "2.3.4"`
-	if err := os.WriteFile(name, []byte(strings.Join(lines, "\n")), 0644); err != nil {
-		t.Fatal(err)
-	}
-	testhelper.RunGit(t, "commit", "-m", "updated version", ".")
-
-	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if needsBump {
-		t.Errorf("expected no need for a bump for %s", name)
-	}
-}
-
-func TestShouldBumpManifestVersionNewCrate(t *testing.T) {
-	const tag = "manifest-version-update-new-crate"
-	testhelper.RequireCommand(t, "git")
-	testhelper.SetupForVersionBump(t, tag)
-
-	testhelper.AddCrate(t, path.Join("src", "new"), "google-cloud-new")
-	testhelper.RunGit(t, "add", ".")
-	testhelper.RunGit(t, "commit", "-m", "new crate", ".")
-	name := path.Join("src", "new", "Cargo.toml")
-
-	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if needsBump {
-		t.Errorf("no changes for new crates")
-	}
-}
-
-func TestShouldBumpManifestVersionNoChange(t *testing.T) {
-	const tag = "manifest-version-update-no-change"
-	testhelper.RequireCommand(t, "git")
-	testhelper.SetupForVersionBump(t, tag)
-	name := path.Join("src", "storage", "Cargo.toml")
-	needsBump, err := shouldBumpManifestVersion(t.Context(), "git", tag, name)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !needsBump {
-		t.Errorf("expected no change for %s", name)
-	}
-}
-
-func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
-	const tag = "manifest-version-update-success"
-	testhelper.RequireCommand(t, "git")
-	testhelper.SetupForVersionBump(t, tag)
-	name := path.Join("src", "storage", "Cargo.toml")
-	if updated, err := shouldBumpManifestVersion(t.Context(), "git", "not-a-valid-tag", name); err == nil {
-		t.Errorf("expected an error with an valid tag, got=%v", updated)
-	}
-}
 
 func TestUpdateCargoVersion(t *testing.T) {
 	content := "[package]\nname = \"test-crate\"\nversion = \"1.0.0\"\n"

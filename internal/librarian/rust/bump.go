@@ -16,7 +16,6 @@
 package rust
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -32,19 +31,10 @@ var (
 	errMissingVersion = errors.New("must provide version")
 )
 
-// Bump checks if a version bump is required and performs it.
-// It returns without error if no bump is needed (version already updated since lastTag).
-func Bump(ctx context.Context, library *config.Library, output, version, gitExe, lastTag string) error {
+// Bump performs the version bump for Rust.
+func Bump(library *config.Library, output, version string) error {
 	if version == "" {
 		return errMissingVersion
-	}
-	cargoFile := filepath.Join(output, "Cargo.toml")
-	needed, err := shouldBumpManifestVersion(ctx, gitExe, lastTag, cargoFile)
-	if err != nil {
-		return err
-	}
-	if !needed {
-		return nil
 	}
 	return writeVersion(library, output, version)
 }

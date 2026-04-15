@@ -123,7 +123,7 @@ func TestNoCargoFile(t *testing.T) {
 }
 
 func TestMissingVersion(t *testing.T) {
-	err := Bump(t.Context(), &config.Library{}, "", "", "", "")
+	err := Bump(&config.Library{}, "", "")
 	if !errors.Is(err, errMissingVersion) {
 		t.Errorf("expected error %v, got %v", errMissingVersion, err)
 	}
