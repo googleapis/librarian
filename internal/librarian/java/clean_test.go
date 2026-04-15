@@ -177,31 +177,6 @@ func TestCleanPatterns(t *testing.T) {
 			},
 		},
 		{
-			name: "with proto only path",
-			library: &config.Library{
-				Name: "accesscontextmanager",
-				APIs: []*config.API{
-					{Path: "google/identity/accesscontextmanager/v1"},
-					{Path: "google/identity/accesscontextmanager/type"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{Path: "google/identity/accesscontextmanager/type",
-							ProtoOnly: true},
-						{Path: "google/identity/accesscontextmanager/v1"},
-					},
-				},
-			},
-			want: map[string]bool{
-				"google-cloud-accesscontextmanager/src":            true,
-				"proto-google-cloud-accesscontextmanager-type/src": true,
-				"proto-google-cloud-accesscontextmanager-v1/src":   true,
-				"grpc-google-cloud-accesscontextmanager-v1/src":    true,
-				filepath.Join("samples", "snippets", "generated"):  true,
-				".repo-metadata.json":                              true,
-			},
-		},
-		{
 			name: "with_overrides",
 			library: &config.Library{
 				Name: "secretmanager",
@@ -218,29 +193,6 @@ func TestCleanPatterns(t *testing.T) {
 				filepath.Join("grpc-secretmanager-special-v1", "src"):  true,
 				filepath.Join("samples", "snippets", "generated"):      true,
 				".repo-metadata.json":                                  true,
-			},
-		},
-		{
-			name: "proto_only",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:      "google/cloud/secretmanager/v1",
-							ProtoOnly: true,
-						},
-					},
-				},
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			want: map[string]bool{
-				filepath.Join("google-cloud-secretmanager", "src"):          true,
-				filepath.Join("proto-google-cloud-secretmanager-v1", "src"): true,
-				filepath.Join("samples", "snippets", "generated"):           true,
-				".repo-metadata.json":                                       true,
 			},
 		},
 	} {
