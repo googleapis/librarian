@@ -109,23 +109,27 @@ func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.
 	if protoArtifactID == "" {
 		protoArtifactID = fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version)
 	}
-	grpcArtifactID := javaAPI.GRPCArtifactIDOverride
-	if grpcArtifactID == "" {
-		grpcArtifactID = fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version)
-	}
-	return APICoordinate{
+	res := APICoordinate{
 		LibraryCoordinate: lc,
 		Proto: Coordinate{
 			GroupID:    protoGRPCGroupID,
 			ArtifactID: protoArtifactID,
 			Version:    lc.GAPIC.Version,
 		},
-		GRPC: Coordinate{
-			GroupID:    protoGRPCGroupID,
-			ArtifactID: grpcArtifactID,
-			Version:    lc.GAPIC.Version,
-		},
 	}
+	if javaAPI.ProtoOnly {
+		return res
+	}
+	grpcArtifactID := javaAPI.GRPCArtifactIDOverride
+	if grpcArtifactID == "" {
+		grpcArtifactID = fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version)
+	}
+	res.GRPC = Coordinate{
+		GroupID:    protoGRPCGroupID,
+		ArtifactID: grpcArtifactID,
+		Version:    lc.GAPIC.Version,
+	}
+	return res
 }
 
 // protoGroupID returns the Maven Group ID for the generated proto and gRPC
