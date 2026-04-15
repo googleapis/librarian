@@ -43,7 +43,6 @@ const (
 	managedModulesEndMarker   = "<!-- {x-generated-modules-end} -->"
 )
 
-
 type javaGAPICInfo struct {
 	AdditionalProtos []string
 	ProtoOnly        bool

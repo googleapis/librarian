@@ -104,7 +104,7 @@ func (r *runner) run(ctx context.Context, args []string) error {
 			return r.fetchSourceWithCommit(ctx, githubEndpoints, flagCommit)
 		}
 		// In this specific block, we don't need to re-override fetchSourceWithCommit
-		// because the default or mock is already there. 
+		// because the default or mock is already there.
 		// We just need to ensure the globals are updated if we are NOT in a test.
 		fetchSource = r.fetchSource
 		fetchSourceWithCommit = r.fetchSourceWithCommit
