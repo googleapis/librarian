@@ -49,6 +49,15 @@ var (
 			DowngradePreGAChanges: true,
 		},
 	}
+	// ignoredChangesInBump defines the list of the files that are
+	// to be ignored as changes during the bump command. This applies to
+	// all languages and repositories.
+	ignoredChangesInBump = []string{
+		// Changes to these files are do not affect the library version
+		// bump for releases, regardless of the languages or repositories.
+		".repo-metadata.json",
+		"docs/README.rst",
+	}
 )
 
 func bumpCommand() *cli.Command {
@@ -156,11 +165,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		var ignoredChanges []string
-		if cfg.Release != nil {
-			ignoredChanges = cfg.Release.IgnoredChanges
-		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChanges)
+		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChangesInBump)
 		if err != nil {
 			return nil, err
 		}
@@ -400,11 +405,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
 func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	var ignoredChanges []string
-	if cfg.Release != nil {
-		ignoredChanges = cfg.Release.IgnoredChanges
-	}
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChanges)
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChangesInBump)
 	if err != nil {
 		return err
 	}

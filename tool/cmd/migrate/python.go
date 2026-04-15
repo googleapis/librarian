@@ -35,11 +35,6 @@ import (
 )
 
 var (
-	pythonIgnoredChanges = []string{
-		".repo-metadata.json",
-		"docs/README.rst",
-	}
-
 	pythonDefaultCommonGAPICPaths = []string{
 		"samples/generated_samples",
 		"tests/unit/gapic",

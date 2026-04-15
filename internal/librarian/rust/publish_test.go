@@ -235,7 +235,7 @@ func TestPublishSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := Publish(t.Context(), cfg, true, false, false); err != nil {
+	if err := Publish(t.Context(), cfg, true, false, false, nil); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -262,7 +262,7 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
-	if err := Publish(t.Context(), cfg, true, false, false); err == nil {
+	if err := Publish(t.Context(), cfg, true, false, false, nil); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
@@ -275,7 +275,7 @@ func TestPublishPreflightError(t *testing.T) {
 			},
 		},
 	}
-	if err := Publish(t.Context(), cfg, true, false, false); err == nil {
+	if err := Publish(t.Context(), cfg, true, false, false, nil); err == nil {
 		t.Errorf("expected a preflight error with a bad git command")
 	}
 }
