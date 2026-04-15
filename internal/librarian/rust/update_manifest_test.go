@@ -15,11 +15,14 @@
 package rust
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path"
 	"slices"
 	"strings"
 	"testing"
+
 	"github.com/google/go-cmp/cmp"
 
 	"github.com/googleapis/librarian/internal/semver"
@@ -124,7 +127,7 @@ func TestUpdateCargoVersion(t *testing.T) {
 
 	expected := "[package]\nname = \"test-crate\"\nversion                = \"2.0.0\"\n"
 	if diff := cmp.Diff(expected, string(updatedContent)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch got = %q, want %q", string(updatedContent), expected)
 	}
 }
 
@@ -132,14 +135,17 @@ func TestUpdateCargoVersion_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		content string
+		wantErr error
 	}{
 		{
 			name:    "no version field",
 			content: "[package]\nname = \"test-crate\"\n",
+			wantErr: ErrNoVersionField,
 		},
 		{
 			name:    "file not found",
 			content: "",
+			wantErr: fs.ErrNotExist,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -156,8 +162,9 @@ func TestUpdateCargoVersion_Error(t *testing.T) {
 
 			newVersion, _ := semver.Parse("2.0.0")
 
-			if err := updateCargoVersion(filePath, newVersion); err == nil {
-				t.Error("expected an error, got nil")
+			err := updateCargoVersion(filePath, newVersion)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("updateCargoVersion() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -202,7 +209,7 @@ func TestUpdateWorkspaceVersion(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.want, string(updatedContent)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch got = %q, want %q", string(updatedContent), test.want)
 			}
 		})
 	}
@@ -210,7 +217,8 @@ func TestUpdateWorkspaceVersion(t *testing.T) {
 
 func TestUpdateWorkspaceVersion_Error(t *testing.T) {
 	newVersion, _ := semver.Parse("2.0.0")
-	if err := updateWorkspaceVersion("non-existent-file", "test-crate", newVersion); err == nil {
-		t.Error("expected an error, got nil")
+	err := updateWorkspaceVersion("non-existent-file", "test-crate", newVersion)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("updateWorkspaceVersion() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
 }
