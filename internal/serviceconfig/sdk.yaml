@@ -1658,6 +1658,8 @@
 - path: google/cloud/memorystore/v1
   languages:
     - all
+  release_level:
+    java: stable
   transports:
     all: rest
 - path: google/cloud/memorystore/v1beta
