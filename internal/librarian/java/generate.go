@@ -345,12 +345,12 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 	if len(relExcludes) == 0 {
 		return fullPaths
 	}
-	excludedSet := make(map[string]bool)
+	excludedSet := make(map[string]bool, len(relExcludes))
 	for _, e := range relExcludes {
 		fullPath := filepath.ToSlash(filepath.Join(root, filepath.FromSlash(e)))
 		excludedSet[fullPath] = true
 	}
-	var filtered []string
+	filtered := make([]string, 0, len(fullPaths))
 	for _, p := range fullPaths {
 		if excludedSet[filepath.ToSlash(p)] {
 			continue
