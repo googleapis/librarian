@@ -34,6 +34,33 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
+func TestIsPreview(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name     string
+		output   string
+		expected bool
+	}{
+		{
+			name:     "preview-packages in path",
+			output:   "preview-packages/google-cloud-secret-manager",
+			expected: true,
+		},
+		{
+			name:     "no preview-packages in path",
+			output:   "packages/google-cloud-secret-manager",
+			expected: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isPreview(test.output)
+			if diff := cmp.Diff(test.expected, got); diff != "" {
+				t.Errorf("isPreview(%q) returned diff (-want +got):\n%s", test.output, diff)
+			}
+		})
+	}
+}
+
 func TestGetStagingChildDirectory(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {

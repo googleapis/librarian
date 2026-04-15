@@ -50,6 +50,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 
+	// For preview libraries, the API protos are rooted in the
+	// googleapis/preview subdirectory, so change the googleapisDir to target
+	// that root.
+	if isPreview(outdir) {
+		googleapisDir = filepath.Join(googleapisDir, "preview")
+	}
+
 	// Create output directory in case it's a new library
 	// (or cleaning has removed everything).
 	if err := os.MkdirAll(outdir, 0755); err != nil {
@@ -460,4 +467,11 @@ func DefaultLibraryName(api string) string {
 		path = filepath.Dir(api)
 	}
 	return strings.ReplaceAll(path, "/", "-")
+}
+
+// isPreview determines if the given output directory contains the canonical
+// preview subdirectory segments as a means of identifying the library as a
+// preview library.
+func isPreview(output string) bool {
+	return strings.Contains(output, "preview-packages")
 }
