@@ -93,7 +93,6 @@ func (r *runner) run(ctx context.Context, args []string) error {
 		r.fetchSource = func(ctx context.Context) (*config.Source, error) {
 			return &config.Source{Dir: googleapisAbs}, nil
 		}
-		}
 	} else if flagCommit != "" {
 		r.fetchSource = func(ctx context.Context) (*config.Source, error) {
 			return r.fetchSourceWithCommit(ctx, githubEndpoints, flagCommit)
