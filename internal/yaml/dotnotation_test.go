@@ -15,7 +15,6 @@
 package yaml
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -85,7 +84,7 @@ func TestSet(t *testing.T) {
 			path:  "sources.googleapis.commit",
 			value: "abcd123",
 			want: map[string]any{
-				"version": "v1.0.1",
+				"version": "v1.0.0",
 				"sources": map[string]any{
 					"googleapis": map[string]any{
 						"commit": "abcd123",
@@ -103,8 +102,7 @@ func TestSet(t *testing.T) {
 				t.Fatalf("Set(%q, %v) error = %v", tt.path, tt.value, err)
 			}
 
-			key := strings.Split(tt.path, ".")[0]
-			if diff := cmp.Diff(tt.want[key], updated[key]); diff != "" {
+			if diff := cmp.Diff(tt.want, updated); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
