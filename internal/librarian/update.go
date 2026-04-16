@@ -104,6 +104,8 @@ Examples:
 					}
 				}
 
+				// Extract the root repository name from the argument.
+				// For example, "sources.googleapis" becomes "googleapis".
 				parts := strings.Split(arg, ".")
 				var matchedSource string
 				for _, part := range parts {
@@ -112,6 +114,7 @@ Examples:
 						break
 					}
 				}
+				// Deduplicate the sources to avoid updating the same repository multiple times.
 				if !seen[matchedSource] {
 					sourcesToUpdate = append(sourcesToUpdate, matchedSource)
 					seen[matchedSource] = true
@@ -134,8 +137,7 @@ func runUpdate(m map[string]any, sourceNames []string) error {
 			return fmt.Errorf("%w: %s", errUnknownSource, name)
 		}
 
-		// If the configuration file overrides the default repository branch,
-		// extract the overridden property setups.
+		// If the configuration file specifies a custom branch, use that branch.
 		if branch, err := yaml.Get(m, "sources."+name+".branch"); err == nil {
 			if b, ok := branch.(string); ok && b != "" {
 				repo.Branch = b
