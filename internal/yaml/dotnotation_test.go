@@ -28,6 +28,9 @@ func TestGet(t *testing.T) {
 			},
 		},
 		"version": "v1.0.0",
+		"libraries": []any{
+			map[string]any{"name": "library-a"},
+		},
 	}
 
 	for _, tt := range []struct {
@@ -49,6 +52,11 @@ func TestGet(t *testing.T) {
 			path:    "sources.googleapis.sha256",
 			want:    nil,
 			wantErr: true,
+		},
+		{
+			path:    "libraries.0.name",
+			want:    "library-a",
+			wantErr: false,
 		},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
@@ -78,6 +86,9 @@ func TestSet(t *testing.T) {
 			value: "v1.0.1",
 			want: map[string]any{
 				"version": "v1.0.1",
+				"libraries": []any{
+					map[string]any{"name": "library-a"},
+				},
 			},
 		},
 		{
@@ -90,12 +101,28 @@ func TestSet(t *testing.T) {
 						"commit": "abcd123",
 					},
 				},
+				"libraries": []any{
+					map[string]any{"name": "library-a"},
+				},
+			},
+		},
+		{
+			path:  "libraries.0.name",
+			value: "library-updated",
+			want: map[string]any{
+				"version": "v1.0.0",
+				"libraries": []any{
+					map[string]any{"name": "library-updated"},
+				},
 			},
 		},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
 			m := map[string]any{
 				"version": "v1.0.0",
+				"libraries": []any{
+					map[string]any{"name": "library-a"},
+				},
 			}
 			updated, err := Set(m, tt.path, tt.value)
 			if err != nil {

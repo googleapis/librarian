@@ -16,6 +16,7 @@ package yaml
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 )
 
@@ -29,15 +30,25 @@ func Get(m map[string]any, path string) (any, error) {
 		if p == "" {
 			continue
 		}
-		currentMap, ok := current.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("cannot traverse %q: %q is not a map", p, p)
+		switch c := current.(type) {
+		case map[string]any:
+			if val, exists := c[p]; exists {
+				current = val
+			} else {
+				return nil, fmt.Errorf("key not found: %s", p)
+			}
+		case []any:
+			idx, err := strconv.Atoi(p)
+			if err != nil {
+				return nil, fmt.Errorf("expected slice index, got %s", p)
+			}
+			if idx < 0 || idx >= len(c) {
+				return nil, fmt.Errorf("slice index out of range: %d", idx)
+			}
+			current = c[idx]
+		default:
+			return nil, fmt.Errorf("cannot traverse %q: not a map or slice", p)
 		}
-		val, exists := currentMap[p]
-		if !exists {
-			return nil, fmt.Errorf("key not found: %s", p)
-		}
-		current = val
 	}
 	return current, nil
 }
@@ -54,32 +65,48 @@ func Set(m map[string]any, path string, value any) (map[string]any, error) {
 		if p == "" {
 			continue
 		}
-		currentMap, ok := current.(map[string]any)
-		if !ok {
+		switch c := current.(type) {
+		case map[string]any:
+			next, exists := c[p]
+			if !exists {
+				next = make(map[string]any)
+				c[p] = next
+			}
+			current = next
+		case []any:
+			idx, err := strconv.Atoi(p)
+			if err != nil {
+				return nil, fmt.Errorf("expected slice index, got %s", p)
+			}
+			if idx < 0 || idx >= len(c) {
+				return nil, fmt.Errorf("slice index out of range: %d", idx)
+			}
+			current = c[idx]
+		default:
 			return nil, fmt.Errorf("cannot set path %s", path)
 		}
-
-		next, exists := currentMap[p]
-		if !exists {
-			next = make(map[string]any)
-			currentMap[p] = next
-		}
-		nextMap, ok := next.(map[string]any)
-		if !ok {
-			return nil, fmt.Errorf("cannot set path %q: %q is not a map", path, p)
-		}
-		current = nextMap
-	}
-
-	currentMap, ok := current.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("cannot set path %s", path)
 	}
 
 	lastPart := parts[len(parts)-1]
 	if lastPart == "" {
 		return nil, fmt.Errorf("cannot set path %q: last segment is empty", path)
 	}
-	currentMap[lastPart] = value
+
+	switch c := current.(type) {
+	case map[string]any:
+		c[lastPart] = value
+	case []any:
+		idx, err := strconv.Atoi(lastPart)
+		if err != nil {
+			return nil, fmt.Errorf("expected slice index, got %s", lastPart)
+		}
+		if idx < 0 || idx >= len(c) {
+			return nil, fmt.Errorf("slice index out of range: %d", idx)
+		}
+		c[idx] = value
+	default:
+		return nil, fmt.Errorf("cannot set path %s", path)
+	}
+
 	return m, nil
 }
