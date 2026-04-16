@@ -388,7 +388,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
-| `include_list` | yaml.FlexibleStringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
+| `include_list` | yaml.FlexibleStringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). TODO(https://github.com/googleapis/librarian/issues/4298): remove comma-separated string fallback unmarshaling in PR 3 (https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367) once google-cloud-rust is updated. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
