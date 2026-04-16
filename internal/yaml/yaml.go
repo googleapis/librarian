@@ -45,7 +45,10 @@ func (s StringSlice) IsZero() bool {
 	return s == nil
 }
 
-// TODO: delete the FlexibleStringSlice once Rust has been migrated according to list syntax (according to this PR): https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367
+// TODO: delete the FlexibleStringSlice once Rust has been migrated according to list syntax
+// (according to this PR):
+// https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367
+
 // FlexibleStringSlice is a custom slice of strings that unmarshals from either
 // a single comma-separated string or a YAML sequence of strings.
 //
