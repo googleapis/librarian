@@ -33,4 +33,34 @@ var (
 		"storage":         true,
 		"spanner":         true,
 	}
+
+	keepOverride = map[string][]string{
+		"translate": {
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/Detection.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/Language.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/Option.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/Translate.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateException.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateFactory.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateImpl.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateOptions.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/Translation.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/package-info.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/TranslateRpcFactory.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/v2/HttpTranslateRpc.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/v2/TranslateRpc.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/testing/RemoteTranslateHelper.java",
+			"google-cloud-translate/src/main/java/com/google/cloud/translate/testing/package-info.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/DetectionTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/LanguageTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/OptionTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/SerializationTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateExceptionTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateImplTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateOptionsTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslationTest.java",
+			"google-cloud-translate/src/test/java/com/google/cloud/translate/it/ITTranslateTest.java",
+		},
+	}
 )
