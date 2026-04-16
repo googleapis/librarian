@@ -501,8 +501,8 @@ func TestAugmentLegacyReleaseExcludePaths(t *testing.T) {
 						Version: "1.2.3",
 						ReleaseExcludePaths: []string{
 							"packages/existing-exclude/other",
-							"packages/existing-exclude/metadata",
-							"packages/existing-exclude/docs/readme",
+							"packages/existing-exclude/.repo-metadata.json",
+							"packages/existing-exclude/docs/README.rst",
 						},
 						APIs:          []*legacyconfig.API{},
 						SourceRoots:   []string{},
@@ -513,8 +513,8 @@ func TestAugmentLegacyReleaseExcludePaths(t *testing.T) {
 						ID:      "initially-empty-exclude",
 						Version: "2.3.4",
 						ReleaseExcludePaths: []string{
-							"packages/initially-empty-exclude/metadata",
-							"packages/initially-empty-exclude/docs/readme",
+							"packages/initially-empty-exclude/.repo-metadata.json",
+							"packages/initially-empty-exclude/docs/README.rst",
 						},
 						APIs:          []*legacyconfig.API{},
 						SourceRoots:   []string{},

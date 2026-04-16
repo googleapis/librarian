@@ -49,10 +49,10 @@ var (
 			DowngradePreGAChanges: true,
 		},
 	}
-	// ignoredChangesInBump defines the list of the files that are
+	// IgnoredChanges defines the list of the files that are
 	// to be ignored as changes during the bump and publish commands.
 	// It is norm that a repository does not have all the files listed here.
-	ignoredChangesInBump = []string{
+	IgnoredChanges = []string{
 		".repo-metadata.json",
 		"docs/README.rst",
 	}
@@ -163,7 +163,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChangesInBump)
+		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, IgnoredChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -387,7 +387,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
 func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChangesInBump)
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, IgnoredChanges)
 	if err != nil {
 		return err
 	}

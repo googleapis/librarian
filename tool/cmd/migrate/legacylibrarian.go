@@ -182,9 +182,8 @@ func blockLegacyGeneration(repoPath string, cfg *config.Config) error {
 
 // augmentLegacyReleaseExcludePaths ensures that every library in the
 // legacylibrarian state file that is also specified in the librarian config
-// has release-exclude paths matching the ones in the release "ignored changes"
-// config section. This will reduce the number of unnecessary releases
-// immediately after migration.
+// has release-exclude paths from librarian.IgnoredChanges.
+// This will reduce the number of unnecessary releases immediately after migration.
 func augmentLegacyReleaseExcludePaths(repoPath string, cfg *config.Config) error {
 	state, err := readState(repoPath)
 	if err != nil {
@@ -195,7 +194,7 @@ func augmentLegacyReleaseExcludePaths(repoPath string, cfg *config.Config) error
 		if libraryState == nil {
 			continue
 		}
-		for _, path := range cfg.Release.IgnoredChanges {
+		for _, path := range librarian.IgnoredChanges {
 			repoRelativePath := filepath.Join(cfg.Default.Output, lib.Name, path)
 			if !slices.Contains(libraryState.ReleaseExcludePaths, repoRelativePath) {
 				libraryState.ReleaseExcludePaths = append(libraryState.ReleaseExcludePaths, repoRelativePath)
