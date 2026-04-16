@@ -66,35 +66,24 @@ func (s FlexibleStringSlice) IsZero() bool {
 
 // UnmarshalYAML implements the yaml.Unmarshaler interface to support unmarshaling
 // from either a single comma-separated string or a YAML sequence of strings.
-func (s *FlexibleStringSlice) UnmarshalYAML(value *yaml.Node) error {
-	switch value.Kind {
+func (s *FlexibleStringSlice) UnmarshalYAML(n *yaml.Node) error {
+	switch n.Kind {
 	case yaml.ScalarNode:
-		if strings.TrimSpace(value.Value) == "" {
-			*s = nil
-			return nil
-		}
-		parts := strings.Split(value.Value, ",")
 		var res []string
-		for _, part := range parts {
-			if part = strings.TrimSpace(part); part != "" {
-				res = append(res, part)
+		parts := strings.Split(n.Value, ",")
+		for _, p := range parts {
+			if p = strings.TrimSpace(p); p != "" {
+				res = append(res, p)
 			}
-		}
-		if len(res) == 0 {
-			*s = nil
-			return nil
 		}
 		*s = res
 		return nil
+
 	case yaml.SequenceNode:
-		var slice []string
-		if err := value.Decode(&slice); err != nil {
-			return err
-		}
-		*s = slice
-		return nil
+		return n.Decode((*[]string)(s))
+
 	default:
-		return fmt.Errorf("expected string or sequence, got %v", value.ShortTag())
+		return fmt.Errorf("yaml: line %d: expected string or sequence, got %v", n.Line, n.ShortTag())
 	}
 }
 
