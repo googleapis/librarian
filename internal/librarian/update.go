@@ -70,7 +70,7 @@ Examples:
 			// to find the target repositories provided by the user.
 			m, err := yaml.Read[map[string]any](config.LibrarianYAML)
 			if err != nil {
-				// If librarian.yaml doesn't exist, we check if the argument matches one of the 
+				// If librarian.yaml doesn't exist, we check if the argument matches one of the
 				// known hardcoded repositories defined in sourceRepos as a fallback.
 				for _, arg := range args {
 					parts := strings.Split(arg, ".")
