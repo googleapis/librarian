@@ -25,7 +25,7 @@ import (
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
 
-var errNewLibraryMustHaveOneAPI = errors.New("a newly added library must have exactly one API")
+var errNewLibraryMustHaveOneAPI = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
 
 // Add initializes a new Python library with default values.
 func Add(lib *config.Library) (*config.Library, error) {
