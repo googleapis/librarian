@@ -51,21 +51,21 @@ func Clean(library *config.Library) error {
 }
 
 func cleanPatterns(library *config.Library) map[string]bool {
-	lc := DeriveLibraryCoordinates(library)
+	libraryCoordinates := DeriveLibraryCoordinates(library)
 	patterns := map[string]bool{
-		filepath.Join(lc.GAPIC.ArtifactID, "src"):         true,
-		filepath.Join("samples", "snippets", "generated"): true,
-		".repo-metadata.json":                             true,
+		filepath.Join(libraryCoordinates.GAPIC.ArtifactID, "src"): true,
+		filepath.Join("samples", "snippets", "generated"):         true,
+		".repo-metadata.json": true,
 	}
 	for _, api := range library.APIs {
 		javaAPI := ResolveJavaAPI(library, api)
 		version := filepath.Base(api.Path)
-		ac := DeriveAPICoordinates(lc, version, javaAPI)
-		if ac.Proto.ArtifactID != "" {
-			patterns[filepath.Join(ac.Proto.ArtifactID, "src")] = true
+		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
+		if apiCoordinates.Proto.ArtifactID != "" {
+			patterns[filepath.Join(apiCoordinates.Proto.ArtifactID, "src")] = true
 		}
-		if ac.GRPC.ArtifactID != "" {
-			patterns[filepath.Join(ac.GRPC.ArtifactID, "src")] = true
+		if apiCoordinates.GRPC.ArtifactID != "" {
+			patterns[filepath.Join(apiCoordinates.GRPC.ArtifactID, "src")] = true
 		}
 	}
 	return patterns
