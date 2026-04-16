@@ -43,13 +43,8 @@ func getGoimportsBinary(tools *config.Tools) string {
 	binary := "goimports"
 	if tools != nil {
 		for _, tool := range tools.Go {
-<<<<<<< HEAD
-			if (t.Name == "golang.org/x/tools/cmd/goimports" || t.Name == "goimports") && t.Exec != "" {
-				binary = t.Exec
-=======
 			if (tool.Name == "golang.org/x/tools/cmd/goimports" || tool.Name == "goimports") && tool.Exec != "" {
 				binary = tool.Exec
->>>>>>> a36991dc (chore: respond to comments)
 				break
 			}
 		}
