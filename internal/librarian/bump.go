@@ -266,22 +266,6 @@ func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.
 	return semver.DeriveNext(semver.Minor, library.Version, opts)
 }
 
-func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
-	branchLibrarianCfgFile, err := git.ShowFileAtRemoteBranch(ctx, gitExe, remote, branch, config.LibrarianYAML)
-	if err != nil {
-		return "", err
-	}
-	branchLibrarianCfg, err := yaml.Unmarshal[config.Config]([]byte(branchLibrarianCfgFile))
-	if err != nil {
-		return "", err
-	}
-	branchLibCfg, err := FindLibrary(branchLibrarianCfg, libName)
-	if err != nil {
-		return "", err
-	}
-	return branchLibCfg.Version, nil
-}
-
 // findReleasedLibraries determines which libraries are released by the
 // change in config from cfgBefore to cfgAfter. This includes libraries
 // which exist (with a version) in cfgAfter but either didn't exist or

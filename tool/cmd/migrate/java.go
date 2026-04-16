@@ -22,6 +22,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/java"
@@ -48,8 +49,9 @@ var (
 )
 
 type javaGAPICInfo struct {
-	Samples          bool
 	AdditionalProtos []string
+	ProtoOnly        bool
+	Samples          bool
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -62,7 +64,10 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	}
 	info := &javaGAPICInfo{Samples: false}
 	// 1. From java_gapic_library
-	if rules := file.Rules("java_gapic_library"); len(rules) > 0 {
+	rules := file.Rules("java_gapic_library")
+	if len(rules) == 0 {
+		info.ProtoOnly = true
+	} else {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
 		}
@@ -81,14 +86,16 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 			log.Printf("Warning: multiple proto_library_with_info in %s/BUILD.bazel, using first", dir)
 		}
 		rule := rules[0]
-		// Search for specific common resource targets in deps
-		if deps := rule.AttrStrings("deps"); len(deps) > 0 {
+		// Search for specific common resource targets in deps.
+		// We use Attr instead of AttrStrings to handle cases where deps is
+		// a variable or an addition of lists.
+		if attr := rule.Attr("deps"); attr != nil {
 			protoMappings := map[string]string{
 				"//google/cloud:common_resources_proto":  "google/cloud/common_resources.proto",
 				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 			}
-			for _, dep := range deps {
+			for _, dep := range extractStrings(attr) {
 				if protoPath, ok := protoMappings[dep]; ok {
 					info.AdditionalProtos = append(info.AdditionalProtos, protoPath)
 				}
@@ -139,7 +146,7 @@ type GenerationConfig struct {
 	Libraries           []LibraryConfig `yaml:"libraries"`
 }
 
-func runJavaMigration(ctx context.Context, repoPath string) error {
+func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers bool) error {
 	gen, err := readGenerationConfig(repoPath)
 	if err != nil {
 		return err
@@ -164,8 +171,10 @@ func runJavaMigration(ctx context.Context, repoPath string) error {
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
 
-	if err := insertMarkers(repoPath, cfg); err != nil {
-		return fmt.Errorf("failed to insert markers: %w", err)
+	if shouldInsertMarkers {
+		if err := insertMarkers(repoPath, cfg); err != nil {
+			return fmt.Errorf("failed to insert markers: %w", err)
+		}
 	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
@@ -240,10 +249,14 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				Path:             g.ProtoPath,
 				AdditionalProtos: info.AdditionalProtos,
 			}
+			if info.ProtoOnly {
+				javaAPI.ProtoOnly = true
+			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(name, javaAPI)
+			applyJavaProtoOverrides(javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		lib := &config.Library{
@@ -348,6 +361,18 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 	case name == "datastore" && api.Path == "google/datastore/admin/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/docs":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/drive":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/gmail":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/sheets":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/slides":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
 	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
@@ -363,6 +388,30 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 	case name == "storage" && api.Path == "google/storage/control/v2":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+	}
+}
+
+// applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
+// for specific APIs, mirroring logic in sdk-platform-java.
+func applyJavaProtoOverrides(api *config.JavaAPI) {
+	switch {
+	case api.Path == "google/cloud":
+		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")
+	case strings.HasPrefix(api.Path, "google/cloud/aiplatform/v1beta1"):
+		api.ExcludedProtos = append(api.ExcludedProtos,
+			"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+			"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
+			"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
+			"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
+			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
+			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
+		)
+	case strings.HasPrefix(api.Path, "google/cloud/filestore"):
+		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
+	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
+		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
+	case api.Path == "google/rpc":
+		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
 }
 
@@ -634,4 +683,15 @@ func containsAny(block, targets []string) bool {
 func getLineIndent(line string) string {
 	trimmed := strings.TrimLeft(line, " \t")
 	return line[:len(line)-len(trimmed)]
+}
+
+// extractStrings returns all string literals found within a Bazel expression.
+func extractStrings(expr build.Expr) []string {
+	var res []string
+	build.Walk(expr, func(e build.Expr, _ []build.Expr) {
+		if s, ok := e.(*build.StringExpr); ok {
+			res = append(res, s.Value)
+		}
+	})
+	return res
 }

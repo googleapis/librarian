@@ -42,3 +42,25 @@ func TestLookupMessage_Error(t *testing.T) {
 		t.Errorf("lookupMessage() expected error, got nil")
 	}
 }
+
+func TestLookupEnum(t *testing.T) {
+	enum := &api.Enum{Name: "SecretType", ID: ".test.SecretType"}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+
+	got, err := lookupEnum(model, ".test.SecretType")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(enum, got); diff != "" {
+		t.Errorf("lookupEnum() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestLookupEnum_Error(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+
+	_, err := lookupEnum(model, ".test.Missing")
+	if err == nil {
+		t.Errorf("lookupEnum() expected error, got nil")
+	}
+}
