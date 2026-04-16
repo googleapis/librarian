@@ -146,7 +146,7 @@ func TestFlexibleStringSlice_Unmarshal(t *testing.T) {
 		List FlexibleStringSlice `yaml:"list"`
 	}
 
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name  string
 		input string
 		want  []string
@@ -172,12 +172,12 @@ func TestFlexibleStringSlice_Unmarshal(t *testing.T) {
 			want:  nil,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := Unmarshal[testStruct]([]byte(tc.input))
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Unmarshal[testStruct]([]byte(test.input))
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(tc.want, []string(got.List)); diff != "" {
+			if diff := cmp.Diff(test.want, []string(got.List)); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

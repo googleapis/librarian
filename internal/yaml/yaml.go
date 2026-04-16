@@ -17,6 +17,7 @@ package yaml
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -44,6 +45,7 @@ func (s StringSlice) IsZero() bool {
 	return s == nil
 }
 
+// TODO: delete the FlexibleStringSlice once Rust has been migrated according to list syntax (according to this PR): https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367
 // FlexibleStringSlice is a custom slice of strings that unmarshals from either
 // a single comma-separated string or a YAML sequence of strings.
 //
@@ -62,16 +64,17 @@ func (s FlexibleStringSlice) IsZero() bool {
 // UnmarshalYAML implements the yaml.Unmarshaler interface to support unmarshaling
 // from either a single comma-separated string or a YAML sequence of strings.
 func (s *FlexibleStringSlice) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind == yaml.ScalarNode {
+	switch value.Kind {
+	case yaml.ScalarNode:
 		if strings.TrimSpace(value.Value) == "" {
 			*s = nil
 			return nil
 		}
 		parts := strings.Split(value.Value, ",")
 		var res []string
-		for _, p := range parts {
-			if p = strings.TrimSpace(p); p != "" {
-				res = append(res, p)
+		for _, part := range parts {
+			if part = strings.TrimSpace(part); part != "" {
+				res = append(res, part)
 			}
 		}
 		if len(res) == 0 {
@@ -80,13 +83,16 @@ func (s *FlexibleStringSlice) UnmarshalYAML(value *yaml.Node) error {
 		}
 		*s = res
 		return nil
+	case yaml.SequenceNode:
+		var slice []string
+		if err := value.Decode(&slice); err != nil {
+			return err
+		}
+		*s = slice
+		return nil
+	default:
+		return fmt.Errorf("expected string or sequence, got %v", value.ShortTag())
 	}
-	var slice []string
-	if err := value.Decode(&slice); err != nil {
-		return err
-	}
-	*s = slice
-	return nil
 }
 
 // Unmarshal parses YAML data into a value of type T.
