@@ -84,6 +84,11 @@ func TestRun(t *testing.T) {
 				if diff := cmp.Diff(test.wantSource, gotSource, cmpopts.IgnoreUnexported(config.Source{})); diff != "" {
 					t.Errorf("fetchSource mismatch (-want +got):\n%s", diff)
 				}
+				// Verify fetchSourceWithCommit behavior
+				gotSourceWithCommit, _ := fetchSourceWithCommit(t.Context(), nil, "any-commit")
+				if diff := cmp.Diff(test.wantSource, gotSourceWithCommit, cmpopts.IgnoreUnexported(config.Source{})); diff != "" {
+					t.Errorf("fetchSourceWithCommit mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
