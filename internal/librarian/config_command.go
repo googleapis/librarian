@@ -78,11 +78,16 @@ func configCommand() *cli.Command {
 					}
 
 					m, err := yaml.Read[map[string]any](config.LibrarianYAML)
-					if err != nil {
+					if err != nil || *m == nil {
 						m = &map[string]any{}
 					}
 
-					updated, err := yaml.Set(*m, path, value)
+					val, err := yaml.Unmarshal[any]([]byte(value))
+					if err != nil {
+						return err
+					}
+
+					updated, err := yaml.Set(*m, path, *val)
 					if err != nil {
 						return err
 					}
