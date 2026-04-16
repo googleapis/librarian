@@ -66,13 +66,12 @@ Examples:
 				return errNoSourcesProvided
 			}
 
-			// Read configuration file as generic unstructured map to allow dynamic resolution
-			// of arguments into their respective source representation.
+			// Read librarian.yaml as an unstructured map so we can use dot-separated paths
+			// to find the target repositories provided by the user.
 			m, err := yaml.Read[map[string]any](config.LibrarianYAML)
 			if err != nil {
-				// If librarian.yaml fails to read (e.g. file does not exist in error scenarios),
-				// fallback to validating argument names against the static source references to
-				// ensure graceful failure states.
+				// If librarian.yaml doesn't exist, we check if the argument matches one of the 
+				// known hardcoded repositories defined in sourceRepos as a fallback.
 				for _, arg := range args {
 					parts := strings.Split(arg, ".")
 					var matchedSource string
@@ -95,8 +94,8 @@ Examples:
 			var sourcesToUpdate []string
 			seen := make(map[string]bool)
 			for _, arg := range args {
-				// Validate independent arguments against configuration setups checks
-				// with optional fallback to standalone properties setups checks.
+				// Check if the argument is a valid path in the configuration file.
+				// If the user passes "googleapis", we fallback to checking "sources.googleapis".
 				path := arg
 				if _, err := yaml.Get(*m, path); err != nil {
 					path = "sources." + arg
@@ -148,8 +147,7 @@ func runUpdate(m map[string]any, sourceNames []string) error {
 			return err
 		}
 
-		// Update the configuration independent representation avoiding redundant benchmarks
-		// constraints checks alignments.
+		// Update the configuration map with the new commit and checksum.
 		updated, err := yaml.Set(m, "sources."+name+".commit", commit)
 		if err != nil {
 			return err
