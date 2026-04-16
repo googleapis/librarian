@@ -64,7 +64,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, m := range model.Messages {
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/message.swift.mustache",
+			TemplatePath: "templates/common/message_file.swift.mustache",
 			OutputPath:   filepath.Join("Sources", c.PackageName, m.Name+".swift"),
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
@@ -77,7 +77,7 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 func (c *codec) generateEnums(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, e := range model.Enums {
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/enum.swift.mustache",
+			TemplatePath: "templates/common/enum_file.swift.mustache",
 			OutputPath:   filepath.Join("Sources", c.PackageName, e.Name+".swift"),
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
