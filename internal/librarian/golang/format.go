@@ -36,7 +36,7 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 
 	binary := "goimports"
 	if tools != nil {
-		for _, t := range tools.Go {
+		for _, tool := range tools.Go {
 			if (t.Name == "golang.org/x/tools/cmd/goimports" || t.Name == "goimports") && t.Exec != "" {
 				binary = t.Exec
 				break
