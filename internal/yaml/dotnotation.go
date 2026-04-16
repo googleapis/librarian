@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package yaml provides utilities to interact with librarian configurations.
 package yaml
 
 import (
