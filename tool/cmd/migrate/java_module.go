@@ -62,5 +62,11 @@ var (
 			"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslationTest.java",
 			"google-cloud-translate/src/test/java/com/google/cloud/translate/it/ITTranslateTest.java",
 		},
+		"aiplatform": {
+			"google-cloud-aiplatform/src/test/java/com/google/cloud/location/MockLocations.java",
+			"google-cloud-aiplatform/src/test/java/com/google/cloud/location/MockLocationsImpl.java",
+			"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicy.java",
+			"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicyImpl.java",
+		},
 	}
 )
