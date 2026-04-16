@@ -389,18 +389,11 @@ func TestBuildConfig(t *testing.T) {
 							{ProtoPath: "google/cloud/accessapproval/v1"},
 						},
 					},
-					{
-						APIShortName: "aiplatform",
-						GAPICs: []GAPICConfig{
-							{ProtoPath: "google/cloud/aiplatform/v1"},
-						},
-					},
 				},
 			},
 			versions: map[string]string{
 				"google-cloud-java":           "1.79.0",
 				"google-cloud-accessapproval": "2.86.0",
-				"google-cloud-aiplatform":     "3.86.0",
 			},
 			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
@@ -427,14 +420,6 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
 						},
-					},
-					{
-						Name:    "aiplatform",
-						Version: "3.86.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/aiplatform/v1"},
-						},
-						Java: &config.JavaModule{},
 					},
 				},
 			},
