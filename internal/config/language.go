@@ -147,8 +147,8 @@ type RustModule struct {
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
-	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
-	IncludeList yaml.FlexibleStringSlice `yaml:"include_list,omitempty"` // TODO(https://github.com/googleapis/librarian/issues/4298): remove comma-separated string fallback unmarshaling in PR 3 once google-cloud-rust is updated.
+	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
+	IncludeList string `yaml:"include_list,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.

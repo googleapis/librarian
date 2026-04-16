@@ -44,51 +44,6 @@ func (s StringSlice) IsZero() bool {
 	return s == nil
 }
 
-// FlexibleStringSlice is a custom slice of strings that unmarshals from either
-// a single comma-separated string or a YAML sequence of strings.
-//
-// By implementing the yaml.IsZeroer interface, it ensures that:
-//  1. A nil slice is considered "zero" and is omitted from the output.
-//  2. An empty but initialized slice (e.g., []string{}) is NOT considered "zero"
-//     and is explicitly marshaled as an empty YAML sequence ([]).
-type FlexibleStringSlice []string
-
-// IsZero implements the yaml.IsZeroer interface, which determines whether a
-// field should be considered "empty" when the 'omitempty' struct tag is used.
-func (s FlexibleStringSlice) IsZero() bool {
-	return s == nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface to support unmarshaling
-// from either a single comma-separated string or a YAML sequence of strings.
-func (s *FlexibleStringSlice) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind == yaml.ScalarNode {
-		if strings.TrimSpace(value.Value) == "" {
-			*s = nil
-			return nil
-		}
-		parts := strings.Split(value.Value, ",")
-		var res []string
-		for _, p := range parts {
-			if p = strings.TrimSpace(p); p != "" {
-				res = append(res, p)
-			}
-		}
-		if len(res) == 0 {
-			*s = nil
-			return nil
-		}
-		*s = res
-		return nil
-	}
-	var slice []string
-	if err := value.Decode(&slice); err != nil {
-		return err
-	}
-	*s = slice
-	return nil
-}
-
 // Unmarshal parses YAML data into a value of type T.
 func Unmarshal[T any](data []byte) (*T, error) {
 	var v T
