@@ -24,6 +24,7 @@ var (
 		"dialogflow-cx":                      "dialogflow-cx",
 		"distributedcloudedge":               "distributedcloudedge",
 		"gke-backup":                         "gke-backup",
+		"apigee-registry":                    "apigee-registry",
 	}
 
 	excludedSamplesLibraries = map[string]bool{
