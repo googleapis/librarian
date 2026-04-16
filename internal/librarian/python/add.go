@@ -33,8 +33,7 @@ func Add(lib *config.Library) (*config.Library, error) {
 	if len(lib.APIs) != 1 {
 		return nil, errNewLibraryMustHaveOneAPI
 	}
-	packageDefaultVersion := serviceconfig.ExtractVersion(lib.APIs[0].Path)
-	if packageDefaultVersion != "" {
+	if packageDefaultVersion := serviceconfig.ExtractVersion(lib.APIs[0].Path); packageDefaultVersion != "" {
 		lib.Python = &config.PythonPackage{
 			DefaultVersion: packageDefaultVersion,
 		}
