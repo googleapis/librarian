@@ -1599,7 +1599,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
-			got := findBestResourceFieldByType(msg, f.model.State.ResourceByType, targetType)
+			got := findBestResourceFieldByType(msg, f.model, targetType)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("findBestResourceFieldByType() mismatch (-want +got):\n%s", diff)
 			}
@@ -1654,7 +1654,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
-			got := findBestResourceFieldBySingular(msg, f.model.State.ResourceByType, targetSingular)
+			got := findBestResourceFieldBySingular(msg, f.model, targetSingular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
 				t.Errorf("findBestResourceFieldBySingular() mismatch (-want +got):\n%s", diff)
 			}
