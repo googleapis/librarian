@@ -170,6 +170,18 @@ func TestUpdateWorkspaceVersion(t *testing.T) {
 			crateName: "test-crate",
 			want:      "[workspace.dependencies]\nother-crate = { version = \"1.0.0\", path = \"src/other-crate\" }\n",
 		},
+		{
+			name:      "renamed dependency",
+			content:   "[workspace.dependencies]\nwkt = { version = \"1.0.0\", package = \"google-cloud-wkt\" }\n",
+			crateName: "google-cloud-wkt",
+			want:      "[workspace.dependencies]\nwkt = { version = \"2.0.0\", package = \"google-cloud-wkt\" }\n",
+		},
+		{
+			name:      "renamed dependency reverse order",
+			content:   "[workspace.dependencies]\nwkt = { package = \"google-cloud-wkt\", version = \"1.0.0\" }\n",
+			crateName: "google-cloud-wkt",
+			want:      "[workspace.dependencies]\nwkt = { package = \"google-cloud-wkt\", version = \"2.0.0\" }\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			filePath := setupTestCargoFile(t, test.content)
