@@ -17,6 +17,7 @@ package provider
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -27,6 +28,12 @@ import (
 
 // CreateAPIModel parses the service specification and creates the API model.
 func CreateAPIModel(googleapisPath, includeList, serviceConfig, descriptorFiles, descriptorFilesToGenerate string) (*api.API, error) {
+	var includeListSlice []string
+	for _, s := range strings.Split(includeList, ",") {
+		if trimmed := strings.TrimSpace(s); trimmed != "" {
+			includeListSlice = append(includeListSlice, strings.ReplaceAll(trimmed, "\\", "/"))
+		}
+	}
 	parserConfig := &parser.ModelConfig{
 		SpecificationFormat:       libconfig.SpecProtobuf,
 		ServiceConfig:             serviceConfig,
@@ -37,7 +44,7 @@ func CreateAPIModel(googleapisPath, includeList, serviceConfig, descriptorFiles,
 				Googleapis: googleapisPath,
 			},
 			ActiveRoots: []string{"googleapis"},
-			IncludeList: []string{includeList},
+			IncludeList: includeListSlice,
 		},
 	}
 
@@ -68,5 +75,22 @@ func ReadGcloudConfig(path string) (*Config, error) {
 		return nil, fmt.Errorf("failed to parse gcloud config YAML: %w", err)
 	}
 
+	if err := validateConfig(cfg); err != nil {
+		return nil, fmt.Errorf("invalid gcloud config: %w", err)
+	}
+
 	return cfg, nil
+}
+
+func validateConfig(cfg *Config) error {
+	for i, p := range cfg.ResourcePatterns {
+		if p.Type == "" {
+			return fmt.Errorf("resource_patterns[%d].type is required", i)
+		}
+		if len(p.Patterns) == 0 {
+			return fmt.Errorf("resource_patterns[%d].patterns must not be empty", i)
+		}
+	}
+
+	return nil
 }
