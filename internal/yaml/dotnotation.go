@@ -30,15 +30,15 @@ func Get(m map[string]any, path string) (any, error) {
 		if p == "" {
 			continue
 		}
-		if currentMap, ok := current.(map[string]any); ok {
-			if val, exists := currentMap[p]; exists {
-				current = val
-			} else {
-				return nil, fmt.Errorf("key not found: %s", p)
-			}
-		} else {
+		currentMap, ok := current.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("cannot traverse %q: %q is not a map", p, p)
+		}
+		val, exists := currentMap[p]
+		if !exists {
 			return nil, fmt.Errorf("key not found: %s", p)
 		}
+		current = val
 	}
 	return current, nil
 }
