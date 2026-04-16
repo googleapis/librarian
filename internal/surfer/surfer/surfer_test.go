@@ -15,6 +15,7 @@
 package surfer
 
 import (
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -22,6 +23,21 @@ import (
 )
 
 func TestRun_Success(t *testing.T) {
+	const validConfig = `
+config_version: v2.0
+service_name: example.googleapis.com
+apis:
+  - name: ExampleAPI
+    api_version: v1
+    release_tracks:
+      - GA
+`
+	tmpDir := t.TempDir()
+	tmpFile := filepath.Join(tmpDir, "gcloud.yaml")
+	if err := os.WriteFile(tmpFile, []byte(validConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
 		name string
 		args []string
@@ -31,9 +47,9 @@ func TestRun_Success(t *testing.T) {
 			args: []string{
 				"surfer",
 				"generate",
-				"../gcloud/testdata/parallelstore/gcloud.yaml",
+				tmpFile,
 				"--googleapis", "../gcloud/testdata/googleapis",
-				"--out", "../gcloud/testdata/parallelstore/surface",
+				"--out", filepath.Join(tmpDir, "out"),
 			},
 		},
 		{
@@ -41,9 +57,9 @@ func TestRun_Success(t *testing.T) {
 			args: []string{
 				"surfer",
 				"generate",
-				"../gcloud/testdata/parallelstore/gcloud.yaml",
+				tmpFile,
 				"--googleapis", "../gcloud/testdata/googleapis",
-				"--out", "../gcloud/testdata/parallelstore/surface",
+				"--out", filepath.Join(tmpDir, "out"),
 				"--service-config", "../gcloud/testdata/googleapis/google/cloud/parallelstore/v1/parallelstore_service.yaml",
 			},
 		},
@@ -52,9 +68,9 @@ func TestRun_Success(t *testing.T) {
 			args: []string{
 				"surfer",
 				"generate",
-				"../gcloud/testdata/parallelstore/gcloud.yaml",
+				tmpFile,
 				"--googleapis", "../gcloud/testdata/googleapis",
-				"--out", "../gcloud/testdata/parallelstore/surface",
+				"--out", filepath.Join(tmpDir, "out"),
 				"--base-module", "customsdk",
 			},
 		},
@@ -71,6 +87,20 @@ func TestRun_Success(t *testing.T) {
 }
 
 func TestRun_Errors(t *testing.T) {
+	const validConfig = `
+config_version: v2.0
+service_name: example.googleapis.com
+apis:
+  - name: ExampleAPI
+    api_version: v1
+    release_tracks:
+      - GA
+`
+	tmpFile := filepath.Join(t.TempDir(), "gcloud.yaml")
+	if err := os.WriteFile(tmpFile, []byte(validConfig), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
 		name string
 		args []string
@@ -90,12 +120,12 @@ func TestRun_Errors(t *testing.T) {
 		},
 		{
 			name: "missing googleapis flag",
-			args: []string{"surfer", "generate", "../gcloud/testdata/parallelstore/gcloud.yaml"},
+			args: []string{"surfer", "generate", tmpFile},
 		},
 		{
 			name: "missing descriptor-files-to-generate",
 			args: []string{
-				"surfer", "generate", "../gcloud/testdata/parallelstore/gcloud.yaml",
+				"surfer", "generate", tmpFile,
 				"--descriptor-files", "dummy.desc",
 			},
 		},
