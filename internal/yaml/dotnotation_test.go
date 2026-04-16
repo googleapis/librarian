@@ -68,9 +68,6 @@ func TestGet(t *testing.T) {
 }
 
 func TestSet(t *testing.T) {
-	m := map[string]any{
-		"version": "v1.0.0",
-	}
 
 	for _, tt := range []struct {
 		path  string
@@ -98,6 +95,9 @@ func TestSet(t *testing.T) {
 		},
 	} {
 		t.Run(tt.path, func(t *testing.T) {
+			m := map[string]any{
+				"version": "v1.0.0",
+			}
 			updated, err := Set(m, tt.path, tt.value)
 			if err != nil {
 				t.Fatalf("Set(%q, %v) error = %v", tt.path, tt.value, err)
