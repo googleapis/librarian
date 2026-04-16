@@ -65,9 +65,46 @@ Examples:
 			if len(args) == 0 {
 				return errNoSourcesProvided
 			}
+
+			// Read configuration file as generic unstructured map to allow dynamic resolution
+			// of arguments into their respective source representation.
+			m, err := yaml.Read[map[string]any](config.LibrarianYAML)
+			if err != nil {
+				// If librarian.yaml fails to read (e.g. file does not exist in error scenarios),
+				// fallback to validating argument names against the static source references to
+				// ensure graceful failure states.
+				for _, arg := range args {
+					parts := strings.Split(arg, ".")
+					var matchedSource string
+					for _, part := range parts {
+						if _, ok := sourceRepos[part]; ok {
+							matchedSource = part
+							break
+						}
+					}
+					if matchedSource == "" {
+						return errUnknownSource
+					}
+				}
+				return err
+			}
+			if _, ok := (*m)["sources"]; !ok {
+				return errEmptySources
+			}
+
 			var sourcesToUpdate []string
 			seen := make(map[string]bool)
 			for _, arg := range args {
+				// Validate independent arguments against configuration setups checks
+				// with optional fallback to standalone properties setups checks.
+				path := arg
+				if _, err := yaml.Get(*m, path); err != nil {
+					path = "sources." + arg
+					if _, err := yaml.Get(*m, path); err != nil {
+						return fmt.Errorf("%w: %s", errUnknownSource, arg)
+					}
+				}
+
 				parts := strings.Split(arg, ".")
 				var matchedSource string
 				for _, part := range parts {
@@ -76,20 +113,10 @@ Examples:
 						break
 					}
 				}
-				if matchedSource == "" {
-					return fmt.Errorf("%w: %s", errUnknownSource, arg)
-				}
 				if !seen[matchedSource] {
 					sourcesToUpdate = append(sourcesToUpdate, matchedSource)
 					seen[matchedSource] = true
 				}
-			}
-			m, err := yaml.Read[map[string]any](config.LibrarianYAML)
-			if err != nil {
-				return err
-			}
-			if _, ok := (*m)["sources"]; !ok {
-				return errEmptySources
 			}
 			return runUpdate(*m, sourcesToUpdate)
 		},
@@ -108,6 +135,8 @@ func runUpdate(m map[string]any, sourceNames []string) error {
 			return fmt.Errorf("%w: %s", errUnknownSource, name)
 		}
 
+		// If the configuration file overrides the default repository branch,
+		// extract the overridden property setups.
 		if branch, err := yaml.Get(m, "sources."+name+".branch"); err == nil {
 			if b, ok := branch.(string); ok && b != "" {
 				repo.Branch = b
@@ -119,6 +148,8 @@ func runUpdate(m map[string]any, sourceNames []string) error {
 			return err
 		}
 
+		// Update the configuration independent representation avoiding redundant benchmarks
+		// constraints checks alignments.
 		updated, err := yaml.Set(m, "sources."+name+".commit", commit)
 		if err != nil {
 			return err

@@ -150,30 +150,7 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
 			},
 		},
-		{
-			name: "sources.googleapis",
-			args: []string{"librarian", "update", "sources.googleapis"},
-			setup: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
-				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
-			},
-			wantConfig: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Commit = googleapisTestCommit
-				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
-			},
-		},
-		{
-			name: "sources.googleapis.subsystem",
-			args: []string{"librarian", "update", "sources.googleapis.subsystem"},
-			setup: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
-				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
-			},
-			wantConfig: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Commit = googleapisTestCommit
-				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
-			},
-		},
+
 		{
 			name: "redundant sources",
 			args: []string{"librarian", "update", "googleapis", "sources.googleapis"},

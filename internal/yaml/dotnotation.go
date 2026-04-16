@@ -23,6 +23,7 @@ import (
 func Get(m map[string]any, path string) (any, error) {
 	parts := strings.Split(path, ".")
 	var current any = m
+	// Traverse the map hierarchy step-by-step based on the path components
 	for _, p := range parts {
 		if currentMap, ok := current.(map[string]any); ok {
 			if val, exists := currentMap[p]; exists {
@@ -31,6 +32,7 @@ func Get(m map[string]any, path string) (any, error) {
 				return nil, fmt.Errorf("key not found: %s", p)
 			}
 		} else {
+			// Fails if intermediate keys are not maps
 			return nil, fmt.Errorf("key not found: %s", p)
 		}
 	}
