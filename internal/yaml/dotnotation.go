@@ -27,6 +27,9 @@ func Get(m map[string]any, path string) (any, error) {
 	var current any = m
 
 	for _, p := range parts {
+		if p == "" {
+			continue
+		}
 		if currentMap, ok := current.(map[string]any); ok {
 			if val, exists := currentMap[p]; exists {
 				current = val
@@ -49,6 +52,9 @@ func Set(m map[string]any, path string, value any) (map[string]any, error) {
 
 	for i := 0; i < len(parts)-1; i++ {
 		p := parts[i]
+		if p == "" {
+			continue
+		}
 		currentMap, ok := current.(map[string]any)
 		if !ok {
 			return nil, fmt.Errorf("cannot set path %s", path)
@@ -71,6 +77,10 @@ func Set(m map[string]any, path string, value any) (map[string]any, error) {
 		return nil, fmt.Errorf("cannot set path %s", path)
 	}
 
-	currentMap[parts[len(parts)-1]] = value
+	lastPart := parts[len(parts)-1]
+	if lastPart == "" {
+		return nil, fmt.Errorf("cannot set path %q: last segment is empty", path)
+	}
+	currentMap[lastPart] = value
 	return m, nil
 }
