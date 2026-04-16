@@ -69,7 +69,8 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		googleapisDir = filepath.Join(googleapisDir, "preview")
 	}
 
-	for _, api := range library.APIs {
+	var fallbackTitle string
+	for i, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
@@ -84,16 +85,19 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		if err := generateClientVersionFile(library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate client version file: %w", err)
 		}
-		api, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
+		sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGo)
 		if err != nil {
 			return fmt.Errorf("failed to find service configuration: %w", err)
 		}
-		if err := generateRepoMetadata(api, library, goAPI); err != nil {
+		if i == 0 {
+			fallbackTitle = sc.Title
+		}
+		if err := generateRepoMetadata(sc, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
 
 	}
-	if err := generateREADME(library, googleapisDir, outDir); err != nil {
+	if err := generateREADME(library, fallbackTitle, outDir); err != nil {
 		return fmt.Errorf("failed to generate README: %w", err)
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
@@ -288,7 +292,7 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 
 // generateREADME generates the top-level README for the library.
 // We only generate one README for the entire library.
-func generateREADME(library *config.Library, googleapisDir string, moduleRoot string) error {
+func generateREADME(library *config.Library, fallbackTitle string, moduleRoot string) error {
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.
@@ -303,14 +307,11 @@ func generateREADME(library *config.Library, googleapisDir string, moduleRoot st
 
 	title := library.TitleOverride
 	if title == "" {
-		if len(library.APIs) == 0 {
-			return fmt.Errorf("no APIs in library %s", library.Name)
-		}
-		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
-		if err != nil {
-			return fmt.Errorf("failed to find service configuration: %w", err)
-		}
-		title = api.Title
+		title = fallbackTitle
+	}
+	if title == "" {
+		// Skip generating README if no title is available.
+		return nil
 	}
 
 	f, err := os.Create(readmePath)
