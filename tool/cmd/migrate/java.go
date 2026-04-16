@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/java"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -572,10 +571,10 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 		BOM:    lc.BOM.ArtifactID,
 	}
 	for _, api := range lib.APIs {
-		version := serviceconfig.ExtractVersion(api.Path)
+		apiBase := filepath.Base(api.Path)
 		// Find Java-specific API config to handle artifact ID overrides.
 		javaAPI := java.ResolveJavaAPI(lib, api)
-		apiCoord := java.DeriveAPICoordinates(lc, version, javaAPI)
+		apiCoord := java.DeriveAPICoordinates(lc, apiBase, javaAPI)
 		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
 		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
 	}

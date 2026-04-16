@@ -958,11 +958,12 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 		APIs: []*config.API{
 			{Path: "google/cloud/vision/v1"},
 			{Path: "google/cloud/vision/v1p1beta1"},
+			{Path: "google/cloud/vision/type"},
 		},
 	}
 	ids := getModuleArtifactIDs(lib)
-	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"}
-	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1"}
+	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1", "proto-google-cloud-vision-type"}
+	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1", "grpc-google-cloud-vision-type"}
 	if diff := cmp.Diff(wantProto, ids.Protos); diff != "" {
 		t.Errorf("mismatch in protoIDs (-want +got):\n%s", diff)
 	}
