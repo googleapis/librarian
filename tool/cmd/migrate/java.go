@@ -287,9 +287,10 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				RpcDocumentation:             l.RpcDocumentation,
 			},
 		}
-		lib.Keep = parseOwlBotKeep(repoPath, output)
 		if override, ok := keepOverride[lib.Name]; ok {
 			lib.Keep = override
+		} else {
+			lib.Keep = parseOwlBotKeep(repoPath, output)
 		}
 		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
 			lib.Java.APIShortnameOverride = shortnameOverride
