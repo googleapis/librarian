@@ -526,24 +526,44 @@ func TestGenerateREADME_TitleOverride(t *testing.T) {
 }
 
 func TestGenerateREADME_Skipped(t *testing.T) {
-	dir := t.TempDir()
-	moduleRoot := filepath.Join(dir, "secretmanager")
-	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
-		t.Fatal(err)
-	}
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		fallbackTitle string
+	}{
+		{
+			name: "skipped because in keep list",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Keep: []string{"README.md"},
+			},
+			fallbackTitle: "Secret Manager API",
+		},
+		{
+			name: "skipped because no title",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			fallbackTitle: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			moduleRoot := filepath.Join(dir, "secretmanager")
+			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+				t.Fatal(err)
+			}
 
-	library := &config.Library{
-		Name:   "secretmanager",
-		Output: dir,
-		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		Keep:   []string{"README.md"},
-	}
-	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
-		t.Fatal(err)
-	}
-	// README doesn't exist because the generation is skipped.
-	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("want README.md to not exist, got: %v", err)
+			if err := generateREADME(test.library, test.fallbackTitle, moduleRoot); err != nil {
+				t.Fatal(err)
+			}
+			// README doesn't exist because the generation is skipped.
+			if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("want README.md to not exist, got: %v", err)
+			}
+		})
 	}
 }
 
