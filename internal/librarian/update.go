@@ -84,68 +84,51 @@ Examples:
 					seen[matchedSource] = true
 				}
 			}
-			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+			m, err := yaml.Read[map[string]any](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
-			return runUpdate(cfg, sourcesToUpdate)
+			if _, ok := (*m)["sources"]; !ok {
+				return errEmptySources
+			}
+			return runUpdate(*m, sourcesToUpdate)
 		},
 	}
 }
 
-func runUpdate(cfg *config.Config, sourceNames []string) error {
-	if cfg.Sources == nil {
-		return errEmptySources
-	}
-
+func runUpdate(m map[string]any, sourceNames []string) error {
 	endpoints := &fetch.Endpoints{
 		API:      githubAPI,
 		Download: githubDownload,
 	}
 
-	sourcesMap := map[string]*config.Source{
-		"conformance": cfg.Sources.Conformance,
-		"discovery":   cfg.Sources.Discovery,
-		"googleapis":  cfg.Sources.Googleapis,
-		"protobuf":    cfg.Sources.ProtobufSrc,
-		"showcase":    cfg.Sources.Showcase,
-	}
-
 	for _, name := range sourceNames {
-		source := sourcesMap[name]
-		repo := sourceRepos[name]
-		if err := updateSource(endpoints, repo, source, cfg); err != nil {
+		repo, exists := sourceRepos[name]
+		if !exists {
+			return fmt.Errorf("%w: %s", errUnknownSource, name)
+		}
+
+		if branch, err := yaml.Get(m, "sources."+name+".branch"); err == nil {
+			if b, ok := branch.(string); ok && b != "" {
+				repo.Branch = b
+			}
+		}
+
+		commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
+		if err != nil {
 			return err
 		}
-	}
-	return nil
-}
 
-func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config.Source, cfg *config.Config) error {
-	if source == nil {
-		return nil
-	}
-
-	// Source configuration specifically references a branch of the
-	// source repository.
-	if source.Branch != "" {
-		repo.Branch = source.Branch
-	}
-
-	oldCommit := source.Commit
-	oldSHA256 := source.SHA256
-
-	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
-	if err != nil {
-		return err
-	}
-
-	if oldCommit != commit || oldSHA256 != sha256 {
-		source.Commit = commit
-		source.SHA256 = sha256
-		if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		updated, err := yaml.Set(m, "sources."+name+".commit", commit)
+		if err != nil {
 			return err
 		}
+		updated, err = yaml.Set(updated, "sources."+name+".sha256", sha256)
+		if err != nil {
+			return err
+		}
+		m = updated
 	}
-	return nil
+
+	return yaml.Write(config.LibrarianYAML, m)
 }
