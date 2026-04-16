@@ -104,30 +104,22 @@ func TestShouldBumpManifestVersionBadDiff(t *testing.T) {
 }
 
 func TestUpdateCargoVersion(t *testing.T) {
-	dir := t.TempDir()
-	filePath := path.Join(dir, "Cargo.toml")
-	content := []byte("[package]\nname = \"test-crate\"\nversion = \"1.0.0\"\n")
-	if err := os.WriteFile(filePath, content, 0644); err != nil {
-		t.Fatal(err)
-	}
-
+	content := "[package]\nname = \"test-crate\"\nversion = \"1.0.0\"\n"
+	filePath := setupTestCargoFile(t, content)
 	newVersion, err := semver.Parse("2.0.0")
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if err := updateCargoVersion(filePath, newVersion); err != nil {
 		t.Fatal(err)
 	}
-
 	updatedContent, err := os.ReadFile(filePath)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	expected := "[package]\nname = \"test-crate\"\nversion                = \"2.0.0\"\n"
 	if diff := cmp.Diff(expected, string(updatedContent)); diff != "" {
-		t.Errorf("mismatch got = %q, want %q", string(updatedContent), expected)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -149,19 +141,8 @@ func TestUpdateCargoVersion_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			var filePath string
-			if test.content != "" {
-				dir := t.TempDir()
-				filePath = path.Join(dir, "Cargo.toml")
-				if err := os.WriteFile(filePath, []byte(test.content), 0644); err != nil {
-					t.Fatal(err)
-				}
-			} else {
-				filePath = "non-existent-file"
-			}
-
+			filePath := setupTestCargoFile(t, test.content)
 			newVersion, _ := semver.Parse("2.0.0")
-
 			err := updateCargoVersion(filePath, newVersion)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("updateCargoVersion() error = %v, wantErr %v", err, test.wantErr)
@@ -191,25 +172,17 @@ func TestUpdateWorkspaceVersion(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			filePath := path.Join(dir, "Cargo.toml")
-			if err := os.WriteFile(filePath, []byte(test.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-
+			filePath := setupTestCargoFile(t, test.content)
 			newVersion, _ := semver.Parse("2.0.0")
-
 			if err := updateWorkspaceVersion(filePath, test.crateName, newVersion); err != nil {
 				t.Fatal(err)
 			}
-
 			updatedContent, err := os.ReadFile(filePath)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.want, string(updatedContent)); diff != "" {
-				t.Errorf("mismatch got = %q, want %q", string(updatedContent), test.want)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -221,4 +194,17 @@ func TestUpdateWorkspaceVersion_Error(t *testing.T) {
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("updateWorkspaceVersion() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
+}
+
+func setupTestCargoFile(t *testing.T, content string) string {
+	t.Helper()
+	if content == "" {
+		return "non-existent-file"
+	}
+	dir := t.TempDir()
+	filePath := path.Join(dir, "Cargo.toml")
+	if err := os.WriteFile(filePath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return filePath
 }
