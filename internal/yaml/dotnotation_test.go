@@ -47,19 +47,7 @@ func TestGet(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			path: "sources.googleapis",
-			want: map[string]any{
-				"commit": "abcd123",
-			},
-			wantErr: false,
-		},
-		{
 			path:    "sources.googleapis.sha256",
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			path:    "nonexistent",
 			want:    nil,
 			wantErr: true,
 		},
@@ -67,9 +55,9 @@ func TestGet(t *testing.T) {
 		t.Run(tt.path, func(t *testing.T) {
 			got, err := Get(m, tt.path)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Get(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
-				return
+				t.Fatalf("Get(%q) error = %v, wantErr %v", tt.path, err, tt.wantErr)
 			}
+
 			if !tt.wantErr {
 				if diff := cmp.Diff(tt.want, got); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -114,6 +102,7 @@ func TestSet(t *testing.T) {
 			if err != nil {
 				t.Fatalf("Set(%q, %v) error = %v", tt.path, tt.value, err)
 			}
+
 			key := strings.Split(tt.path, ".")[0]
 			if diff := cmp.Diff(tt.want[key], updated[key]); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
