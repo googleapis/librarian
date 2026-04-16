@@ -19,19 +19,20 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/fetch"
 )
 
 var (
-	// ErrUnsupportedPath is returned when a dot-notation path is not supported.
-	ErrUnsupportedPath = errors.New("unsupported config path")
+	// errUnsupportedPath is returned when a dot-notation path is not supported.
+	errUnsupportedPath = errors.New("unsupported config path")
 
-	// ErrSourceNotConfigured is returned when attempting to access a source that is not configured.
-	ErrSourceNotConfigured = errors.New("source not configured")
+	// errSourceNotConfigured is returned when attempting to access a source that is not configured.
+	errSourceNotConfigured = errors.New("source not configured")
 )
 
-// SetConfigValue sets a value at a specific path within the configuration.
+// setConfigValue sets a value at a specific path within the configuration.
 // It only supports a limited set of paths for now.
-func SetConfigValue(currentConfig *config.Config, path string, value string) error {
+func setConfigValue(currentConfig *config.Config, path string, value string) error {
 	switch path {
 	case "version":
 		currentConfig.Version = value
@@ -43,24 +44,38 @@ func SetConfigValue(currentConfig *config.Config, path string, value string) err
 			currentConfig.Sources.Googleapis = &config.Source{}
 		}
 		currentConfig.Sources.Googleapis.Commit = value
+		endpoints := &fetch.Endpoints{
+			API:      githubAPI,
+			Download: githubDownload,
+		}
+		repo := &fetch.RepoRef{
+			Org:    "googleapis",
+			Name:   "googleapis",
+			Branch: value,
+		}
+		_, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
+		if err != nil {
+			return fmt.Errorf("failed to fetch checksum for commit %s: %w", value, err)
+		}
+		currentConfig.Sources.Googleapis.SHA256 = sha256
 	default:
-		return fmt.Errorf("%w: %s", ErrUnsupportedPath, path)
+		return fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
 	return nil
 }
 
-// GetConfigValue returns the value at a specific path within the configuration.
+// getConfigValue returns the value at a specific path within the configuration.
 // It only supports a limited set of paths for now.
-func GetConfigValue(currentConfig *config.Config, path string) (string, error) {
+func getConfigValue(currentConfig *config.Config, path string) (string, error) {
 	switch path {
 	case "version":
 		return currentConfig.Version, nil
 	case "sources.googleapis.commit":
 		if currentConfig.Sources == nil || currentConfig.Sources.Googleapis == nil {
-			return "", fmt.Errorf("%w: googleapis", ErrSourceNotConfigured)
+			return "", fmt.Errorf("%w: googleapis", errSourceNotConfigured)
 		}
 		return currentConfig.Sources.Googleapis.Commit, nil
 	default:
-		return "", fmt.Errorf("%w: %s", ErrUnsupportedPath, path)
+		return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
 }

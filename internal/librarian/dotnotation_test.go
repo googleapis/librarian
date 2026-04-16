@@ -15,7 +15,11 @@
 package librarian
 
 import (
+	"crypto/sha256"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -46,12 +50,12 @@ func TestGetConfigValue(t *testing.T) {
 		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
-			got, err := GetConfigValue(currentConfig, test.path)
+			got, err := getConfigValue(currentConfig, test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != test.want {
-				t.Errorf("GetConfigValue(%q) = %q, want %q", test.path, got, test.want)
+				t.Errorf("getConfigValue(%q) = %q, want %q", test.path, got, test.want)
 			}
 		})
 	}
@@ -69,24 +73,49 @@ func TestGetConfigValue_Error(t *testing.T) {
 		{
 			name:    "invalid path",
 			path:    "invalid.path",
-			wantErr: ErrUnsupportedPath,
+			wantErr: errUnsupportedPath,
 		},
 		{
 			name:    "missing sources",
 			path:    "sources.googleapis.commit",
-			wantErr: ErrSourceNotConfigured,
+			wantErr: errSourceNotConfigured,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := GetConfigValue(currentConfig, test.path)
+			_, err := getConfigValue(currentConfig, test.path)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("GetConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
+				t.Errorf("getConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
 			}
 		})
 	}
 }
 
 func TestSetConfigValue(t *testing.T) {
+	// Start a mock server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/googleapis/googleapis/commits/xyz789":
+			w.Write([]byte("xyz789"))
+		case "/googleapis/googleapis/archive/xyz789.tar.gz":
+			w.Write([]byte("dummy content"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	// Override endpoints
+	oldAPI := githubAPI
+	oldDownload := githubDownload
+	githubAPI = ts.URL
+	githubDownload = ts.URL
+	defer func() {
+		githubAPI = oldAPI
+		githubDownload = oldDownload
+	}()
+
+	dummySHA := fmt.Sprintf("%x", sha256.Sum256([]byte("dummy content")))
+
 	for _, test := range []struct {
 		path  string
 		value string
@@ -112,6 +141,7 @@ func TestSetConfigValue(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
 						Commit: "xyz789",
+						SHA256: dummySHA,
 					},
 				},
 			},
@@ -126,7 +156,7 @@ func TestSetConfigValue(t *testing.T) {
 					},
 				},
 			}
-			err := SetConfigValue(currentConfig, test.path, test.value)
+			err := setConfigValue(currentConfig, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -151,18 +181,18 @@ func TestSetConfigValue_Error(t *testing.T) {
 		{
 			name:    "invalid path (misspelled)",
 			path:    "surces.googleapis.commit",
-			wantErr: ErrUnsupportedPath,
+			wantErr: errUnsupportedPath,
 		},
 		{
 			name:    "unsupported path",
 			path:    "unknown.field",
-			wantErr: ErrUnsupportedPath,
+			wantErr: errUnsupportedPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := SetConfigValue(currentConfig, test.path, "some-value")
+			err := setConfigValue(currentConfig, test.path, "some-value")
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("SetConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
+				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
 			}
 		})
 	}
