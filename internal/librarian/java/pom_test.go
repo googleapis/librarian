@@ -392,9 +392,7 @@ func TestCollectModules(t *testing.T) {
 				},
 			},
 			monorepoVersion: "1.2.3",
-			metadata: &repoMetadata{
-				NamePretty: "Secret Manager",
-			},
+			metadata:        &repoMetadata{},
 			transports: map[string]serviceconfig.Transport{
 				"google/identity/accesscontextmanager/type": serviceconfig.GRPC,
 			},
