@@ -37,7 +37,7 @@ func maybeInlineObjectField(model *api.API, parent *api.Message, name string, in
 		return nil, err
 	}
 	parent.Messages = append(parent.Messages, message)
-	model.State.MessageByID[id] = message
+	model.AddMessage(message)
 
 	field := &api.Field{
 		Name:          name,

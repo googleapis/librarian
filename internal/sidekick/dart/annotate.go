@@ -1352,11 +1352,11 @@ func registerMissingWkt(model *api.API) {
 	} {
 		_, ok := model.State.MessageByID[message.ID]
 		if !ok {
-			model.State.MessageByID[message.ID] = &api.Message{
+			model.AddMessage(&api.Message{
 				ID:      message.ID,
 				Name:    message.Name,
 				Package: message.Package,
-			}
+			})
 		}
 	}
 }

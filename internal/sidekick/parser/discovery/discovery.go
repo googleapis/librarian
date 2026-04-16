@@ -86,7 +86,7 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 			return nil, err
 		}
 		result.Messages = append(result.Messages, message)
-		result.State.MessageByID[id] = message
+		result.AddMessage(message)
 	}
 	// The messages must be sorted otherwise the generated code gets different
 	// output on each run.

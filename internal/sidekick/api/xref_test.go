@@ -206,7 +206,7 @@ func TestCrossReferenceService(t *testing.T) {
 	}
 
 	model := NewTestAPI([]*Message{}, []*Enum{}, []*Service{service})
-	model.State.ServiceByID[mixin.ID] = mixin
+	model.AddService(mixin)
 	if err := CrossReference(model); err != nil {
 		t.Fatal(err)
 	}

@@ -56,7 +56,7 @@ func makeMessageEnum(model *api.API, message *api.Message, name string, schema *
 		enum.Values = append(enum.Values, value)
 		enum.UniqueNumberValues = append(enum.UniqueNumberValues, value)
 	}
-	model.State.EnumByID[enum.ID] = enum
+	model.AddEnum(enum)
 	message.Enums = append(message.Enums, enum)
 	return nil
 }

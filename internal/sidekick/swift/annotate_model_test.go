@@ -110,7 +110,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{message}, []*api.Enum{}, []*api.Service{service})
-	model.State.MessageByID[externalMessage.ID] = externalMessage
+	model.AddMessage(externalMessage)
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},

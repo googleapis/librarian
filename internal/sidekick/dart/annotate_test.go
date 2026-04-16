@@ -712,8 +712,8 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 		},
 	}
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[status.ID] = status
-	model.State.MessageByID[mapMessage.ID] = mapMessage
+	model.AddMessage(status)
+	model.AddMessage(mapMessage)
 	annotate := newAnnotateModel(model)
 
 	annotate.annotateModel(map[string]string{
@@ -1925,7 +1925,7 @@ func TestAnnotateField(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumState}, []*api.Service{})
-			model.State.MessageByID[mapMessage.ID] = mapMessage
+			model.AddMessage(mapMessage)
 			annotate := newAnnotateModel(model)
 			registerMissingWkt(annotate.model)
 
