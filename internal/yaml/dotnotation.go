@@ -54,19 +54,16 @@ func Set(m map[string]any, path string, value any) (map[string]any, error) {
 			return nil, fmt.Errorf("cannot set path %s", path)
 		}
 
-		if next, exists := currentMap[p]; exists {
-			if _, ok := next.(map[string]any); !ok {
-				nextMap := make(map[string]any)
-				currentMap[p] = nextMap
-				current = nextMap
-			} else {
-				current = next
-			}
-		} else {
-			nextMap := make(map[string]any)
-			currentMap[p] = nextMap
-			current = nextMap
+		next, exists := currentMap[p]
+		if !exists {
+			next = make(map[string]any)
+			currentMap[p] = next
 		}
+		nextMap, ok := next.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("cannot set path %q: %q is not a map", path, p)
+		}
+		current = nextMap
 	}
 
 	currentMap, ok := current.(map[string]any)
