@@ -256,6 +256,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(name, javaAPI)
+			applyJavaProtoOverrides(javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		lib := &config.Library{
@@ -360,6 +361,18 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 	case name == "datastore" && api.Path == "google/datastore/admin/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/docs":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/drive":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/gmail":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/sheets":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
+	case name == "gsuite-addons" && api.Path == "google/apps/script/type/slides":
+		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
 	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
@@ -375,6 +388,30 @@ func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
 	case name == "storage" && api.Path == "google/storage/control/v2":
 		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
 		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+	}
+}
+
+// applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
+// for specific APIs, mirroring logic in sdk-platform-java.
+func applyJavaProtoOverrides(api *config.JavaAPI) {
+	switch {
+	case api.Path == "google/cloud":
+		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")
+	case strings.HasPrefix(api.Path, "google/cloud/aiplatform/v1beta1"):
+		api.ExcludedProtos = append(api.ExcludedProtos,
+			"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+			"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
+			"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
+			"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
+			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
+			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
+		)
+	case strings.HasPrefix(api.Path, "google/cloud/filestore"):
+		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
+	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
+		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
+	case api.Path == "google/rpc":
+		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
 }
 

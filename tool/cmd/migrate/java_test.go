@@ -28,6 +28,77 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
+func TestApplyJavaProtoOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want *config.JavaAPI
+	}{
+		{
+			name: "google/cloud",
+			path: "google/cloud",
+			want: &config.JavaAPI{
+				Path:           "google/cloud",
+				ExcludedProtos: []string{"google/cloud/common_resources.proto"},
+			},
+		},
+		{
+			name: "aiplatform/v1beta1",
+			path: "google/cloud/aiplatform/v1beta1",
+			want: &config.JavaAPI{
+				Path: "google/cloud/aiplatform/v1beta1",
+				ExcludedProtos: []string{
+					"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+					"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
+					"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
+					"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
+					"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
+					"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
+				},
+			},
+		},
+		{
+			name: "filestore",
+			path: "google/cloud/filestore/v1",
+			want: &config.JavaAPI{
+				Path:             "google/cloud/filestore/v1",
+				AdditionalProtos: []string{"google/cloud/common/operation_metadata.proto"},
+			},
+		},
+		{
+			name: "oslogin",
+			path: "google/cloud/oslogin/v1",
+			want: &config.JavaAPI{
+				Path:             "google/cloud/oslogin/v1",
+				AdditionalProtos: []string{"google/cloud/oslogin/common/common.proto"},
+			},
+		},
+		{
+			name: "google/rpc",
+			path: "google/rpc",
+			want: &config.JavaAPI{
+				Path:           "google/rpc",
+				ExcludedProtos: []string{"google/rpc/http.proto"},
+			},
+		},
+		{
+			name: "no override",
+			path: "google/cloud/language/v1",
+			want: &config.JavaAPI{
+				Path: "google/cloud/language/v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := &config.JavaAPI{Path: test.path}
+			applyJavaProtoOverrides(got)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRunJavaMigration(t *testing.T) {
 	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
@@ -429,6 +500,48 @@ func TestBuildConfig(t *testing.T) {
 									Path:      "google/cloud/gkehub/policycontroller/v1beta",
 									Samples:   new(false),
 									ProtoOnly: true,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "proto artifact overrides",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName: "gsuite-addons",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/apps/script/type"},
+						},
+					},
+				},
+			},
+			src: &config.Source{Dir: "testdata/googleapis"},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "gsuite-addons",
+						APIs: []*config.API{
+							{Path: "google/apps/script/type"},
+						},
+						Java: &config.JavaModule{
+							JavaAPIs: []*config.JavaAPI{
+								{
+									Path:                    "google/apps/script/type",
+									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
+									ProtoOnly:               true,
+									Samples:                 new(false),
 								},
 							},
 						},
