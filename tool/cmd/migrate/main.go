@@ -24,7 +24,6 @@ import (
 	"log"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
 )
@@ -41,8 +40,6 @@ var (
 	errRepoNotFound = errors.New("repo argument is required")
 	errTidyFailed   = errors.New("librarian tidy failed")
 	errFetchSource  = errors.New("cannot fetch source")
-
-	fetchSource = fetchGoogleapis
 )
 
 func main() {
@@ -70,13 +67,7 @@ func run(ctx context.Context, args []string) error {
 		return err
 	}
 	base := filepath.Base(abs)
-	// TODO(https://github.com/googleapis/librarian/issues/4566): implement
-	// selective and incremental migration for languages other than Go and
-	// Python.
 	switch base {
-	case "google-cloud-python":
-		parts := strings.SplitN(base, "-", 3)
-		return runLibrarianMigration(ctx, parts[2], abs, flagSet.Args()[1:])
 	case "google-cloud-java":
 		return runJavaMigration(ctx, abs, *insertMarkersFlag)
 	case "google-cloud-node":
