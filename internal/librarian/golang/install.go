@@ -32,12 +32,7 @@ var fallbackTools = []string{
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || len(tools.Go) == 0 {
-		for _, tool := range fallbackTools {
-			if err := command.Run(ctx, command.Go, "install", tool); err != nil {
-				return fmt.Errorf("install %s: %w", tool, err)
-			}
-		}
-		return nil
+		return installFallbackTools(ctx)
 	}
 
 	for _, tool := range tools.Go {
@@ -45,9 +40,18 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if version == "" {
 			version = "latest"
 		}
-		t := fmt.Sprintf("%s@%s", tool.Name, version)
-		if err := command.Run(ctx, command.Go, "install", t); err != nil {
-			return fmt.Errorf("install %s: %w", t, err)
+		toolStr := fmt.Sprintf("%s@%s", tool.Name, version)
+		if err := command.Run(ctx, command.Go, "install", toolStr); err != nil {
+			return fmt.Errorf("install %s: %w", toolStr, err)
+		}
+	}
+	return nil
+}
+
+func installFallbackTools(ctx context.Context) error {
+	for _, tool := range fallbackTools {
+		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
+			return fmt.Errorf("install %s: %w", tool, err)
 		}
 	}
 	return nil
