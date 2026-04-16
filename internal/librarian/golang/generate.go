@@ -300,22 +300,22 @@ func generateREADME(library *config.Library, googleapisDir string, moduleRoot st
 			return nil
 		}
 	}
-	f, err := os.Create(readmePath)
-	if err != nil {
-		return err
-	}
+
 	title := library.TitleOverride
 	if title == "" {
 		if len(library.APIs) == 0 {
-			f.Close()
 			return fmt.Errorf("no APIs in library %s", library.Name)
 		}
 		api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
 		if err != nil {
-			f.Close()
-			return err
+			return fmt.Errorf("failed to find service configuration: %w", err)
 		}
 		title = api.Title
+	}
+
+	f, err := os.Create(readmePath)
+	if err != nil {
+		return err
 	}
 	err = readmeTmplParsed.Execute(f, map[string]string{
 		"Name":       title,
