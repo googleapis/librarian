@@ -35,7 +35,6 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 	}
 
 	binary := getGoimportsBinary(tools)
-
 	return command.Run(ctx, binary, args...)
 }
 
