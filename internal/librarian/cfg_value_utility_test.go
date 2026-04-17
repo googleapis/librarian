@@ -156,7 +156,7 @@ func TestSetConfigValue(t *testing.T) {
 					},
 				},
 			}
-			err := setConfigValue(currentConfig, test.path, test.value)
+			_, err := setConfigValue(currentConfig, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -190,10 +190,67 @@ func TestSetConfigValue_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := setConfigValue(currentConfig, test.path, "some-value")
+			_, err := setConfigValue(currentConfig, test.path, "some-value")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
 			}
 		})
 	}
+}
+func TestSetConfigValue_FetchFailure_NoMutation(t *testing.T) {
+	// Override endpoints with invalid URL to cause failure without a server
+	oldAPI := githubAPI
+	oldDownload := githubDownload
+	githubAPI = "://invalid-url"
+	githubDownload = "://invalid-url"
+	defer func() {
+		githubAPI = oldAPI
+		githubDownload = oldDownload
+	}()
+
+	t.Run("existing config not mutated", func(t *testing.T) {
+		currentConfig := &config.Config{
+			Version: "v1.0.0",
+			Sources: &config.Sources{
+				Googleapis: &config.Source{
+					Commit: "abcd123",
+				},
+			},
+		}
+		originalConfig := &config.Config{
+			Version: "v1.0.0",
+			Sources: &config.Sources{
+				Googleapis: &config.Source{
+					Commit: "abcd123",
+				},
+			},
+		}
+
+		_, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
+			t.Errorf("currentConfig was mutated on failure (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("nil sources remains nil", func(t *testing.T) {
+		currentConfig := &config.Config{
+			Version: "v1.0.0",
+		}
+		originalConfig := &config.Config{
+			Version: "v1.0.0",
+		}
+
+		_, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
+		if err == nil {
+			t.Fatal("expected error, got nil")
+		}
+
+		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
+			t.Errorf("currentConfig was mutated on failure (-want +got):\n%s", diff)
+		}
+	})
 }

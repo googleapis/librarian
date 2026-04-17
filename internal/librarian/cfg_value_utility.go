@@ -32,49 +32,47 @@ var (
 
 // setConfigValue sets a value at a specific path within the configuration.
 // It only supports a limited set of paths for now.
-func setConfigValue(currentConfig *config.Config, path string, value string) error {
+func setConfigValue(cfg *config.Config, path string, value string) (*config.Config, error) {
 	switch path {
 	case "version":
-		currentConfig.Version = value
+		cfg.Version = value
 	case "sources.googleapis.commit":
-		if currentConfig.Sources == nil {
-			currentConfig.Sources = &config.Sources{}
-		}
-		if currentConfig.Sources.Googleapis == nil {
-			currentConfig.Sources.Googleapis = &config.Source{}
-		}
-		currentConfig.Sources.Googleapis.Commit = value
 		endpoints := &fetch.Endpoints{
 			API:      githubAPI,
 			Download: githubDownload,
 		}
-		repo := &fetch.RepoRef{
-			Org:    "googleapis",
-			Name:   "googleapis",
-			Branch: value,
-		}
-		_, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
+		repo := sourceRepos["googleapis"]
+		repo.Branch = value
+		sha256, err := fetch.CommitChecksum(endpoints, &repo, value)
 		if err != nil {
-			return fmt.Errorf("failed to fetch checksum for commit %s: %w", value, err)
+			return nil, fmt.Errorf("fetching checksum for %s: %w", value, err)
 		}
-		currentConfig.Sources.Googleapis.SHA256 = sha256
+
+		if cfg.Sources == nil {
+			cfg.Sources = &config.Sources{}
+		}
+		if cfg.Sources.Googleapis == nil {
+			cfg.Sources.Googleapis = &config.Source{}
+		}
+		cfg.Sources.Googleapis.Commit = value
+		cfg.Sources.Googleapis.SHA256 = sha256
 	default:
-		return fmt.Errorf("%w: %s", errUnsupportedPath, path)
+		return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
-	return nil
+	return cfg, nil
 }
 
 // getConfigValue returns the value at a specific path within the configuration.
 // It only supports a limited set of paths for now.
-func getConfigValue(currentConfig *config.Config, path string) (string, error) {
+func getConfigValue(cfg *config.Config, path string) (string, error) {
 	switch path {
 	case "version":
-		return currentConfig.Version, nil
+		return cfg.Version, nil
 	case "sources.googleapis.commit":
-		if currentConfig.Sources == nil || currentConfig.Sources.Googleapis == nil {
+		if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 			return "", fmt.Errorf("%w: googleapis", errSourceNotConfigured)
 		}
-		return currentConfig.Sources.Googleapis.Commit, nil
+		return cfg.Sources.Googleapis.Commit, nil
 	default:
 		return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
