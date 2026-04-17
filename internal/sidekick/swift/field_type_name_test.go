@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -344,6 +345,115 @@ func TestFieldTypeName_Map(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := "[String: Int32]"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFieldTypeName_ExternalMessage(t *testing.T) {
+	externalMessage := &api.Message{
+		Name:    "ExternalMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalMessage",
+	}
+
+	c := &codec{
+		Model: &api.API{
+			PackageName: "google.cloud.test.v1",
+		},
+		ApiPackages: map[string]*Dependency{
+			"google.cloud.external.v1": {
+				SwiftDependency: config.SwiftDependency{
+					ApiPackage: "google.cloud.external.v1",
+					Name:       "external-package",
+				},
+			},
+		},
+	}
+
+	got, err := c.messageTypeName(externalMessage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "GoogleCloudExternalV1.ExternalMessage"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	dep := c.ApiPackages["google.cloud.external.v1"]
+	if !dep.Required {
+		t.Errorf("expected dependency to be marked as required")
+	}
+}
+
+func TestFieldTypeName_ExternalEnum(t *testing.T) {
+	externalEnum := &api.Enum{
+		Name:    "ExternalEnum",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalEnum",
+	}
+
+	c := &codec{
+		Model: &api.API{
+			PackageName: "google.cloud.test.v1",
+		},
+		ApiPackages: map[string]*Dependency{
+			"google.cloud.external.v1": {
+				SwiftDependency: config.SwiftDependency{
+					ApiPackage: "google.cloud.external.v1",
+					Name:       "external-package",
+				},
+			},
+		},
+	}
+
+	got, err := c.enumTypeName(externalEnum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "GoogleCloudExternalV1.ExternalEnum"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	dep := c.ApiPackages["google.cloud.external.v1"]
+	if !dep.Required {
+		t.Errorf("expected dependency to be marked as required")
+	}
+}
+
+func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
+	externalOuter := &api.Message{
+		Name:    "OuterMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OuterMessage",
+	}
+	externalNested := &api.Message{
+		Name:    "NestedMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OuterMessage.NestedMessage",
+		Parent:  externalOuter,
+	}
+
+	c := &codec{
+		Model: &api.API{
+			PackageName: "google.cloud.test.v1",
+		},
+		ApiPackages: map[string]*Dependency{
+			"google.cloud.external.v1": {
+				SwiftDependency: config.SwiftDependency{
+					ApiPackage: "google.cloud.external.v1",
+					Name:       "external-package",
+				},
+			},
+		},
+	}
+
+	got, err := c.messageTypeName(externalNested)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "GoogleCloudExternalV1.OuterMessage.NestedMessage"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
