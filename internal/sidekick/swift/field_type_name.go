@@ -47,7 +47,7 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 			return "", err
 		}
 		if m.IsMap {
-			return "", fmt.Errorf("TODO(#5060) - map fields are not supported: %s", field.ID)
+			return c.mapFieldTypeName(m)
 		}
 		return c.messageTypeName(m)
 	case api.ENUM_TYPE:
@@ -59,6 +59,30 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	default:
 		return scalarFieldTypeName(field)
 	}
+}
+
+func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+	var keyField, valueField *api.Field
+	for _, f := range m.Fields {
+		switch f.Name {
+		case "key":
+			keyField = f
+		case "value":
+			valueField = f
+		}
+	}
+	if keyField == nil || valueField == nil {
+		return "", fmt.Errorf("map message %q missing key or value field", m.ID)
+	}
+	keyType, err := c.baseFieldTypeName(keyField)
+	if err != nil {
+		return "", err
+	}
+	valueType, err := c.baseFieldTypeName(valueField)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
