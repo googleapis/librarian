@@ -389,18 +389,11 @@ func TestBuildConfig(t *testing.T) {
 							{ProtoPath: "google/cloud/accessapproval/v1"},
 						},
 					},
-					{
-						APIShortName: "aiplatform",
-						GAPICs: []GAPICConfig{
-							{ProtoPath: "google/cloud/aiplatform/v1"},
-						},
-					},
 				},
 			},
 			versions: map[string]string{
 				"google-cloud-java":           "1.79.0",
 				"google-cloud-accessapproval": "2.86.0",
-				"google-cloud-aiplatform":     "3.86.0",
 			},
 			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
 			want: &config.Config{
@@ -427,14 +420,6 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
 						},
-					},
-					{
-						Name:    "aiplatform",
-						Version: "3.86.0",
-						APIs: []*config.API{
-							{Path: "google/cloud/aiplatform/v1"},
-						},
-						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -958,11 +943,12 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 		APIs: []*config.API{
 			{Path: "google/cloud/vision/v1"},
 			{Path: "google/cloud/vision/v1p1beta1"},
+			{Path: "google/cloud/vision/type"},
 		},
 	}
 	ids := getModuleArtifactIDs(lib)
-	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1"}
-	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1"}
+	wantProto := []string{"proto-google-cloud-vision-v1", "proto-google-cloud-vision-v1p1beta1", "proto-google-cloud-vision-type"}
+	wantGrpc := []string{"grpc-google-cloud-vision-v1", "grpc-google-cloud-vision-v1p1beta1", "grpc-google-cloud-vision-type"}
 	if diff := cmp.Diff(wantProto, ids.Protos); diff != "" {
 		t.Errorf("mismatch in protoIDs (-want +got):\n%s", diff)
 	}

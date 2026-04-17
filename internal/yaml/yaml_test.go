@@ -141,3 +141,45 @@ func TestStringSlice_NilSlice(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+func TestFlexibleStringSlice_Unmarshal(t *testing.T) {
+	type testStruct struct {
+		List FlexibleStringSlice `yaml:"list"`
+	}
+
+	for _, test := range []struct {
+		name  string
+		input string
+		want  []string
+	}{
+		{
+			name:  "sequence",
+			input: "list:\n  - a\n  - b\n",
+			want:  []string{"a", "b"},
+		},
+		{
+			name:  "string",
+			input: "list: a, b\n",
+			want:  []string{"a", "b"},
+		},
+		{
+			name:  "string_no_spaces",
+			input: "list: a,b\n",
+			want:  []string{"a", "b"},
+		},
+		{
+			name:  "empty",
+			input: "list: \"\"\n",
+			want:  nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Unmarshal[testStruct]([]byte(test.input))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, []string(got.List)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
