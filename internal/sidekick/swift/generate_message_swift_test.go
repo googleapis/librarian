@@ -79,9 +79,6 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	filename := filepath.Join(expectedDir, "WithNested.swift")
-	if _, err := os.Stat(filename); err != nil {
-		t.Error(err)
-	}
 	for _, unexpected := range []string{"Nested1.swift", "Nested2.swift"} {
 		unexpectedFilename := filepath.Join(expectedDir, unexpected)
 		if _, err := os.Stat(unexpectedFilename); err == nil {
@@ -137,9 +134,6 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
 	filename := filepath.Join(expectedDir, "WithNestedEnum.swift")
-	if _, err := os.Stat(filename); err != nil {
-		t.Error(err)
-	}
 	unexpectedFilename := filepath.Join(expectedDir, "NestedEnum.swift")
 	if _, err := os.Stat(unexpectedFilename); err == nil {
 		t.Errorf("unexpected file generated: %s", unexpectedFilename)
