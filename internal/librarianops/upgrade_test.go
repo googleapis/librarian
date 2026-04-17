@@ -28,6 +28,7 @@ import (
 )
 
 func TestRunUpgrade(t *testing.T) {
+	t.Skip("TODO(https://github.com/googleapis/librarian/issues/5311): re-enable once the flake fetching librarian version from the Go proxy is resolved")
 	wantVersion, err := getLibrarianVersionAtMain(t.Context())
 	if err != nil {
 		t.Fatal(err)
