@@ -357,17 +357,14 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 		ID:      ".google.cloud.external.v1.ExternalMessage",
 	}
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-		},
-		ApiPackages: map[string]*Dependency{
-			"google.cloud.external.v1": {
-				SwiftDependency: config.SwiftDependency{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "ExternalPackage",
-				},
-			},
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[externalMessage.ID] = externalMessage
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
 		},
 	}
 
@@ -393,17 +390,14 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 		ID:      ".google.cloud.external.v1.ExternalEnum",
 	}
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-		},
-		ApiPackages: map[string]*Dependency{
-			"google.cloud.external.v1": {
-				SwiftDependency: config.SwiftDependency{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "ExternalPackage",
-				},
-			},
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.EnumByID[externalEnum.ID] = externalEnum
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
 		},
 	}
 
@@ -434,18 +428,17 @@ func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
 		ID:      ".google.cloud.external.v1.OuterMessage.NestedMessage",
 		Parent:  externalOuter,
 	}
+	externalOuter.Messages = append(externalOuter.Messages, externalNested)
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-		},
-		ApiPackages: map[string]*Dependency{
-			"google.cloud.external.v1": {
-				SwiftDependency: config.SwiftDependency{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "ExternalPackage",
-				},
-			},
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[externalNested.ID] = externalNested
+	model.State.MessageByID[externalOuter.ID] = externalOuter
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
 		},
 	}
 
