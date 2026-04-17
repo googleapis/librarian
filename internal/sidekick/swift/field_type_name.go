@@ -123,12 +123,12 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
-	prefix, err := c.externalTypePrefix(m.Package)
-	if err != nil {
-		return "", err
-	}
 	name := pascalCase(m.Name)
 	if m.Parent == nil {
+		prefix, err := c.externalTypePrefix(m.Package)
+		if err != nil {
+			return "", err
+		}
 		if prefix != "" {
 			return fmt.Sprintf("%s.%s", prefix, name), nil
 		}
@@ -142,12 +142,12 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
-	prefix, err := c.externalTypePrefix(e.Package)
-	if err != nil {
-		return "", err
-	}
 	name := pascalCase(e.Name)
 	if e.Parent == nil {
+		prefix, err := c.externalTypePrefix(e.Package)
+		if err != nil {
+			return "", err
+		}
 		if prefix != "" {
 			return fmt.Sprintf("%s.%s", prefix, name), nil
 		}
