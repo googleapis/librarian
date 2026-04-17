@@ -346,16 +346,10 @@ func TestFieldTypeName_Map(t *testing.T) {
 		},
 	}
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-			State: &api.APIState{
-				MessageByID: map[string]*api.Message{
-					".google.cloud.test.v1.WithMap.SingularMapEntry": mapEntry,
-				},
-			},
-		},
-	}
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = mapEntry.Package
+	model.State.MessageByID[mapEntry.ID] = mapEntry
+	c := newTestCodec(t, model, map[string]string{})
 
 	field := &api.Field{
 		Typez:   api.MESSAGE_TYPE,
