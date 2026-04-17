@@ -187,9 +187,6 @@ type GoTool struct {
 
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
-
-	// Exec is the binary name of the tool.
-	Exec string `yaml:"exec,omitempty"`
 }
 
 // Default contains default settings for all libraries.

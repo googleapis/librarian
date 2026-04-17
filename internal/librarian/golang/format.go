@@ -34,21 +34,7 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 		return err
 	}
 
-	binary := getGoimportsBinary(tools)
-	return command.Run(ctx, binary, args...)
-}
-
-func getGoimportsBinary(tools *config.Tools) string {
-	binary := "goimports"
-	if tools != nil {
-		for _, tool := range tools.Go {
-			if (tool.Name == "golang.org/x/tools/cmd/goimports" || tool.Name == "goimports") && tool.Exec != "" {
-				binary = tool.Exec
-				break
-			}
-		}
-	}
-	return binary
+	return command.Run(ctx, "goimports", args...)
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {
