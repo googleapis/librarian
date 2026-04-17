@@ -44,7 +44,6 @@ func (s StringSlice) IsZero() bool {
 	return s == nil
 }
 
-
 // Unmarshal parses YAML data into a value of type T.
 func Unmarshal[T any](data []byte) (*T, error) {
 	var v T

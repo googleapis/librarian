@@ -141,4 +141,3 @@ func TestStringSlice_NilSlice(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
-
