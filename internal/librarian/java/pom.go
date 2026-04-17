@@ -249,9 +249,9 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	protoModules := make([]Coordinate, 0, len(library.APIs))
 	gRPCModules := make([]Coordinate, 0, len(library.APIs))
 	for _, api := range library.APIs {
-		version := serviceconfig.ExtractVersion(api.Path)
+		apiBase := filepath.Base(api.Path)
 		javaAPI := ResolveJavaAPI(library, api)
-		apiCoord := DeriveAPICoordinates(libCoord, version, javaAPI)
+		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 
 		transport := transports[api.Path]
 		data := gRPCProtoPOMData{

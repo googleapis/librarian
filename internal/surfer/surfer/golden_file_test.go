@@ -48,6 +48,10 @@ func TestGolden(t *testing.T) {
 		name string
 		skip string // Reason for skipping.
 	}{
+		{name: "apis/developerconnect"},
+		{name: "apis/iam"},
+		{name: "apis/parallelstore"},
+		{name: "apis/seclm"},
 		{name: "confirmation_prompt"},
 		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
 		{name: "field_attributes"},
@@ -233,17 +237,8 @@ func copyProtos(t *testing.T, src, dst string) {
 		t.Fatalf("failed to read directory %q: %v", src, err)
 	}
 	for _, entry := range entries {
-		if entry.IsDir() {
-			if entry.Name() != "expected" && entry.Name() != "tests" && entry.Name() != "google" {
-				copyProtos(t, filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name()))
-			}
-			continue
-		}
 		if filepath.Ext(entry.Name()) == ".proto" {
 			target := filepath.Join(dst, entry.Name())
-			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-				t.Fatalf("failed to create directory %q: %v", filepath.Dir(target), err)
-			}
 			if _, err := os.Stat(target); errors.Is(err, fs.ErrNotExist) {
 				if err := os.Symlink(filepath.Join(absSrc, entry.Name()), target); err != nil {
 					t.Fatalf("failed to create symlink for %q: %v", target, err)
@@ -258,9 +253,6 @@ func findProtos(root string) []string {
 	filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
-		}
-		if d.IsDir() && d.Name() == "google" {
-			return filepath.SkipDir
 		}
 		if !d.IsDir() && filepath.Ext(path) == ".proto" {
 			rel, _ := filepath.Rel(root, path)

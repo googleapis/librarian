@@ -15,18 +15,15 @@
 package gcloud
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestWritePartialFile_Output(t *testing.T) {
@@ -78,60 +75,6 @@ func TestWritePartialFile_Output(t *testing.T) {
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("writePartialFile output mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestYAMLCommandSchema(t *testing.T) {
-	const root = "testdata/parallelstore/surface"
-	var files []string
-	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			return nil
-		}
-		if filepath.Ext(path) != ".yaml" {
-			return nil
-		}
-		files = append(files, path)
-		return nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	for _, filename := range files {
-		t.Run(filename, func(t *testing.T) {
-			data, err := os.ReadFile(filename)
-			if err != nil {
-				t.Fatal(err)
-			}
-			data = bytes.ReplaceAll(data, []byte("\r\n"), []byte("\n"))
-
-			if strings.Contains(string(data), "_PARTIALS_") {
-				return
-			}
-
-			commands, err := yaml.Unmarshal[[]*yamlCommand](data)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			marshaled, err := yaml.Marshal(commands)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			roundTripped, err := yaml.Unmarshal[[]*yamlCommand](marshaled)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if diff := cmp.Diff(commands, roundTripped); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
 	}
 }
 

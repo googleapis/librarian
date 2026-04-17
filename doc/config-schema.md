@@ -108,6 +108,7 @@ This document describes the schema for the librarian.yaml.
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
 | `description_override` | string | Overrides the library description. |
+| `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
@@ -388,7 +389,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
-| `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `include_list` | yaml.FlexibleStringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). TODO(https://github.com/googleapis/librarian/issues/4298): remove comma-separated string fallback unmarshaling in PR 3 (https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367) once google-cloud-rust is updated. |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
