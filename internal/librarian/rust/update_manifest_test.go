@@ -182,6 +182,12 @@ func TestUpdateWorkspaceVersion(t *testing.T) {
 			crateName: "google-cloud-wkt",
 			want:      "[workspace.dependencies]\nwkt = { package = \"google-cloud-wkt\", version = \"2.0.0\" }\n",
 		},
+		{
+			name:      "inline comment ignored",
+			content:   "[workspace.dependencies]\nother-crate = { version = \"1.0.0\" } # package = \"google-cloud-wkt\"\n",
+			crateName: "google-cloud-wkt",
+			want:      "[workspace.dependencies]\nother-crate = { version = \"1.0.0\" } # package = \"google-cloud-wkt\"\n",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			filePath := setupTestCargoFile(t, test.content)

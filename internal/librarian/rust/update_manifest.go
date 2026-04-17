@@ -76,7 +76,7 @@ func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) e
 	lines := strings.Split(string(contents), "\n")
 	updated := false
 	crateRegex := regexp.MustCompile(fmt.Sprintf(`^\s*%s\s*=`, regexp.QuoteMeta(crateName)))
-	packageRegex := regexp.MustCompile(fmt.Sprintf(`^\s*[^#].*package\s*=\s*"%s"`, regexp.QuoteMeta(crateName)))
+	packageRegex := regexp.MustCompile(fmt.Sprintf(`^\s*[^#]*\bpackage\s*=\s*"%s"`, regexp.QuoteMeta(crateName)))
 	for i, line := range lines {
 		if (crateRegex.MatchString(line) || packageRegex.MatchString(line)) && versionRegex.MatchString(line) {
 			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion.String()))
