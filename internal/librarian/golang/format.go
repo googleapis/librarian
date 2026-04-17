@@ -33,7 +33,6 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 	if err != nil {
 		return err
 	}
-
 	return command.Run(ctx, "goimports", args...)
 }
 

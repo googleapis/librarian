@@ -25,18 +25,20 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-//go:embed librarian.yaml
-var librarianYAML []byte
+var (
+	//go:embed librarian.yaml
+	librarianYAML []byte
 
-// ErrMissingToolVersion indicates a go tool entry is missing its version.
-var ErrMissingToolVersion = errors.New("go tool missing version")
+	// errMissingToolVersion indicates a go tool entry is missing its version.
+	errMissingToolVersion = errors.New("go tool missing version")
+)
 
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || len(tools.Go) == 0 {
-		return installFallbackTools(ctx)
+	if tools != nil && len(tools.Go) > 0 {
+		return installGoTools(ctx, tools.Go)
 	}
-	return installGoTools(ctx, tools.Go)
+	return installFallbackTools(ctx)
 }
 
 func installFallbackTools(ctx context.Context) error {
@@ -44,20 +46,17 @@ func installFallbackTools(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	if cfg.Tools == nil || len(cfg.Tools.Go) == 0 {
-		return fmt.Errorf("no go tools defined in embedded librarian.yaml")
-	}
 	return installGoTools(ctx, cfg.Tools.Go)
 }
 
 func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	for _, tool := range goTools {
 		if tool.Version == "" {
-			return fmt.Errorf("%w: %s", ErrMissingToolVersion, tool.Name)
+			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
 		}
 		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		if err := command.Run(ctx, command.Go, "install", toolStr); err != nil {
-			return fmt.Errorf("install %s: %w", toolStr, err)
+			return err
 		}
 	}
 	return nil
