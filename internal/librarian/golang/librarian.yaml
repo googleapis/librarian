@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# TODO(https://github.com/googleapis/librarian/issues/4848): move this file to
+# TODO(https://github.com/googleapis/librarian/issues/5449): move this file to
 # github.com/googleapis/google-cloud-go after the repository has migrated to
 # librarian.
 language: go
