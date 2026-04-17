@@ -169,5 +169,5 @@ func (c *codec) externalTypePrefix(packageName string) (string, error) {
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
 	}
 	dep.Required = true
-	return PackageName(&api.API{PackageName: dep.ApiPackage}), nil
+	return dep.Name, nil
 }
