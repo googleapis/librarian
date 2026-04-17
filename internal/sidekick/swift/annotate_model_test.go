@@ -63,15 +63,9 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	model := api.NewTestAPI(
 		[]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-
-	model.State = &api.APIState{
-		MessageByID: map[string]*api.Message{
-			".google.cloud.external.v1.ExternalMessage": externalMessage,
-		},
-	}
-
+	model.State.MessageByID[externalMessage.ID] = externalMessage
 	codec := newTestCodec(t, model, nil)
-	dep := &Dependency{
+	dep1 := &Dependency{
 		SwiftDependency: config.SwiftDependency{
 			ApiPackage: "google.cloud.external.v1",
 			Name:       "external-package",
@@ -84,10 +78,10 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		},
 	}
 	codec.ApiPackages = map[string]*Dependency{
-		"google.cloud.external.v1": dep,
+		"google.cloud.external.v1": dep1,
 		"google.cloud.unused.v1":   dep2,
 	}
-	codec.Dependencies = []*Dependency{dep, dep2}
+	codec.Dependencies = []*Dependency{dep1, dep2}
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
