@@ -86,6 +86,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
+	model.State.MessageByID[nested.ID] = nested
 	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
@@ -144,6 +145,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
+	model.State.EnumByID[nested.ID] = nested
 	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
