@@ -148,7 +148,7 @@ type RustModule struct {
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
 	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
-	IncludeList []string `yaml:"include_list,omitempty"`
+	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.

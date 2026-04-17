@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -779,7 +780,7 @@ func TestModuleToModelConfig(t *testing.T) {
 							Template:    "prost",
 							IncludedIds: []string{"id1", "id2"},
 							SkippedIds:  []string{"id3", "id4"},
-							IncludeList: []string{"example-list"},
+							IncludeList: yaml.StringSlice{"example-list"},
 						},
 					},
 				},
