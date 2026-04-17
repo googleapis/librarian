@@ -155,3 +155,44 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
+	inputMessage := &api.Message{
+		Name:    "InputMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.InputMessage",
+	}
+	outputMessage := &api.Message{
+		Name:    "OutputMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OutputMessage",
+	}
+	method := &api.Method{
+		Name:       "TestMethod",
+		InputType:  inputMessage,
+		OutputType: outputMessage,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+		},
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[inputMessage.ID] = inputMessage
+	model.State.MessageByID[outputMessage.ID] = outputMessage
+	codec := newTestCodec(t, model, nil)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	if inputMessage.Codec == nil {
+		t.Error("expected input message to be annotated")
+	}
+	if outputMessage.Codec == nil {
+		t.Error("expected output message to be annotated")
+	}
+}

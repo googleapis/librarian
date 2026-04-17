@@ -26,6 +26,9 @@ type messageAnnotations struct {
 }
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
+	if message.Codec != nil {
+		return nil
+	}
 	docLines := codec.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
 		CopyrightYear: model.CopyrightYear,
