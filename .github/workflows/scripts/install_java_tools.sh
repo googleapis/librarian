@@ -9,7 +9,6 @@
 set -e
 
 # Versions
-PROTOC_VERSION="33.2"
 GRPC_VERSION="1.76.2"
 GAPIC_GENERATOR_VERSION="2.66.1"
 FORMATTER_VERSION="1.25.2"
@@ -32,13 +31,6 @@ download_from() {
 }
 
 echo "Starting installation of Java tools to $INSTALL_DIR..."
-
-# 1. protoc
-echo "Installing protoc..."
-mkdir -p "$INSTALL_DIR/protoc"
-curl -fsSL -o /tmp/protoc.zip "https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-${OS_ARCHITECTURE}.zip"
-unzip -o -q /tmp/protoc.zip -d "$INSTALL_DIR/protoc"
-ln -sf "$INSTALL_DIR/protoc/bin/protoc" "$BIN_DIR/protoc"
 
 # 2. gRPC Plugin
 echo "Installing gRPC plugin..."
