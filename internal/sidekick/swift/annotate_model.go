@@ -28,6 +28,7 @@ type modelAnnotations struct {
 	PackageName    string
 	MonorepoRoot   string
 	DependsOn      map[string]*Dependency
+	ServiceImports []string
 	MessageImports []string
 }
 
@@ -44,6 +45,13 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	deps := slices.Collect(maps.Values(ann.DependsOn))
 	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
 	return deps
+}
+
+// HasMessageImports returns true if the package needs imports for the methods.
+//
+// The mustache templates use this to format the generated code.
+func (ann *modelAnnotations) HasMessageImports() bool {
+	return len(ann.MessageImports) != 0
 }
 
 func (codec *codec) annotateModel() error {
@@ -70,16 +78,20 @@ func (codec *codec) annotateModel() error {
 			return err
 		}
 	}
-	var imports []string
+	var serviceImports []string
+	var messageImports []string
 	for _, p := range codec.Dependencies {
-		if p.Required || (p.RequiredByServices && len(codec.Model.Services) != 0) {
+		if p.RequiredByServices && len(codec.Model.Services) != 0 {
+			serviceImports = append(serviceImports, p.Name)
+			annotations.DependsOn[p.Name] = p
+		} else if p.Required {
+			messageImports = append(messageImports, p.Name)
 			annotations.DependsOn[p.Name] = p
 		}
-		if p.Required && !p.RequiredByServices {
-			imports = append(imports, p.Name)
-		}
 	}
-	slices.Sort(imports)
-	annotations.MessageImports = imports
+	slices.Sort(serviceImports)
+	slices.Sort(messageImports)
+	annotations.ServiceImports = serviceImports
+	annotations.MessageImports = messageImports
 	return nil
 }

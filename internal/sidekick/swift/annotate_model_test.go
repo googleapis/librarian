@@ -82,7 +82,6 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 			Name:               "GoogleCloudGax",
 			RequiredByServices: true,
 		},
-		Required: true,
 	}
 	codec.ApiPackages = map[string]*Dependency{
 		dep1.ApiPackage: dep1,
@@ -108,7 +107,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1"}
+	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudGax"}
 	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -19,13 +19,12 @@ import (
 )
 
 type serviceAnnotations struct {
-	CopyrightYear    string
-	BoilerPlate      []string
 	Name             string
 	DocLines         []string
 	RestMethods      []*api.Method
 	PackageName      string
 	QuickstartMethod *api.Method
+	Model            *modelAnnotations
 }
 
 func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -44,13 +43,12 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 		quickstartMethod = service.QuickstartMethod
 	}
 	annotations := &serviceAnnotations{
-		CopyrightYear:    model.CopyrightYear,
-		BoilerPlate:      model.BoilerPlate,
 		Name:             pascalCase(service.Name),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
 		PackageName:      codec.PackageName,
 		QuickstartMethod: quickstartMethod,
+		Model:            model,
 	}
 	service.Codec = annotations
 	return nil
