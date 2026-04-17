@@ -156,12 +156,12 @@ func TestSetConfigValue(t *testing.T) {
 					},
 				},
 			}
-			_, err := setConfigValue(currentConfig, test.path, test.value)
+			gotCfg, err := setConfigValue(currentConfig, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, currentConfig); diff != "" {
+			if diff := cmp.Diff(test.want, gotCfg); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -190,9 +190,12 @@ func TestSetConfigValue_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := setConfigValue(currentConfig, test.path, "some-value")
+			gotCfg, err := setConfigValue(currentConfig, test.path, "some-value")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
+			}
+			if gotCfg != nil {
+				t.Errorf("setConfigValue(%q) gotCfg = %v, want nil on error", test.path, gotCfg)
 			}
 		})
 	}
@@ -226,9 +229,12 @@ func TestSetConfigValue_FetchFailure_NoMutation(t *testing.T) {
 			},
 		}
 
-		_, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
+		gotCfg, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+		if gotCfg != nil {
+			t.Errorf("expected nil config on failure, got %v", gotCfg)
 		}
 
 		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
@@ -244,9 +250,12 @@ func TestSetConfigValue_FetchFailure_NoMutation(t *testing.T) {
 			Version: "v1.0.0",
 		}
 
-		_, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
+		gotCfg, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
 		if err == nil {
 			t.Fatal("expected error, got nil")
+		}
+		if gotCfg != nil {
+			t.Errorf("expected nil config on failure, got %v", gotCfg)
 		}
 
 		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
