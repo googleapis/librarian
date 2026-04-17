@@ -46,7 +46,7 @@ func TestAnnotateMessage(t *testing.T) {
 		DocLines: []string{"A secret message.", "With two lines."},
 	}
 
-	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
@@ -68,7 +68,7 @@ func TestAnnotateMessage_EscapedName(t *testing.T) {
 		DocLines: []string{"A message named Protocol."},
 	}
 
-	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
