@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/java"
-	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -262,7 +261,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		lib := &config.Library{
 			Name:    name,
 			Version: version,
-			Keep:    parseOwlBotKeep(repoPath, output),
 			APIs:    apis,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
@@ -287,6 +285,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
 			},
+		}
+		if override, ok := keepOverride[lib.Name]; ok {
+			lib.Keep = override
+		} else {
+			lib.Keep = parseOwlBotKeep(repoPath, output)
 		}
 		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
 			lib.Java.APIShortnameOverride = shortnameOverride
@@ -568,10 +571,10 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 		BOM:    lc.BOM.ArtifactID,
 	}
 	for _, api := range lib.APIs {
-		version := serviceconfig.ExtractVersion(api.Path)
+		apiBase := filepath.Base(api.Path)
 		// Find Java-specific API config to handle artifact ID overrides.
 		javaAPI := java.ResolveJavaAPI(lib, api)
-		apiCoord := java.DeriveAPICoordinates(lc, version, javaAPI)
+		apiCoord := java.DeriveAPICoordinates(lc, apiBase, javaAPI)
 		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
 		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
 	}

@@ -265,6 +265,9 @@ type Library struct {
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
 
+	// TitleOverride overrides the title used in README generation.
+	TitleOverride string `yaml:"title_override,omitempty"`
+
 	// Keep lists files and directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
 

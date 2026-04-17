@@ -99,9 +99,13 @@
   documentation_uri: https://cloud.google.com/api-keys/docs
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/api/cloudquotas/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/api/cloudquotas/v1beta
   languages:
     - go
@@ -284,6 +288,8 @@
 - path: google/cloud/advisorynotifications/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/aiplatform/v1
   languages:
     - all
@@ -370,6 +376,8 @@
     - all
   skip_rest_numeric_enums:
     - python
+  release_level:
+    java: stable
 - path: google/cloud/alloydb/connectors/v1alpha
   languages:
     - go
@@ -387,6 +395,8 @@
 - path: google/cloud/alloydb/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/alloydb/v1alpha
   languages:
     - go
@@ -542,6 +552,8 @@
 - path: google/cloud/backupdr/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/baremetalsolution/v2
   documentation_uri: https://cloud.google.com/bare-metal/docs
   languages:
@@ -638,6 +650,8 @@
     - all
   skip_rest_numeric_enums:
     - all
+  release_level:
+    java: stable
   transports:
     python: grpc
 - path: google/cloud/bigquery/biglake/v1
@@ -902,6 +916,8 @@
 - path: google/cloud/cloudcontrolspartner/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/cloudcontrolspartner/v1beta
   languages:
     - go
@@ -988,6 +1004,8 @@
 - path: google/cloud/config/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/configdelivery/v1
   languages:
     - all
@@ -1032,6 +1050,8 @@
     - all
   skip_rest_numeric_enums:
     - php
+  release_level:
+    java: stable
 - path: google/cloud/datacatalog/v1
   languages:
     - all
@@ -1167,6 +1187,8 @@
 - path: google/cloud/discoveryengine/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/discoveryengine/v1alpha
   languages:
     - go
@@ -1219,9 +1241,13 @@
   documentation_uri: https://cloud.google.com/distributed-cloud/edge
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/edgenetwork/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/enterpriseknowledgegraph/v1
   documentation_uri: https://cloud.google.com/enterprise-knowledge-graph/
   languages:
@@ -1335,6 +1361,8 @@
     - python
   skip_rest_numeric_enums:
     - all
+  release_level:
+    java: stable
   transports:
     all: rest
 - path: google/cloud/gkehub/policycontroller/v1beta
@@ -1512,6 +1540,8 @@
   documentation_uri: https://cloud.google.com/iap
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/iap/v1beta1
   languages:
     - dart
@@ -1658,6 +1688,8 @@
 - path: google/cloud/memorystore/v1
   languages:
     - all
+  release_level:
+    java: stable
   transports:
     all: rest
 - path: google/cloud/memorystore/v1beta
@@ -1762,6 +1794,8 @@
   documentation_uri: https://cloud.google.com/traffic-director/docs/reference/network-security/rest
   languages:
     - all
+  release_level:
+    java: stable
   transports:
     csharp: grpc
     java: grpc
@@ -2103,6 +2137,8 @@
 - path: google/cloud/securesourcemanager/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/security/privateca/v1
   documentation_uri: https://cloud.google.com/certificate-authority-service
   languages:
@@ -2118,6 +2154,7 @@
     - all
   release_level:
     go: beta
+    java: stable
 - path: google/cloud/security/publicca/v1alpha1
   languages:
     - dart
@@ -2173,9 +2210,13 @@
 - path: google/cloud/securitycentermanagement/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/securityposture/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/servicedirectory/v1
   documentation_uri: https://cloud.google.com/service-directory/
   languages:
@@ -2291,6 +2332,8 @@
 - path: google/cloud/telcoautomation/v1
   languages:
     - all
+  release_level:
+    java: stable
 - path: google/cloud/telcoautomation/v1alpha1
   languages:
     - java
@@ -2386,6 +2429,8 @@
   documentation_uri: https://cloud.google.com/video-stitcher
   languages:
     - all
+  release_level:
+    java: stable
   transports:
     csharp: grpc
     go: grpc
@@ -2839,6 +2884,8 @@
     - go
     - java
     - python
+  release_level:
+    java: stable
 - path: google/maps/mapsplatformdatasets/v1
   languages:
     - java
