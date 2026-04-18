@@ -39,19 +39,13 @@ func TestAnnotateOneOf(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	gotAnn, ok := message.Codec.(*messageAnnotations)
-	if !ok {
-		t.Fatalf("expected message.Codec to be *messageAnnotations, got %T", message.Codec)
-	}
-
-	wantAnn := &oneOfAnnotations{
+	want := &oneOfAnnotations{
 		Name:         "OneOf_TestAlternatives",
 		PropertyName: "testAlternatives",
 		DocLines:     []string{"A test oneof."},
 	}
-	want := map[string]*oneOfAnnotations{oneof.Name: wantAnn}
 
-	if diff := cmp.Diff(want, gotAnn.OneOfs); diff != "" {
+	if diff := cmp.Diff(want, oneof.Codec); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
