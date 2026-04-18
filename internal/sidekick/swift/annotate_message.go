@@ -23,7 +23,6 @@ type messageAnnotations struct {
 	BoilerPlate   []string
 	Name          string
 	DocLines      []string
-	OneOfs        map[string]*oneOfAnnotations
 }
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
@@ -36,12 +35,8 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 	}
 
 	message.Codec = annotations
-	if len(message.OneOfs) != 0 {
-		annotations.OneOfs = make(map[string]*oneOfAnnotations)
-		for _, oneof := range message.OneOfs {
-			ann := codec.annotateOneOf(oneof)
-			annotations.OneOfs[oneof.Name] = ann
-		}
+	for _, oneof := range message.OneOfs {
+		codec.annotateOneOf(oneof)
 	}
 	for _, field := range message.Fields {
 		if err := codec.annotateField(field); err != nil {

@@ -24,7 +24,7 @@ type oneOfAnnotations struct {
 	DocLines     []string
 }
 
-func (codec *codec) annotateOneOf(oneof *api.OneOf) *oneOfAnnotations {
+func (codec *codec) annotateOneOf(oneof *api.OneOf) {
 	docLines := codec.formatDocumentation(oneof.Documentation)
 	annotations := &oneOfAnnotations{
 		Name:         "OneOf_" + pascalCase(oneof.Name),
@@ -32,5 +32,4 @@ func (codec *codec) annotateOneOf(oneof *api.OneOf) *oneOfAnnotations {
 		DocLines:     docLines,
 	}
 	oneof.Codec = annotations
-	return annotations
 }
