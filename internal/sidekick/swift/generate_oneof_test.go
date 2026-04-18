@@ -102,7 +102,7 @@ func TestGenerateOneOf(t *testing.T) {
 	got := contentStr[startIdx:]
 
 	// I (coryan@) don't particularly like testing a big string like this. It is a bit of a change
-	// detector test. On the other hand, checking that the oneof fields are defined propertly, and
+	// detector test. On the other hand, checking that the oneof fields are defined properly, and
 	// that the constructor has the right arguments is more tedious and also becomes a change detector
 	// test.
 	//
