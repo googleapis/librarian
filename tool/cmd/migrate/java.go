@@ -17,9 +17,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
@@ -289,7 +292,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		if override, ok := keepOverride[lib.Name]; ok {
 			lib.Keep = override
 		} else {
-			lib.Keep = parseOwlBotKeep(repoPath, output)
+			keep, err := parseOwlBotKeep(repoPath, output)
+			if err != nil {
+				return nil
+			}
+			lib.Keep = keep
 		}
 		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
 			lib.Java.APIShortnameOverride = shortnameOverride
@@ -319,29 +326,46 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 // to be preserved during generation. It filters out the standard template
 // patterns and ensures the paths are relative to the library's output directory.
 // It assumes the regex is actually a file or dir path.
-func parseOwlBotKeep(repoPath, outputDir string) []string {
-	path := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
-	if _, err := os.Stat(path); err != nil {
-		return nil
+func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
+	libraryDir := filepath.Join(repoPath, outputDir)
+	yamlPath := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
+	if _, err := os.Stat(yamlPath); err != nil {
+		return nil, err
 	}
 	content, err := yaml.Read[struct {
 		DeepPreserveRegex []string `yaml:"deep-preserve-regex"`
-	}](path)
+	}](yamlPath)
 	if err != nil {
-		log.Printf("Warning: failed to parse %s: %v", path, err)
-		return nil
+		log.Printf("Warning: failed to parse %s: %v", yamlPath, err)
+		return nil, err
 	}
 	var keeps []string
-	prefix := "/" + outputDir + "/"
 	for _, regex := range content.DeepPreserveRegex {
-		// Ignore standard template pattern:
-		// "/java-library-name/google-.*/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java"
-		if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, "/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java") {
-			continue
+		regex = strings.TrimPrefix(regex, "/")
+		err := filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
+			if err != nil {
+				return err
+			}
+			if d.IsDir() {
+				return nil
+			}
+			ok, err := regexp.MatchString(regex, path)
+			if err != nil {
+				return err
+			}
+			if ok {
+				path = strings.TrimPrefix(path, libraryDir)
+				path = strings.TrimPrefix(path, "/")
+				keeps = append(keeps, path)
+			}
+			return nil
+		})
+		if err != nil {
+			return nil, err
 		}
-		keeps = append(keeps, strings.TrimPrefix(regex, prefix))
 	}
-	return keeps
+	slices.Sort(keeps)
+	return keeps, nil
 }
 
 // parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
