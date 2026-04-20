@@ -15,7 +15,13 @@
 package swift
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
+)
+
+const (
+	typeUrlPrefix = "type.googleapis.com/"
 )
 
 type messageAnnotations struct {
@@ -23,6 +29,7 @@ type messageAnnotations struct {
 	BoilerPlate   []string
 	Name          string
 	DocLines      []string
+	TypeURL       string
 }
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
@@ -32,6 +39,7 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(message.Name),
 		DocLines:      docLines,
+		TypeURL:       typeUrlPrefix + strings.TrimPrefix(message.ID, "."),
 	}
 
 	message.Codec = annotations

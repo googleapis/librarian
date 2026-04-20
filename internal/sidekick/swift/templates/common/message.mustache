@@ -16,7 +16,7 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable {
+public struct {{Codec.Name}}: Codable, Equatable, GoogleCloudWkt._AnyPackable {
   {{#Fields}}
 
   {{#Codec.DocLines}}
@@ -58,4 +58,12 @@ public struct {{Codec.Name}}: Codable, Equatable {
 
   {{> /templates/common/enum}}
   {{/Enums}}
+
+  public static var _anyTypeUrl: String { return "{{Codec.TypeURL}}" }
+  public init(fromAny any: GoogleCloudWkt.`Any`) throws {
+    self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
+  }
+  public func _pack() throws -> Struct {
+    return try GoogleCloudWkt._slowAnySerialize(message: self)
+  }
 }

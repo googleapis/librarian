@@ -41,6 +41,53 @@ func TestModelAnnotations(t *testing.T) {
 	}
 }
 
+func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
+	enum := &api.Enum{
+		Name: "SomeEnum", ID: ".test.SomeSnum", Package: "test",
+		Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
+	}
+	enum.UniqueNumberValues = enum.Values
+	for _, test := range []struct {
+		name  string
+		model *api.API
+		want  map[string]bool
+	}{
+		{
+			name: "Messages with wkt",
+			model: api.NewTestAPI(
+				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
+			want: map[string]bool{"GoogleCloudWkt": true},
+		},
+		{
+			name:  "Enum with wkt",
+			model: api.NewTestAPI(nil, []*api.Enum{enum}, nil),
+			want:  map[string]bool{"GoogleCloudWkt": false},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			codec := newTestCodec(t, test.model, map[string]string{})
+			wkt := &Dependency{
+				SwiftDependency: config.SwiftDependency{
+					ApiPackage: "google.protobuf",
+					Name:       "GoogleCloudWkt",
+				},
+			}
+			codec.ApiPackages = map[string]*Dependency{wkt.ApiPackage: wkt}
+			codec.Dependencies = []*Dependency{wkt}
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := map[string]bool{}
+			for _, d := range codec.Dependencies {
+				got[d.Name] = d.Required
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	externalMessage := &api.Message{
 		Name:    "ExternalMessage",

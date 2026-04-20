@@ -92,14 +92,14 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", "Equatable {")
-	wantBlock1 := "public struct Nested1: Codable, Equatable {"
+	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", "._AnyPackable {")
+	wantBlock1 := "public struct Nested1: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
 	if diff := cmp.Diff(wantBlock1, gotBlock1); diff != "" {
 		t.Errorf("mismatch in Nested1 (-want +got):\n%s", diff)
 	}
 
-	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", "Equatable {")
-	wantBlock2 := "public struct Nested2: Codable, Equatable {"
+	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", "._AnyPackable {")
+	wantBlock2 := "public struct Nested2: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
 	if diff := cmp.Diff(wantBlock2, gotBlock2); diff != "" {
 		t.Errorf("mismatch in Nested2 (-want +got):\n%s", diff)
 	}

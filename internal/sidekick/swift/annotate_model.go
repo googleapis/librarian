@@ -59,6 +59,11 @@ func (codec *codec) annotateModel() error {
 			return err
 		}
 	}
+	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
+	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
+	if dep, ok := codec.ApiPackages[wellKnownPackage]; ok && len(codec.Model.Messages) != 0 {
+		dep.Required = true
+	}
 	for _, enum := range codec.Model.Enums {
 		if err := codec.annotateEnum(enum, annotations); err != nil {
 			return err
