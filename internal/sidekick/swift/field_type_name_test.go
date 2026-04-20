@@ -367,6 +367,12 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 			Name:       "ExternalPackage",
 		},
 	}
+	c.ApiPackages["google.cloud.unused.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "UnusedPackage",
+		},
+	}
 
 	got, err := c.messageTypeName(externalMessage)
 	if err != nil {
@@ -377,9 +383,16 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	dep := c.ApiPackages["google.cloud.external.v1"]
-	if !dep.Required {
-		t.Errorf("expected dependency to be marked as required")
+	wantRequired := map[string]bool{
+		"google.cloud.external.v1": true,
+		"google.cloud.unused.v1":   false,
+	}
+	gotRequired := map[string]bool{}
+	for k, v := range c.ApiPackages {
+		gotRequired[k] = v.Required
+	}
+	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -400,6 +413,12 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 			Name:       "ExternalPackage",
 		},
 	}
+	c.ApiPackages["google.cloud.unused.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "UnusedPackage",
+		},
+	}
 
 	got, err := c.enumTypeName(externalEnum)
 	if err != nil {
@@ -410,9 +429,16 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	dep := c.ApiPackages["google.cloud.external.v1"]
-	if !dep.Required {
-		t.Errorf("expected dependency to be marked as required")
+	wantRequired := map[string]bool{
+		"google.cloud.external.v1": true,
+		"google.cloud.unused.v1":   false,
+	}
+	gotRequired := map[string]bool{}
+	for k, v := range c.ApiPackages {
+		gotRequired[k] = v.Required
+	}
+	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
