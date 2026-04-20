@@ -71,10 +71,8 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 		if resp != nil {
 			if after := resp.Header.Get("Retry-After"); after != "" {
-				if d, err := time.ParseDuration(after + "s"); err == nil {
-					if d > delay {
-						delay = d
-					}
+				if d, err := time.ParseDuration(after + "s"); err == nil && d > delay {
+					delay = d
 				}
 			}
 		}
