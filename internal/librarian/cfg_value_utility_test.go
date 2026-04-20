@@ -91,7 +91,6 @@ func TestGetConfigValue_Error(t *testing.T) {
 }
 
 func TestSetConfigValue(t *testing.T) {
-	// Start a mock server
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/repos/googleapis/googleapis/commits/xyz789":
@@ -148,7 +147,7 @@ func TestSetConfigValue(t *testing.T) {
 		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
-			currentConfig := &config.Config{
+			cfg := &config.Config{
 				Version: "v1.0.0",
 				Sources: &config.Sources{
 					Googleapis: &config.Source{
@@ -156,12 +155,12 @@ func TestSetConfigValue(t *testing.T) {
 					},
 				},
 			}
-			gotCfg, err := setConfigValue(currentConfig, test.path, test.value)
+			got, err := setConfigValue(cfg, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.want, gotCfg); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -169,10 +168,6 @@ func TestSetConfigValue(t *testing.T) {
 }
 
 func TestSetConfigValue_Error(t *testing.T) {
-	currentConfig := &config.Config{
-		Version: "v1.0.0",
-	}
-
 	for _, test := range []struct {
 		name    string
 		path    string
@@ -190,76 +185,85 @@ func TestSetConfigValue_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotCfg, err := setConfigValue(currentConfig, test.path, "some-value")
+			cfg := &config.Config{
+				Version: "v1.0.0",
+			}
+			got, err := setConfigValue(cfg, test.path, "some-value")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
 			}
-			if gotCfg != nil {
-				t.Errorf("setConfigValue(%q) gotCfg = %v, want nil on error", test.path, gotCfg)
+			if got != nil {
+				t.Errorf("setConfigValue(%q) got = %v, want nil on error", test.path, got)
 			}
 		})
 	}
 }
 func TestSetConfigValue_FetchFailure_NoMutation(t *testing.T) {
-	// Override endpoints with invalid URL to cause failure without a server
 	oldAPI := githubAPI
 	oldDownload := githubDownload
 	githubAPI = "://invalid-url"
 	githubDownload = "://invalid-url"
-	defer func() {
+	t.Cleanup(func() {
 		githubAPI = oldAPI
 		githubDownload = oldDownload
-	}()
-
-	t.Run("existing config not mutated", func(t *testing.T) {
-		currentConfig := &config.Config{
-			Version: "v1.0.0",
-			Sources: &config.Sources{
-				Googleapis: &config.Source{
-					Commit: "abcd123",
-				},
-			},
-		}
-		originalConfig := &config.Config{
-			Version: "v1.0.0",
-			Sources: &config.Sources{
-				Googleapis: &config.Source{
-					Commit: "abcd123",
-				},
-			},
-		}
-
-		gotCfg, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-		if gotCfg != nil {
-			t.Errorf("expected nil config on failure, got %v", gotCfg)
-		}
-
-		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
-			t.Errorf("currentConfig was mutated on failure (-want +got):\n%s", diff)
-		}
 	})
 
-	t.Run("nil sources remains nil", func(t *testing.T) {
-		currentConfig := &config.Config{
-			Version: "v1.0.0",
-		}
-		originalConfig := &config.Config{
-			Version: "v1.0.0",
-		}
+	cfg := &config.Config{
+		Version: "v1.0.0",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "abcd123",
+			},
+		},
+	}
+	originalConfig := &config.Config{
+		Version: "v1.0.0",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "abcd123",
+			},
+		},
+	}
 
-		gotCfg, err := setConfigValue(currentConfig, "sources.googleapis.commit", "xyz789")
-		if err == nil {
-			t.Fatal("expected error, got nil")
-		}
-		if gotCfg != nil {
-			t.Errorf("expected nil config on failure, got %v", gotCfg)
-		}
+	got, err := setConfigValue(cfg, "sources.googleapis.commit", "xyz789")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got != nil {
+		t.Errorf("expected nil config on failure, got %v", got)
+	}
 
-		if diff := cmp.Diff(originalConfig, currentConfig); diff != "" {
-			t.Errorf("currentConfig was mutated on failure (-want +got):\n%s", diff)
-		}
+	if diff := cmp.Diff(originalConfig, cfg); diff != "" {
+		t.Errorf("cfg was mutated on failure (-want +got):\n%s", diff)
+	}
+}
+
+func TestSetConfigValue_FetchFailure_NilSourcesRemainsNil(t *testing.T) {
+	oldAPI := githubAPI
+	oldDownload := githubDownload
+	githubAPI = "://invalid-url"
+	githubDownload = "://invalid-url"
+	t.Cleanup(func() {
+		githubAPI = oldAPI
+		githubDownload = oldDownload
 	})
+
+	cfg := &config.Config{
+		Version: "v1.0.0",
+	}
+	originalConfig := &config.Config{
+		Version: "v1.0.0",
+	}
+
+	got, err := setConfigValue(cfg, "sources.googleapis.commit", "xyz789")
+	if err == nil {
+		t.Fatal("expected error, got nil")
+	}
+	if got != nil {
+		t.Errorf("expected nil config on failure, got %v", got)
+	}
+
+	if diff := cmp.Diff(originalConfig, cfg); diff != "" {
+		t.Errorf("cfg was mutated on failure (-want +got):\n%s", diff)
+	}
 }

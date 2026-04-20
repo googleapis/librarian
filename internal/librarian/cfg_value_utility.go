@@ -17,6 +17,7 @@ package librarian
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -31,35 +32,85 @@ var (
 )
 
 // setConfigValue sets a value at a specific path within the configuration.
-// It only supports a limited set of paths for now.
 func setConfigValue(cfg *config.Config, path string, value string) (*config.Config, error) {
 	switch path {
 	case "version":
 		cfg.Version = value
-	case "sources.googleapis.commit":
-		endpoints := &fetch.Endpoints{
-			API:      githubAPI,
-			Download: githubDownload,
-		}
-		repo := sourceRepos["googleapis"]
-		repo.Branch = value
-		sha256, err := fetch.CommitChecksum(endpoints, &repo, value)
-		if err != nil {
-			return nil, fmt.Errorf("fetching checksum for %s: %w", value, err)
+		return cfg, nil
+	}
+
+	// Handle paths like "sources.<source_name>.<field>"
+	parts := strings.Split(path, ".")
+	if len(parts) == 3 && parts[0] == "sources" {
+		sourceName := parts[1]
+		field := parts[2]
+
+		var commit, sha256 string
+		var err error
+
+		// Fallible operation first!
+		if field == "commit" {
+			commit, sha256, err = fetchCommitAndChecksum(sourceName, value)
+			if err != nil {
+				return nil, err
+			}
 		}
 
+		// Now it is safe to mutate!
 		if cfg.Sources == nil {
 			cfg.Sources = &config.Sources{}
 		}
-		if cfg.Sources.Googleapis == nil {
-			cfg.Sources.Googleapis = &config.Source{}
+
+		var source *config.Source
+		switch sourceName {
+		case "conformance":
+			if cfg.Sources.Conformance == nil {
+				cfg.Sources.Conformance = &config.Source{}
+			}
+			source = cfg.Sources.Conformance
+		case "discovery":
+			if cfg.Sources.Discovery == nil {
+				cfg.Sources.Discovery = &config.Source{}
+			}
+			source = cfg.Sources.Discovery
+		case "googleapis":
+			if cfg.Sources.Googleapis == nil {
+				cfg.Sources.Googleapis = &config.Source{}
+			}
+			source = cfg.Sources.Googleapis
+		case "protobuf":
+			if cfg.Sources.ProtobufSrc == nil {
+				cfg.Sources.ProtobufSrc = &config.Source{}
+			}
+			source = cfg.Sources.ProtobufSrc
+		case "showcase":
+			if cfg.Sources.Showcase == nil {
+				cfg.Sources.Showcase = &config.Source{}
+			}
+			source = cfg.Sources.Showcase
+		default:
+			return nil, fmt.Errorf("unsupported source: %s", sourceName)
 		}
-		cfg.Sources.Googleapis.Commit = value
-		cfg.Sources.Googleapis.SHA256 = sha256
-	default:
-		return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
+
+		switch field {
+		case "commit":
+			source.Commit = commit
+			source.SHA256 = sha256
+		case "branch":
+			source.Branch = value
+		case "dir":
+			source.Dir = value
+		case "sha256":
+			source.SHA256 = value
+		case "subpath":
+			source.Subpath = value
+		default:
+			return nil, fmt.Errorf("unsupported field %q for source %q", field, sourceName)
+		}
+		return cfg, nil
 	}
-	return cfg, nil
+
+	return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
 }
 
 // getConfigValue returns the value at a specific path within the configuration.
@@ -76,4 +127,20 @@ func getConfigValue(cfg *config.Config, path string) (string, error) {
 	default:
 		return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
+}
+
+// fetchCommitAndChecksum fetches the latest commit and checksum for the given source and branch.
+func fetchCommitAndChecksum(sourceName, branch string) (commit, sha256 string, err error) {
+	repoRef, ok := sourceRepos[sourceName]
+	if !ok {
+		return "", "", fmt.Errorf("unknown source repository for %s", sourceName)
+	}
+	repoRef.Branch = branch
+
+	endpoints := &fetch.Endpoints{
+		API:      githubAPI,
+		Download: githubDownload,
+	}
+
+	return fetch.LatestCommitAndChecksum(endpoints, &repoRef)
 }
