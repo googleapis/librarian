@@ -28,11 +28,12 @@ var (
 	}
 
 	excludedSamplesLibraries = map[string]bool{
-		"bigquerystorage": true,
-		"datastore":       true,
-		"logging":         true,
-		"storage":         true,
-		"spanner":         true,
+		"bigquerystorage":   true,
+		"datastore":         true,
+		"logging":           true,
+		"storage":           true,
+		"spanner":           true,
+		"containeranalysis": true,
 	}
 
 	keepOverride = map[string][]string{
