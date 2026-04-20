@@ -339,29 +339,32 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 		log.Printf("Warning: failed to parse %s: %v", yamlPath, err)
 		return nil, err
 	}
+	var files []string
+	if err := filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		path = strings.TrimPrefix(path, libraryDir)
+		path = strings.TrimPrefix(path, "/")
+		files = append(files, path)
+		return nil
+	}); err != nil {
+		return nil, err
+	}
 	var keeps []string
 	for _, regex := range content.DeepPreserveRegex {
 		regex = strings.TrimPrefix(regex, "/")
-		err := filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
+		for _, file := range files {
+			matched, err := regexp.MatchString(regex, file)
 			if err != nil {
-				return err
+				return nil, err
 			}
-			if d.IsDir() {
-				return nil
+			if matched {
+				keeps = append(keeps, file)
 			}
-			ok, err := regexp.MatchString(regex, path)
-			if err != nil {
-				return err
-			}
-			if ok {
-				path = strings.TrimPrefix(path, libraryDir)
-				path = strings.TrimPrefix(path, "/")
-				keeps = append(keeps, path)
-			}
-			return nil
-		})
-		if err != nil {
-			return nil, err
 		}
 	}
 	slices.Sort(keeps)

@@ -707,7 +707,7 @@ func TestParseOwlBotKeep(t *testing.T) {
 		want      []string
 	}{
 		{
-			name:      "",
+			name:      "find keep files",
 			repoPath:  "testdata/google-cloud-java",
 			outputDir: "java-vision",
 			want: []string{
