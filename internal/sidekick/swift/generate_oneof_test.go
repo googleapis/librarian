@@ -107,7 +107,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable {
+	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable {
 
   /// A regular field.
   public var regularInt32: Int32
@@ -135,6 +135,14 @@ func TestGenerateOneOf(t *testing.T) {
     case stringField(String)
     /// A message field that is part of the oneof.
     indirect case messageField(Inner)
+  }
+
+  public static var _anyTypeUrl: String { return "type.googleapis.com/google.cloud.test.v1.Outer" }
+  public init(fromAny any: GoogleCloudWkt.` + "`Any`" + `) throws {
+    self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
+  }
+  public func _pack() throws -> GoogleCloudWkt.Struct {
+    return try GoogleCloudWkt._slowAnySerialize(message: self)
   }
 }
 `
