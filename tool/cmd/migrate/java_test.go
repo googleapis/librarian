@@ -660,7 +660,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			protoPath:   "google/datastore/admin/v1",
 			wantJavaAPI: &config.JavaAPI{
 				Path:                    "google/datastore/admin/v1",
-				Samples:                 func(b bool) *bool { return &b }(false),
+				Samples:                 new(false),
 				ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
 			},
@@ -671,7 +671,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			protoPath:   "google/storage/control/v2",
 			wantJavaAPI: &config.JavaAPI{
 				Path:                    "google/storage/control/v2",
-				Samples:                 func(b bool) *bool { return &b }(false),
+				Samples:                 new(false),
 				GAPICArtifactIDOverride: "google-cloud-storage-control",
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-control-v2",
