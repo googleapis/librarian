@@ -29,9 +29,10 @@ final class {{Codec.Name}} {
   /// authentication is required by `{{Codec.Name}}`. You can do that using
   /// [`package:googleapis_auth`](https://pub.dev/packages/googleapis_auth).
   ///
-  /// If [endPoint] is provided then its `host` and `scheme` are used for all
-  /// API requests. For example, `Uri.http('127.0.0.1:8080')` could be used to
-  /// force the `Firebase` service to communicate with the local emulator.
+  /// If [endPoint] is provided then its `scheme` and `authority` are used for
+  /// all API requests. For example, `Uri.http('127.0.0.1:8080')` could be used
+  /// to force the `{{Codec.Name}}` service to communicate with the local
+  /// emulator.
   {{Codec.Name}}({required http.Client client, Uri? endPoint})
       : _client = ServiceClient(client: client),
         _endPoint = endPoint ?? Uri.https(_defaultHost, '');
