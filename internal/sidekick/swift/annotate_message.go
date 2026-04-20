@@ -21,7 +21,7 @@ import (
 )
 
 const (
-	typeUrlPrefix = "type.googleapis.com/"
+	typeURLPrefix = "type.googleapis.com/"
 )
 
 type messageAnnotations struct {
@@ -39,7 +39,7 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 		BoilerPlate:   model.BoilerPlate,
 		Name:          pascalCase(message.Name),
 		DocLines:      docLines,
-		TypeURL:       typeUrlPrefix + strings.TrimPrefix(message.ID, "."),
+		TypeURL:       typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 	}
 
 	message.Codec = annotations
