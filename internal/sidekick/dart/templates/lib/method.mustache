@@ -23,8 +23,8 @@ limitations under the License.
 /// any reason.
 {{#Codec.ServerSideStreaming}}
 Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
-  final url = Uri.https(_host, '{{PathInfo.Codec.PathFmt}}'
-    {{#Codec.HasQueryLines}}, {
+  final url = _endPoint.replace(path: '{{PathInfo.Codec.PathFmt}}'
+    {{#Codec.HasQueryLines}}, queryParameters: {
       {{#Codec.QueryLines}}
         {{{.}}},
       {{/Codec.QueryLines}}
@@ -42,7 +42,7 @@ Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
 /// This method can be used to get the current status of a long-running
 /// operation.
 Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request) async {
-  final url = Uri.https(_host, '{{PathInfo.Codec.PathFmt}}');
+  final url = _endPoint.replace(path: '{{PathInfo.Codec.PathFmt}}');
   {{#Codec.ReturnsValue}}final response = {{/Codec.ReturnsValue}}await _client.{{Codec.RequestMethod}}(url{{#Codec.HasBody}}, body: {{Codec.BodyMessageName}}{{/Codec.HasBody}});
   return Operation.fromJson(response, request.operationHelper);
 }
@@ -57,8 +57,8 @@ Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoM
 /// [Operation.responseAsMessage] will contain the operation's result.
 {{/OperationInfo}}
 Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> {{Codec.Name}}({{Codec.RequestType}} request) async {
-  final url = Uri.https(_host, '{{PathInfo.Codec.PathFmt}}'
-    {{#Codec.HasQueryLines}}, {
+  final url = _endPoint.replace(path: '{{PathInfo.Codec.PathFmt}}'
+    {{#Codec.HasQueryLines}}, queryParameters: {
       {{#Codec.QueryLines}}
         {{{.}}},
       {{/Codec.QueryLines}}
