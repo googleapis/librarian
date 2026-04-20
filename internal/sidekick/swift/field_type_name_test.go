@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -78,24 +79,16 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 		ID:      ".google.cloud.test.v1.OuterMessage.NestedMessage",
 		Parent:  outer,
 	}
+	outer.Messages = append(outer.Messages, nested)
 	simple := &api.Message{
 		Name:    "SimpleMessage",
 		Package: "google.cloud.test.v1",
 		ID:      ".google.cloud.test.v1.SimpleMessage",
 	}
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-			State: &api.APIState{
-				MessageByID: map[string]*api.Message{
-					".google.cloud.test.v1.SimpleMessage":              simple,
-					".google.cloud.test.v1.OuterMessage":               outer,
-					".google.cloud.test.v1.OuterMessage.NestedMessage": nested,
-				},
-			},
-		},
-	}
+	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
+	model.State.MessageByID[nested.ID] = nested
+	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
 		name  string
@@ -145,26 +138,16 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		ID:      ".google.cloud.test.v1.OuterMessage.NestedEnum",
 		Parent:  outer,
 	}
+	outer.Enums = append(outer.Enums, nested)
 	simple := &api.Enum{
 		Name:    "SimpleEnum",
 		Package: "google.cloud.test.v1",
 		ID:      ".google.cloud.test.v1.SimpleEnum",
 	}
 
-	c := &codec{
-		Model: &api.API{
-			PackageName: "google.cloud.test.v1",
-			State: &api.APIState{
-				EnumByID: map[string]*api.Enum{
-					".google.cloud.test.v1.SimpleEnum":              simple,
-					".google.cloud.test.v1.OuterMessage.NestedEnum": nested,
-				},
-				MessageByID: map[string]*api.Message{
-					".google.cloud.test.v1.OuterMessage": outer,
-				},
-			},
-		},
-	}
+	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
+	model.State.EnumByID[nested.ID] = nested
+	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
 		name  string
@@ -331,5 +314,166 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFieldTypeName_Map(t *testing.T) {
+	mapEntry := &api.Message{
+		Name:    "SingularMapEntry",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.WithMap.SingularMapEntry",
+		IsMap:   true,
+		Fields: []*api.Field{
+			{Name: "key", Typez: api.STRING_TYPE, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.key"},
+			{Name: "value", Typez: api.INT32_TYPE, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.value"},
+		},
+	}
+
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = mapEntry.Package
+	model.State.MessageByID[mapEntry.ID] = mapEntry
+	c := newTestCodec(t, model, map[string]string{})
+
+	field := &api.Field{
+		Typez:   api.MESSAGE_TYPE,
+		TypezID: ".google.cloud.test.v1.WithMap.SingularMapEntry",
+		ID:      ".test.field1",
+	}
+
+	got, err := c.baseFieldTypeName(field)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "[String: Int32]"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFieldTypeName_ExternalMessage(t *testing.T) {
+	externalMessage := &api.Message{
+		Name:    "ExternalMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalMessage",
+	}
+
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[externalMessage.ID] = externalMessage
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
+		},
+	}
+	c.ApiPackages["google.cloud.unused.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "UnusedPackage",
+		},
+	}
+
+	got, err := c.messageTypeName(externalMessage)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ExternalPackage.ExternalMessage"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	wantRequired := map[string]bool{
+		"google.cloud.external.v1": true,
+		"google.cloud.unused.v1":   false,
+	}
+	gotRequired := map[string]bool{}
+	for k, v := range c.ApiPackages {
+		gotRequired[k] = v.Required
+	}
+	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFieldTypeName_ExternalEnum(t *testing.T) {
+	externalEnum := &api.Enum{
+		Name:    "ExternalEnum",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalEnum",
+	}
+
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.EnumByID[externalEnum.ID] = externalEnum
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
+		},
+	}
+	c.ApiPackages["google.cloud.unused.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "UnusedPackage",
+		},
+	}
+
+	got, err := c.enumTypeName(externalEnum)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ExternalPackage.ExternalEnum"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	wantRequired := map[string]bool{
+		"google.cloud.external.v1": true,
+		"google.cloud.unused.v1":   false,
+	}
+	gotRequired := map[string]bool{}
+	for k, v := range c.ApiPackages {
+		gotRequired[k] = v.Required
+	}
+	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
+	externalOuter := &api.Message{
+		Name:    "OuterMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OuterMessage",
+	}
+	externalNested := &api.Message{
+		Name:    "NestedMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OuterMessage.NestedMessage",
+		Parent:  externalOuter,
+	}
+	externalOuter.Messages = append(externalOuter.Messages, externalNested)
+
+	model := api.NewTestAPI(nil, nil, nil)
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[externalNested.ID] = externalNested
+	model.State.MessageByID[externalOuter.ID] = externalOuter
+	c := newTestCodec(t, model, nil)
+	c.ApiPackages["google.cloud.external.v1"] = &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "ExternalPackage",
+		},
+	}
+
+	got, err := c.messageTypeName(externalNested)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "ExternalPackage.OuterMessage.NestedMessage"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

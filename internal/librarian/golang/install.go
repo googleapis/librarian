@@ -16,21 +16,46 @@ package golang
 
 import (
 	"context"
+	_ "embed"
+	"errors"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
-var tools = []string{
-	"github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic@v0.58.0",
-	"golang.org/x/tools/cmd/goimports@latest",
-	"google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.3.0",
-	"google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.11",
-}
+var (
+	//go:embed librarian.yaml
+	librarianYAML []byte
+
+	// errMissingToolVersion indicates a go tool entry is missing its version.
+	errMissingToolVersion = errors.New("go tool missing version")
+)
 
 // Install installs the tools required for Go library generation.
-func Install(ctx context.Context) error {
-	for _, tool := range tools {
-		if err := command.Run(ctx, command.Go, "install", tool); err != nil {
+func Install(ctx context.Context, tools *config.Tools) error {
+	if tools != nil && len(tools.Go) > 0 {
+		return installGoTools(ctx, tools.Go)
+	}
+	return installFallbackTools(ctx)
+}
+
+func installFallbackTools(ctx context.Context) error {
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	if err != nil {
+		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
+	}
+	return installGoTools(ctx, cfg.Tools.Go)
+}
+
+func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
+	for _, tool := range goTools {
+		if tool.Version == "" {
+			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
+		}
+		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
+		if err := command.Run(ctx, command.Go, "install", toolStr); err != nil {
 			return err
 		}
 	}

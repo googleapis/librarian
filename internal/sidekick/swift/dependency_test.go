@@ -29,27 +29,27 @@ func TestLocalName(t *testing.T) {
 	}{
 		{
 			name: "path simple",
-			dep:  Dependency{config.SwiftDependency{Path: "packages/auth"}},
+			dep:  Dependency{SwiftDependency: config.SwiftDependency{Path: "packages/auth"}},
 			want: "auth",
 		},
 		{
 			name: "path nested",
-			dep:  Dependency{config.SwiftDependency{Path: "generated/google-cloud-location"}},
+			dep:  Dependency{SwiftDependency: config.SwiftDependency{Path: "generated/google-cloud-location"}},
 			want: "google-cloud-location",
 		},
 		{
 			name: "path trailing slash",
-			dep:  Dependency{config.SwiftDependency{Path: "packages/auth/"}},
+			dep:  Dependency{SwiftDependency: config.SwiftDependency{Path: "packages/auth/"}},
 			want: "auth",
 		},
 		{
 			name: "url without git",
-			dep:  Dependency{config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf"}},
+			dep:  Dependency{SwiftDependency: config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf"}},
 			want: "swift-protobuf",
 		},
 		{
 			name: "url with git",
-			dep:  Dependency{config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf.git"}},
+			dep:  Dependency{SwiftDependency: config.SwiftDependency{URL: "https://github.com/apple/swift-protobuf.git"}},
 			want: "swift-protobuf",
 		},
 	} {

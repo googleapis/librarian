@@ -201,7 +201,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx = errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Format(gctx, library); err != nil {
+				if err := golang.Format(gctx, library, cfg.Tools); err != nil {
 					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil

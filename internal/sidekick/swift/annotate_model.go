@@ -67,11 +67,9 @@ func (codec *codec) annotateModel() error {
 	for _, service := range codec.Model.Services {
 		codec.annotateService(service, annotations)
 	}
-	if len(codec.Model.Services) != 0 {
-		for _, p := range codec.Dependencies {
-			if p.RequiredByServices {
-				annotations.DependsOn[p.Name] = p
-			}
+	for _, p := range codec.Dependencies {
+		if p.Required || (p.RequiredByServices && len(codec.Model.Services) != 0) {
+			annotations.DependsOn[p.Name] = p
 		}
 	}
 	return nil

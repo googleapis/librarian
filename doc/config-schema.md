@@ -57,6 +57,7 @@ This document describes the schema for the librarian.yaml.
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
 ## CargoTool Configuration
 
@@ -82,6 +83,13 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pip package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
+
+## GoTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the go module name. |
+| `version` | string | Is the version to install. |
 
 ## Default Configuration
 

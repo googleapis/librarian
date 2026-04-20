@@ -47,7 +47,7 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 			return "", err
 		}
 		if m.IsMap {
-			return "", fmt.Errorf("TODO(#5060) - map fields are not supported: %s", field.ID)
+			return c.mapFieldTypeName(m)
 		}
 		return c.messageTypeName(m)
 	case api.ENUM_TYPE:
@@ -59,6 +59,30 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	default:
 		return scalarFieldTypeName(field)
 	}
+}
+
+func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+	var keyField, valueField *api.Field
+	for _, f := range m.Fields {
+		switch f.Name {
+		case "key":
+			keyField = f
+		case "value":
+			valueField = f
+		}
+	}
+	if keyField == nil || valueField == nil {
+		return "", fmt.Errorf("map message %q missing key or value field", m.ID)
+	}
+	keyType, err := c.baseFieldTypeName(keyField)
+	if err != nil {
+		return "", err
+	}
+	valueType, err := c.baseFieldTypeName(valueField)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
@@ -99,12 +123,15 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
-	if m.Package != c.Model.PackageName {
-		return "", fmt.Errorf("TODO(#5060) - support external message types")
-	}
-	// Names can be qualified with nested objects.
 	name := pascalCase(m.Name)
 	if m.Parent == nil {
+		prefix, err := c.externalTypePrefix(m.Package)
+		if err != nil {
+			return "", err
+		}
+		if prefix != "" {
+			return fmt.Sprintf("%s.%s", prefix, name), nil
+		}
 		return name, nil
 	}
 	parent, err := c.messageTypeName(m.Parent)
@@ -115,12 +142,15 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
-	if e.Package != c.Model.PackageName {
-		return "", fmt.Errorf("TODO(#5060) - support external enum types")
-	}
-	// Names can be qualified with nested objects.
 	name := pascalCase(e.Name)
 	if e.Parent == nil {
+		prefix, err := c.externalTypePrefix(e.Package)
+		if err != nil {
+			return "", err
+		}
+		if prefix != "" {
+			return fmt.Sprintf("%s.%s", prefix, name), nil
+		}
 		return name, nil
 	}
 	parent, err := c.messageTypeName(e.Parent)
@@ -128,4 +158,16 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 		return "", err
 	}
 	return fmt.Sprintf("%s.%s", parent, name), nil
+}
+
+func (c *codec) externalTypePrefix(packageName string) (string, error) {
+	if packageName == c.Model.PackageName {
+		return "", nil
+	}
+	dep, ok := c.ApiPackages[packageName]
+	if !ok {
+		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
+	}
+	dep.Required = true
+	return dep.Name, nil
 }

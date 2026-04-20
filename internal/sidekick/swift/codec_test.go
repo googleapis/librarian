@@ -66,15 +66,15 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 	}
 
 	wantDeps := []*Dependency{
-		{swiftCfg.Dependencies[0]},
-		{swiftCfg.Dependencies[1]},
+		{SwiftDependency: swiftCfg.Dependencies[0]},
+		{SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantDeps, got.Dependencies); diff != "" {
 		t.Errorf("mismatch in Dependencies (-want +got):\n%s", diff)
 	}
 
 	wantApiPackages := map[string]*Dependency{
-		"google.cloud.location": {swiftCfg.Dependencies[1]},
+		"google.cloud.location": {SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantApiPackages, got.ApiPackages); diff != "" {
 		t.Errorf("mismatch in ApiPackages (-want +got):\n%s", diff)

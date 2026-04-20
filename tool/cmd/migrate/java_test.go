@@ -602,7 +602,10 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, ".", test.src, test.versions)
+			got, err := buildConfig(test.gen, ".", test.src, test.versions)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -693,38 +696,53 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 		},
 	}
 
-	got := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+	got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
-func TestBuildConfig_OwlBotKeep(t *testing.T) {
-	repoPath := "testdata/google-cloud-java"
-	gen := &GenerationConfig{
-		Libraries: []LibraryConfig{
-			{
-				APIShortName: "vision",
-				GAPICs: []GAPICConfig{
-					{ProtoPath: "google/cloud/vision/v1"},
-				},
+func TestParseOwlBotKeep(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		repoPath  string
+		outputDir string
+		want      []string
+	}{
+		{
+			name:      "find keep files",
+			repoPath:  "testdata/google-cloud-java",
+			outputDir: "java-vision",
+			want: []string{
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/stub/Version.java",
+				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
+				"google-cloud-vision/src/test/resources/placeholder.txt",
+				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 			},
 		},
-	}
-	got := buildConfig(gen, repoPath, &config.Source{Dir: "../../internal/testdata/googleapis"}, nil)
-	wantKeep := []string{
-		"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
-		"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
-		"google-cloud-vision/src/test/resources/city.jpg",
-		"google-cloud-vision/src/test/resources/face_no_surprise.jpg",
-		"google-cloud-vision/src/test/resources/landmark.jpg",
-		"google-cloud-vision/src/test/resources/logos.png",
-		"google-cloud-vision/src/test/resources/puppies.jpg",
-		"google-cloud-vision/src/test/resources/text.jpg",
-		"google-cloud-vision/src/test/resources/wakeupcat.jpg",
-	}
-	if diff := cmp.Diff(wantKeep, got.Libraries[0].Keep); diff != "" {
-		t.Errorf("mismatch in Keep field (-want +got):\n%s", diff)
+		{
+			name:      "find keep files in a dir regex",
+			repoPath:  "testdata/google-cloud-java",
+			outputDir: "java-speech",
+			want: []string{
+				"google-cloud-speech/src/test/java/com/google/cloud/speech/v1/SpeechSmokeTest.java",
+				"google-cloud-speech/src/test/java/com/google/cloud/speech/v1/it/ITSpeechTest.java",
+				"google-cloud-speech/src/test/resources/META-INF/native-image/com.google.cloud/google-cloud-speech/resource-config.json",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseOwlBotKeep(test.repoPath, test.outputDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

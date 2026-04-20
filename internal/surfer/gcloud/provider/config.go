@@ -15,6 +15,8 @@
 // Package provider contains configuration types and helpers for surfer tools.
 package provider
 
+//go:generate go run -tags configdocgen ../../../../cmd/config_doc_generate.go -input . -output ../../../../doc/gcloud/gcloud-yaml-schema.md -title "gcloud.yaml"
+
 // Config represents the top-level schema of a gcloud config YAML file.
 type Config struct {
 	// ServiceName is the name of a service. Each gcloud.yaml file should
