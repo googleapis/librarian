@@ -79,11 +79,9 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	cfg.Language = config.LanguageJava
 	cfg.Repo = "googleapis/google-cloud-java"
 	s := sample.RepoMetadata()
-
 	wantNamePretty := "Secret Manager"
 	wantProductDoc := "https://cloud.google.com/secret-manager/"
 	wantAPIDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
-
 	for _, test := range []struct {
 		name string
 		java *config.JavaModule
