@@ -763,9 +763,23 @@ func TestGenerate_Multiple(t *testing.T) {
 			},
 			Python: &config.PythonPackage{DefaultVersion: "v1"},
 		},
+		{
+			Name: "secretmanager",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/secretmanager/v1",
+				},
+			},
+			Output: "preview-packages",
+			Python: &config.PythonPackage{DefaultVersion: "v1"},
+		},
 	}
 	for _, library := range libraries {
-		library.Output = filepath.Join(repoRoot, "packages", library.Name)
+		subDir := "packages"
+		if library.Output != "" {
+			subDir = library.Output
+		}
+		library.Output = filepath.Join(repoRoot, subDir, library.Name)
 	}
 	for _, library := range libraries {
 		if err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
