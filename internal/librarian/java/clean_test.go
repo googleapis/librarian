@@ -211,7 +211,7 @@ func TestCleanPatterns(t *testing.T) {
 				filepath.Join("proto-google-cloud-secretmanager-v1beta1", "src"): true,
 				filepath.Join("grpc-google-cloud-secretmanager-v1beta1", "src"):  true,
 				filepath.Join("samples", "snippets", "generated"):                true,
-				".repo-metadata.json":                                            true,
+				".repo-metadata.json": true,
 			},
 		},
 		{
