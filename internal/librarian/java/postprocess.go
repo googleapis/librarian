@@ -207,6 +207,9 @@ type moveAction struct {
 func restructure(actions []moveAction) error {
 	for _, action := range actions {
 		if _, err := os.Stat(action.src); err == nil {
+			if command.Verbose {
+				fmt.Printf("  Moving %s: %s -> %s\n", action.description, action.src, action.dest)
+			}
 			if err := os.MkdirAll(action.dest, 0755); err != nil {
 				return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
 			}
@@ -223,6 +226,16 @@ func restructure(actions []moveAction) error {
 // It also copies the relevant proto files into the proto module.
 func restructureModules(p postProcessParams, destRoot string) error {
 	coords := p.coords()
+
+	if command.Verbose {
+		fmt.Printf("Restructuring modules for API %q:\n", p.apiBase)
+		fmt.Printf("  Artifact IDs: Proto=%s, GRPC=%s, GAPIC=%s\n", coords.Proto.ArtifactID, coords.GRPC.ArtifactID, coords.GAPIC.ArtifactID)
+		fmt.Printf("  Staging paths (relative to %s):\n", destRoot)
+		fmt.Printf("    Proto: %s\n", coords.Proto.ArtifactID)
+		fmt.Printf("    GRPC:  %s\n", coords.GRPC.ArtifactID)
+		fmt.Printf("    GAPIC: %s\n", coords.GAPIC.ArtifactID)
+	}
+
 	tempProtoSrcDir := p.protoDir()
 	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 		return err
@@ -329,6 +342,9 @@ func deriveLastReleasedVersion(v string) (string, error) {
 }
 
 func copyProtos(googleapisDir string, protos []string, destDir string) error {
+	if command.Verbose {
+		fmt.Printf("  Copying %d protos to %s\n", len(protos), destDir)
+	}
 	for _, proto := range protos {
 		// Calculate relative path from googleapisDir to preserve directory structure
 		rel, err := filepath.Rel(googleapisDir, proto)
@@ -336,6 +352,9 @@ func copyProtos(googleapisDir string, protos []string, destDir string) error {
 			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
 		}
 		target := filepath.Join(destDir, rel)
+		if command.Verbose {
+			fmt.Printf("    %s -> %s\n", rel, target)
+		}
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
 		}

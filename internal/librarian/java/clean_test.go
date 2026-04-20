@@ -195,6 +195,49 @@ func TestCleanPatterns(t *testing.T) {
 				".repo-metadata.json":                                  true,
 			},
 		},
+		{
+			name: "multiple_apis",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta1"},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("google-cloud-secretmanager", "src"):               true,
+				filepath.Join("proto-google-cloud-secretmanager-v1", "src"):      true,
+				filepath.Join("grpc-google-cloud-secretmanager-v1", "src"):       true,
+				filepath.Join("proto-google-cloud-secretmanager-v1beta1", "src"): true,
+				filepath.Join("grpc-google-cloud-secretmanager-v1beta1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):                true,
+				".repo-metadata.json":                                            true,
+			},
+		},
+		{
+			name: "gapic_artifact_id_override",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:                    "google/cloud/secretmanager/v1",
+							GapicArtifactIDOverride: "custom-gapic-artifact",
+						},
+					},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("custom-gapic-artifact", "src"):          true,
+				filepath.Join("proto-custom-gapic-artifact-v1", "src"): true,
+				filepath.Join("grpc-custom-gapic-artifact-v1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):      true,
+				".repo-metadata.json":                                  true,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cleanPatterns(test.library)

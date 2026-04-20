@@ -570,6 +570,9 @@ type JavaModule struct {
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
@@ -578,12 +581,14 @@ type JavaAPI struct {
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
-	// Samples determines whether to generate samples for the API,
-	// default is true when omitted.
-	Samples *bool `yaml:"samples,omitempty"`
+	// GapicArtifactIDOverride overrides the artifact ID for the GAPIC module.
+	// It determines the module's directory name and is used to derive proto
+	// and gRPC artifact IDs if they are not explicitly overridden.
+	GapicArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
 
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
+	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
+	// The artifact ID is also used as the name for the module's directory.
+	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
 
 	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
 	// The artifact ID is also used as the name for the module's directory.
@@ -593,9 +598,9 @@ type JavaAPI struct {
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
-	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
-	// The artifact ID is also used as the name for the module's directory.
-	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
+	// Samples determines whether to generate samples for the API,
+	// default is true when omitted.
+	Samples *bool `yaml:"samples,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.
