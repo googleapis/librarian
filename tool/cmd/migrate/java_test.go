@@ -723,6 +723,16 @@ func TestParseOwlBotKeep(t *testing.T) {
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 			},
 		},
+		{
+			name:      "find keep files in a dir regex",
+			repoPath:  "testdata/google-cloud-java",
+			outputDir: "java-speech",
+			want: []string{
+				"google-cloud-speech/src/test/java/com/google/cloud/speech/v1/SpeechSmokeTest.java",
+				"google-cloud-speech/src/test/java/com/google/cloud/speech/v1/it/ITSpeechTest.java",
+				"google-cloud-speech/src/test/resources/META-INF/native-image/com.google.cloud/google-cloud-speech/resource-config.json",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := parseOwlBotKeep(test.repoPath, test.outputDir)
