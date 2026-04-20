@@ -16,14 +16,12 @@ package java
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
 	"syscall"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -34,12 +32,6 @@ var versionRegexp = regexp.MustCompile(`src/main/java/com/google/cloud/.*/v.*/st
 // It targets patterns like proto-*, grpc-*, and the main GAPIC module.
 func Clean(library *config.Library) error {
 	patterns := cleanPatterns(library)
-	if command.Verbose {
-		fmt.Printf("Cleaning library %q in %q\n", library.Name, library.Output)
-		for p := range patterns {
-			fmt.Printf("  Cleaning pattern: %s\n", p)
-		}
-	}
 	keepSet := make(map[string]bool)
 	for _, k := range library.Keep {
 		keepSet[k] = true
