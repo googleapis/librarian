@@ -347,7 +347,15 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 		log.Printf("Warning: failed to parse %s: %v", yamlPath, err)
 		return nil, err
 	}
-	var files []string
+	var compiledRegexes []*regexp.Regexp
+	for _, r := range content.DeepPreserveRegex {
+		re, err := regexp.Compile(strings.TrimPrefix(r, "/"))
+		if err != nil {
+			return nil, err
+		}
+		compiledRegexes = append(compiledRegexes, re)
+	}
+	var keeps []string
 	if err := filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -355,25 +363,20 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 		if d.IsDir() {
 			return nil
 		}
-		path = strings.TrimPrefix(path, libraryDir)
-		path = strings.TrimPrefix(path, "/")
-		files = append(files, path)
+		rel, err := filepath.Rel(libraryDir, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		for _, re := range compiledRegexes {
+			if re.MatchString(rel) {
+				keeps = append(keeps, rel)
+				break
+			}
+		}
 		return nil
 	}); err != nil {
 		return nil, err
-	}
-	var keeps []string
-	for _, regex := range content.DeepPreserveRegex {
-		regex = strings.TrimPrefix(regex, "/")
-		for _, file := range files {
-			matched, err := regexp.MatchString(regex, file)
-			if err != nil {
-				return nil, err
-			}
-			if matched {
-				keeps = append(keeps, file)
-			}
-		}
 	}
 	slices.Sort(keeps)
 	return keeps, nil
