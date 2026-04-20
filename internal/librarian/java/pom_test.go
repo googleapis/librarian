@@ -378,6 +378,45 @@ func TestCollectModules(t *testing.T) {
 			},
 		},
 		{
+			name: "non versioned proto only skips grpc module",
+			library: &config.Library{
+				Name:    "accesscontextmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{Path: "google/identity/accesscontextmanager/type"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "google/identity/accesscontextmanager/type", ProtoOnly: true},
+					},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata:        &repoMetadata{},
+			transports: map[string]serviceconfig.Transport{
+				"google/identity/accesscontextmanager/type": serviceconfig.GRPC,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-accesscontextmanager-type",
+					"google-cloud-accesscontextmanager",
+					"google-cloud-accesscontextmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-accesscontextmanager-type", isMissing: true, template: protoPOMTemplateName},
+				{artifactID: "google-cloud-accesscontextmanager", isMissing: true, template: clientPOMTemplateName},
+				{artifactID: "google-cloud-accesscontextmanager-bom", isMissing: true, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-accesscontextmanager-parent", isMissing: true, template: parentPOMTemplateName},
+			},
+		},
+		{
 			name: "existing poms",
 			library: &config.Library{
 				Name:    "secretmanager",

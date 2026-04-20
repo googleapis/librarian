@@ -57,6 +57,7 @@ This document describes the schema for the librarian.yaml.
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
 ## CargoTool Configuration
 
@@ -83,6 +84,13 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
 
+## GoTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the go module name. |
+| `version` | string | Is the version to install. |
+
 ## Default Configuration
 
 | Field | Type | Description |
@@ -108,6 +116,7 @@ This document describes the schema for the librarian.yaml.
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
 | `description_override` | string | Overrides the library description. |
+| `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
@@ -241,13 +250,14 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `path` | string | Is the source path. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
-| `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
-| `path` | string | Is the source path. |
+| `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
+| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
-| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
+| `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
 ## JavaModule Configuration
 
@@ -276,6 +286,7 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. |
 
 ## NodejsAPI Configuration
 
@@ -388,7 +399,7 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
-| `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |

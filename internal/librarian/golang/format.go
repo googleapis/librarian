@@ -23,7 +23,7 @@ import (
 )
 
 // Format formats a generated Go library.
-func Format(ctx context.Context, library *config.Library) error {
+func Format(ctx context.Context, library *config.Library, tools *config.Tools) error {
 	// No need to format the root module because it does not
 	// have generated code.
 	if library.Name == rootModule {

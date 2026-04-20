@@ -148,6 +148,9 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
+		if library.Java.TransportOverride != "" {
+			metadata.Transport = library.Java.TransportOverride
+		}
 	}
 
 	// distribution_name default for Java is groupId:artifactId
@@ -161,10 +164,12 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
 	// transport
-	apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
+	if metadata.Transport == "" {
+		apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find api config: %w", err)
+		}
+		metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
 	}
-	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
 	return metadata, nil
 }

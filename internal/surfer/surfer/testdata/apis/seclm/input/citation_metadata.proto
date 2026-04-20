@@ -1,0 +1,64 @@
+// Copyright 2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package google.cloud.seclm.v1;
+
+option csharp_namespace = "Google.Cloud.SecLM.V1";
+option go_package = "cloud.google.com/go/seclm/apiv1/seclmpb;seclmpb";
+option java_multiple_files = true;
+option java_outer_classname = "CitationMetadataProto";
+option java_package = "com.google.cloud.seclm.v1";
+option php_namespace = "Google\\Cloud\\SecLM\\V1";
+option ruby_package = "Google::Cloud::SecLM::V1";
+
+// The schema of citations found in textual prediction outputs. Citations
+// originate from various sources and indicate that these contents should be
+// cited properly.
+message CitationMetadata {
+  // Metadata of all citations found in this prediction output.
+  repeated Citation citations = 1;
+}
+
+// Metadata of one citation.
+message Citation {
+  // Index in the prediction output where the citation starts
+  // (inclusive). Must be >= 0 and < end_index.
+  int32 start_index = 1;
+
+  // Index in the prediction output where the citation ends
+  // (exclusive). Must be > start_index and < len(output).
+  int32 end_index = 2;
+
+  // URL associated with this citation. If present, this URL links to the
+  // webpage of the source of this citation. Possible URLs include news
+  // websites, GitHub repos, etc.
+  string url = 3;
+
+  // Title associated with this citation. If present, it refers to the title
+  // of the source of this citation. Possible titles include
+  // news titles, book titles, etc.
+  string title = 4;
+
+  // License associated with this recitation. If present, it refers to the
+  // license of the source of this citation. Possible licenses include code
+  // licenses, e.g., mit license.
+  string license = 5;
+
+  // Publication date associated with this citation. If present, it refers to
+  // the date at which the source of this citation was published.
+  // Possible formats are YYYY, YYYY-MM, YYYY-MM-DD.
+  string publication_date = 6;
+}

@@ -83,17 +83,22 @@ from librarian.yaml in the current directory.`,
 			if lang == "" {
 				lang = cfg.Language
 			}
+			var tools *config.Tools
+			if cfg != nil {
+				tools = cfg.Tools
+			}
+
 			switch lang {
 			case config.LanguageFake:
 				return nil
 			case config.LanguageGo:
-				return golang.Install(ctx)
+				return golang.Install(ctx, tools)
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx)
 			case config.LanguagePython:
 				return python.Install(ctx)
 			case config.LanguageRust:
-				return rust.Install(ctx, cfg.Tools)
+				return rust.Install(ctx, tools)
 			default:
 				return fmt.Errorf("language %q does not support install", lang)
 			}

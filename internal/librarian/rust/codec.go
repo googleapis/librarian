@@ -244,8 +244,8 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}
-	if module.IncludeList != "" {
-		src.IncludeList = strings.Split(module.IncludeList, ",")
+	if len(module.IncludeList) > 0 {
+		src.IncludeList = module.IncludeList
 	}
 	resourceNameHeuristic := library.Rust != nil && library.Rust.ResourceNameHeuristic != nil && *library.Rust.ResourceNameHeuristic
 	if module.ResourceNameHeuristic != nil {

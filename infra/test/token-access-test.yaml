@@ -46,7 +46,7 @@ steps:
           exit 1
         fi
         permission_url="https://api.github.com/repos/googleapis/${repo_name}/collaborators/${ROBOT_ACCOUNT}/permission"
-        curl --fail -H "Authorization: token ${GITHUB_TOKEN}" "${permission_url}"
+        curl --retry 5 --retry-delay 15 --fail -H "Authorization: token ${GITHUB_TOKEN}" "${permission_url}"
         if [[ $? -ne 0 ]]; then
           echo "Failed to validate credentials for repository: ${repo_name} via ${permission_url}"
           exit 1

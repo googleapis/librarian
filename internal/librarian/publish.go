@@ -74,7 +74,7 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 	dryRun := cmd.Bool("dry-run")
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
-	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks)
+	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, IgnoredChanges)
 }
 
 // publish implements the publish command. It is provided with the configuration

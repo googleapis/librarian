@@ -136,6 +136,9 @@ type Tools struct {
 
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
+
+	// Go defines tools to install via go.
+	Go []*GoTool `yaml:"go,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -175,6 +178,15 @@ type PipTool struct {
 
 	// Package is the pip install specifier (e.g., "pkg@git+https://...").
 	Package string `yaml:"package,omitempty"`
+}
+
+// GoTool defines a tool to install via go.
+type GoTool struct {
+	// Name is the go module name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version,omitempty"`
 }
 
 // Default contains default settings for all libraries.
@@ -252,6 +264,9 @@ type Library struct {
 
 	// DescriptionOverride overrides the library description.
 	DescriptionOverride string `yaml:"description_override,omitempty"`
+
+	// TitleOverride overrides the title used in README generation.
+	TitleOverride string `yaml:"title_override,omitempty"`
 
 	// Keep lists files and directories to preserve during regeneration.
 	Keep []string `yaml:"keep,omitempty"`
