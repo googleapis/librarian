@@ -70,24 +70,48 @@ func TestAnnotateService(t *testing.T) {
 }
 
 func TestAnnotateService_SkipNoBindings(t *testing.T) {
+	inputType := &api.Message{
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+	}
+	outputType := &api.Message{
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
+	}
 	service := &api.Service{
-		Name: "TestService",
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
 		Methods: []*api.Method{
 			{
-				Name: "ValidMethod",
+				Name:         "ValidMethod",
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
 				},
 			},
 			{
-				Name: "NoBindingMethod",
+				Name:         "NoBindingMethod",
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{},
 				},
 			},
 			{
-				Name:     "NilPathInfoMethod",
-				PathInfo: nil,
+				Name:         "NilPathInfoMethod",
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
+				PathInfo:     nil,
 			},
 		},
 	}

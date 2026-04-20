@@ -16,6 +16,7 @@ package swift
 
 import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
@@ -26,6 +27,14 @@ type methodAnnotations struct {
 	HasBody        bool
 	IsBodyWildcard bool
 	BodyField      string
+	QueryParams    []*api.Field
+}
+
+// HasQueryParams returns true if the method's default binding has query parameters
+//
+// The mustache templates use this to avoid
+func (ann *methodAnnotations) HasQueryParams() bool {
+	return len(ann.QueryParams) != 0
 }
 
 func (codec *codec) annotateMethod(method *api.Method) {
@@ -46,5 +55,6 @@ func (codec *codec) annotateMethod(method *api.Method) {
 		HasBody:        hasBody,
 		IsBodyWildcard: isBodyWildcard,
 		BodyField:      bodyField,
+		QueryParams:    language.QueryParams(method, binding),
 	}
 }
