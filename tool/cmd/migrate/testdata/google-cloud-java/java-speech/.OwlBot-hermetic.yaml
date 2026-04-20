@@ -11,8 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 deep-preserve-regex:
-- "/.*google-.*/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java"
-- "/.*google-cloud-speech/src/test/java/com/google/cloud/speech/v1/SpeechSmokeTest.java"
-- "/.*google-cloud-speech/src/test/resources/META-INF/native-image/"
+  - "/.*google-.*/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java"
+  - "/.*google-cloud-speech/src/test/java/com/google/cloud/speech/v1/SpeechSmokeTest.java"
+  - "/.*google-cloud-speech/src/test/resources/META-INF/native-image/"
