@@ -104,7 +104,7 @@ func TestRunJavaMigration(t *testing.T) {
 		return &config.Source{
 			Commit: commitish,
 			SHA256: "sha123",
-			Dir:    "../../internal/testdata/googleapis",
+			Dir:    "../../../internal/testdata/googleapis",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -198,7 +198,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -206,7 +206,7 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
@@ -231,7 +231,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -239,7 +239,7 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
@@ -270,7 +270,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -278,7 +278,7 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
@@ -334,7 +334,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -344,7 +344,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
@@ -396,7 +396,7 @@ func TestBuildConfig(t *testing.T) {
 				"google-cloud-java":           "1.79.0",
 				"google-cloud-accessapproval": "2.86.0",
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -404,7 +404,7 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
@@ -432,7 +432,7 @@ func TestBuildConfig(t *testing.T) {
 					{APIShortName: "beyondcorp-appconnections"},
 				},
 			},
-			src: &config.Source{Dir: "../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -440,7 +440,7 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
