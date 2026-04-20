@@ -51,12 +51,6 @@ func fillPythonPreview(stable, preview *config.Library) *config.Library {
 	p, s := preview.Python, stable.Python
 
 	// Merge stable into preview, favoring preview.
-	if len(p.CommonGAPICPaths) == 0 {
-		p.CommonGAPICPaths = s.CommonGAPICPaths
-	}
-	if p.LibraryType == "" {
-		p.LibraryType = s.LibraryType
-	}
 	if len(p.OptArgsByAPI) == 0 && len(s.OptArgsByAPI) > 0 {
 		filtered := make(map[string][]string)
 		for _, api := range preview.APIs {
@@ -65,36 +59,6 @@ func fillPythonPreview(stable, preview *config.Library) *config.Library {
 			}
 		}
 		p.OptArgsByAPI = filtered
-	}
-	if len(p.ProtoOnlyAPIs) == 0 {
-		p.ProtoOnlyAPIs = s.ProtoOnlyAPIs
-	}
-	if p.NamePrettyOverride == "" {
-		p.NamePrettyOverride = s.NamePrettyOverride
-	}
-	if p.ProductDocumentationOverride == "" {
-		p.ProductDocumentationOverride = s.ProductDocumentationOverride
-	}
-	if p.APIShortnameOverride == "" {
-		p.APIShortnameOverride = s.APIShortnameOverride
-	}
-	if p.APIIDOverride == "" {
-		p.APIIDOverride = s.APIIDOverride
-	}
-	if p.ClientDocumentationOverride == "" {
-		p.ClientDocumentationOverride = s.ClientDocumentationOverride
-	}
-	if p.IssueTrackerOverride == "" {
-		p.IssueTrackerOverride = s.IssueTrackerOverride
-	}
-	if p.MetadataNameOverride == "" {
-		p.MetadataNameOverride = s.MetadataNameOverride
-	}
-	if p.DefaultVersion == "" {
-		p.DefaultVersion = s.DefaultVersion
-	}
-	if !p.SkipReadmeCopy {
-		p.SkipReadmeCopy = s.SkipReadmeCopy
 	}
 
 	return preview

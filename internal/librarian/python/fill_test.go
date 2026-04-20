@@ -148,9 +148,6 @@ func TestFill(t *testing.T) {
 						{Path: "google/cloud/secretmanager/v1"},
 					},
 					Python: &config.PythonPackage{
-						PythonDefault: config.PythonDefault{
-							LibraryType: "GAPIC",
-						},
 						MetadataNameOverride: "secretmanager-preview",
 						OptArgsByAPI: map[string][]string{
 							"google/cloud/secretmanager/v1": {"opt1"},
