@@ -325,11 +325,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 	}, nil
 }
 
-// parseOwlBotKeep parses the .OwlBot-hermetic.yaml file for the given library
-// and extracts additional deep-preserve-regex patterns into a list of paths
-// to be preserved during generation. It filters out the standard template
-// patterns and ensures the paths are relative to the library's output directory.
-// It assumes the regex is actually a file or dir path.
+// parseOwlBotKeep reads .OwlBot-hermetic.yaml in the library directory and returns
+// a sorted list of file paths that match the deep-preserve-regex patterns.
 func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 	libraryDir := filepath.Join(repoPath, outputDir)
 	yamlPath := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
