@@ -602,7 +602,10 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildConfig(test.gen, ".", test.src, test.versions)
+			got, err := buildConfig(test.gen, ".", test.src, test.versions)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -693,7 +696,10 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 		},
 	}
 
-	got := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+	got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

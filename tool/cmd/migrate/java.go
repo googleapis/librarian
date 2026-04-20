@@ -166,7 +166,10 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if err != nil {
 		return err
 	}
-	cfg := buildConfig(gen, repoPath, src, versions)
+	cfg, err := buildConfig(gen, repoPath, src, versions)
+	if err != nil {
+		return err
+	}
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -215,7 +218,7 @@ func readVersions(path string) (map[string]string, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) *config.Config {
+func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) (*config.Config, error) {
 	var libs []*config.Library
 	if v, ok := versions["google-cloud-java"]; ok {
 		libs = append(libs, &config.Library{
@@ -295,7 +298,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		} else {
 			keep, err := parseOwlBotKeep(repoPath, output)
 			if err != nil {
-				return nil
+				return nil, err
 			}
 			lib.Keep = keep
 		}
@@ -305,7 +308,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		libs = append(libs, lib)
 	}
 	if len(libs) == 0 {
-		return nil
+		return nil, nil
 	}
 	return &config.Config{
 		Language: "java",
@@ -319,7 +322,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		},
 		Libraries: libs,
 		Repo:      "googleapis/google-cloud-java",
-	}
+	}, nil
 }
 
 // parseOwlBotKeep parses the .OwlBot-hermetic.yaml file for the given library
