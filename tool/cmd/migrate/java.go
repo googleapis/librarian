@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/fs"
 	"log"
@@ -329,7 +330,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 	libraryDir := filepath.Join(repoPath, outputDir)
 	yamlPath := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
-	if _, err := os.Stat(yamlPath); err != nil {
+	_, err := os.Stat(yamlPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
 		return nil, err
 	}
 	content, err := yaml.Read[struct {
