@@ -250,13 +250,14 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `path` | string | Is the source path. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
-| `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
-| `path` | string | Is the source path. |
+| `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
+| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
-| `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
+| `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
 ## JavaModule Configuration
 
@@ -285,6 +286,7 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. |
 
 ## NodejsAPI Configuration
 
