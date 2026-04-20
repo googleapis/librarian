@@ -215,6 +215,47 @@ func TestTarballLink(t *testing.T) {
 	}
 }
 
+func TestChecksum(t *testing.T) {
+	const (
+		testOrg               = "testorg"
+		testRepo              = "testrepo"
+		testCommit            = "testcommit123"
+		tarballContents       = "mock tarball content\n"
+		expectedTarballSHA256 = "0bd89170c5b805ecc7c265a6fbb861875d6cd5024aec24235d2e9a96c6fb3699"
+	)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		expectedPath := fmt.Sprintf("/%s/%s/archive/%s.tar.gz", testOrg, testRepo, testCommit)
+		if r.URL.Path != expectedPath {
+			t.Fatalf("unexpected request path %q, want %q", r.URL.Path, expectedPath)
+		}
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(tarballContents))
+	}))
+	defer server.Close()
+
+	repo := &RepoRef{Org: testOrg, Name: testRepo}
+	got, err := Checksum(server.URL, repo, testCommit)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != expectedTarballSHA256 {
+		t.Errorf("Checksum() = %q, want %q", got, expectedTarballSHA256)
+	}
+}
+
+func TestChecksum_Error(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusBadRequest)
+	}))
+	defer server.Close()
+
+	repo := &RepoRef{Org: "org", Name: "repo"}
+	if _, err := Checksum(server.URL, repo, "commit"); err == nil {
+		t.Error("expected an error from Checksum()")
+	}
+}
+
 func TestDownload_TgzExists(t *testing.T) {
 	testDir := t.TempDir()
 	tarball := makeTestContents(t)

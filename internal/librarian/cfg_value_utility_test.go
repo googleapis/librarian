@@ -20,19 +20,23 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestGetConfigValue(t *testing.T) {
 	currentConfig := &config.Config{
 		Version: "v1.0.0",
 		Sources: &config.Sources{
-			Googleapis: &config.Source{
-				Commit: "abcd123",
-			},
+			Googleapis:  &config.Source{Commit: "abcd123"},
+			Conformance: &config.Source{Commit: "conf123"},
+			Discovery:   &config.Source{Commit: "disc123"},
+			ProtobufSrc: &config.Source{Commit: "proto123"},
+			Showcase:    &config.Source{Commit: "show123"},
 		},
 	}
 
@@ -47,6 +51,22 @@ func TestGetConfigValue(t *testing.T) {
 		{
 			path: "sources.googleapis.commit",
 			want: "abcd123",
+		},
+		{
+			path: "sources.conformance.commit",
+			want: "conf123",
+		},
+		{
+			path: "sources.discovery.commit",
+			want: "disc123",
+		},
+		{
+			path: "sources.protobuf.commit",
+			want: "proto123",
+		},
+		{
+			path: "sources.showcase.commit",
+			want: "show123",
 		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
@@ -92,14 +112,15 @@ func TestGetConfigValue_Error(t *testing.T) {
 
 func TestSetConfigValue(t *testing.T) {
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		switch r.URL.Path {
-		case "/repos/googleapis/googleapis/commits/xyz789":
+		if strings.HasPrefix(r.URL.Path, "/repos/") {
 			w.Write([]byte("xyz789"))
-		case "/googleapis/googleapis/archive/xyz789.tar.gz":
-			w.Write([]byte("dummy content"))
-		default:
-			http.NotFound(w, r)
+			return
 		}
+		if strings.HasSuffix(r.URL.Path, ".tar.gz") {
+			w.Write([]byte("dummy content"))
+			return
+		}
+		http.NotFound(w, r)
 	}))
 	defer ts.Close()
 
@@ -141,6 +162,75 @@ func TestSetConfigValue(t *testing.T) {
 					Googleapis: &config.Source{
 						Commit: "xyz789",
 						SHA256: dummySHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.conformance.commit",
+			value: "xyz789",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "abcd123"},
+					Conformance: &config.Source{
+						Commit: "xyz789",
+						SHA256: dummySHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.discovery.commit",
+			value: "xyz789",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "abcd123"},
+					Discovery: &config.Source{
+						Commit: "xyz789",
+						SHA256: dummySHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.protobuf.commit",
+			value: "xyz789",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "abcd123"},
+					ProtobufSrc: &config.Source{
+						Commit: "xyz789",
+						SHA256: dummySHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.showcase.commit",
+			value: "xyz789",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "abcd123"},
+					Showcase: &config.Source{
+						Commit: "xyz789",
+						SHA256: dummySHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.protobuf.subpath",
+			value: "src",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "abcd123"},
+					ProtobufSrc: &config.Source{
+						Subpath: "src",
 					},
 				},
 			},
@@ -265,5 +355,49 @@ func TestSetConfigValue_FetchFailure_NilSourcesRemainsNil(t *testing.T) {
 
 	if diff := cmp.Diff(originalConfig, cfg); diff != "" {
 		t.Errorf("cfg was mutated on failure (-want +got):\n%s", diff)
+	}
+}
+
+func TestLibrarianSourcesYAML(t *testing.T) {
+	filePath := "testdata/librarian_sources.yaml"
+	cfg, err := yaml.Read[config.Config](filePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		path string
+		want string
+	}{
+		{"sources.conformance.commit", "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6"},
+		{"sources.discovery.commit", "a9217d2c6b2ce003fde50c0729c2bb8434434b5b"},
+		{"sources.googleapis.commit", "f5cb7afc40b63d52f43bc306cb9b64a87b681aea"},
+		{"sources.protobuf.commit", "b407e8416e3893036aee5af9a12bd9b6a0e2b2e6"},
+		{"sources.protobuf.subpath", "src"},
+		{"sources.showcase.commit", "3fd9cb2f682d5f8263d913eaba8b78e045acc4d2"},
+	}
+
+	for _, test := range tests {
+		got, err := getConfigValue(cfg, test.path)
+		if err != nil {
+			t.Errorf("getConfigValue(%q) error = %v", test.path, err)
+			continue
+		}
+		if got != test.want {
+			t.Errorf("getConfigValue(%q) = %q, want %q", test.path, got, test.want)
+		}
+	}
+
+	updatedCfg, err := setConfigValue(cfg, "sources.conformance.subpath", "new-subpath")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := getConfigValue(updatedCfg, "sources.conformance.subpath")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "new-subpath" {
+		t.Errorf("Expected conformance subpath to be 'new-subpath', got %q", got)
 	}
 }

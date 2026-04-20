@@ -114,19 +114,59 @@ func setConfigValue(cfg *config.Config, path string, value string) (*config.Conf
 }
 
 // getConfigValue returns the value at a specific path within the configuration.
-// It only supports a limited set of paths for now.
 func getConfigValue(cfg *config.Config, path string) (string, error) {
 	switch path {
 	case "version":
 		return cfg.Version, nil
-	case "sources.googleapis.commit":
-		if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
-			return "", fmt.Errorf("%w: googleapis", errSourceNotConfigured)
-		}
-		return cfg.Sources.Googleapis.Commit, nil
-	default:
-		return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 	}
+
+	// Handle paths like "sources.<source_name>.<field>"
+	parts := strings.Split(path, ".")
+	if len(parts) == 3 && parts[0] == "sources" {
+		sourceName := parts[1]
+		field := parts[2]
+
+		if cfg.Sources == nil {
+			return "", fmt.Errorf("%w: %s", errSourceNotConfigured, sourceName)
+		}
+
+		var source *config.Source
+		switch sourceName {
+		case "conformance":
+			source = cfg.Sources.Conformance
+		case "discovery":
+			source = cfg.Sources.Discovery
+		case "googleapis":
+			source = cfg.Sources.Googleapis
+		case "protobuf":
+			source = cfg.Sources.ProtobufSrc
+		case "showcase":
+			source = cfg.Sources.Showcase
+		default:
+			return "", fmt.Errorf("unsupported source: %s", sourceName)
+		}
+
+		if source == nil {
+			return "", fmt.Errorf("%w: %s", errSourceNotConfigured, sourceName)
+		}
+
+		switch field {
+		case "commit":
+			return source.Commit, nil
+		case "branch":
+			return source.Branch, nil
+		case "dir":
+			return source.Dir, nil
+		case "sha256":
+			return source.SHA256, nil
+		case "subpath":
+			return source.Subpath, nil
+		default:
+			return "", fmt.Errorf("unsupported field %q for source %q", field, sourceName)
+		}
+	}
+
+	return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 }
 
 // fetchCommitAndChecksum fetches the latest commit and checksum for the given source and branch.
