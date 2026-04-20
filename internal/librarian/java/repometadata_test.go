@@ -73,12 +73,17 @@ func TestRepoMetadata_write(t *testing.T) {
 func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 	t.Parallel()
 	apiPath := "google/cloud/secretmanager/v1"
-	googleapis := "internal/testdata/googleapis"
+	googleapis := "../../testdata/googleapis"
 
 	cfg := sample.Config()
 	cfg.Language = config.LanguageJava
 	cfg.Repo = "googleapis/google-cloud-java"
 	s := sample.RepoMetadata()
+
+	wantNamePretty := "Secret Manager"
+	wantProductDoc := "https://cloud.google.com/secret-manager/"
+	wantAPIDescription := "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security."
+
 	for _, test := range []struct {
 		name string
 		java *config.JavaModule
@@ -121,18 +126,43 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				APIShortnameOverride: "custom-shortname",
 			},
 			want: &repoMetadata{
-				APIShortname:        "custom-shortname",
-				ClientDocumentation: "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
-				ReleaseLevel:        "stable",
-				Transport:           "both",
-				Language:            "java",
-				Repo:                "googleapis/google-cloud-java",
-				RepoShort:           "java-secretmanager",
-				DistributionName:    "com.google.cloud:google-cloud-secretmanager",
+				APIShortname:         "custom-shortname",
+				NamePretty:           wantNamePretty,
+				ProductDocumentation: wantProductDoc,
+				APIDescription:       wantAPIDescription,
+				ClientDocumentation:  "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
+				ReleaseLevel:         "stable",
+				Transport:            "both",
+				Language:             "java",
+				Repo:                 "googleapis/google-cloud-java",
+				RepoShort:            "java-secretmanager",
+				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				// API ID is also override.
 				APIID:           "custom-shortname.googleapis.com",
 				LibraryType:     "GAPIC_AUTO",
 				RequiresBilling: true,
+			},
+		},
+		{
+			name: "transport override",
+			java: &config.JavaModule{
+				TransportOverride: "rest",
+			},
+			want: &repoMetadata{
+				APIShortname:         "secretmanager",
+				NamePretty:           wantNamePretty,
+				ProductDocumentation: wantProductDoc,
+				APIDescription:       wantAPIDescription,
+				ClientDocumentation:  "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
+				ReleaseLevel:         "stable",
+				Transport:            "rest",
+				Language:             "java",
+				Repo:                 "googleapis/google-cloud-java",
+				RepoShort:            "java-secretmanager",
+				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
+				APIID:                "secretmanager.googleapis.com",
+				LibraryType:          "GAPIC_AUTO",
+				RequiresBilling:      true,
 			},
 		},
 	} {

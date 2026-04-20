@@ -285,6 +285,7 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. |
 
 ## NodejsAPI Configuration
 

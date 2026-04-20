@@ -566,6 +566,10 @@ type JavaModule struct {
 
 	// RpcDocumentation is the URL for the RPC documentation.
 	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+
+	// TransportOverride allows the "transport" field in .repo-metadata.json
+	// to be overridden.
+	TransportOverride string `yaml:"transport_override,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.
