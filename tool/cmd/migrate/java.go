@@ -284,6 +284,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				BillingNotRequired:           invertBoolPtr(l.RequiresBilling),
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
+				TransportOverride:            l.Transport,
 			},
 		}
 		if override, ok := keepOverride[lib.Name]; ok {

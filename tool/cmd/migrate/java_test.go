@@ -373,6 +373,7 @@ func TestBuildConfig(t *testing.T) {
 							BillingNotRequired:           true,
 							RestDocumentation:            "https://rest-doc.com",
 							RpcDocumentation:             "https://rpc-doc.com",
+							TransportOverride:            "grpc",
 						},
 					},
 				},
