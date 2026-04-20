@@ -60,10 +60,10 @@ public struct {{Codec.Name}}: Codable, Equatable, GoogleCloudWkt._AnyPackable {
   {{/Enums}}
 
   public static var _anyTypeUrl: String { return "{{Codec.TypeURL}}" }
-  public init(fromAny any: GoogleCloudWkt.`Any`) throws {
-    self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
+  public init(fromAny any: {{Model.Codec.WktPackage}}.`Any`) throws {
+    self = try {{Model.Codec.WktPackage}}._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> GoogleCloudWkt.Struct {
-    return try GoogleCloudWkt._slowAnySerialize(message: self)
+  public func _pack() throws -> {{Model.Codec.WktPackage}}.Struct {
+    return try {{Model.Codec.WktPackage}}._slowAnySerialize(message: self)
   }
 }

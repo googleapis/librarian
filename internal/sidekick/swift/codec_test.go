@@ -87,9 +87,30 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	codec, err := newCodec(model, cfg, nil, ".")
+	swiftCfg := &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: "GoogleCloudWkt", ApiPackage: wellKnownPackage},
+			},
+		},
+	}
+	codec, err := newCodec(model, cfg, swiftCfg, ".")
 	if err != nil {
 		t.Fatal(err)
 	}
 	return codec
+}
+
+func (codec *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependency) {
+	t.Helper()
+	for _, d := range deps {
+		dep := &Dependency{SwiftDependency: d}
+		if d.ApiPackage != "" {
+			if _, ok := codec.ApiPackages[d.ApiPackage]; ok {
+				t.Fatalf("conflicting definition for %s", d.ApiPackage)
+			}
+			codec.ApiPackages[d.ApiPackage] = dep
+		}
+		codec.Dependencies = append(codec.Dependencies, dep)
+	}
 }

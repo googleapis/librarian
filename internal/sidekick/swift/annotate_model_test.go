@@ -66,14 +66,6 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			codec := newTestCodec(t, test.model, map[string]string{})
-			wkt := &Dependency{
-				SwiftDependency: config.SwiftDependency{
-					ApiPackage: "google.protobuf",
-					Name:       "GoogleCloudWkt",
-				},
-			}
-			codec.ApiPackages = map[string]*Dependency{wkt.ApiPackage: wkt}
-			codec.Dependencies = []*Dependency{wkt}
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
@@ -112,23 +104,10 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		[]*api.Message{message}, []*api.Enum{}, []*api.Service{})
 	model.State.MessageByID[externalMessage.ID] = externalMessage
 	codec := newTestCodec(t, model, nil)
-	dep1 := &Dependency{
-		SwiftDependency: config.SwiftDependency{
-			ApiPackage: "google.cloud.external.v1",
-			Name:       "external-package",
-		},
-	}
-	dep2 := &Dependency{
-		SwiftDependency: config.SwiftDependency{
-			ApiPackage: "google.cloud.unused.v1",
-			Name:       "unused-package",
-		},
-	}
-	codec.ApiPackages = map[string]*Dependency{
-		"google.cloud.external.v1": dep1,
-		"google.cloud.unused.v1":   dep2,
-	}
-	codec.Dependencies = []*Dependency{dep1, dep2}
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "google.cloud.external.v1", Name: "external-package"},
+		{ApiPackage: "google.cloud.unused.v1", Name: "unused-package"},
+	})
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -144,6 +123,13 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 			SwiftDependency: config.SwiftDependency{
 				ApiPackage: "google.cloud.external.v1",
 				Name:       "external-package",
+			},
+			Required: true,
+		},
+		"GoogleCloudWkt": {
+			SwiftDependency: config.SwiftDependency{
+				ApiPackage: "google.protobuf",
+				Name:       "GoogleCloudWkt",
 			},
 			Required: true,
 		},

@@ -16,6 +16,7 @@ package swift
 
 import (
 	"cmp"
+	"fmt"
 	"maps"
 	"slices"
 
@@ -45,6 +46,13 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	return deps
 }
 
+func (ann *modelAnnotations) WktPackage() string {
+	if dep, ok := ann.DependsOn[wellKnownPackage]; ok {
+		return dep.Name
+	}
+	panic("if the wkt package is missing we would return an error in the annotation phase")
+}
+
 func (codec *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear: codec.GenerationYear,
@@ -61,8 +69,12 @@ func (codec *codec) annotateModel() error {
 	}
 	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
 	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
-	if dep, ok := codec.ApiPackages[wellKnownPackage]; ok && len(codec.Model.Messages) != 0 {
-		dep.Required = true
+	if len(codec.Model.Messages) != 0 {
+		if dep, ok := codec.ApiPackages[wellKnownPackage]; ok {
+			dep.Required = true
+		} else {
+			return fmt.Errorf("missing dependency for `google.protobuf` this is required to generate the `Any` extensions")
+		}
 	}
 	for _, enum := range codec.Model.Enums {
 		if err := codec.annotateEnum(enum, annotations); err != nil {

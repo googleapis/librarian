@@ -20,9 +20,20 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
+
+func testSwiftConfig() *config.SwiftPackage {
+	return &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: "GoogleCloudWkt", ApiPackage: wellKnownPackage},
+			},
+		},
+	}
+}
 
 func TestGenerateMessage_Files(t *testing.T) {
 	outDir := t.TempDir()
@@ -39,7 +50,7 @@ func TestGenerateMessage_Files(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, testSwiftConfig()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -73,7 +84,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, testSwiftConfig()); err != nil {
 		t.Fatal(err)
 	}
 
@@ -128,7 +139,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, testSwiftConfig()); err != nil {
 		t.Fatal(err)
 	}
 

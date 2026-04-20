@@ -56,6 +56,13 @@ func TestGenerate(t *testing.T) {
 			Name:          "GoogleType",
 			APIs:          []*config.API{{Path: "google/type"}},
 			CopyrightYear: "2038",
+			Swift: &config.SwiftPackage{
+				SwiftDefault: config.SwiftDefault{
+					Dependencies: []config.SwiftDependency{
+						{Name: "GoogleCloudWkt", ApiPackage: "google.protobuf"},
+					},
+				},
+			},
 		},
 	}
 	for _, library := range libraries {
