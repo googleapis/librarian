@@ -334,7 +334,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			src: &config.Source{Dir: "../../../internal/testdata/googleapis"},
+			src: &config.Source{},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -344,7 +344,7 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
+					Googleapis: &config.Source{},
 				},
 				Libraries: []*config.Library{
 					{
