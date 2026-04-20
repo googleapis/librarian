@@ -261,7 +261,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
-			applyJavaArtifactOverrides(name, javaAPI)
+			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
@@ -394,38 +394,17 @@ func parseArtifactID(distributionName, name string) string {
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
 // they don't follow the standard pattern.
-func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
-	switch {
-	case name == "datastore" && api.Path == "google/datastore/admin/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/docs":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/drive":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/gmail":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/sheets":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/slides":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
-	case name == "spanner" && api.Path == "google/spanner/admin/instance/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-instance-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-instance-v1"
-	case name == "spanner" && api.Path == "google/spanner/executor/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-executor-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-executor-v1"
-	case name == "errorreporting" && api.Path == "google/devtools/clouderrorreporting/v1beta1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-error-reporting-v1beta1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-error-reporting-v1beta1"
-	case name == "storage" && api.Path == "google/storage/control/v2":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+func applyJavaArtifactOverrides(api *config.JavaAPI) {
+	if override, ok := javaArtifactIDOverrides[api.Path]; ok {
+		if override.protoArtifactID != "" {
+			api.ProtoArtifactIDOverride = override.protoArtifactID
+		}
+		if override.grpcArtifactID != "" {
+			api.GRPCArtifactIDOverride = override.grpcArtifactID
+		}
+		if override.gapicArtifactID != "" {
+			api.GAPICArtifactIDOverride = override.gapicArtifactID
+		}
 	}
 }
 

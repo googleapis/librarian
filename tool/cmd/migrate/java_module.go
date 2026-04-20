@@ -70,4 +70,61 @@ var (
 			"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicyImpl.java",
 		},
 	}
+
+	javaArtifactIDOverrides = map[string]javaArtifactOverrides{
+		"google/datastore/admin/v1": {
+			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
+			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
+		},
+		"google/apps/script/type": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/apps/script/type/docs": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/apps/script/type/drive": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/apps/script/type/gmail": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/apps/script/type/sheets": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/apps/script/type/slides": {
+			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/spanner/admin/database/v1": {
+			protoArtifactID: "proto-google-cloud-spanner-admin-database-v1",
+			grpcArtifactID:  "grpc-google-cloud-spanner-admin-database-v1",
+		},
+		"google/spanner/admin/instance/v1": {
+			protoArtifactID: "proto-google-cloud-spanner-admin-instance-v1",
+			grpcArtifactID:  "grpc-google-cloud-spanner-admin-instance-v1",
+		},
+		"google/spanner/executor/v1": {
+			protoArtifactID: "proto-google-cloud-spanner-executor-v1",
+			grpcArtifactID:  "grpc-google-cloud-spanner-executor-v1",
+		},
+		"google/devtools/clouderrorreporting/v1beta1": {
+			protoArtifactID: "proto-google-cloud-error-reporting-v1beta1",
+			grpcArtifactID:  "grpc-google-cloud-error-reporting-v1beta1",
+		},
+		"google/storage/v2": {
+			protoArtifactID: "proto-google-cloud-storage-v2",
+			grpcArtifactID:  "grpc-google-cloud-storage-v2",
+			gapicArtifactID: "gapic-google-cloud-storage-v2",
+		},
+		"google/storage/control/v2": {
+			protoArtifactID: "proto-google-cloud-storage-control-v2",
+			grpcArtifactID:  "grpc-google-cloud-storage-control-v2",
+			gapicArtifactID: "google-cloud-storage-control",
+		},
+	}
 )
+
+type javaArtifactOverrides struct {
+	protoArtifactID string
+	grpcArtifactID  string
+	gapicArtifactID string
+}
