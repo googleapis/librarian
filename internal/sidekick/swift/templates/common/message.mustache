@@ -63,7 +63,7 @@ public struct {{Codec.Name}}: Codable, Equatable, GoogleCloudWkt._AnyPackable {
   public init(fromAny any: GoogleCloudWkt.`Any`) throws {
     self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
   }
-  public func _pack() throws -> Struct {
+  public func _pack() throws -> GoogleCloudWkt.Struct {
     return try GoogleCloudWkt._slowAnySerialize(message: self)
   }
 }
