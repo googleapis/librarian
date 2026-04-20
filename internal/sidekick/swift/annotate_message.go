@@ -26,6 +26,9 @@ type messageAnnotations struct {
 }
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
+	if dep, ok := codec.ApiPackages[message.Package]; ok {
+		dep.Required = true
+	}
 	if message.Codec != nil {
 		return nil
 	}
