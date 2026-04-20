@@ -32,7 +32,8 @@ type methodAnnotations struct {
 
 // HasQueryParams returns true if the method's default binding has query parameters
 //
-// The mustache templates use this to avoid
+// The mustache templates use this to (1) use a `var query` vs. `let query` for the collection of
+// query parameters, and (2) generate the query parameter encoder only once, and only if needed.
 func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
 }
