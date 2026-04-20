@@ -275,7 +275,7 @@ func TestDeriveAPICoordinates(t *testing.T) {
 			},
 			version: "v1",
 			javaAPI: &config.JavaAPI{
-				GapicArtifactIDOverride: "custom-gapic-artifact",
+				GAPICArtifactIDOverride: "custom-gapic-artifact",
 			},
 			wantProto: Coordinate{
 				GroupID:    "com.google.api.grpc",

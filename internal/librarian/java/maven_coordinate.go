@@ -104,8 +104,8 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 // DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
 func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.JavaAPI) APICoordinate {
-	if javaAPI.GapicArtifactIDOverride != "" {
-		lc.GAPIC.ArtifactID = javaAPI.GapicArtifactIDOverride
+	if javaAPI.GAPICArtifactIDOverride != "" {
+		lc.GAPIC.ArtifactID = javaAPI.GAPICArtifactIDOverride
 	}
 	protoGRPCGroupID := protoGroupID(lc.GAPIC.GroupID)
 	protoArtifactID := javaAPI.ProtoArtifactIDOverride

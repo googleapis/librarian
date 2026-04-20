@@ -225,7 +225,7 @@ func TestCleanPatterns(t *testing.T) {
 					JavaAPIs: []*config.JavaAPI{
 						{
 							Path:                    "google/cloud/secretmanager/v1",
-							GapicArtifactIDOverride: "custom-gapic-artifact",
+							GAPICArtifactIDOverride: "custom-gapic-artifact",
 						},
 					},
 				},

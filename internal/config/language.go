@@ -581,10 +581,10 @@ type JavaAPI struct {
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
-	// GapicArtifactIDOverride overrides the artifact ID for the GAPIC module.
+	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
 	// It determines the module's directory name and is used to derive proto
 	// and gRPC artifact IDs if they are not explicitly overridden.
-	GapicArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
+	GAPICArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
 
 	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
 	// The artifact ID is also used as the name for the module's directory.
