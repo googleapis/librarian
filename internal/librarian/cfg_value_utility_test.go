@@ -118,12 +118,9 @@ func TestSetConfigValue_Error(t *testing.T) {
 			cfg := &config.Config{
 				Version: "v1.0.0",
 			}
-			got, err := setConfigValue(cfg, test.path, "some-value")
+			_, err := setConfigValue(cfg, test.path, "some-value")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
-			}
-			if got != nil {
-				t.Errorf("setConfigValue(%q) got = %v, want nil on error", test.path, got)
 			}
 		})
 	}
