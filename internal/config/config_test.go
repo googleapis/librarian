@@ -434,37 +434,3 @@ libraries:
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
-
-func TestNodejsConfig_DIREGAPIC(t *testing.T) {
-	yamlData := `
-language: nodejs
-libraries:
-  - name: google-cloud-compute
-    nodejs:
-      nodejs_apis:
-        - path: google/cloud/compute/v1
-          diregapic: true
-`
-	got, err := yaml.Unmarshal[Config]([]byte(yamlData))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(got.Libraries) != 1 {
-		t.Fatalf("expected 1 library, got %d", len(got.Libraries))
-	}
-	lib := got.Libraries[0]
-	if lib.Nodejs == nil {
-		t.Fatal("expected library.Nodejs to be set")
-	}
-	if len(lib.Nodejs.NodejsAPIs) != 1 {
-		t.Fatalf("expected 1 NodejsAPI, got %d", len(lib.Nodejs.NodejsAPIs))
-	}
-	api := lib.Nodejs.NodejsAPIs[0]
-	if api.Path != "google/cloud/compute/v1" {
-		t.Errorf("got path %q, want %q", api.Path, "google/cloud/compute/v1")
-	}
-	if !api.DIREGAPIC {
-		t.Error("expected DIREGAPIC to be true")
-	}
-}

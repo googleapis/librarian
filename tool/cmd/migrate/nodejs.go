@@ -143,107 +143,118 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 		if !entry.IsDir() {
 			continue
 		}
-		libraryName := entry.Name()
-		pkgDir := filepath.Join(packagesDir, libraryName)
-
-		// Read package.json.
-		pkgJSON, err := readNodejsPackageJSON(filepath.Join(pkgDir, "package.json"))
+		library, err := buildNodejsLibrary(googleapisDir, packagesDir, entry.Name())
 		if err != nil {
-			return nil, fmt.Errorf("reading package.json for %s: %w", libraryName, err)
+			return nil, err
 		}
-
-		library := &config.Library{
-			Name:    libraryName,
-			Version: pkgJSON.Version,
+		if library != nil {
+			libraries = append(libraries, library)
 		}
-
-		// Read .OwlBot.yaml to get API paths.
-		owlBotPath := filepath.Join(pkgDir, ".OwlBot.yaml")
-		if _, statErr := os.Stat(owlBotPath); statErr == nil {
-			owlBot, err := yaml.Read[owlBotYAML](owlBotPath)
-			if err != nil {
-				return nil, fmt.Errorf("reading .OwlBot.yaml for %s: %w", libraryName, err)
-			}
-			apis, err := parseOwlBotAPIPaths(owlBot, googleapisDir, pkgJSON.Name)
-			if err != nil {
-				return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
-			}
-			for _, api := range apis {
-				info, err := parseBazelNodejsInfo(googleapisDir, api.Path)
-				if err == nil && info != nil && info.diregapic {
-					ensureNodejsPackage(library).NodejsAPIs = append(ensureNodejsPackage(library).NodejsAPIs, &config.NodejsAPI{
-						Path:      api.Path,
-						DIREGAPIC: true,
-					})
-				}
-			}
-			library.APIs = apis
-		}
-		// Extract copyright year from existing generated source files.
-		if year := extractCopyrightYear(pkgDir); year != "" {
-			library.CopyrightYear = year
-		}
-
-		// Check if the npm package name needs to be set explicitly.
-		derivedName := deriveNpmPackageName(libraryName)
-		if pkgJSON.Name != derivedName {
-			ensureNodejsPackage(library).PackageName = pkgJSON.Name
-		}
-
-		// Extract extra dependencies (beyond google-gax).
-		extraDeps := make(map[string]string)
-		for dep, version := range pkgJSON.Dependencies {
-			if dep == "google-gax" {
-				continue
-			}
-			extraDeps[dep] = version
-		}
-		if len(extraDeps) > 0 {
-			ensureNodejsPackage(library).Dependencies = extraDeps
-		}
-
-		// Apply BUILD.bazel fields to the library config.
-		if len(library.APIs) > 0 {
-			info, err := parseBazelNodejsInfo(googleapisDir, library.APIs[0].Path)
-			if err == nil && info != nil {
-				if info.bundleConfig != "" || len(info.extraProtocParameters) > 0 ||
-					info.handwrittenLayer || info.mainService != "" || info.mixins != "" {
-					pkg := ensureNodejsPackage(library)
-					if info.bundleConfig != "" {
-						pkg.BundleConfig = info.bundleConfig
-					}
-					if len(info.extraProtocParameters) > 0 {
-						pkg.ExtraProtocParameters = info.extraProtocParameters
-					}
-					if info.handwrittenLayer {
-						pkg.HandwrittenLayer = true
-					}
-					if info.mainService != "" {
-						pkg.MainService = info.mainService
-					}
-					if info.mixins != "" {
-						pkg.Mixins = info.mixins
-					}
-				}
-			}
-		}
-
-		for _, name := range nodejsConfigFiles {
-			if _, err := os.Stat(filepath.Join(pkgDir, name)); err == nil {
-				library.Keep = append(library.Keep, name)
-			}
-		}
-		for _, dir := range []string{"samples", "system-test"} {
-			dirKeep, err := nodejsSubdirKeep(pkgDir, dir)
-			if err != nil {
-				return nil, fmt.Errorf("collecting %s for %s: %w", dir, libraryName, err)
-			}
-			library.Keep = append(library.Keep, dirKeep...)
-		}
-
-		libraries = append(libraries, library)
 	}
 	return libraries, nil
+}
+
+func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config.Library, error) {
+	pkgDir := filepath.Join(packagesDir, libraryName)
+
+	// Read package.json.
+	pkgJSON, err := readNodejsPackageJSON(filepath.Join(pkgDir, "package.json"))
+	if err != nil {
+		return nil, fmt.Errorf("reading package.json for %s: %w", libraryName, err)
+	}
+
+	library := &config.Library{
+		Name:    libraryName,
+		Version: pkgJSON.Version,
+		Nodejs:  &config.NodejsPackage{},
+	}
+
+	// Read .OwlBot.yaml to get API paths.
+	owlBotPath := filepath.Join(pkgDir, ".OwlBot.yaml")
+	if _, statErr := os.Stat(owlBotPath); statErr == nil {
+		owlBot, err := yaml.Read[owlBotYAML](owlBotPath)
+		if err != nil {
+			return nil, fmt.Errorf("reading .OwlBot.yaml for %s: %w", libraryName, err)
+		}
+		apis, err := parseOwlBotAPIPaths(owlBot, googleapisDir, pkgJSON.Name)
+		if err != nil {
+			return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
+		}
+		library.APIs = apis
+		library.Nodejs.NodejsAPIs = buildNodejsLibraryAPIs(googleapisDir, apis)
+	}
+
+	// Extract copyright year from existing generated source files.
+	if year := extractCopyrightYear(pkgDir); year != "" {
+		library.CopyrightYear = year
+	}
+
+	// Check if the npm package name needs to be set explicitly.
+	if derivedName := deriveNpmPackageName(libraryName); pkgJSON.Name != derivedName {
+		library.Nodejs.PackageName = pkgJSON.Name
+	}
+
+	// Extract extra dependencies (beyond google-gax).
+	extraDeps := make(map[string]string)
+	for dep, version := range pkgJSON.Dependencies {
+		if dep != "google-gax" {
+			extraDeps[dep] = version
+		}
+	}
+	if len(extraDeps) > 0 {
+		library.Nodejs.Dependencies = extraDeps
+	}
+
+	// Apply BUILD.bazel fields to the library config.
+	if len(library.APIs) > 0 {
+		info, err := parseBazelNodejsInfo(googleapisDir, library.APIs[0].Path)
+		if err == nil && info != nil {
+			if info.bundleConfig != "" {
+				library.Nodejs.BundleConfig = info.bundleConfig
+			}
+			if len(info.extraProtocParameters) > 0 {
+				library.Nodejs.ExtraProtocParameters = info.extraProtocParameters
+			}
+			if info.handwrittenLayer {
+				library.Nodejs.HandwrittenLayer = true
+			}
+			if info.mainService != "" {
+				library.Nodejs.MainService = info.mainService
+			}
+			if info.mixins != "" {
+				library.Nodejs.Mixins = info.mixins
+			}
+		}
+	}
+
+	for _, name := range nodejsConfigFiles {
+		if _, err := os.Stat(filepath.Join(pkgDir, name)); err == nil {
+			library.Keep = append(library.Keep, name)
+		}
+	}
+	for _, dir := range []string{"samples", "system-test"} {
+		dirKeep, err := nodejsSubdirKeep(pkgDir, dir)
+		if err != nil {
+			return nil, fmt.Errorf("collecting %s for %s: %w", dir, libraryName, err)
+		}
+		library.Keep = append(library.Keep, dirKeep...)
+	}
+
+	return library, nil
+}
+
+func buildNodejsLibraryAPIs(googleapisDir string, apis []*config.API) []*config.NodejsAPI {
+	var nodejsAPIs []*config.NodejsAPI
+	for _, api := range apis {
+		info, err := parseBazelNodejsInfo(googleapisDir, api.Path)
+		if err == nil && info != nil && info.diregapic {
+			nodejsAPIs = append(nodejsAPIs, &config.NodejsAPI{
+				Path:      api.Path,
+				DIREGAPIC: true,
+			})
+		}
+	}
+	return nodejsAPIs
 }
 
 func readNodejsPackageJSON(path string) (*nodejsPackageJSON, error) {
@@ -350,15 +361,6 @@ func parseBazelNodejsInfo(googleapisDir, apiDir string) (*nodejsGapicInfo, error
 		info.handwrittenLayer = true
 	}
 	return info, nil
-}
-
-// ensureNodejsPackage returns the Nodejs field of the library, initializing
-// it if nil.
-func ensureNodejsPackage(l *config.Library) *config.NodejsPackage {
-	if l.Nodejs == nil {
-		l.Nodejs = &config.NodejsPackage{}
-	}
-	return l.Nodejs
 }
 
 // copyrightYearRegex matches "Copyright YYYY Google" in a file header.
