@@ -182,6 +182,10 @@ func TestGenerateService_WithImports(t *testing.T) {
 					ApiPackage: "google.cloud.external.v1",
 					Name:       "GoogleCloudExternalV1",
 				},
+				{
+					ApiPackage: "google.protobuf",
+					Name:       "GoogleCloudWkt",
+				},
 			},
 		},
 	}

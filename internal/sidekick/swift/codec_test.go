@@ -87,7 +87,15 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	cfg := &parser.ModelConfig{
 		Codec: options,
 	}
-	codec, err := newCodec(model, cfg, nil, ".")
+	// Configure the package for well-known types by default.
+	swiftCfg := &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: wellKnownSwiftPackage, ApiPackage: wellKnownPackage},
+			},
+		},
+	}
+	codec, err := newCodec(model, cfg, swiftCfg, ".")
 	if err != nil {
 		t.Fatal(err)
 	}

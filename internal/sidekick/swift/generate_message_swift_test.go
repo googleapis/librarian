@@ -26,6 +26,19 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
+func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
+	t.Helper()
+	deps := []config.SwiftDependency{
+		{Name: "GoogleCloudWkt", ApiPackage: wellKnownPackage},
+	}
+	deps = append(deps, extraDependencies...)
+	return &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: deps,
+		},
+	}
+}
+
 func TestGenerateMessage_Files(t *testing.T) {
 	outDir := t.TempDir()
 
@@ -41,7 +54,7 @@ func TestGenerateMessage_Files(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,7 +88,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -130,7 +143,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -190,20 +203,16 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 		},
 	}
 
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "GoogleCloudExternalV1",
-				},
-				{
-					ApiPackage: "google.cloud.unused.v1",
-					Name:       "GoogleCloudUnusedV1",
-				},
-			},
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
 		},
-	}
+		{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "GoogleCloudUnusedV1",
+		},
+	})
 
 	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)

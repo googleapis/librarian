@@ -81,7 +81,7 @@ func TestGenerateOneOf(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{outer, inner}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 

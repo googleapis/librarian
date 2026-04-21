@@ -24,6 +24,11 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
+const (
+	wellKnownPackage      = "google.protobuf"
+	wellKnownSwiftPackage = "GoogleCloudWkt"
+)
+
 // codec represents the configuration for a Swift sidekick Codec.
 //
 // A sideckick Codec is a package that generates libraries from an `api.API`
