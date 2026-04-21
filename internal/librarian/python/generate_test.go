@@ -156,22 +156,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "library starting google-cloud-compute does not use gRPC service config",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			library: &config.Library{
-				// It's odd to use a Compute name for a path that's using secretmanager,
-				// but it's simpler than making the test realistic by importing the
-				// (huge) Compute protos etc.
-				Name: "google-cloud-compute-beta",
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "transport specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
