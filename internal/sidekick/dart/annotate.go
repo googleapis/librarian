@@ -81,9 +81,9 @@ type modelAnnotations struct {
 	ApiKeyEnvironmentVariables []string
 	// Dart `export` statements e.g.
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
-	Exports               []string
-	FakeList string
-	ProtoPrefix           string
+	Exports     []string
+	FakeList    string
+	ProtoPrefix string
 }
 
 // HasServices returns true if the model has services.
@@ -385,7 +385,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	var fakes []string
 	for _, s := range model.Services {
-		fakes = append(fakes, "Fake" + s.Codec.(*serviceAnnotations).Name)
+		fakes = append(fakes, "Fake"+s.Codec.(*serviceAnnotations).Name)
 	}
 	slices.Sort(fakes)
 
