@@ -156,6 +156,50 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "preview library OptArgsByAPI takes priority",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"stable-opt"},
+					},
+				},
+				Preview: &config.Library{
+					Name: "google-cloud-secret-manager-preview",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Python: &config.PythonPackage{
+						OptArgsByAPI: map[string][]string{
+							"google/cloud/secretmanager/v1": {"preview-opt"},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"stable-opt"},
+					},
+				},
+				Preview: &config.Library{
+					Name:   "google-cloud-secret-manager-preview",
+					Output: "preview-packages/google-cloud-secret-manager",
+					APIs: []*config.API{
+						{Path: "google/cloud/secretmanager/v1"},
+					},
+					Python: &config.PythonPackage{
+						OptArgsByAPI: map[string][]string{
+							"google/cloud/secretmanager/v1": {"preview-opt"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.library)
