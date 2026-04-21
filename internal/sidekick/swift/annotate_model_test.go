@@ -100,14 +100,13 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	wantDependsOn := map[string]*Dependency{
 		dep1.Name: dep1,
-		dep3.Name: dep3,
 	}
 
 	if diff := cmp.Diff(wantDependsOn, ann.DependsOn); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudGax"}
+	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1"}
 	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

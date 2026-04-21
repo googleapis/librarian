@@ -62,7 +62,7 @@ func TestAnnotateService(t *testing.T) {
 				DocLines: test.wantDocs,
 			}
 
-			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "BoilerPlate", "CopyrightYear", "PackageName", "QuickstartMethod", "Model")); diff != "" {
+			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
