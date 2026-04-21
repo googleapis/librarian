@@ -82,6 +82,7 @@ type modelAnnotations struct {
 	// Dart `export` statements e.g.
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports     []string
+	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
 	FakeList    string
 	ProtoPrefix string
 }
@@ -457,7 +458,6 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 		Exports:                    exports,
-		// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
 		FakeList:    strings.Join(fakes, ", "),
 		ProtoPrefix: protobufPrefix,
 	}
