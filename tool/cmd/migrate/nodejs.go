@@ -148,9 +148,8 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 		if err != nil {
 			return nil, err
 		}
-		if library != nil {
-			libraries = append(libraries, library)
-		}
+
+		libraries = append(libraries, library)
 	}
 	return libraries, nil
 }
