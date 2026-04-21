@@ -122,9 +122,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		// Add API-level additional protos.
 		protos = append(protos, nodejsAPI.AdditionalProtos...)
+		res.DIREGAPIC = nodejsAPI.DIREGAPIC
 		break
 	}
-
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -187,6 +187,12 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguageNodejs) {
 		args = append(args, "--rest-numeric-enums")
 	}
+
+	nodejsAPI := resolveNodejsAPI(library, api)
+	if nodejsAPI.DIREGAPIC {
+		args = append(args, "--diregapic")
+	}
+
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
 			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))

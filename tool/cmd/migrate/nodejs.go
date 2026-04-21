@@ -84,6 +84,7 @@ type owlBotCopyRule struct {
 type nodejsGapicInfo struct {
 	packageName           string
 	bundleConfig          string
+	diregapic             bool
 	extraProtocParameters []string
 	handwrittenLayer      bool
 	mainService           string
@@ -167,9 +168,17 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 			if err != nil {
 				return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
 			}
+			for _, api := range apis {
+				info, err := parseBazelNodejsInfo(googleapisDir, api.Path)
+				if err == nil && info != nil && info.diregapic {
+					ensureNodejsPackage(library).NodejsAPIs = append(ensureNodejsPackage(library).NodejsAPIs, &config.NodejsAPI{
+						Path:      api.Path,
+						DIREGAPIC: true,
+					})
+				}
+			}
 			library.APIs = apis
 		}
-
 		// Extract copyright year from existing generated source files.
 		if year := extractCopyrightYear(pkgDir); year != "" {
 			library.CopyrightYear = year
@@ -333,6 +342,9 @@ func parseBazelNodejsInfo(googleapisDir, apiDir string) (*nodejsGapicInfo, error
 		extraProtocParameters: rule.AttrStrings("extra_protoc_parameters"),
 		mainService:           rule.AttrString("main_service"),
 		mixins:                rule.AttrString("mixins"),
+	}
+	if rule.AttrLiteral("diregapic") == "True" {
+		info.diregapic = true
 	}
 	if rule.AttrLiteral("handwritten_layer") == "True" {
 		info.handwrittenLayer = true
