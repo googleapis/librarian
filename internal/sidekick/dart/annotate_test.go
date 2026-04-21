@@ -57,6 +57,28 @@ func TestAnnotateModel(t *testing.T) {
 	}
 }
 
+func TestAnnotateModel_FakeList(t *testing.T) {
+	service1 := &api.Service{Name: "SecretManagerService", Package: "google.cloud.secretmanager"}
+	service2 := &api.Service{Name: "AccessApprovalService", Package: "google.cloud.accessapproval"}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{service1, service2})
+	model.PackageName = "test"
+
+	options := maps.Clone(requiredConfig)
+
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(options)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec := model.Codec.(*modelAnnotations)
+
+	want := "FakeAccessApprovalService, FakeSecretManagerService"
+	if diff := cmp.Diff(want, codec.FakeList); diff != "" {
+		t.Errorf("mismatch in Codec.FakeList (-want, +got)\n:%s", diff)
+	}
+}
+
 func TestAnnotateModel_Options(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 
@@ -389,45 +411,45 @@ func TestCalculateDependencies(t *testing.T) {
 
 func TestCalculateImports(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		imports     []string
-		packageName string
-		fileName    string
-		want        []string
+		name         string
+		imports      []string
+		packageName  string
+		mainFileName string
+		want         []string
 	}{
 		{
-			name:        "dart: import",
-			imports:     []string{"dart:typed_data"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'dart:typed_data';"},
+			name:         "dart: import",
+			imports:      []string{"dart:typed_data"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'dart:typed_data';"},
 		},
 		{
-			name:        "dart: import with prefix",
-			imports:     []string{"dart:typed_data as td"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'dart:typed_data' as td;"},
+			name:         "dart: import with prefix",
+			imports:      []string{"dart:typed_data as td"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'dart:typed_data' as td;"},
 		},
 		{
-			name:        "package: import",
-			imports:     []string{"package:http/http.dart"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'package:http/http.dart';"},
+			name:         "package: import",
+			imports:      []string{"package:http/http.dart"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'package:http/http.dart';"},
 		},
 		{
-			name:        "package: import with prefix",
-			imports:     []string{"package:http/http.dart as http"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'package:http/http.dart' as http;"},
+			name:         "package: import with prefix",
+			imports:      []string{"package:http/http.dart as http"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'package:http/http.dart' as http;"},
 		},
 		{
-			name:        "dart: and package: imports",
-			imports:     []string{"dart:typed_data", "package:http/http.dart"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
+			name:         "dart: and package: imports",
+			imports:      []string{"dart:typed_data", "package:http/http.dart"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
 			want: []string{
 				"import 'dart:typed_data';",
 				"",
@@ -435,44 +457,52 @@ func TestCalculateImports(t *testing.T) {
 			},
 		},
 		{
-			name:        "same file import",
-			imports:     []string{"package:google_cloud_bar/bar.dart"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        nil,
+			name:         "same file import",
+			imports:      []string{"package:google_cloud_bar/bar.dart"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         nil,
 		},
 		{
-			name:        "same file import with prefix",
-			imports:     []string{"package:google_cloud_bar/bar.dart as bar"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        nil,
+			name:         "same file import with prefix",
+			imports:      []string{"package:google_cloud_bar/bar.dart as bar"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         nil,
 		},
 		{
-			name:        "same package import",
-			imports:     []string{"package:google_cloud_bar/baz.dart"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'baz.dart';"},
+			name:         "same package import",
+			imports:      []string{"package:google_cloud_bar/baz.dart"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'baz.dart';"},
 		},
 		{
-			name:        "same package import with prefix",
-			imports:     []string{"package:google_cloud_bar/baz.dart as baz"},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
-			want:        []string{"import 'baz.dart' as baz;"},
+			name:         "same package import, src directory",
+			imports:      []string{"package:google_cloud_bar/src/baz.dart"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'baz.dart';"},
+		},
+		{
+			name:         "same package import with prefix",
+			imports:      []string{"package:google_cloud_bar/baz.dart as baz"},
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
+			want:         []string{"import 'baz.dart' as baz;"},
 		},
 		{
 			name: "many imports", imports: []string{
 				"package:google_cloud_foo/foo.dart",
 				"package:google_cloud_bar/bar.dart as bar",
+				"package:google_cloud_bar/src/bing.dart",
 				"package:google_cloud_bar/src/foo.dart as foo",
 				"package:google_cloud_bar/baz.dart",
 				"dart:core",
 				"dart:io as io",
 			},
-			packageName: "google_cloud_bar",
-			fileName:    "bar.dart",
+			packageName:  "google_cloud_bar",
+			mainFileName: "bar.dart",
 			want: []string{
 				"import 'dart:core';",
 				"import 'dart:io' as io;",
@@ -480,7 +510,8 @@ func TestCalculateImports(t *testing.T) {
 				"import 'package:google_cloud_foo/foo.dart';",
 				"",
 				"import 'baz.dart';",
-				"import 'src/foo.dart' as foo;",
+				"import 'bing.dart';",
+				"import 'foo.dart' as foo;",
 			},
 		},
 	} {
@@ -489,7 +520,7 @@ func TestCalculateImports(t *testing.T) {
 			for _, imp := range test.imports {
 				deps[imp] = true
 			}
-			got := calculateImports(deps, test.packageName, test.fileName)
+			got := calculateImports(deps, test.packageName, test.mainFileName)
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in calculateImports (-want, +got)\n:%s", diff)

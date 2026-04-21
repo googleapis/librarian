@@ -537,6 +537,9 @@ func calculateImports(imports map[string]bool, curPkgName string, curMainFileNam
 					continue
 				}
 
+				// If the package is imported from the "src" directory, then remove
+				// the "src/" prefix because the generated file is also in the "src/"
+				// directory.
 				localImports = append(localImports, formatImport(strings.TrimPrefix(pathAndAlias, "src/")))
 			} else {
 				packageImports = append(packageImports, formatImport(imp))
