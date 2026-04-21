@@ -310,7 +310,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging")
+			nodejsAPI := resolveNodejsAPI(test.library, test.api)
+			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
 			if err != nil {
 				t.Fatal(err)
 			}
