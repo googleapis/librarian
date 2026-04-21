@@ -457,8 +457,9 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 		Exports:                    exports,
-		FakeList:                   strings.Join(fakes, ", "),
-		ProtoPrefix:                protobufPrefix,
+		// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
+		FakeList:    strings.Join(fakes, ", "),
+		ProtoPrefix: protobufPrefix,
 	}
 
 	model.Codec = ann
