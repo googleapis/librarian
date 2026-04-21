@@ -1,0 +1,59 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package java
+
+import (
+	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+)
+
+func TestAdd(t *testing.T) {
+	lib := &config.Library{
+		Name: "test-library",
+	}
+	want := &config.Library{
+		Name:    "test-library",
+		Version: defaultVersion,
+	}
+	got := Add(lib)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestDefaultLibraryName(t *testing.T) {
+	for _, test := range []struct {
+		api  string
+		want string
+	}{
+		{"google/cloud/secretmanager/v1", "secretmanager"},
+		{"google/api/serviceusage/v1", "serviceusage"},
+		{"google/devtools/cloudbuild/v1", "cloudbuild"},
+		{"google/pubsub/v1", "pubsub"},
+		{"other/api/v1", "other-api"},
+		{"google/cloud/datacatalog/lineage/v1", "datacatalog-lineage"},
+		{"google/cloud/aiplatform/v1beta1", "aiplatform"},
+		{"google/shopping/merchant/datasources/v1", "shopping-merchant-datasources"},
+	} {
+		t.Run(test.api, func(t *testing.T) {
+			got := DefaultLibraryName(test.api)
+			if got != test.want {
+				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.api, got, test.want)
+			}
+		})
+	}
+}
