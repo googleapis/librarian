@@ -81,8 +81,9 @@ type modelAnnotations struct {
 	ApiKeyEnvironmentVariables []string
 	// Dart `export` statements e.g.
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
-	Exports     []string
-	ProtoPrefix string
+	Exports               []string
+	FakeList string
+	ProtoPrefix           string
 }
 
 // HasServices returns true if the model has services.
@@ -382,6 +383,12 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		annotate.annotateService(s)
 	}
 
+	var fakes []string
+	for _, s := range model.Services {
+		fakes = append(fakes, "Fake" + s.Codec.(*serviceAnnotations).Name)
+	}
+	slices.Sort(fakes)
+
 	// Remove our package self-reference.
 	delete(annotate.imports, model.PackageName)
 
@@ -450,6 +457,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		ReadMeQuickstartText:       readMeQuickstartText,
 		ApiKeyEnvironmentVariables: apiKeyEnvironmentVariables,
 		Exports:                    exports,
+		FakeList:                   strings.Join(fakes, ", "),
 		ProtoPrefix:                protobufPrefix,
 	}
 
@@ -498,7 +506,7 @@ func calculateDependencies(packages map[string]bool, constraints map[string]stri
 // For example:
 // `{"dart:io": true, "package:http/http.dart as http": true}` to
 // `{"import 'dart:io';", "", "import 'package:http/http.dart' as http;"}`.
-func calculateImports(imports map[string]bool, curPkgName string, curFileName string) []string {
+func calculateImports(imports map[string]bool, curPkgName string, curMainFileName string) []string {
 	var dartImports []string
 	var packageImports []string
 	var localImports []string
@@ -525,11 +533,11 @@ func calculateImports(imports map[string]bool, curPkgName string, curFileName st
 				pathAndAlias := strings.TrimPrefix(body, curPkgName+"/")
 
 				pathOnly := strings.Split(pathAndAlias, " ")[0]
-				if pathOnly == curFileName {
+				if pathOnly == curMainFileName {
 					continue
 				}
 
-				localImports = append(localImports, formatImport(pathAndAlias))
+				localImports = append(localImports, formatImport(strings.TrimPrefix(pathAndAlias, "src/")))
 			} else {
 				packageImports = append(packageImports, formatImport(imp))
 			}

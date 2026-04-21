@@ -13,22 +13,11 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-// Copyright {{Codec.CopyrightYear}} Google LLC
-{{#Codec.BoilerPlate}}
-//{{{.}}}
-{{/Codec.BoilerPlate}}
 
-/// The Google Cloud client for the {{Title}}.
-///
-{{#Codec.DocLines}}
-{{{.}}}
-{{/Codec.DocLines}}
-library;
-
-// ignore_for_file: comment_references {{! TODO(#25): improve the generated dartdocs }}
-// ignore_for_file: unintended_html_in_doc_comment {{! TODO(#25): improve the generated dartdocs }}
-
-export 'src/api.g.dart' 
-{{#Codec.FakeList}}
-hide {{Codec.FakeList}}
-{{/Codec.FakeList}};
+/// Testing fake for [{{Codec.Name}}].
+base class Fake{{Codec.Name}} implements {{Codec.Name}} {
+  @override
+  dynamic noSuchMethod(Invocation invocation) {
+    throw UnsupportedError('Fake{{Codec.Name}}.${invocation.memberName} must be overridden');
+  }
+}
