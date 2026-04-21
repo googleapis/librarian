@@ -28,7 +28,7 @@ type enumAnnotations struct {
 	DefaultCaseName string
 }
 
-func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) (*api.Enum, error) {
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
@@ -43,12 +43,12 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 		if len(enum.UniqueNumberValues) != 0 {
 			defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
 		} else {
-			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
+			return nil, fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
 		}
 	}
 	for _, ev := range enum.Values {
-		if err := codec.annotateEnumValue(ev, existing); err != nil {
-			return err
+		if _, err := codec.annotateEnumValue(ev, existing); err != nil {
+			return nil, err
 		}
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 	}
@@ -63,5 +63,5 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 	}
 
 	enum.Codec = annotations
-	return nil
+	return enum, nil
 }

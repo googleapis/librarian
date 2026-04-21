@@ -35,7 +35,7 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err != nil {
 		return err
 	}
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		return err
 	}
 	provider := func(name string) (string, error) {

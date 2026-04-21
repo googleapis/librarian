@@ -27,7 +27,7 @@ type enumValueAnnotations struct {
 	DocLines    []string
 }
 
-func (codec *codec) annotateUniqueEnumValue(ev *api.EnumValue) {
+func (codec *codec) annotateUniqueEnumValue(ev *api.EnumValue) *api.EnumValue {
 	docLines := codec.formatDocumentation(ev.Documentation)
 	ann := &enumValueAnnotations{
 		CaseName:    enumValueCaseName(ev),
@@ -36,15 +36,16 @@ func (codec *codec) annotateUniqueEnumValue(ev *api.EnumValue) {
 		DocLines:    docLines,
 	}
 	ev.Codec = ann
+	return ev
 }
 
-func (codec *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumValueAnnotations) error {
+func (codec *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumValueAnnotations) (*api.EnumValue, error) {
 	if ev.Codec != nil {
-		return nil
+		return ev, nil
 	}
 	existing, ok := unique[ev.Number]
 	if !ok {
-		return fmt.Errorf("expected an existing annotation for %s as it duplicates the integer value %d", ev.Name, ev.Number)
+		return nil, fmt.Errorf("expected an existing annotation for %s as it duplicates the integer value %d", ev.Name, ev.Number)
 	}
 	ann := &enumValueAnnotations{
 		CaseName:    existing.CaseName,
@@ -52,5 +53,5 @@ func (codec *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumV
 		StringValue: ev.Name,
 	}
 	ev.Codec = ann
-	return nil
+	return ev, nil
 }

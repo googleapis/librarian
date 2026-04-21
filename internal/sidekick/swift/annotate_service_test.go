@@ -53,7 +53,7 @@ func TestAnnotateService(t *testing.T) {
 			model := api.NewTestAPI(nil, nil, []*api.Service{s})
 			codec := newTestCodec(t, model, nil)
 
-			if err := codec.annotateModel(); err != nil {
+			if _, err := annotateModel(codec); err != nil {
 				t.Fatal(err)
 			}
 
@@ -117,7 +117,7 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 
 	model := api.NewTestAPI(nil, nil, []*api.Service{service})
 	codec := newTestCodec(t, model, nil)
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -180,7 +180,7 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			if _, err := annotateModel(codec); err != nil {
 				t.Fatal(err)
 			}
 

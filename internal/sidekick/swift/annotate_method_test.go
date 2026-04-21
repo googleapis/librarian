@@ -145,7 +145,7 @@ func TestAnnotateMethod(t *testing.T) {
 			}
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
-			if err := codec.annotateModel(); err != nil {
+			if _, err := annotateModel(codec); err != nil {
 				t.Fatal(err)
 			}
 			got := test.method.Codec.(*methodAnnotations)
@@ -199,7 +199,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
 			codec := newTestCodec(t, model, nil)
 
-			if err := codec.annotateModel(); err != nil {
+			if _, err := annotateModel(codec); err != nil {
 				t.Fatal(err)
 			}
 
@@ -246,7 +246,7 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 	model.State.MessageByID[outputMessage.ID] = outputMessage
 	codec := newTestCodec(t, model, nil)
 
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 

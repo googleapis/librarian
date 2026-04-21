@@ -28,7 +28,7 @@ func TestModelAnnotations(t *testing.T) {
 		[]*api.Message{}, []*api.Enum{},
 		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
 	codec := newTestCodec(t, model, map[string]string{"copyright-year": "2038"})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 	want := &modelAnnotations{
@@ -90,7 +90,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	}
 	codec.Dependencies = []*Dependency{dep1, dep2, dep3}
 
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 

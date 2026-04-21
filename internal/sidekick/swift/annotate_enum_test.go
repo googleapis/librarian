@@ -70,7 +70,7 @@ func TestAnnotateEnum(t *testing.T) {
 			}
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 			codec := newTestCodec(t, model, map[string]string{})
-			if err := codec.annotateModel(); err != nil {
+			if _, err := annotateModel(codec); err != nil {
 				t.Fatal(err)
 			}
 			want := &enumAnnotations{
@@ -95,7 +95,7 @@ func TestAnnotateEnum_Error(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
 
-	err := codec.annotateModel()
+	_, err := annotateModel(codec)
 	if err == nil {
 		t.Errorf("annotateModel() expected error for enum with no values, got nil")
 	}

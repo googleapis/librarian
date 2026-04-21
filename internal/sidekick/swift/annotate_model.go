@@ -46,7 +46,7 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	return deps
 }
 
-func (codec *codec) annotateModel() error {
+func annotateModel(codec *codec) (*codec, error) {
 	annotations := &modelAnnotations{
 		CopyrightYear: codec.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
@@ -56,18 +56,18 @@ func (codec *codec) annotateModel() error {
 	}
 	codec.Model.Codec = annotations
 	for _, message := range codec.Model.Messages {
-		if err := codec.annotateMessage(message, annotations); err != nil {
-			return err
+		if _, err := codec.annotateMessage(message, annotations); err != nil {
+			return nil, err
 		}
 	}
 	for _, enum := range codec.Model.Enums {
-		if err := codec.annotateEnum(enum, annotations); err != nil {
-			return err
+		if _, err := codec.annotateEnum(enum, annotations); err != nil {
+			return nil, err
 		}
 	}
 	for _, service := range codec.Model.Services {
-		if err := codec.annotateService(service, annotations); err != nil {
-			return err
+		if _, err := codec.annotateService(service, annotations); err != nil {
+			return nil, err
 		}
 	}
 	var imports []string
@@ -81,5 +81,5 @@ func (codec *codec) annotateModel() error {
 	}
 	slices.Sort(imports)
 	annotations.MessageImports = imports
-	return nil
+	return codec, nil
 }

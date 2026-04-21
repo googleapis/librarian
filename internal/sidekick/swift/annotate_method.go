@@ -38,15 +38,15 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
 }
 
-func (codec *codec) annotateMethod(method *api.Method, model *modelAnnotations) error {
+func (codec *codec) annotateMethod(method *api.Method, model *modelAnnotations) (*api.Method, error) {
 	if method.InputType != nil {
-		if err := codec.annotateMessage(method.InputType, model); err != nil {
-			return err
+		if _, err := codec.annotateMessage(method.InputType, model); err != nil {
+			return nil, err
 		}
 	}
 	if method.OutputType != nil {
-		if err := codec.annotateMessage(method.OutputType, model); err != nil {
-			return err
+		if _, err := codec.annotateMessage(method.OutputType, model); err != nil {
+			return nil, err
 		}
 	}
 	docLines := codec.formatDocumentation(method.Documentation)
@@ -68,5 +68,5 @@ func (codec *codec) annotateMethod(method *api.Method, model *modelAnnotations) 
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
 	}
-	return nil
+	return method, nil
 }

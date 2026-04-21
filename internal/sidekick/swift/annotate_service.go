@@ -28,13 +28,13 @@ type serviceAnnotations struct {
 	QuickstartMethod *api.Method
 }
 
-func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) error {
+func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) (*api.Service, error) {
 	docLines := codec.formatDocumentation(service.Documentation)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
-			if err := codec.annotateMethod(method, model); err != nil {
-				return err
+			if _, err := codec.annotateMethod(method, model); err != nil {
+				return nil, err
 			}
 			restMethods = append(restMethods, method)
 		}
@@ -53,7 +53,7 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 		QuickstartMethod: quickstartMethod,
 	}
 	service.Codec = annotations
-	return nil
+	return service, nil
 }
 
 func isGeneratedMethod(method *api.Method) bool {

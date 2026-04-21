@@ -38,7 +38,7 @@ func TestAnnotateMessage(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 	want := &messageAnnotations{
@@ -60,7 +60,7 @@ func TestAnnotateMessage_EscapedName(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 	want := &messageAnnotations{

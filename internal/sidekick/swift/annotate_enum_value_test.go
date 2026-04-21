@@ -29,7 +29,7 @@ func TestAnnotateEnumValue_WithDocs(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -59,7 +59,7 @@ func TestAnnotateEnumValue_Multiple(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 
@@ -97,7 +97,7 @@ func TestAnnotateEnumValue_Aliases(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
 	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
+	if _, err := annotateModel(codec); err != nil {
 		t.Fatal(err)
 	}
 
