@@ -43,6 +43,7 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-go-grpc")
 	testhelper.RequireCommand(t, "protoc-gen-go_gapic")
 	repoRoot := t.TempDir()
+	setupSnippets(t, repoRoot)
 	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
@@ -435,6 +436,7 @@ func TestGenerateLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			repoRoot := t.TempDir()
+			setupSnippets(t, repoRoot)
 			if err := os.MkdirAll(filepath.Join(repoRoot, "internal"), 0777); err != nil {
 				t.Fatal(err)
 			}
@@ -478,11 +480,7 @@ func TestGenerateREADME(t *testing.T) {
 		Output: dir,
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := generateREADME(library, api, moduleRoot); err != nil {
+	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
 		t.Fatal(err)
 	}
 	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
@@ -498,7 +496,7 @@ func TestGenerateREADME(t *testing.T) {
 	}
 }
 
-func TestGenerateREADME_Skipped(t *testing.T) {
+func TestGenerateREADME_TitleOverride(t *testing.T) {
 	dir := t.TempDir()
 	moduleRoot := filepath.Join(dir, "secretmanager")
 	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
@@ -506,21 +504,66 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:   "secretmanager",
-		Output: dir,
-		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		Keep:   []string{"README.md"},
+		Name:          "secretmanager",
+		Output:        dir,
+		APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		TitleOverride: "Custom Title",
 	}
-	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageGo)
+	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := generateREADME(library, api, moduleRoot); err != nil {
-		t.Fatal(err)
+	s := string(content)
+	if !strings.Contains(s, "Custom Title") {
+		t.Errorf("want overridden title in README, got:\n%s", s)
 	}
-	// README doesn't exist because the generation is skipped.
-	if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("want README.md to not exist, got: %v", err)
+	if strings.Contains(s, "Secret Manager API") {
+		t.Errorf("did not want original title in README, got:\n%s", s)
+	}
+}
+
+func TestGenerateREADME_Skipped(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		fallbackTitle string
+	}{
+		{
+			name: "skipped because in keep list",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Keep: []string{"README.md"},
+			},
+			fallbackTitle: "Secret Manager API",
+		},
+		{
+			name: "skipped because no title",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			fallbackTitle: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			moduleRoot := filepath.Join(dir, "secretmanager")
+			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := generateREADME(test.library, test.fallbackTitle, moduleRoot); err != nil {
+				t.Fatal(err)
+			}
+			// README doesn't exist because the generation is skipped.
+			if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
+				t.Errorf("want README.md to not exist, got: %v", err)
+			}
+		})
 	}
 }
 
@@ -607,6 +650,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 		name          string
 		apiPath       string
 		goAPI         *config.GoAPI
+		version       string
 		googleapisDir string
 		want          []string
 	}{
@@ -762,7 +806,7 @@ func TestBuildGAPICOpts(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
+			got, err := buildGAPICOpts(test.apiPath, test.goAPI, test.version, test.googleapisDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -803,7 +847,7 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := buildGAPICOpts(test.apiPath, test.goAPI, test.googleapisDir)
+			_, err := buildGAPICOpts(test.apiPath, test.goAPI, "", test.googleapisDir)
 			if err == nil {
 				t.Fatal("expected error")
 			}
@@ -946,7 +990,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			outDir, apiDir, snippetDir, lib := test.setup(t, tmpDir)
-			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir)
+			err := moveGeneratedFiles(lib, lib.Go.GoAPIs[0], outDir, outDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -963,5 +1007,98 @@ func TestMoveGeneratedFiles(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestUpdateSnippetsModule(t *testing.T) {
+	testhelper.RequireCommand(t, "go")
+	repoRoot := t.TempDir()
+	setupSnippets(t, repoRoot)
+	snippetsGoMod := filepath.Join(repoRoot, "internal", "generated", "snippets", "go.mod")
+
+	library := &config.Library{
+		Name: "secretmanager",
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					Path:       "google/cloud/secretmanager/v1",
+					NoSnippets: false,
+				},
+			},
+		},
+	}
+	outDir := filepath.Join(repoRoot, "secretmanager")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check if go.mod was updated with require and replace.
+	content, err := os.ReadFile(snippetsGoMod)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(content)
+	wantRequire := "require cloud.google.com/go/secretmanager v0.0.0"
+	wantReplace := "replace cloud.google.com/go/secretmanager => ../../../secretmanager"
+
+	if !strings.Contains(got, wantRequire) {
+		t.Errorf("snippets/go.mod missing expected require:\n%s", got)
+	}
+	if !strings.Contains(got, wantReplace) {
+		t.Errorf("snippets/go.mod missing expected replace:\n%s", got)
+	}
+}
+
+func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
+	testhelper.RequireCommand(t, "go")
+	repoRoot := t.TempDir()
+	setupSnippets(t, repoRoot)
+	snippetsGoMod := filepath.Join(repoRoot, "internal", "generated", "snippets", "go.mod")
+
+	initialContent := "module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"
+
+	library := &config.Library{
+		Name: "secretmanager",
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					Path:       "google/cloud/secretmanager/v1",
+					NoSnippets: true,
+				},
+			},
+		},
+	}
+	outDir := filepath.Join(repoRoot, "secretmanager")
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	// Check if go.mod was NOT updated.
+	content, err := os.ReadFile(snippetsGoMod)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(content) != initialContent {
+		t.Errorf("snippets/go.mod was updated unexpectedly:\ngot:\n%s\nwant:\n%s", string(content), initialContent)
+	}
+}
+
+func setupSnippets(t *testing.T, repoRoot string) {
+	t.Helper()
+	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
+	if err := os.MkdirAll(snippetsDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
+	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
+		t.Fatal(err)
 	}
 }

@@ -57,7 +57,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 		SpecificationSource: specSource,
 		Source:              src,
 		ServiceConfig:       svcConfig.ServiceConfig,
-		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust)),
+		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust, library.Version)),
 		Override: api.ModelOverride{
 			Description: library.DescriptionOverride,
 			Title:       svcConfig.Title,
@@ -240,16 +240,12 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 		}
 	}
 
-	language := config.LanguageRust
-	if module.Language != "" {
-		language = module.Language
-	}
 	specificationFormat := config.SpecProtobuf
 	if module.SpecificationFormat != "" {
 		specificationFormat = module.SpecificationFormat
 	}
-	if module.IncludeList != "" {
-		src.IncludeList = strings.Split(module.IncludeList, ",")
+	if len(module.IncludeList) > 0 {
+		src.IncludeList = module.IncludeList
 	}
 	resourceNameHeuristic := library.Rust != nil && library.Rust.ResourceNameHeuristic != nil && *library.Rust.ResourceNameHeuristic
 	if module.ResourceNameHeuristic != nil {
@@ -257,7 +253,7 @@ func moduleToModelConfig(library *config.Library, module *config.RustModule, src
 	}
 
 	modelCfg := &parser.ModelConfig{
-		Language:            language,
+		Language:            config.LanguageRust,
 		SpecificationFormat: specificationFormat,
 		ServiceConfig:       module.ServiceConfig,
 		SpecificationSource: module.APIPath,

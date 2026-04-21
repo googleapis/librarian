@@ -57,6 +57,7 @@ This document describes the schema for the librarian.yaml.
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
 ## CargoTool Configuration
 
@@ -83,6 +84,13 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
 
+## GoTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the go module name. |
+| `version` | string | Is the version to install. |
+
 ## Default Configuration
 
 | Field | Type | Description |
@@ -96,6 +104,7 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
+| `swift` | [SwiftDefault](#swiftdefault-configuration) (optional) | Contains Swift-specific default configuration. |
 
 ## Library Configuration
 
@@ -107,6 +116,7 @@ This document describes the schema for the librarian.yaml.
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
 | `description_override` | string | Overrides the library description. |
+| `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
@@ -240,11 +250,14 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
-| `samples` | bool (optional) | Determines whether to generate samples for the API. |
 | `path` | string | Is the source path. |
-| `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
+| `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
+| `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
+| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
+| `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
 ## JavaModule Configuration
 
@@ -273,6 +286,7 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
+| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. |
 
 ## NodejsAPI Configuration
 
@@ -316,7 +330,7 @@ This document describes the schema for the librarian.yaml.
 | `api_id_override` | string | Allows the "api_id" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses of this field to only cases where it's really needed. |
 | `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
-| `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default it's the package name, but older packages use the API short name instead. |
+| `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 | `skip_readme_copy` | bool | Prevents generation from copying README.rst from the root directory to the docs directory. TODO(https://github.com/googleapis/librarian/issues/4738): revisit whether or not this field should exist after migration. |
 
@@ -386,10 +400,9 @@ This document describes the schema for the librarian.yaml.
 | `has_veneer` | bool | Indicates whether this module has a handwritten wrapper. |
 | `included_ids` | list of string | Is a list of proto IDs to include in generation. |
 | `include_grpc_only_methods` | bool | Indicates whether to include gRPC-only methods. |
-| `include_list` | string | Is a list of proto files to include (e.g., "date.proto,expr.proto"). |
+| `include_list` | yaml.StringSlice | Is a list of proto files to include (e.g., "date.proto", "expr.proto"). |
 | `include_streaming_methods` | bool | Indicates whether to include gRPC streaming methods. |
 | `internal_builders` | bool | Indicates whether generated builders should be internal to the crate. |
-| `language` | string | Can be used to select a variation of the Rust generator. For example, `rust_storage` enables special handling for the storage client. |
 | `module_path` | string | Is the Rust module path for converters (e.g., "crate::generated::gapic::model"). |
 | `module_roots` | map[string]string |  |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
@@ -402,7 +415,7 @@ This document describes the schema for the librarian.yaml.
 | `skipped_ids` | list of string | Is a list of proto IDs to skip in generation. |
 | `specification_format` | string | Overrides the library-level specification format. |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
-| `template` | string | Specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod". |
+| `template` | string | Specifies which generator template to use. Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage". |
 
 ## RustPackageDependency Configuration
 

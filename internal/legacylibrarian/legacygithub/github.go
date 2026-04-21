@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math/rand"
 	"net/http"
 	"net/url"
 	"strings"
@@ -30,9 +31,10 @@ import (
 )
 
 const (
-	maxRetries = 3
+	maxRetries = 5
 	retryDelay = 2 * time.Second
 	maxDelay   = 60 * time.Second
+	multiplier = 2.0
 )
 
 type retryableTransport struct {
@@ -46,6 +48,7 @@ type retryableTransport struct {
 func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error) {
 	var resp *http.Response
 	var err error
+	b := newBackoff()
 	for i := 0; i < maxRetries; i++ {
 		resp, err = t.transport.RoundTrip(req)
 		if err == nil &&
@@ -63,15 +66,14 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 
 		delay := t.delay
 		if delay == 0 {
-			if resp != nil {
-				if after := resp.Header.Get("Retry-After"); after != "" {
-					if d, err := time.ParseDuration(after + "s"); err == nil {
-						delay = d
-					}
+			delay = b.pause()
+		}
+
+		if resp != nil {
+			if after := resp.Header.Get("Retry-After"); after != "" {
+				if d, err := time.ParseDuration(after + "s"); err == nil && d > delay {
+					delay = d
 				}
-			}
-			if delay == 0 {
-				delay = retryDelay
 			}
 		}
 		if delay > maxDelay {
@@ -81,6 +83,36 @@ func (t *retryableTransport) RoundTrip(req *http.Request) (*http.Response, error
 		t.sleep(delay)
 	}
 	return resp, err
+}
+
+// backoff implements exponential backoff for retry delays with jitter.
+type backoff struct {
+	initial    time.Duration
+	max        time.Duration
+	multiplier float64
+	cur        time.Duration
+}
+
+// newBackoff creates a new backoff with default settings.
+func newBackoff() *backoff {
+	return &backoff{
+		initial:    retryDelay,
+		max:        maxDelay,
+		multiplier: multiplier,
+	}
+}
+
+// pause returns the time to wait before the next retry.
+func (b *backoff) pause() time.Duration {
+	if b.cur == 0 {
+		b.cur = b.initial
+	}
+	d := time.Duration(1 + rand.Int63n(int64(b.cur)))
+	b.cur = time.Duration(float64(b.cur) * b.multiplier)
+	if b.cur > b.max {
+		b.cur = b.max
+	}
+	return d
 }
 
 // PullRequest is a type alias for the go-github type.

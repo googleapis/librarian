@@ -169,6 +169,59 @@ func TestFillDefaults(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "swift defaults",
+			defaults: &config.Default{
+				Swift: &config.SwiftDefault{
+					Dependencies: []config.SwiftDependency{
+						{Name: "wkt", URL: "https://github.com/googleapis/swift-protobuf"},
+					},
+				},
+			},
+			lib: &config.Library{Output: "foo/"},
+			want: &config.Library{
+				Output: "foo/",
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: "wkt", URL: "https://github.com/googleapis/swift-protobuf"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "swift defaults do not override library params",
+			defaults: &config.Default{
+				Swift: &config.SwiftDefault{
+					Dependencies: []config.SwiftDependency{
+						{Name: "wkt", URL: "https://github.com/googleapis/swift-protobuf"},
+						{Name: "gax", URL: "https://github.com/googleapis/gax-swift"},
+					},
+				},
+			},
+			lib: &config.Library{
+				Output: "foo/",
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: "wkt", URL: "https://github.com/custom/swift-protobuf"},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				Output: "foo/",
+				Swift: &config.SwiftPackage{
+					SwiftDefault: config.SwiftDefault{
+						Dependencies: []config.SwiftDependency{
+							{Name: "wkt", URL: "https://github.com/custom/swift-protobuf"},
+							{Name: "gax", URL: "https://github.com/googleapis/gax-swift"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)
@@ -707,7 +760,7 @@ func TestResolvePreview(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ResolvePreview(test.lib)
+			got := ResolvePreview(test.lib, config.LanguageGo)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -734,7 +787,7 @@ func TestResolvePreview_NoMutation(t *testing.T) {
 
 	want := *lib
 
-	_ = ResolvePreview(lib)
+	_ = ResolvePreview(lib, config.LanguageGo)
 
 	if diff := cmp.Diff(want, *lib); diff != "" {
 		t.Errorf("ResolvePreview mutated the input library (-want +got):\n%s", diff)

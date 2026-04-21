@@ -288,3 +288,40 @@ func TestTypezString(t *testing.T) {
 		})
 	}
 }
+
+func TestService_HasClientSideStreaming(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		methods []*Method
+		want    bool
+	}{
+		{
+			name: "no methods",
+			want: false,
+		},
+		{
+			name: "no streaming methods",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false},
+				{Name: "m2", ClientSideStreaming: false},
+			},
+			want: false,
+		},
+		{
+			name: "one streaming method",
+			methods: []*Method{
+				{Name: "m1", ClientSideStreaming: false},
+				{Name: "m2", ClientSideStreaming: true},
+			},
+			want: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			s := &Service{Methods: test.methods}
+			got := s.HasClientSideStreaming()
+			if got != test.want {
+				t.Errorf("got %v, want %v", got, test.want)
+			}
+		})
+	}
+}

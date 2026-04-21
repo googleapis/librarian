@@ -49,6 +49,13 @@ var (
 			DowngradePreGAChanges: true,
 		},
 	}
+	// IgnoredChanges defines the list of the files that are
+	// to be ignored as changes during the bump and publish commands.
+	// It is norm that a repository does not have all the files listed here.
+	IgnoredChanges = []string{
+		".repo-metadata.json",
+		"docs/README.rst",
+	}
 )
 
 func bumpCommand() *cli.Command {
@@ -156,11 +163,7 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		var ignoredChanges []string
-		if cfg.Release != nil {
-			ignoredChanges = cfg.Release.IgnoredChanges
-		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, ignoredChanges)
+		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, IgnoredChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -264,22 +267,6 @@ func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.
 	}
 
 	return semver.DeriveNext(semver.Minor, library.Version, opts)
-}
-
-func loadBranchLibraryVersion(ctx context.Context, gitExe, remote, branch, libName string) (string, error) {
-	branchLibrarianCfgFile, err := git.ShowFileAtRemoteBranch(ctx, gitExe, remote, branch, config.LibrarianYAML)
-	if err != nil {
-		return "", err
-	}
-	branchLibrarianCfg, err := yaml.Unmarshal[config.Config]([]byte(branchLibrarianCfgFile))
-	if err != nil {
-		return "", err
-	}
-	branchLibCfg, err := FindLibrary(branchLibrarianCfg, libName)
-	if err != nil {
-		return "", err
-	}
-	return branchLibCfg.Version, nil
 }
 
 // findReleasedLibraries determines which libraries are released by the
@@ -400,11 +387,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
 func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	var ignoredChanges []string
-	if cfg.Release != nil {
-		ignoredChanges = cfg.Release.IgnoredChanges
-	}
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, ignoredChanges)
+	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, IgnoredChanges)
 	if err != nil {
 		return err
 	}

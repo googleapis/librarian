@@ -244,6 +244,50 @@ func TestDeriveAPICoordinates(t *testing.T) {
 				Version:    "1.2.3",
 			},
 		},
+		{
+			name: "proto-only mapping",
+			lc: LibraryCoordinate{
+				GAPIC: Coordinate{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					Version:    "1.2.3",
+				},
+			},
+			version: "v1",
+			javaAPI: &config.JavaAPI{
+				ProtoOnly: true,
+			},
+			wantProto: Coordinate{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "proto-google-cloud-secretmanager-v1",
+				Version:    "1.2.3",
+			},
+			wantGRPC: Coordinate{},
+		},
+		{
+			name: "with gapic artifact id override",
+			lc: LibraryCoordinate{
+				GAPIC: Coordinate{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					Version:    "1.2.3",
+				},
+			},
+			version: "v1",
+			javaAPI: &config.JavaAPI{
+				GAPICArtifactIDOverride: "custom-gapic-artifact",
+			},
+			wantProto: Coordinate{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "proto-custom-gapic-artifact-v1",
+				Version:    "1.2.3",
+			},
+			wantGRPC: Coordinate{
+				GroupID:    "com.google.api.grpc",
+				ArtifactID: "grpc-custom-gapic-artifact-v1",
+				Version:    "1.2.3",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DeriveAPICoordinates(test.lc, test.version, test.javaAPI)

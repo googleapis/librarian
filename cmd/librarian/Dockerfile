@@ -107,7 +107,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install protoc
-RUN curl -fsSL -o /tmp/protoc.zip \
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${PROTOC_VERSION}/protoc-${PROTOC_VERSION}-linux-x86_64.zip && \
     echo "${PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
@@ -127,7 +127,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Rust toolchain
-RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN curl --retry 5 --retry-delay 15 --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
 ENV PATH="/root/.cargo/bin:${PATH}"
 
 # Install Rust and components
@@ -166,14 +166,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 # Install pandoc
-RUN curl -fsSL -o /tmp/pandoc.tar.gz \
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/pandoc.tar.gz \
         https://github.com/jgm/pandoc/releases/download/${PANDOC_VERSION}/pandoc-${PANDOC_VERSION}-linux-amd64.tar.gz && \
     echo "${PANDOC_CHECKSUM} /tmp/pandoc.tar.gz" | sha512sum -c - && \
     tar -xvf /tmp/pandoc.tar.gz -C /usr/local --strip-components=1 && \
     rm /tmp/pandoc.tar.gz
 
 # Install Python-specific protoc version
-RUN curl -fsSL -o /tmp/protoc.zip \
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${PYTHON_PROTOC_VERSION}/protoc-${PYTHON_PROTOC_VERSION}-linux-x86_64.zip && \
     echo "${PYTHON_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
@@ -227,7 +227,7 @@ RUN (export GOTOOLCHAIN='auto' && \
     go install golang.org/x/tools/cmd/goimports@${GO_GOIMPORTS_VERSION})
 
 # Install Go-specific protoc version
-RUN curl -fsSL -o /tmp/protoc.zip \
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${GO_PROTOC_VERSION}/protoc-${GO_PROTOC_VERSION}-linux-x86_64.zip && \
     echo "${GO_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
