@@ -111,7 +111,6 @@ func TestAnnotateService_SkipNoBindings(t *testing.T) {
 				InputType:    inputType,
 				OutputTypeID: outputType.ID,
 				OutputType:   outputType,
-				PathInfo:     nil,
 			},
 		},
 	}
