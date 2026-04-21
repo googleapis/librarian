@@ -67,5 +67,5 @@ Some languages might need to skip REST numeric enums due to compatibility or leg
 - This file is managed manually.
 - When we identify an API that requires an exception that cannot be inferred via standard discovery, an entry should be added or updated in this file.
 - Changes should be reviewed by the Librarian team to ensure they align with these principles.
-- Changes to `sdk.yaml` won't take effect during generation unless Librarian version is bumped in the `librarian.yaml` file of the language repositories.
+- Changes to `sdk.yaml` won't take effect during generation unless the Librarian version is bumped in the `librarian.yaml` file of the language repositories.
 - We should strive to minimize the number of entries in `sdk.yaml` and reduce the number of exceptional entries over time.
