@@ -16,6 +16,7 @@ package swift
 
 import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 type methodAnnotations struct {
@@ -26,9 +27,28 @@ type methodAnnotations struct {
 	HasBody        bool
 	IsBodyWildcard bool
 	BodyField      string
+	QueryParams    []*api.Field
 }
 
-func (codec *codec) annotateMethod(method *api.Method) {
+// HasQueryParams returns true if the method's default binding has query parameters
+//
+// The mustache templates use this to (1) use a `var query` vs. `let query` for the collection of
+// query parameters, and (2) generate the query parameter encoder only once, and only if needed.
+func (ann *methodAnnotations) HasQueryParams() bool {
+	return len(ann.QueryParams) != 0
+}
+
+func (codec *codec) annotateMethod(method *api.Method, model *modelAnnotations) error {
+	if method.InputType != nil {
+		if err := codec.annotateMessage(method.InputType, model); err != nil {
+			return err
+		}
+	}
+	if method.OutputType != nil {
+		if err := codec.annotateMessage(method.OutputType, model); err != nil {
+			return err
+		}
+	}
 	docLines := codec.formatDocumentation(method.Documentation)
 	binding := method.PathInfo.Bindings[0]
 	path := formatPath(binding.PathTemplate)
@@ -46,5 +66,7 @@ func (codec *codec) annotateMethod(method *api.Method) {
 		HasBody:        hasBody,
 		IsBodyWildcard: isBodyWildcard,
 		BodyField:      bodyField,
+		QueryParams:    language.QueryParams(method, binding),
 	}
+	return nil
 }

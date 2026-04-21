@@ -649,60 +649,86 @@ func TestShouldExcludeSamples(t *testing.T) {
 }
 
 func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
-	gen := &GenerationConfig{
-		Libraries: []LibraryConfig{
-			{
-				LibraryName: "datastore",
-				GAPICs: []GAPICConfig{
-					{ProtoPath: "google/datastore/admin/v1"},
-				},
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		protoPath   string
+		wantJavaAPI *config.JavaAPI
+	}{
+		{
+			name:        "datastore admin v1",
+			libraryName: "datastore",
+			protoPath:   "google/datastore/admin/v1",
+			wantJavaAPI: &config.JavaAPI{
+				Path:                    "google/datastore/admin/v1",
+				Samples:                 new(false),
+				ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
+				GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
 			},
 		},
-	}
-	srcDir := t.TempDir()
-	buildFile := filepath.Join(srcDir, "google/datastore/admin/v1", "BUILD.bazel")
-	if err := os.MkdirAll(filepath.Dir(buildFile), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(buildFile, []byte(`java_gapic_library(name = "datastore_java_gapic")`), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	want := &config.Config{
-		Language: "java",
-		Repo:     "googleapis/google-cloud-java",
-		Default: &config.Default{
-			Java: &config.JavaModule{},
+		{
+			name:        "storage control v2",
+			libraryName: "storage",
+			protoPath:   "google/storage/control/v2",
+			wantJavaAPI: &config.JavaAPI{
+				Path:                    "google/storage/control/v2",
+				Samples:                 new(false),
+				GAPICArtifactIDOverride: "google-cloud-storage-control",
+				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
+				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-control-v2",
+			},
 		},
-		Sources: &config.Sources{
-			Googleapis: &config.Source{Dir: srcDir},
-		},
-		Libraries: []*config.Library{
-			{
-				Name: "datastore",
-				APIs: []*config.API{
-					{Path: "google/datastore/admin/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                    "google/datastore/admin/v1",
-							Samples:                 func(b bool) *bool { return &b }(false),
-							ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
-							GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gen := &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						LibraryName: test.libraryName,
+						GAPICs: []GAPICConfig{
+							{ProtoPath: test.protoPath},
 						},
 					},
 				},
-			},
-		},
-	}
+			}
+			srcDir := t.TempDir()
+			buildFile := filepath.Join(srcDir, test.protoPath, "BUILD.bazel")
+			if err := os.MkdirAll(filepath.Dir(buildFile), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(buildFile, []byte(`java_gapic_library(name = "test_java_gapic")`), 0644); err != nil {
+				t.Fatal(err)
+			}
 
-	got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			want := &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: srcDir},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: test.libraryName,
+						APIs: []*config.API{
+							{Path: test.protoPath},
+						},
+						Java: &config.JavaModule{
+							JavaAPIs: []*config.JavaAPI{test.wantJavaAPI},
+						},
+					},
+				},
+			}
+
+			got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

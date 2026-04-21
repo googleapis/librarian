@@ -94,11 +94,11 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 			return err
 		}
 		if !all && isPreview {
-			prepared = ResolvePreview(prepared)
+			prepared = ResolvePreview(prepared, cfg.Language)
 		} else if all && lib.Preview != nil {
 			// Generate both stable and preview libraries by first appending the
 			// resolved library config for the preview variant.
-			libraries = append(libraries, ResolvePreview(prepared))
+			libraries = append(libraries, ResolvePreview(prepared, cfg.Language))
 		}
 		libraries = append(libraries, prepared)
 	}

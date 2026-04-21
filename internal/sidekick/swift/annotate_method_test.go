@@ -22,6 +22,19 @@ import (
 )
 
 func TestAnnotateMethod(t *testing.T) {
+	keyField := &api.Field{Name: "key", ID: ".test.Request.key", Typez: api.STRING_TYPE}
+	inputType := &api.Message{
+		Name:   "Request",
+		ID:     ".test.Request",
+		Fields: []*api.Field{keyField},
+	}
+	outputType := &api.Message{
+		Name: "Response",
+		ID:   ".test.Response",
+		Fields: []*api.Field{
+			{Name: "value", ID: ".test.Request.value", Typez: api.STRING_TYPE},
+		},
+	}
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -94,10 +107,40 @@ func TestAnnotateMethod(t *testing.T) {
 				IsBodyWildcard: true,
 			},
 		},
+		{
+			name: "List request",
+			method: &api.Method{
+				Name:          "ListThings",
+				Documentation: "Lists things.",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:            "GET",
+							PathTemplate:    api.NewPathTemplate().WithLiteral("v1").WithLiteral("things"),
+							QueryParameters: map[string]bool{"key": true},
+						},
+					},
+				},
+			},
+			want: &methodAnnotations{
+				Name:        "listThings",
+				Path:        "/v1/things",
+				DocLines:    []string{"Lists things."},
+				HTTPMethod:  "GET",
+				HasBody:     false,
+				QueryParams: []*api.Field{keyField},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			test.method.InputType = inputType
+			test.method.InputTypeID = inputType.ID
+			test.method.OutputType = outputType
+			test.method.OutputTypeID = outputType.ID
 			service := &api.Service{
 				Name:    "TestService",
+				ID:      ".test.TestService",
+				Package: "test",
 				Methods: []*api.Method{test.method},
 			}
 			model := api.NewTestAPI(nil, nil, []*api.Service{service})
@@ -124,12 +167,30 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 		{"escaped default", "Default", "`default`"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			inputType := &api.Message{
+				Name: "Request",
+				ID:   ".test.Request",
+				Fields: []*api.Field{
+					{Name: "key", ID: ".test.Request.key", Typez: api.STRING_TYPE},
+				},
+			}
+			outputType := &api.Message{
+				Name: "Response",
+				ID:   ".test.Response",
+				Fields: []*api.Field{
+					{Name: "value", ID: ".test.Request.value", Typez: api.STRING_TYPE},
+				},
+			}
 			method := &api.Method{
 				Name:          test.methodName,
 				Documentation: "Test documentation.",
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
 				},
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
 			}
 			service := &api.Service{
 				Name:    "TestService",
@@ -153,5 +214,46 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
+	inputMessage := &api.Message{
+		Name:    "InputMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.InputMessage",
+	}
+	outputMessage := &api.Message{
+		Name:    "OutputMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.OutputMessage",
+	}
+	method := &api.Method{
+		Name:       "TestMethod",
+		InputType:  inputMessage,
+		OutputType: outputMessage,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+		},
+	}
+	service := &api.Service{
+		Name:    "TestService",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.test.v1"
+	model.State.MessageByID[inputMessage.ID] = inputMessage
+	model.State.MessageByID[outputMessage.ID] = outputMessage
+	codec := newTestCodec(t, model, nil)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	if inputMessage.Codec == nil {
+		t.Error("expected input message to be annotated")
+	}
+	if outputMessage.Codec == nil {
+		t.Error("expected output message to be annotated")
 	}
 }

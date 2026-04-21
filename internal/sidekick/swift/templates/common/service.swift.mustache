@@ -51,12 +51,24 @@ public class {{Codec.Name}} {
   /// {{{.}}}
   {{/Codec.DocLines}}
   public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
-    {{! TODO(#5138) - deal with `google.proto.Empty` and other complex return types }}
+    {{^ReturnsEmpty}}
     -> {{OutputType.Codec.Name}}
+    {{/ReturnsEmpty}}
   {
-    let query = [
-      URLQueryItem(name: "$alt", value: "json")
-    ]
+    {{#Codec.HasQueryParams}}
+    var query = [URLQueryItem(name: "$alt", value: "json")]
+    let encoder = GoogleCloudGax.QueryParameterEncoder()
+    {{/Codec.HasQueryParams}}
+    {{^Codec.HasQueryParams}}
+    let query = [URLQueryItem(name: "$alt", value: "json")]
+    {{/Codec.HasQueryParams}}
+    {{#Codec.QueryParams}}
+    {{!
+      Note that `Codec.Name` includes mangling and escaping, while `JSONName` does not. We want the latter
+      for the query parameter name, and the former to access the field in the Swift struct.
+    }}
+    query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
+    {{/Codec.QueryParams}}
     var req = try await self.inner.Request(path: "{{{Codec.Path}}}", query: query)
     req.httpMethod = "{{Codec.HTTPMethod}}"
     {{#Codec.HasBody}}
@@ -79,7 +91,9 @@ public class {{Codec.Name}} {
         payload: data,
       ))
     }
+    {{^ReturnsEmpty}}
     return try JSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
+    {{/ReturnsEmpty}}
   }
   {{/Codec.RestMethods}}
 }
