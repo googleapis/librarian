@@ -385,7 +385,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 
 	var fakes []string
 	for _, s := range model.Services {
-		fakes = append(fakes, "Fake"+s.Codec.(*serviceAnnotations).Name)
+		fakes = append(fakes, "Fake"+s.Name)
 	}
 	slices.Sort(fakes)
 
