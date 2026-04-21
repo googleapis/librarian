@@ -51,8 +51,9 @@ public class {{Codec.Name}} {
   /// {{{.}}}
   {{/Codec.DocLines}}
   public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
-    {{! TODO(#5138) - deal with `google.proto.Empty` and other complex return types }}
+    {{^ReturnsEmpty}}
     -> {{OutputType.Codec.Name}}
+    {{/ReturnsEmpty}}
   {
     let query = [
       URLQueryItem(name: "$alt", value: "json")
@@ -79,7 +80,9 @@ public class {{Codec.Name}} {
         payload: data,
       ))
     }
+    {{^ReturnsEmpty}}
     return try JSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
+    {{/ReturnsEmpty}}
   }
   {{/Codec.RestMethods}}
 }
