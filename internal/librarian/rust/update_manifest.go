@@ -65,9 +65,7 @@ func updateCargoVersion(path string, newVersion semver.Version) error {
 
 var versionRegex = regexp.MustCompile(`version\s*=\s*"[^"]*"`)
 
-// updateWorkspaceVersion updates the version of a crate in a workspace Cargo.toml.
-// It searches for a line that starts with the crate name followed by "=" and
-// contains a "version =" field.
+// updateWorkspaceVersion updates the version of a dependency in a workspace Cargo.toml.
 func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) error {
 	contents, err := os.ReadFile(path)
 	if err != nil {
@@ -75,10 +73,13 @@ func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) e
 	}
 	lines := strings.Split(string(contents), "\n")
 	updated := false
-	crateRegex := regexp.MustCompile(fmt.Sprintf(`^\s*%s\s*=`, regexp.QuoteMeta(crateName)))
-	packageRegex := regexp.MustCompile(fmt.Sprintf(`^\s*[^#]*\bpackage\s*=\s*"%s"`, regexp.QuoteMeta(crateName)))
 	for i, line := range lines {
-		if (crateRegex.MatchString(line) || packageRegex.MatchString(line)) && versionRegex.MatchString(line) {
+		trimmed := strings.TrimSpace(line)
+
+		isDirect := isDirectDependency(trimmed, crateName)
+		isRenamed := isRenamedDependency(line, crateName)
+
+		if (isDirect || isRenamed) && versionRegex.MatchString(line) {
 			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion.String()))
 			updated = true
 		}
@@ -87,6 +88,23 @@ func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) e
 		return nil
 	}
 	return os.WriteFile(path, []byte(strings.Join(lines, "\n")), 0644)
+}
+
+// isDirectDependency checks if the line describes a dependency named directly as the crate.
+// Example: crateName = "...".
+func isDirectDependency(trimmed, crateName string) bool {
+	if !strings.HasPrefix(trimmed, crateName) {
+		return false
+	}
+	after := strings.TrimSpace(trimmed[len(crateName):])
+	return strings.HasPrefix(after, "=")
+}
+
+// isRenamedDependency checks if the line describes a renamed dependency that uses the crate.
+// Example: custom_name = { package = "crateName", ... }.
+func isRenamedDependency(line, crateName string) bool {
+	packageRegex := regexp.MustCompile(fmt.Sprintf(`^\s*[^#]*\bpackage\s*=\s*"%s"`, regexp.QuoteMeta(crateName)))
+	return packageRegex.MatchString(line)
 }
 
 // shouldBumpManifestVersion checks if the manifest version needs to be bumped.
