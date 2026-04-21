@@ -61,33 +61,21 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		},
 	}
 
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".google.cloud.test.v1.TestService",
+		Package: "google.cloud.test.v1",
+	}
+
 	model := api.NewTestAPI(
-		[]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+		[]*api.Message{message}, []*api.Enum{}, []*api.Service{service})
 	model.State.MessageByID[externalMessage.ID] = externalMessage
 	codec := newTestCodec(t, model, nil)
-	dep1 := &Dependency{
-		SwiftDependency: config.SwiftDependency{
-			ApiPackage: "google.cloud.external.v1",
-			Name:       "GoogleCloudExternalWithOverrideV1",
-		},
-	}
-	dep2 := &Dependency{
-		SwiftDependency: config.SwiftDependency{
-			ApiPackage: "google.cloud.unused.v1",
-			Name:       "unused-package",
-		},
-	}
-	dep3 := &Dependency{
-		SwiftDependency: config.SwiftDependency{
-			Name:               "GoogleCloudGax",
-			RequiredByServices: true,
-		},
-	}
-	codec.ApiPackages = map[string]*Dependency{
-		dep1.ApiPackage: dep1,
-		dep2.ApiPackage: dep2,
-	}
-	codec.Dependencies = []*Dependency{dep1, dep2, dep3}
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},
+		{ApiPackage: "google.cloud.unused.v1", Name: "GoogleUnusedPackage"},
+		{Name: "GoogleCloudGax", RequiredByServices: true},
+	})
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -98,11 +86,16 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	wantDependsOn := map[string]*Dependency{
-		dep1.Name: dep1,
+	want := map[string]bool{
+		"GoogleCloudExternalWithOverrideV1": true,
+		"GoogleCloudGax":                    false, // required by the service, but not messages
+	}
+	got := map[string]bool{}
+	for name, dep := range ann.DependsOn {
+		got[name] = dep.Required
 	}
 
-	if diff := cmp.Diff(wantDependsOn, ann.DependsOn); diff != "" {
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 

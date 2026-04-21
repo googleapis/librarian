@@ -54,34 +54,34 @@ func (ann *modelAnnotations) HasMessageImports() bool {
 	return len(ann.MessageImports) != 0
 }
 
-func (codec *codec) annotateModel() error {
+func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
-		CopyrightYear: codec.GenerationYear,
+		CopyrightYear: c.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   codec.PackageName,
-		MonorepoRoot:  codec.MonorepoRoot,
+		PackageName:   c.PackageName,
+		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
 	}
-	codec.Model.Codec = annotations
-	for _, message := range codec.Model.Messages {
-		if err := codec.annotateMessage(message, annotations); err != nil {
+	c.Model.Codec = annotations
+	for _, message := range c.Model.Messages {
+		if err := c.annotateMessage(message, annotations); err != nil {
 			return err
 		}
 	}
-	for _, enum := range codec.Model.Enums {
-		if err := codec.annotateEnum(enum, annotations); err != nil {
+	for _, enum := range c.Model.Enums {
+		if err := c.annotateEnum(enum, annotations); err != nil {
 			return err
 		}
 	}
-	for _, service := range codec.Model.Services {
-		if err := codec.annotateService(service, annotations); err != nil {
+	for _, service := range c.Model.Services {
+		if err := c.annotateService(service, annotations); err != nil {
 			return err
 		}
 	}
 	var serviceImports []string
 	var messageImports []string
-	for _, p := range codec.Dependencies {
-		if p.RequiredByServices && len(codec.Model.Services) != 0 {
+	for _, p := range c.Dependencies {
+		if p.RequiredByServices && len(c.Model.Services) != 0 {
 			serviceImports = append(serviceImports, p.Name)
 			annotations.DependsOn[p.Name] = p
 		} else if p.Required {

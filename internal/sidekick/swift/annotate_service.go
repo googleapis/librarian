@@ -27,12 +27,12 @@ type serviceAnnotations struct {
 	Model            *modelAnnotations
 }
 
-func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) error {
-	docLines := codec.formatDocumentation(service.Documentation)
+func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
+	docLines := c.formatDocumentation(service.Documentation)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
-			if err := codec.annotateMethod(method, model); err != nil {
+			if err := c.annotateMethod(method, model); err != nil {
 				return err
 			}
 			restMethods = append(restMethods, method)
@@ -46,7 +46,7 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 		Name:             pascalCase(service.Name),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
-		PackageName:      codec.PackageName,
+		PackageName:      c.PackageName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 	}
