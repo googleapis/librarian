@@ -91,7 +91,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 		protos = append(protos, filepath.Join(googleapisDir, p))
 	}
 
-	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir)
+	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
@@ -122,9 +122,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 		// Add API-level additional protos.
 		protos = append(protos, nodejsAPI.AdditionalProtos...)
+		res.DIREGAPIC = nodejsAPI.DIREGAPIC
 		break
 	}
-
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -143,7 +143,7 @@ func unique(ss []string) []string {
 
 // buildGeneratorArgs constructs the gapic-generator-typescript arguments,
 // excluding proto files.
-func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir, stagingDir string) ([]string, error) {
+func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir, stagingDir string, nodejsAPI *config.NodejsAPI) ([]string, error) {
 	protocPath, err := exec.LookPath("protoc")
 	if err != nil {
 		return nil, fmt.Errorf("failed to find protoc: %w", err)
@@ -187,6 +187,11 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	if apiMetadata != nil && apiMetadata.HasRESTNumericEnums(config.LanguageNodejs) {
 		args = append(args, "--rest-numeric-enums")
 	}
+
+	if nodejsAPI.DIREGAPIC {
+		args = append(args, "--diregapic")
+	}
+
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
 			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))

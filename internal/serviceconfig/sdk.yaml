@@ -2886,6 +2886,12 @@
     - python
   release_level:
     java: stable
+- path: google/maps/mapmanagement/v2beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
 - path: google/maps/mapsplatformdatasets/v1
   languages:
     - java

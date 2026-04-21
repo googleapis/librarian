@@ -724,6 +724,10 @@ type NodejsAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
+	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// This is typically false. Used for the GCE (compute) client.
+	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 }
