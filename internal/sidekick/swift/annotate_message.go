@@ -19,22 +19,29 @@ import (
 )
 
 type messageAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
+	Name     string
+	DocLines []string
+	Model    *modelAnnotations
 }
 
 func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
+	if dep, ok := codec.ApiPackages[message.Package]; ok {
+		dep.Required = true
+	}
+	if message.Codec != nil {
+		return nil
+	}
 	docLines := codec.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          pascalCase(message.Name),
-		DocLines:      docLines,
+		Name:     pascalCase(message.Name),
+		DocLines: docLines,
+		Model:    model,
 	}
 
 	message.Codec = annotations
+	for _, oneof := range message.OneOfs {
+		codec.annotateOneOf(oneof)
+	}
 	for _, field := range message.Fields {
 		if err := codec.annotateField(field); err != nil {
 			return err

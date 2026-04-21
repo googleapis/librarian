@@ -23,11 +23,12 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	PackageName   string
-	MonorepoRoot  string
-	DependsOn     map[string]*Dependency
+	CopyrightYear  string
+	BoilerPlate    []string
+	PackageName    string
+	MonorepoRoot   string
+	DependsOn      map[string]*Dependency
+	MessageImports []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -65,12 +66,20 @@ func (codec *codec) annotateModel() error {
 		}
 	}
 	for _, service := range codec.Model.Services {
-		codec.annotateService(service, annotations)
+		if err := codec.annotateService(service, annotations); err != nil {
+			return err
+		}
 	}
+	var imports []string
 	for _, p := range codec.Dependencies {
 		if p.Required || (p.RequiredByServices && len(codec.Model.Services) != 0) {
 			annotations.DependsOn[p.Name] = p
 		}
+		if p.Required && !p.RequiredByServices {
+			imports = append(imports, p.Name)
+		}
 	}
+	slices.Sort(imports)
+	annotations.MessageImports = imports
 	return nil
 }

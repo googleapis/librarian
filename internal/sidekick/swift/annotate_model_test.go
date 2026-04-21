@@ -68,7 +68,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	dep1 := &Dependency{
 		SwiftDependency: config.SwiftDependency{
 			ApiPackage: "google.cloud.external.v1",
-			Name:       "external-package",
+			Name:       "GoogleCloudExternalWithOverrideV1",
 		},
 	}
 	dep2 := &Dependency{
@@ -77,11 +77,18 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 			Name:       "unused-package",
 		},
 	}
-	codec.ApiPackages = map[string]*Dependency{
-		"google.cloud.external.v1": dep1,
-		"google.cloud.unused.v1":   dep2,
+	dep3 := &Dependency{
+		SwiftDependency: config.SwiftDependency{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
+		},
+		Required: true,
 	}
-	codec.Dependencies = []*Dependency{dep1, dep2}
+	codec.ApiPackages = map[string]*Dependency{
+		dep1.ApiPackage: dep1,
+		dep2.ApiPackage: dep2,
+	}
+	codec.Dependencies = []*Dependency{dep1, dep2, dep3}
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -93,16 +100,25 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	}
 
 	wantDependsOn := map[string]*Dependency{
-		"external-package": {
-			SwiftDependency: config.SwiftDependency{
-				ApiPackage: "google.cloud.external.v1",
-				Name:       "external-package",
-			},
-			Required: true,
-		},
+		dep1.Name: dep1,
+		dep3.Name: dep3,
 	}
 
 	if diff := cmp.Diff(wantDependsOn, ann.DependsOn); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1"}
+	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	msg := model.Messages[0]
+	msgAnn, ok := msg.Codec.(*messageAnnotations)
+	if !ok {
+		t.Fatalf("expected message.Codec to be *messageAnnotations, got %T", msg.Codec)
+	}
+	if msgAnn.Model != ann {
+		t.Errorf("expected msgAnn.Model to be %p, got %p", ann, msgAnn.Model)
 	}
 }

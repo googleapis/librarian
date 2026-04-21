@@ -18,17 +18,27 @@ limitations under the License.
 {{/Codec.DocLines}}
 public struct {{Codec.Name}}: Codable, Equatable {
   {{#Fields}}
+  {{^IsOneOf}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
   public var {{Codec.Name}}: {{Codec.FieldType}}
+  {{/IsOneOf}}
   {{/Fields}}
+  {{#OneOfs}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  public var {{Codec.PropertyName}}: {{Codec.Name}}?
+  {{/OneOfs}}
 
   {{! Provide a memberwise initializer, with defaults for each field. }}
   /// Initialize a new instance of `{{Codec.Name}}`.
   public init(
     {{#Fields}}
+    {{^IsOneOf}}
     {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
     {{#Singular}}
     {{^Optional}}
@@ -44,11 +54,20 @@ public struct {{Codec.Name}}: Codable, Equatable {
     {{#Map}}
     {{Codec.Name}}: {{Codec.FieldType}} = [:],
     {{/Map}}
+    {{/IsOneOf}}
     {{/Fields}}
+    {{#OneOfs}}
+    {{Codec.PropertyName}}: {{Codec.Name}}? = nil,
+    {{/OneOfs}}
   ) {
     {{#Fields}}
+    {{^IsOneOf}}
     self.{{Codec.Name}} = {{Codec.Name}}
+    {{/IsOneOf}}
     {{/Fields}}
+    {{#OneOfs}}
+    self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
+    {{/OneOfs}}
   }
   {{#Messages}}
 
@@ -58,4 +77,8 @@ public struct {{Codec.Name}}: Codable, Equatable {
 
   {{> /templates/common/enum}}
   {{/Enums}}
+  {{#OneOfs}}
+
+  {{> /templates/common/oneof}}
+  {{/OneOfs}}
 }

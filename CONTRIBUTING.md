@@ -324,35 +324,6 @@ file an issue following the guidelines above and include a clear justification.
 See the guidelines for
 [How We Write Go](https://github.com/googleapis/librarian/blob/main/doc/howwewritego.md).
 
-## Using the @gemini-cli bot
-
-> **Note:** This feature is experimental.
-
-Repository collaborators can ask Gemini to implement code changes directly from
-a GitHub issue. The bot reads the issue, proposes a plan, and after approval
-creates a branch and opens a pull request.
-
-Comment on any issue with `@gemini-cli` followed by your request:
-
-```
-@gemini-cli implement this feature
-```
-
-Gemini will analyze the issue and the codebase, then post a plan of action as a
-comment for you to review.
-
-Once you are satisfied with the proposed plan, comment:
-
-```
-@gemini-cli /approve
-```
-
-Gemini will execute the plan, commit the changes to a new branch, and open a
-pull request. The pull request still goes through the normal review process.
-
-Only users with OWNER, MEMBER, or COLLABORATOR association on the repository
-can trigger the bot. A `GEMINI_API_KEY` repository secret must be configured.
-
 ## Gemini CLI skills
 
 This repository includes project-scoped
