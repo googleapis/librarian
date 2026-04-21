@@ -1085,7 +1085,7 @@ func TestRetryableTransport(t *testing.T) {
 			},
 			wantStatusCode:   http.StatusServiceUnavailable,
 			wantErr:          true,
-			wantRequestCount: 3,
+			wantRequestCount: 5,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1176,5 +1176,56 @@ func TestNewClient(t *testing.T) {
 				t.Fatalf("expected to create a new client")
 			}
 		})
+	}
+}
+
+func TestBackoff(t *testing.T) {
+	b := &backoff{
+		initial:    2 * time.Second,
+		max:        10 * time.Second,
+		multiplier: 2.0,
+	}
+
+	// Attempt 1
+	d1 := b.pause()
+	if d1 < 1 || d1 > 2*time.Second {
+		t.Errorf("pause() = %v, want in range [1ns, 2s]", d1)
+	}
+
+	// Attempt 2
+	d2 := b.pause()
+	if d2 < 1 || d2 > 4*time.Second {
+		t.Errorf("pause() = %v, want in range [1ns, 4s]", d2)
+	}
+
+	// Attempt 3
+	d3 := b.pause()
+	if d3 < 1 || d3 > 8*time.Second {
+		t.Errorf("pause() = %v, want in range [1ns, 8s]", d3)
+	}
+
+	// Attempt 4 (should hit max)
+	d4 := b.pause()
+	if d4 < 1 || d4 > 10*time.Second {
+		t.Errorf("pause() = %v, want in range [1ns, 10s]", d4)
+	}
+
+	// Attempt 5 (should still hit max)
+	d5 := b.pause()
+	if d5 < 1 || d5 > 10*time.Second {
+		t.Errorf("pause() = %v, want in range [1ns, 10s]", d5)
+	}
+}
+
+func TestNewBackoff(t *testing.T) {
+	b := newBackoff()
+	if b.initial != retryDelay {
+		t.Errorf("newBackoff().initial = %v, want %v", b.initial, retryDelay)
+	}
+	if b.max != maxDelay {
+		t.Errorf("newBackoff().max = %v, want %v", b.max, maxDelay)
+	}
+	if b.multiplier != multiplier {
+		t.Errorf("newBackoff().multiplier = %v, want %v", b.multiplier, multiplier)
 	}
 }

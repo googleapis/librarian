@@ -205,6 +205,12 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 	switch cfg.Language {
 	case config.LanguageGo:
 		lib = golang.Add(lib)
+	case config.LanguagePython:
+		var err error
+		lib, err = python.Add(lib)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguageRust:
 		lib = rust.Add(lib)
 	case config.LanguageFake:

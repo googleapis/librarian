@@ -65,7 +65,7 @@ RUN apt-get install -y unzip \
 
 # Add Docker's official GPG key
 RUN install -m 0755 -d /etc/apt/keyrings
-RUN curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
+RUN curl -fsSL --retry 5 --retry-delay 15 https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc
 RUN chmod a+r /etc/apt/keyrings/docker.asc
 
 # Add the repository to Apt sources:
@@ -89,7 +89,7 @@ RUN apt update && \
 # Add the Google Cloud SDK distribution URI as a package source
 RUN echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] https://packages.cloud.google.com/apt cloud-sdk main" \
     > /etc/apt/sources.list.d/google-cloud-sdk.list && \
-    curl -fsSL https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
+    curl -fsSL --retry 5 --retry-delay 15 https://packages.cloud.google.com/apt/doc/apt-key.gpg | \
     gpg --dearmor -o /usr/share/keyrings/cloud.google.gpg
 
 # Install the gcloud CLI

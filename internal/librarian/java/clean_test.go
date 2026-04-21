@@ -23,6 +23,7 @@ import (
 	"syscall"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -68,6 +69,9 @@ func TestClean(t *testing.T) {
 		Name:   "secretmanager",
 		Output: tmpDir,
 		Keep:   []string{"kept-file.txt", "kept-dir"},
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
 	}
 	if err := Clean(lib); err != nil {
 		t.Fatal(err)
@@ -76,8 +80,8 @@ func TestClean(t *testing.T) {
 	// Verify cleaned paths
 	cleanedPaths := []string{
 		filepath.Join(tmpDir, libraryName, "src", "Main.java"),
-		filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version)),
-		filepath.Join(tmpDir, fmt.Sprintf("grpc-%s-%s", libraryName, version)),
+		filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version), "src"),
+		filepath.Join(tmpDir, fmt.Sprintf("grpc-%s-%s", libraryName, version), "src"),
 		filepath.Join(tmpDir, "samples", "snippets", "generated"),
 		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "Version.java"),
 	}
@@ -91,6 +95,8 @@ func TestClean(t *testing.T) {
 		filepath.Join(tmpDir, "kept-file.txt"),
 		filepath.Join(tmpDir, "kept-dir", "file.txt"),
 		filepath.Join(tmpDir, libraryName, "pom.xml"),
+		filepath.Join(tmpDir, fmt.Sprintf("proto-%s-%s", libraryName, version)),
+		filepath.Join(tmpDir, fmt.Sprintf("grpc-%s-%s", libraryName, version)),
 		filepath.Join(tmpDir, libraryName, "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1", "stub", "Version.java"),
 		filepath.Join(tmpDir, libraryName, "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "it", "ITSecretManagerTest.java"),
 	}
@@ -142,6 +148,101 @@ func TestIsDirNotEmpty(t *testing.T) {
 			got := isDirNotEmpty(test.err)
 			if got != test.want {
 				t.Errorf("isDirNotEmpty(%v) = %v, want %v", test.err, got, test.want)
+			}
+		})
+	}
+}
+
+func TestCleanPatterns(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    map[string]bool
+	}{
+		{
+			name: "default_case",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("google-cloud-secretmanager", "src"):          true,
+				filepath.Join("proto-google-cloud-secretmanager-v1", "src"): true,
+				filepath.Join("grpc-google-cloud-secretmanager-v1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):           true,
+				".repo-metadata.json": true,
+			},
+		},
+		{
+			name: "with_overrides",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					DistributionNameOverride: "com.google.cloud:secretmanager-special",
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("secretmanager-special", "src"):          true,
+				filepath.Join("proto-secretmanager-special-v1", "src"): true,
+				filepath.Join("grpc-secretmanager-special-v1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):      true,
+				".repo-metadata.json":                                  true,
+			},
+		},
+		{
+			name: "multiple_apis",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta1"},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("google-cloud-secretmanager", "src"):               true,
+				filepath.Join("proto-google-cloud-secretmanager-v1", "src"):      true,
+				filepath.Join("grpc-google-cloud-secretmanager-v1", "src"):       true,
+				filepath.Join("proto-google-cloud-secretmanager-v1beta1", "src"): true,
+				filepath.Join("grpc-google-cloud-secretmanager-v1beta1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):                true,
+				".repo-metadata.json": true,
+			},
+		},
+		{
+			name: "gapic_artifact_id_override",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:                    "google/cloud/secretmanager/v1",
+							GAPICArtifactIDOverride: "custom-gapic-artifact",
+						},
+					},
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("custom-gapic-artifact", "src"):          true,
+				filepath.Join("proto-custom-gapic-artifact-v1", "src"): true,
+				filepath.Join("grpc-custom-gapic-artifact-v1", "src"):  true,
+				filepath.Join("samples", "snippets", "generated"):      true,
+				".repo-metadata.json":                                  true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := cleanPatterns(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

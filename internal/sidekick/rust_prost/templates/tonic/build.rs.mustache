@@ -39,8 +39,15 @@ fn main() {
         config.type_name_domain(&["."], "type.googleapis.com");
         config.include_file("includes.rs");
         tonic_prost_build::configure()
+            .disable_comments([
+                {{#Services}}
+                "{{Package}}.{{Name}}",
+                {{#Methods}}
+                "{{Service.Package}}.{{Service.Name}}.{{Name}}",
+                {{/Methods}}
+                {{/Services}}
+            ])
             .type_attribute(".", "#[allow(clippy::large_enum_variant)]")
-            .bytes(".")
             .out_dir(&destination)
             .compile_with_config(config, files, includes)
             .expect("error compiling protos");

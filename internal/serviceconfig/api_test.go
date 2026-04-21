@@ -67,6 +67,7 @@ func TestReleaseLevel(t *testing.T) {
 		name     string
 		sc       *API
 		language string
+		version  string
 		want     string
 	}{
 		{
@@ -116,9 +117,54 @@ func TestReleaseLevel(t *testing.T) {
 			language: config.LanguageRust,
 			want:     "stable",
 		},
+		{
+			name:     "preview due to version 0.x",
+			sc:       &API{Path: "google/cloud/secretmanager/v1"},
+			language: config.LanguageRust,
+			version:  "0.1.0",
+			want:     "preview",
+		},
+		{
+			name:     "preview due to alpha path",
+			sc:       &API{Path: "google/cloud/secretmanager/v1alpha"},
+			language: config.LanguageRust,
+			want:     "preview",
+		},
+		{
+			name:     "preview due to beta path",
+			sc:       &API{Path: "google/cloud/secretmanager/v1beta"},
+			language: config.LanguageRust,
+			want:     "preview",
+		},
+		{
+			name:     "go alpha due to alpha path",
+			sc:       &API{Path: "google/cloud/secretmanager/v1alpha"},
+			language: config.LanguageGo,
+			want:     "alpha",
+		},
+		{
+			name:     "go beta due to beta path",
+			sc:       &API{Path: "google/cloud/secretmanager/v1beta"},
+			language: config.LanguageGo,
+			want:     "beta",
+		},
+		{
+			name:     "go ga for stable path",
+			sc:       &API{Path: "google/cloud/secretmanager/v1"},
+			language: config.LanguageGo,
+			version:  "1.0.0",
+			want:     "ga",
+		},
+		{
+			name:     "go beta for stable path with 0.x version",
+			sc:       &API{Path: "google/cloud/secretmanager/v1"},
+			language: config.LanguageGo,
+			version:  "0.1.0",
+			want:     "beta",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.ReleaseLevel(test.language)
+			got := test.sc.ReleaseLevel(test.language, test.version)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -131,6 +177,7 @@ func TestRepoMetadataReleaseLevel(t *testing.T) {
 		name     string
 		sc       *API
 		language string
+		version  string
 		want     string
 	}{
 		{
@@ -139,12 +186,14 @@ func TestRepoMetadataReleaseLevel(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 			},
 			language: config.LanguageGo,
+			version:  "1.0.0",
 			want:     "stable",
 		},
 		{
 			name:     "go, stable empty path",
 			sc:       &API{},
 			language: config.LanguageGo,
+			version:  "1.0.0",
 			want:     "stable",
 		},
 		{
@@ -180,6 +229,13 @@ func TestRepoMetadataReleaseLevel(t *testing.T) {
 			want:     "preview",
 		},
 		{
+			name:     "go, preview due to version 0.x",
+			sc:       &API{Path: "google/cloud/secretmanager/v1"},
+			language: config.LanguageGo,
+			version:  "0.1.0",
+			want:     "preview",
+		},
+		{
 			name:     "non-go returns raw release level",
 			sc:       &API{},
 			language: config.LanguageRust,
@@ -195,7 +251,7 @@ func TestRepoMetadataReleaseLevel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.RepoMetadataReleaseLevel(test.language)
+			got := test.sc.RepoMetadataReleaseLevel(test.language, test.version)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

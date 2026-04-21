@@ -45,6 +45,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Python != nil {
 		return fillPython(lib, d)
 	}
+	if d.Swift != nil {
+		return fillSwift(lib, d)
+	}
 	return lib
 }
 
@@ -114,6 +117,36 @@ func fillPython(lib *config.Library, d *config.Default) *config.Library {
 		lib.Python.LibraryType = d.Python.LibraryType
 	}
 	return lib
+}
+
+// fillSwift populates empty Swift-specific fields in lib from the provided default.
+func fillSwift(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Swift == nil {
+		lib.Swift = &config.SwiftPackage{}
+	}
+	lib.Swift.Dependencies = mergeSwiftDependencies(
+		d.Swift.Dependencies,
+		lib.Swift.Dependencies,
+	)
+	return lib
+}
+
+// mergeSwiftDependencies merges library dependencies with default dependencies,
+// with library dependencies taking precedence for duplicates.
+func mergeSwiftDependencies(defaults, lib []config.SwiftDependency) []config.SwiftDependency {
+	seen := make(map[string]bool)
+	var result []config.SwiftDependency
+	for _, dep := range lib {
+		seen[dep.Name] = true
+		result = append(result, dep)
+	}
+	for _, dep := range defaults {
+		if seen[dep.Name] {
+			continue
+		}
+		result = append(result, dep)
+	}
+	return result
 }
 
 // mergeDartDependencies merges library dependencies with default dependencies.
@@ -271,7 +304,7 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 // ResolvePreview returns a library where fields from lib.Preview override
 // those in the base lib, if set. If lib.Preview is not set or lib itself is nil
 // this returns nil.
-func ResolvePreview(lib *config.Library) *config.Library {
+func ResolvePreview(lib *config.Library, language string) *config.Library {
 	if lib == nil || lib.Preview == nil {
 		return nil
 	}
@@ -310,13 +343,22 @@ func ResolvePreview(lib *config.Library) *config.Library {
 	if p.SpecificationFormat != "" {
 		res.SpecificationFormat = p.SpecificationFormat
 	}
-	res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
-	res.Dart = mergeDart(res.Dart, p.Dart)
-	res.Go = mergeGo(res.Go, p.Go)
-	res.Java = mergeJava(res.Java, p.Java)
-	res.Nodejs = mergeNodejs(res.Nodejs, p.Nodejs)
-	res.Python = mergePython(res.Python, p.Python)
-	res.Rust = mergeRust(res.Rust, p.Rust)
+	switch language {
+	case config.LanguageDotnet:
+		res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
+	case config.LanguageDart:
+		res.Dart = mergeDart(res.Dart, p.Dart)
+	case config.LanguageGo:
+		res.Go = mergeGo(res.Go, p.Go)
+	case config.LanguageJava:
+		res.Java = mergeJava(res.Java, p.Java)
+	case config.LanguageNodejs:
+		res.Nodejs = mergeNodejs(res.Nodejs, p.Nodejs)
+	case config.LanguagePython:
+		res.Python = mergePython(res.Python, p.Python)
+	case config.LanguageRust:
+		res.Rust = mergeRust(res.Rust, p.Rust)
+	}
 	res.Preview = nil
 	return &res
 }

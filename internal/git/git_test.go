@@ -136,8 +136,7 @@ func TestFilterNoFilter(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/model.rs",
 	}
 
-	cfg := &config.Release{}
-	got := filesFilter(cfg.IgnoredChanges, input)
+	got := filesFilter(nil, input)
 	want := input
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -155,13 +154,10 @@ func TestFilterBasic(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/model.rs",
 	}
 
-	cfg := &config.Release{
-		IgnoredChanges: []string{
-			".sidekick.toml",
-			".repo-metadata.json",
-		},
-	}
-	got := filesFilter(cfg.IgnoredChanges, input)
+	got := filesFilter([]string{
+		".sidekick.toml",
+		".repo-metadata.json",
+	}, input)
 	want := []string{
 		"src/storage/src/lib.rs",
 		"src/storage/Cargo.toml",
@@ -180,14 +176,11 @@ func TestFilterSomeGlobs(t *testing.T) {
 		"doc/howto-2.md",
 	}
 
-	cfg := &config.Release{
-		IgnoredChanges: []string{
-			".sidekick.toml",
-			".repo-metadata.json",
-			"doc/**",
-		},
-	}
-	got := filesFilter(cfg.IgnoredChanges, input)
+	got := filesFilter([]string{
+		".sidekick.toml",
+		".repo-metadata.json",
+		"doc/**",
+	}, input)
 	want := []string{}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

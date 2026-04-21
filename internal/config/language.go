@@ -45,8 +45,6 @@ const (
 	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
 	LanguageRust = "rust"
-	// LanguageRustStorage is a variation of the Rust generator for storage.
-	LanguageRustStorage = "rust_storage"
 	// LanguageSwift is the language identifier for Swift.
 	LanguageSwift = "swift"
 )
@@ -149,8 +147,8 @@ type RustModule struct {
 	// IncludeGrpcOnlyMethods indicates whether to include gRPC-only methods.
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
-	// IncludeList is a list of proto files to include (e.g., "date.proto,expr.proto").
-	IncludeList string `yaml:"include_list,omitempty"`
+	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
+	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
@@ -158,10 +156,6 @@ type RustModule struct {
 
 	// InternalBuilders indicates whether generated builders should be internal to the crate.
 	InternalBuilders bool `yaml:"internal_builders,omitempty"`
-
-	// Language can be used to select a variation of the Rust generator.
-	// For example, `rust_storage` enables special handling for the storage client.
-	Language string `yaml:"language,omitempty"`
 
 	// ModulePath is the Rust module path for converters
 	// (e.g., "crate::generated::gapic::model").
@@ -203,7 +197,7 @@ type RustModule struct {
 	APIPath string `yaml:"api_path"`
 
 	// Template specifies which generator template to use.
-	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod".
+	// Valid values: "grpc-client", "http-client", "prost", "convert-prost", "mod", "storage".
 	Template string `yaml:"template"`
 }
 
@@ -398,7 +392,7 @@ type PythonPackage struct {
 
 	// MetadataNameOverride allows the name in .repo-metadata.json (which is
 	// also used as part of the client documentation URI) to be overridden. By
-	// default it's the package name, but older packages use the API short name
+	// default, it's the package name, but older packages use the API short name
 	// instead.
 	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
 
@@ -572,26 +566,45 @@ type JavaModule struct {
 
 	// RpcDocumentation is the URL for the RPC documentation.
 	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+
+	// TransportOverride allows the "transport" field in .repo-metadata.json
+	// to be overridden.
+	TransportOverride string `yaml:"transport_override,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
-	// Samples determines whether to generate samples for the API.
-	Samples *bool `yaml:"samples,omitempty"`
+	// ExcludedProtos is a list of proto files to exclude from generation.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
+	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
+	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
+	// It determines the module's directory name and is used to derive proto
+	// and gRPC artifact IDs if they are not explicitly overridden.
+	GAPICArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
+
+	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
+	// The artifact ID is also used as the name for the module's directory.
+	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
 
 	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
-	// The artifact ID is also used as the name for the module's directory.
-	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
+	// ProtoOnly determines whether to generate a Proto-only client.
+	// A proto-only client does not define a service in the proto files.
+	ProtoOnly bool `yaml:"proto_only,omitempty"`
+
+	// Samples determines whether to generate samples for the API,
+	// default is true when omitted.
+	Samples *bool `yaml:"samples,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

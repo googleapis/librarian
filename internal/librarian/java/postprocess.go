@@ -49,7 +49,7 @@ type postProcessParams struct {
 	javaAPI        *config.JavaAPI
 	metadata       *repoMetadata
 	outDir         string
-	version        string
+	apiBase        string
 	googleapisDir  string
 	apiProtos      []string
 	includeSamples bool
@@ -89,18 +89,18 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	return nil
 }
 
-func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.version, "gapic") }
-func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.version, "grpc") }
-func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.version, "proto") }
+func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.apiBase, "gapic") }
+func (p postProcessParams) gRPCDir() string  { return filepath.Join(p.outDir, p.apiBase, "grpc") }
+func (p postProcessParams) protoDir() string { return filepath.Join(p.outDir, p.apiBase, "proto") }
 func (p postProcessParams) coords() APICoordinate {
-	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.version, p.javaAPI)
+	return DeriveAPICoordinates(DeriveLibraryCoordinates(p.library), p.apiBase, p.javaAPI)
 }
 
 func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	gapicDir := p.gapicDir()
 	gRPCDir := p.gRPCDir()
 	protoDir := p.protoDir()
-	// Unzip the temp-codegen.srcjar into temporary version/ directory.
+	// Unzip the temp-codegen.srcjar into temporary {gapicDir} directory.
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
 	if _, err := os.Stat(srcjarPath); err == nil {
 		if err := filesystem.Unzip(ctx, srcjarPath, gapicDir); err != nil {
@@ -121,7 +121,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// We target the staging directory because runOwlBot hasn't moved the files
 	// to their final destination yet.
 	coords := p.coords()
-	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.version, coords.Proto.ArtifactID)
+	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
 	exists, err := clirrIgnoreExists(protoModuleRepoRoot)
 	if err != nil {
@@ -134,7 +134,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	}
 
 	// Cleanup intermediate protoc output directory after restructuring
-	if err := os.RemoveAll(filepath.Join(p.outDir, p.version)); err != nil {
+	if err := os.RemoveAll(filepath.Join(p.outDir, p.apiBase)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
 	}
 	return nil
@@ -189,14 +189,14 @@ func removeConflictingFiles(protoSrcDir string) error {
 
 // restructureToStaging moves the generated code into a temporary staging directory
 // that matches the structure expected by owlbot.py. It nests modules under the
-// version directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
+// {apiBase} directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
 // ensure synthtool preserves the module structure.
 func restructureToStaging(p postProcessParams) error {
 	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
-	return restructureModules(p, filepath.Join(stagingDir, p.version))
+	return restructureModules(p, filepath.Join(stagingDir, p.apiBase))
 }
 
 type moveAction struct {

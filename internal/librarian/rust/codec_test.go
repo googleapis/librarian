@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -50,10 +51,11 @@ func ptr[T any](v T) *T {
 
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		api     *config.API
-		want    *parser.ModelConfig
+		name             string
+		library          *config.Library
+		api              *config.API
+		wantReleaseLevel string
+		want             *parser.ModelConfig
 	}{
 		{
 			name: "minimal config",
@@ -113,6 +115,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "google/cloud/secretmanager/v1",
 			},
+			wantReleaseLevel: "preview",
 			want: &parser.ModelConfig{
 				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
@@ -567,6 +570,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 			api: &config.API{
 				Path: "schema/google/showcase/v1beta1",
 			},
+			wantReleaseLevel: "preview",
 			want: &parser.ModelConfig{
 				Language:            config.LanguageRust,
 				SpecificationFormat: config.SpecProtobuf,
@@ -598,7 +602,11 @@ func TestLibraryToModelConfig(t *testing.T) {
 				t.Fatal(err)
 			}
 			if test.want.Codec == nil {
-				test.want.Codec = buildCodec(test.library, "stable")
+				rl := test.wantReleaseLevel
+				if rl == "" {
+					rl = "stable"
+				}
+				test.want.Codec = buildCodec(test.library, rl)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -621,11 +629,6 @@ func TestModuleToModelConfig(t *testing.T) {
 					RustDefault: config.RustDefault{
 						ResourceNameHeuristic: ptr(false),
 					},
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRust,
-						},
-					},
 				},
 			},
 			want: &parser.ModelConfig{
@@ -644,11 +647,6 @@ func TestModuleToModelConfig(t *testing.T) {
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
 						ResourceNameHeuristic: ptr(true),
-					},
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRust,
-						},
 					},
 				},
 			},
@@ -704,26 +702,6 @@ func TestModuleToModelConfig(t *testing.T) {
 						Match:   "bucket id",
 						Replace: "the id of the bucket",
 					},
-				},
-			},
-		},
-		{
-			name: "with custom module language",
-			library: &config.Library{
-				Name: "google-cloud-showcase",
-				Rust: &config.RustCrate{
-					Modules: []*config.RustModule{
-						{
-							Language: config.LanguageRustStorage,
-						},
-					},
-				},
-			},
-			want: &parser.ModelConfig{
-				Language:            config.LanguageRustStorage,
-				SpecificationFormat: config.SpecProtobuf,
-				Source: &sources.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
 				},
 			},
 		},
@@ -802,7 +780,7 @@ func TestModuleToModelConfig(t *testing.T) {
 							Template:    "prost",
 							IncludedIds: []string{"id1", "id2"},
 							SkippedIds:  []string{"id3", "id4"},
-							IncludeList: "example-list",
+							IncludeList: yaml.StringSlice{"example-list"},
 						},
 					},
 				},
@@ -1357,7 +1335,7 @@ func TestBuildCodec(t *testing.T) {
 				"copyright-year":        "2024",
 				"not-for-publication":   "true",
 				"extra-modules":         "mod1,mod2",
-				"release-level":         "stable",
+				"release-level":         "preview",
 			},
 		},
 		{
@@ -1438,7 +1416,7 @@ func TestBuildCodec(t *testing.T) {
 			if sc == nil {
 				sc = &serviceconfig.API{}
 			}
-			got := buildCodec(test.library, sc.ReleaseLevel(config.LanguageRust))
+			got := buildCodec(test.library, sc.ReleaseLevel(config.LanguageRust, test.library.Version))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

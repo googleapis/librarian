@@ -16,6 +16,7 @@ package rust
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"regexp"
@@ -25,6 +26,9 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/semver"
 )
+
+// ErrNoVersionField indicates that the version field was not found in Cargo.toml.
+var ErrNoVersionField = errors.New("no version field found")
 
 // CrateInfo contains the package information.
 type CrateInfo struct {
@@ -51,7 +55,7 @@ func updateCargoVersion(path string, newVersion semver.Version) error {
 	lines := strings.Split(string(contents), "\n")
 	idx := slices.IndexFunc(lines, func(a string) bool { return strings.HasPrefix(a, "version ") })
 	if idx == -1 {
-		return fmt.Errorf("no version field found in %q", path)
+		return fmt.Errorf("%w in %q", ErrNoVersionField, path)
 	}
 	// The number of spaces may seem weird. They match the number of spaces in
 	// the mustache template.

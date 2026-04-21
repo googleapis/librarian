@@ -315,11 +315,17 @@ func TestGenerateAPI(t *testing.T) {
 	library := &config.Library{
 		Name:   "secretmanager",
 		Output: outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
 				{Path: "google/cloud/secretmanager/v1", AdditionalProtos: []string{"google/cloud/common_resources.proto"}},
 			},
 		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
@@ -354,6 +360,68 @@ func TestGenerateAPI(t *testing.T) {
 	}
 }
 
+func TestGenerateAPI_ProtoOnly(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	outdir := t.TempDir()
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	library := &config.Library{
+		Name:   "gkehub",
+		Output: outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		},
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
+			},
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	for _, artifact := range []string{"proto-google-cloud-gkehub-v1beta", "google-cloud-gkehub-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/gkehub/policycontroller/v1beta", config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(
+		t.Context(),
+		cfg,
+		&config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		library,
+		googleapisDir,
+		outdir,
+		&repoMetadata{
+			NamePretty: "GKE Hub API",
+		},
+		apiCfg,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	restructuredPath := filepath.Join(outdir, "owl-bot-staging", "v1beta", "proto-google-cloud-gkehub-v1beta", "src", "main", "java")
+	if _, err := os.Stat(restructuredPath); err != nil {
+		t.Errorf("expected restructured path %s to exist: %v", restructuredPath, err)
+	}
+}
+
 func TestGenerateAPI_NoTools(t *testing.T) {
 	// Temporarily mock runProtoc to avoid external tool requirements.
 	oldRunProtoc := runProtoc
@@ -381,6 +449,9 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 		APIs: []*config.API{
 			api,
 		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
 	}
 	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
 		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
@@ -424,17 +495,6 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		setup   func(t *testing.T, library *config.Library)
 		wantErr error
 	}{
-		{
-			name: "invalid version",
-			library: &config.Library{
-				Name:   "test",
-				Output: t.TempDir(),
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager"}, // Missing version
-				},
-			},
-			wantErr: errExtractVersion,
-		},
 		{
 			name: "no protos found",
 			library: &config.Library{
@@ -492,6 +552,9 @@ func TestGenerateLibrary_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			if _, err := Fill(test.library); err != nil {
+				t.Fatal(err)
+			}
 			// Temporarily mock runProtoc to avoid external tool requirements.
 			oldRunProtoc := runProtoc
 			defer func() { runProtoc = oldRunProtoc }()
@@ -531,6 +594,9 @@ func TestGenerate_Logic(t *testing.T) {
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
 	}
 	cfg := &config.Config{
 		Language: config.LanguageJava,
@@ -670,5 +736,99 @@ func TestCollectJavaFiles(t *testing.T) {
 	sort.Strings(want)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGatherProtos(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	files := []string{
+		"google/cloud/aiplatform/v1/aiplatform.proto",
+		"google/cloud/aiplatform/v1/sub/nested.proto",
+		"google/cloud/aiplatform/v1/sub/deep/deep.proto",
+		"google/api/api.proto",
+		"google/api/sub/sub.proto",
+		"google/cloud/location/locations.proto",
+		"google/cloud/location/sub/sub.proto",
+	}
+	for _, f := range files {
+		path := filepath.Join(tmpDir, f)
+		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, test := range []struct {
+		name    string
+		relPath string
+		want    []string
+	}{
+		{
+			name:    "recursive",
+			relPath: "google/cloud/aiplatform/v1",
+			want: []string{
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/aiplatform.proto"),
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/sub/deep/deep.proto"),
+				filepath.Join(tmpDir, "google/cloud/aiplatform/v1/sub/nested.proto"),
+			},
+		},
+		{
+			name:    "non-recursive google/api",
+			relPath: "google/api",
+			want: []string{
+				filepath.Join(tmpDir, "google/api/api.proto"),
+			},
+		},
+		{
+			name:    "recursive google/cloud/location",
+			relPath: "google/cloud/location",
+			want: []string{
+				filepath.Join(tmpDir, "google/cloud/location/locations.proto"),
+				filepath.Join(tmpDir, "google/cloud/location/sub/sub.proto"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := filepath.Join(tmpDir, test.relPath)
+			got, err := gatherProtos(root, test.relPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFilterProtos(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		fullPaths   []string
+		relExcludes []string
+		want        []string
+	}{
+		{
+			name: "aiplatform exclusion",
+			fullPaths: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/aiplatform.proto"),
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/schema/io_format.proto"),
+			},
+			relExcludes: []string{"google/cloud/aiplatform/v1beta1/schema/io_format.proto"},
+			want: []string{
+				filepath.Join(googleapisDir, "google/cloud/aiplatform/v1beta1/aiplatform.proto"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := filterProtos(test.fullPaths, test.relExcludes, googleapisDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

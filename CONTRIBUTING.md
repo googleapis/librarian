@@ -151,48 +151,21 @@ directory. Markdown files should follow the
 
 ## Sending a pull request
 
-All code changes must go through a pull request. First-time contributors should
-review
-[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow).
+All code changes must be submitted via a pull request. If you are a first-time
+contributor, please review the
+[GitHub flow](https://docs.github.com/en/get-started/using-github/github-flow)
+before starting.
 
-Before sending a pull request, it should include tests if there are logic
+Before sending a pull request, make sure it includes tests if there are logic
 changes, copyright headers in every file, and a commit message following the
-conventions in "Commit messages" section below.
+conventions in the [Commit messages](#commit-messages) section below.
 
-A pull request can be opened from a branch within the repository or from a
-fork. External contributors are only able to open pull requests from forks,
-but team members with write access can choose to open a pull request from a
-repository branch.
+To keep the main repository clean, please open pull requests from a personal
+fork. When opening your pull request, enable "Allow edits from maintainers"
+to allow others to help you with minor tweaks or merge conflicts directly.
 
-### Pull request from a fork
-
-If you open a pull request from a personal fork, you should allow repository
-maintainers to make edits to your fork by turning on
-"Allow edits from maintainers".
-
-Please see [creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork)
-in the official GitHub documentation for details.
-
-### Pull request from a branch
-
-If you are a team member with write access, you can create a branch within the
-repository with your changes and open a pull request from it. After the pull
-request is merged, the branch will be automatically deleted.
-
-You should not have any long-lived branches within the repository without an
-open pull request. Such non-protected branches that don't have an associated
-open pull request, will be periodically cleaned up.
-
-Please see [changing the branch range and destination repository](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request#changing-the-branch-range-and-destination-repository)
-in the official GitHub documentation for details.
-
-### Pull requests with multiple commits
-
-When opening a pull request, it can be helpful to structure the commits for review. If
-your pull request has multiple commits, note in the description whether reviewers should
-review them individually or just focus on the final result. (For example, if
-earlier commits are exploratory and only the end state matters, make that clear
-to avoid wasting reviewer time.)
+For a step-by-step guide, see the official documentation on
+[creating a pull request from a fork](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/creating-a-pull-request-from-a-fork).
 
 ### Keeping pull requests up to date with base branch
 

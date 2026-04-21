@@ -16,7 +16,6 @@ package java
 
 import (
 	"errors"
-	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -32,19 +31,12 @@ var versionRegexp = regexp.MustCompile(`src/main/java/com/google/cloud/.*/v.*/st
 // Clean removes files in the library's output directory that are not in the keep list.
 // It targets patterns like proto-*, grpc-*, and the main GAPIC module.
 func Clean(library *config.Library) error {
-	libraryName := ensureCloudPrefix(library.Name)
-	patterns := []string{
-		fmt.Sprintf("proto-%s-*", libraryName),
-		fmt.Sprintf("grpc-%s-*", libraryName),
-		libraryName,
-		filepath.Join("samples", "snippets", "generated"),
-		".repo-metadata.json",
-	}
+	patterns := cleanPatterns(library)
 	keepSet := make(map[string]bool)
 	for _, k := range library.Keep {
 		keepSet[k] = true
 	}
-	for _, pattern := range patterns {
+	for pattern := range patterns {
 		matches, err := filepath.Glob(filepath.Join(library.Output, pattern))
 		if err != nil {
 			return err
@@ -56,6 +48,29 @@ func Clean(library *config.Library) error {
 		}
 	}
 	return nil
+}
+
+func cleanPatterns(library *config.Library) map[string]bool {
+	libraryCoordinates := DeriveLibraryCoordinates(library)
+	patterns := map[string]bool{
+		filepath.Join("samples", "snippets", "generated"): true,
+		".repo-metadata.json":                             true,
+	}
+	for _, api := range library.APIs {
+		javaAPI := ResolveJavaAPI(library, api)
+		version := filepath.Base(api.Path)
+		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
+		if apiCoordinates.Proto.ArtifactID != "" {
+			patterns[filepath.Join(apiCoordinates.Proto.ArtifactID, "src")] = true
+		}
+		if apiCoordinates.GRPC.ArtifactID != "" {
+			patterns[filepath.Join(apiCoordinates.GRPC.ArtifactID, "src")] = true
+		}
+		if apiCoordinates.GAPIC.ArtifactID != "" {
+			patterns[filepath.Join(apiCoordinates.GAPIC.ArtifactID, "src")] = true
+		}
+	}
+	return patterns
 }
 
 func cleanPath(targetPath, root string, keepSet map[string]bool) error {
