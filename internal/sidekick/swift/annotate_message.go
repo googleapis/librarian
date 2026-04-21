@@ -29,7 +29,7 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 		dep.Required = true
 	}
 	if message.Codec != nil {
-		return nil, nil
+		return message, nil
 	}
 	docLines := codec.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
