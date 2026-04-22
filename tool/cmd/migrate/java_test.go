@@ -190,15 +190,15 @@ func TestBuildConfig(t *testing.T) {
 			gen: &GenerationConfig{
 				Libraries: []LibraryConfig{
 					{
-						LibraryName:  "language-v1",
-						APIShortName: "language",
+						LibraryName:  "secretmanager-v1",
+						APIShortName: "secretmanager",
 						GAPICs: []GAPICConfig{
-							{ProtoPath: "google/cloud/language/v1"},
+							{ProtoPath: "google/cloud/secretmanager/v1"},
 						},
 					},
 				},
 			},
-			src: &config.Source{},
+			src: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -206,13 +206,13 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{},
+					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name: "language-v1",
+						Name: "secretmanager-v1",
 						APIs: []*config.API{
-							{Path: "google/cloud/language/v1"},
+							{Path: "google/cloud/secretmanager/v1"},
 						},
 						Java: &config.JavaModule{},
 					},
@@ -429,10 +429,16 @@ func TestBuildConfig(t *testing.T) {
 			name: "api shortname overrides",
 			gen: &GenerationConfig{
 				Libraries: []LibraryConfig{
-					{APIShortName: "beyondcorp-appconnections"},
+					{
+						LibraryName:  "maps-places",
+						APIShortName: "maps-places",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/maps/places/v1"},
+						},
+					},
 				},
 			},
-			src: &config.Source{},
+			src: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 			want: &config.Config{
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
@@ -440,13 +446,16 @@ func TestBuildConfig(t *testing.T) {
 					Java: &config.JavaModule{},
 				},
 				Sources: &config.Sources{
-					Googleapis: &config.Source{},
+					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
 				},
 				Libraries: []*config.Library{
 					{
-						Name: "beyondcorp-appconnections",
+						Name: "maps-places",
+						APIs: []*config.API{
+							{Path: "google/maps/places/v1"},
+						},
 						Java: &config.JavaModule{
-							APIShortnameOverride: "beyondcorp-appconnections",
+							APIShortnameOverride: "maps-places",
 						},
 					},
 				},

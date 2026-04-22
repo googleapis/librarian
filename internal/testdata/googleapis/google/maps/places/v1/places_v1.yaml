@@ -1,0 +1,6 @@
+type: google.api.Service
+config_version: 3
+name: places.googleapis.com
+title: Places API (New)
+publishing:
+  api_short_name: places
