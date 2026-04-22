@@ -32,7 +32,9 @@ Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
     {{/Codec.HasQueryLines}}
   );
   return _client
-      .{{Codec.RequestMethod}}Streaming(url{{#Codec.HasBody}}, body: {{Codec.BodyMessageName}}{{/Codec.HasBody}})
+      .{{Codec.RequestMethod}}Streaming(url{{#Codec.HasBody}},
+        body: {{Codec.BodyMessageName}}{{/Codec.HasBody}},
+        enableSse: {{Codec.EnableSSE}})
       .map({{Codec.ResponseType}}.fromJson);
 }
 {{/Codec.ServerSideStreaming}}
