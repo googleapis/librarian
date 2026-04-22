@@ -21,7 +21,7 @@ import "strings"
 //
 // Both Swift and the Protobuf comments use markdown, but our markdown includes cross-reference
 // links and sometimes needs cleaning up work correctly on a different markdown engine.
-func (codec *codec) formatDocumentation(doc string) []string {
+func (c *codec) formatDocumentation(doc string) []string {
 	if doc == "" {
 		return nil
 	}

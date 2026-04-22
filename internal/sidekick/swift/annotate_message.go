@@ -24,14 +24,14 @@ type messageAnnotations struct {
 	Model    *modelAnnotations
 }
 
-func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
-	if dep, ok := codec.ApiPackages[message.Package]; ok {
+func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
+	if dep, ok := c.ApiPackages[message.Package]; ok {
 		dep.Required = true
 	}
 	if message.Codec != nil {
 		return nil
 	}
-	docLines := codec.formatDocumentation(message.Documentation)
+	docLines := c.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
 		Name:     pascalCase(message.Name),
 		DocLines: docLines,
@@ -40,20 +40,20 @@ func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotation
 
 	message.Codec = annotations
 	for _, oneof := range message.OneOfs {
-		codec.annotateOneOf(oneof)
+		c.annotateOneOf(oneof)
 	}
 	for _, field := range message.Fields {
-		if err := codec.annotateField(field); err != nil {
+		if err := c.annotateField(field); err != nil {
 			return err
 		}
 	}
 	for _, nested := range message.Messages {
-		if err := codec.annotateMessage(nested, model); err != nil {
+		if err := c.annotateMessage(nested, model); err != nil {
 			return err
 		}
 	}
 	for _, enum := range message.Enums {
-		if err := codec.annotateEnum(enum, model); err != nil {
+		if err := c.annotateEnum(enum, model); err != nil {
 			return err
 		}
 	}

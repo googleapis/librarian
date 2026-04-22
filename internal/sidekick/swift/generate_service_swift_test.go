@@ -17,9 +17,11 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -113,5 +115,95 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestGenerateService_WithImports(t *testing.T) {
+	outDir := t.TempDir()
+
+	externalMessage := &api.Message{
+		Name:    "ExternalMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalMessage",
+	}
+
+	inputMessage := &api.Message{
+		Name:    "LocalMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.LocalMessage",
+		Fields: []*api.Field{
+			{
+				Name:    "ext_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".google.cloud.external.v1.ExternalMessage",
+			},
+		},
+	}
+
+	iam := &api.Service{
+		Name: "IAM",
+		Methods: []*api.Method{
+			{
+				Name:      "TestMethod",
+				InputType: inputMessage,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})
+	model.PackageName = "google.cloud.test.v1"
+	model.State = &api.APIState{
+		MessageByID: map[string]*api.Message{
+			".google.cloud.external.v1.ExternalMessage": externalMessage,
+		},
+	}
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	swiftCfg := &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{
+					Name:               "GoogleCloudGax",
+					RequiredByServices: true,
+				},
+				{
+					Name:               "GoogleCloudAuth",
+					RequiredByServices: true,
+				},
+				{
+					ApiPackage: "google.cloud.external.v1",
+					Name:       "GoogleCloudExternalV1",
+				},
+			},
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	filename := filepath.Join(expectedDir, "IAM.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	expectedImports := `import GoogleCloudAuth
+import GoogleCloudGax
+
+import GoogleCloudExternalV1`
+
+	if !strings.Contains(contentStr, expectedImports) {
+		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)
 	}
 }

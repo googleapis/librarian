@@ -23,7 +23,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/googleapis/librarian/internal/surfer/gcloud/declarative"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/declarative"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/iancoleman/strcase"
 )

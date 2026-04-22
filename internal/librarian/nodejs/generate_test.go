@@ -280,9 +280,38 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--some-other-param",
 			},
 		},
+		{
+			name: "DIREGAPIC support",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:      "google/cloud/secretmanager/v1",
+							DIREGAPIC: true,
+						},
+					},
+				},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=" + absGoogleapisDir,
+				"-I", absGoogleapisDir,
+				"--output-dir", "staging",
+				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
+				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--diregapic",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging")
+			nodejsAPI := resolveNodejsAPI(test.library, test.api)
+			got, err := buildGeneratorArgs(test.api, test.library, absGoogleapisDir, "staging", nodejsAPI)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1141,6 +1170,25 @@ func TestResolveNodejsAPI(t *testing.T) {
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
+			},
+		},
+		{
+			name: "DIREGAPIC support",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:      "google/cloud/secretmanager/v1",
+							DIREGAPIC: true,
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:             "google/cloud/secretmanager/v1",
+				AdditionalProtos: []string{commonProtos},
+				DIREGAPIC:        true,
 			},
 		},
 	} {

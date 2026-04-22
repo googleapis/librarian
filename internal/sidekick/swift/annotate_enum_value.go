@@ -27,8 +27,8 @@ type enumValueAnnotations struct {
 	DocLines    []string
 }
 
-func (codec *codec) annotateUniqueEnumValue(ev *api.EnumValue) {
-	docLines := codec.formatDocumentation(ev.Documentation)
+func (c *codec) annotateUniqueEnumValue(ev *api.EnumValue) {
+	docLines := c.formatDocumentation(ev.Documentation)
 	ann := &enumValueAnnotations{
 		CaseName:    enumValueCaseName(ev),
 		Number:      ev.Number,
@@ -38,7 +38,7 @@ func (codec *codec) annotateUniqueEnumValue(ev *api.EnumValue) {
 	ev.Codec = ann
 }
 
-func (codec *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumValueAnnotations) error {
+func (c *codec) annotateEnumValue(ev *api.EnumValue, unique map[int32]*enumValueAnnotations) error {
 	if ev.Codec != nil {
 		return nil
 	}

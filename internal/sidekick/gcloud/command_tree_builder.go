@@ -19,7 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
 type commandTreeBuilder struct {

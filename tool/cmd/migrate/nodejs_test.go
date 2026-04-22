@@ -15,6 +15,8 @@
 package main
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -29,8 +31,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 	}
 	want := []*config.Library{
 		{
-			Name:          "google-cloud-secretmanager",
-			Version:       "6.1.0",
+			Name: "google-cloud-secretmanager", Version: "6.1.0",
 			CopyrightYear: "2020",
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
@@ -179,5 +180,36 @@ func TestParseBazelNodejsInfo(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestParseBazelNodejsInfo_Diregapic(t *testing.T) {
+	tmpDir := t.TempDir()
+	apiPath := "google/cloud/compute/v1"
+	fullPath := filepath.Join(tmpDir, apiPath)
+	if err := os.MkdirAll(fullPath, 0755); err != nil {
+		t.Fatal(err)
+	}
+	bazelContent := `
+nodejs_gapic_library(
+    name = "compute_nodejs_gapic",
+    package_name = "@google-cloud/compute",
+    diregapic = True,
+)
+`
+	if err := os.WriteFile(filepath.Join(fullPath, "BUILD.bazel"), []byte(bazelContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := parseBazelNodejsInfo(tmpDir, apiPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &nodejsGapicInfo{
+		packageName: "@google-cloud/compute",
+		diregapic:   true,
+	}
+	if diff := cmp.Diff(want, got, cmp.AllowUnexported(nodejsGapicInfo{})); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

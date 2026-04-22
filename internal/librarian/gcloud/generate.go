@@ -12,13 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides functionality for generating gcloud commands.
+// Package gcloud provides a simple API for generating gcloud commands.
 package gcloud
 
 import (
-	"context"
-
-	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	sidekickgcloud "github.com/googleapis/librarian/internal/sidekick/gcloud"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
 // GenerateConfig contains parameters for generating gcloud commands.
@@ -34,21 +33,14 @@ type GenerateConfig struct {
 }
 
 // Generate generates gcloud commands for a service.
-func Generate(_ context.Context, cfg GenerateConfig) error {
+func Generate(cfg GenerateConfig) error {
 	overrides, err := provider.ReadGcloudConfig(cfg.GcloudConfig)
 	if err != nil {
 		return err
 	}
-
 	model, err := provider.CreateAPIModel(cfg.Googleapis, cfg.IncludeList, cfg.ServiceConfig, cfg.DescriptorFiles, cfg.DescriptorFilesToGenerate)
 	if err != nil {
 		return err
 	}
-
-	tree, err := newCommandTreeBuilder(model, overrides).build()
-	if err != nil {
-		return err
-	}
-
-	return writeCommandGroupTree(cfg.Output, cfg.BaseModule, tree)
+	return sidekickgcloud.Generate(model, overrides, cfg.Output, cfg.BaseModule)
 }
