@@ -475,7 +475,7 @@ type DartPackage struct {
 	// RepositoryURL is the URL to the repository for this package.
 	RepositoryURL string `yaml:"repository_url,omitempty"`
 
-	// SupportsSSE indicates whether the taget API supports Server-Sent Events (SSE) for methods
+	// SupportsSSE indicates whether the target API supports Server-Sent Events (SSE) for methods
 	// where `ServerSideStreaming` is `true`.
 	SupportsSSE bool `yaml:"supports_sse,omitempty"`
 

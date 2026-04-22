@@ -151,7 +151,7 @@ type methodAnnotation struct {
 	QueryLines          []string
 	IsLROGetOperation   bool
 	ServerSideStreaming bool // Whether the method produces a stream of results (or list if `EnableSSE` is `false`).
-	EnableSSE           bool // Whether the taget API supports Server-Sent Events (SSE).
+	EnableSSE           bool // Whether the target API supports Server-Sent Events (SSE).
 }
 
 // HasBody returns true if the method has a body.
