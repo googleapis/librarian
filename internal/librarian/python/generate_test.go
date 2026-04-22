@@ -105,12 +105,14 @@ func TestCreateProtocOptions(t *testing.T) {
 		wantErr  bool
 	}{
 		{
-			name:    "basic case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
+			name: "basic case",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -127,7 +129,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -139,7 +141,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -152,7 +154,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -168,26 +170,28 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
 			name: "proto-only exists but doesn't include API path",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
+				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
 					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
 				},
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
 			name: "proto-only exists and includes API path",
 			api:  &config.API{Path: "google/cloud/secretmanager/type"},
 			library: &config.Library{
+				Name: "google-cloud-secret-manager",
 				Python: &config.PythonPackage{
 					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
 				},
@@ -195,6 +199,26 @@ func TestCreateProtocOptions(t *testing.T) {
 			expected: []string{
 				"--python_out=staging",
 				"--pyi_out=staging",
+			},
+		},
+		{
+			name: "potentially derived options specified explicitly",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {
+							"python-gapic-namespace=x",
+							"python-gapic-name=y",
+							"warehouse-package-name=z",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,python-gapic-namespace=x,python-gapic-name=y,warehouse-package-name=z,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 	} {
@@ -1323,6 +1347,106 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 			}
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("stageProtoFiles error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeriveGAPICNamespace(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "single path element",
+			path: "grafeas",
+			want: "grafeas",
+		},
+		{
+			name: "multiple path elements",
+			path: "google/cloud/datacatalog/lineage/v1",
+			want: "google.cloud",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveGAPICNamespace(test.path)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveGAPICName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "single path element in name",
+			path: "google/cloud/datacatalog/v1",
+			want: "datacatalog",
+		},
+		{
+			name: "multiple path elements in name",
+			path: "google/cloud/datacatalog/lineage/v1",
+			want: "datacatalog_lineage",
+		},
+		{
+			name: "no version",
+			path: "google/apps/script/type",
+			want: "script_type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveGAPICName(test.path)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindOption(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		options   []string
+		wantValue string
+		wantFound bool
+	}{
+		{
+			name:    "empty options",
+			options: []string{},
+		},
+		{
+			name:    "requested option not present",
+			options: []string{"a=b"},
+		},
+		{
+			name:    "requested option not present, but similar names are",
+			options: []string{"othertest=a", "testother=b"},
+		},
+		{
+			name:      "option present with value",
+			options:   []string{"a=b", "test=test-value", "c=d"},
+			wantValue: "test-value",
+			wantFound: true,
+		},
+		{
+			name:      "option present without value",
+			options:   []string{"a=b", "test=", "c=d"},
+			wantFound: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotValue, gotFound := findOption(test.options, "test")
+			if diff := cmp.Diff(test.wantValue, gotValue); diff != "" {
+				t.Errorf("mismatch in value (-want +got):\n%s", diff)
+			}
+			if test.wantFound != gotFound {
+				t.Errorf("mismatch in found: want %v, got %v", test.wantFound, gotFound)
 			}
 		})
 	}

@@ -36,6 +36,10 @@ import (
 const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
+	transportOption                     = "transport"
+	gapicNamespaceOption                = "python-gapic-namespace"
+	gapicNameOption                     = "python-gapic-name"
+	warehousePackageNameOption          = "warehouse-package-name"
 )
 
 var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
@@ -304,15 +308,21 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 		opts = append(opts, "rest-numeric-enums")
 	}
 
-	addTransport := true
-	for _, opt := range opts {
-		if strings.HasPrefix(opt, "transport=") {
-			addTransport = false
-		}
-	}
 	// Add transport option, if we haven't already got it.
-	if addTransport {
-		opts = append(opts, fmt.Sprintf("transport=%s", transport))
+	if _, gotOption := findOption(opts, transportOption); !gotOption {
+		opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
+	}
+	// Add derived python-gapic-namespace option, if we haven't already got it.
+	if _, gotOption := findOption(opts, gapicNamespaceOption); !gotOption {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNamespaceOption, deriveGAPICNamespace(api.Path)))
+	}
+	// Add derived python-gapic-name option, if we haven't already got it.
+	if _, gotOption := findOption(opts, gapicNameOption); !gotOption {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNameOption, deriveGAPICName(api.Path)))
+	}
+	// Add the library name as warehouse-package-name option, if we haven't already got it.
+	if _, gotOption := findOption(opts, warehousePackageNameOption); !gotOption {
+		opts = append(opts, fmt.Sprintf("%s=%s", warehousePackageNameOption, library.Name))
 	}
 
 	// Add gapic-version from library version
@@ -469,4 +479,45 @@ func DefaultLibraryName(api string) string {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview-packages")
+}
+
+// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
+// it's not specified explicitly. This is the first two components of the API
+// path, dot-separated.
+func deriveGAPICNamespace(path string) string {
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return path
+	}
+	return parts[0] + "." + parts[1]
+}
+
+// deriveGAPICName derives the value to pass as python-gapic-name when it's not
+// specified explicitly. This is the path, without the leading namespace (after
+// replacing dots with slashes), and without any version suffix, and then
+// replacing slashes with underscores. Example:
+// a path of google/cloud/foo/bar/v1 would have a GAPIC name of "foo_bar".
+func deriveGAPICName(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, version)
+	}
+	derivedNamespace := deriveGAPICNamespace(path)
+	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
+	path = strings.TrimSuffix(path, version)
+	path = strings.Trim(path, "/")
+	return strings.ReplaceAll(path, "/", "_")
+}
+
+// findOption finds the value of a named option within a list of name=value
+// strings. If the option isn't found, an empty string is returned. The second
+// value indicates whether the option was found or not.
+func findOption(options []string, name string) (string, bool) {
+	prefix := name + "="
+	for _, candidate := range options {
+		if strings.HasPrefix(candidate, prefix) {
+			return strings.TrimPrefix(candidate, prefix), true
+		}
+	}
+	return "", false
 }

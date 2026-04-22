@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // gapicGenerationInfo contains useful information about the expected directory
@@ -46,7 +47,6 @@ type gapicGenerationInfo struct {
 const neutralSourcePlaceholder = "{neutral-source}"
 
 var (
-	errBadAPIPath               = errors.New("invalid API path")
 	errNoCommonGAPICFilesConfig = errors.New("when cleaning a GAPIC package, a config with common GAPIC paths must be provided")
 	// versionedGAPICRelativePathsToClean is the set of paths to remove for each
 	// API-versioned GAPIC output directory, relative to that directory.
@@ -129,10 +129,7 @@ func cleanProtoOnly(api *config.API, lib *config.Library) error {
 // be completely deleted. Likewise the documentation directory (e.g.
 // "docs/run_v2") will be completely deleted.
 func cleanGAPIC(api *config.API, lib *config.Library) error {
-	generationInfo, err := deriveGAPICGenerationInfo(api, lib)
-	if err != nil {
-		return err
-	}
+	generationInfo := deriveGAPICGenerationInfo(api, lib)
 	// Unusual, but it does happen, e.g. google/shopping/type and
 	// google/apps/script/type/{xyz}. We'll delete files as "common" GAPIC
 	// files instead.
@@ -152,10 +149,7 @@ func cleanGAPIC(api *config.API, lib *config.Library) error {
 // cleanGAPICCommon cleans the common output created for packages containing
 // any GAPIC libraries.
 func cleanGAPICCommon(lib *config.Library) error {
-	apiInfo, err := deriveGAPICGenerationInfo(lib.APIs[0], lib)
-	if err != nil {
-		return err
-	}
+	apiInfo := deriveGAPICGenerationInfo(lib.APIs[0], lib)
 	if lib.Python == nil {
 		return errNoCommonGAPICFilesConfig
 	}
@@ -208,59 +202,27 @@ func deleteUnlessKept(lib *config.Library, path string) error {
 
 // deriveGAPICGenerationInfo derives a gapicGenerationInfo for a single API within a library,
 // using the API path and the options from the configuration.
-func deriveGAPICGenerationInfo(api *config.API, lib *config.Library) (*gapicGenerationInfo, error) {
-	splitPath := strings.Split(api.Path, "/")
-	if len(splitPath) < 2 {
-		return nil, fmt.Errorf("not enough path segments in %s: %w", api.Path, errBadAPIPath)
+func deriveGAPICGenerationInfo(api *config.API, lib *config.Library) *gapicGenerationInfo {
+	options := []string{}
+	if lib.Python != nil {
+		options = lib.Python.OptArgsByAPI[api.Path]
 	}
-	namespace := findOptArg(api, lib.Python, "python-gapic-namespace")
-	gapicName := findOptArg(api, lib.Python, "python-gapic-name")
-
-	lastElement := splitPath[len(splitPath)-1]
-	version := ""
-	if strings.HasPrefix(lastElement, "v") {
-		version = lastElement
-		splitPath = splitPath[:len(splitPath)-1]
+	namespace, gotNamespace := findOption(options, gapicNamespaceOption)
+	if !gotNamespace {
+		namespace = deriveGAPICNamespace(api.Path)
 	}
-	var rootDir string
-	if namespace == "" {
-		rootDir = strings.Join(splitPath[:len(splitPath)-1], "/")
-	} else {
-		rootDir = strings.ReplaceAll(namespace, ".", "/")
+	name, gotName := findOption(options, gapicNameOption)
+	if !gotName {
+		name = deriveGAPICName(api.Path)
 	}
-	if gapicName == "" {
-		gapicName = splitPath[len(splitPath)-1]
-	}
+	version := serviceconfig.ExtractVersion(api.Path)
 	versionDir := ""
 	if version != "" {
-		versionDir = fmt.Sprintf("%s_%s", gapicName, version)
+		versionDir = fmt.Sprintf("%s_%s", name, version)
 	}
 	return &gapicGenerationInfo{
-		RootDir:    rootDir,
-		NeutralDir: gapicName,
+		RootDir:    strings.ReplaceAll(namespace, ".", "/"),
+		NeutralDir: name,
 		VersionDir: versionDir,
-	}, nil
-}
-
-// findOptArg finds the value for the named option within the configuration for
-// a Python package, with respect to a specific API path.
-// Note: this does not use PythonPackage.OptArgs, only OptArgsByAPI.
-// TODO(https://github.com/googleapis/librarian/issues/4107): remove the above
-// comment when OptArgs doesn't exist, or change this function to use OptArgs
-// if we decide to keep it.
-func findOptArg(api *config.API, cfg *config.PythonPackage, optName string) string {
-	if cfg == nil || cfg.OptArgsByAPI == nil {
-		return ""
 	}
-	args, ok := cfg.OptArgsByAPI[api.Path]
-	if !ok {
-		return ""
-	}
-	prefix := optName + "="
-	for _, arg := range args {
-		if strings.HasPrefix(arg, prefix) {
-			return arg[len(prefix):]
-		}
-	}
-	return ""
 }
