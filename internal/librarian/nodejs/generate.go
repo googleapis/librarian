@@ -237,7 +237,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
 	// them afterward.
-	backupDir, err := os.MkdirTemp("", "librarian-backup-*")
+	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
 	if err != nil {
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}

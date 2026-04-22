@@ -152,7 +152,8 @@ type methodAnnotation struct {
 	BodyMessageName     string
 	QueryLines          []string
 	IsLROGetOperation   bool
-	ServerSideStreaming bool // Whether the server supports streaming via server-sent events (SSE).
+	ServerSideStreaming bool // Whether the method produces a stream of results (or list if `EnableSSE` is `false`).
+	EnableSSE           bool // Whether the target API supports Server-Sent Events (SSE).
 }
 
 // HasBody returns true if the method has a body.
@@ -232,6 +233,8 @@ type annotateModel struct {
 	packagePrefixes map[string]string
 	// A mapping from a package name (e.g. "http") to its version constraint (e.g. "^1.3.0").
 	dependencyConstraints map[string]string
+	// Whether the target API supports Server-Sent Events (SSE).
+	supportsSSE bool
 }
 
 func newAnnotateModel(model *api.API) *annotateModel {
@@ -328,6 +331,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			doNotPublish = value
+		case key == "supports-sse":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return fmt.Errorf(
+					"cannot convert `supports-sse` value %q to boolean: %w",
+					definition,
+					err,
+				)
+			}
+			annotate.supportsSSE = value
 		case key == "readme-after-title-text":
 			// Markdown that will be inserted into the README.md after the title section.
 			readMeAfterTitleText = definition
@@ -734,6 +747,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		QueryLines:          queryLines,
 		IsLROGetOperation:   isGetOperation,
 		ServerSideStreaming: method.ServerSideStreaming,
+		EnableSSE:           method.ServerSideStreaming && annotate.supportsSSE,
 	}
 	method.Codec = annotation
 }

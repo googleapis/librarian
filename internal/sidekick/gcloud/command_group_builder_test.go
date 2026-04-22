@@ -19,7 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
 func TestCommandGroupBuilder_BuildRoot(t *testing.T) {

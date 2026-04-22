@@ -392,7 +392,7 @@ func requireGoogleapisPath(t *testing.T) string {
 		return env
 	}
 
-	relPath := "../../testdata/googleapis"
+	relPath := "../testdata/googleapis"
 	if _, err := os.Stat(relPath); err == nil {
 		abs, err := filepath.Abs(relPath)
 		if err != nil {

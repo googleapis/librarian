@@ -93,3 +93,17 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 	}
 	return codec
 }
+
+func (c *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependency) {
+	t.Helper()
+	for _, d := range deps {
+		dep := &Dependency{SwiftDependency: d}
+		if d.ApiPackage != "" {
+			if _, ok := c.ApiPackages[d.ApiPackage]; ok {
+				t.Fatalf("conflicting definition for %s", d.ApiPackage)
+			}
+			c.ApiPackages[d.ApiPackage] = dep
+		}
+		c.Dependencies = append(c.Dependencies, dep)
+	}
+}

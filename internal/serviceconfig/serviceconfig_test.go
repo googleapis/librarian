@@ -167,7 +167,7 @@ func TestFind(t *testing.T) {
 				Title:                "Google Compute Engine API",
 				Languages:            []string{config.LanguageAll},
 				Transports:           map[string]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
-				SkipRESTNumericEnums: []string{"go", "python"},
+				SkipRESTNumericEnums: []string{"go", "java", "python"},
 			},
 		},
 	} {

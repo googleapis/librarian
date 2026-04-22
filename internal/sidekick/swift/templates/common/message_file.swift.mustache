@@ -21,7 +21,9 @@ limitations under the License.
 {{/Codec.Model.BoilerPlate}}
 
 import Foundation
+{{#Codec.Model.HasMessageImports}}
 
+{{/Codec.Model.HasMessageImports}}
 {{#Codec.Model.MessageImports}}
 import {{.}}
 {{/Codec.Model.MessageImports}}

@@ -12,20 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Command surfer generates gcloud command YAML files.
-package main
+// Package gcloud provides a code generator for gcloud commands.
+package gcloud
 
 import (
-	"context"
-	"log"
-	"os"
-
-	"github.com/googleapis/librarian/internal/surfer"
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
-func main() {
-	ctx := context.Background()
-	if err := surfer.Run(ctx, os.Args...); err != nil {
-		log.Fatal(err)
+// Generate builds a gcloud command tree from the parsed API model and
+// overrides and writes the resulting command groups into output under
+// baseModule.
+func Generate(model *api.API, overrides *provider.Config, output, baseModule string) error {
+	tree, err := newCommandTreeBuilder(model, overrides).build()
+	if err != nil {
+		return err
 	}
+	return writeCommandGroupTree(output, baseModule, tree)
 }

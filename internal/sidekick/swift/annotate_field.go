@@ -24,15 +24,15 @@ type fieldAnnotations struct {
 	DocLines  []string
 }
 
-func (codec *codec) annotateField(field *api.Field) error {
-	fieldType, err := codec.fieldTypeName(field)
+func (c *codec) annotateField(field *api.Field) error {
+	fieldType, err := c.fieldTypeName(field)
 	if err != nil {
 		return err
 	}
 	annotations := &fieldAnnotations{
 		Name:      camelCase(field.Name),
 		FieldType: fieldType,
-		DocLines:  codec.formatDocumentation(field.Documentation),
+		DocLines:  c.formatDocumentation(field.Documentation),
 	}
 	field.Codec = annotations
 	return nil

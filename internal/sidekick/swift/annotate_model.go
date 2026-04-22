@@ -28,6 +28,7 @@ type modelAnnotations struct {
 	PackageName    string
 	MonorepoRoot   string
 	DependsOn      map[string]*Dependency
+	ServiceImports []string
 	MessageImports []string
 }
 
@@ -46,40 +47,51 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	return deps
 }
 
-func (codec *codec) annotateModel() error {
+// HasMessageImports returns true if the package needs imports for the methods.
+//
+// The mustache templates use this to format the generated code.
+func (ann *modelAnnotations) HasMessageImports() bool {
+	return len(ann.MessageImports) != 0
+}
+
+func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
-		CopyrightYear: codec.GenerationYear,
+		CopyrightYear: c.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   codec.PackageName,
-		MonorepoRoot:  codec.MonorepoRoot,
+		PackageName:   c.PackageName,
+		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
 	}
-	codec.Model.Codec = annotations
-	for _, message := range codec.Model.Messages {
-		if err := codec.annotateMessage(message, annotations); err != nil {
+	c.Model.Codec = annotations
+	for _, message := range c.Model.Messages {
+		if err := c.annotateMessage(message, annotations); err != nil {
 			return err
 		}
 	}
-	for _, enum := range codec.Model.Enums {
-		if err := codec.annotateEnum(enum, annotations); err != nil {
+	for _, enum := range c.Model.Enums {
+		if err := c.annotateEnum(enum, annotations); err != nil {
 			return err
 		}
 	}
-	for _, service := range codec.Model.Services {
-		if err := codec.annotateService(service, annotations); err != nil {
+	for _, service := range c.Model.Services {
+		if err := c.annotateService(service, annotations); err != nil {
 			return err
 		}
 	}
-	var imports []string
-	for _, p := range codec.Dependencies {
-		if p.Required || (p.RequiredByServices && len(codec.Model.Services) != 0) {
+	var serviceImports []string
+	var messageImports []string
+	for _, p := range c.Dependencies {
+		if p.RequiredByServices && len(c.Model.Services) != 0 {
+			serviceImports = append(serviceImports, p.Name)
+			annotations.DependsOn[p.Name] = p
+		} else if p.Required {
+			messageImports = append(messageImports, p.Name)
 			annotations.DependsOn[p.Name] = p
 		}
-		if p.Required && !p.RequiredByServices {
-			imports = append(imports, p.Name)
-		}
 	}
-	slices.Sort(imports)
-	annotations.MessageImports = imports
+	slices.Sort(serviceImports)
+	slices.Sort(messageImports)
+	annotations.ServiceImports = serviceImports
+	annotations.MessageImports = messageImports
 	return nil
 }

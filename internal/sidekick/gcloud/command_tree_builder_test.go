@@ -22,8 +22,8 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
 )
 
 func TestCommandTreeBuilder_Build_Structure(t *testing.T) {

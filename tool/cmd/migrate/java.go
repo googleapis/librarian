@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -294,6 +295,17 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				TransportOverride:            l.Transport,
 			},
 		}
+		if len(apis) > 0 {
+			derivedShortName := name
+			serviceconfig.SortAPIs(apis)
+			api, err := serviceconfig.Find(src.Dir, apis[0].Path, config.LanguageJava)
+			if err == nil && api.ShortName != "" {
+				derivedShortName = api.ShortName
+			}
+			if derivedShortName != l.APIShortName {
+				lib.Java.APIShortnameOverride = l.APIShortName
+			}
+		}
 		if override, ok := keepOverride[lib.Name]; ok {
 			lib.Keep = override
 		} else {
@@ -302,9 +314,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				return nil, err
 			}
 			lib.Keep = keep
-		}
-		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
-			lib.Java.APIShortnameOverride = shortnameOverride
 		}
 		libs = append(libs, lib)
 	}

@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
 func TestNewArgument(t *testing.T) {

@@ -194,6 +194,17 @@ func TestBuildCodec(t *testing.T) {
 			},
 		},
 		{
+			name: "supports sse",
+			library: &config.Library{
+				Dart: &config.DartPackage{
+					SupportsSSE: true,
+				},
+			},
+			want: map[string]string{
+				"supports-sse": "true",
+			},
+		},
+		{
 			name: "all fields",
 			library: &config.Library{
 				CopyrightYear: "2025",
@@ -219,6 +230,7 @@ func TestBuildCodec(t *testing.T) {
 					Protos: map[string]string{
 						"proto:google.api": "package:google_cloud_api/api.dart",
 					},
+					SupportsSSE: true,
 				},
 			},
 			want: map[string]string{
@@ -235,6 +247,7 @@ func TestBuildCodec(t *testing.T) {
 				"readme-after-title-text":        "**Note:** This package is experimental.",
 				"readme-quickstart-text":         "Run `dart pub add` to install.",
 				"repository-url":                 "https://github.com/googleapis/google-cloud-dart",
+				"supports-sse":                   "true",
 				"package:googleapis_auth":        "^2.0.0",
 				"prefix:google.protobuf":         "pb",
 				"proto:google.api":               "package:google_cloud_api/api.dart",

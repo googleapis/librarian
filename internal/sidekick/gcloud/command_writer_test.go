@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/surfer/gcloud/declarative"
+	"github.com/googleapis/librarian/internal/sidekick/gcloud/declarative"
 )
 
 func TestWritePartialFile_Output(t *testing.T) {
