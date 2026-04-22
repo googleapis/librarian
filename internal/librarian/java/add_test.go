@@ -51,8 +51,8 @@ func TestDefaultLibraryName(t *testing.T) {
 	} {
 		t.Run(test.api, func(t *testing.T) {
 			got := DefaultLibraryName(test.api)
-			if got != test.want {
-				t.Errorf("DefaultLibraryName(%q) = %q, want %q", test.api, got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
