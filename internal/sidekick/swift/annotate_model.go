@@ -83,7 +83,7 @@ func (c *codec) annotateModel() error {
 			dep.Required = true
 			annotations.WktPackage = dep.Name
 		} else {
-			return fmt.Errorf("missing dependency for `google.protobuf` this is required to generate the `Any` extensions")
+			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownPackage)
 		}
 	}
 	for _, service := range c.Model.Services {
