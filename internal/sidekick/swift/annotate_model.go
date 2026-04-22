@@ -65,6 +65,9 @@ func (c *codec) annotateModel() error {
 		DependsOn:     map[string]*Dependency{},
 		WktPackage:    wellKnownSwiftPackage,
 	}
+	if dep, ok := c.ApiPackages[wellKnownPackage]; ok {
+		annotations.WktPackage = dep.Name
+	}
 	c.Model.Codec = annotations
 	for _, message := range c.Model.Messages {
 		if err := c.annotateMessage(message, annotations); err != nil {
