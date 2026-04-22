@@ -45,7 +45,9 @@ const (
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
-var errTargetDir = errors.New("target directory does not exist")
+var (
+	errTargetDir = errors.New("target directory does not exist")
+)
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
@@ -86,10 +88,10 @@ type javaModule struct {
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
 // and parent POMs when new proto or gRPC modules are added.
-func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
+func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]string, error) {
 	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var anyMissingProtoGRPC bool
@@ -104,7 +106,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		pomPath := filepath.Join(m.dir, "pom.xml")
 		if m.isMissing {
 			if err := writePOM(pomPath, m.template, m.templateData); err != nil {
-				return fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
+				return nil, fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
 			}
 			continue
 		}
@@ -114,19 +116,41 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		switch m.template {
 		case clientPOMTemplateName:
 			if err := updateClientPOM(pomPath, m.templateData.(clientPOMData)); err != nil {
-				return fmt.Errorf("failed to update client pom.xml %s: %w", m.artifactID, err)
+				return nil, fmt.Errorf("failed to update client pom.xml %s: %w", m.artifactID, err)
 			}
 		case bomPOMTemplateName:
 			if err := updateBOMPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
-				return fmt.Errorf("failed to update BOM pom.xml %s: %w", m.artifactID, err)
+				return nil, fmt.Errorf("failed to update BOM pom.xml %s: %w", m.artifactID, err)
 			}
 		case parentPOMTemplateName:
 			if err := updateParentPOM(pomPath, m.templateData.(bomParentPOMData)); err != nil {
-				return fmt.Errorf("failed to update parent pom.xml %s: %w", m.artifactID, err)
+				return nil, fmt.Errorf("failed to update parent pom.xml %s: %w", m.artifactID, err)
 			}
 		}
 	}
-	return nil
+
+	return deriveNewVersions(library, modules, anyMissingProtoGRPC), nil
+}
+
+func deriveNewVersions(library *config.Library, modules []javaModule, anyMissingProtoGRPC bool) []string {
+	if !anyMissingProtoGRPC {
+		return nil
+	}
+
+	releasedVersion, err := deriveLastReleasedVersion(library.Version)
+	if err != nil {
+		// This should not happen if we validated the version earlier,
+		// and we don't want to fail syncPOMs just for versions.txt.
+		return nil
+	}
+
+	var newVersions []string
+	for _, m := range modules {
+		if m.isMissing && (m.template == protoPOMTemplateName || m.template == gRPCPOMTemplateName) {
+			newVersions = append(newVersions, fmt.Sprintf("%s:%s:%s", m.artifactID, releasedVersion, library.Version))
+		}
+	}
+	return newVersions
 }
 
 // updateClientPOM surgically updates the client POM using template markers

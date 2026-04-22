@@ -46,7 +46,7 @@ func TestPostGenerate(t *testing.T) {
 			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
-	if err := PostGenerate(t.Context(), tmpDir, cfg); err != nil {
+	if err := PostGenerate(t.Context(), tmpDir, cfg, nil); err != nil {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
@@ -193,7 +193,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
@@ -212,7 +212,7 @@ func TestPostGenerate_Error(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
 	if !errors.Is(err, errRootPOMGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPOMGeneration)
 	}

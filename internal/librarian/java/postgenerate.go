@@ -59,7 +59,7 @@ var (
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newVersions []string) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -67,6 +67,11 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
+
+	if err := appendVersions(repoPath, newVersions); err != nil {
+		return err
+	}
+
 	modules, err := searchForJavaModules(repoPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
@@ -80,6 +85,29 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	}
 	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
+	}
+	return nil
+}
+
+func appendVersions(repoPath string, versions []string) (err error) {
+	if len(versions) == 0 {
+		return nil
+	}
+	versionsPath := filepath.Join(repoPath, "versions.txt")
+	f, err := os.OpenFile(versionsPath, os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to open versions.txt: %w", err)
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = fmt.Errorf("failed to close versions.txt: %w", cerr)
+		}
+	}()
+
+	for _, v := range versions {
+		if _, err := fmt.Fprintf(f, "%s\n", v); err != nil {
+			return fmt.Errorf("failed to write to versions.txt: %w", err)
+		}
 	}
 	return nil
 }

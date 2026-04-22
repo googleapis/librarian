@@ -224,15 +224,18 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
+		var allNewVersions []string
 		for _, library := range libraries {
-			if err := java.Generate(ctx, cfg, library, src); err != nil {
+			newVersions, err := java.Generate(ctx, cfg, library, src)
+			if err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
+			allNewVersions = append(allNewVersions, newVersions...)
 			if err := java.Format(ctx, library); err != nil {
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
-		return java.PostGenerate(ctx, ".", cfg)
+		return java.PostGenerate(ctx, ".", cfg, allNewVersions)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
