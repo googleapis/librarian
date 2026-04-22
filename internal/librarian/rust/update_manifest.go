@@ -75,10 +75,8 @@ func updateWorkspaceVersion(path, crateName string, newVersion semver.Version) e
 	updated := false
 	for i, line := range lines {
 		trimmed := strings.TrimSpace(line)
-
 		isDirect := isDirectDependency(trimmed, crateName)
 		isRenamed := isRenamedDependency(line, crateName)
-
 		if (isDirect || isRenamed) && versionRegex.MatchString(line) {
 			lines[i] = versionRegex.ReplaceAllString(line, fmt.Sprintf(`version = "%s"`, newVersion.String()))
 			updated = true
