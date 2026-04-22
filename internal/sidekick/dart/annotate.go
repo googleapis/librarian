@@ -187,9 +187,10 @@ type fieldAnnotation struct {
 	// The default value for the string, e.g. "0" for an integer type.
 	DefaultValue string
 	// Whether the default value is constant or not, e.g. "0" is constant but "Uint8List(0)" is not.
-	ConstDefault bool
-	FromJson     string
-	ToJson       string
+	ConstDefault  bool
+	FromJson      string
+	ToJson        string
+	ToJsonElement string
 }
 
 type enumAnnotation struct {
@@ -811,6 +812,10 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		}
 	}
 	state := annotate.state
+	var toJsonElement string
+	if !implicitPresence {
+		toJsonElement = createToJsonElement(field)
+	}
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
@@ -820,7 +825,8 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
-		ToJson:                createToJsonLine(field, state),
+		ToJson:                createToJsonLine(field, state, fieldName(field)),
+		ToJsonElement:         toJsonElement,
 		ConstDefault:          constDefault,
 	}
 }
@@ -1004,8 +1010,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, state *api.APIState) string {
-	name := fieldName(field)
+func createToJsonLine(field *api.Field, state *api.APIState, name string) string {
 
 	switch {
 	case field.Repeated:
@@ -1032,6 +1037,39 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 
 	enc, _ := encoder(field.Typez, name)
 	return enc
+}
+
+// createToJsonNullAwareLine creates a null-aware expression for JSON serialization.
+func createToJsonNullAwareLine(field *api.Field) string {
+	name := fieldName(field)
+
+	// Check if the type requires encoding.
+	_, required := encoder(field.Typez, name)
+	if !required {
+		return name
+	}
+
+	// For types that require encoding (like Messages or 64-bit ints),
+	// encoder appends ".toJson()" or ".toString()".
+	// Passing "name?" results in "name?.toJson()" or "name?.toString()".
+	enc, _ := encoder(field.Typez, name+"?")
+	return enc
+}
+
+// createToJsonElement creates a JSON element expression for map literals.
+func createToJsonElement(field *api.Field) string {
+	name := fieldName(field)
+	jsonName := field.JSONName
+
+	switch field.Typez {
+	case api.FLOAT_TYPE, api.DOUBLE_TYPE:
+		return fmt.Sprintf("if (%s case final $1?) '%s': encodeDouble($1)", name, jsonName)
+	case api.BYTES_TYPE:
+		return fmt.Sprintf("if (%s case final $1?) '%s': encodeBytes($1)", name, jsonName)
+	default:
+		nullAware := createToJsonNullAwareLine(field)
+		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
+	}
 }
 
 // buildQueryLines builds a string or strings representing query parameters for the given field.
@@ -1139,8 +1177,14 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.STRING_TYPE:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.ENUM_TYPE:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.BOOL_TYPE ||
 		field.Typez == api.INT32_TYPE ||

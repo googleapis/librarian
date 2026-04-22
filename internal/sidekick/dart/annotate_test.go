@@ -531,7 +531,40 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 	}
 }
 
-// Tests that messages that are allowlisted as not being generated are, in fact, not generated.
+func TestAnnotateMessage_HasFields(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{sample.Secret()},
+		[]*api.Enum{},
+		[]*api.Service{},
+	)
+	annotate := newAnnotateModel(model)
+	annotate.annotateModel(map[string]string{})
+
+	emptyMessage := &api.Message{
+		Name:    "EmptyMessage",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.EmptyMessage",
+		Fields:  []*api.Field{},
+	}
+
+	t.Run("has fields", func(t *testing.T) {
+		secret := sample.Secret()
+		annotate.annotateMessage(secret)
+		codec := secret.Codec.(*messageAnnotation)
+		if !codec.HasFields() {
+			t.Errorf("Expected HasFields() to be true")
+		}
+	})
+
+	t.Run("no fields", func(t *testing.T) {
+		annotate.annotateMessage(emptyMessage)
+		codec := emptyMessage.Codec.(*messageAnnotation)
+		if codec.HasFields() {
+			t.Errorf("Expected HasFields() to be false")
+		}
+	})
+}
+
 func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	status := &api.Message{
 		Name:    "Status",
@@ -693,7 +726,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 			[]string{"if (result.doubleOpt case final $1?) 'double': '${$1}'"},
 		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
-			[]string{"if (result.stringOpt case final $1?) 'string': $1"},
+			[]string{"'string': ?result.stringOpt"},
 		},
 
 		// one ofs
@@ -792,7 +825,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 				Typez:    api.ENUM_TYPE,
 				TypezID:  enum.ID,
 				Optional: true},
-			[]string{"if (result.optionalEnum case final $1?) 'optionalJsonEnum': $1.value"},
+			[]string{"'optionalJsonEnum': ?result.optionalEnum?.value"},
 		},
 		{
 			&api.Field{
@@ -1500,7 +1533,7 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model.State)
+			got := createToJsonLine(test.field, model.State, fieldName(test.field))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
@@ -1638,6 +1671,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1657,6 +1691,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1676,6 +1711,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1695,6 +1731,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const []",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1715,6 +1752,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const {}",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1734,6 +1772,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1754,6 +1793,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1773,6 +1813,7 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1793,11 +1834,10 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "",
 			},
 		},
 		{
-			// `google.protobuf.Empty` is a special because, in some cases, it is
-			// converted to the `void` Dart type. `void` is not nullable in Dart.
 			name: "google.protobuf.Empty",
 			field: &api.Field{
 				Name:     "empty_field",
@@ -1814,6 +1854,27 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
+				ToJsonElement:         "'emptyField': ?emptyField?.toJson()",
+			},
+		},
+		{
+			name: "float",
+			field: &api.Field{
+				Name:     "float_field",
+				JSONName: "floatField",
+				Typez:    api.FLOAT_TYPE,
+				Optional: true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "floatField",
+				Type:                  "double",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+				ToJsonElement:         "if (floatField case final $1?) 'floatField': encodeDouble($1)",
 			},
 		},
 	} {
