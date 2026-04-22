@@ -84,7 +84,6 @@ func (c *codec) annotateModel() error {
 	if len(c.Model.Messages) != 0 {
 		if dep, ok := c.ApiPackages[wellKnownPackage]; ok {
 			dep.Required = true
-			annotations.WktPackage = dep.Name
 		} else {
 			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownPackage)
 		}
