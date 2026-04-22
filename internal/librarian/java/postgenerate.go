@@ -59,6 +59,7 @@ var (
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
+// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt
 func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newVersions []string) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {

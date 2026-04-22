@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -68,7 +69,12 @@ func TestSyncPOMs_Golden(t *testing.T) {
 	wantVersions := []string{
 		"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
 		"grpc-google-cloud-secretmanager-v1:1.2.3:1.2.3",
+		"google-cloud-secretmanager:1.2.3:1.2.3",
+		"google-cloud-secretmanager-bom:1.2.3:1.2.3",
+		"google-cloud-secretmanager-parent:1.2.3:1.2.3",
 	}
+	sort.Strings(gotVersions)
+	sort.Strings(wantVersions)
 	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
 		t.Errorf("mismatch in new versions (-want +got):\n%s", diff)
 	}

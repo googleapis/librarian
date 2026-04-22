@@ -87,7 +87,9 @@ type javaModule struct {
 }
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
-// and parent POMs when new proto or gRPC modules are added.
+// and parent POMs when new proto or gRPC modules are added. It returns a list
+// of newly created artifact version entries to be added to versions.txt.
+// TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries
 func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]string, error) {
 	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
@@ -102,14 +104,22 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		}
 	}
 
+	releasedVersion, err := deriveLastReleasedVersion(library.Version)
+	if err != nil {
+		return nil, err
+	}
+
+	var newVersions []string
 	for _, m := range modules {
 		pomPath := filepath.Join(m.dir, "pom.xml")
 		if m.isMissing {
 			if err := writePOM(pomPath, m.template, m.templateData); err != nil {
 				return nil, fmt.Errorf("failed to generate pom.xml for %s: %w", m.artifactID, err)
 			}
+			newVersions = append(newVersions, fmt.Sprintf("%s:%s:%s", m.artifactID, releasedVersion, library.Version))
 			continue
 		}
+
 		if !anyMissingProtoGRPC {
 			continue
 		}
@@ -129,28 +139,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		}
 	}
 
-	return deriveNewVersions(library, modules, anyMissingProtoGRPC), nil
-}
-
-func deriveNewVersions(library *config.Library, modules []javaModule, anyMissingProtoGRPC bool) []string {
-	if !anyMissingProtoGRPC {
-		return nil
-	}
-
-	releasedVersion, err := deriveLastReleasedVersion(library.Version)
-	if err != nil {
-		// This should not happen if we validated the version earlier,
-		// and we don't want to fail syncPOMs just for versions.txt.
-		return nil
-	}
-
-	var newVersions []string
-	for _, m := range modules {
-		if m.isMissing && (m.template == protoPOMTemplateName || m.template == gRPCPOMTemplateName) {
-			newVersions = append(newVersions, fmt.Sprintf("%s:%s:%s", m.artifactID, releasedVersion, library.Version))
-		}
-	}
-	return newVersions
+	return newVersions, nil
 }
 
 // updateClientPOM surgically updates the client POM using template markers
