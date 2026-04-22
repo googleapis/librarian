@@ -15,7 +15,7 @@ limitations under the License.
 }}
 {{#IsAIPStandard}}
 {{#SampleInfo}}
-///    client: &{{Service.Codec.Name}}{{#ResourceNameField}}, {{Codec.SetterName}}: &str{{/ResourceNameField}}{{#IsAIPStandardUpdate}}, name: &str{{/IsAIPStandardUpdate}}
+///    client: &{{Service.Codec.Name}}{{#ResourceNameField}}{{^IsAIPStandardUpdate}}{{#Codec.FormattedResource}}{{#FormatArgs}}, {{.}}: &str{{/FormatArgs}}{{/Codec.FormattedResource}}{{^Codec.FormattedResource}}, {{Codec.SetterName}}: &str{{/Codec.FormattedResource}}{{/IsAIPStandardUpdate}}{{/ResourceNameField}}{{#IsAIPStandardUpdate}}{{#ResourceNameField}}{{#Codec.FormattedResource}}{{#FormatArgs}}, {{.}}: &str{{/FormatArgs}}{{/Codec.FormattedResource}}{{^Codec.FormattedResource}}, name: &str{{/Codec.FormattedResource}}{{/ResourceNameField}}{{^ResourceNameField}}, name: &str{{/ResourceNameField}}{{/IsAIPStandardUpdate}}
 {{/SampleInfo}}
 {{/IsAIPStandard}}
 {{^IsAIPStandard}}

@@ -88,8 +88,82 @@ func CrossReference(model *API) error {
 			}
 		}
 	}
+
+	for _, m := range model.State.MessageByID {
+		if m.Resource != nil && len(m.Resource.Patterns) > 0 {
+			for _, f := range m.Fields {
+				// AIP-121: name field is the identifier.
+				if f.Name == "name" && f.ResourceNamePattern == nil {
+					f.ResourceNamePattern = ToResourceNamePattern(m.Resource.Patterns[0])
+				}
+			}
+		}
+
+		for _, f := range m.Fields {
+			if f.ResourceReference != nil {
+				if f.ResourceReference.Type != "" {
+					if res, ok := model.State.ResourceByType[f.ResourceReference.Type]; ok && len(res.Patterns) > 0 {
+						f.ResourceNamePattern = ToResourceNamePattern(res.Patterns[0])
+					}
+				} else if f.ResourceReference.ChildType != "" {
+					if res, ok := model.State.ResourceByType[f.ResourceReference.ChildType]; ok && len(res.Patterns) > 0 {
+						pattern := ToResourceNamePattern(res.Patterns[0])
+						if len(pattern.Segments) > 1 {
+							pattern.Segments = pattern.Segments[:len(pattern.Segments)-1]
+						}
+						f.ResourceNamePattern = pattern
+					}
+				}
+			}
+		}
+	}
+
 	enrichSamples(model)
 	return nil
+}
+
+// ToResourceNamePattern converts a ResourcePattern into a ResourceNamePattern.
+func ToResourceNamePattern(pattern ResourcePattern) *ResourceNamePattern {
+	var segments []ResourceNameSegment
+	for i := 0; i < len(pattern); i++ {
+		s := pattern[i]
+		if s.Literal != nil && strings.HasPrefix(*s.Literal, "//") {
+			continue
+		}
+		seg := ResourceNameSegment{}
+		if s.Literal != nil {
+			seg.Literal = *s.Literal
+		}
+		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
+			seg.Variable = s.Variable.FieldPath[0]
+		}
+
+		// Try to combine with next segment if this is a literal and next is variable
+		if s.Literal != nil && i+1 < len(pattern) && pattern[i+1].Variable != nil {
+			if len(pattern[i+1].Variable.FieldPath) > 0 {
+				seg.Variable = pattern[i+1].Variable.FieldPath[0]
+			}
+			i++
+		}
+
+		// Clean up leading slash if it's the first segment after host skip
+		if len(segments) == 0 {
+			seg.Literal = strings.TrimPrefix(seg.Literal, "/")
+		} else {
+			// Add leading slash if missing
+			if !strings.HasPrefix(seg.Literal, "/") {
+				seg.Literal = "/" + seg.Literal
+			}
+		}
+
+		// Add slash between literal and variable if both present
+		if seg.Literal != "" && seg.Variable != "" && !strings.HasSuffix(seg.Literal, "/") {
+			seg.Literal += "/"
+		}
+
+		segments = append(segments, seg)
+	}
+	return &ResourceNamePattern{Segments: segments}
 }
 
 // enrichSamples populates the API model with information useful for generating code samples.
@@ -563,9 +637,20 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		}
 	}
 
+	var resourceNameField *Field
+	if resourceField.MessageType != nil {
+		for _, f := range resourceField.MessageType.Fields {
+			if f.Name == "name" {
+				resourceNameField = f
+				break
+			}
+		}
+	}
+
 	return &SampleInfo{
-		MessageField:    resourceField,
-		UpdateMaskField: updateMaskField,
+		ResourceNameField: resourceNameField,
+		MessageField:      resourceField,
+		UpdateMaskField:   updateMaskField,
 	}
 }
 

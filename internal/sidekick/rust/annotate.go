@@ -269,6 +269,7 @@ type methodAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
+	ResourceNameField         *api.Field
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -547,6 +548,15 @@ type fieldAnnotations struct {
 	// If this field is part of a oneof group, this will contain the other fields
 	// in the group.
 	OtherFieldsInGroup []*api.Field
+	// FormattedResource contains information on how to format the resource name.
+	FormattedResource *FormattedResource
+}
+
+type FormattedResource struct {
+	// The Rust format string, e.g., "projects/{}/secrets/{}"
+	FormatString string
+	// The variables used in the format string, mapped to sample function parameters.
+	FormatArgs []string
 }
 
 // SkipIfIsEmpty returns true if the field should be skipped if it is empty.
@@ -1005,6 +1015,9 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
 		return nil, err
 	}
+	if m.SampleInfo != nil {
+		annotation.ResourceNameField = m.SampleInfo.ResourceNameField
+	}
 	if annotation.Name == "clone" {
 		// Some methods look too similar to standard Rust traits. Clippy makes
 		// a recommendation that is not applicable to generated code.
@@ -1391,6 +1404,36 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
 		}
 	}
+
+	if field.ResourceNamePattern != nil && len(field.ResourceNamePattern.Segments) > 0 {
+		fr := &FormattedResource{}
+		var formatString strings.Builder
+		hasLiterals := false
+		for _, s := range field.ResourceNamePattern.Segments {
+			if s.Literal != "" {
+				hasLiterals = true
+				formatString.WriteString(s.Literal)
+			}
+			if s.Variable != "" {
+				formatString.WriteString("{}")
+				// Convert variable to snake_case and add _id suffix if needed
+				arg := strcase.ToSnake(s.Variable)
+				if !strings.HasSuffix(arg, "_id") && !strings.HasSuffix(arg, "_name") {
+					arg += "_id"
+				}
+				fr.FormatArgs = append(fr.FormatArgs, arg)
+			}
+		}
+		if hasLiterals && len(fr.FormatArgs) > 0 {
+			fr.FormatString = formatString.String()
+			ann.FormattedResource = fr
+		}
+	}
+
+	if field.ID == ".google.cloud.secretmanager.v1.Secret.name" {
+		slog.Info("ANNOTATING SECRET.NAME", "fr", ann.FormattedResource, "pattern", field.ResourceNamePattern)
+	}
+
 	return ann, nil
 }
 

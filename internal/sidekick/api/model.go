@@ -1027,6 +1027,9 @@ type Field struct {
 	// ResourceReference contains the data from the `google.api.resource_reference`
 	// annotation.
 	ResourceReference *ResourceReference
+	// ResourceNamePattern is a parsed representation of the resource pattern associated
+	// with this field.
+	ResourceNamePattern *ResourceNamePattern
 	// Codec is a placeholder to put language specific annotations.
 	Codec any
 }
@@ -1176,6 +1179,19 @@ type Resource struct {
 
 // ResourcePattern is a sequence of path segments that defines the structure of a resource's unique identifier.
 type ResourcePattern []PathSegment
+
+// ResourceNameSegment is a segment of a resource name pattern.
+type ResourceNameSegment struct {
+	// Literal is the literal part of the segment, including any separators.
+	Literal string
+	// Variable is the name of the variable part of the segment, if any.
+	Variable string
+}
+
+// ResourceNamePattern describes the structure of a resource name.
+type ResourceNamePattern struct {
+	Segments []ResourceNameSegment
+}
 
 // ResourceReference describes a field's relationship to another resource type.
 // It acts as a foreign key, indicating that the field's value identifies an instance of another resource.

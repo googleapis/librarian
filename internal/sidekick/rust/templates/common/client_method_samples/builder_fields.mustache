@@ -15,15 +15,15 @@ limitations under the License.
 }}
 {{#IsAIPStandard}}
 {{#SampleInfo}}
-{{#ResourceNameField}}
-///         .set_{{Codec.SetterName}}({{Codec.SetterName}})
-{{/ResourceNameField}}
+{{#ResourceNameField}}{{^IsAIPStandardUpdate}}{{#Codec.FormattedResource}}
+///         .set_{{Codec.SetterName}}(format!("{{FormatString}}"{{#FormatArgs}}, {{.}}{{/FormatArgs}})){{/Codec.FormattedResource}}{{^Codec.FormattedResource}}
+///         .set_{{Codec.SetterName}}({{Codec.SetterName}}){{/Codec.FormattedResource}}{{/IsAIPStandardUpdate}}{{/ResourceNameField}}
 {{#ResourceIDField}}
 ///         .set_{{Codec.SetterName}}("{{Codec.SetterName}}_value")
 {{/ResourceIDField}}
 {{#MessageField}}
 ///         .set_{{Codec.SetterName}}(
-///             {{MessageType.Codec.Name}}::new(){{#IsAIPStandardUpdate}}.set_name(name){{/IsAIPStandardUpdate}}/* set fields */
+///             {{MessageType.Codec.Name}}::new(){{#IsAIPStandardUpdate}}{{#ResourceNameField.Codec.FormattedResource}}.set_name(format!("{{FormatString}}"{{#FormatArgs}}, {{.}}{{/FormatArgs}})){{/ResourceNameField.Codec.FormattedResource}}{{^ResourceNameField.Codec.FormattedResource}}.set_name(name){{/ResourceNameField.Codec.FormattedResource}}{{/IsAIPStandardUpdate}}/* set fields */
 ///         )
 {{/MessageField}}
 {{#UpdateMaskField}}
