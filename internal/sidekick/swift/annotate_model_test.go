@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -37,5 +38,78 @@ func TestModelAnnotations(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
+	externalMessage := &api.Message{
+		Name:    "ExternalMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.ExternalMessage",
+	}
+
+	message := &api.Message{
+		Name:    "LocalMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.LocalMessage",
+		Fields: []*api.Field{
+			{
+				Name:    "ext_field",
+				Typez:   api.MESSAGE_TYPE,
+				TypezID: ".google.cloud.external.v1.ExternalMessage",
+			},
+		},
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".google.cloud.test.v1.TestService",
+		Package: "google.cloud.test.v1",
+	}
+
+	model := api.NewTestAPI(
+		[]*api.Message{message}, []*api.Enum{}, []*api.Service{service})
+	model.State.MessageByID[externalMessage.ID] = externalMessage
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalWithOverrideV1"},
+		{ApiPackage: "google.cloud.unused.v1", Name: "GoogleUnusedPackage"},
+		{Name: "GoogleCloudGax", RequiredByServices: true},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := model.Codec.(*modelAnnotations)
+	if !ok {
+		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+	}
+
+	want := map[string]bool{
+		"GoogleCloudExternalWithOverrideV1": true,
+		"GoogleCloudGax":                    false, // required by the service, but not messages
+	}
+	got := map[string]bool{}
+	for name, dep := range ann.DependsOn {
+		got[name] = dep.Required
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1"}
+	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	msg := model.Messages[0]
+	msgAnn, ok := msg.Codec.(*messageAnnotations)
+	if !ok {
+		t.Fatalf("expected message.Codec to be *messageAnnotations, got %T", msg.Codec)
+	}
+	if msgAnn.Model != ann {
+		t.Errorf("expected msgAnn.Model to be %p, got %p", ann, msgAnn.Model)
 	}
 }

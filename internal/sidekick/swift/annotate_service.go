@@ -19,21 +19,22 @@ import (
 )
 
 type serviceAnnotations struct {
-	CopyrightYear    string
-	BoilerPlate      []string
 	Name             string
 	DocLines         []string
 	RestMethods      []*api.Method
 	PackageName      string
 	QuickstartMethod *api.Method
+	Model            *modelAnnotations
 }
 
-func (codec *codec) annotateService(service *api.Service, model *modelAnnotations) {
-	docLines := codec.formatDocumentation(service.Documentation)
+func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
+	docLines := c.formatDocumentation(service.Documentation)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
-			codec.annotateMethod(method)
+			if err := c.annotateMethod(method, model); err != nil {
+				return err
+			}
 			restMethods = append(restMethods, method)
 		}
 	}
@@ -42,15 +43,15 @@ func (codec *codec) annotateService(service *api.Service, model *modelAnnotation
 		quickstartMethod = service.QuickstartMethod
 	}
 	annotations := &serviceAnnotations{
-		CopyrightYear:    model.CopyrightYear,
-		BoilerPlate:      model.BoilerPlate,
 		Name:             pascalCase(service.Name),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
-		PackageName:      codec.PackageName,
+		PackageName:      c.PackageName,
 		QuickstartMethod: quickstartMethod,
+		Model:            model,
 	}
 	service.Codec = annotations
+	return nil
 }
 
 func isGeneratedMethod(method *api.Method) bool {

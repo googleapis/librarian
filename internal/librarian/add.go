@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -112,6 +113,8 @@ func deriveLibraryName(language string, api string) string {
 		return fakeDefaultLibraryName(api)
 	case config.LanguageGo:
 		return golang.DefaultLibraryName(api)
+	case config.LanguageJava:
+		return java.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:
@@ -205,6 +208,8 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 	switch cfg.Language {
 	case config.LanguageGo:
 		lib = golang.Add(lib)
+	case config.LanguageJava:
+		lib = java.Add(lib)
 	case config.LanguagePython:
 		var err error
 		lib, err = python.Add(lib)

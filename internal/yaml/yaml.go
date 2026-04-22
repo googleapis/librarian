@@ -17,7 +17,6 @@ package yaml
 
 import (
 	"bytes"
-	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -43,48 +42,6 @@ func (s StringSlice) IsZero() bool {
 	// return true ONLY if nil (omit field)
 	// return false if empty slice (keep field)
 	return s == nil
-}
-
-// TODO: delete the FlexibleStringSlice once Rust has been migrated according to list syntax
-// (according to this PR):
-// https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367
-
-// FlexibleStringSlice is a custom slice of strings that unmarshals from either
-// a single comma-separated string or a YAML sequence of strings.
-//
-// By implementing the yaml.IsZeroer interface, it ensures that:
-//  1. A nil slice is considered "zero" and is omitted from the output.
-//  2. An empty but initialized slice (e.g., []string{}) is NOT considered "zero"
-//     and is explicitly marshaled as an empty YAML sequence ([]).
-type FlexibleStringSlice []string
-
-// IsZero implements the yaml.IsZeroer interface, which determines whether a
-// field should be considered "empty" when the 'omitempty' struct tag is used.
-func (s FlexibleStringSlice) IsZero() bool {
-	return s == nil
-}
-
-// UnmarshalYAML implements the yaml.Unmarshaler interface to support unmarshaling
-// from either a single comma-separated string or a YAML sequence of strings.
-func (s *FlexibleStringSlice) UnmarshalYAML(n *yaml.Node) error {
-	switch n.Kind {
-	case yaml.ScalarNode:
-		var res []string
-		parts := strings.Split(n.Value, ",")
-		for _, p := range parts {
-			if p = strings.TrimSpace(p); p != "" {
-				res = append(res, p)
-			}
-		}
-		*s = res
-		return nil
-
-	case yaml.SequenceNode:
-		return n.Decode((*[]string)(s))
-
-	default:
-		return fmt.Errorf("yaml: line %d: expected string or sequence, got %v", n.Line, n.ShortTag())
-	}
 }
 
 // Unmarshal parses YAML data into a value of type T.

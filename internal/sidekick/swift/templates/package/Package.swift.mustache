@@ -25,7 +25,8 @@ import PackageDescription
 
 let package = Package(
   name: "{{Codec.PackageName}}",
-  platforms: [.macOS(.v15), .iOS(.v18)],
+  {{! Linux and Windows are implicit in Swift }}
+  platforms: [.macOS(.v15)],
   products: [
     .library(name: "{{Codec.PackageName}}", targets: ["{{Codec.PackageName}}"])
   ],

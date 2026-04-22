@@ -969,6 +969,7 @@
   new_issue_uri: https://issuetracker.google.com/issues/new?component=187134&template=0
   skip_rest_numeric_enums:
     - go
+    - java
     - python
   transports:
     csharp: rest
@@ -2886,6 +2887,12 @@
     - python
   release_level:
     java: stable
+- path: google/maps/mapmanagement/v2beta
+  languages:
+    - go
+    - java
+    - nodejs
+    - python
 - path: google/maps/mapsplatformdatasets/v1
   languages:
     - java

@@ -28,11 +28,11 @@ type enumAnnotations struct {
 	DefaultCaseName string
 }
 
-func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
-		codec.annotateUniqueEnumValue(ev)
+		c.annotateUniqueEnumValue(ev)
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 		if ev.Number == 0 {
 			defaultCaseName = ev.Codec.(*enumValueAnnotations).CaseName
@@ -47,13 +47,13 @@ func (codec *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error 
 		}
 	}
 	for _, ev := range enum.Values {
-		if err := codec.annotateEnumValue(ev, existing); err != nil {
+		if err := c.annotateEnumValue(ev, existing); err != nil {
 			return err
 		}
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 	}
 
-	docLines := codec.formatDocumentation(enum.Documentation)
+	docLines := c.formatDocumentation(enum.Documentation)
 	annotations := &enumAnnotations{
 		CopyrightYear:   model.CopyrightYear,
 		BoilerPlate:     model.BoilerPlate,

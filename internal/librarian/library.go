@@ -22,6 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 )
 
@@ -283,6 +284,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return golang.Fill(lib)
 	case config.LanguageJava:
 		return java.Fill(lib)
+	case config.LanguagePython:
+		return python.Fill(lib)
 	default:
 		return lib, nil
 	}
@@ -304,7 +307,7 @@ func FindLibrary(c *config.Config, name string) (*config.Library, error) {
 // ResolvePreview returns a library where fields from lib.Preview override
 // those in the base lib, if set. If lib.Preview is not set or lib itself is nil
 // this returns nil.
-func ResolvePreview(lib *config.Library) *config.Library {
+func ResolvePreview(lib *config.Library, language string) *config.Library {
 	if lib == nil || lib.Preview == nil {
 		return nil
 	}
@@ -343,13 +346,22 @@ func ResolvePreview(lib *config.Library) *config.Library {
 	if p.SpecificationFormat != "" {
 		res.SpecificationFormat = p.SpecificationFormat
 	}
-	res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
-	res.Dart = mergeDart(res.Dart, p.Dart)
-	res.Go = mergeGo(res.Go, p.Go)
-	res.Java = mergeJava(res.Java, p.Java)
-	res.Nodejs = mergeNodejs(res.Nodejs, p.Nodejs)
-	res.Python = mergePython(res.Python, p.Python)
-	res.Rust = mergeRust(res.Rust, p.Rust)
+	switch language {
+	case config.LanguageDotnet:
+		res.Dotnet = mergeDotnet(res.Dotnet, p.Dotnet)
+	case config.LanguageDart:
+		res.Dart = mergeDart(res.Dart, p.Dart)
+	case config.LanguageGo:
+		res.Go = mergeGo(res.Go, p.Go)
+	case config.LanguageJava:
+		res.Java = mergeJava(res.Java, p.Java)
+	case config.LanguageNodejs:
+		res.Nodejs = mergeNodejs(res.Nodejs, p.Nodejs)
+	case config.LanguagePython:
+		res.Python = mergePython(res.Python, p.Python)
+	case config.LanguageRust:
+		res.Rust = mergeRust(res.Rust, p.Rust)
+	}
 	res.Preview = nil
 	return &res
 }

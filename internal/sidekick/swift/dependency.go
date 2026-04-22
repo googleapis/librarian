@@ -23,6 +23,7 @@ import (
 // Dependency wraps config.SwiftDependency to add helper methods.
 type Dependency struct {
 	config.SwiftDependency
+	Required bool
 }
 
 // LocalName returns the name of the dependency when used in a `Package.swift` file.

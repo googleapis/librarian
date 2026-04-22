@@ -70,7 +70,7 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	}
 	if swiftCfg != nil {
 		for _, d := range swiftCfg.Dependencies {
-			dependency := Dependency{d}
+			dependency := Dependency{SwiftDependency: d}
 			result.Dependencies = append(result.Dependencies, &dependency)
 			if d.ApiPackage != "" {
 				result.ApiPackages[d.ApiPackage] = &dependency

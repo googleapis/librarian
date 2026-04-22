@@ -16,10 +16,14 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bazelbuild/buildtools/build"
@@ -162,7 +166,10 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if err != nil {
 		return err
 	}
-	cfg := buildConfig(gen, repoPath, src, versions)
+	cfg, err := buildConfig(gen, repoPath, src, versions)
+	if err != nil {
+		return err
+	}
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
@@ -211,7 +218,7 @@ func readVersions(path string) (map[string]string, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) *config.Config {
+func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) (*config.Config, error) {
 	var libs []*config.Library
 	if v, ok := versions["google-cloud-java"]; ok {
 		libs = append(libs, &config.Library{
@@ -254,7 +261,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
-			applyJavaArtifactOverrides(name, javaAPI)
+			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
@@ -284,12 +291,17 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				BillingNotRequired:           invertBoolPtr(l.RequiresBilling),
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
+				TransportOverride:            l.Transport,
 			},
 		}
 		if override, ok := keepOverride[lib.Name]; ok {
 			lib.Keep = override
 		} else {
-			lib.Keep = parseOwlBotKeep(repoPath, output)
+			keep, err := parseOwlBotKeep(repoPath, output)
+			if err != nil {
+				return nil, err
+			}
+			lib.Keep = keep
 		}
 		if shortnameOverride, ok := apiShortnameOverrides[lib.Name]; ok {
 			lib.Java.APIShortnameOverride = shortnameOverride
@@ -297,7 +309,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		libs = append(libs, lib)
 	}
 	if len(libs) == 0 {
-		return nil
+		return nil, nil
 	}
 	return &config.Config{
 		Language: "java",
@@ -311,37 +323,61 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		},
 		Libraries: libs,
 		Repo:      "googleapis/google-cloud-java",
-	}
+	}, nil
 }
 
-// parseOwlBotKeep parses the .OwlBot-hermetic.yaml file for the given library
-// and extracts additional deep-preserve-regex patterns into a list of paths
-// to be preserved during generation. It filters out the standard template
-// patterns and ensures the paths are relative to the library's output directory.
-// It assumes the regex is actually a file or dir path.
-func parseOwlBotKeep(repoPath, outputDir string) []string {
-	path := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
-	if _, err := os.Stat(path); err != nil {
-		return nil
+// parseOwlBotKeep reads .OwlBot-hermetic.yaml in the library directory and returns
+// a sorted list of file paths that match the deep-preserve-regex patterns.
+func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
+	libraryDir := filepath.Join(repoPath, outputDir)
+	yamlPath := filepath.Join(repoPath, outputDir, ".OwlBot-hermetic.yaml")
+	_, err := os.Stat(yamlPath)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
 	}
 	content, err := yaml.Read[struct {
 		DeepPreserveRegex []string `yaml:"deep-preserve-regex"`
-	}](path)
+	}](yamlPath)
 	if err != nil {
-		log.Printf("Warning: failed to parse %s: %v", path, err)
-		return nil
+		log.Printf("Warning: failed to parse %s: %v", yamlPath, err)
+		return nil, err
+	}
+	var compiledRegexes []*regexp.Regexp
+	for _, r := range content.DeepPreserveRegex {
+		re, err := regexp.Compile(strings.TrimPrefix(r, "/"))
+		if err != nil {
+			return nil, err
+		}
+		compiledRegexes = append(compiledRegexes, re)
 	}
 	var keeps []string
-	prefix := "/" + outputDir + "/"
-	for _, regex := range content.DeepPreserveRegex {
-		// Ignore standard template pattern:
-		// "/java-library-name/google-.*/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java"
-		if strings.HasPrefix(regex, prefix) && strings.HasSuffix(regex, "/src/test/java/com/google/cloud/.*/v.*/it/IT.*Test.java") {
-			continue
+	if err := filepath.WalkDir(libraryDir, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
 		}
-		keeps = append(keeps, strings.TrimPrefix(regex, prefix))
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(libraryDir, path)
+		if err != nil {
+			return err
+		}
+		rel = filepath.ToSlash(rel)
+		for _, re := range compiledRegexes {
+			if re.MatchString(rel) {
+				keeps = append(keeps, rel)
+				break
+			}
+		}
+		return nil
+	}); err != nil {
+		return nil, err
 	}
-	return keeps
+	slices.Sort(keeps)
+	return keeps, nil
 }
 
 // parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
@@ -359,38 +395,17 @@ func parseArtifactID(distributionName, name string) string {
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
 // they don't follow the standard pattern.
-func applyJavaArtifactOverrides(name string, api *config.JavaAPI) {
-	switch {
-	case name == "datastore" && api.Path == "google/datastore/admin/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-datastore-admin-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-datastore-admin-v1"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/docs":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/drive":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/gmail":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/sheets":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "gsuite-addons" && api.Path == "google/apps/script/type/slides":
-		api.ProtoArtifactIDOverride = "proto-google-apps-script-type-protos"
-	case name == "spanner" && api.Path == "google/spanner/admin/database/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-database-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-database-v1"
-	case name == "spanner" && api.Path == "google/spanner/admin/instance/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-admin-instance-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-admin-instance-v1"
-	case name == "spanner" && api.Path == "google/spanner/executor/v1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-spanner-executor-v1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-spanner-executor-v1"
-	case name == "errorreporting" && api.Path == "google/devtools/clouderrorreporting/v1beta1":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-error-reporting-v1beta1"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-error-reporting-v1beta1"
-	case name == "storage" && api.Path == "google/storage/control/v2":
-		api.ProtoArtifactIDOverride = "proto-google-cloud-storage-control-v2"
-		api.GRPCArtifactIDOverride = "grpc-google-cloud-storage-control-v2"
+func applyJavaArtifactOverrides(api *config.JavaAPI) {
+	if override, ok := javaArtifactIDOverrides[api.Path]; ok {
+		if override.protoArtifactID != "" {
+			api.ProtoArtifactIDOverride = override.protoArtifactID
+		}
+		if override.grpcArtifactID != "" {
+			api.GRPCArtifactIDOverride = override.grpcArtifactID
+		}
+		if override.gapicArtifactID != "" {
+			api.GAPICArtifactIDOverride = override.gapicArtifactID
+		}
 	}
 }
 

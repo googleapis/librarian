@@ -19,34 +19,41 @@ import (
 )
 
 type messageAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	Name          string
-	DocLines      []string
+	Name     string
+	DocLines []string
+	Model    *modelAnnotations
 }
 
-func (codec *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
-	docLines := codec.formatDocumentation(message.Documentation)
+func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
+	if dep, ok := c.ApiPackages[message.Package]; ok {
+		dep.Required = true
+	}
+	if message.Codec != nil {
+		return nil
+	}
+	docLines := c.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
-		CopyrightYear: model.CopyrightYear,
-		BoilerPlate:   model.BoilerPlate,
-		Name:          pascalCase(message.Name),
-		DocLines:      docLines,
+		Name:     pascalCase(message.Name),
+		DocLines: docLines,
+		Model:    model,
 	}
 
 	message.Codec = annotations
+	for _, oneof := range message.OneOfs {
+		c.annotateOneOf(oneof)
+	}
 	for _, field := range message.Fields {
-		if err := codec.annotateField(field); err != nil {
+		if err := c.annotateField(field); err != nil {
 			return err
 		}
 	}
 	for _, nested := range message.Messages {
-		if err := codec.annotateMessage(nested, model); err != nil {
+		if err := c.annotateMessage(nested, model); err != nil {
 			return err
 		}
 	}
 	for _, enum := range message.Enums {
-		if err := codec.annotateEnum(enum, model); err != nil {
+		if err := c.annotateEnum(enum, model); err != nil {
 			return err
 		}
 	}

@@ -148,11 +148,7 @@ type RustModule struct {
 	IncludeGrpcOnlyMethods bool `yaml:"include_grpc_only_methods,omitempty"`
 
 	// IncludeList is a list of proto files to include (e.g., "date.proto", "expr.proto").
-	// TODO(https://github.com/googleapis/librarian/issues/4298):
-	// remove comma-separated string fallback unmarshaling in PR 3
-	// (https://github.com/googleapis/librarian/issues/4769#issuecomment-4117482367)
-	// once google-cloud-rust is updated.
-	IncludeList yaml.FlexibleStringSlice `yaml:"include_list,omitempty"`
+	IncludeList yaml.StringSlice `yaml:"include_list,omitempty"`
 
 	// IncludeStreamingMethods indicates whether to include gRPC streaming
 	// methods.
@@ -570,10 +566,17 @@ type JavaModule struct {
 
 	// RpcDocumentation is the URL for the RPC documentation.
 	RpcDocumentation string `yaml:"rpc_documentation,omitempty"`
+
+	// TransportOverride allows the "transport" field in .repo-metadata.json
+	// to be overridden.
+	TransportOverride string `yaml:"transport_override,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
@@ -582,12 +585,14 @@ type JavaAPI struct {
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
-	// Samples determines whether to generate samples for the API,
-	// default is true when omitted.
-	Samples *bool `yaml:"samples,omitempty"`
+	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
+	// It determines the module's directory name and is used to derive proto
+	// and gRPC artifact IDs if they are not explicitly overridden.
+	GAPICArtifactIDOverride string `yaml:"gapic_artifact_id_override,omitempty"`
 
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
+	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
+	// The artifact ID is also used as the name for the module's directory.
+	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
 
 	// ProtoArtifactIDOverride overrides the artifact ID for the proto module.
 	// The artifact ID is also used as the name for the module's directory.
@@ -597,9 +602,9 @@ type JavaAPI struct {
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
-	// GRPCArtifactIDOverride overrides the artifact ID for the gRPC module.
-	// The artifact ID is also used as the name for the module's directory.
-	GRPCArtifactIDOverride string `yaml:"grpc_artifact_id_override,omitempty"`
+	// Samples determines whether to generate samples for the API,
+	// default is true when omitted.
+	Samples *bool `yaml:"samples,omitempty"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.
@@ -718,6 +723,10 @@ type NodejsPackage struct {
 type NodejsAPI struct {
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
+	// This is typically false. Used for the GCE (compute) client.
+	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`

@@ -24,7 +24,7 @@ import (
 func TestInstall(t *testing.T) {
 	gobin := t.TempDir()
 	t.Setenv("GOBIN", gobin)
-	if err := Install(t.Context()); err != nil {
+	if err := Install(t.Context(), nil); err != nil {
 		t.Fatal(err)
 	}
 	suffix := ""
