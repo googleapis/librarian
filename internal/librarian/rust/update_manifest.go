@@ -103,8 +103,8 @@ func isDirectDependency(trimmed, crateName string) bool {
 // isRenamedDependency checks if the line describes a renamed dependency that uses the crate.
 // Example: custom_name = { package = "crateName", ... }.
 func isRenamedDependency(line, crateName string) bool {
-	packageRegex := regexp.MustCompile(fmt.Sprintf(`^\s*[^#]*\bpackage\s*=\s*"%s"`, regexp.QuoteMeta(crateName)))
-	return packageRegex.MatchString(line)
+	pattern := `package = "` + crateName + `"`
+	return strings.Contains(line, pattern)
 }
 
 // shouldBumpManifestVersion checks if the manifest version needs to be bumped.
