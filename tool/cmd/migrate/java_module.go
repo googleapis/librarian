@@ -113,7 +113,7 @@ var (
 
 	javaTransportOverrides = map[string]string{
 		//This is added here instead of sdk.yaml change because this is
-		//a proto-only library and transport affect on Java code generation.
+		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
 	}
 )
