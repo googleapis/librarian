@@ -110,6 +110,7 @@ type serviceAnnotations struct {
 	FieldName   string
 	StructName  string
 	DefaultHost string
+	HasMethods  bool
 }
 
 type messageAnnotation struct {
@@ -154,6 +155,7 @@ type methodAnnotation struct {
 	IsLROGetOperation   bool
 	ServerSideStreaming bool // Whether the method produces a stream of results (or list if `EnableSSE` is `false`).
 	EnableSSE           bool // Whether the target API supports Server-Sent Events (SSE).
+	IsLast              bool
 }
 
 // HasBody returns true if the method has a body.
@@ -602,8 +604,9 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 		return shouldGenerateMethod(m)
 	})
 
-	for _, m := range methods {
+	for i, m := range methods {
 		annotate.annotateMethod(m)
+		m.Codec.(*methodAnnotation).IsLast = (i == len(methods)-1)
 	}
 	ann := &serviceAnnotations{
 		Name:        s.Name,
@@ -612,6 +615,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 		FieldName:   strcase.ToLowerCamel(s.Name),
 		StructName:  s.Name,
 		DefaultHost: s.DefaultHost,
+		HasMethods:  len(methods) > 0,
 	}
 	s.Codec = ann
 }
