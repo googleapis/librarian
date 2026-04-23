@@ -46,7 +46,8 @@ type repoMetadata struct {
 	// Java-specific field.
 	RequiresBilling bool `json:"requires_billing"`
 
-	// Optional fields (appended in this order in Python)
+	// Java-specific field.
+	APIReference string `json:"api_reference,omitempty"`
 	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
 	// Java-specific field.
@@ -140,6 +141,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		}
 		metadata.RequiresBilling = !library.Java.BillingNotRequired
 		// Java only fields
+		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
