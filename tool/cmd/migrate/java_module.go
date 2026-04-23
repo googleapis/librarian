@@ -112,6 +112,8 @@ var (
 	}
 
 	javaTransportOverrides = map[string]string{
+		//This is added here instead of sdk.yaml change because this is
+		//a proto-only library and transport affect on Java code generation.
 		"alloydb-connectors": "grpc",
 	}
 )
