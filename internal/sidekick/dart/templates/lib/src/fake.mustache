@@ -16,8 +16,22 @@ limitations under the License.
 
 /// Testing fake for [{{Codec.Name}}].
 base class Fake{{Codec.Name}} implements {{Codec.Name}} {
-  @override
-  dynamic noSuchMethod(Invocation invocation) {
-    throw UnsupportedError('Fake{{Codec.Name}}.${invocation.memberName} must be overridden');
+  {{#Codec.Methods}}
+  late final {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}> Function({{Codec.RequestType}} request){{/Codec.ServerSideStreaming}}{{^Codec.ServerSideStreaming}}{{#Codec.IsLROGetOperation}}Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request){{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> Function({{Codec.RequestType}} request){{/Codec.IsLROGetOperation}}{{/Codec.ServerSideStreaming}}? {{#Codec.IsLROGetOperation}}_getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}_{{Codec.Name}}{{/Codec.IsLROGetOperation}};
+  {{/Codec.Methods}}
+
+  Fake{{Codec.Name}}({
+    {{#Codec.Methods}}
+    {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}> Function({{Codec.RequestType}} request){{/Codec.ServerSideStreaming}}{{^Codec.ServerSideStreaming}}{{#Codec.IsLROGetOperation}}Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request){{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> Function({{Codec.RequestType}} request){{/Codec.IsLROGetOperation}}{{/Codec.ServerSideStreaming}}? {{#Codec.IsLROGetOperation}}getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}{{Codec.Name}}{{/Codec.IsLROGetOperation}},
+    {{/Codec.Methods}}
+  }) {
+    {{#Codec.Methods}}
+    {{#Codec.IsLROGetOperation}}_getOperation = getOperation;{{/Codec.IsLROGetOperation}}
+    {{^Codec.IsLROGetOperation}}_{{Codec.Name}} = {{Codec.Name}};{{/Codec.IsLROGetOperation}}
+    {{/Codec.Methods}}
   }
+
+  {{#Codec.Methods}}
+  {{> fake_method}}
+  {{/Codec.Methods}}
 }
