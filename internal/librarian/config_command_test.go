@@ -27,10 +27,10 @@ import (
 // TestConfigCommand_Get tests that the config get command successfully reads a value from librarian.yaml.
 func TestConfigCommand_Get(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		args        []string
-		configYAML  string
-		wantOutput  string
+		name       string
+		args       []string
+		configYAML string
+		wantOutput string
 	}{
 		{
 			name:       "get string value",
@@ -73,10 +73,10 @@ func TestConfigCommand_Get(t *testing.T) {
 // TestConfigCommand_Get_Error tests that the config get command returns an error when the path is missing or the key is not found.
 func TestConfigCommand_Get_Error(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		args        []string
-		configYAML  string
-		wantErrStr  string
+		name       string
+		args       []string
+		configYAML string
+		wantErrStr string
 	}{
 		{
 			name:       "missing path",
@@ -115,10 +115,10 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 // TestConfigCommand_Set tests that the config set command successfully updates a value in librarian.yaml.
 func TestConfigCommand_Set(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		args        []string
-		configYAML  string
-		wantYAML    string
+		name       string
+		args       []string
+		configYAML string
+		wantYAML   string
 	}{
 		{
 			name:       "set string value",
