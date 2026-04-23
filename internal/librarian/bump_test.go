@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -669,17 +668,6 @@ func TestDeriveNextVersion(t *testing.T) {
 			wantVersion: sample.NextVersion,
 		},
 		{
-			name: "rust new library default version",
-			cfg: func() *config.Config {
-				c := sample.Config()
-				c.Language = config.LanguageRust
-				c.Libraries[0].Version = ""
-				return c
-			}(),
-			versionOpts: languageVersioningOptions[config.LanguageRust],
-			wantVersion: rust.DefaultVersion,
-		},
-		{
 			name:        "default semver options next GA version",
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
@@ -693,6 +681,15 @@ func TestDeriveNextVersion(t *testing.T) {
 			}(),
 			versionOverride: "1.0.0-override.1",
 			wantVersion:     "1.0.0-override.1",
+		},
+		{
+			name: "unreleased library, default version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = ""
+				return c
+			}(),
+			wantVersion:     defaultVersion,
 		},
 		{
 			name: "version override, already released library, later version",

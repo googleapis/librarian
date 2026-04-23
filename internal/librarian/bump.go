@@ -256,13 +256,10 @@ func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.
 		return versionOverride, nil
 	}
 
-	// First release, use the appropriate default starting version.
+	// First release, use the appropriate default starting version. Many languages
+	// have their own default starting version, set at add time. This is a
+	// fallback for the case where it wasn't.
 	if library.Version == "" {
-		// Keep this logic until we know we no longer need it i.e. all entries
-		// have a version set.
-		if cfg.Language == config.LanguageRust {
-			return rust.DefaultVersion, nil
-		}
 		return defaultVersion, nil
 	}
 
