@@ -31,7 +31,7 @@ type groupTracks struct {
 	alpha *CommandGroup
 }
 
-func writeCommandGroupTree(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
+func writeSurface(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
 	bundle := groupTracks{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
 	return writeGroup(outputDir, baseModule, bundle)
 }

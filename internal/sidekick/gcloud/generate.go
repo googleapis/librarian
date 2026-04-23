@@ -28,5 +28,5 @@ func Generate(model *api.API, overrides *provider.Config, output, baseModule str
 	if err != nil {
 		return err
 	}
-	return writeCommandGroupTree(output, baseModule, tree)
+	return writeSurface(output, baseModule, tree)
 }

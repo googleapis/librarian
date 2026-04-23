@@ -155,7 +155,7 @@ func TestWriteCommandGroupFile_Error(t *testing.T) {
 	}
 }
 
-func TestWriteCommandGroupTree(t *testing.T) {
+func TestWriteSurface(t *testing.T) {
 	tmpDir := t.TempDir()
 
 	tree := &CommandGroupsByTrack{
@@ -177,7 +177,7 @@ func TestWriteCommandGroupTree(t *testing.T) {
 		},
 	}
 
-	if err := writeCommandGroupTree(tmpDir, "googlecloudsdk", tree); err != nil {
+	if err := writeSurface(tmpDir, "googlecloudsdk", tree); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
