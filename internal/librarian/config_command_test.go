@@ -41,14 +41,7 @@ func TestConfigCommand_Get(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			oldDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chdir(tempDir); err != nil {
-				t.Fatal(err)
-			}
-			defer os.Chdir(oldDir)
+			t.Chdir(tempDir)
 
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
@@ -58,7 +51,7 @@ func TestConfigCommand_Get(t *testing.T) {
 			r, w, _ := os.Pipe()
 			os.Stdout = w
 
-			err = Run(t.Context(), test.args...)
+			err := Run(t.Context(), test.args...)
 
 			w.Close()
 			os.Stdout = oldStdout
@@ -100,20 +93,13 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			oldDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chdir(tempDir); err != nil {
-				t.Fatal(err)
-			}
-			defer os.Chdir(oldDir)
+			t.Chdir(tempDir)
 
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
 
-			err = Run(t.Context(), test.args...)
+			err := Run(t.Context(), test.args...)
 
 			if err == nil {
 				t.Fatal("expected error; got nil")
@@ -143,20 +129,13 @@ func TestConfigCommand_Set(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			oldDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chdir(tempDir); err != nil {
-				t.Fatal(err)
-			}
-			defer os.Chdir(oldDir)
+			t.Chdir(tempDir)
 
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
 
-			err = Run(t.Context(), test.args...)
+			err := Run(t.Context(), test.args...)
 
 			if err != nil {
 				t.Fatal(err)
@@ -226,5 +205,24 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 				t.Fatalf("got error %v, want containing %q", err, test.wantErrStr)
 			}
 		})
+	}
+}
+// TestConfigCommand_Set_ReadError tests that the config set command returns an error when librarian.yaml is unreadable.
+func TestConfigCommand_Set_ReadError(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	if err := os.WriteFile("librarian.yaml", []byte("version: 1.2.3\n"), 0000); err != nil {
+		t.Fatal(err)
+	}
+
+	err := Run(t.Context(), "librarian", "config", "set", "version", "1.2.4")
+
+	if err == nil {
+		t.Fatal("expected error; got nil")
+	}
+
+	if !strings.Contains(err.Error(), "permission denied") {
+		t.Fatalf("got error %v, want containing %q", err, "permission denied")
 	}
 }

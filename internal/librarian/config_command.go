@@ -16,7 +16,9 @@ package librarian
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -69,7 +71,10 @@ func configCommand() *cli.Command {
 					}
 
 					cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-					if err != nil || cfg == nil {
+					if err != nil {
+						if !errors.Is(err, fs.ErrNotExist) {
+							return err
+						}
 						cfg = &config.Config{}
 					}
 
