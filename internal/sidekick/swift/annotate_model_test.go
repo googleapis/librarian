@@ -113,3 +113,38 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Errorf("expected msgAnn.Model to be %p, got %p", ann, msgAnn.Model)
 	}
 }
+
+func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{}, []*api.Enum{}, []*api.Service{{Name: "DummyService", Package: "google.cloud.placeholder.v1"}})
+	model.PackageName = "google.cloud.placeholder.v1"
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
+		{ApiPackage: "google.cloud.other.v1", Name: "GoogleCloudOtherV1", RequiredByServices: true},
+	})
+	// Make it required to verify the rest of the code works.
+	codec.Dependencies[0].Required = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := model.Codec.(*modelAnnotations)
+	if !ok {
+		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+	}
+
+	// Self dependency should be ignored, other should be present.
+	want := map[string]bool{
+		"GoogleCloudOtherV1": false, // required by the service, but not messages
+	}
+	got := map[string]bool{}
+	for name, dep := range ann.DependsOn {
+		got[name] = dep.Required
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

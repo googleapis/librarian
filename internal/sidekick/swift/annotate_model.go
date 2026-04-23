@@ -81,6 +81,9 @@ func (c *codec) annotateModel() error {
 	var serviceImports []string
 	var messageImports []string
 	for _, p := range c.Dependencies {
+		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+			continue
+		}
 		if p.RequiredByServices && len(c.Model.Services) != 0 {
 			serviceImports = append(serviceImports, p.Name)
 			annotations.DependsOn[p.Name] = p
