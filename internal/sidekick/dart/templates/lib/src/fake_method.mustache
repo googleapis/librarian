@@ -54,9 +54,7 @@ Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoM
 {{/OperationInfo}}
 @override
 Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> {{Codec.Name}}({{Codec.RequestType}} request) async {
-  if (isClosed) {
-    throw StateError('Service is closed');
-  }
+  if (isClosed) throw StateError('Service is closed');
 
   if (_{{Codec.Name}} case final {{Codec.Name}}?) {
     return {{Codec.Name}}(request);
