@@ -17,13 +17,28 @@ limitations under the License.
 /// Testing fake for [{{Codec.Name}}].
 base class Fake{{Codec.Name}} implements {{Codec.Name}} {
   {{#Codec.Methods}}
-  late final {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}> Function({{Codec.RequestType}} request){{/Codec.ServerSideStreaming}}{{^Codec.ServerSideStreaming}}{{#Codec.IsLROGetOperation}}Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request){{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> Function({{Codec.RequestType}} request){{/Codec.IsLROGetOperation}}{{/Codec.ServerSideStreaming}}? {{#Codec.IsLROGetOperation}}_getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}_{{Codec.Name}}{{/Codec.IsLROGetOperation}};
+    late final
+    {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}>
+      Function({{Codec.RequestType}} request)
+    {{/Codec.ServerSideStreaming}}
+    {{^Codec.ServerSideStreaming}}
+      {{#Codec.IsLROGetOperation}}
+        Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage,
+                                         S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request)
+      {{/Codec.IsLROGetOperation}}
+      {{^Codec.IsLROGetOperation}}
+        Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}>
+          Function({{Codec.RequestType}} request)
+      {{/Codec.IsLROGetOperation}}
+    {{/Codec.ServerSideStreaming}}?
+    {{#Codec.IsLROGetOperation}}_getOperation{{/Codec.IsLROGetOperation}}
+    {{^Codec.IsLROGetOperation}}_{{Codec.Name}}{{/Codec.IsLROGetOperation}};
   {{/Codec.Methods}}
 
   @override
-  Uri get _endPoint => throw UnsupportedError('');
+  Uri get _endPoint => throw UnsupportedError('_endPoint');
   @override
-  ServiceClient get _client => throw UnsupportedError('');
+  ServiceClient get _client => throw UnsupportedError('_client');
 
   bool isClosed = false;
 
