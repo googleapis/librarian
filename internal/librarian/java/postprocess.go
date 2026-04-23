@@ -121,13 +121,13 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// We target the staging directory because runOwlBot hasn't moved the files
 	// to their final destination yet.
 	coords := p.coords()
-	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	exists, err := clirrIgnoreExists(protoModuleRepoRoot)
+	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot)
 	if err != nil {
 		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
 	}
-	if !exists {
+	if shouldGenerate {
+		protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
 			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 		}

@@ -51,38 +51,46 @@ func TestGenerateClirrIgnore(t *testing.T) {
 	}
 }
 
-func TestClirrIgnoreExists(t *testing.T) {
+func TestClirrIgnoreShouldGenerate(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T, dir string)
-		want  bool
+		name       string
+		artifactID string
+		setup      func(t *testing.T, dir string)
+		want       bool
 	}{
 		{
-			name:  "not exists",
-			setup: func(t *testing.T, dir string) {},
-			want:  false,
+			name:       "should generate - prefix matches and not exists",
+			artifactID: "proto-google-cloud-test-v1",
+			setup:      func(t *testing.T, dir string) {},
+			want:       true,
 		},
 		{
-			name: "exists",
+			name:       "should not generate - prefix mismatch",
+			artifactID: "proto-data-manager-v1",
+			setup:      func(t *testing.T, dir string) {},
+			want:       false,
+		},
+		{
+			name:       "should not generate - already exists",
+			artifactID: "proto-google-cloud-test-v1",
 			setup: func(t *testing.T, dir string) {
 				path := filepath.Join(dir, clirrIgnoreFile)
 				if err := os.WriteFile(path, []byte("exists"), 0644); err != nil {
 					t.Fatal(err)
 				}
 			},
-			want: true,
+			want: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.setup(t, dir)
-
-			got, err := clirrIgnoreExists(dir)
+			got, err := clirrIgnoreShouldGenerate(test.artifactID, dir)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != test.want {
-				t.Errorf("clirrIgnoreExists(%q) = %v, want %v", dir, got, test.want)
+				t.Errorf("clirrIgnoreShouldGenerate(%q, %q) = %v, want %v", test.artifactID, dir, got, test.want)
 			}
 		})
 	}

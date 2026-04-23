@@ -63,6 +63,14 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(protoFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+	orBuilderDir := filepath.Join(protoDir, "com", "google", "cloud", "secretmanager", "v1")
+	if err := os.MkdirAll(orBuilderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	orBuilderFile := filepath.Join(orBuilderDir, "SomeOrBuilder.java")
+	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.secretmanager.v1; public interface SomeOrBuilder {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create a dummy srcjar (which is a zip)
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -138,6 +146,12 @@ func TestPostProcessAPI(t *testing.T) {
 	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
+	}
+
+	// Verify that clirr-ignored-differences.xml is generated.
+	clirrPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "proto-google-cloud-secretmanager-v1", "clirr-ignored-differences.xml")
+	if _, err := os.Stat(clirrPath); err != nil {
+		t.Errorf("expected clirr ignore file at %s, but it was not found: %v", clirrPath, err)
 	}
 
 	// Verify that the apiBase directory was cleaned up
