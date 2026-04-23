@@ -38,16 +38,16 @@ func (b *surfaceBuilder) build() (*CommandGroupsByTrack, error) {
 	tree := &CommandGroupsByTrack{}
 
 	for _, service := range b.model.Services {
-		groupBuilder := newGroupBuilder(b.model, service, b.config)
+		gb := newGroupBuilder(b.model, service, b.config)
 
 		track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
-		root, err := b.root(tree, track, groupBuilder)
+		root, err := b.root(tree, track, gb)
 		if err != nil {
 			return nil, err
 		}
 
 		for _, method := range service.Methods {
-			if err := b.insert(root, groupBuilder, method); err != nil {
+			if err := b.insert(root, gb, method); err != nil {
 				return nil, err
 			}
 		}
@@ -59,7 +59,7 @@ func (b *surfaceBuilder) build() (*CommandGroupsByTrack, error) {
 // insert traverses the tree and attaches a command leaf node. It resolves the
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
-func (b *surfaceBuilder) insert(root *CommandGroup, groupBuilder *groupBuilder, method *api.Method) error {
+func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
 	if provider.IsSingletonResourceMethod(method, b.model) {
 		return nil
 	}
@@ -85,12 +85,12 @@ func (b *surfaceBuilder) insert(root *CommandGroup, groupBuilder *groupBuilder, 
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = groupBuilder.build(segments, i, curr.Path)
+			curr.Groups[seg] = gb.build(segments, i, curr.Path)
 		}
 		curr = curr.Groups[seg]
 	}
 
-	cmd, err := newCommandBuilder(method, b.config, b.model, groupBuilder.service).build()
+	cmd, err := newCommandBuilder(method, b.config, b.model, gb.service).build()
 	if err != nil {
 		return err
 	}
@@ -99,21 +99,21 @@ func (b *surfaceBuilder) insert(root *CommandGroup, groupBuilder *groupBuilder, 
 	return nil
 }
 
-func (b *surfaceBuilder) root(tree *CommandGroupsByTrack, track string, groupBuilder *groupBuilder) (*CommandGroup, error) {
+func (b *surfaceBuilder) root(tree *CommandGroupsByTrack, track string, gb *groupBuilder) (*CommandGroup, error) {
 	switch track {
 	case "GA":
 		if tree.GA == nil {
-			tree.GA = groupBuilder.buildRoot()
+			tree.GA = gb.buildRoot()
 		}
 		return tree.GA, nil
 	case "BETA":
 		if tree.BETA == nil {
-			tree.BETA = groupBuilder.buildRoot()
+			tree.BETA = gb.buildRoot()
 		}
 		return tree.BETA, nil
 	case "ALPHA":
 		if tree.ALPHA == nil {
-			tree.ALPHA = groupBuilder.buildRoot()
+			tree.ALPHA = gb.buildRoot()
 		}
 		return tree.ALPHA, nil
 	default:
