@@ -110,6 +110,10 @@ var (
 			gapicArtifactID: "google-cloud-storage-control",
 		},
 	}
+
+	javaTransportOverrides = map[string]string{
+		"alloydb-connectors": "grpc",
+	}
 )
 
 type javaArtifactOverrides struct {

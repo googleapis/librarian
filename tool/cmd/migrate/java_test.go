@@ -659,10 +659,11 @@ func TestShouldExcludeSamples(t *testing.T) {
 
 func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		libraryName string
-		protoPath   string
-		wantJavaAPI *config.JavaAPI
+		name          string
+		libraryName   string
+		protoPath     string
+		wantJavaAPI   *config.JavaAPI
+		wantTransport string
 	}{
 		{
 			name:        "datastore admin v1",
@@ -686,6 +687,16 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-control-v2",
 			},
+		},
+		{
+			name:        "alloydb-connectors transport override",
+			libraryName: "alloydb-connectors",
+			protoPath:   "google/cloud/alloydb/connectors/v1",
+			wantJavaAPI: &config.JavaAPI{
+				Path:    "google/cloud/alloydb/connectors/v1",
+				Samples: new(false),
+			},
+			wantTransport: "grpc",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -724,7 +735,8 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 							{Path: test.protoPath},
 						},
 						Java: &config.JavaModule{
-							JavaAPIs: []*config.JavaAPI{test.wantJavaAPI},
+							JavaAPIs:          []*config.JavaAPI{test.wantJavaAPI},
+							TransportOverride: test.wantTransport,
 						},
 					},
 				},

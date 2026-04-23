@@ -295,6 +295,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				TransportOverride:            l.Transport,
 			},
 		}
+		applyJavaLibraryOverrides(lib)
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)
@@ -415,6 +416,13 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 		if override.gapicArtifactID != "" {
 			api.GAPICArtifactIDOverride = override.gapicArtifactID
 		}
+	}
+}
+
+// applyJavaLibraryOverrides sets library-level overrides.
+func applyJavaLibraryOverrides(lib *config.Library) {
+	if transport, ok := javaTransportOverrides[lib.Name]; ok {
+		lib.Java.TransportOverride = transport
 	}
 }
 
