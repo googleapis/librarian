@@ -156,10 +156,10 @@ func TestConfigCommand_Set(t *testing.T) {
 // TestConfigCommand_Set_Error tests that the config set command returns an error when the path or value is missing.
 func TestConfigCommand_Set_Error(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		args        []string
-		configYAML  string
-		wantErrStr  string
+		name       string
+		args       []string
+		configYAML string
+		wantErrStr string
 	}{
 		{
 			name:       "missing path",
@@ -200,6 +200,7 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 		})
 	}
 }
+
 // TestConfigCommand_Set_ReadError tests that the config set command returns an error when librarian.yaml is unreadable.
 func TestConfigCommand_Set_ReadError(t *testing.T) {
 	tempDir := t.TempDir()
