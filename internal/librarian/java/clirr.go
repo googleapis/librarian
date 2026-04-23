@@ -45,7 +45,7 @@ const (
 // clirrIgnoreShouldGenerate determines if the clirr-ignored-differences.xml file
 // should be generated for the specified proto module.
 //
-// It returns true only if the artifactID starts with "proto-google-" AND the file
+// It returns true only if the artifactID starts with protoGooglePrefix AND the file
 // does not already exist in the repo directory.
 func clirrIgnoreShouldGenerate(artifactID, repoDir string) (bool, error) {
 	if !strings.HasPrefix(artifactID, protoGooglePrefix) {
