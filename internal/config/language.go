@@ -573,6 +573,8 @@ type JavaModule struct {
 
 	// TransportOverride allows the "transport" field in .repo-metadata.json
 	// to be overridden.
+	// TODO(https://github.com/googleapis/librarian/issues/5561):
+	// investigate and determine if can remove
 	TransportOverride string `yaml:"transport_override,omitempty"`
 }
 
