@@ -64,3 +64,33 @@ func TestLookupEnum_Error(t *testing.T) {
 		t.Errorf("lookupEnum() expected error, got nil")
 	}
 }
+
+func TestLookupField(t *testing.T) {
+	field := &api.Field{Name: "name", ID: ".test.Secret.name", Typez: api.TypezString}
+	msg := &api.Message{
+		Name:   "Secret",
+		ID:     ".test.Secret",
+		Fields: []*api.Field{field},
+	}
+
+	got, err := lookupField(msg, "name")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(field, got); diff != "" {
+		t.Errorf("lookupField() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestLookupField_Error(t *testing.T) {
+	msg := &api.Message{
+		Name:   "Secret",
+		ID:     ".test.Secret",
+		Fields: []*api.Field{},
+	}
+
+	_, err := lookupField(msg, "missing")
+	if err == nil {
+		t.Errorf("lookupField() expected error, got nil")
+	}
+}

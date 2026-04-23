@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -36,4 +37,15 @@ func lookupEnum(model *api.API, id string) (*api.Enum, error) {
 		return nil, fmt.Errorf("unable to lookup enum %q", id)
 	}
 	return e, nil
+}
+
+// lookupField finds a field in a message.
+func lookupField(message *api.Message, name string) (*api.Field, error) {
+	idx := slices.IndexFunc(message.Fields, func(f *api.Field) bool {
+		return f.Name == name
+	})
+	if idx == -1 {
+		return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, message.ID)
+	}
+	return message.Fields[idx], nil
 }

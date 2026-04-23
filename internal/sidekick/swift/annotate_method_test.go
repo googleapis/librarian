@@ -55,11 +55,11 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:       "getOperation",
-				Path:       "/v1/operations",
-				DocLines:   []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-				HTTPMethod: "GET",
-				HasBody:    false,
+				Name:           "getOperation",
+				PathExpression: "/v1/operations",
+				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+				HTTPMethod:     "GET",
+				HasBody:        false,
 			},
 		},
 		{
@@ -78,7 +78,7 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			want: &methodAnnotations{
 				Name:           "createKey",
-				Path:           "/v1/keys",
+				PathExpression: "/v1/keys",
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: false,
@@ -101,7 +101,7 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			want: &methodAnnotations{
 				Name:           "uploadData",
-				Path:           "/v1/data",
+				PathExpression: "/v1/data",
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
@@ -123,12 +123,12 @@ func TestAnnotateMethod(t *testing.T) {
 				},
 			},
 			want: &methodAnnotations{
-				Name:        "listThings",
-				Path:        "/v1/things",
-				DocLines:    []string{"Lists things."},
-				HTTPMethod:  "GET",
-				HasBody:     false,
-				QueryParams: []*api.Field{keyField},
+				Name:           "listThings",
+				PathExpression: "/v1/things",
+				DocLines:       []string{"Lists things."},
+				HTTPMethod:     "GET",
+				HasBody:        false,
+				QueryParams:    []*api.Field{keyField},
 			},
 		},
 	} {
@@ -204,10 +204,10 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:       test.wantName,
-				DocLines:   []string{"Test documentation."},
-				Path:       "/",
-				HTTPMethod: "GET",
+				Name:           test.wantName,
+				DocLines:       []string{"Test documentation."},
+				PathExpression: "/",
+				HTTPMethod:     "GET",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {

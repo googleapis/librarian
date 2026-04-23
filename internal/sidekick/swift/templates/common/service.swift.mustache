@@ -63,6 +63,14 @@ public class {{Codec.Name}} {
     -> {{OutputType.Codec.Name}}
     {{/ReturnsEmpty}}
   {
+    let path = try { () throws -> String in
+      {{#Codec.PathVariables}}
+      guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
+        throw GoogleCloudGax.RequestError.binding("'request{{Expression}}' returns an empty binding")
+      }
+      {{/Codec.PathVariables}}
+      return "{{Codec.PathExpression}}"
+    }()
     {{#Codec.HasQueryParams}}
     var query = [URLQueryItem(name: "$alt", value: "json")]
     let encoder = GoogleCloudGax.QueryParameterEncoder()
@@ -77,7 +85,7 @@ public class {{Codec.Name}} {
     }}
     query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
     {{/Codec.QueryParams}}
-    var req = try await self.inner.Request(path: "{{{Codec.Path}}}", query: query)
+    var req = try await self.inner.Request(path: path, query: query)
     req.httpMethod = "{{Codec.HTTPMethod}}"
     {{#Codec.HasBody}}
     {{#Codec.IsBodyWildcard}}
