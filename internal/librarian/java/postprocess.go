@@ -113,7 +113,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		}
 	}
 	if err := copyFiles(p); err != nil {
-		return err
+		return fmt.Errorf("failed to copy files: %w", err)
 	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
