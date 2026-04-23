@@ -77,7 +77,7 @@ func TestPathParams(t *testing.T) {
 
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
 
-	got, err := PathParams(sample.MethodCreate(), test.State)
+	got, err := PathParams(sample.MethodCreate(), test)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestPathParams(t *testing.T) {
 		t.Errorf("mismatched query parameters (-want, +got):\n%s", diff)
 	}
 
-	got, err = PathParams(sample.MethodUpdate(), test.State)
+	got, err = PathParams(sample.MethodUpdate(), test)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -207,13 +207,13 @@ func TestFieldIsMap(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{parent, map_message}, []*api.Enum{}, []*api.Service{})
 
-	if !FieldIsMap(field0, model.State) {
+	if !FieldIsMap(field0, model) {
 		t.Errorf("expected FieldIsMap(field0) to be true")
 	}
-	if FieldIsMap(field1, model.State) {
+	if FieldIsMap(field1, model) {
 		t.Errorf("expected FieldIsMap(field1) to be false")
 	}
-	if FieldIsMap(field2, model.State) {
+	if FieldIsMap(field2, model) {
 		t.Errorf("expected FieldIsMap(field2) to be false")
 	}
 }

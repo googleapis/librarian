@@ -379,7 +379,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	// Register any missing WKTs.
-	registerMissingWkt(annotate.state)
+	registerMissingWkt(annotate.model)
 
 	model := annotate.model
 
@@ -459,7 +459,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model.State),
+		DocLines:                   formatDocComments(model.Description, model),
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
@@ -607,7 +607,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 	}
 	ann := &serviceAnnotations{
 		Name:        s.Name,
-		DocLines:    formatDocComments(s.Documentation, annotate.state),
+		DocLines:    formatDocComments(s.Documentation, annotate.model),
 		Methods:     methods,
 		FieldName:   strcase.ToLowerCamel(s.Name),
 		StructName:  s.Name,
@@ -654,7 +654,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		Parent:          m,
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
-		DocLines:        formatDocComments(m.Documentation, annotate.state),
+		DocLines:        formatDocComments(m.Documentation, annotate.model),
 		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
@@ -732,7 +732,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
 	queryLines := []string{}
 	for _, field := range queryParams {
-		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field, state)
+		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field)
 	}
 
 	annotation := &methodAnnotation{
@@ -741,7 +741,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
 		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
 		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
-		DocLines:            formatDocComments(method.Documentation, state),
+		DocLines:            formatDocComments(method.Documentation, annotate.model),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
 		QueryLines:          queryLines,
@@ -765,7 +765,7 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {
 	oneof.Codec = &oneOfAnnotation{
 		Name:     strcase.ToLowerCamel(oneof.Name),
-		DocLines: formatDocComments(oneof.Documentation, annotate.state),
+		DocLines: formatDocComments(oneof.Documentation, annotate.model),
 	}
 }
 
@@ -836,22 +836,21 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
-	state := annotate.state
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
-		DocLines:              formatDocComments(field.Documentation, state),
+		DocLines:              formatDocComments(field.Documentation, annotate.model),
 		Required:              implicitPresence,
 		Nullable:              !implicitPresence,
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
-		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
-		ToJson:                createToJsonLine(field, state),
+		FromJson:              annotate.createFromJsonLine(field, implicitPresence),
+		ToJson:                createToJsonLine(field, annotate.model),
 		ConstDefault:          constDefault,
 	}
 }
 
-func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *api.APIState) string {
+func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
 	switch typez {
 	case api.INT64_TYPE,
 		api.SINT64_TYPE,
@@ -876,10 +875,10 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *ap
 	case api.BYTES_TYPE:
 		return "decodeBytes"
 	case api.ENUM_TYPE:
-		typeName := annotate.resolveEnumName(state.EnumByID[typeid])
+		typeName := annotate.resolveEnumName(annotate.state.EnumByID[typeid])
 		return fmt.Sprintf("%s.fromJson", typeName)
 	case api.MESSAGE_TYPE:
-		typeName := annotate.resolveMessageName(state.MessageByID[typeid], false)
+		typeName := annotate.resolveMessageName(annotate.state.MessageByID[typeid], false)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -985,7 +984,7 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
-func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.APIState, required bool) string {
+func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
 	defaultValue := "null"
@@ -1007,18 +1006,18 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	switch {
 	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
-		decoder := annotate.decoder(field.Typez, field.TypezID, state)
+		decoder := annotate.decoder(field.Typez, field.TypezID)
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], "+
 				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
-		message := state.MessageByID[field.TypezID]
+		message := annotate.state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := message.Fields[1].Typez
 		valueTypeID := message.Fields[1].TypezID
-		valueDecoder := annotate.decoder(valueType, valueTypeID, state)
+		valueDecoder := annotate.decoder(valueType, valueTypeID)
 
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, "+
@@ -1026,11 +1025,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			data, defaultValue, keyDecoder, valueDecoder, field.JSONName)
 	}
 
-	decoder := annotate.decoder(field.Typez, field.TypezID, state)
+	decoder := annotate.decoder(field.Typez, field.TypezID)
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, state *api.APIState) string {
+func createToJsonLine(field *api.Field, model *api.API) string {
 	name := fieldName(field)
 
 	switch {
@@ -1042,7 +1041,7 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 		}
 		return name
 	case field.Map:
-		message := state.MessageByID[field.TypezID]
+		message := model.State.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := message.Fields[1].Typez
@@ -1096,9 +1095,9 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 //	// if (request.sub?.id case final $1? when $1.isNotDefault) 'sub.id=$1'
 func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
-	paramPrefix string, field *api.Field, state *api.APIState,
+	paramPrefix string, field *api.Field,
 ) []string {
-	message := state.MessageByID[field.TypezID]
+	message := annotate.state.MessageByID[field.TypezID]
 	isMap := message != nil && message.IsMap
 
 	if field.Codec == nil {
@@ -1160,7 +1159,7 @@ func (annotate *annotateModel) buildQueryLines(
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
 			result = annotate.buildQueryLines(
-				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field, state)
+				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field)
 		}
 		return result
 
@@ -1227,7 +1226,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 
 	enum.Codec = &enumAnnotation{
 		Name:         enumName(enum),
-		DocLines:     formatDocComments(enum.Documentation, annotate.state),
+		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,
 		Model:        annotate.model,
 	}
@@ -1236,7 +1235,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
 		Name:     enumValueToName[ev],
-		DocLines: formatDocComments(ev.Documentation, annotate.state),
+		DocLines: formatDocComments(ev.Documentation, annotate.model),
 	}
 }
 
@@ -1336,7 +1335,7 @@ func (annotate *annotateModel) updateUsedPackages(packageName string) {
 	}
 }
 
-func registerMissingWkt(state *api.APIState) {
+func registerMissingWkt(model *api.API) {
 	// If these definitions weren't provided by protoc then provide our own
 	// placeholders.
 	for _, message := range []struct {
@@ -1347,9 +1346,9 @@ func registerMissingWkt(state *api.APIState) {
 		{".google.protobuf.Any", "Any", "google.protobuf"},
 		{".google.protobuf.Empty", "Empty", "google.protobuf"},
 	} {
-		_, ok := state.MessageByID[message.ID]
+		_, ok := model.State.MessageByID[message.ID]
 		if !ok {
-			state.MessageByID[message.ID] = &api.Message{
+			model.State.MessageByID[message.ID] = &api.Message{
 				ID:      message.ID,
 				Name:    message.Name,
 				Package: message.Package,

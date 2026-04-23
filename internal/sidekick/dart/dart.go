@@ -192,7 +192,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 // - `[google.rpc.Code][]`.
 var commentRefsRegex = regexp.MustCompile(`\[([\w\d\._]+)\]\[([\d\w\._]*)\]`)
 
-func formatDocComments(documentation string, _ *api.APIState) []string {
+func formatDocComments(documentation string, _ *api.API) []string {
 	lines := strings.Split(documentation, "\n")
 
 	// Remove trailing whitespace.
