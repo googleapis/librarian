@@ -38,7 +38,7 @@ Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoM
   if (isClosed) throw StateError('Service is closed');
 
   if (_getOperation case final getOperation?) {
-    return getOperation<T, S>(request);
+    return getOperation(request);
   }
   throw UnsupportedError('getOperation');
 }
