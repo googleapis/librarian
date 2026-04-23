@@ -23,21 +23,21 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type commandGroupBuilder struct {
+type groupBuilder struct {
 	model   *api.API
 	config  *provider.Config
 	service *api.Service
 }
 
-func newCommandGroupBuilder(model *api.API, service *api.Service, config *provider.Config) *commandGroupBuilder {
-	return &commandGroupBuilder{
+func newGroupBuilder(model *api.API, service *api.Service, config *provider.Config) *groupBuilder {
+	return &groupBuilder{
 		model:   model,
 		config:  config,
 		service: service,
 	}
 }
 
-func (b *commandGroupBuilder) buildRoot() *CommandGroup {
+func (b *groupBuilder) buildRoot() *CommandGroup {
 	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
 	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(b.model)
@@ -50,7 +50,7 @@ func (b *commandGroupBuilder) buildRoot() *CommandGroup {
 	}
 }
 
-func (b *commandGroupBuilder) build(segments []string, idx int, parentPath []string) *CommandGroup {
+func (b *groupBuilder) build(segments []string, idx int, parentPath []string) *CommandGroup {
 	seg := segments[idx]
 	singular := seg
 	if resName := provider.GetSingularResourceNameForPrefix(b.model, segments[:idx+1]); resName != "" {

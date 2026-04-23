@@ -24,7 +24,7 @@ import (
 // overrides and writes the resulting command groups into output under
 // baseModule.
 func Generate(model *api.API, overrides *provider.Config, output, baseModule string) error {
-	tree, err := newCommandTreeBuilder(model, overrides).build()
+	tree, err := newSurfaceBuilder(model, overrides).build()
 	if err != nil {
 		return err
 	}

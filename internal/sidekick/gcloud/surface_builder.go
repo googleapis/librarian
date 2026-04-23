@@ -22,23 +22,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
-type commandTreeBuilder struct {
+type surfaceBuilder struct {
 	model  *api.API
 	config *provider.Config
 }
 
-func newCommandTreeBuilder(model *api.API, config *provider.Config) *commandTreeBuilder {
-	return &commandTreeBuilder{
+func newSurfaceBuilder(model *api.API, config *provider.Config) *surfaceBuilder {
+	return &surfaceBuilder{
 		model:  model,
 		config: config,
 	}
 }
 
-func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
+func (b *surfaceBuilder) build() (*CommandGroupsByTrack, error) {
 	tree := &CommandGroupsByTrack{}
 
 	for _, service := range b.model.Services {
-		groupBuilder := newCommandGroupBuilder(b.model, service, b.config)
+		groupBuilder := newGroupBuilder(b.model, service, b.config)
 
 		track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
 		root, err := b.root(tree, track, groupBuilder)
@@ -59,7 +59,7 @@ func (b *commandTreeBuilder) build() (*CommandGroupsByTrack, error) {
 // insert traverses the tree and attaches a command leaf node. It resolves the
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
-func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGroupBuilder, method *api.Method) error {
+func (b *surfaceBuilder) insert(root *CommandGroup, groupBuilder *groupBuilder, method *api.Method) error {
 	if provider.IsSingletonResourceMethod(method, b.model) {
 		return nil
 	}
@@ -99,7 +99,7 @@ func (b *commandTreeBuilder) insert(root *CommandGroup, groupBuilder *commandGro
 	return nil
 }
 
-func (b *commandTreeBuilder) root(tree *CommandGroupsByTrack, track string, groupBuilder *commandGroupBuilder) (*CommandGroup, error) {
+func (b *surfaceBuilder) root(tree *CommandGroupsByTrack, track string, groupBuilder *groupBuilder) (*CommandGroup, error) {
 	switch track {
 	case "GA":
 		if tree.GA == nil {
@@ -130,10 +130,10 @@ var flattenedSegments = map[string]bool{
 	"organizations": true,
 }
 
-func (b *commandTreeBuilder) isFlattenedSegment(lit string) bool {
+func (b *surfaceBuilder) isFlattenedSegment(lit string) bool {
 	return flattenedSegments[lit]
 }
 
-func (b *commandTreeBuilder) isTerminatedSegment(lit string) bool {
+func (b *surfaceBuilder) isTerminatedSegment(lit string) bool {
 	return lit == "operations" && !provider.ShouldGenerateOperations(b.config)
 }

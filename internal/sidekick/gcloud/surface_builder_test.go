@@ -26,7 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 )
 
-func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
+func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com",
 		mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"),
 		mockMethod("ListInstances", "v1/{parent=projects/*/locations/*}/instances"),
@@ -48,7 +48,7 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 		},
 	}
 
-	root, err := newCommandTreeBuilder(model, config).build()
+	root, err := newSurfaceBuilder(model, config).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -65,7 +65,7 @@ func TestCommandTreeBuilder_Build_Structure(t *testing.T) {
 	}
 }
 
-func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
+func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
 
 	model := &api.API{
@@ -74,7 +74,7 @@ func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(false)}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(false)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -85,7 +85,7 @@ func TestCommandTreeBuilder_Build_Operations_Disabled(t *testing.T) {
 	}
 }
 
-func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
+func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
 
 	model := &api.API{
@@ -94,7 +94,7 @@ func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -109,7 +109,7 @@ func TestCommandTreeBuilder_Build_Operations_Enabled(t *testing.T) {
 	}
 }
 
-func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
+func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
 	serviceTwo := mockService("OtherParallelstoreService", mockMethod("CreateOtherInstance", "v1/{parent=projects/*/locations/*}/otherInstances"))
 
@@ -119,7 +119,7 @@ func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -135,7 +135,7 @@ func TestCommandTreeBuilder_Build_MultipleServices(t *testing.T) {
 	}
 }
 
-func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
+func TestSurfaceBuilder_Build_MultipleReleaseTracks(t *testing.T) {
 	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
 	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/{parent=projects/*/locations/*}/instances"))
 	serviceTwo.Package = "google.cloud.parallelstore.v1alpha"
@@ -146,7 +146,7 @@ func TestCommandTreeBuilder_Build_MultipleReleaseTracks(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := newCommandTreeBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}

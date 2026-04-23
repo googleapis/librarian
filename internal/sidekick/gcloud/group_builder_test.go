@@ -22,7 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
 
-func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
+func TestGroupBuilder_BuildRoot(t *testing.T) {
 	model := &api.API{
 		Name:  "parallelstore",
 		Title: "Parallelstore API",
@@ -34,7 +34,7 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 		},
 	}
 
-	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
+	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.buildRoot()
 
 	if group.Name != "parallelstore" {
@@ -52,7 +52,7 @@ func TestCommandGroupBuilder_BuildRoot(t *testing.T) {
 	}
 }
 
-func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
+func TestGroupBuilder_BuildGroup(t *testing.T) {
 	model := &api.API{
 		Name:        "parallelstore",
 		PackageName: "google.cloud.parallelstore.v1beta1",
@@ -65,7 +65,7 @@ func TestCommandGroupBuilder_BuildGroup(t *testing.T) {
 		},
 	}
 
-	builder := newCommandGroupBuilder(model, model.Services[0], &provider.Config{})
+	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.build([]string{"instances"}, 0, []string{"parallelstore"})
 
 	if group.Name != "instances" {
