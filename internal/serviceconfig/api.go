@@ -202,10 +202,10 @@ func (api *API) RepoMetadataReleaseLevel(language, version string) string {
 // For Java, it maps the transport to "grpc", "http", or "both".
 func (api *API) RepoMetadataTransport(language string, library *config.Library) string {
 	transport := api.Transport(language)
-	if language == config.LanguageJava && library != nil && library.Java != nil && library.Java.TransportOverride != "" {
-		transport = Transport(library.Java.TransportOverride)
-	}
 	if language == config.LanguageJava {
+		if library != nil && library.Java != nil && library.Java.TransportOverride != "" {
+			transport = Transport(library.Java.TransportOverride)
+		}
 		switch transport {
 		case GRPC:
 			return "grpc"
