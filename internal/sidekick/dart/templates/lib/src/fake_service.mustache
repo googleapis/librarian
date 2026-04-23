@@ -14,6 +14,50 @@ See the License for the specific language governing permissions and
 limitations under the License.
 }}
 
+{{!
+Generates a fake for a service class like:
+
+```dart
+/// Testing fake for [Echo].
+base class FakeEcho implements Echo {
+  late final Future<EchoResponse> Function(EchoRequest request)? _echo;
+  @override
+  Uri get _endPoint => throw UnsupportedError('_endPoint');
+  @override
+  ServiceClient get _client => throw UnsupportedError('_client');
+
+  bool isClosed = false;
+
+  FakeEcho({
+    Future<EchoResponse> Function(EchoRequest request)? echo,
+  }) {
+    _echo = echo;
+  }
+
+  /// This method simply echoes the request. This method showcases unary RPCs.
+  ///
+  /// Throws a [http.ClientException] if there were problems communicating with
+  /// the API service. Throws a [ServiceException] if the API method failed for
+  /// any reason.
+  @override
+  Future<EchoResponse> echo(EchoRequest request) async {
+    if (isClosed) {
+      throw StateError('Service is closed');
+    }
+
+    if (_echo case final echo?) {
+      return echo(request);
+    }
+    throw UnsupportedError('echo');
+  }
+}
+```
+
+It would be more idiomatic to use an initializer list and make the callback
+fields `final`. However, this requires knowing which method is "last" in
+order to correctly punctuate the initializer list.
+}}
+
 /// Testing fake for [{{Codec.Name}}].
 base class Fake{{Codec.Name}} implements {{Codec.Name}} {
   {{#Codec.Methods}}
