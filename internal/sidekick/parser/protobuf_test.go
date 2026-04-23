@@ -79,8 +79,8 @@ func TestProtobuf_Scalar(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -204,8 +204,8 @@ func TestProtobuf_ScalarArray(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -256,8 +256,8 @@ func TestProtobuf_ScalarOptional(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API", "Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -309,12 +309,11 @@ func TestProtobuf_SkipExternalMessages(t *testing.T) {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
 	// Both `ImportedMessage` and `LocalMessage` should be in the index:
-	_, ok := test.State.MessageByID[".away.ImportedMessage"]
-	if !ok {
+	if test.Message(".away.ImportedMessage") == nil {
 		t.Fatalf("Cannot find message %s in API State", ".away.ImportedMessage")
 	}
-	message, ok := test.State.MessageByID[".test.LocalMessage"]
-	if !ok {
+	message := test.Message(".test.LocalMessage")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.LocalMessage")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -358,12 +357,11 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
 	// Both `ImportedEnum` and `LocalEnum` should be in the index:
-	_, ok := test.State.EnumByID[".away.ImportedEnum"]
-	if !ok {
+	if test.Enum(".away.ImportedEnum") == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".away.ImportedEnum")
 	}
-	enum, ok := test.State.EnumByID[".test.LocalEnum"]
-	if !ok {
+	enum := test.Enum(".test.LocalEnum")
+	if enum == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.LocalEnum")
 	}
 	apitest.CheckEnum(t, *enum, api.Enum{
@@ -400,8 +398,8 @@ func TestProtobuf_Comments(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Request"]
-	if !ok {
+	message := test.Message(".test.Request")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -420,8 +418,8 @@ func TestProtobuf_Comments(t *testing.T) {
 		},
 	})
 
-	message, ok = test.State.MessageByID[".test.Response.Nested"]
-	if !ok {
+	message = test.Message(".test.Response.Nested")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Response.nested")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -440,8 +438,8 @@ func TestProtobuf_Comments(t *testing.T) {
 		},
 	})
 
-	e, ok := test.State.EnumByID[".test.Response.Status"]
-	if !ok {
+	e := test.Enum(".test.Response.Status")
+	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Response.Status")
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
@@ -463,8 +461,8 @@ func TestProtobuf_Comments(t *testing.T) {
 		},
 	})
 
-	service, ok := test.State.ServiceByID[".test.Service"]
-	if !ok {
+	service := test.Service(".test.Service")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.Service")
 	}
 	apitest.CheckService(t, service, &api.Service{
@@ -506,8 +504,8 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	withAlias, ok := test.State.EnumByID[".test.WithAlias"]
-	if !ok {
+	withAlias := test.Enum(".test.WithAlias")
+	if withAlias == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.WithAlias")
 	}
 	fullList := []*api.EnumValue{
@@ -563,8 +561,8 @@ func TestProtobuf_OneOfs(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -638,8 +636,8 @@ func TestProtobuf_ObjectFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -675,8 +673,8 @@ func TestProtobuf_WellKnownTypeFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -742,8 +740,8 @@ func TestProtobuf_JsonName(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Request"]
-	if !ok {
+	message := test.Message(".test.Request")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Request")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -780,8 +778,8 @@ func TestProtobuf_MapFields(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	message, ok := test.State.MessageByID[".test.Fake"]
-	if !ok {
+	message := test.Message(".test.Fake")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -816,8 +814,8 @@ func TestProtobuf_MapFields(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	message, ok = test.State.MessageByID[".test.Fake.SingularMapEntry"]
-	if !ok {
+	message = test.Message(".test.Fake.SingularMapEntry")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.SingularMapEntry")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -845,8 +843,8 @@ func TestProtobuf_MapFields(t *testing.T) {
 		},
 	})
 
-	message, ok = test.State.MessageByID[".test.Fake.EnumValueEntry"]
-	if !ok {
+	message = test.Message(".test.Fake.EnumValueEntry")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake.EnumValueEntry")
 	}
 	apitest.CheckMessage(t, message, &api.Message{
@@ -882,8 +880,8 @@ func TestProtobuf_Service(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
 	apitest.CheckService(t, service, &api.Service{
@@ -1018,8 +1016,8 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
 	apitest.CheckService(t, service, &api.Service{
@@ -1087,8 +1085,8 @@ func TestProtobuf_Enum(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	e, ok := test.State.EnumByID[".test.Code"]
-	if !ok {
+	e := test.Enum(".test.Code")
+	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Code")
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
@@ -1141,8 +1139,8 @@ func TestProtobuf_Pagination(t *testing.T) {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
 	api.UpdateMethodPagination(nil, test)
-	service, ok := test.State.ServiceByID[".test.TestService"]
-	if !ok {
+	service := test.Service(".test.TestService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.TestService")
 	}
 	apitest.CheckService(t, service, &api.Service{
@@ -1399,8 +1397,8 @@ func TestProtobuf_Pagination(t *testing.T) {
 		},
 	})
 
-	resp, ok := test.State.MessageByID[".test.ListFooResponse"]
-	if !ok {
+	resp := test.Message(".test.ListFooResponse")
+	if resp == nil {
 		t.Errorf("missing message (ListFooResponse) in MessageByID index")
 		return
 	}
@@ -1488,8 +1486,8 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	service, ok := test.State.ServiceByID[".test.LroService"]
-	if !ok {
+	service := test.Service(".test.LroService")
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", ".test.LroService")
 	}
 	apitest.CheckService(t, service, &api.Service{
@@ -1620,8 +1618,8 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 			t.Fatalf("Mixin %s should not be in list of services to generate", service.ID)
 		}
 	}
-	message, ok := test.State.MessageByID[".test.CreateFooRequest"]
-	if !ok {
+	message := test.Message(".test.CreateFooRequest")
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.CreateFooRequest")
 	}
 	request_id := &api.Field{
@@ -1736,8 +1734,8 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 		},
 	})
 
-	method, ok := test.State.MethodByID[".test.TestService.CreateFoo"]
-	if !ok {
+	method := test.Method(".test.TestService.CreateFoo")
+	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	want := []*api.Field{request_id, request_id_optional, request_id_with_field_behavior}
@@ -1752,8 +1750,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
-	s, ok := test.State.ServiceByID[".test.ServiceA"]
-	if !ok {
+	s := test.Service(".test.ServiceA")
+	if s == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceA")
 	}
 	apitest.CheckService(t, s, &api.Service{
@@ -1763,8 +1761,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		Deprecated: true,
 	})
 
-	s, ok = test.State.ServiceByID[".test.ServiceB"]
-	if !ok {
+	s = test.Service(".test.ServiceB")
+	if s == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.ServiceB")
 	}
 	apitest.CheckService(t, s, &api.Service{
@@ -1785,8 +1783,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		},
 	})
 
-	m, ok := test.State.MessageByID[".test.Request"]
-	if !ok {
+	m := test.Message(".test.Request")
+	if m == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.Request")
 	}
 	apitest.CheckMessage(t, m, &api.Message{
@@ -1811,8 +1809,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		},
 	})
 
-	m, ok = test.State.MessageByID[".test.Response"]
-	if !ok {
+	m = test.Message(".test.Response")
+	if m == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.Response")
 	}
 	apitest.CheckMessage(t, m, &api.Message{
@@ -1822,8 +1820,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		Deprecated: true,
 	})
 
-	e, ok := test.State.EnumByID[".test.EnumA"]
-	if !ok {
+	e := test.Enum(".test.EnumA")
+	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumA")
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
@@ -1839,8 +1837,8 @@ func TestProtobuf_Deprecated(t *testing.T) {
 		},
 	})
 
-	e, ok = test.State.EnumByID[".test.EnumB"]
-	if !ok {
+	e = test.Enum(".test.EnumB")
+	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumB")
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
@@ -1944,12 +1942,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("API.State.ResourceByType", func(t *testing.T) {
-		if _, ok := test.State.ResourceByType["library.googleapis.com/Shelf"]; ok {
+		if test.Resource("library.googleapis.com/Shelf") != nil {
 			t.Errorf("Resource 'library.googleapis.com/Shelf' should not be in ResourceByType map")
 		}
 
-		bookResource, ok := test.State.ResourceByType["library.googleapis.com/Book"]
-		if !ok {
+		bookResource := test.Resource("library.googleapis.com/Book")
+		if bookResource == nil {
 			t.Fatalf("Expected resource 'library.googleapis.com/Book' not found in ResourceByType map")
 		}
 		if bookResource.Type != "library.googleapis.com/Book" {
@@ -1961,8 +1959,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("Message.Resource", func(t *testing.T) {
-		bookMessage, ok := test.State.MessageByID[".test.Book"]
-		if !ok {
+		bookMessage := test.Message(".test.Book")
+		if bookMessage == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.Book")
 		}
 
@@ -2003,8 +2001,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("CreateBookRequest", func(t *testing.T) {
-		createBookRequest, ok := test.State.MessageByID[".test.CreateBookRequest"]
-		if !ok {
+		createBookRequest := test.Message(".test.CreateBookRequest")
+		if createBookRequest == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.CreateBookRequest")
 		}
 
@@ -2041,8 +2039,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("ListBooksRequest", func(t *testing.T) {
-		listBooksRequest, ok := test.State.MessageByID[".test.ListBooksRequest"]
-		if !ok {
+		listBooksRequest := test.Message(".test.ListBooksRequest")
+		if listBooksRequest == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.ListBooksRequest")
 		}
 
@@ -2077,8 +2075,8 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("NoResourceMessage", func(t *testing.T) {
-		msg, ok := test.State.MessageByID[".test.NoResourceMessage"]
-		if !ok {
+		msg := test.Message(".test.NoResourceMessage")
+		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoResourceMessage")
 		}
 		if msg.Resource != nil {
@@ -2087,9 +2085,9 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 	})
 
 	t.Run("NoReferenceMessage", func(t *testing.T) {
-		msg, ok := test.State.MessageByID[".test.NoReferenceMessage"]
+		msg := test.Message(".test.NoReferenceMessage")
 
-		if !ok {
+		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoReferenceMessage")
 		}
 

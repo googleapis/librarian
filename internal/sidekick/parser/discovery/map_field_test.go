@@ -256,8 +256,8 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 		},
 	}
 	wantEnum.UniqueNumberValues = wantEnum.Values
-	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	gotEnum := model.Enum(wantEnum.ID)
+	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)

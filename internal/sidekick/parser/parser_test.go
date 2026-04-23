@@ -67,7 +67,7 @@ func TestCreateModelDisco(t *testing.T) {
 	// This is strange, but we want to verify the package name override from
 	// the service config YAML applies to the message IDs too.
 	wantMessage := ".google.cloud.secretmanager.v1.ZoneSetPolicyRequest"
-	if _, ok := got.State.MessageByID[wantMessage]; !ok {
+	if got.Message(wantMessage) == nil {
 		t.Errorf("missing message %s in MessageByID index", wantMessage)
 	}
 }
@@ -82,8 +82,7 @@ func TestCreateModelOpenAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, ok := model.State.ServiceByID[".google.cloud.secretmanager.v1.SecretManagerService"]
-	if !ok {
+	if model.Service(".google.cloud.secretmanager.v1.SecretManagerService") == nil {
 		t.Errorf("missing service (.google.cloud.secretmanager.v1.SecretManagerService) in ServiceByID index")
 		return
 	}
@@ -106,8 +105,7 @@ func TestCreateModelProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, ok := model.State.ServiceByID[".google.cloud.secretmanager.v1.SecretManagerService"]
-	if !ok {
+	if model.Service(".google.cloud.secretmanager.v1.SecretManagerService") == nil {
 		t.Errorf("missing service (.google.cloud.secretmanager.v1.SecretManagerService) in ServiceByID index")
 		return
 	}

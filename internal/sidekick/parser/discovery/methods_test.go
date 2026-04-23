@@ -28,8 +28,8 @@ func TestMakeServiceMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..zones.get"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -65,8 +65,8 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..zoneOperations.delete"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -106,8 +106,8 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..projects.moveInstance"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -166,8 +166,8 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 		},
 	} {
 		t.Run(test.id, func(t *testing.T) {
-			got, ok := model.State.MethodByID[test.id]
-			if !ok {
+			got := model.Method(test.id)
+			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
 			if got.APIVersion != test.wantVersion {
@@ -206,14 +206,14 @@ func TestMethodEmptyBody(t *testing.T) {
 			},
 		},
 	}
-	got, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	got := model.Message(want.ID)
+	if got == nil {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, got, want)
 
-	wantParent, ok := model.State.MessageByID["..zones"]
-	if !ok {
+	wantParent := model.Message("..zones")
+	if wantParent == nil {
 		t.Fatalf("expected message %s in the API model", "..zones")
 	}
 	if wantParent != got.Parent {
@@ -288,8 +288,8 @@ func TestMethodWithQueryParameters(t *testing.T) {
 			},
 		},
 	}
-	gotListRequest, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	gotListRequest := model.Message(want.ID)
+	if gotListRequest == nil {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, gotListRequest, want)
@@ -342,8 +342,8 @@ func TestMethodWithBody(t *testing.T) {
 			},
 		},
 	}
-	gotGetRequest, ok := model.State.MessageByID[wantInsertRequest.ID]
-	if !ok {
+	gotGetRequest := model.Message(wantInsertRequest.ID)
+	if gotGetRequest == nil {
 		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID)
 	}
 	apitest.CheckMessage(t, gotGetRequest, wantInsertRequest)

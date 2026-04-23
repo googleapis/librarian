@@ -325,11 +325,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	if err != nil {
 		return nil, err
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/3827): remove this
-	// hardcoding once we can use the gRPC service config for Compute.
-	if strings.HasPrefix(library.Name, "google-cloud-compute") {
-		grpcConfigPath = ""
-	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
 	}

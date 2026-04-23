@@ -35,19 +35,19 @@ type DocumentationOverride struct {
 func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 	for _, override := range overrides {
 		id := override.ID
-		if msg, ok := model.State.MessageByID[id]; ok {
+		if msg := model.Message(id); msg != nil {
 			if err := patchElementDocs(&msg.Documentation, &override); err != nil {
 				return err
 			}
 			continue
 		}
-		if enu, ok := model.State.EnumByID[id]; ok {
+		if enu := model.Enum(id); enu != nil {
 			if err := patchElementDocs(&enu.Documentation, &override); err != nil {
 				return err
 			}
 			continue
 		}
-		if svc, ok := model.State.ServiceByID[id]; ok {
+		if svc := model.Service(id); svc != nil {
 			if err := patchElementDocs(&svc.Documentation, &override); err != nil {
 				return err
 			}
@@ -59,19 +59,19 @@ func PatchDocumentation(model *API, overrides []DocumentationOverride) error {
 		}
 		parentId := id[0:idx]
 		childId := id[idx+1:]
-		if msg, ok := model.State.MessageByID[parentId]; ok {
+		if msg := model.Message(parentId); msg != nil {
 			if err := patchFieldDocs(msg, childId, &override); err != nil {
 				return err
 			}
 			continue
 		}
-		if enu, ok := model.State.EnumByID[parentId]; ok {
+		if enu := model.Enum(parentId); enu != nil {
 			if err := patchEnumValueDocs(enu, childId, &override); err != nil {
 				return err
 			}
 			continue
 		}
-		if svc, ok := model.State.ServiceByID[parentId]; ok {
+		if svc := model.Service(parentId); svc != nil {
 			if err := patchMethodDocs(svc, childId, &override); err != nil {
 				return err
 			}

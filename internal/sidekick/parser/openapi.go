@@ -105,7 +105,7 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 		if err != nil {
 			return nil, err
 		}
-		fields, err := makeMessageFields(result.State, packageName, name, schema)
+		fields, err := makeMessageFields(result, packageName, name, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -301,8 +301,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 			return nil, "", err
 		}
 		bid := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-		_, ok := a.State.MessageByID[bid]
-		if !ok {
+		if a.Message(bid) == nil {
 			return nil, "", fmt.Errorf("cannot find referenced type (%s) in API messages", reference)
 		}
 		name, err := openapiBodyFieldName(fieldNames)
@@ -357,7 +356,7 @@ func makeResponseMessage(api *api.API, operation *v3.Operation, packageName stri
 		return nil, err
 	}
 	id := fmt.Sprintf(".%s.%s", packageName, strings.TrimPrefix(reference, "#/components/schemas/"))
-	if message, ok := api.State.MessageByID[id]; ok {
+	if message := api.Message(id); message != nil {
 		return message, nil
 	}
 	return nil, fmt.Errorf("cannot find response message ref=%s", reference)
@@ -384,7 +383,7 @@ func makeQueryParameters(operation *v3.Operation) map[string]bool {
 	return queryParameters
 }
 
-func makeMessageFields(state *api.APIState, packageName, messageName string, message *base.Schema) ([]*api.Field, error) {
+func makeMessageFields(model *api.API, packageName, messageName string, message *base.Schema) ([]*api.Field, error) {
 	var fields []*api.Field
 	for name, f := range message.Properties.FromOldest() {
 		schema, err := f.BuildSchema()
@@ -398,7 +397,7 @@ func makeMessageFields(state *api.APIState, packageName, messageName string, mes
 				break
 			}
 		}
-		field, err := makeField(state, packageName, messageName, name, optional, schema)
+		field, err := makeField(model, packageName, messageName, name, optional, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -407,10 +406,10 @@ func makeMessageFields(state *api.APIState, packageName, messageName string, mes
 	return fields, nil
 }
 
-func makeField(state *api.APIState, packageName, messageName, name string, optional bool, field *base.Schema) (*api.Field, error) {
+func makeField(model *api.API, packageName, messageName, name string, optional bool, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
 		// Simple object fields name an AllOf attribute, but no `Type` attribute.
-		return makeObjectField(state, packageName, messageName, name, field)
+		return makeObjectField(model, packageName, messageName, name, field)
 	}
 	if len(field.Type) == 0 {
 		return nil, fmt.Errorf("missing field type for field %s.%s", messageName, name)
@@ -419,9 +418,9 @@ func makeField(state *api.APIState, packageName, messageName, name string, optio
 	case "boolean", "integer", "number", "string":
 		return makeScalarField(messageName, name, field, optional, field)
 	case "object":
-		return makeObjectField(state, packageName, messageName, name, field)
+		return makeObjectField(model, packageName, messageName, name, field)
 	case "array":
-		return makeArrayField(state, packageName, messageName, name, field)
+		return makeArrayField(model, packageName, messageName, name, field)
 	default:
 		return nil, fmt.Errorf("unknown type for field %q", name)
 	}
@@ -443,7 +442,7 @@ func makeScalarField(messageName, name string, schema *base.Schema, optional boo
 	}, nil
 }
 
-func makeObjectField(state *api.APIState, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
+func makeObjectField(model *api.API, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
 	if len(field.AllOf) != 0 {
 		return makeObjectFieldAllOf(packageName, messageName, name, field)
 	}
@@ -467,7 +466,7 @@ func makeObjectField(state *api.APIState, packageName, messageName, name string,
 				Optional:      true,
 			}, nil
 		}
-		message, err := makeMapMessage(state, messageName, name, schema)
+		message, err := makeMapMessage(model, messageName, name, schema)
 		if err != nil {
 			return nil, err
 		}
@@ -499,7 +498,7 @@ func makeObjectField(state *api.APIState, packageName, messageName, name string,
 	return nil, fmt.Errorf("unknown object field type for field %s.%s", messageName, name)
 }
 
-func makeArrayField(state *api.APIState, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
+func makeArrayField(model *api.API, packageName, messageName, name string, field *base.Schema) (*api.Field, error) {
 	if !field.Items.IsA() {
 		return nil, fmt.Errorf("cannot handle arrays without an `Items` field for %s.%s", messageName, name)
 	}
@@ -528,7 +527,7 @@ func makeArrayField(state *api.APIState, packageName, messageName, name string, 
 			}
 			result = new
 		} else {
-			result, err = makeObjectField(state, packageName, messageName, name, schema)
+			result, err = makeObjectField(model, packageName, messageName, name, schema)
 		}
 	default:
 		return nil, fmt.Errorf("unknown array field type for %s.%s %q", messageName, name, schema.Type[0])
@@ -558,7 +557,7 @@ func makeObjectFieldAllOf(packageName, messageName, name string, field *base.Sch
 	return nil, fmt.Errorf("cannot build any AllOf schema for field %s.%s", messageName, name)
 }
 
-func makeMapMessage(state *api.APIState, messageName, name string, schema *base.Schema) (*api.Message, error) {
+func makeMapMessage(model *api.API, messageName, name string, schema *base.Schema) (*api.Message, error) {
 	value_typez, value_id, err := scalarType(messageName, name, schema)
 	if err != nil {
 		return nil, err
@@ -571,7 +570,7 @@ func makeMapMessage(state *api.APIState, messageName, name string, schema *base.
 	}
 
 	id := fmt.Sprintf("$map<string, %s>", value.TypezID)
-	message := state.MessageByID[id]
+	message := model.Message(id)
 	if message == nil {
 		// The map was not found, insert the type.
 		key := &api.Field{
@@ -589,7 +588,7 @@ func makeMapMessage(state *api.APIState, messageName, name string, schema *base.
 			Parent:        nil,
 			Package:       "$",
 		}
-		state.MessageByID[id] = placeholder
+		model.State.MessageByID[id] = placeholder
 		message = placeholder
 	}
 	return message, nil

@@ -164,16 +164,16 @@ func serviceAnnotationsModel() *api.API {
 
 func TestServiceAnnotations(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
-	if !ok {
+	method := model.Method(".test.v1.ResourceService.GetResource")
+	if method == nil {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
-	emptyMethod, ok := model.State.MethodByID[".test.v1.ResourceService.DeleteResource"]
-	if !ok {
+	emptyMethod := model.Method(".test.v1.ResourceService.DeleteResource")
+	if emptyMethod == nil {
 		t.Fatal("cannot find .test.v1.ResourceService.DeleteResource")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
@@ -235,8 +235,8 @@ func TestServiceAnnotations(t *testing.T) {
 
 func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -252,8 +252,8 @@ func TestServiceAnnotationsExtendGrpcTransport(t *testing.T) {
 
 func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -268,8 +268,8 @@ func TestServiceAnnotationsDetailedTracing(t *testing.T) {
 
 func TestServiceAnnotationsHasVeneer(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -285,8 +285,8 @@ func TestServiceAnnotationsHasVeneer(t *testing.T) {
 
 func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
-	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
-	if !ok {
+	method := model.Method(".test.v1.ResourceService.GetResource")
+	if method == nil {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -301,8 +301,8 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 
 func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
@@ -325,8 +325,8 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 	setSingleMethodVersion := func(t *testing.T, model *api.API) {
 		t.Helper()
 		id := ".test.v1.ResourceService.GetResource"
-		method, ok := model.State.MethodByID[id]
-		if !ok {
+		method := model.Method(id)
+		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
 		method.APIVersion = "v1_20260205"
@@ -335,8 +335,8 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 		t.Helper()
 		setSingleMethodVersion(t, model)
 		id := ".test.v1.ResourceService.DeleteResource"
-		method, ok := model.State.MethodByID[id]
-		if !ok {
+		method := model.Method(id)
+		if method == nil {
 			t.Fatalf("cannot find method %s", id)
 		}
 		method.APIVersion = "v1_20270305"
@@ -354,8 +354,8 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			wantVersion: "",
 			delta: func(t *testing.T, model *api.API) {
 				id := ".test.v1.ResourceService"
-				service, ok := model.State.ServiceByID[id]
-				if !ok {
+				service := model.Service(id)
+				if service == nil {
 					t.Fatalf("cannot find service %s", id)
 				}
 				service.Methods = []*api.Method{}
@@ -374,8 +374,8 @@ func TestServiceAnnotationsAPIVersions(t *testing.T) {
 			model := serviceAnnotationsModel()
 			test.delta(t, model)
 			id := ".test.v1.ResourceService"
-			service, ok := model.State.ServiceByID[id]
-			if !ok {
+			service := model.Service(id)
+			if service == nil {
 				t.Fatalf("cannot find service %s", id)
 			}
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
@@ -461,7 +461,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 	})
 	codec.packageMapping["google.longrunning"] = &packagez{name: "google-cloud-longrunning"}
 	annotateModel(model, codec)
-	empty := model.State.MessageByID[".google.protobuf.Empty"]
+	empty := model.Message(".google.protobuf.Empty")
 	wantService := &serviceAnnotations{
 		Name:              "LroService",
 		PackageModuleName: "test",
@@ -482,12 +482,12 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 
 func TestServiceAnnotationsNameOverrides(t *testing.T) {
 	model := serviceAnnotationsModel()
-	service, ok := model.State.ServiceByID[".test.v1.ResourceService"]
-	if !ok {
+	service := model.Service(".test.v1.ResourceService")
+	if service == nil {
 		t.Fatal("cannot find .test.v1.ResourceService")
 	}
-	method, ok := model.State.MethodByID[".test.v1.ResourceService.GetResource"]
-	if !ok {
+	method := model.Method(".test.v1.ResourceService.GetResource")
+	if method == nil {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
 	}
 
