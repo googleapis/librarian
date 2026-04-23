@@ -689,7 +689,7 @@ func TestDeriveNextVersion(t *testing.T) {
 				c.Libraries[0].Version = ""
 				return c
 			}(),
-			wantVersion:     defaultVersion,
+			wantVersion: defaultVersion,
 		},
 		{
 			name: "version override, already released library, later version",
