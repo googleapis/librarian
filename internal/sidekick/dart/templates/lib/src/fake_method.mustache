@@ -24,8 +24,10 @@ limitations under the License.
 {{#Codec.ServerSideStreaming}}
 @override
 Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
-  final {{Codec.Name}} = _{{Codec.Name}};
-  if ({{Codec.Name}} != null) {
+  if (isClosed) {
+    throw StateError('Service is closed');
+  }
+  if (_{{Codec.Name}} case final {{Codec.Name}}?) {
     return {{Codec.Name}}(request);
   }
   throw UnsupportedError('{{Codec.Name}}');
@@ -35,8 +37,11 @@ Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
 {{#Codec.IsLROGetOperation}}
 @override
 Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request) async {
-  final getOperation = _getOperation;
-  if (getOperation != null) {
+  if (isClosed) {
+    throw StateError('Service is closed');
+  }
+
+  if (_getOperation case final getOperation?) {
     return getOperation<T, S>(request);
   }
   throw UnsupportedError('getOperation');
@@ -53,8 +58,11 @@ Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoM
 {{/OperationInfo}}
 @override
 Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> {{Codec.Name}}({{Codec.RequestType}} request) async {
-  final {{Codec.Name}} = _{{Codec.Name}};
-  if ({{Codec.Name}} != null) {
+  if (isClosed) {
+    throw StateError('Service is closed');
+  }
+
+  if (_{{Codec.Name}} case final {{Codec.Name}}?) {
     return {{Codec.Name}}(request);
   }
   throw UnsupportedError('{{Codec.Name}}');
