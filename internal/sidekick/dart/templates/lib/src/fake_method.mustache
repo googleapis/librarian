@@ -35,9 +35,7 @@ Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
 {{#Codec.IsLROGetOperation}}
 @override
 Future<Operation<T, S>> getOperation<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request) async {
-  if (isClosed) {
-    throw StateError('Service is closed');
-  }
+  if (isClosed) throw StateError('Service is closed');
 
   if (_getOperation case final getOperation?) {
     return getOperation<T, S>(request);
