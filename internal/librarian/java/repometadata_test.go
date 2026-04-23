@@ -153,7 +153,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				APIDescription:       wantAPIDescription,
 				ClientDocumentation:  "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
 				ReleaseLevel:         "stable",
-				Transport:            "rest",
+				Transport:            "http",
 				Language:             "java",
 				Repo:                 "googleapis/google-cloud-java",
 				RepoShort:            "java-secretmanager",

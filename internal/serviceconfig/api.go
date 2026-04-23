@@ -204,8 +204,11 @@ func (api *API) RepoMetadataReleaseLevel(language, version string) string {
 // Python exclusion, or change the comments.
 // For Python, transport is currently excluded to reduce the difference during
 // migration.
-func (api *API) RepoMetadataTransport(language string) string {
+func (api *API) RepoMetadataTransport(language string, library *config.Library) string {
 	transport := api.Transport(language)
+	if language == config.LanguageJava && library != nil && library.Java != nil && library.Java.TransportOverride != "" {
+		transport = Transport(library.Java.TransportOverride)
+	}
 	if language == config.LanguagePython {
 		return ""
 	}
