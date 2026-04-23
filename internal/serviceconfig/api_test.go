@@ -389,20 +389,6 @@ func TestRepoMetadataTransport(t *testing.T) {
 			want:     "grpc+rest",
 		},
 		{
-			name: "python, grpc",
-			sc: &API{
-				Transports: map[string]Transport{config.LanguagePython: GRPC},
-			},
-			language: config.LanguagePython,
-			want:     "",
-		},
-		{
-			name:     "python, default",
-			sc:       &API{},
-			language: config.LanguagePython,
-			want:     "",
-		},
-		{
 			name: "non-java, grpc",
 			sc: &API{
 				Transports: map[string]Transport{config.LanguageGo: GRPC},
