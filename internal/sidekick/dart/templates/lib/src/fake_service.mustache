@@ -85,8 +85,9 @@ base class Fake{{Codec.Name}} implements {{Codec.Name}} {
     {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}> Function({{Codec.RequestType}} request){{/Codec.ServerSideStreaming}}{{^Codec.ServerSideStreaming}}{{#Codec.IsLROGetOperation}}Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request){{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> Function({{Codec.RequestType}} request){{/Codec.IsLROGetOperation}}{{/Codec.ServerSideStreaming}}? {{#Codec.IsLROGetOperation}}getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}{{Codec.Name}}{{/Codec.IsLROGetOperation}},
     {{/Codec.Methods}}
   }){{#Codec.HasMethods}} : {{/Codec.HasMethods}}
-{{#Codec.Methods}}    {{#Codec.IsLROGetOperation}}_getOperation = getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}_{{Codec.Name}} = {{Codec.Name}}{{/Codec.IsLROGetOperation}}{{^Codec.IsLast}},
-{{/Codec.IsLast}}{{/Codec.Methods}};
+{{#Codec.Methods}}
+  {{#Codec.IsLROGetOperation}}_getOperation = getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}_{{Codec.Name}} = {{Codec.Name}}{{/Codec.IsLROGetOperation}}{{^Codec.IsLast}},
+  {{/Codec.IsLast}}{{/Codec.Methods}};
 
   {{#Codec.Methods}}
   {{> fake_method}}

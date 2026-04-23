@@ -348,16 +348,16 @@ func TestAnnotateMethod(t *testing.T) {
 }
 
 func TestAnnotateMethod_IsLast(t *testing.T) {
-	lastMethod := sample.MethodListSecretVersions()
 	notLastMethod := sample.MethodListSecretVersions()
-	notLastMethod.Name = "ListSecretVersions2"
-	notLastMethod.ID = lastMethod.ID + "2"
+	lastMethod := sample.MethodListSecretVersions()
+	lastMethod.Name = "ListSecretVersions2"
+	lastMethod.ID = notLastMethod.ID + "2"
 
 	service := &api.Service{
 		Name:          sample.ServiceName,
 		Documentation: sample.APIDescription,
 		DefaultHost:   sample.DefaultHost,
-		Methods:       []*api.Method{lastMethod, notLastMethod},
+		Methods:       []*api.Method{notLastMethod, lastMethod},
 		Package:       sample.Package,
 	}
 	model := api.NewTestAPI(
@@ -374,12 +374,12 @@ func TestAnnotateMethod_IsLast(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	codec1 := lastMethod.Codec.(*methodAnnotation)
+	codec1 := notLastMethod.Codec.(*methodAnnotation)
 	if codec1.IsLast {
 		t.Errorf("Expected IsLast to be false for method1")
 	}
 
-	codec2 := notLastMethod.Codec.(*methodAnnotation)
+	codec2 := lastMethod.Codec.(*methodAnnotation)
 	if !codec2.IsLast {
 		t.Errorf("Expected IsLast to be true for method2")
 	}
