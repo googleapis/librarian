@@ -685,7 +685,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				GAPICArtifactIDOverride: "google-cloud-storage-control",
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-control-v2",
-				FileRelocations: []*config.JavaFileRelocation{
+				CopyFiles: []*config.JavaFileCopy{
 					{
 						Source:      "src/main/java/com/google/storage/control/v2/gapic_metadata.json",
 						Destination: "src/main/resources/com/google/storage/control/v2/gapic_metadata.json",
@@ -703,7 +703,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				GAPICArtifactIDOverride: "gapic-google-cloud-storage-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-v2",
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-v2",
-				FileRelocations: []*config.JavaFileRelocation{
+				CopyFiles: []*config.JavaFileCopy{
 					{
 						Source:      "src/main/java/com/google/storage/v2/gapic_metadata.json",
 						Destination: "src/main/resources/com/google/storage/v2/gapic_metadata.json",

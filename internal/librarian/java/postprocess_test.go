@@ -574,7 +574,7 @@ func TestAddMissingHeaders(t *testing.T) {
 	}
 }
 
-func TestRelocateFiles(t *testing.T) {
+func TestCopyFiles(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	apiBase := "v1"
@@ -595,7 +595,7 @@ func TestRelocateFiles(t *testing.T) {
 		outDir:  outdir,
 		apiBase: apiBase,
 		javaAPI: &config.JavaAPI{
-			FileRelocations: []*config.JavaFileRelocation{
+			CopyFiles: []*config.JavaFileCopy{
 				{
 					Source:      srcPath,
 					Destination: destPath,
@@ -604,17 +604,17 @@ func TestRelocateFiles(t *testing.T) {
 		},
 	}
 
-	if err := relocateFiles(p); err != nil {
+	if err := copyFiles(p); err != nil {
 		t.Fatal(err)
 	}
 
-	// Verify relocation
+	// Verify copy
 	fullDestPath := filepath.Join(gapicDir, destPath)
 	if _, err := os.Stat(fullDestPath); err != nil {
 		t.Errorf("destination file %s does not exist: %v", fullDestPath, err)
 	}
-	if _, err := os.Stat(fullSrcPath); !errors.Is(err, os.ErrNotExist) {
-		t.Errorf("source file %s should not exist", fullSrcPath)
+	if _, err := os.Stat(fullSrcPath); err != nil {
+		t.Errorf("source file %s should still exist", fullSrcPath)
 	}
 
 	gotContent, err := os.ReadFile(fullDestPath)
@@ -626,7 +626,7 @@ func TestRelocateFiles(t *testing.T) {
 	}
 }
 
-func TestRelocateFiles_Error(t *testing.T) {
+func TestCopyFiles_Error(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	apiBase := "v1"
@@ -635,7 +635,7 @@ func TestRelocateFiles_Error(t *testing.T) {
 		outDir:  outdir,
 		apiBase: apiBase,
 		javaAPI: &config.JavaAPI{
-			FileRelocations: []*config.JavaFileRelocation{
+			CopyFiles: []*config.JavaFileCopy{
 				{
 					Source:      "non-existent",
 					Destination: "dest",
@@ -644,7 +644,7 @@ func TestRelocateFiles_Error(t *testing.T) {
 		},
 	}
 
-	if err := relocateFiles(p); err == nil {
-		t.Error("relocateFiles() error = nil, want error for non-existent source")
+	if err := copyFiles(p); err == nil {
+		t.Error("copyFiles() error = nil, want error for non-existent source")
 	}
 }

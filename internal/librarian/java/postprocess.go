@@ -112,7 +112,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-	if err := relocateFiles(p); err != nil {
+	if err := copyFiles(p); err != nil {
 		return err
 	}
 	if err := restructureToStaging(p); err != nil {
@@ -162,22 +162,22 @@ func addMissingHeaders(dir string) error {
 	})
 }
 
-func relocateFiles(p postProcessParams) error {
-	if p.javaAPI == nil || len(p.javaAPI.FileRelocations) == 0 {
+func copyFiles(p postProcessParams) error {
+	if p.javaAPI == nil || len(p.javaAPI.CopyFiles) == 0 {
 		return nil
 	}
 	gapicDir := p.gapicDir()
-	for _, r := range p.javaAPI.FileRelocations {
-		src := filepath.Join(gapicDir, r.Source)
-		dest := filepath.Join(gapicDir, r.Destination)
+	for _, c := range p.javaAPI.CopyFiles {
+		src := filepath.Join(gapicDir, c.Source)
+		dest := filepath.Join(gapicDir, c.Destination)
 		if _, err := os.Stat(src); err != nil {
-			return fmt.Errorf("failed to stat relocation source %s: %w", src, err)
+			return fmt.Errorf("failed to stat copy source %s: %w", src, err)
 		}
 		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
 			return fmt.Errorf("failed to create destination directory for %s: %w", dest, err)
 		}
-		if err := os.Rename(src, dest); err != nil {
-			return fmt.Errorf("failed to relocate %s to %s: %w", src, dest, err)
+		if err := filesystem.CopyFile(src, dest); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", src, dest, err)
 		}
 	}
 	return nil
