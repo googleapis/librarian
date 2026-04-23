@@ -709,7 +709,7 @@ func TestDeriveNextVersion(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			got, err := deriveNextVersion(test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			got, err := deriveNextVersion(test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -747,7 +747,7 @@ func TestDeriveNextVersion_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveNextVersion(test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			got, err := deriveNextVersion(test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err == nil {
 				t.Errorf("DeriveNextVersion() expected error; returned no error and version %s", got)
 			}

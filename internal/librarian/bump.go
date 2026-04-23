@@ -212,7 +212,7 @@ func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 // to update manifests, version files etc.
 func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}
@@ -246,7 +246,7 @@ func postBump(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
+func deriveNextVersion(library *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
 	// If a version override has been specified, use it - but
 	// check that it's not a regression or a no-op.
 	if versionOverride != "" {
@@ -409,7 +409,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 // the next version.)
 func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, gitExe, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}
