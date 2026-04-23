@@ -613,11 +613,11 @@ type JavaAPI struct {
 
 // JavaFileRelocation represents a file relocation for Java.
 type JavaFileRelocation struct {
-	// Source is the source path relative to the API version directory
-	// (e.g., "gapic/src/main/java/com/google/storage/v2/gapic_metadata.json").
+	// Source is the source path relative to the generated GAPIC module directory
+	// (e.g., "src/main/java/com/google/storage/v2/gapic_metadata.json").
 	// These paths are used before restructuring the output into Maven modules.
 	Source string `yaml:"source"`
-	// Destination is the destination path relative to the API version directory.
+	// Destination is the destination path relative to the generated GAPIC module directory.
 	// These paths are used before restructuring the output into Maven modules.
 	Destination string `yaml:"destination"`
 }

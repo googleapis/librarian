@@ -166,9 +166,10 @@ func relocateFiles(p postProcessParams) error {
 	if p.javaAPI == nil || len(p.javaAPI.FileRelocations) == 0 {
 		return nil
 	}
+	gapicDir := p.gapicDir()
 	for _, r := range p.javaAPI.FileRelocations {
-		src := filepath.Join(p.outDir, p.apiBase, r.Source)
-		dest := filepath.Join(p.outDir, p.apiBase, r.Destination)
+		src := filepath.Join(gapicDir, r.Source)
+		dest := filepath.Join(gapicDir, r.Destination)
 		if _, err := os.Stat(src); err != nil {
 			return fmt.Errorf("failed to stat relocation source %s: %w", src, err)
 		}

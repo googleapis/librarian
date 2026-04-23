@@ -578,10 +578,11 @@ func TestRelocateFiles(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	apiBase := "v1"
-	srcPath := "gapic/src/main/java/com/google/storage/v2/gapic_metadata.json"
-	destPath := "gapic/src/main/resources/com/google/storage/v2/gapic_metadata.json"
+	gapicDir := filepath.Join(outdir, apiBase, "gapic")
+	srcPath := "src/main/java/com/google/storage/v2/gapic_metadata.json"
+	destPath := "src/main/resources/com/google/storage/v2/gapic_metadata.json"
 
-	fullSrcPath := filepath.Join(outdir, apiBase, srcPath)
+	fullSrcPath := filepath.Join(gapicDir, srcPath)
 	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -608,7 +609,7 @@ func TestRelocateFiles(t *testing.T) {
 	}
 
 	// Verify relocation
-	fullDestPath := filepath.Join(outdir, apiBase, destPath)
+	fullDestPath := filepath.Join(gapicDir, destPath)
 	if _, err := os.Stat(fullDestPath); err != nil {
 		t.Errorf("destination file %s does not exist: %v", fullDestPath, err)
 	}
