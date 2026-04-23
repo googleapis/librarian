@@ -24,9 +24,7 @@ limitations under the License.
 {{#Codec.ServerSideStreaming}}
 @override
 Stream<{{Codec.ResponseType}}> {{Codec.Name}}({{Codec.RequestType}} request) {
-  if (isClosed) {
-    throw StateError('Service is closed');
-  }
+  if (isClosed) throw StateError('Service is closed');
   if (_{{Codec.Name}} case final {{Codec.Name}}?) {
     return {{Codec.Name}}(request);
   }
