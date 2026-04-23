@@ -182,20 +182,13 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
-			oldDir, err := os.Getwd()
-			if err != nil {
-				t.Fatal(err)
-			}
-			if err := os.Chdir(tempDir); err != nil {
-				t.Fatal(err)
-			}
-			defer os.Chdir(oldDir)
+			t.Chdir(tempDir)
 
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
 
-			err = Run(t.Context(), test.args...)
+			err := Run(t.Context(), test.args...)
 
 			if err == nil {
 				t.Fatal("expected error; got nil")
