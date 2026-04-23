@@ -573,3 +573,77 @@ func TestAddMissingHeaders(t *testing.T) {
 		})
 	}
 }
+
+func TestRelocateFiles(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	srcPath := "gapic/src/main/java/com/google/storage/v2/gapic_metadata.json"
+	destPath := "gapic/src/main/resources/com/google/storage/v2/gapic_metadata.json"
+
+	fullSrcPath := filepath.Join(outdir, apiBase, srcPath)
+	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := `{"schema": "1.0"}`
+	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			FileRelocations: []*config.JavaFileRelocation{
+				{
+					Source:      srcPath,
+					Destination: destPath,
+				},
+			},
+		},
+	}
+
+	if err := relocateFiles(p); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify relocation
+	fullDestPath := filepath.Join(outdir, apiBase, destPath)
+	if _, err := os.Stat(fullDestPath); err != nil {
+		t.Errorf("destination file %s does not exist: %v", fullDestPath, err)
+	}
+	if _, err := os.Stat(fullSrcPath); !errors.Is(err, os.ErrNotExist) {
+		t.Errorf("source file %s should not exist", fullSrcPath)
+	}
+
+	gotContent, err := os.ReadFile(fullDestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(gotContent) != content {
+		t.Errorf("content mismatch: got %q, want %q", string(gotContent), content)
+	}
+}
+
+func TestRelocateFiles_Error(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			FileRelocations: []*config.JavaFileRelocation{
+				{
+					Source:      "non-existent",
+					Destination: "dest",
+				},
+			},
+		},
+	}
+
+	if err := relocateFiles(p); err == nil {
+		t.Error("relocateFiles() error = nil, want error for non-existent source")
+	}
+}

@@ -602,9 +602,24 @@ type JavaAPI struct {
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
+	// FileRelocations is a list of file relocations to perform after generation.
+	// It applies to files in GAPIC, gRPC, and proto modules.
+	FileRelocations []*JavaFileRelocation `yaml:"file_relocations,omitempty"`
+
 	// Samples determines whether to generate samples for the API,
 	// default is true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
+}
+
+// JavaFileRelocation represents a file relocation for Java.
+type JavaFileRelocation struct {
+	// Source is the source path relative to the API version directory
+	// (e.g., "gapic/src/main/java/com/google/storage/v2/gapic_metadata.json").
+	// These paths are used before restructuring the output into Maven modules.
+	Source string `yaml:"source"`
+	// Destination is the destination path relative to the API version directory.
+	// These paths are used before restructuring the output into Maven modules.
+	Destination string `yaml:"destination"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

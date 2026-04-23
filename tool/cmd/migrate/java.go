@@ -264,6 +264,23 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			}
 			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
+
+			if name == "storage" && g.ProtoPath == "google/storage/v2" {
+				javaAPI.FileRelocations = []*config.JavaFileRelocation{
+					{
+						Source:      "gapic/src/main/java/com/google/storage/v2/gapic_metadata.json",
+						Destination: "gapic/src/main/resources/com/google/storage/v2/gapic_metadata.json",
+					},
+				}
+			}
+			if name == "storage" && g.ProtoPath == "google/storage/control/v2" {
+				javaAPI.FileRelocations = []*config.JavaFileRelocation{
+					{
+						Source:      "gapic/src/main/java/com/google/storage/control/v2/gapic_metadata.json",
+						Destination: "gapic/src/main/resources/com/google/storage/control/v2/gapic_metadata.json",
+					},
+				}
+			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		lib := &config.Library{

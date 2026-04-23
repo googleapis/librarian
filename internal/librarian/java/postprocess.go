@@ -112,7 +112,9 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-
+	if err := relocateFiles(p); err != nil {
+		return err
+	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
 	}
@@ -158,6 +160,26 @@ func addMissingHeaders(dir string) error {
 		}
 		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
 	})
+}
+
+func relocateFiles(p postProcessParams) error {
+	if p.javaAPI == nil || len(p.javaAPI.FileRelocations) == 0 {
+		return nil
+	}
+	for _, r := range p.javaAPI.FileRelocations {
+		src := filepath.Join(p.outDir, p.apiBase, r.Source)
+		dest := filepath.Join(p.outDir, p.apiBase, r.Destination)
+		if _, err := os.Stat(src); err != nil {
+			return fmt.Errorf("failed to stat relocation source %s: %w", src, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("failed to create destination directory for %s: %w", dest, err)
+		}
+		if err := os.Rename(src, dest); err != nil {
+			return fmt.Errorf("failed to relocate %s to %s: %w", src, dest, err)
+		}
+	}
+	return nil
 }
 
 // buildLicenseText constructs the complete license header text for the given year.
