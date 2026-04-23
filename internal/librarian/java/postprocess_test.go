@@ -590,7 +590,6 @@ func TestCopyFiles(t *testing.T) {
 	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	p := postProcessParams{
 		outDir:  outdir,
 		apiBase: apiBase,
@@ -603,11 +602,9 @@ func TestCopyFiles(t *testing.T) {
 			},
 		},
 	}
-
 	if err := copyFiles(p); err != nil {
 		t.Fatal(err)
 	}
-
 	// Verify copy
 	fullDestPath := filepath.Join(gapicDir, destPath)
 	if _, err := os.Stat(fullDestPath); err != nil {
@@ -616,13 +613,12 @@ func TestCopyFiles(t *testing.T) {
 	if _, err := os.Stat(fullSrcPath); err != nil {
 		t.Errorf("source file %s should still exist", fullSrcPath)
 	}
-
 	gotContent, err := os.ReadFile(fullDestPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(gotContent) != content {
-		t.Errorf("content mismatch: got %q, want %q", string(gotContent), content)
+	if diff := cmp.Diff(content, string(gotContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -630,7 +626,6 @@ func TestCopyFiles_Error(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	apiBase := "v1"
-
 	p := postProcessParams{
 		outDir:  outdir,
 		apiBase: apiBase,
@@ -643,7 +638,6 @@ func TestCopyFiles_Error(t *testing.T) {
 			},
 		},
 	}
-
 	if err := copyFiles(p); err == nil {
 		t.Error("copyFiles() error = nil, want error for non-existent source")
 	}
