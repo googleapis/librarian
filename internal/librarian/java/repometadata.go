@@ -46,6 +46,7 @@ type repoMetadata struct {
 	// Java-specific field.
 	RequiresBilling bool `json:"requires_billing"`
 
+	// Optional fields (appended in this order in Python)
 	// Java-specific field.
 	APIReference string `json:"api_reference,omitempty"`
 	// Java-specific field.
