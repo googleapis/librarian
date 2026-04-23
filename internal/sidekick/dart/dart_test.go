@@ -511,8 +511,7 @@ We want to respect whitespace at the beginning, because it important in Markdown
 		"///   - A nested thing",
 		"/// - The next thing",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -522,8 +521,7 @@ func TestFormatDocCommentsEmpty(t *testing.T) {
 	input := ``
 
 	want := []string{}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -539,8 +537,7 @@ This line has trailing spaces.  `
 		"///",
 		"/// This line has trailing spaces.",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -558,16 +555,13 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 		"/// sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
 		"/// Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
 }
 
 func TestFormatDocCommentsRewriteReferences(t *testing.T) {
-	state := &api.APIState{}
-
 	for _, test := range []struct {
 		testName string
 		input    string
@@ -609,7 +603,7 @@ is set to true, this field will contain the sentiment for the sentence.`,
 		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {
-			gotLines := formatDocComments(test.input, state)
+			gotLines := formatDocComments(test.input, nil)
 			got := strings.Join(gotLines, "\n")
 			if diff := cmp.Diff(test.output, got); diff != "" {
 				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)

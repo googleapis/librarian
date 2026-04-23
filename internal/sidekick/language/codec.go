@@ -38,9 +38,9 @@ type GeneratedFile struct {
 type TemplateProvider func(templateName string) (string, error)
 
 // PathParams returns the path parameters for a method.
-func PathParams(m *api.Method, state *api.APIState) ([]*api.Field, error) {
-	msg, ok := state.MessageByID[m.InputTypeID]
-	if !ok {
+func PathParams(m *api.Method, model *api.API) ([]*api.Field, error) {
+	msg := model.Message(m.InputTypeID)
+	if msg == nil {
 		return nil, fmt.Errorf("unable to lookup request type: %q", m.InputTypeID)
 	}
 	pathNames := []string{}
@@ -111,11 +111,11 @@ func HasNestedTypes(m *api.Message) bool {
 }
 
 // FieldIsMap returns true if the field is a map.
-func FieldIsMap(f *api.Field, state *api.APIState) bool {
+func FieldIsMap(f *api.Field, model *api.API) bool {
 	if f.Typez != api.MESSAGE_TYPE {
 		return false
 	}
-	if m, ok := state.MessageByID[f.TypezID]; ok {
+	if m := model.Message(f.TypezID); m != nil {
 		return m.IsMap
 	}
 	return false

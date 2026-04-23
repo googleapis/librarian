@@ -39,14 +39,14 @@ func CrossReference(model *API) error {
 			f.Parent = m
 			switch f.Typez {
 			case MESSAGE_TYPE:
-				t, ok := model.State.MessageByID[f.TypezID]
-				if !ok {
+				t := model.Message(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
 				}
 				f.MessageType = t
 			case ENUM_TYPE:
-				t, ok := model.State.EnumByID[f.TypezID]
-				if !ok {
+				t := model.Enum(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
 				}
 				f.EnumType = t
@@ -60,12 +60,12 @@ func CrossReference(model *API) error {
 		}
 	}
 	for _, m := range model.State.MethodByID {
-		input, ok := model.State.MessageByID[m.InputTypeID]
-		if !ok {
+		input := model.Message(m.InputTypeID)
+		if input == nil {
 			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
 		}
-		output, ok := model.State.MessageByID[m.OutputTypeID]
-		if !ok {
+		output := model.Message(m.OutputTypeID)
+		if output == nil {
 			return fmt.Errorf("cannot find output type %s for method %s", m.OutputTypeID, m.ID)
 		}
 		m.InputType = input
@@ -79,8 +79,7 @@ func CrossReference(model *API) error {
 		for _, m := range s.Methods {
 			m.Model = model
 			m.Service = s
-			source, ok := model.State.ServiceByID[m.SourceServiceID]
-			if ok {
+			if source := model.Service(m.SourceServiceID); source != nil {
 				m.SourceService = source
 			} else {
 				// Default to the regular service. OpenAPI does not define the
@@ -356,7 +355,7 @@ func enrichMethodSamples(m *Method) {
 	m.IsLRO = m.OperationInfo != nil
 
 	if m.OperationInfo != nil && m.Model != nil && m.Model.State != nil {
-		m.LongRunningResponseType = m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"

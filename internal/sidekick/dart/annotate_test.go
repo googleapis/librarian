@@ -846,7 +846,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{})
 
-			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.field, model.State)
+			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.field)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 			}
@@ -911,7 +911,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 		},
 	} {
 		t.Run(test.enumField.Name, func(t *testing.T) {
-			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.enumField, model.State)
+			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.enumField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLinesEnums (-want, +got)\n:%s", diff)
 			}
@@ -974,7 +974,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	}
 
 	// messages
-	got := annotate.buildQueryLines([]string{}, "result.", false, "", messageField1, model.State)
+	got := annotate.buildQueryLines([]string{}, "result.", false, "", messageField1)
 	want := []string{
 		"if (result.message1?.name case final $1? when $1.isNotDefault) 'message1.name': $1",
 		"if (result.message1?.state case final $1? when $1.isNotDefault) 'message1.state': $1.value",
@@ -983,7 +983,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField2, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField2)
 	want = []string{
 		"if (result.message2?.data case final $1?) 'message2.data': encodeBytes($1)!",
 		"if (result.message2?.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
@@ -993,7 +993,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	}
 
 	// nested messages
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField3, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField3)
 	want = []string{
 		"if (result.message3?.secret?.name case final $1? when $1.isNotDefault) 'message3.secret.name': $1",
 		"if (result.message3?.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
@@ -1003,7 +1003,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	}
 
 	// custom encoded messages
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", fieldMaskField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", fieldMaskField)
 	want = []string{
 		"if (result.fieldMask case final $1?) 'fieldMask': $1.toJson()",
 	}
@@ -1011,7 +1011,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", durationField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", durationField)
 	want = []string{
 		"if (result.duration case final $1?) 'duration': $1.toJson()",
 	}
@@ -1019,7 +1019,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", timestampField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", timestampField)
 	want = []string{
 		"if (result.time case final $1?) 'time': $1.toJson()",
 	}
@@ -1259,7 +1259,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
-			got := annotate.createFromJsonLine(test.field, model.State, codec.Required)
+			got := annotate.createFromJsonLine(test.field, codec.Required)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 			}
@@ -1606,7 +1606,7 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model.State)
+			got := createToJsonLine(test.field, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
@@ -1927,7 +1927,7 @@ func TestAnnotateField(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumState}, []*api.Service{})
 			model.State.MessageByID[mapMessage.ID] = mapMessage
 			annotate := newAnnotateModel(model)
-			registerMissingWkt(annotate.state)
+			registerMissingWkt(annotate.model)
 
 			annotate.annotateField(test.field)
 			got := test.field.Codec.(*fieldAnnotation)

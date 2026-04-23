@@ -35,12 +35,10 @@ func FindServiceDependencies(model *API, serviceID string) *ServiceDependencies 
 
 	includedIDs, _ := FindDependencies(model, []string{serviceID})
 	for id := range includedIDs {
-		_, ok := model.State.MessageByID[id]
-		if ok {
+		if model.Message(id) != nil {
 			deps.Messages = append(deps.Messages, id)
 		}
-		_, ok = model.State.EnumByID[id]
-		if ok {
+		if model.Enum(id) != nil {
 			deps.Enums = append(deps.Enums, id)
 		}
 	}

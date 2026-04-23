@@ -972,10 +972,7 @@
     - java
     - python
   transports:
-    csharp: rest
-    go: rest
-    java: rest
-    php: rest
+    all: rest
 - path: google/cloud/compute/v1beta
   languages:
     - go
@@ -985,8 +982,7 @@
     - go
     - python
   transports:
-    go: rest
-    java: rest
+    all: rest
 - path: google/cloud/confidentialcomputing/v1
   languages:
     - all

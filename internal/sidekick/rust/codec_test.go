@@ -499,7 +499,7 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
-		if _, ok := model.State.MessageByID[fmt.Sprintf(".google.protobuf.%s", name)]; !ok {
+		if model.Message(fmt.Sprintf(".google.protobuf.%s", name)) == nil {
 			t.Errorf("cannot find well-known message %s in API", name)
 		}
 	}
@@ -510,7 +510,7 @@ func TestWellKnownTypesAsMethod(t *testing.T) {
 	c := createRustCodec()
 
 	want := "wkt::Empty"
-	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -589,7 +589,7 @@ func TestMethodInOut(t *testing.T) {
 	c := createRustCodec()
 
 	want := "crate::model::Target"
-	got, err := c.methodInOutTypeName("..Target", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName("..Target", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -598,7 +598,7 @@ func TestMethodInOut(t *testing.T) {
 	}
 
 	want = "crate::model::target::Nested"
-	got, err = c.methodInOutTypeName("..Target.Nested", model.State, model.PackageName)
+	got, err = c.methodInOutTypeName("..Target.Nested", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -722,8 +722,8 @@ func rustFieldTypesCases() *api.API {
 
 func TestFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 	expectedTypes := map[string]string{
@@ -762,7 +762,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -774,7 +774,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err = c.fieldType(field, model.State, true, model.PackageName)
+		got, err = c.fieldType(field, model, true, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -786,8 +786,8 @@ func TestFieldType(t *testing.T) {
 
 func TestOneOfFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 
@@ -812,7 +812,7 @@ func TestOneOfFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err := c.oneOfFieldType(field, model.State, model.PackageName)
+		got, err := c.oneOfFieldType(field, model, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -886,7 +886,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -950,7 +950,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -1255,7 +1255,7 @@ Maybe they wanted to show some JSON:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1284,7 +1284,7 @@ func TestFormatDocCommentsBullets(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1340,7 +1340,7 @@ func TestFormatDocCommentsNumbers(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1419,7 +1419,7 @@ block:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1443,7 +1443,7 @@ func TestFormatDocCommentsImplicitBlockQuoteClosing(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1473,7 +1473,7 @@ Second [example][].
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1567,7 +1567,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1629,7 +1629,7 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1689,7 +1689,7 @@ func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 			}
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 
-			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model.State, []string{})
+			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model, []string{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1754,7 +1754,7 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1.Message", "test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1792,7 +1792,7 @@ func TestFormatDocCommentsHTMLTags(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1987,7 +1987,7 @@ Truncated link: [text](https://example11.com`
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}

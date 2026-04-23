@@ -112,8 +112,8 @@ func TestDisco_ParsePagination(t *testing.T) {
 	}
 	api.UpdateMethodPagination(nil, model)
 	wantID := "..zones.list"
-	got, ok := model.State.MethodByID[wantID]
-	if !ok {
+	got := model.Method(wantID)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := &api.Field{
@@ -139,8 +139,8 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 	}
 	api.UpdateMethodPagination(nil, model)
 	wantID := "..machineTypes.aggregatedList"
-	got, ok := model.State.MethodByID[wantID]
-	if !ok {
+	got := model.Method(wantID)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
 	}
 	wantPagination := &api.Field{
@@ -167,8 +167,8 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	wantEnum := &api.Enum{
 		ID: "..AcceleratorTypeAggregatedList.warning.code",
 	}
-	got, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	got := model.Enum(wantEnum.ID)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantEnum.ID)
 	}
 	if len(got.Values) < 7 {

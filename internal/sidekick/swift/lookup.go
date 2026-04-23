@@ -22,8 +22,8 @@ import (
 
 // lookupMessage finds a message in the model by its fully-qualified ID.
 func lookupMessage(model *api.API, id string) (*api.Message, error) {
-	m, ok := model.State.MessageByID[id]
-	if !ok {
+	m := model.Message(id)
+	if m == nil {
 		return nil, fmt.Errorf("unable to lookup message %q", id)
 	}
 	return m, nil
@@ -31,8 +31,8 @@ func lookupMessage(model *api.API, id string) (*api.Message, error) {
 
 // lookupEnum finds an enum in the model by its fully-qualified ID.
 func lookupEnum(model *api.API, id string) (*api.Enum, error) {
-	e, ok := model.State.EnumByID[id]
-	if !ok {
+	e := model.Enum(id)
+	if e == nil {
 		return nil, fmt.Errorf("unable to lookup enum %q", id)
 	}
 	return e, nil
