@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -44,12 +45,16 @@ func TestConfigCommand_Get(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
 
-			if err := yaml.Write("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
+			cfg, err := yaml.Unmarshal[config.Config]([]byte(test.configYAML))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := yaml.Write("librarian.yaml", cfg); err != nil {
 				t.Fatal(err)
 			}
 
 			var buf bytes.Buffer
-			err := runConfigGet(&buf, test.path)
+			err = runConfigGet(&buf, test.path)
 
 			if err != nil {
 				t.Fatal(err)
