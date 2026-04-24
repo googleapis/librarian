@@ -29,7 +29,7 @@ import (
 func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
 	t.Helper()
 	deps := []config.SwiftDependency{
-		{Name: "GoogleCloudWkt", ApiPackage: wellKnownPackage},
+		{Name: "GoogleCloudWkt", ApiPackage: wellKnownProtobufPackage},
 	}
 	deps = append(deps, extraDependencies...)
 	return &config.SwiftPackage{

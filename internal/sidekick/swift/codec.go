@@ -25,7 +25,10 @@ import (
 )
 
 const (
-	wellKnownPackage      = "google.protobuf"
+	// The name of the Protobuf package that contains the well-known Protobuf types.
+	wellKnownProtobufPackage = "google.protobuf"
+	// The name of the corresponding Swift package that contains the Swift implementations of these
+	// types.
 	wellKnownSwiftPackage = "GoogleCloudWkt"
 )
 

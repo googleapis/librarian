@@ -65,7 +65,7 @@ func (c *codec) annotateModel() error {
 		DependsOn:     map[string]*Dependency{},
 		WktPackage:    wellKnownSwiftPackage,
 	}
-	if dep, ok := c.ApiPackages[wellKnownPackage]; ok {
+	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
 	}
 	c.Model.Codec = annotations
@@ -82,10 +82,10 @@ func (c *codec) annotateModel() error {
 	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
 	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
 	if len(c.Model.Messages) != 0 {
-		if dep, ok := c.ApiPackages[wellKnownPackage]; ok {
+		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 			dep.Required = true
 		} else {
-			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownPackage)
+			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
 	}
 	for _, service := range c.Model.Services {
