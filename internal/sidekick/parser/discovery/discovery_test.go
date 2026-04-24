@@ -124,8 +124,8 @@ func TestMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..WeightedBackendService"
-	got, ok := model.State.MessageByID[id]
-	if !ok {
+	got := model.Message(id)
+	if got == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
 	want := &api.Message{
@@ -172,8 +172,8 @@ func TestDeprecatedField(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..BackendService"
-	gotMessage, ok := model.State.MessageByID[id]
-	if !ok {
+	gotMessage := model.Message(id)
+	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
 	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })

@@ -85,8 +85,8 @@ func TestMapFields(t *testing.T) {
 			},
 		},
 	}
-	gotMap, ok := model.State.MessageByID[wantMap.ID]
-	if !ok {
+	gotMap := model.Message(wantMap.ID)
+	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
 	}
 	apitest.CheckMessage(t, gotMap, wantMap)
@@ -154,8 +154,8 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 			},
 		},
 	}
-	gotMap, ok := model.State.MessageByID[wantMap.ID]
-	if !ok {
+	gotMap := model.Message(wantMap.ID)
+	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
 	}
 	apitest.CheckMessage(t, gotMap, wantMap)
@@ -230,8 +230,8 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 			},
 		},
 	}
-	gotMap, ok := model.State.MessageByID[wantMap.ID]
-	if !ok {
+	gotMap := model.Message(wantMap.ID)
+	if gotMap == nil {
 		t.Fatalf("missing map message %s", wantMap.ID)
 	}
 	apitest.CheckMessage(t, gotMap, wantMap)
@@ -325,9 +325,10 @@ func TestMapScalarTypes(t *testing.T) {
 			t.Errorf("mismatch (-want, +got):\n%s", diff)
 			continue
 		}
-		mapMessage, ok := model.State.MessageByID[message.Fields[0].TypezID]
-		if !ok {
+		mapMessage := model.Message(message.Fields[0].TypezID)
+		if mapMessage == nil {
 			t.Errorf("missing map message %s", message.Fields[0].TypezID)
+			continue
 		}
 		if len(mapMessage.Fields) != 2 {
 			t.Errorf("expected exactly two fields, got=%v", mapMessage.Fields)

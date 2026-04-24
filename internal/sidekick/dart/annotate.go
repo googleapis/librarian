@@ -217,8 +217,6 @@ type packageDependency struct {
 type annotateModel struct {
 	// The API model we're annotating.
 	model *api.API
-	// Mappings from IDs to types.
-	state *api.APIState
 	// The set of required imports (e.g. "package:google_cloud_type/type.dart" or
 	// "package:http/http.dart as http") that have been calculated.
 	//
@@ -242,7 +240,6 @@ type annotateModel struct {
 func newAnnotateModel(model *api.API) *annotateModel {
 	return &annotateModel{
 		model:                 model,
-		state:                 model.State,
 		imports:               map[string]bool{},
 		packageMapping:        map[string]string{},
 		packagePrefixes:       map[string]string{},
@@ -719,8 +716,6 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		bodyMessageName = "request." + strcase.ToLowerCamel(bodyMessageName)
 	}
 
-	state := annotate.state
-
 	// For 'GetOperation' mixins, we augment the method generation with
 	// additional generic type parameters.
 	isGetOperation := method.Name == "GetOperation" &&
@@ -743,8 +738,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
+		RequestType:         annotate.resolveMessageName(method.InputType, true),
+		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
 		DocLines:            formatDocComments(method.Documentation, annotate.model),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
@@ -757,8 +752,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 }
 
 func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.OperationInfo) {
-	response := annotate.state.MessageByID[operationInfo.ResponseTypeID]
-	metadata := annotate.state.MessageByID[operationInfo.MetadataTypeID]
+	response := annotate.model.Message(operationInfo.ResponseTypeID)
+	metadata := annotate.model.Message(operationInfo.MetadataTypeID)
 
 	operationInfo.Codec = &operationInfoAnnotation{
 		ResponseType: annotate.resolveMessageName(response, false),
@@ -882,7 +877,7 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
 		typeName := annotate.resolveEnumName(annotate.model.Enum(typeid))
 		return fmt.Sprintf("%s.fromJson", typeName)
 	case api.TypezMessage:
-		typeName := annotate.resolveMessageName(annotate.state.MessageByID[typeid], false)
+		typeName := annotate.resolveMessageName(annotate.model.Message(typeid), false)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -1016,7 +1011,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
-		message := annotate.state.MessageByID[field.TypezID]
+		message := annotate.model.Message(field.TypezID)
 		keyType := message.Fields[0].Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := message.Fields[1].Typez
@@ -1045,7 +1040,7 @@ func createToJsonLine(field *api.Field, model *api.API) string {
 		}
 		return name
 	case field.Map:
-		message := model.State.MessageByID[field.TypezID]
+		message := model.Message(field.TypezID)
 		keyType := message.Fields[0].Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := message.Fields[1].Typez
@@ -1101,7 +1096,7 @@ func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
 	paramPrefix string, field *api.Field,
 ) []string {
-	message := annotate.state.MessageByID[field.TypezID]
+	message := annotate.model.Message(field.TypezID)
 	isMap := message != nil && message.IsMap
 
 	if field.Codec == nil {
@@ -1263,8 +1258,8 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	case api.TypezBytes:
 		out = "Uint8List"
 	case api.TypezMessage:
-		message, ok := annotate.state.MessageByID[f.TypezID]
-		if !ok {
+		message := annotate.model.Message(f.TypezID)
+		if message == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
@@ -1350,8 +1345,8 @@ func registerMissingWkt(model *api.API) {
 		{".google.protobuf.Any", "Any", "google.protobuf"},
 		{".google.protobuf.Empty", "Empty", "google.protobuf"},
 	} {
-		_, ok := model.State.MessageByID[message.ID]
-		if !ok {
+		msg := model.Message(message.ID)
+		if msg == nil {
 			model.AddMessage(&api.Message{
 				ID:      message.ID,
 				Name:    message.Name,

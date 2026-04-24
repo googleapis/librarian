@@ -127,12 +127,12 @@ func TestServiceMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
-	if !ok {
+	getMessage := model.Message("..zones.getRequest")
+	if getMessage == nil {
 		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
 	}
-	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
-	if !ok {
+	listMessage := model.Message("..zones.listRequest")
+	if listMessage == nil {
 		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
 	}
 
@@ -145,8 +145,8 @@ func TestServiceMessages(t *testing.T) {
 		Messages:           []*api.Message{getMessage, listMessage},
 	}
 
-	got, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	got := model.Message(want.ID)
+	if got == nil {
 		t.Fatalf("expected service %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, got, want)

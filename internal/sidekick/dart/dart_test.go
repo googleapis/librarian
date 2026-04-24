@@ -120,7 +120,6 @@ func TestResolveMessageName(t *testing.T) {
 
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
-	state := model.State
 
 	for _, test := range []struct {
 		typeId string
@@ -131,7 +130,7 @@ func TestResolveMessageName(t *testing.T) {
 		{".google.protobuf.Timestamp", "Timestamp"},
 		{".google.protobuf.Duration", "Duration"},
 	} {
-		got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+		got := annotate.resolveMessageName(model.Message(test.typeId), true)
 		if got != test.want {
 			t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 		}
@@ -158,7 +157,6 @@ func TestResolveMessageName_ImportsMessages(t *testing.T) {
 
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
-	state := model.State
 
 	annotate.packageMapping = map[string]string{
 		"google.protobuf": "package:google_cloud_protobuf/protobuf.dart",
@@ -175,7 +173,7 @@ func TestResolveMessageName_ImportsMessages(t *testing.T) {
 		{".google.type.Expr", "package:google_cloud_type/type.dart"},
 	} {
 		annotate.imports = map[string]bool{}
-		annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+		annotate.resolveMessageName(model.Message(test.typeId), true)
 		if _, ok := annotate.imports[test.want]; !ok {
 			t.Errorf("import not added, got: %v want: %s", annotate.imports, test.want)
 		}
@@ -240,7 +238,6 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		"prefix:google.protobuf": "protobuf",
 		"prefix:google.type":     "type",
 	})
-	state := model.State
 
 	for _, test := range []struct {
 		typeId string
@@ -252,7 +249,7 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		{".google.type.DayOfWeek", "type.DayOfWeek"},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+			got := annotate.resolveMessageName(model.Message(test.typeId), true)
 			if got != test.want {
 				t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 			}
