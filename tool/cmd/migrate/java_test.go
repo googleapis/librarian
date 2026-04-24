@@ -76,14 +76,6 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			},
 		},
 		{
-			name: "visionai/v1",
-			path: "google/cloud/visionai/v1",
-			want: &config.JavaAPI{
-				Path:           "google/cloud/visionai/v1",
-				ExcludedProtos: []string{"google/cloud/visionai/v1/prediction.proto"},
-			},
-		},
-		{
 			name: "google/rpc",
 			path: "google/rpc",
 			want: &config.JavaAPI{

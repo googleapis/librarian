@@ -464,8 +464,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
 	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
 		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
-	case strings.HasPrefix(api.Path, "google/cloud/visionai/v1"):
-		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/visionai/v1/prediction.proto")
 	case api.Path == "google/rpc":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
