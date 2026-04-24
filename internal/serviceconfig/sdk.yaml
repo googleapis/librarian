@@ -1780,6 +1780,7 @@
     - python
   transports:
     go: grpc
+    java: grpc
     python: grpc
 - path: google/cloud/networkmanagement/v1
   documentation_uri: https://cloud.google.com/network-management
