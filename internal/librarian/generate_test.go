@@ -356,6 +356,41 @@ libraries:
 	}
 }
 
+func TestGenerate_Gcloud(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
+	})
+
+	configContent := fmt.Sprintf(`language: gcloud
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: secretmanager
+    output: out
+    apis:
+      - path: google/cloud/secretmanager/v1
+`, googleapisDir)
+
+	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := Run(t.Context(), "librarian", "generate", "secretmanager")
+	if err == nil {
+		return
+	}
+	if strings.Contains(err.Error(), "does not support generation") {
+		t.Errorf("expected gcloud to be supported, but got: %v", err)
+	}
+	if !strings.Contains(err.Error(), "no .proto files found") {
+		t.Errorf("expected error about missing .proto files, got: %v", err)
+	}
+}
+
 // createGoogleapisServiceConfigs creates a mock googleapis directory structure
 // with service config files for testing purposes.
 // The configs map keys are api paths (e.g., "google/cloud/speech/v1")
