@@ -50,6 +50,7 @@ type pathVariable struct {
 	Name       string
 	Expression string
 	Test       string
+	FieldPath  string
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters

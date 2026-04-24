@@ -221,7 +221,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("secret", "name"),
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.secret.map({ $0.name }), !pathVariable0.isEmpty else {
-        throw GoogleCloudGax.RequestError.binding("'request.secret.map({ $0.name })' returns an empty binding")
+        throw GoogleCloudGax.RequestError.binding("'request.secret.name' is not set or is empty")
       }
       return "/v1/\(pathVariable0)"
     }()`,
@@ -233,7 +233,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("name"),
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.name as String?, !pathVariable0.isEmpty else {
-        throw GoogleCloudGax.RequestError.binding("'request.name as String?' returns an empty binding")
+        throw GoogleCloudGax.RequestError.binding("'request.name' is not set or is empty")
       }
       return "/v1/\(pathVariable0)"
     }()`,
@@ -248,10 +248,10 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("location"),
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.project as String?, !pathVariable0.isEmpty else {
-        throw GoogleCloudGax.RequestError.binding("'request.project as String?' returns an empty binding")
+        throw GoogleCloudGax.RequestError.binding("'request.project' is not set or is empty")
       }
       guard let pathVariable1 = request.location, !pathVariable1.isEmpty else {
-        throw GoogleCloudGax.RequestError.binding("'request.location' returns an empty binding")
+        throw GoogleCloudGax.RequestError.binding("'request.location' is not set or is empty")
       }
       return "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
     }()`,

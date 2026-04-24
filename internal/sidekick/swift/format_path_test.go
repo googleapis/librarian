@@ -104,6 +104,7 @@ func TestPathVariables(t *testing.T) {
 					Name:       "pathVariable0",
 					Expression: ".name as String?",
 					Test:       "!pathVariable0.isEmpty",
+					FieldPath:  "name",
 				},
 			},
 		},
@@ -119,11 +120,13 @@ func TestPathVariables(t *testing.T) {
 					Name:       "pathVariable0",
 					Expression: ".name as String?",
 					Test:       "!pathVariable0.isEmpty",
+					FieldPath:  "name",
 				},
 				{
 					Name:       "pathVariable1",
 					Expression: ".second as String?",
 					Test:       "!pathVariable1.isEmpty",
+					FieldPath:  "second",
 				},
 			},
 		},
@@ -232,6 +235,7 @@ func TestNewPathVariable(t *testing.T) {
 				Name:       "pathVariable0",
 				Expression: ".parent as String?",
 				Test:       "!pathVariable0.isEmpty",
+				FieldPath:  "parent",
 			},
 		},
 		{
@@ -245,6 +249,7 @@ func TestNewPathVariable(t *testing.T) {
 				Name:       "pathVariable1",
 				Expression: ".displayName",
 				Test:       "!pathVariable1.isEmpty",
+				FieldPath:  "display_name",
 			},
 		},
 		{
@@ -267,6 +272,7 @@ func TestNewPathVariable(t *testing.T) {
 				Name:       "pathVariable2",
 				Expression: ".secret.map({ $0.name })",
 				Test:       "!pathVariable2.isEmpty",
+				FieldPath:  "secret.name",
 			},
 		},
 		{
@@ -280,6 +286,7 @@ func TestNewPathVariable(t *testing.T) {
 				Name:       "pathVariable3",
 				Expression: ".secret.flatMap({ $0.description })",
 				Test:       "!pathVariable3.isEmpty",
+				FieldPath:  "secret.description",
 			},
 		},
 		{

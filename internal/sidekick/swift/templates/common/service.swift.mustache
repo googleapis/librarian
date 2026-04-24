@@ -66,7 +66,7 @@ public class {{Codec.Name}} {
     let path = try { () throws -> String in
       {{#Codec.PathVariables}}
       guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
-        throw GoogleCloudGax.RequestError.binding("'request{{Expression}}' returns an empty binding")
+        throw GoogleCloudGax.RequestError.binding("'request.{{FieldPath}}' is not set or is empty")
       }
       {{/Codec.PathVariables}}
       return "{{Codec.PathExpression}}"

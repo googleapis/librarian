@@ -92,7 +92,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		case api.TypezString:
 			test = fmt.Sprintf("!%s.isEmpty", name)
 		case api.TypezBytes:
-			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, variable.FieldPath)
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(variable.FieldPath, "."))
 		default:
 			test = ""
 		}
@@ -101,6 +101,7 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		Name:       name,
 		Expression: expression.String(),
 		Test:       test,
+		FieldPath:  strings.Join(variable.FieldPath, "."),
 	}
 	return new, nil
 }
