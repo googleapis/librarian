@@ -23,6 +23,9 @@ tool/cmd/migrate/migrate
 tool/cmd/syncversion/syncversion
 
 # The same binaries, but in the root directory
+# (These are in the same order as the list above,
+# which means they're not strictly sorted because
+# all the /cmd binaries come before /tool/cmd ones.)
 /legacyautomation
 /legacylibrarian
 /librarian
