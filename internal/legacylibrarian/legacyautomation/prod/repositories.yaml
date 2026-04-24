@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 # SHA corresponds https://github.com/googleapis/librarian/commit/2e86731a438a346f789999998944bc4085c1cab6.
 librarian-image-sha: sha256:7860dfbb8432b6292c493d7c06589a713e52bcaef9e08e2564d3b5f9e66051c7
 repositories:

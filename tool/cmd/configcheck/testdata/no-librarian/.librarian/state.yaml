@@ -11,7 +11,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
 image: us-central1-docker.pkg.dev/cloud-sdk-librarian-prod/images-prod/librarian-go@sha256:19bb93e8f1f916c61b597db2bad65dc432f79baaabb210499d7d0e4ad1dffe29
 libraries:
   - id: accessapproval
