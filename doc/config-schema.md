@@ -254,6 +254,7 @@ This document describes the schema for the librarian.yaml.
 | `path` | string | Is the source path. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
+| `skip_proto_class_generation` | list of string | Is a list of proto files to exclude from generating Java classes (Step 1: protoc --java_out), but NOT from gRPC or GAPIC generation, nor from the packaged proto files. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto"). |
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |

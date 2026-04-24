@@ -452,6 +452,8 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 	case strings.HasPrefix(api.Path, "google/cloud/aiplatform/v1beta1"):
 		api.ExcludedProtos = append(api.ExcludedProtos,
 			"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+		)
+		api.SkipProtoClassGeneration = append(api.SkipProtoClassGeneration,
 			"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
 			"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
 			"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
@@ -462,6 +464,8 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
 	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
 		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
+	case strings.HasPrefix(api.Path, "google/cloud/visionai/v1"):
+		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/visionai/v1/prediction.proto")
 	case api.Path == "google/rpc":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}

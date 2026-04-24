@@ -636,6 +636,105 @@ func TestGenerate_Logic(t *testing.T) {
 	}
 }
 
+func TestGenerate_ProtoExclusion(t *testing.T) {
+	var capturedArgs [][]string
+	oldRunProtoc := runProtoc
+	defer func() { runProtoc = oldRunProtoc }()
+	runProtoc = func(ctx context.Context, args []string) error {
+		capturedArgs = append(capturedArgs, args)
+		return nil
+	}
+	outdir := t.TempDir()
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "0.1.2",
+		Output:  outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{
+					Path: "google/cloud/secretmanager/v1",
+					SkipProtoClassGeneration: []string{
+						"google/cloud/secretmanager/v1/resources.proto",
+					},
+				},
+			},
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	// Setup mandatory files for postProcessAPI and syncPOMs
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageJava,
+		Repo:     "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "1.2.3",
+			},
+		},
+		Libraries: []*config.Library{
+			library,
+			{Name: rootLibrary, Version: "1.2.3"},
+		},
+	}
+	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// 1. Generate standard Protocol Buffer Java classes.
+	// 2. Generate gRPC service stubs.
+	// 3. Generate GAPIC library.
+	if len(capturedArgs) < 3 {
+		t.Fatalf("expected at least 3 protoc calls, got %d", len(capturedArgs))
+	}
+	// Verify Step 1 (proto) excludes resources.proto
+	protoArgs := capturedArgs[0]
+	for _, arg := range protoArgs {
+		if strings.Contains(arg, "resources.proto") {
+			t.Errorf("Step 1 (proto) should exclude resources.proto, but it was found in args: %v", arg)
+		}
+	}
+	// Verify Step 2 (gRPC) includes resources.proto
+	grpcArgs := capturedArgs[1]
+	found := false
+	for _, arg := range grpcArgs {
+		if strings.Contains(arg, "resources.proto") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Step 2 (gRPC) should include resources.proto, but it was not found in args")
+	}
+	// Verify Step 3 (GAPIC) includes resources.proto
+	gapicArgs := capturedArgs[2]
+	found = false
+	for _, arg := range gapicArgs {
+		if strings.Contains(arg, "resources.proto") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Errorf("Step 3 (GAPIC) should include resources.proto, but it was not found in args")
+	}
+}
+
 func TestFormat_Success(t *testing.T) {
 	testhelper.RequireCommand(t, "google-java-format")
 	for _, test := range []struct {

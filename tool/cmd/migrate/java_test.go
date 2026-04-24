@@ -49,6 +49,8 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 				Path: "google/cloud/aiplatform/v1beta1",
 				ExcludedProtos: []string{
 					"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+				},
+				SkipProtoClassGeneration: []string{
 					"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
 					"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
 					"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
@@ -71,6 +73,14 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			want: &config.JavaAPI{
 				Path:             "google/cloud/oslogin/v1",
 				AdditionalProtos: []string{"google/cloud/oslogin/common/common.proto"},
+			},
+		},
+		{
+			name: "visionai/v1",
+			path: "google/cloud/visionai/v1",
+			want: &config.JavaAPI{
+				Path:           "google/cloud/visionai/v1",
+				ExcludedProtos: []string{"google/cloud/visionai/v1/prediction.proto"},
 			},
 		},
 		{

@@ -125,7 +125,8 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	if err := runProtoc(ctx, protoProtocArgs(apiProtos, googleapisDir, protoDir)); err != nil {
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, googleapisDir)
+	if err := runProtoc(ctx, protoProtocArgs(protoProtos, googleapisDir, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
