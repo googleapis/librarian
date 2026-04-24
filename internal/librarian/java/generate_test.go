@@ -832,3 +832,62 @@ func TestFilterProtos(t *testing.T) {
 		})
 	}
 }
+
+func TestDeriveAdditionalProtoPaths(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		javaAPI *config.JavaAPI
+		want    []string
+	}{
+		{
+			name:    "included by default",
+			javaAPI: &config.JavaAPI{},
+			want: []string{
+				filepath.Join(googleapisDir, commonResourcesProto),
+			},
+		},
+		{
+			name: "omitted via flag",
+			javaAPI: &config.JavaAPI{
+				OmitCommonResources: true,
+			},
+			want: nil,
+		},
+		{
+			name: "explicitly included in AdditionalProtos (still only one)",
+			javaAPI: &config.JavaAPI{
+				AdditionalProtos: []string{commonResourcesProto},
+			},
+			want: []string{
+				filepath.Join(googleapisDir, commonResourcesProto),
+			},
+		},
+		{
+			name: "other additional protos",
+			javaAPI: &config.JavaAPI{
+				AdditionalProtos: []string{"other.proto"},
+			},
+			want: []string{
+				filepath.Join(googleapisDir, commonResourcesProto),
+				filepath.Join(googleapisDir, "other.proto"),
+			},
+		},
+		{
+			name: "omitted via flag with other additional protos",
+			javaAPI: &config.JavaAPI{
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"other.proto"},
+			},
+			want: []string{
+				filepath.Join(googleapisDir, "other.proto"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveAdditionalProtoPaths(test.javaAPI, googleapisDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
