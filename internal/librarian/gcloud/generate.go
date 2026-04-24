@@ -22,6 +22,7 @@ package gcloud
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -37,6 +38,9 @@ import (
 // baseModule is the default Python base module path for generated gcloud
 // command groups.
 const baseModule = "googlecloudsdk"
+
+// ErrNoProtosFound is returned when no .proto files are found in the API directory.
+var ErrNoProtosFound = errors.New("no .proto files found")
 
 // Generate generates gcloud command YAML files for a library.
 //
@@ -107,7 +111,7 @@ func collectProtos(googleapisDir, apiPath string) ([]string, error) {
 		protos = append(protos, filepath.ToSlash(filepath.Join(apiPath, entry.Name())))
 	}
 	if len(protos) == 0 {
-		return nil, fmt.Errorf("no .proto files found in %q", apiDir)
+		return nil, fmt.Errorf("%w: %q", ErrNoProtosFound, apiDir)
 	}
 	return protos, nil
 }
