@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // TestConfigCommand_Get tests that the config get command successfully reads a value from librarian.yaml.
@@ -43,7 +44,7 @@ func TestConfigCommand_Get(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
 
-			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
+			if err := yaml.Write("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
 
