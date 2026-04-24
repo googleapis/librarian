@@ -1364,6 +1364,11 @@ func TestDeriveGAPICNamespace(t *testing.T) {
 			want: "grafeas",
 		},
 		{
+			name: "single path element with version",
+			path: "grafeas/v1",
+			want: "grafeas",
+		},
+		{
 			name: "multiple path elements",
 			path: "google/cloud/datacatalog/lineage/v1",
 			want: "google.cloud",

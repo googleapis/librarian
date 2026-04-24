@@ -483,8 +483,12 @@ func isPreview(output string) bool {
 
 // deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
 // it's not specified explicitly. This is the first two components of the API
-// path, dot-separated.
+// path (excluding any trailing version), dot-separated.
 func deriveGAPICNamespace(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, "/"+version)
+	}
 	parts := strings.Split(path, "/")
 	if len(parts) < 2 {
 		return path
@@ -504,7 +508,6 @@ func deriveGAPICName(path string) string {
 	}
 	derivedNamespace := deriveGAPICNamespace(path)
 	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
-	path = strings.TrimSuffix(path, version)
 	path = strings.Trim(path, "/")
 	return strings.ReplaceAll(path, "/", "_")
 }
