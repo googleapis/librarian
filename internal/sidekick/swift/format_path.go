@@ -81,6 +81,10 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		optional = field.Optional
 		switch field.Typez {
 		case api.TypezMessage:
+			if !field.Optional {
+				// Panics are the right way to deal with bugs in other parts of the code.
+				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name, current.ID))
+			}
 			current, err = lookupMessage(c.Model, field.TypezID)
 			if err != nil {
 				return nil, err
