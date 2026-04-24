@@ -3188,6 +3188,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: Shopping Common Types
 - path: google/spanner/adapter/v1
   languages:
     - go
@@ -3195,7 +3196,6 @@
   release_level:
     go: beta
     java: preview
-  title: Shopping Common Types
 - path: google/spanner/admin/database/v1
   languages:
     - all
