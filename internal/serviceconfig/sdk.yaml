@@ -955,6 +955,7 @@
   release_level:
     java: preview
 - path: google/cloud/common
+  documentation_uri: https://cloud.google.com
   languages:
     - all
   skip_rest_numeric_enums:
@@ -974,6 +975,7 @@
   transports:
     all: rest
 - path: google/cloud/compute/v1beta
+  documentation_uri: https://cloud.google.com/compute/
   languages:
     - go
     - nodejs
@@ -2646,9 +2648,11 @@
   release_level:
     java: preview
 - path: google/datastore/admin/v1
+  documentation_uri: https://cloud.google.com/datastore
   languages:
     - all
 - path: google/datastore/v1
+  documentation_uri: https://cloud.google.com/datastore
   languages:
     - go
     - java
@@ -2713,6 +2717,7 @@
     - java
     - nodejs
 - path: google/devtools/source/v1
+  documentation_uri: https://cloud.google.com
   languages:
     - python
   skip_rest_numeric_enums:
@@ -2720,19 +2725,23 @@
   transports:
     python: grpc
 - path: google/firestore/admin/v1
+  documentation_uri: https://cloud.google.com/firestore
   languages:
     - all
 - path: google/firestore/bundle
+  documentation_uri: https://cloud.google.com/firestore
   languages:
     - python
   skip_rest_numeric_enums:
     - python
   title: Cloud Firestore API
 - path: google/firestore/v1
+  documentation_uri: https://cloud.google.com/firestore
   languages:
     - all
   title: Cloud Firestore API
 - path: google/geo/type
+  documentation_uri: https://mapsplatform.google.com/maps-products
   languages:
     - python
   skip_rest_numeric_enums:
@@ -3168,6 +3177,7 @@
   release_level:
     java: preview
 - path: google/shopping/type
+  documentation_uri: https://developers.google.com/merchant/api
   languages:
     - go
     - python
