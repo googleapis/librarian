@@ -53,9 +53,10 @@ var (
 )
 
 type javaGAPICInfo struct {
-	AdditionalProtos []string
-	ProtoOnly        bool
-	Samples          bool
+	AdditionalProtos    []string
+	ProtoOnly           bool
+	Samples             bool
+	OmitCommonResources bool
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -66,7 +67,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	if file == nil {
 		return nil, nil
 	}
-	info := &javaGAPICInfo{Samples: false}
+	info := &javaGAPICInfo{Samples: false, OmitCommonResources: true}
 	// 1. From java_gapic_library
 	rules := file.Rules("java_gapic_library")
 	if len(rules) == 0 {
@@ -95,11 +96,14 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 		// a variable or an addition of lists.
 		if attr := rule.Attr("deps"); attr != nil {
 			protoMappings := map[string]string{
-				"//google/cloud:common_resources_proto":  "google/cloud/common_resources.proto",
 				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 			}
 			for _, dep := range extractStrings(attr) {
+				if dep == "//google/cloud:common_resources_proto" {
+					info.OmitCommonResources = false
+					continue
+				}
 				if protoPath, ok := protoMappings[dep]; ok {
 					info.AdditionalProtos = append(info.AdditionalProtos, protoPath)
 				}
@@ -253,8 +257,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				continue
 			}
 			javaAPI := &config.JavaAPI{
-				Path:             g.ProtoPath,
-				AdditionalProtos: info.AdditionalProtos,
+				Path:                g.ProtoPath,
+				AdditionalProtos:    info.AdditionalProtos,
+				OmitCommonResources: info.OmitCommonResources,
 			}
 			if info.ProtoOnly {
 				javaAPI.ProtoOnly = true

@@ -1,0 +1,1 @@
+proto_library_with_info(name = "foo", deps = [":bar"])

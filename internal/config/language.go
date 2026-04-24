@@ -584,7 +584,13 @@ type JavaAPI struct {
 	Path string `yaml:"path,omitempty"`
 
 	// AdditionalProtos is a list of additional proto files to include in generation.
+	// Note: google/cloud/common_resources.proto is included by default unless
+	// OmitCommonResources is set to true.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// OmitCommonResources indicates whether to omit the default inclusion of
+	// google/cloud/common_resources.proto.
+	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
 
 	// ExcludedProtos is a list of proto files to exclude from generation.
 	// It expects the full path starting from the root of the googleapis
