@@ -62,6 +62,9 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		if err != nil {
 			return nil, err
 		}
+		if field.IsOneOf {
+			return nil, fmt.Errorf("unsupported path parameter: field %s in message %s is part of a oneof", field.Name, current.ID)
+		}
 		fieldCodec, ok := field.Codec.(*fieldAnnotations)
 		if !ok {
 			return nil, fmt.Errorf("internal error: field %s in message %s does not have swift fieldAnnotations", field.Name, current.ID)

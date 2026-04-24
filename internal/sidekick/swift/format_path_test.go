@@ -192,6 +192,11 @@ func TestNewPathVariable(t *testing.T) {
 				Name:  "data",
 				Typez: api.TypezBytes,
 			},
+			{
+				Name:    "oneof_field",
+				Typez:   api.TypezString,
+				IsOneOf: true,
+			},
 		},
 	}
 
@@ -241,6 +246,15 @@ func TestNewPathVariable(t *testing.T) {
 				Expression: ".displayName",
 				Test:       "!pathVariable1.isEmpty",
 			},
+		},
+		{
+			name:    "error - oneof field",
+			message: requestMessage,
+			variable: &api.PathVariable{
+				FieldPath: []string{"oneof_field"},
+			},
+			count:   6,
+			wantErr: true,
 		},
 		{
 			name:    "nested non-optional string",
