@@ -351,7 +351,7 @@ libraries:
 		return
 	}
 
-	if strings.Contains(err.Error(), "does not support generation") {
+	if errors.Is(err, errUnsupportedLanguage) {
 		t.Errorf("expected Java to be supported, but got: %v", err)
 	}
 }
@@ -383,7 +383,7 @@ libraries:
 	if err == nil {
 		return
 	}
-	if strings.Contains(err.Error(), "does not support generation") {
+	if errors.Is(err, errUnsupportedLanguage) {
 		t.Errorf("expected gcloud to be supported, but got: %v", err)
 	}
 	if !strings.Contains(err.Error(), "no .proto files found") {

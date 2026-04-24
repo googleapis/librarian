@@ -40,6 +40,7 @@ var (
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errSkipGenerate            = errors.New("library has skip_generate set")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
+	errUnsupportedLanguage     = errors.New("language does not support generation")
 )
 
 func generateCommand() *cli.Command {
@@ -287,7 +288,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	default:
-		return fmt.Errorf("language %q does not support generation", cfg.Language)
+		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}
 	return nil
 }
