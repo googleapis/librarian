@@ -41,7 +41,7 @@ func TestGenerateService_Files(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -69,7 +69,7 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,7 +105,7 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -167,28 +167,20 @@ func TestGenerateService_WithImports(t *testing.T) {
 		},
 	}
 
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{
-					Name:               "GoogleCloudGax",
-					RequiredByServices: true,
-				},
-				{
-					Name:               "GoogleCloudAuth",
-					RequiredByServices: true,
-				},
-				{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "GoogleCloudExternalV1",
-				},
-				{
-					ApiPackage: "google.protobuf",
-					Name:       "GoogleCloudWkt",
-				},
-			},
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
 		},
-	}
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
+		},
+	})
 
 	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
