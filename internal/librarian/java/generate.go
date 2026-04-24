@@ -161,7 +161,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) []string {
 	var additionalProtos []string
 	if !javaAPI.OmitCommonResources {
-		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, commonResourcesProto))
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
 	}
 	for _, p := range javaAPI.AdditionalProtos {
 		if p == commonResourcesProto {

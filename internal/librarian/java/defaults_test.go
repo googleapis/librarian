@@ -36,7 +36,9 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
-				Java:   &config.JavaModule{},
+				Java: &config.JavaModule{
+					JavaAPIs: nil,
+				},
 			},
 		},
 		{
@@ -48,7 +50,9 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "custom-output",
-				Java:   &config.JavaModule{},
+				Java: &config.JavaModule{
+					JavaAPIs: nil,
+				},
 			},
 		},
 		{
@@ -192,8 +196,9 @@ func TestValidate(t *testing.T) {
 
 func TestValidate_Error(t *testing.T) {
 	for _, test := range []struct {
-		name string
-		lib  *config.Library
+		name    string
+		lib     *config.Library
+		wantErr error
 	}{
 		{
 			name: "missing colon",
@@ -202,14 +207,16 @@ func TestValidate_Error(t *testing.T) {
 					DistributionNameOverride: "nocolon",
 				},
 			},
+			wantErr: ErrInvalidDistributionName,
 		},
 		{
 			name: "too many colons",
 			lib: &config.Library{
 				Java: &config.JavaModule{
-					DistributionNameOverride: "part1:part2:part3",
+					DistributionNameOverride: "too:many:colons",
 				},
 			},
+			wantErr: ErrInvalidDistributionName,
 		},
 		{
 			name: "empty parts",
@@ -218,28 +225,46 @@ func TestValidate_Error(t *testing.T) {
 					DistributionNameOverride: ":",
 				},
 			},
+			wantErr: ErrInvalidDistributionName,
 		},
 		{
 			name: "missing artifact id",
 			lib: &config.Library{
 				Java: &config.JavaModule{
-					DistributionNameOverride: "part1:",
+					DistributionNameOverride: "groupid:",
 				},
 			},
+			wantErr: ErrInvalidDistributionName,
 		},
 		{
 			name: "missing group id",
 			lib: &config.Library{
 				Java: &config.JavaModule{
-					DistributionNameOverride: ":part2",
+					DistributionNameOverride: ":artifactid",
 				},
 			},
+			wantErr: ErrInvalidDistributionName,
+		},
+		{
+			name: "omit common resources conflict",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:                "google/cloud/conflict/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"google/cloud/common_resources.proto"},
+						},
+					},
+				},
+			},
+			wantErr: ErrOmitCommonResourcesConflict,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := Validate(test.lib)
-			if !errors.Is(err, ErrInvalidDistributionName) {
-				t.Errorf("expected %v, got %v", ErrInvalidDistributionName, err)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Validate() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
