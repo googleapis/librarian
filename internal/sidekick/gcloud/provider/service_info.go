@@ -22,9 +22,12 @@ import (
 )
 
 const (
+	// ALPHA release track.
 	ALPHA = "ALPHA"
-	BETA  = "BETA"
-	GA    = "GA"
+	// BETA release track.
+	BETA = "BETA"
+	// GA release track.
+	GA = "GA"
 )
 
 // apiVersionFromPackage extracts the API version from the package name.

@@ -25,11 +25,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type groupTracks struct {
-	ga    *CommandGroup
-	beta  *CommandGroup
-	alpha *CommandGroup
-}
+
 
 type surfaceWriter struct {
 	outputDir  string
@@ -96,7 +92,7 @@ func (w *surfaceWriter) writeCommandGroupFile(g *CommandGroup, path []string) er
 	initPath := filepath.Join(groupDir, "__init__.py")
 	extPath := filepath.Join(groupDir, "_init_extensions.py")
 
-	var primaryHelpText string = g.HelpText
+	primaryHelpText := g.HelpText
 	var trackViews []trackView
 	for _, t := range w.tracks {
 		var suffix string
