@@ -1419,7 +1419,7 @@ func TestFindOption(t *testing.T) {
 		name      string
 		options   []string
 		wantValue string
-		wantFound bool
+		wantOk    bool
 	}{
 		{
 			name:    "empty options",
@@ -1437,21 +1437,21 @@ func TestFindOption(t *testing.T) {
 			name:      "option present with value",
 			options:   []string{"a=b", "test=test-value", "c=d"},
 			wantValue: "test-value",
-			wantFound: true,
+			wantOk:    true,
 		},
 		{
-			name:      "option present without value",
-			options:   []string{"a=b", "test=", "c=d"},
-			wantFound: true,
+			name:    "option present without value",
+			options: []string{"a=b", "test=", "c=d"},
+			wantOk:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotValue, gotFound := findOption(test.options, "test")
+			gotValue, gotOk := findOption(test.options, "test")
 			if diff := cmp.Diff(test.wantValue, gotValue); diff != "" {
 				t.Errorf("mismatch in value (-want +got):\n%s", diff)
 			}
-			if test.wantFound != gotFound {
-				t.Errorf("mismatch in found: want %v, got %v", test.wantFound, gotFound)
+			if test.wantOk != gotOk {
+				t.Errorf("mismatch in found: want %v, got %v", test.wantOk, gotOk)
 			}
 		})
 	}

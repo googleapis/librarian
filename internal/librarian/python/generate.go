@@ -309,19 +309,19 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	}
 
 	// Add transport option, if we haven't already got it.
-	if _, gotOption := findOption(opts, transportOption); !gotOption {
+	if _, ok := findOption(opts, transportOption); !ok {
 		opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
 	}
 	// Add derived python-gapic-namespace option, if we haven't already got it.
-	if _, gotOption := findOption(opts, gapicNamespaceOption); !gotOption {
+	if _, ok := findOption(opts, gapicNamespaceOption); !ok {
 		opts = append(opts, fmt.Sprintf("%s=%s", gapicNamespaceOption, deriveGAPICNamespace(api.Path)))
 	}
 	// Add derived python-gapic-name option, if we haven't already got it.
-	if _, gotOption := findOption(opts, gapicNameOption); !gotOption {
+	if _, ok := findOption(opts, gapicNameOption); !ok {
 		opts = append(opts, fmt.Sprintf("%s=%s", gapicNameOption, deriveGAPICName(api.Path)))
 	}
 	// Add the library name as warehouse-package-name option, if we haven't already got it.
-	if _, gotOption := findOption(opts, warehousePackageNameOption); !gotOption {
+	if _, ok := findOption(opts, warehousePackageNameOption); !ok {
 		opts = append(opts, fmt.Sprintf("%s=%s", warehousePackageNameOption, library.Name))
 	}
 

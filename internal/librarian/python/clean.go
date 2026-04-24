@@ -207,12 +207,12 @@ func deriveGAPICGenerationInfo(api *config.API, lib *config.Library) *gapicGener
 	if lib.Python != nil {
 		options = lib.Python.OptArgsByAPI[api.Path]
 	}
-	namespace, gotNamespace := findOption(options, gapicNamespaceOption)
-	if !gotNamespace {
+	namespace, ok := findOption(options, gapicNamespaceOption)
+	if !ok {
 		namespace = deriveGAPICNamespace(api.Path)
 	}
-	name, gotName := findOption(options, gapicNameOption)
-	if !gotName {
+	name, ok := findOption(options, gapicNameOption)
+	if !ok {
 		name = deriveGAPICName(api.Path)
 	}
 	version := serviceconfig.ExtractVersion(api.Path)
