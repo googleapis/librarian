@@ -596,6 +596,9 @@ type JavaAPI struct {
 	// gRPC or GAPIC generation, nor from the packaged proto files.
 	// It expects the full path starting from the root of the googleapis
 	// directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto").
+	// TODO(https://github.com/googleapis/google-cloud-java/issues/12817):
+	// This is only intended for aiplatform, revisit whether or not this
+	// field should exist after migration.
 	SkipProtoClassGeneration []string `yaml:"skip_proto_class_generation,omitempty"`
 
 	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
