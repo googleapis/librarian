@@ -231,7 +231,7 @@ type ResourceSpec struct {
 	// DisableAutoCompleters turns off automatic tab-completion for this
 	// resource. Set for cross-API references where the completer would need to
 	// call a different service.
-	DisableAutoCompleters bool `yaml:"disable_auto_completers,omitempty"`
+	DisableAutoCompleters bool `yaml:"disable_auto_completers"`
 
 	// Name is the singular resource name, for example instance.
 	Name string `yaml:"name,omitempty"`
