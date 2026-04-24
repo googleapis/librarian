@@ -28,6 +28,6 @@ jobs:
       - name: Install addlicense
         run: go install github.com/google/addlicense@latest
       - name: Run addlicense
-        run: addlicense -c "Google LLC" -l apache .
+        run: addlicense -c "Google LLC" -l apache . -ignore pom.xml
       - name: Check for diffs
         run: git diff --exit-code
