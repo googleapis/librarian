@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -164,8 +165,13 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
 		{ApiPackage: "google.cloud.other.v1", Name: "GoogleCloudOtherV1", RequiredByServices: true},
 	})
-	// Make it required to verify the rest of the code works.
-	codec.Dependencies[0].Required = true
+	// Make GoogleCloudPlaceholderV1 required to verify the rest of the code works. Its position may
+	// change as the implementation of `withExtraDependencies()` changes, so search for it:
+	idx := slices.IndexFunc(codec.Dependencies, func(d *Dependency) bool { return d.Name == "GoogleCloudPlaceholderV1" })
+	if idx == -1 {
+		t.Fatalf("GoogleCloudPlaceholderV1 not found")
+	}
+	codec.Dependencies[idx].Required = true
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
