@@ -18,11 +18,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
+)
+
+var (
+	errPathRequired  = errors.New("path is required")
+	errValueRequired = errors.New("value is required")
 )
 
 // configCommand returns the CLI command for reading and writing librarian configuration.
@@ -37,23 +43,7 @@ func configCommand() *cli.Command {
 				Usage:     "get a configuration value",
 				UsageText: "librarian config get [path]",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					path := cmd.Args().First()
-					if path == "" {
-						return fmt.Errorf("path is required")
-					}
-
-					cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-					if err != nil {
-						return err
-					}
-
-					val, err := getConfigValue(cfg, path)
-					if err != nil {
-						return err
-					}
-
-					fmt.Println(val)
-					return nil
+					return runConfigGet(cmd.Root().Writer, cmd.Args().First())
 				},
 			},
 			{
@@ -61,31 +51,50 @@ func configCommand() *cli.Command {
 				Usage:     "set a configuration value",
 				UsageText: "librarian config set [path] [value]",
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					path := cmd.Args().Get(0)
-					value := cmd.Args().Get(1)
-					if path == "" {
-						return fmt.Errorf("path is required")
-					}
-					if value == "" {
-						return fmt.Errorf("value is required")
-					}
-
-					cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-					if err != nil {
-						if !errors.Is(err, fs.ErrNotExist) {
-							return err
-						}
-						cfg = &config.Config{}
-					}
-
-					updated, err := setConfigValue(cfg, path, value)
-					if err != nil {
-						return err
-					}
-
-					return yaml.Write(config.LibrarianYAML, updated)
+					return runConfigSet(cmd.Args().Get(0), cmd.Args().Get(1))
 				},
 			},
 		},
 	}
+}
+
+func runConfigGet(w io.Writer, path string) error {
+	if path == "" {
+		return errPathRequired
+	}
+	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		return err
+	}
+
+	val, err := getConfigValue(cfg, path)
+	if err != nil {
+		return err
+	}
+
+	_, err = fmt.Fprintln(w, val)
+	return err
+}
+
+func runConfigSet(path, value string) error {
+	if path == "" {
+		return errPathRequired
+	}
+	if value == "" {
+		return errValueRequired
+	}
+	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		cfg = &config.Config{}
+	}
+
+	updated, err := setConfigValue(cfg, path, value)
+	if err != nil {
+		return err
+	}
+
+	return yaml.Write(config.LibrarianYAML, updated)
 }

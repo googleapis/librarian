@@ -16,7 +16,7 @@ package librarian
 
 import (
 	"bytes"
-	"io"
+	"errors"
 	"os"
 	"strings"
 	"testing"
@@ -28,15 +28,15 @@ import (
 func TestConfigCommand_Get(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		args       []string
+		path       string
 		configYAML string
-		wantOutput string
+		want       string
 	}{
 		{
 			name:       "get string value",
-			args:       []string{"librarian", "config", "get", "version"},
+			path:       "version",
 			configYAML: "version: 1.2.3\n",
-			wantOutput: "1.2.3\n",
+			want:       "1.2.3\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -47,23 +47,14 @@ func TestConfigCommand_Get(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			oldStdout := os.Stdout
-			r, w, _ := os.Pipe()
-			os.Stdout = w
-
-			err := Run(t.Context(), test.args...)
-
-			w.Close()
-			os.Stdout = oldStdout
 			var buf bytes.Buffer
-			io.Copy(&buf, r)
-			r.Close()
+			err := runConfigGet(&buf, test.path)
 
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			if diff := cmp.Diff(test.wantOutput, buf.String()); diff != "" {
+			if diff := cmp.Diff(test.want, buf.String()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -74,21 +65,21 @@ func TestConfigCommand_Get(t *testing.T) {
 func TestConfigCommand_Get_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		args       []string
+		path       string
 		configYAML string
-		wantErrStr string
+		wantErr    error
 	}{
 		{
 			name:       "missing path",
-			args:       []string{"librarian", "config", "get"},
+			path:       "",
 			configYAML: "version: 1.2.3\n",
-			wantErrStr: "path is required",
+			wantErr:    errPathRequired,
 		},
 		{
 			name:       "key not found",
-			args:       []string{"librarian", "config", "get", "foo"},
+			path:       "foo",
 			configYAML: "version: 1.2.3\n",
-			wantErrStr: "unsupported config path",
+			wantErr:    errUnsupportedPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -99,14 +90,15 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err := Run(t.Context(), test.args...)
+			var buf bytes.Buffer
+			err := runConfigGet(&buf, test.path)
 
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
 
-			if !strings.Contains(err.Error(), test.wantErrStr) {
-				t.Fatalf("got error %v, want containing %q", err, test.wantErrStr)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
@@ -116,13 +108,15 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 func TestConfigCommand_Set(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		args       []string
+		path       string
+		value      string
 		configYAML string
 		wantYAML   string
 	}{
 		{
 			name:       "set string value",
-			args:       []string{"librarian", "config", "set", "version", "1.2.4"},
+			path:       "version",
+			value:      "1.2.4",
 			configYAML: "version: 1.2.3\n",
 			wantYAML:   "version: 1.2.4\n",
 		},
@@ -135,7 +129,7 @@ func TestConfigCommand_Set(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err := Run(t.Context(), test.args...)
+			err := runConfigSet(test.path, test.value)
 
 			if err != nil {
 				t.Fatal(err)
@@ -157,27 +151,31 @@ func TestConfigCommand_Set(t *testing.T) {
 func TestConfigCommand_Set_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
-		args       []string
+		path       string
+		value      string
 		configYAML string
-		wantErrStr string
+		wantErr    error
 	}{
 		{
 			name:       "missing path",
-			args:       []string{"librarian", "config", "set"},
+			path:       "",
+			value:      "",
 			configYAML: "version: 1.2.3\n",
-			wantErrStr: "path is required",
+			wantErr:    errPathRequired,
 		},
 		{
 			name:       "missing value",
-			args:       []string{"librarian", "config", "set", "version"},
+			path:       "version",
+			value:      "",
 			configYAML: "version: 1.2.3\n",
-			wantErrStr: "value is required",
+			wantErr:    errValueRequired,
 		},
 		{
 			name:       "unsupported path",
-			args:       []string{"librarian", "config", "set", "foo", "bar"},
+			path:       "foo",
+			value:      "bar",
 			configYAML: "version: 1.2.3\n",
-			wantErrStr: "unsupported config path",
+			wantErr:    errUnsupportedPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -188,14 +186,14 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			err := Run(t.Context(), test.args...)
+			err := runConfigSet(test.path, test.value)
 
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
 
-			if !strings.Contains(err.Error(), test.wantErrStr) {
-				t.Fatalf("got error %v, want containing %q", err, test.wantErrStr)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
@@ -210,13 +208,13 @@ func TestConfigCommand_Set_ReadError(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	err := Run(t.Context(), "librarian", "config", "set", "version", "1.2.4")
+	err := runConfigSet("version", "1.2.4")
 
 	if err == nil {
 		t.Fatal("expected error; got nil")
 	}
 
-	if !strings.Contains(err.Error(), "permission denied") {
-		t.Fatalf("got error %v, want containing %q", err, "permission denied")
+	if !errors.Is(err, os.ErrPermission) {
+		t.Fatalf("got error %v, want %v", err, os.ErrPermission)
 	}
 }
