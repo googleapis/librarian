@@ -189,12 +189,16 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return fakePostGenerate()
 	case config.LanguageGcloud:
+		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
-			if err := gcloud.Generate(ctx, library, src); err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			g.Go(func() error {
+				if err := gcloud.Generate(gctx, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
 		}
-		return nil
+		return g.Wait()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
