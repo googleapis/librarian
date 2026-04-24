@@ -28,7 +28,7 @@ import (
 
 func TestRenderCommandGroup(t *testing.T) {
 	data := commandGroupView{
-		Name:       "instances",
+		ClassName:  "instances",
 		ModulePath: "googlecloudsdk.surface.instances",
 		HelpText:   "Manage Compute Engine Instance resources.",
 		Year:       2025,
@@ -86,7 +86,7 @@ class InstancesBeta(extensions.InstancesBeta):
 
 func TestRenderInitExtensions(t *testing.T) {
 	data := commandGroupView{
-		Name:       "instances",
+		ClassName:  "instances",
 		ModulePath: "googlecloudsdk.surface.instances",
 		HelpText:   "Manage Compute Engine Instance resources.",
 		Year:       2025,
@@ -137,20 +137,22 @@ class InstancesGa(base.Group):
 
 func TestWriteCommandGroupFile(t *testing.T) {
 	tmpDir := t.TempDir()
-	ga := &CommandGroup{Name: "instances", HelpText: "Manage instances"}
-	if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", ga, []string{"GA"}); err != nil {
+	ga := &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "Manage instances"}
+	w := &surfaceWriter{outputDir: tmpDir, baseModule: "googlecloudsdk.instances", tracks: []string{"GA"}}
+	if err := w.writeCommandGroupFile(ga, []string{"instances"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
-	expectedPath := filepath.Join(tmpDir, "__init__.py")
+	expectedPath := filepath.Join(tmpDir, "instances", "__init__.py")
 	if _, err := os.Stat(expectedPath); errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected file %q to be generated", expectedPath)
 	}
 }
 
 func TestWriteCommandGroupFile_Error(t *testing.T) {
-	ga := &CommandGroup{Name: "instances", HelpText: "Manage instances"}
-	err := writeCommandGroupFile("/dev/null/invalid/path", "googlecloudsdk.instances", "instances", ga, []string{"GA"})
+	ga := &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "Manage instances"}
+	w := &surfaceWriter{outputDir: "/dev/null/invalid/path", baseModule: "googlecloudsdk.instances", tracks: []string{"GA"}}
+	err := w.writeCommandGroupFile(ga, []string{"instances"})
 	if err == nil {
 		t.Error("expected error writing to invalid path, got nil")
 	}
@@ -161,15 +163,17 @@ func TestWriteSurface(t *testing.T) {
 
 	surface := &Surface{
 		Root: &CommandGroup{
-			Name:     "users",
-			HelpText: "Manage users.",
+			ClassName: "users",
+			FileName:  "users",
+			HelpText:  "Manage users.",
 			Commands: map[string]*Command{
 				"create": {},
 			},
 			Groups: map[string]*CommandGroup{
 				"billing": {
-					Name:     "billing",
-					HelpText: "Manage user billing.",
+					ClassName: "billing",
+					FileName:  "billing",
+					HelpText:  "Manage user billing.",
 					Commands: map[string]*Command{
 						"cancel": {},
 					},
@@ -210,21 +214,21 @@ func TestWriteCommandGroupFile_TrackCombinations(t *testing.T) {
 	}{
 		{
 			name:           "GA and Beta",
-			ga:             &CommandGroup{Name: "instances", HelpText: "G"},
-			beta:           &CommandGroup{Name: "instances", HelpText: "B"},
+			ga:             &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "G"},
+			beta:           &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "B"},
 			containsTracks: []string{"ReleaseTrack.GA", "ReleaseTrack.BETA"},
 			omitsTracks:    []string{"ReleaseTrack.ALPHA"},
 		},
 		{
 			name:           "Beta and Alpha",
-			beta:           &CommandGroup{Name: "instances", HelpText: "B"},
-			alpha:          &CommandGroup{Name: "instances", HelpText: "A"},
+			beta:           &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "B"},
+			alpha:          &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "A"},
 			containsTracks: []string{"ReleaseTrack.BETA", "ReleaseTrack.ALPHA"},
 			omitsTracks:    []string{"ReleaseTrack.GA"},
 		},
 		{
 			name:           "Only Alpha",
-			alpha:          &CommandGroup{Name: "instances", HelpText: "A"},
+			alpha:          &CommandGroup{ClassName: "instances", FileName: "instances", HelpText: "A"},
 			containsTracks: []string{"ReleaseTrack.ALPHA"},
 			omitsTracks:    []string{"ReleaseTrack.GA", "ReleaseTrack.BETA"},
 		},
@@ -247,11 +251,12 @@ func TestWriteCommandGroupFile_TrackCombinations(t *testing.T) {
 				tracks = append(tracks, "ALPHA")
 			}
 
-			if err := writeCommandGroupFile(tmpDir, "googlecloudsdk.instances", "instances", g, tracks); err != nil {
+			w := &surfaceWriter{outputDir: tmpDir, baseModule: "googlecloudsdk.instances", tracks: tracks}
+			if err := w.writeCommandGroupFile(g, []string{"instances"}); err != nil {
 				t.Fatalf("unexpected error: %v", err)
 			}
 
-			path := filepath.Join(tmpDir, "__init__.py")
+			path := filepath.Join(tmpDir, "instances", "__init__.py")
 			data, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatalf("failed to read generated file: %v", err)
@@ -280,8 +285,9 @@ func TestWriteGroup_DirError(t *testing.T) {
 		t.Fatalf("failed to create test file: %v", err)
 	}
 
-	ga := &CommandGroup{Name: "instances"}
-	err := writeGroup(tmpDir, "googlecloudsdk", ga, []string{"GA"})
+	ga := &CommandGroup{ClassName: "instances", FileName: "instances"}
+	w := &surfaceWriter{outputDir: tmpDir, baseModule: "googlecloudsdk", tracks: []string{"GA"}}
+	err := w.writeGroup(ga, nil)
 	if err == nil {
 		t.Error("expected error when creating directory over an existing file, got nil")
 	}
@@ -289,7 +295,8 @@ func TestWriteGroup_DirError(t *testing.T) {
 
 func TestWriteGroup_NoName(t *testing.T) {
 	tmpDir := t.TempDir()
-	err := writeGroup(tmpDir, "googlecloudsdk", nil, []string{})
+	w := &surfaceWriter{outputDir: tmpDir, baseModule: "googlecloudsdk", tracks: []string{}}
+	err := w.writeGroup(nil, nil)
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

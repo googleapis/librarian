@@ -24,11 +24,11 @@ type Surface struct {
 // (typically mapping to an API service or an AIP-122 Resource collection).
 // It is used to generate the Python `__init__.py` registration files.
 type CommandGroup struct {
-	Name     string
-	Path     []string
-	HelpText string
-	Commands map[string]*Command
-	Groups   map[string]*CommandGroup
+	ClassName string
+	FileName  string
+	HelpText  string
+	Commands  map[string]*Command
+	Groups    map[string]*CommandGroup
 }
 
 // Command represents the top-level structure for a gcloud command definition.

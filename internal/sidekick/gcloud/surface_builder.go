@@ -81,7 +81,7 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = gb.build(segments, i, curr.Path)
+			curr.Groups[seg] = gb.build(segments[:i+1])
 		}
 		curr = curr.Groups[seg]
 	}

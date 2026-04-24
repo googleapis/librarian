@@ -38,6 +38,7 @@ var (
 	// Tests that are enabled by default because they are expected to pass against the target.
 	enabledTargetTests = map[string]bool{
 		"resource_standard": true,
+		"multi_service":     true,
 	}
 )
 

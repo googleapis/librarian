@@ -16,13 +16,13 @@
 from googlecloudsdk.calliope import base
 
 
-class LongResourcesAlpha(base.Group):
+class ApiLongResourcesAlpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 
 
-class LongResourcesBeta(base.Group):
+class ApiLongResourcesBeta(base.Group):
   """Optional no-auto-generated code for BETA."""
 
 
-class LongResourcesGa(base.Group):
+class ApiLongResourcesGa(base.Group):
   """Optional no-auto-generated code for GA."""

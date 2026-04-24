@@ -789,12 +789,12 @@ func TestGetSingularResourceNameForPrefix(t *testing.T) {
 		{
 			name:   "No Match",
 			prefix: []string{"projects", "locations", "unknown"},
-			want:   "",
+			want:   "unknown",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := GetSingularResourceNameForPrefix(model, test.prefix)
+			got, _ := GetResourceDisplayNames(model, test.prefix)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

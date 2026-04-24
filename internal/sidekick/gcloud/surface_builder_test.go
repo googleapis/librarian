@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
+	"github.com/iancoleman/strcase"
 )
 
 func TestSurfaceBuilder_Build_Structure(t *testing.T) {
@@ -127,7 +128,7 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 	got := flattenTree(root.Root)
 	want := []string{
 		"parallelstore/instances/create",
-		"parallelstore/otherInstances/create",
+		"parallelstore/other_instances/create",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -140,10 +141,10 @@ func flattenTree(g *CommandGroup) []string {
 	var walk func(prefix string, current *CommandGroup)
 	walk = func(prefix string, current *CommandGroup) {
 		for name := range current.Commands {
-			paths = append(paths, path.Join(prefix, current.Name, name))
+			paths = append(paths, path.Join(prefix, strcase.ToSnake(current.FileName), name))
 		}
 		for _, sub := range current.Groups {
-			walk(path.Join(prefix, current.Name), sub)
+			walk(path.Join(prefix, strcase.ToSnake(current.FileName)), sub)
 		}
 	}
 	walk("", g)
