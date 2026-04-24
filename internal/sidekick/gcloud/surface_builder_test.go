@@ -53,7 +53,7 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root.GA)
+	got := flattenTree(root.Root)
 	want := []string{
 		"parallelstore/instances/create",
 		"parallelstore/instances/list",
@@ -79,7 +79,7 @@ func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root.GA)
+	got := flattenTree(root.Root)
 	if len(got) != 0 {
 		t.Errorf("flattenTree() = %v, want empty when GenerateOperations is false", got)
 	}
@@ -99,7 +99,7 @@ func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root.GA)
+	got := flattenTree(root.Root)
 	want := []string{
 		"parallelstore/operations/describe",
 	}
@@ -124,47 +124,10 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 		t.Fatalf("build() failed: %v", err)
 	}
 
-	got := flattenTree(root.GA)
+	got := flattenTree(root.Root)
 	want := []string{
 		"parallelstore/instances/create",
 		"parallelstore/otherInstances/create",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestSurfaceBuilder_Build_MultipleReleaseTracks(t *testing.T) {
-	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
-	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/{parent=projects/*/locations/*}/instances"))
-	serviceTwo.Package = "google.cloud.parallelstore.v1alpha"
-
-	model := &api.API{
-		Name:     "parallelstore",
-		Title:    "Parallelstore API",
-		Services: []*api.Service{serviceOne, serviceTwo},
-	}
-
-	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
-	if err != nil {
-		t.Fatalf("build() failed: %v", err)
-	}
-
-	// GA release track
-	got := flattenTree(root.GA)
-	want := []string{
-		"parallelstore/instances/create",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
-	}
-
-	// Alpha release track
-	got = flattenTree(root.ALPHA)
-	want = []string{
-		"parallelstore/instances/create",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {

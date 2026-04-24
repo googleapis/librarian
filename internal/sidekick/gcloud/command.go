@@ -14,11 +14,10 @@
 
 package gcloud
 
-// CommandGroupsByTrack represents the top-level collection of command trees organized by release track.
-type CommandGroupsByTrack struct {
-	GA    *CommandGroup
-	BETA  *CommandGroup
-	ALPHA *CommandGroup
+// Surface represents the top-level collection of command trees.
+type Surface struct {
+	Root   *CommandGroup
+	Tracks []string
 }
 
 // CommandGroup defines the metadata for a structural grouping of gcloud commands

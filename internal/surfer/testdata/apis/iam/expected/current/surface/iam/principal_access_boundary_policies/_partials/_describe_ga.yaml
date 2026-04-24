@@ -52,6 +52,6 @@
           disable_auto_completers: false
         required: true
   request:
-    api_version: v3alpha
+    api_version: v3
     collection:
       - iam.organizations.locations.principalAccessBoundaryPolicies

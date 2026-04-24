@@ -21,22 +21,22 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestInferTrackFromPackage(t *testing.T) {
+func TestTracks(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		pkg  string
-		want string
+		want []string
 	}{
-		{"GA package", "google.cloud.parallelstore.v1", "ga"},
-		{"Beta package", "google.cloud.parallelstore.v1beta", "beta"},
-		{"Alpha package", "google.cloud.parallelstore.v1alpha", "alpha"},
-		{"Empty package", "", "ga"},
-		{"Package without version", "google.cloud.parallelstore", "ga"},
-		{"Other version", "google.cloud.parallelstore.v2", "ga"},
+		{"GA package", "google.cloud.parallelstore.v1", []string{"GA"}},
+		{"Beta package", "google.cloud.parallelstore.v1beta", []string{"BETA"}},
+		{"Alpha package", "google.cloud.parallelstore.v1alpha", []string{"ALPHA"}},
+		{"Empty package", "", []string{"GA"}},
+		{"Package without version", "google.cloud.parallelstore", []string{"GA"}},
+		{"Other version", "google.cloud.parallelstore.v2", []string{"GA"}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := InferTrackFromPackage(test.pkg)
+			got := Tracks(APIVersionFromModel(&api.API{PackageName: test.pkg}))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

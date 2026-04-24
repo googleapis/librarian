@@ -31,137 +31,68 @@ type groupTracks struct {
 	alpha *CommandGroup
 }
 
-func writeSurface(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
-	bundle := groupTracks{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
-	return writeGroup(outputDir, baseModule, bundle)
+func writeSurface(outputDir string, baseModule string, surface *Surface) error {
+	return writeGroup(outputDir, baseModule, surface.Root, surface.Tracks)
 }
 
-func writeGroup(outputDir string, baseModule string, b groupTracks) error {
-	name := groupName(b)
-	if name == "" {
+func writeGroup(outputDir string, baseModule string, g *CommandGroup, tracks []string) error {
+	if g == nil {
 		return nil
 	}
 
-	moduleName := strcase.ToSnake(name)
+	moduleName := strcase.ToSnake(g.Name)
 	groupDir := filepath.Join(outputDir, moduleName)
 	if err := os.MkdirAll(groupDir, 0755); err != nil {
 		return err
 	}
 
-	if err := writeCommandGroupFile(groupDir, baseModule, name, b); err != nil {
+	if err := writeCommandGroupFile(groupDir, baseModule, g.Name, g, tracks); err != nil {
 		return err
 	}
 
-	if err := writeGroupCommands(groupDir, b); err != nil {
+	if err := writeGroupCommands(groupDir, g, tracks); err != nil {
 		return err
 	}
 
-	return writeGroupSubgroups(groupDir, baseModule, b)
+	return writeGroupSubgroups(groupDir, baseModule, g, tracks)
 }
 
-func groupName(b groupTracks) string {
-	if b.ga != nil {
-		return b.ga.Name
-	}
-	if b.beta != nil {
-		return b.beta.Name
-	}
-	if b.alpha != nil {
-		return b.alpha.Name
-	}
-	return ""
-}
-
-func writeGroupCommands(groupDir string, b groupTracks) error {
-	cmdNames := make(map[string]bool)
-	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
-	for _, g := range tracks {
-		if g != nil {
-			for n := range g.Commands {
-				cmdNames[n] = true
-			}
-		}
-	}
-
-	for verb := range cmdNames {
-		var gaCmd, betaCmd, alphaCmd *Command
-		if b.ga != nil {
-			gaCmd = b.ga.Commands[verb]
-		}
-		if b.beta != nil {
-			betaCmd = b.beta.Commands[verb]
-		}
-		if b.alpha != nil {
-			alphaCmd = b.alpha.Commands[verb]
-		}
-
-		if err := writeCommandFiles(groupDir, verb, gaCmd, betaCmd, alphaCmd); err != nil {
+func writeGroupCommands(groupDir string, g *CommandGroup, tracks []string) error {
+	for verb, cmd := range g.Commands {
+		if err := writeCommandFiles(groupDir, verb, cmd, tracks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeGroupSubgroups(groupDir string, baseModule string, b groupTracks) error {
-	subNames := make(map[string]bool)
-	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
-	for _, g := range tracks {
-		if g != nil {
-			for n := range g.Groups {
-				subNames[n] = true
-			}
-		}
-	}
-
-	for sub := range subNames {
-		subBundle := groupTracks{}
-		if b.ga != nil {
-			subBundle.ga = b.ga.Groups[sub]
-		}
-		if b.beta != nil {
-			subBundle.beta = b.beta.Groups[sub]
-		}
-		if b.alpha != nil {
-			subBundle.alpha = b.alpha.Groups[sub]
-		}
-
-		if err := writeGroup(groupDir, baseModule, subBundle); err != nil {
+func writeGroupSubgroups(groupDir string, baseModule string, g *CommandGroup, tracks []string) error {
+	for _, subGroup := range g.Groups {
+		if err := writeGroup(groupDir, baseModule, subGroup, tracks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeCommandGroupFile(dir string, baseModule string, name string, b groupTracks) error {
+func writeCommandGroupFile(dir string, baseModule string, name string, g *CommandGroup, tracks []string) error {
 	initPath := filepath.Join(dir, "__init__.py")
 	extPath := filepath.Join(dir, "_init_extensions.py")
 
-	var path []string
-	var primaryHelpText string
-	var gaView, betaView, alphaView *trackView
-
-	if b.ga != nil {
-		gaView = &trackView{Name: "GA", HelpText: b.ga.HelpText}
-		primaryHelpText = b.ga.HelpText
-		path = b.ga.Path
-	}
-	if b.beta != nil {
-		betaView = &trackView{Name: "BETA", HelpText: b.beta.HelpText}
-		if primaryHelpText == "" {
-			primaryHelpText = b.beta.HelpText
+	var primaryHelpText string = g.HelpText
+	var path []string = g.Path
+	var trackViews []trackView
+	for _, t := range tracks {
+		var suffix string
+		switch t {
+		case "GA":
+			suffix = "Ga"
+		case "BETA":
+			suffix = "Beta"
+		case "ALPHA":
+			suffix = "Alpha"
 		}
-		if len(path) == 0 {
-			path = b.beta.Path
-		}
-	}
-	if b.alpha != nil {
-		alphaView = &trackView{Name: "ALPHA", HelpText: b.alpha.HelpText}
-		if primaryHelpText == "" {
-			primaryHelpText = b.alpha.HelpText
-		}
-		if len(path) == 0 {
-			path = b.alpha.Path
-		}
+		trackViews = append(trackViews, trackView{Name: t, Suffix: suffix})
 	}
 
 	modulePathParts := make([]string, 0, 2+len(path))
@@ -182,9 +113,7 @@ func writeCommandGroupFile(dir string, baseModule string, name string, b groupTr
 		HelpText:   primaryHelpText,
 		Year:       time.Now().Year(),
 		IsRoot:     isRoot,
-		GA:         gaView,
-		BETA:       betaView,
-		ALPHA:      alphaView,
+		Tracks:     trackViews,
 	}
 
 	var buf bytes.Buffer
@@ -205,8 +134,8 @@ func writeCommandGroupFile(dir string, baseModule string, name string, b groupTr
 }
 
 type trackView struct {
-	Name     string
-	HelpText string
+	Name   string
+	Suffix string
 }
 
 type commandGroupView struct {
@@ -215,9 +144,7 @@ type commandGroupView struct {
 	HelpText   string
 	Year       int
 	IsRoot     bool
-	GA         *trackView
-	BETA       *trackView
-	ALPHA      *trackView
+	Tracks     []trackView
 }
 
 var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{
@@ -228,22 +155,12 @@ from googlecloudsdk.calliope import base
 from {{.ModulePath}} import _init_extensions as extensions
 
 
-{{if .GA}}@base.ReleaseTracks(base.ReleaseTrack.GA)
+{{range .Tracks}}@base.ReleaseTracks(base.ReleaseTrack.{{.Name}})
 @base.Autogenerated
-class {{$.Name | toCamel}}Ga(extensions.{{$.Name | toCamel}}Ga):
-  """{{.GA.HelpText}}"""
-{{end}}{{if .BETA}}
+class {{$.Name | toCamel}}{{.Suffix}}(extensions.{{$.Name | toCamel}}{{.Suffix}}):
+  """{{$.HelpText}}"""
 
-@base.ReleaseTracks(base.ReleaseTrack.BETA)
-@base.Autogenerated
-class {{$.Name | toCamel}}Beta(extensions.{{$.Name | toCamel}}Beta):
-  """{{.BETA.HelpText}}"""
-{{end}}{{if .ALPHA}}
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
-@base.Autogenerated
-class {{$.Name | toCamel}}Alpha(extensions.{{$.Name | toCamel}}Alpha):
-  """{{.ALPHA.HelpText}}"""
 {{end}}
 `))
 

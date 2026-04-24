@@ -148,7 +148,7 @@
             enum_value: MODE_PRESERVE
             help_text: Value for the `mode-preserve` field.
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.instances
     method: exportData

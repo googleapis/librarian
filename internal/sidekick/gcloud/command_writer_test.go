@@ -119,7 +119,7 @@ func TestWriteCommandFiles(t *testing.T) {
 	tmpDir := t.TempDir()
 	verb := "create"
 
-	if err := writeCommandFiles(tmpDir, verb, &Command{}, &Command{}, nil); err != nil {
+	if err := writeCommandFiles(tmpDir, verb, &Command{}, []string{"GA", "BETA"}); err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
 
@@ -137,7 +137,7 @@ func TestWriteCommandFiles(t *testing.T) {
 }
 
 func TestWriteCommandFiles_Error(t *testing.T) {
-	err := writeCommandFiles("/dev/null/invalid/path", "create", &Command{}, nil, nil)
+	err := writeCommandFiles("/dev/null/invalid/path", "create", &Command{}, []string{"GA"})
 	if err == nil {
 		t.Error("expected error writing to invalid path, got nil")
 	}

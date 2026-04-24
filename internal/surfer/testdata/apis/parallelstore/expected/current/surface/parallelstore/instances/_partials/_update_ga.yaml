@@ -88,7 +88,7 @@
         is_positional: false
         required: false
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.instances
     static_fields:
