@@ -62,22 +62,11 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		if err != nil {
 			return nil, err
 		}
-		if field.IsOneOf {
-			return nil, fmt.Errorf("unsupported path parameter: field %s in message %s is part of a oneof", field.Name, current.ID)
+		expr, err := c.fieldPathParameterExpression(optional, field)
+		if err != nil {
+			return nil, err
 		}
-		fieldCodec, ok := field.Codec.(*fieldAnnotations)
-		if !ok {
-			return nil, fmt.Errorf("internal error: field %s in message %s does not have swift fieldAnnotations", field.Name, current.ID)
-		}
-		if optional && field.Optional {
-			fmt.Fprintf(&expression, ".flatMap({ $0.%s })", fieldCodec.Name)
-		} else if optional {
-			fmt.Fprintf(&expression, ".map({ $0.%s })", fieldCodec.Name)
-		} else if field.Optional {
-			fmt.Fprintf(&expression, ".%s", fieldCodec.Name)
-		} else {
-			fmt.Fprintf(&expression, ".%s as %s?", fieldCodec.Name, fieldCodec.FieldType)
-		}
+		expression.WriteString(expr)
 		optional = field.Optional
 		switch field.Typez {
 		case api.TypezMessage:
@@ -104,4 +93,24 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 		FieldPath:  strings.Join(variable.FieldPath, "."),
 	}
 	return pathVar, nil
+}
+
+func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (string, error) {
+	if field.IsOneOf {
+		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID)
+	}
+	fieldCodec, ok := field.Codec.(*fieldAnnotations)
+	if !ok {
+		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID)
+	}
+	if optional && field.Optional {
+		return fmt.Sprintf(".flatMap({ $0.%s })", fieldCodec.Name), nil
+	}
+	if optional {
+		return fmt.Sprintf(".map({ $0.%s })", fieldCodec.Name), nil
+	}
+	if field.Optional {
+		return fmt.Sprintf(".%s", fieldCodec.Name), nil
+	}
+	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil
 }
