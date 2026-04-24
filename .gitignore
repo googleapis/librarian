@@ -16,10 +16,25 @@ cmd/librarianops/librarianops
 cmd/sidekick/sidekick
 cmd/surfer/surfer
 tool/cmd/builddockerimages/builddockerimages
+tool/cmd/configcheck/configcheck
 tool/cmd/importconfigs/importconfigs
 tool/cmd/importmetadata/importmetadata
 tool/cmd/migrate/migrate
 tool/cmd/syncversion/syncversion
+
+# The same binaries, but in the root directory
+/legacyautomation
+/legacylibrarian
+/librarian
+/librarianops
+/sidekick
+/surfer
+/builddockerimages
+/configcheck
+/importconfigs
+/importmetadata
+/migrate
+/syncversion
 
 # Test binary, built with `go test -c`
 *.test
