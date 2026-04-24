@@ -119,7 +119,7 @@ func findServiceConfig(googleapisDir, apiPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if sc == nil || sc.ServiceConfig == "" {
+	if sc.ServiceConfig == "" {
 		return "", fmt.Errorf("no service config found for api %q", apiPath)
 	}
 	return filepath.Join(googleapisDir, sc.ServiceConfig), nil
