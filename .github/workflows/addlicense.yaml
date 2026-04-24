@@ -28,6 +28,9 @@ jobs:
       - name: Install addlicense
         run: go install github.com/google/addlicense@latest
       - name: Run addlicense
-        run: addlicense -c "Google LLC" -l apache . -ignore pom.xml
+        # TODO(https://github.com/googleapis/librarian/issues/5576): remove
+        # -ignore after license headers have been added to pom.xml and
+        # *_pom.xml files.
+        run: addlicense -c "Google LLC" -l apache -ignore "**/*pom.xml" .
       - name: Check for diffs
         run: git diff --exit-code
