@@ -40,11 +40,11 @@ func (c *codec) pathVariables(message *api.Message, t *api.PathTemplate) ([]*pat
 	var variables []*pathVariable
 	for _, segment := range t.Segments {
 		if segment.Variable != nil {
-			new, err := c.newPathVariable(message, segment.Variable, count)
+			pathVar, err := c.newPathVariable(message, segment.Variable, count)
 			if err != nil {
 				return nil, err
 			}
-			variables = append(variables, new)
+			variables = append(variables, pathVar)
 			count += 1
 		}
 	}
@@ -97,11 +97,11 @@ func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable
 			test = ""
 		}
 	}
-	new := &pathVariable{
+	pathVar := &pathVariable{
 		Name:       name,
 		Expression: expression.String(),
 		Test:       test,
 		FieldPath:  strings.Join(variable.FieldPath, "."),
 	}
-	return new, nil
+	return pathVar, nil
 }
