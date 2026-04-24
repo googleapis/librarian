@@ -140,6 +140,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: AppEngine Logging
   transports:
     python: grpc
 - path: google/appengine/v1
@@ -152,6 +153,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: Google Apps Card
 - path: google/apps/events/subscriptions/v1
   languages:
     - go
@@ -736,6 +738,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: BigQuery Logging
   transports:
     python: grpc
 - path: google/cloud/bigquery/migration/v2
@@ -2722,6 +2725,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: Source Context
   transports:
     python: grpc
 - path: google/firestore/admin/v1
@@ -2777,6 +2781,7 @@
     - python
   skip_rest_numeric_enums:
     - python
+  title: IAM Audit Logging
   transports:
     python: grpc
 - path: google/iam/v1beta
@@ -3190,6 +3195,7 @@
   release_level:
     go: beta
     java: preview
+  title: Shopping Common Types
 - path: google/spanner/admin/database/v1
   languages:
     - all
