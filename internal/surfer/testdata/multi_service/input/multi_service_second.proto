@@ -16,7 +16,7 @@ syntax = "proto3";
 
 package multi_service.v1;
 
-import "cloud/sdk/tools/gen_sfc/test_apis/multi_service/multi_service_resources.proto";
+import "multi_service_resources.proto";
 import "google/api/annotations.proto";
 import "google/api/client.proto";
 import "google/api/field_behavior.proto";
