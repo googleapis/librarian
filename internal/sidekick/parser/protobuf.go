@@ -311,14 +311,20 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	}
 
 	// Consolidate resources.
-	// Message-level resources (in state.ResourceByType) take precedence over
+	// Message-level resources (in result.AllResources take precedence over
 	// file-level resources (already in result.ResourceDefinitions).
-	allResources := make(map[string]*api.Resource, len(result.ResourceDefinitions)+len(state.ResourceByType))
-	for _, r := range result.ResourceDefinitions {
-		allResources[r.Type] = r
+	seen := map[string]int{}
+	for i, r := range result.ResourceDefinitions {
+		seen[r.Type] = i
 	}
-	maps.Copy(allResources, state.ResourceByType)
-	result.ResourceDefinitions = slices.Collect(maps.Values(allResources))
+	for r := range result.AllResources() {
+		if i, found := seen[r.Type]; found {
+			result.ResourceDefinitions[i] = r
+		} else {
+			seen[r.Type] = len(result.ResourceDefinitions)
+			result.ResourceDefinitions = append(result.ResourceDefinitions, r)
+		}
+	}
 
 	// Sort to ensure deterministic output.
 	slices.SortFunc(result.ResourceDefinitions, func(a, b *api.Resource) int {
