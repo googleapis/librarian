@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: addlicense
+name: Linter
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
@@ -24,13 +24,21 @@ jobs:
       - uses: actions/setup-go@v6
         with:
           go-version-file: "go.mod"
-          cache: false
-      - name: Install addlicense
-        run: go install github.com/google/addlicense@latest
-      - name: Run addlicense
-        # TODO(https://github.com/googleapis/librarian/issues/5576): remove
-        # -ignore after license headers have been added to pom.xml and
-        # *_pom.xml files.
-        run: addlicense -c "Google LLC" -l apache -ignore "**/*pom.xml" .
-      - name: Check for diffs
-        run: git diff --exit-code
+      - name: Run TestAddLicense
+        run: go test -run TestAddLicense -count=1 .
+  typos:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: crate-ci/typos@v1.45.0
+  yamlfmt:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run TestYAMLFormat
+        run: go test -run TestYAMLFormat -count=1 .
