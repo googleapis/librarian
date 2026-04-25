@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -27,8 +27,9 @@ import (
 )
 
 var (
-	errPathRequired  = errors.New("path is required")
-	errValueRequired = errors.New("value is required")
+	errPathRequired   = errors.New("path is required")
+	errValueRequired  = errors.New("value is required")
+	errConfigNotFound = errors.New("configuration file not found")
 )
 
 // configCommand returns the CLI command for reading and writing librarian configuration.
@@ -64,14 +65,15 @@ func runConfigGet(w io.Writer, path string) error {
 	}
 	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return errConfigNotFound
+		}
 		return err
 	}
-
 	val, err := getConfigValue(cfg, path)
 	if err != nil {
 		return err
 	}
-
 	_, err = fmt.Fprintln(w, val)
 	return err
 }
@@ -85,16 +87,14 @@ func runConfigSet(path, value string) error {
 	}
 	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return err
+		if errors.Is(err, fs.ErrNotExist) {
+			return errConfigNotFound
 		}
-		cfg = &config.Config{}
+		return err
 	}
-
 	updated, err := setConfigValue(cfg, path, value)
 	if err != nil {
 		return err
 	}
-
 	return yaml.Write(config.LibrarianYAML, updated)
 }

@@ -26,8 +26,8 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// TestConfigCommand_Get tests that the config get command successfully reads a value from librarian.yaml.
-func TestConfigCommand_Get(t *testing.T) {
+// TestRunConfigGet tests that the config get command successfully reads a value from librarian.yaml.
+func TestRunConfigGet(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -44,7 +44,6 @@ func TestConfigCommand_Get(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
 			cfg, err := yaml.Unmarshal[config.Config]([]byte(test.configYAML))
 			if err != nil {
 				t.Fatal(err)
@@ -52,14 +51,11 @@ func TestConfigCommand_Get(t *testing.T) {
 			if err := yaml.Write("librarian.yaml", cfg); err != nil {
 				t.Fatal(err)
 			}
-
 			var buf bytes.Buffer
 			err = runConfigGet(&buf, test.path)
-
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.want, buf.String()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -67,8 +63,8 @@ func TestConfigCommand_Get(t *testing.T) {
 	}
 }
 
-// TestConfigCommand_Get_Error tests that the config get command returns an error when the path is missing or the key is not found.
-func TestConfigCommand_Get_Error(t *testing.T) {
+// TestRunConfigGet_Error tests that the config get command returns an error when the path is missing or the key is not found.
+func TestRunConfigGet_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -91,18 +87,14 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			var buf bytes.Buffer
 			err := runConfigGet(&buf, test.path)
-
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
-
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
@@ -110,8 +102,8 @@ func TestConfigCommand_Get_Error(t *testing.T) {
 	}
 }
 
-// TestConfigCommand_Set tests that the config set command successfully updates a value in librarian.yaml.
-func TestConfigCommand_Set(t *testing.T) {
+// TestRunConfigSet tests that the config set command successfully updates a value in librarian.yaml.
+func TestRunConfigSet(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -130,22 +122,17 @@ func TestConfigCommand_Set(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			err := runConfigSet(test.path, test.value)
-
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			gotYAML, err := os.ReadFile("librarian.yaml")
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if !strings.HasSuffix(string(gotYAML), test.wantYAML) {
 				t.Errorf("got YAML =\n%s\nwant ending with %q", string(gotYAML), test.wantYAML)
 			}
@@ -153,8 +140,8 @@ func TestConfigCommand_Set(t *testing.T) {
 	}
 }
 
-// TestConfigCommand_Set_Error tests that the config set command returns an error when the path or value is missing.
-func TestConfigCommand_Set_Error(t *testing.T) {
+// TestRunConfigSet_Error tests that the config set command returns an error when the path or value is missing.
+func TestRunConfigSet_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
@@ -187,17 +174,13 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
 			t.Chdir(tempDir)
-
 			if err := os.WriteFile("librarian.yaml", []byte(test.configYAML), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			err := runConfigSet(test.path, test.value)
-
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
-
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
@@ -205,22 +188,15 @@ func TestConfigCommand_Set_Error(t *testing.T) {
 	}
 }
 
-// TestConfigCommand_Set_ReadError tests that the config set command returns an error when librarian.yaml is unreadable.
-func TestConfigCommand_Set_ReadError(t *testing.T) {
+// TestRunConfigSet_FileNotFound tests that the config set command returns an error when the file doesn't exist.
+func TestRunConfigSet_FileNotFound(t *testing.T) {
 	tempDir := t.TempDir()
 	t.Chdir(tempDir)
-
-	if err := os.WriteFile("librarian.yaml", []byte("version: 1.2.3\n"), 0000); err != nil {
-		t.Fatal(err)
-	}
-
 	err := runConfigSet("version", "1.2.4")
-
 	if err == nil {
 		t.Fatal("expected error; got nil")
 	}
-
-	if !errors.Is(err, os.ErrPermission) {
-		t.Fatalf("got error %v, want %v", err, os.ErrPermission)
+	if !errors.Is(err, errConfigNotFound) {
+		t.Fatalf("got error %v, want %v", err, errConfigNotFound)
 	}
 }
