@@ -61,7 +61,7 @@ var (
 func bumpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "bump",
-		Usage:     "update versions and prepare release artifacts",
+		Usage:     "bump version numbers and prepare release artifacts",
 		UsageText: "librarian bump <library>",
 		Description: `bump updates version numbers and prepares the files needed for a new release.
 
@@ -70,8 +70,9 @@ library in the workspace. When a library is specified explicitly, the --version 
 be used to override the new version.
 
 Examples:
-  librarian bump <library>           # update version for one library
-  librarian bump --all               # update versions for all libraries`,
+
+	librarian bump <library>           # update version for one library
+	librarian bump --all               # update versions for all libraries`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",

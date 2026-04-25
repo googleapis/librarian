@@ -48,6 +48,27 @@ func generateCommand() *cli.Command {
 		Name:      "generate",
 		Usage:     "generate a client library",
 		UsageText: "librarian generate <library>",
+		Description: `generate produces client library code from the APIs configured in
+librarian.yaml.
+
+The library name argument selects a single library to regenerate. Use the
+--all flag to regenerate every library in the workspace instead. Exactly
+one of <library> or --all must be provided.
+
+Generation is delegated to the language-specific tooling configured in
+librarian.yaml. Libraries marked with skip_generate are skipped.
+
+Examples:
+
+	librarian generate <library>   # regenerate one library
+	librarian generate --all       # regenerate every library
+
+[after-flags]
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",

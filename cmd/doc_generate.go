@@ -25,17 +25,28 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"text/template"
 )
 
 const (
-	librarianDesc = `Librarian CLI runs local workflow that 
-	adds, generates, updates and publishes client libraries.
+	librarianDesc = `Librarian manages Google Cloud client libraries. It runs a local workflow
+that onboards new APIs, generates client code, bumps versions, publishes
+releases, and tags release commits. Language-specific work, such as code
+generation, building, and testing, is delegated to per-language tooling.
+
+All behavior is driven by librarian.yaml at the root of the repository,
+whose schema is documented at
+https://github.com/googleapis/librarian/blob/main/doc/config-schema.md.
 
 Usage:
 
 	librarian <command> [arguments]
+
+Global flags:
+
+	--verbose, -v    enable verbose logging
 `
 	librarianopsDesc = `Librarianops orchestrates librarian operations across multiple repositories.
 
@@ -77,31 +88,45 @@ Usage:
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-{{.Description}}
-
-The commands are:
-{{range .Commands}}{{template "command" .}}{{end}}
-*/
+{{.Description}}{{range .Commands}}{{template "command" .}}{{end}}*/
 package main
 
 {{define "command"}}
+# {{.Tagline}}
 
-# {{.Name}}
+Usage:
 
-{{.HelpText}}
-{{if .Commands}}
-{{range .Commands}}{{template "command" .}}{{end}}
-{{end}}
-{{end}}
+	{{.Usage}}
+{{if .Description}}
+{{.Description}}
+{{end}}{{if .Flags}}
+Flags:
+
+{{.Flags}}
+{{end}}{{if .AfterFlags}}
+{{.AfterFlags}}
+{{end}}{{if .Commands}}{{range .Commands}}{{template "command" .}}{{end}}{{end}}{{end}}
 `
 )
 
-// CommandDoc holds the documentation for a single CLI command.
+// CommandDoc holds the documentation for a single CLI command, parsed from
+// the urfave/cli "--help" output.
 type CommandDoc struct {
-	Name     string
-	HelpText string
-	Commands []CommandDoc
+	Name        string
+	Summary     string
+	Tagline     string
+	Usage       string
+	Description string
+	Flags       string
+	AfterFlags  string
+	Commands    []CommandDoc
 }
+
+// afterFlagsMarker, when it appears on its own line inside a command's
+// Description, splits the description: text above the marker stays in the
+// Description (rendered before Flags), text below moves to AfterFlags
+// (rendered after Flags). The marker itself is stripped from godoc output.
+const afterFlagsMarker = "[after-flags]"
 
 var (
 	descriptions = map[string]string{
@@ -119,6 +144,8 @@ var (
 	}
 
 	cmdPath = flag.String("cmd", "", "Path to the command to generate docs for (e.g., ../../cmd/librarian)")
+
+	sectionRE = regexp.MustCompile(`(?m)^([A-Z][A-Z ]*):\s*$`)
 )
 
 func main() {
@@ -194,7 +221,6 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 		parentParts = strings.Fields(parentCommand)
 	}
 
-	// Get help text for parent to find subcommands.
 	args := []string{"run", "main.go"}
 	args = append(args, parentParts...)
 	cmd := exec.Command("go", args...)
@@ -206,7 +232,6 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 
 	commandNames, err := extractCommandNames(out.Bytes())
 	if err != nil {
-		// Not an error, just means no subcommands.
 		return nil, nil
 	}
 
@@ -222,20 +247,170 @@ func buildCommandDocs(parentCommand string) ([]CommandDoc, error) {
 			return nil, fmt.Errorf("getting help text for command %s: %w", fullCommandName, err)
 		}
 
-		// Recurse.
 		subCommands, err := buildCommandDocs(fullCommandName)
 		if err != nil {
 			return nil, err
 		}
 
-		commands = append(commands, CommandDoc{
-			Name:     sanitize(fullCommandName),
-			HelpText: sanitize(helpText),
-			Commands: subCommands,
-		})
+		doc := parseHelp(helpText)
+		doc.Name = sanitize(fullCommandName)
+		doc.Commands = subCommands
+		commands = append(commands, doc)
 	}
 
 	return commands, nil
+}
+
+// parseHelp parses urfave/cli "--help" output into a CommandDoc, populating
+// Tagline, Usage, Description, and Flags. The expected input format is:
+//
+//	NAME:
+//	   <name> - <tagline>
+//
+//	USAGE:
+//	   <usage>
+//
+//	DESCRIPTION:
+//	   <description>
+//
+//	OPTIONS:
+//	   <flag>  <flag help>
+//
+//	GLOBAL OPTIONS:
+//	   <flag>  <flag help>
+//
+// GLOBAL OPTIONS are dropped (they are documented once at the package level).
+// The "--help, -h" flag is filtered out of OPTIONS.
+func parseHelp(help string) CommandDoc {
+	sections := splitSections(help)
+
+	var doc CommandDoc
+	if name, ok := sections["NAME"]; ok {
+		name = strings.TrimSpace(name)
+		if i := strings.Index(name, " - "); i >= 0 {
+			doc.Summary = strings.TrimSpace(name[i+3:])
+			doc.Tagline = sentenceCase(doc.Summary)
+		}
+	}
+	if u, ok := sections["USAGE"]; ok {
+		doc.Usage = strings.TrimSpace(u)
+	}
+	if d, ok := sections["DESCRIPTION"]; ok {
+		desc, after := splitAfterFlags(strings.TrimRight(dedent(d), "\n"))
+		doc.Description = sanitize(desc)
+		doc.AfterFlags = sanitize(after)
+	}
+	if o, ok := sections["OPTIONS"]; ok {
+		doc.Flags = filterFlags(o)
+	}
+	return doc
+}
+
+// splitSections splits urfave/cli help text into sections keyed by their
+// uppercase header (NAME, USAGE, DESCRIPTION, OPTIONS, GLOBAL OPTIONS).
+func splitSections(help string) map[string]string {
+	matches := sectionRE.FindAllStringIndex(help, -1)
+	sections := make(map[string]string, len(matches))
+	for i, m := range matches {
+		header := strings.TrimSpace(help[m[0]:m[1]])
+		header = strings.TrimSuffix(header, ":")
+		start := m[1]
+		end := len(help)
+		if i+1 < len(matches) {
+			end = matches[i+1][0]
+		}
+		sections[header] = help[start:end]
+	}
+	return sections
+}
+
+// splitAfterFlags splits a dedented description on a line that is exactly
+// afterFlagsMarker. Text before the marker is returned as the description;
+// text after the marker is returned as the after-flags content. If the
+// marker is absent, the whole input is returned as the description.
+func splitAfterFlags(desc string) (before, after string) {
+	lines := strings.Split(desc, "\n")
+	for i, l := range lines {
+		if strings.TrimSpace(l) == afterFlagsMarker {
+			before = strings.TrimRight(strings.Join(lines[:i], "\n"), "\n")
+			after = strings.TrimSpace(strings.Join(lines[i+1:], "\n"))
+			return
+		}
+	}
+	return desc, ""
+}
+
+// dedent strips the smallest common leading-whitespace prefix from every
+// non-blank line of s and trims surrounding blank lines.
+func dedent(s string) string {
+	lines := strings.Split(s, "\n")
+	for len(lines) > 0 && strings.TrimSpace(lines[0]) == "" {
+		lines = lines[1:]
+	}
+	for len(lines) > 0 && strings.TrimSpace(lines[len(lines)-1]) == "" {
+		lines = lines[:len(lines)-1]
+	}
+	if len(lines) == 0 {
+		return ""
+	}
+	min := -1
+	for _, l := range lines {
+		if strings.TrimSpace(l) == "" {
+			continue
+		}
+		i := 0
+		for i < len(l) && (l[i] == ' ' || l[i] == '\t') {
+			i++
+		}
+		if min == -1 || i < min {
+			min = i
+		}
+	}
+	if min <= 0 {
+		return strings.Join(lines, "\n")
+	}
+	out := make([]string, len(lines))
+	for i, l := range lines {
+		if len(l) >= min {
+			out[i] = l[min:]
+		} else {
+			out[i] = l
+		}
+	}
+	return strings.Join(out, "\n")
+}
+
+// filterFlags removes the help flag from an OPTIONS block, dedents, and
+// re-indents each remaining line with a single tab so godoc renders the
+// block as preformatted text.
+func filterFlags(opts string) string {
+	body := dedent(opts)
+	if body == "" {
+		return ""
+	}
+	var out []string
+	for _, l := range strings.Split(body, "\n") {
+		trimmed := strings.TrimSpace(l)
+		if trimmed == "" {
+			continue
+		}
+		if strings.HasPrefix(trimmed, "--help") {
+			continue
+		}
+		out = append(out, "\t"+l)
+	}
+	if len(out) == 0 {
+		return ""
+	}
+	return strings.Join(out, "\n")
+}
+
+// sentenceCase capitalizes the first letter of s.
+func sentenceCase(s string) string {
+	if s == "" {
+		return s
+	}
+	return strings.ToUpper(s[:1]) + s[1:]
 }
 
 func getCommandHelpText(command string) (string, error) {
@@ -249,7 +424,6 @@ func getCommandHelpText(command string) (string, error) {
 	cmd.Stderr = &out
 	err := cmd.Run()
 	if err != nil {
-		// The help command also exits with status 1.
 		if out.Len() == 0 {
 			return "", fmt.Errorf("cmd.Run() for '%s --help' failed with %s\n%s", command, err, out.String())
 		}
@@ -260,7 +434,6 @@ func getCommandHelpText(command string) (string, error) {
 func extractCommandNames(helpText []byte) ([]string, error) {
 	ss := string(helpText)
 	var start int
-	// handle both legacy tool and urfave/cli/v3 style
 	headers := []string{"Commands:\n\n", "COMMANDS:\n"}
 	for _, header := range headers {
 		start = strings.Index(ss, header)
@@ -288,7 +461,6 @@ func extractCommandNames(helpText []byte) ([]string, error) {
 		fields := strings.Fields(line)
 		if len(fields) > 0 {
 			name := fields[0]
-			// Handle urfave/cli "help, h" style and filter out help command.
 			name = strings.TrimSuffix(name, ",")
 			if name == "help" || name == "h" {
 				continue

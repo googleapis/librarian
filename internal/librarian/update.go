@@ -46,12 +46,30 @@ func updateCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "update",
 		Usage: "update sources to the latest version",
-		Description: `Supported sources are:
-  - conformance
-  - discovery
-  - googleapis
-  - protobuf
-  - showcase`,
+		Description: `update refreshes the upstream source repositories declared in
+librarian.yaml to their latest commits and updates the recorded commit
+SHAs in librarian.yaml accordingly.
+
+Each <source> names an upstream repository that librarian consumes:
+
+  - conformance: protocolbuffers/protobuf conformance tests
+  - discovery: googleapis/discovery-artifact-manager
+  - googleapis: googleapis/googleapis (the API definitions)
+  - protobuf: protocolbuffers/protobuf
+  - showcase: googleapis/gapic-showcase
+
+At least one source must be specified.
+
+Examples:
+
+	librarian update googleapis
+	librarian update googleapis protobuf
+
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all`,
 		UsageText: "librarian update <sources...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()

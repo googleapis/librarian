@@ -15,213 +15,235 @@
 //go:generate go run -tags docgen ../doc_generate.go -cmd .
 
 /*
-Librarian CLI runs local workflow that
+Librarian manages Google Cloud client libraries. It runs a local workflow
+that onboards new APIs, generates client code, bumps versions, publishes
+releases, and tags release commits. Language-specific work, such as code
+generation, building, and testing, is delegated to per-language tooling.
 
-	adds, generates, updates and publishes client libraries.
+All behavior is driven by librarian.yaml at the root of the repository,
+whose schema is documented at
+https://github.com/googleapis/librarian/blob/main/doc/config-schema.md.
 
 Usage:
 
 	librarian <command> [arguments]
 
-The commands are:
+Global flags:
 
-# add
+	--verbose, -v    enable verbose logging
 
-NAME:
+# Install tool dependencies for a language
 
-	librarian add - add a new client library to librarian.yaml
-
-USAGE:
-
-	librarian add <apis...>
-
-OPTIONS:
-
-	--help, -h  show help
-
-GLOBAL OPTIONS:
-
-	--verbose, -v  enable verbose logging
-
-# generate
-
-NAME:
-
-	librarian generate - generate a client library
-
-USAGE:
-
-	librarian generate <library>
-
-OPTIONS:
-
-	--all       generate all libraries
-	--help, -h  show help
-
-GLOBAL OPTIONS:
-
-	--verbose, -v  enable verbose logging
-
-# bump
-
-NAME:
-
-	librarian bump - update versions and prepare release artifacts
-
-USAGE:
-
-	librarian bump <library>
-
-DESCRIPTION:
-
-	bump updates version numbers and prepares the files needed for a new release.
-
-	If a library name is given, only that library is updated. The --all flag updates every
-	library in the workspace. When a library is specified explicitly, the --version flag can
-	be used to override the new version.
-
-	Examples:
-	  librarian bump <library>           # update version for one library
-	  librarian bump --all               # update versions for all libraries
-
-OPTIONS:
-
-	--all             update all libraries in the workspace
-	--version string  specific version to update to; not valid with --all
-	--help, -h        show help
-
-GLOBAL OPTIONS:
-
-	--verbose, -v  enable verbose logging
-
-# install
-
-NAME:
-
-	librarian install - install tool dependencies for a language
-
-USAGE:
+Usage:
 
 	librarian install [language]
 
-DESCRIPTION:
+install installs the language-specific tools that librarian uses to
+generate and build client libraries (for example, language SDKs and code
+generators).
 
-	Install tool dependencies for the given language.
-	If no language is provided, the language is determined
-	from librarian.yaml in the current directory.
+If [language] is omitted, the language is read from librarian.yaml in the
+current directory.
 
-OPTIONS:
+Examples:
 
-	--help, -h  show help
+	librarian install              # use language from librarian.yaml
+	librarian install go           # install Go-specific tools
 
-GLOBAL OPTIONS:
+# Tidy and validate librarian.yaml
 
-	--verbose, -v  enable verbose logging
-
-# tidy
-
-NAME:
-
-	librarian tidy - format and validate librarian.yaml
-
-USAGE:
+Usage:
 
 	librarian tidy
 
-OPTIONS:
+tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
 
-	--help, -h  show help
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.
 
-GLOBAL OPTIONS:
+# Add a new client library
 
-	--verbose, -v  enable verbose logging
+Usage:
 
-# update
+	librarian add <apis...>
 
-NAME:
+add registers one or more APIs as a new client library in librarian.yaml.
 
-	librarian update - update sources to the latest version
+Each <api> is a path within the configured googleapis source, such as
+"google/cloud/secretmanager/v1". The library name and other defaults are
+derived from the first API path using language-specific rules.
 
-USAGE:
+Multiple API paths may be passed to bundle them into a single library. To
+add a preview client of an existing library, prefix every API path with
+"preview/"; preview and non-preview APIs cannot be mixed in one invocation.
+
+Examples:
+
+	librarian add google/cloud/secretmanager/v1
+	librarian add google/cloud/foo/v1 google/cloud/foo/v1beta
+	librarian add preview/google/cloud/secretmanager/v1beta
+
+A typical librarian workflow for adding a new client library is:
+
+	librarian add <api>            # onboard a new API into librarian.yaml
+	librarian generate <library>   # generate the client library
+
+# Update sources to the latest version
+
+Usage:
 
 	librarian update <sources...>
 
-DESCRIPTION:
+update refreshes the upstream source repositories declared in
+librarian.yaml to their latest commits and updates the recorded commit
+SHAs in librarian.yaml accordingly.
 
-	Supported sources are:
-	  - conformance
-	  - discovery
-	  - googleapis
-	  - protobuf
-	  - showcase
+Each <source> names an upstream repository that librarian consumes:
 
-OPTIONS:
+  - conformance: protocolbuffers/protobuf conformance tests
+  - discovery: googleapis/discovery-artifact-manager
+  - googleapis: googleapis/googleapis (the API definitions)
+  - protobuf: protocolbuffers/protobuf
+  - showcase: googleapis/gapic-showcase
 
-	--help, -h  show help
+At least one source must be specified.
 
-GLOBAL OPTIONS:
+Examples:
 
-	--verbose, -v  enable verbose logging
+	librarian update googleapis
+	librarian update googleapis protobuf
 
-# version
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
 
-NAME:
+	librarian update googleapis
+	librarian generate --all
 
-	librarian version - print the version
+# Generate a client library
 
-USAGE:
+Usage:
 
-	librarian version
+	librarian generate <library>
 
-OPTIONS:
+generate produces client library code from the APIs configured in
+librarian.yaml.
 
-	--help, -h  show help
+The library name argument selects a single library to regenerate. Use the
+--all flag to regenerate every library in the workspace instead. Exactly
+one of <library> or --all must be provided.
 
-GLOBAL OPTIONS:
+Generation is delegated to the language-specific tooling configured in
+librarian.yaml. Libraries marked with skip_generate are skipped.
 
-	--verbose, -v  enable verbose logging
+Examples:
 
-# publish
+	librarian generate <library>   # regenerate one library
+	librarian generate --all       # regenerate every library
 
-NAME:
+Flags:
 
-	librarian publish - publishes client libraries
+	--all       generate all libraries
 
-USAGE:
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all
+
+# Bump version numbers and prepare release artifacts
+
+Usage:
+
+	librarian bump <library>
+
+bump updates version numbers and prepares the files needed for a new release.
+
+If a library name is given, only that library is updated. The --all flag updates every
+library in the workspace. When a library is specified explicitly, the --version flag can
+be used to override the new version.
+
+Examples:
+
+	librarian bump <library>           # update version for one library
+	librarian bump --all               # update versions for all libraries
+
+Flags:
+
+	--all             update all libraries in the workspace
+	--version string  specific version to update to; not valid with --all
+
+# Publish client libraries
+
+Usage:
 
 	librarian publish
 
-OPTIONS:
+publish releases the libraries that were updated in a release commit
+prepared by librarian bump.
+
+By default, publish performs a dry run that prints the actions it would
+take. Pass --execute to actually publish. By default, the most recent
+release commit reachable from HEAD is used; --release-commit overrides
+this with a specific commit.
+
+The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
+only honored when the workspace language is Rust; they are retained for
+backwards compatibility with the legacy Rust release jobs and will be
+removed once Rust migrates to the unified flow.
+
+Examples:
+
+	librarian publish                          # dry run
+	librarian publish --execute                # publish for real
+	librarian publish --release-commit=<sha>   # publish a specific commit
+
+Flags:
 
 	--execute                fully publish (default is to only perform a dry run)
 	--release-commit string  the release commit to publish; default finds latest release commit
 	--dry-run                print commands without executing (legacy Rust-only flag)
 	--dry-run-keep-going     print commands without executing, don't stop on error (legacy Rust-only flag)
 	--skip-semver-checks     skip semantic versioning checks (legacy Rust-only flag)
-	--help, -h               show help
 
-GLOBAL OPTIONS:
+# Tag a release commit based on the libraries published
 
-	--verbose, -v  enable verbose logging
-
-# tag
-
-NAME:
-
-	librarian tag - tags a release commit based on the libraries published
-
-USAGE:
+Usage:
 
 	librarian tag
 
-OPTIONS:
+tag creates git tags on a release commit, one tag per library that the
+commit released, using the tag_format declared for each library in
+librarian.yaml.
+
+Run tag after librarian publish has succeeded. By default, the most
+recent release commit reachable from HEAD is used; --release-commit
+overrides this with a specific commit.
+
+The --create-release-tag flag additionally creates a tag of the form
+release-<PR number>; this is used by the legacy release jobs and will be
+removed once those jobs are retired.
+
+Examples:
+
+	librarian tag
+	librarian tag --release-commit=<sha>
+	librarian tag --create-release-tag
+
+Flags:
 
 	--release-commit string  the release commit to tag; default finds latest release commit
 	--create-release-tag     whether to create a tag of the form release-{PR number}
-	--help, -h               show help
 
-GLOBAL OPTIONS:
+# Print the binary version
 
-	--verbose, -v  enable verbose logging
+Usage:
+
+	librarian version
+
+version prints the librarian binary version and exits. The version is
+embedded at build time and follows the conventions described at
+https://go.dev/ref/mod#versions.
 */
 package main
