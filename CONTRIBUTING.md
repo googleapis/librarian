@@ -149,6 +149,30 @@ All documentation should live in the root of the repository or in the `doc/`
 directory. Markdown files should follow the
 [Google Style Guide](https://google.github.io/styleguide/docguide/style.html).
 
+### Generated package documentation
+
+Each binary under `cmd/` has a `doc.go` file that renders as the package's
+godoc page on pkg.go.dev. The files are produced by
+[`tool/cmd/docgen`](https://github.com/googleapis/librarian/blob/main/tool/cmd/docgen).
+If you change a command's name, usage text, description, flags, or examples,
+regenerate `doc.go` and commit it alongside your change:
+
+```
+go generate ./...
+```
+
+Then check the rendered output before sending the pull request, either with:
+
+```
+go doc ./cmd/librarian
+```
+
+or, to preview the way pkg.go.dev will display it, with pkgsite:
+
+```
+go run golang.org/x/pkgsite/cmd/pkgsite@latest .
+```
+
 ## Sending a pull request
 
 All code changes must be submitted via a pull request. If you are a first-time
