@@ -55,7 +55,7 @@ jobs:
       - name: Run tests and check coverage
         run: |
           go run ./tool/cmd/coverage \
-            $(go list ./... | grep -v -E 'internal/librarian/(dart|java|nodejs|python|rust)|internal/sidekick|internal/legacylibrarian')
+            $(go list ./... | grep -v -E 'internal/librarian/(dart|golang|java|nodejs|python|rust)|internal/sidekick|internal/legacylibrarian')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [go-generate, legacylibrarian, test]
