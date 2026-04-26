@@ -29,21 +29,21 @@ func TestPathExpression(t *testing.T) {
 	}{
 		{
 			name: "literals only",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("operations"),
 			want: "/v1/operations",
 		},
 		{
 			name: "with variable",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
 			want: "/v1/\\(pathVariable0)",
 		},
 		{
 			name: "with multiple variables",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
@@ -91,12 +91,12 @@ func TestPathVariables(t *testing.T) {
 	}{
 		{
 			name:     "no variables",
-			template: api.NewPathTemplate().WithLiteral("v1"),
+			template: (&api.PathTemplate{}).WithLiteral("v1"),
 			want:     nil,
 		},
 		{
 			name: "one variable",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
 			want: []*pathVariable{
@@ -110,7 +110,7 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "two variables",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name").
 				WithLiteral("sep").
@@ -132,7 +132,7 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "error - lookup field missing",
-			template: api.NewPathTemplate().
+			template: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("missing"),
 			wantErr: true,

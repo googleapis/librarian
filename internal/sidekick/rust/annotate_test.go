@@ -105,7 +105,7 @@ func serviceAnnotationsModel() *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("resource"),
 				},
@@ -122,7 +122,7 @@ func serviceAnnotationsModel() *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("resource"),
 				},
@@ -1138,7 +1138,7 @@ func TestPathInfoAnnotations(t *testing.T) {
 	binding := func(verb string) *api.PathBinding {
 		return &api.PathBinding{
 			Verb: verb,
-			PathTemplate: api.NewPathTemplate().
+			PathTemplate: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("resource"),
 		}
@@ -1270,7 +1270,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	b0 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: api.NewPathTemplate().
+		PathTemplate: (&api.PathTemplate{}).
 			WithLiteral("v2").
 			WithVariable(api.NewPathVariable("name").
 				WithLiteral("projects").
@@ -1296,7 +1296,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	b1 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: api.NewPathTemplate().
+		PathTemplate: (&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("project").
@@ -1328,7 +1328,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 	b2 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: api.NewPathTemplate().
+		PathTemplate: (&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithLiteral("projects").
 			WithVariableNamed("child", "project").
@@ -1360,7 +1360,7 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 	b3 := &api.PathBinding{
 		Verb: "GET",
-		PathTemplate: api.NewPathTemplate().
+		PathTemplate: (&api.PathTemplate{}).
 			WithLiteral("v2").
 			WithLiteral("foos"),
 		QueryParameters: map[string]bool{
@@ -1433,7 +1433,7 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	}
 	binding := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: api.NewPathTemplate().
+		PathTemplate: (&api.PathTemplate{}).
 			WithLiteral("v2").
 			WithVariable(api.NewPathVariable("name").
 				WithLiteral("projects").
@@ -1502,7 +1502,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		}
 		binding := &api.PathBinding{
 			Verb: "GET",
-			PathTemplate: api.NewPathTemplate().
+			PathTemplate: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("machines").
 				WithVariable(api.NewPathVariable(test.FieldName).

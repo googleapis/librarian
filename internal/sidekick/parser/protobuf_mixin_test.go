@@ -80,7 +80,7 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("name").
 							WithLiteral("projects").
@@ -151,7 +151,7 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("resource").
 							WithLiteral("services").
@@ -228,7 +228,7 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v2").
 						WithVariable(api.NewPathVariable("name").
 							WithLiteral("operations").
@@ -316,7 +316,7 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v2").
 						WithVariable(api.NewPathVariable("name").
 							WithLiteral("operations").
@@ -401,7 +401,7 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("name").
 							WithLiteral("operations").

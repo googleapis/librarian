@@ -236,10 +236,10 @@ func TestIsResourceMethod(t *testing.T) {
 		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), true},
 		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), false},
 		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance"))}},
 		), true},
 		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithLiteral("instances")}},
 		), false},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
@@ -264,10 +264,10 @@ func TestIsCollectionMethod(t *testing.T) {
 		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), false},
 		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), true},
 		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithVariable(api.NewPathVariable("instance"))}},
+			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance"))}},
 		), false},
 		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*api.NewPathSegment().WithLiteral("instances")}},
+			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithLiteral("instances")}},
 		), true},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
@@ -313,9 +313,9 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/Singleton",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*api.NewPathSegment().WithLiteral("projects"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
-						*api.NewPathSegment().WithLiteral("singletonConfig"),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
+						*(&api.PathSegment{}).WithLiteral("singletonConfig"),
 					},
 				},
 			},
@@ -323,11 +323,11 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/AdjacentLiterals",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*api.NewPathSegment().WithLiteral("projects"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
-						*api.NewPathSegment().WithLiteral("literal1"),
-						*api.NewPathSegment().WithLiteral("literal2"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("instance")),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
+						*(&api.PathSegment{}).WithLiteral("literal1"),
+						*(&api.PathSegment{}).WithLiteral("literal2"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance")),
 					},
 				},
 			},
@@ -335,10 +335,10 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/Standard",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*api.NewPathSegment().WithLiteral("projects"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("project")),
-						*api.NewPathSegment().WithLiteral("instances"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("instance")),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
+						*(&api.PathSegment{}).WithLiteral("instances"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance")),
 					},
 				},
 			},

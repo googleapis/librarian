@@ -27,27 +27,27 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 		input string
 		want  *api.PathTemplate
 	}{
-		{"locations/global/firewallPolicies", api.NewPathTemplate().
+		{"locations/global/firewallPolicies", (&api.PathTemplate{}).
 			WithLiteral("locations").
 			WithLiteral("global").
 			WithLiteral("firewallPolicies")},
-		{"locations/global/operations/{operation}", api.NewPathTemplate().
+		{"locations/global/operations/{operation}", (&api.PathTemplate{}).
 			WithLiteral("locations").
 			WithLiteral("global").
 			WithLiteral("operations").
 			WithVariableNamed("operation")},
-		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", api.NewPathTemplate().
+		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", (&api.PathTemplate{}).
 			WithLiteral("projects").
 			WithVariableNamed("project").
 			WithLiteral("zones").
 			WithVariableNamed("zone").
 			WithVariableNamed("parentName").
 			WithLiteral("reservationSubBlocks")},
-		{"v1/{+parent}/externalAccountKeys", api.NewPathTemplate().
+		{"v1/{+parent}/externalAccountKeys", (&api.PathTemplate{}).
 			WithLiteral("v1").
 			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatchRecursive()).
 			WithLiteral("externalAccountKeys")},
-		{"dns/v1/{+resource}:getIamPolicy", api.NewPathTemplate().
+		{"dns/v1/{+resource}:getIamPolicy", (&api.PathTemplate{}).
 			WithLiteral("dns").
 			WithLiteral("v1").
 			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).

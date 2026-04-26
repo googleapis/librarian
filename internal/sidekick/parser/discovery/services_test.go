@@ -49,7 +49,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").
@@ -72,7 +72,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").

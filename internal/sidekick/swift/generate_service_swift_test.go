@@ -212,7 +212,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 	}{
 		{
 			name: "Nested",
-			path: api.NewPathTemplate().
+			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("secret", "name"),
 			wantBlock: `let path = try { () throws -> String in
@@ -224,7 +224,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Plain",
-			path: api.NewPathTemplate().
+			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
 			wantBlock: `let path = try { () throws -> String in
@@ -236,7 +236,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Multiple strings",
-			path: api.NewPathTemplate().
+			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").

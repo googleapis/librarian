@@ -56,7 +56,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v7").
 								WithLiteral("thing"),
 							QueryParameters: map[string]bool{"parent": true}},
@@ -75,7 +75,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v7").
 								WithLiteral("thing").
 								WithVerb("make"),
