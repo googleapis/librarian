@@ -53,6 +53,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	for _, api := range library.APIs {
+		// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+		// generate v1small. This package is not meant to be used and will be
+		// deprecated in the future, but for now (during the migration period) it
+		// will be set to not be maintained.
+		if api.Path == "google/cloud/compute/v1small" {
+			continue
+		}
 		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
@@ -543,6 +550,13 @@ func updateSnippetMetadataVersion(outDir, version string) error {
 		return fmt.Errorf("failed to glob snippet metadata files: %w", err)
 	}
 	for _, path := range matches {
+		// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+		// update v1small. This package is not meant to be used and will be
+		// deprecated in the future, but for now (during the migration period) it
+		// will be set to not be maintained.
+		if strings.Contains(path, "v1small") {
+			continue
+		}
 		if err := updateVersionInFile(path, version); err != nil {
 			return fmt.Errorf("failed to update %s: %w", path, err)
 		}

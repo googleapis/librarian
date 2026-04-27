@@ -180,8 +180,16 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		if err != nil {
 			return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
 		}
-		library.APIs = apis
-		library.Nodejs.NodejsAPIs = buildNodejsLibraryAPIs(googleapisDir, apis)
+
+		var filteredAPIs []*config.API
+		for _, api := range apis {
+			if strings.HasSuffix(api.Path, "/v1small") {
+				continue
+			}
+			filteredAPIs = append(filteredAPIs, api)
+		}
+		library.APIs = filteredAPIs
+		library.Nodejs.NodejsAPIs = buildNodejsLibraryAPIs(googleapisDir, filteredAPIs)
 	}
 
 	// Extract copyright year from existing generated source files.
@@ -240,7 +248,52 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		library.Keep = append(library.Keep, dirKeep...)
 	}
 
+	if libraryName == "google-cloud-compute" {
+		v1smallKeep, err := nodejsV1SmallKeep(pkgDir)
+		if err != nil {
+			return nil, fmt.Errorf("collecting keep files for v1small: %w", err)
+		}
+		library.Keep = append(library.Keep, v1smallKeep...)
+	}
+
 	return library, nil
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+// generate or delete v1small. This package is not meant to be used and
+// will be deprecated in the future, but for now (during the migration
+// period) it will be set to not be maintained.
+//
+// We explicitly add these files to the keep list to prevent the clean
+// phase from deleting them, as the generation phase skips v1small.
+func nodejsV1SmallKeep(pkgDir string) ([]string, error) {
+	var paths []string
+	err := filepath.WalkDir(pkgDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if d.Name() == "node_modules" || d.Name() == "owl-bot-staging" {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		rel, err := filepath.Rel(pkgDir, path)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(rel, "v1small") {
+			paths = append(paths, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return paths, nil
 }
 
 func buildNodejsLibraryAPIs(googleapisDir string, apis []*config.API) []*config.NodejsAPI {
