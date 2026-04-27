@@ -36,9 +36,7 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
-				Java: &config.JavaModule{
-					JavaAPIs: nil,
-				},
+				Java:   &config.JavaModule{},
 			},
 		},
 		{
@@ -50,9 +48,7 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "custom-output",
-				Java: &config.JavaModule{
-					JavaAPIs: nil,
-				},
+				Java:   &config.JavaModule{},
 			},
 		},
 		{
