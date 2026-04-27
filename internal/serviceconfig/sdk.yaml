@@ -424,7 +424,7 @@
   languages:
     - all
 - path: google/cloud/apigeeconnect/v1
-  description: Apigee Connect allows the Apigee hybrid management plane to connect securely to the MART service in the runtime plane without requiring you to expose the MART endpoint on the internet. 
+  description: Apigee Connect allows the Apigee hybrid management plane to connect securely to the MART service in the runtime plane without requiring you to expose the MART endpoint on the internet.
   documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
   languages:
     - all
