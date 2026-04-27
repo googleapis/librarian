@@ -296,7 +296,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 		wantCfg  *config.Config
 	}{
 		{
-			name: "update existing library",
+			name: "update existing library (go)",
 			apis: []string{"google/cloud/secretmanager/v1beta2"},
 			cfg: &config.Config{
 				Language: config.LanguageGo,
@@ -320,6 +320,42 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/secretmanager/v1"},
 							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "update existing library (python)",
+			apis: []string{"google/cloud/kms/v1beta2"},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-kms",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/kms/v1"},
+						},
+						Python: &config.PythonPackage{
+							DefaultVersion: "v1beta2",
+						},
+					},
+				},
+			},
+			wantName: "google-cloud-kms",
+			wantCfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-kms",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/kms/v1"},
+							{Path: "google/cloud/kms/v1beta2"},
+						},
+						Python: &config.PythonPackage{
+							DefaultVersion: "v1beta2",
 						},
 					},
 				},
@@ -380,13 +416,13 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			wantErr: errAPIDuplicate,
 		},
 		{
-			name: "python doesn't support updating existing library",
+			name: "java doesn't support updating existing library",
 			apis: []string{"google/cloud/secretmanager/v1beta2"},
 			cfg: &config.Config{
-				Language: config.LanguagePython,
+				Language: config.LanguageJava,
 				Libraries: []*config.Library{
 					{
-						Name:    "google-cloud-secretmanager",
+						Name:    "secretmanager",
 						Version: "1.2.3",
 						APIs: []*config.API{
 							{Path: "google/cloud/secretmanager/v1"},

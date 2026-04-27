@@ -35,8 +35,10 @@ var (
 		"google.maps",
 		"google.shopping",
 	}
-	errNewLibraryMustHaveOneAPI = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
-	errNewLibraryBadNamespace   = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
+	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
+	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
+	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
+	errExistingLibraryCustomGAPICOptions = errors.New("new APIs cannot be automatically added to a library with custom GAPIC options")
 )
 
 // Add initializes a new Python library with default values.
@@ -56,4 +58,18 @@ func Add(lib *config.Library) (*config.Library, error) {
 		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
 	}
 	return lib, nil
+}
+
+// ValidateNewAPIs validates that new APIs can be added to an existing library.
+// Currently this is just a check that no existing APIs in the library have
+// custom GAPIC options. Future checks may require details of the APIs being
+// added.
+func ValidateNewAPIs(lib *config.Library) error {
+	if lib.Python == nil || lib.Python.DefaultVersion == "" {
+		return errExistingLibraryNoDefaultVersion
+	}
+	if len(lib.Python.OptArgsByAPI) != 0 {
+		return errExistingLibraryCustomGAPICOptions
+	}
+	return nil
 }

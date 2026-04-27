@@ -169,7 +169,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
-		if cfg.Language != config.LanguageGo {
+		if cfg.Language != config.LanguageGo && cfg.Language != config.LanguagePython {
 			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 		}
 		return updateExistingLibrary(cfg, existingLib, paths)
@@ -232,6 +232,11 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis
 	for _, api := range apis {
 		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
 			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
+		}
+	}
+	if cfg.Language == config.LanguagePython {
+		if err := python.ValidateNewAPIs(existingLib); err != nil {
+			return "", nil, err
 		}
 	}
 	existingLib.APIs = append(existingLib.APIs, apis...)
