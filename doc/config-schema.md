@@ -279,7 +279,7 @@ This document describes the schema for the librarian.yaml.
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
 | `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
-| `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
+| `cloud_api` | bool (optional) | Indicates whether the API is a Google Cloud API. Defaults to true when omitted. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
 | `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
@@ -294,7 +294,7 @@ This document describes the schema for the librarian.yaml.
 | `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
 | `recommended_package` | string | Is the recommended package name. |
-| `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
+| `billing_required` | bool (optional) | Indicates whether the API requires billing. Defaults to true when omitted. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 | `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. TODO(https://github.com/googleapis/librarian/issues/5561): investigate and determine if can remove |

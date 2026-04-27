@@ -528,8 +528,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
 	}
-	if src.NonCloudAPI {
-		res.NonCloudAPI = src.NonCloudAPI
+	if src.CloudAPI != nil {
+		res.CloudAPI = src.CloudAPI
 	}
 	if src.CodeownerTeam != "" {
 		res.CodeownerTeam = src.CodeownerTeam
@@ -573,8 +573,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.RecommendedPackage != "" {
 		res.RecommendedPackage = src.RecommendedPackage
 	}
-	if src.BillingNotRequired {
-		res.BillingNotRequired = src.BillingNotRequired
+	if src.BillingRequired != nil {
+		res.BillingRequired = src.BillingRequired
 	}
 	if src.RestDocumentation != "" {
 		res.RestDocumentation = src.RestDocumentation

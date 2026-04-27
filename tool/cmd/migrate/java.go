@@ -297,7 +297,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
 				ClientDocumentationOverride:  l.ClientDocumentation,
-				NonCloudAPI:                  invertBoolPtr(l.CloudAPI),
+				CloudAPI:                     l.CloudAPI,
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
@@ -311,7 +311,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				NamePrettyOverride:           l.NamePretty,
 				ProductDocumentationOverride: l.ProductDocumentation,
 				RecommendedPackage:           l.RecommendedPackage,
-				BillingNotRequired:           invertBoolPtr(l.RequiresBilling),
+				BillingRequired:              l.RequiresBilling,
 				RestDocumentation:            l.RestDocumentation,
 				RpcDocumentation:             l.RpcDocumentation,
 				TransportOverride:            l.Transport,
@@ -476,10 +476,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 
 func shouldExcludeSamples(name string, info *javaGAPICInfo) bool {
 	return !info.Samples || excludedSamplesLibraries[name]
-}
-
-func invertBoolPtr(p *bool) bool {
-	return p != nil && !*p
 }
 
 // insertMarkers updates pom.xml files for each library to include managed markers.
