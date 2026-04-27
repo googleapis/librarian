@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -61,8 +62,21 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	gotVersions, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
+	if err != nil {
 		t.Fatal(err)
+	}
+	wantVersions := []string{
+		"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
+		"grpc-google-cloud-secretmanager-v1:1.2.3:1.2.3",
+		"google-cloud-secretmanager:1.2.3:1.2.3",
+		"google-cloud-secretmanager-bom:1.2.3:1.2.3",
+		"google-cloud-secretmanager-parent:1.2.3:1.2.3",
+	}
+	sort.Strings(gotVersions)
+	sort.Strings(wantVersions)
+	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
+		t.Errorf("mismatch in new versions (-want +got):\n%s", diff)
 	}
 	artifacts := []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
 	for _, artifact := range artifacts {
@@ -175,7 +189,7 @@ func TestSyncPOMs_Update(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if _, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -234,7 +248,7 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if _, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 

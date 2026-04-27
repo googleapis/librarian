@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 const (
@@ -35,6 +36,9 @@ const (
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
+	// versionsFileName is the name of the  manifest file that keeps track of
+	// artifact versions for release-please.
+	versionsFileName = "versions.txt"
 )
 
 var (
@@ -59,7 +63,8 @@ var (
 )
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
+// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newVersions []string) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -67,6 +72,11 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
+
+	if err := appendVersions(repoPath, newVersions); err != nil {
+		return err
+	}
+
 	modules, err := searchForJavaModules(repoPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
@@ -80,6 +90,14 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	}
 	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
+	}
+	return nil
+}
+
+func appendVersions(repoPath string, versions []string) error {
+	versionsPath := filepath.Join(repoPath, versionsFileName)
+	if err := filesystem.AppendLines(versionsPath, versions); err != nil {
+		return fmt.Errorf("failed to update %s: %w", versionsFileName, err)
 	}
 	return nil
 }

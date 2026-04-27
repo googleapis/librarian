@@ -82,3 +82,48 @@ func CopyFile(src, dest string) error {
 func Unzip(ctx context.Context, src, dest string) error {
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
 }
+
+// AppendLines appends the given lines to an existing file, ensuring that it
+// ends with a newline character before appending. It returns an error if the
+// file does not exist.
+func AppendLines(path string, lines []string) (err error) {
+	if len(lines) == 0 {
+		return nil
+	}
+	// os.O_RDWR is required to read the last byte for the trailing newline check.
+	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+	if err := ensureTrailingNewline(f); err != nil {
+		return err
+	}
+	for _, line := range lines {
+		if _, err := fmt.Fprintln(f, line); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureTrailingNewline(f *os.File) error {
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+	if info.Size() == 0 {
+		return nil
+	}
+	var b [1]byte
+	// ReadAt doesn't affect the append offset.
+	if n, _ := f.ReadAt(b[:], info.Size()-1); n > 0 && b[0] != '\n' {
+		_, err := f.WriteString("\n") // Appends because of os.O_APPEND
+		return err
+	}
+	return nil
+}

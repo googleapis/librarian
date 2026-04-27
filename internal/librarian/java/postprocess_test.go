@@ -22,6 +22,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	"testing"
@@ -404,9 +405,26 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				outDir:   outDir,
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
-			err := postProcessLibrary(t.Context(), params)
+			got, err := postProcessLibrary(t.Context(), params)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
+			}
+			if err == nil && test.name == "success" {
+				libCoords := DeriveLibraryCoordinates(library)
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
+				released, _ := deriveLastReleasedVersion(library.Version)
+				want := []string{
+					fmt.Sprintf("%s:%s:%s", apiCoords.Proto.ArtifactID, released, library.Version),
+					fmt.Sprintf("%s:%s:%s", apiCoords.GRPC.ArtifactID, released, library.Version),
+					fmt.Sprintf("%s:%s:%s", apiCoords.GAPIC.ArtifactID, released, library.Version),
+					fmt.Sprintf("%s:%s:%s", apiCoords.BOM.ArtifactID, released, library.Version),
+					fmt.Sprintf("%s:%s:%s", apiCoords.Parent.ArtifactID, released, library.Version),
+				}
+				sort.Strings(got)
+				sort.Strings(want)
+				if diff := cmp.Diff(want, got); diff != "" {
+					t.Errorf("mismatch in new versions (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
