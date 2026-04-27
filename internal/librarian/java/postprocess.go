@@ -63,6 +63,9 @@ type libraryPostProcessParams struct {
 	transports map[string]serviceconfig.Transport
 }
 
+// postProcessLibrary runs owlbot.py and updates POM.xml files for the library.
+// It returns a list of newly created artifact version entries to be added to
+// versions.txt.
 func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) ([]string, error) {
 	// Check if owlbot.py exists in the library output directory.
 	// It is required for restructuring the output and generating README files.

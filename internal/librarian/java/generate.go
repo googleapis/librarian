@@ -44,7 +44,8 @@ var (
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
-// Generate generates a Java client library.
+// Generate generates a Java client library and returns a list of newly created
+// artifact version entries to be added to versions.txt.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) ([]string, error) {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {

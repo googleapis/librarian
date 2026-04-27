@@ -89,7 +89,7 @@ type javaModule struct {
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
 // and parent POMs when new proto or gRPC modules are added. It returns a list
 // of newly created artifact version entries to be added to versions.txt.
-// TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries
+// TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries.
 func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]string, error) {
 	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
