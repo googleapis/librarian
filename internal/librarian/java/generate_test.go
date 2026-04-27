@@ -702,35 +702,21 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 	if len(capturedArgs) < 3 {
 		t.Fatalf("expected at least 3 protoc calls, got %d", len(capturedArgs))
 	}
-	// Verify Step 1 (proto) excludes resources.proto
-	protoArgs := capturedArgs[0]
-	for _, arg := range protoArgs {
-		if strings.Contains(arg, "resources.proto") {
-			t.Errorf("Step 1 (proto) should exclude resources.proto, but it was found in args: %v", arg)
+	containsArg := func(args []string, target string) bool {
+		for _, arg := range args {
+			if strings.Contains(arg, target) {
+				return true
+			}
 		}
+		return false
 	}
-	// Verify Step 2 (gRPC) includes resources.proto
-	grpcArgs := capturedArgs[1]
-	found := false
-	for _, arg := range grpcArgs {
-		if strings.Contains(arg, "resources.proto") {
-			found = true
-			break
-		}
+	if containsArg(capturedArgs[0], "resources.proto") {
+		t.Errorf("Step 1 (proto) should exclude resources.proto, but it was found in args: %v", capturedArgs[0])
 	}
-	if !found {
+	if !containsArg(capturedArgs[1], "resources.proto") {
 		t.Errorf("Step 2 (gRPC) should include resources.proto, but it was not found in args")
 	}
-	// Verify Step 3 (GAPIC) includes resources.proto
-	gapicArgs := capturedArgs[2]
-	found = false
-	for _, arg := range gapicArgs {
-		if strings.Contains(arg, "resources.proto") {
-			found = true
-			break
-		}
-	}
-	if !found {
+	if !containsArg(capturedArgs[2], "resources.proto") {
 		t.Errorf("Step 3 (GAPIC) should include resources.proto, but it was not found in args")
 	}
 }
