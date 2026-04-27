@@ -2575,13 +2575,13 @@
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
 - path: google/cloud/visionai/v1
-  description: Cloud Vision API allows developers to easily integrate vision detection features within applications, including image labeling, face and landmark detection, optical character recognition (OCR), and tagging of explicit content.
+  description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
   languages:
     - all
   release_level:
     java: preview
 - path: google/cloud/visionai/v1alpha1
-  description: Cloud Vision API allows developers to easily integrate vision detection features within applications, including image labeling, face and landmark detection, optical character recognition (OCR), and tagging of explicit content.
+  description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
   documentation_uri: https://cloud.google.com/vision-ai/docs
   languages:
     - nodejs
