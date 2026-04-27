@@ -29,12 +29,12 @@ limitations under the License.
 {{#QuickstartMethod}}
 {{#IsAIPStandard}}
 {{#SampleInfo}}
-{{#ResourceNameField}}
-///     let {{Codec.SetterName}} = "{{Codec.SetterName}}_value";
-{{/ResourceNameField}}
-{{#IsAIPStandardUpdate}}
-///     let name = "name_value";
-{{/IsAIPStandardUpdate}}
+{{#ResourceNameField}}{{^IsAIPStandardUpdate}}{{#Codec.FormattedResource}}{{#FormatArgs}}
+///     let {{.}} = "{{.}}_value";{{/FormatArgs}}{{/Codec.FormattedResource}}{{^Codec.FormattedResource}}
+///     let {{Codec.SetterName}} = "{{Codec.SetterName}}_value";{{/Codec.FormattedResource}}{{/IsAIPStandardUpdate}}{{/ResourceNameField}}{{#IsAIPStandardUpdate}}{{#ResourceNameField}}{{#Codec.FormattedResource}}{{#FormatArgs}}
+///     let {{.}} = "{{.}}_value";{{/FormatArgs}}{{/Codec.FormattedResource}}{{^Codec.FormattedResource}}
+///     let name = "name_value";{{/Codec.FormattedResource}}{{/ResourceNameField}}{{^ResourceNameField}}
+///     let name = "name_value";{{/ResourceNameField}}{{/IsAIPStandardUpdate}}
 {{/SampleInfo}}
 {{/IsAIPStandard}}
 {{> /templates/common/client_method_samples/method_call}}

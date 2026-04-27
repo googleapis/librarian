@@ -420,7 +420,7 @@ func checkApiVersionComments(t *testing.T, outDir string) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	lines := strings.Split(string(contents), "\n")
+	lines := strings.Split(strings.ReplaceAll(string(contents), "\r\n", "\n"), "\n")
 	for _, test := range []struct {
 		featureName string
 		wantVersion string

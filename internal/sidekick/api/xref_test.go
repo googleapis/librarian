@@ -150,6 +150,152 @@ func TestCrossReferenceFields(t *testing.T) {
 	}
 }
 
+func TestCrossReferenceResourcePattern(t *testing.T) {
+	t.Run("child type resolution", func(t *testing.T) {
+		res := &Resource{
+			Type: "test.googleapis.com/Child",
+			Patterns: []ResourcePattern{
+				{
+					*NewPathSegment().WithLiteral("parents"),
+					*NewPathSegment().WithVariable(NewPathVariable("parent").WithMatch()),
+					*NewPathSegment().WithLiteral("children"),
+					*NewPathSegment().WithVariable(NewPathVariable("child").WithMatch()),
+				},
+			},
+		}
+		field := &Field{
+			Name:  "parent",
+			ID:    ".test.Message.parent",
+			Typez: STRING_TYPE,
+			ResourceReference: &ResourceReference{
+				ChildType: "test.googleapis.com/Child",
+			},
+		}
+		message := &Message{
+			Name:   "Message",
+			ID:     ".test.Message",
+			Fields: []*Field{field},
+		}
+		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
+		model.State.ResourceByType[res.Type] = res
+
+		if err := CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+
+		if field.ResourceNamePattern == nil {
+			t.Fatal("ResourceNamePattern should not be nil")
+		}
+		// "parents/{parent}/children/{child}" -> truncated to "parents/{parent}"
+		// segments: {Literal: "parents/", Variable: "parent"}
+		if len(field.ResourceNamePattern.Segments) != 1 {
+			t.Fatalf("expected 1 segment, got %d", len(field.ResourceNamePattern.Segments))
+		}
+		want := ResourceNameSegment{Literal: "parents/", Variable: "parent"}
+		if field.ResourceNamePattern.Segments[0] != want {
+			t.Errorf("mismatch: got %+v, want %+v", field.ResourceNamePattern.Segments[0], want)
+		}
+	})
+
+	t.Run("name field resolution", func(t *testing.T) {
+		res := &Resource{
+			Type: "test.googleapis.com/Resource",
+			Patterns: []ResourcePattern{
+				{
+					*NewPathSegment().WithLiteral("resources"),
+					*NewPathSegment().WithVariable(NewPathVariable("resource").WithMatch()),
+				},
+			},
+		}
+		field := &Field{
+			Name:  "name",
+			ID:    ".test.ResourceMessage.name",
+			Typez: STRING_TYPE,
+		}
+		message := &Message{
+			Name:     "ResourceMessage",
+			ID:       ".test.ResourceMessage",
+			Fields:   []*Field{field},
+			Resource: res,
+		}
+		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
+
+		if err := CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+
+		if field.ResourceNamePattern == nil {
+			t.Fatal("ResourceNamePattern should not be nil")
+		}
+		if len(field.ResourceNamePattern.Segments) != 1 {
+			t.Fatalf("expected 1 segment, got %d", len(field.ResourceNamePattern.Segments))
+		}
+		want := ResourceNameSegment{Literal: "resources/", Variable: "resource"}
+		if field.ResourceNamePattern.Segments[0] != want {
+			t.Errorf("mismatch: got %+v, want %+v", field.ResourceNamePattern.Segments[0], want)
+		}
+	})
+}
+
+func TestToResourceNamePattern(t *testing.T) {
+	tests := []struct {
+		name    string
+		pattern ResourcePattern
+		want    *ResourceNamePattern
+	}{
+		{
+			name: "simple",
+			pattern: ResourcePattern{
+				*NewPathSegment().WithLiteral("projects"),
+				*NewPathSegment().WithVariable(NewPathVariable("project").WithMatch()),
+			},
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects/", Variable: "project"},
+				},
+			},
+		},
+		{
+			name: "multi-segment",
+			pattern: ResourcePattern{
+				*NewPathSegment().WithLiteral("projects"),
+				*NewPathSegment().WithVariable(NewPathVariable("project").WithMatch()),
+				*NewPathSegment().WithLiteral("secrets"),
+				*NewPathSegment().WithVariable(NewPathVariable("secret").WithMatch()),
+			},
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects/", Variable: "project"},
+					{Literal: "/secrets/", Variable: "secret"},
+				},
+			},
+		},
+		{
+			name: "with trailing literal",
+			pattern: ResourcePattern{
+				*NewPathSegment().WithLiteral("projects"),
+				*NewPathSegment().WithVariable(NewPathVariable("project").WithMatch()),
+				*NewPathSegment().WithLiteral("config"),
+			},
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects/", Variable: "project"},
+					{Literal: "/config", Variable: ""},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := ToResourceNamePattern(tt.pattern)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("ToResourceNamePattern() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCrossReferenceMethod(t *testing.T) {
 	request := &Message{
 		Name: "Request",
