@@ -2655,12 +2655,14 @@
   documentation_uri: https://cloud.google.com/datastore
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559768
 - path: google/datastore/v1
   documentation_uri: https://cloud.google.com/datastore
   languages:
     - go
     - java
     - python
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559768
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
   languages:
@@ -2733,10 +2735,12 @@
   documentation_uri: https://cloud.google.com/firestore
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/savedsearches/5337669
 - path: google/firestore/bundle
   documentation_uri: https://cloud.google.com/firestore
   languages:
     - python
+  new_issue_uri: https://issuetracker.google.com/savedsearches/5337669
   skip_rest_numeric_enums:
     - python
   title: Cloud Firestore API
@@ -2744,6 +2748,7 @@
   documentation_uri: https://cloud.google.com/firestore
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/savedsearches/5337669
   title: Cloud Firestore API
 - path: google/geo/type
   documentation_uri: https://mapsplatform.google.com/maps-products
@@ -2834,6 +2839,7 @@
 - path: google/logging/v2
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/savedsearches/559764
   transports:
     csharp: grpc
     java: grpc
