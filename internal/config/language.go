@@ -356,30 +356,6 @@ type PythonPackage struct {
 	// should use regular protoc Python generation instead of GAPIC.
 	ProtoOnlyAPIs []string `yaml:"proto_only_apis,omitempty"`
 
-	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
-	// to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
-
-	// ProductDocumentationOverride allows the "product_documentation" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
-
-	// APIShortnameOverride allows the "api_shortname" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
-
-	// APIIDOverride allows the "api_id" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	APIIDOverride string `yaml:"api_id_override,omitempty"`
-
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	// TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses

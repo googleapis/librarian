@@ -637,18 +637,6 @@ func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
 	if src.ProtoOnlyAPIs != nil {
 		res.ProtoOnlyAPIs = src.ProtoOnlyAPIs
 	}
-	if src.NamePrettyOverride != "" {
-		res.NamePrettyOverride = src.NamePrettyOverride
-	}
-	if src.ProductDocumentationOverride != "" {
-		res.ProductDocumentationOverride = src.ProductDocumentationOverride
-	}
-	if src.APIShortnameOverride != "" {
-		res.APIShortnameOverride = src.APIShortnameOverride
-	}
-	if src.APIIDOverride != "" {
-		res.APIIDOverride = src.APIIDOverride
-	}
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
 	}
