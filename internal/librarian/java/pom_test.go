@@ -265,10 +265,6 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 	}
 }
 
-func TestSyncVersions(t *testing.T) {
-	// syncPOMs returns the right thing, which is tested in TestSyncPOMs_Golden.
-}
-
 func TestCollectModules(t *testing.T) {
 	for _, test := range []struct {
 		name            string
