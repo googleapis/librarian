@@ -53,7 +53,7 @@ func Add(lib *config.Library) (*config.Library, error) {
 	}
 	namespace := deriveGAPICNamespace(apiPath)
 	if !slices.Contains(approvedGAPICNamespaces, namespace) {
-		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", namespace, apiPath, errNewLibraryBadNamespace)
+		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
 	}
 	return lib, nil
 }
