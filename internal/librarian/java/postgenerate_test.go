@@ -304,4 +304,3 @@ func TestAppendVersions(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
-
