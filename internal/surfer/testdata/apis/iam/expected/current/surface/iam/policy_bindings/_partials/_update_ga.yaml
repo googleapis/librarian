@@ -137,7 +137,7 @@
         required: false
         type: bool
   request:
-    api_version: v3alpha
+    api_version: v3
     collection:
       - iam.folders.locations.policyBindings
       - iam.organizations.locations.policyBindings

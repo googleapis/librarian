@@ -95,7 +95,7 @@
         type: bool
         default: null
   request:
-    api_version: v3alpha
+    api_version: v3
     collection:
       - iam.organizations.locations.principalAccessBoundaryPolicies
   async:

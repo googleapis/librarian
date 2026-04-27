@@ -59,8 +59,8 @@ func header() string {
 	return buf.String()
 }
 
-func writeCommandFiles(resourceDir string, verb string, ga, beta, alpha *Command) error {
-	if ga == nil && beta == nil && alpha == nil {
+func writeCommandFiles(resourceDir string, verb string, cmd *Command, tracks []string) error {
+	if cmd == nil || len(tracks) == 0 {
 		return nil
 	}
 
@@ -74,14 +74,10 @@ func writeCommandFiles(resourceDir string, verb string, ga, beta, alpha *Command
 		return fmt.Errorf("failed to write main command file for %q: %w", verb, err)
 	}
 
-	if err := writePartialFile(partialsDir, verb, "GA", ga); err != nil {
-		return err
-	}
-	if err := writePartialFile(partialsDir, verb, "BETA", beta); err != nil {
-		return err
-	}
-	if err := writePartialFile(partialsDir, verb, "ALPHA", alpha); err != nil {
-		return err
+	for _, track := range tracks {
+		if err := writePartialFile(partialsDir, verb, track, cmd); err != nil {
+			return err
+		}
 	}
 
 	return nil

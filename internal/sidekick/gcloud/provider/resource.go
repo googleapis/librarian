@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"path"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -335,20 +336,42 @@ func GetLiteralSegments(raw []api.PathSegment) []string {
 	return filtered
 }
 
-// GetSingularResourceNameForPrefix looks up the singular resource name for a given list of URL prefix literals.
-func GetSingularResourceNameForPrefix(model *api.API, prefix []string) string {
-	target := strings.Join(prefix, ".")
+// GetResourceForPath looks up the resource definition for a given list of URL path literals.
+func GetResourceForPath(model *api.API, path []string) *api.Resource {
+	target := strings.Join(path, ".")
 	for _, res := range model.ResourceDefinitions {
 		if len(res.Patterns) == 0 {
 			continue
 		}
 		segments := GetLiteralSegments(res.Patterns[0])
 		if strings.Join(segments, ".") == target {
-			if res.Singular != "" {
-				return res.Singular
-			}
-			return GetSingularFromSegments(res.Patterns[0])
+			return res
 		}
 	}
-	return ""
+	return nil
+}
+
+// GetResourceDisplayNames returns the singular and plural names for a resource,
+// prioritizing explicit annotations in the resource definition and falling back
+// to the message name to provide more descriptive names for help text and classes.
+func GetResourceDisplayNames(model *api.API, methodPath []string) (singular string, plural string) {
+	res := GetResourceForPath(model, methodPath)
+	if res == nil {
+		// Fallback if no resource found
+		seg := methodPath[len(methodPath)-1]
+		singular = strings.TrimSuffix(seg, "s")
+		plural = seg
+		return singular, plural
+	}
+
+	singular = res.Singular
+	if singular == "" {
+		singular = path.Base(res.Type)
+	}
+
+	plural = res.Plural
+	if plural == "" {
+		plural = singular + "s"
+	}
+	return singular, plural
 }

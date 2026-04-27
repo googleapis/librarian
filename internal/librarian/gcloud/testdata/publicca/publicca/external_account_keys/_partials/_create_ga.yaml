@@ -48,5 +48,6 @@
           plural_name: locations
         required: true
   request:
+    api_version: v1
     collection:
       - publicca.projects.locations.externalAccountKeys

@@ -17,7 +17,6 @@ package gcloud
 import (
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
@@ -37,13 +36,12 @@ func TestGroupBuilder_BuildRoot(t *testing.T) {
 	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
 	group := builder.buildRoot()
 
-	if group.Name != "parallelstore" {
-		t.Errorf("group.Name = %q, want %q", group.Name, "parallelstore")
+	if group.ClassName != "parallelstore" {
+		t.Errorf("group.ClassName = %q, want %q", group.ClassName, "parallelstore")
 	}
 
-	wantPath := []string{"parallelstore"}
-	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
-		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
+	if group.FileName != "parallelstore" {
+		t.Errorf("group.FileName = %q, want %q", group.FileName, "parallelstore")
 	}
 
 	wantHelp := "Manage Parallelstore resources."
@@ -66,18 +64,17 @@ func TestGroupBuilder_BuildGroup(t *testing.T) {
 	}
 
 	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
-	group := builder.build([]string{"instances"}, 0, []string{"parallelstore"})
+	group := builder.build([]string{"instances"})
 
-	if group.Name != "instances" {
-		t.Errorf("group.Name = %q, want %q", group.Name, "instances")
+	if group.ClassName != "instances" {
+		t.Errorf("group.ClassName = %q, want %q", group.ClassName, "instances")
 	}
 
-	wantPath := []string{"parallelstore", "instances"}
-	if diff := cmp.Diff(wantPath, group.Path); diff != "" {
-		t.Errorf("group.Path mismatch (-want +got):\n%s", diff)
+	if group.FileName != "instances" {
+		t.Errorf("group.FileName = %q, want %q", group.FileName, "instances")
 	}
 
-	wantHelp := "Manage Instances resources." // Fallback singular is the segment name if no resource found
+	wantHelp := "Manage Instance resources." // Fallback singular is the singularized segment name if no resource found
 	if group.HelpText != wantHelp {
 		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
 	}

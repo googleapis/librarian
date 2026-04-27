@@ -15,9 +15,6 @@
 package gcloud
 
 import (
-	"fmt"
-	"strings"
-
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 )
@@ -34,16 +31,15 @@ func newSurfaceBuilder(model *api.API, config *provider.Config) *surfaceBuilder 
 	}
 }
 
-func (b *surfaceBuilder) build() (*CommandGroupsByTrack, error) {
-	tree := &CommandGroupsByTrack{}
+func (b *surfaceBuilder) build() (*Surface, error) {
+	var root *CommandGroup
+	tracks := provider.Tracks(provider.APIVersionFromModel(b.model))
 
 	for _, service := range b.model.Services {
 		gb := newGroupBuilder(b.model, service, b.config)
 
-		track := strings.ToUpper(provider.InferTrackFromPackage(service.Package))
-		root, err := b.root(tree, track, gb)
-		if err != nil {
-			return nil, err
+		if root == nil {
+			root = gb.buildRoot()
 		}
 
 		for _, method := range service.Methods {
@@ -53,7 +49,7 @@ func (b *surfaceBuilder) build() (*CommandGroupsByTrack, error) {
 		}
 	}
 
-	return tree, nil
+	return &Surface{Root: root, Tracks: tracks}, nil
 }
 
 // insert traverses the tree and attaches a command leaf node. It resolves the
@@ -85,7 +81,7 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = gb.build(segments, i, curr.Path)
+			curr.Groups[seg] = gb.build(segments[:i+1])
 		}
 		curr = curr.Groups[seg]
 	}
@@ -97,28 +93,6 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 
 	curr.Commands[cmd.Name] = cmd
 	return nil
-}
-
-func (b *surfaceBuilder) root(tree *CommandGroupsByTrack, track string, gb *groupBuilder) (*CommandGroup, error) {
-	switch track {
-	case "GA":
-		if tree.GA == nil {
-			tree.GA = gb.buildRoot()
-		}
-		return tree.GA, nil
-	case "BETA":
-		if tree.BETA == nil {
-			tree.BETA = gb.buildRoot()
-		}
-		return tree.BETA, nil
-	case "ALPHA":
-		if tree.ALPHA == nil {
-			tree.ALPHA = gb.buildRoot()
-		}
-		return tree.ALPHA, nil
-	default:
-		return nil, fmt.Errorf("unknown track %q", track)
-	}
 }
 
 var flattenedSegments = map[string]bool{

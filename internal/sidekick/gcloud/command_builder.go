@@ -60,7 +60,7 @@ func (b *commandBuilder) build() (*Command, error) {
 		Name:                 b.name(),
 		Hidden:               b.hidden(),
 		HelpText:             b.helpText(),
-		APIVersion:           provider.APIVersion(b.overrides),
+		APIVersion:           provider.APIVersionFromMethod(b.method),
 		Collection:           b.collectionPath(false),
 		Method:               b.requestMethod(),
 		Arguments:            args,

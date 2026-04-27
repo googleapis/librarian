@@ -42,31 +42,24 @@ func (b *groupBuilder) buildRoot() *CommandGroup {
 	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(b.model)
 	return &CommandGroup{
-		Name:     rootName,
-		Path:     []string{rootName},
-		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
-		Groups:   make(map[string]*CommandGroup),
-		Commands: make(map[string]*Command),
+		ClassName: rootName,
+		FileName:  rootName,
+		HelpText:  fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
+		Groups:    make(map[string]*CommandGroup),
+		Commands:  make(map[string]*Command),
 	}
 }
 
-func (b *groupBuilder) build(segments []string, idx int, parentPath []string) *CommandGroup {
-	seg := segments[idx]
-	singular := seg
-	if resName := provider.GetSingularResourceNameForPrefix(b.model, segments[:idx+1]); resName != "" {
-		singular = resName
-	}
-
-	path := make([]string, 0, len(parentPath)+1)
-	path = append(path, parentPath...)
-	path = append(path, seg)
+func (b *groupBuilder) build(methodPath []string) *CommandGroup {
+	seg := methodPath[len(methodPath)-1]
+	singular, plural := provider.GetResourceDisplayNames(b.model, methodPath)
 
 	return &CommandGroup{
-		Name:     seg,
-		Path:     path,
-		HelpText: fmt.Sprintf("Manage %s resources.", toTitleCase(singular)),
-		Groups:   make(map[string]*CommandGroup),
-		Commands: make(map[string]*Command),
+		ClassName: plural,
+		FileName:  seg,
+		HelpText:  fmt.Sprintf("Manage %s resources.", toTitleCase(singular)),
+		Groups:    make(map[string]*CommandGroup),
+		Commands:  make(map[string]*Command),
 	}
 }
 

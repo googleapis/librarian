@@ -25,166 +25,105 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-type groupTracks struct {
-	ga    *CommandGroup
-	beta  *CommandGroup
-	alpha *CommandGroup
+
+
+type surfaceWriter struct {
+	outputDir  string
+	baseModule string
+	tracks     []string
 }
 
-func writeSurface(outputDir string, baseModule string, tree *CommandGroupsByTrack) error {
-	bundle := groupTracks{ga: tree.GA, beta: tree.BETA, alpha: tree.ALPHA}
-	return writeGroup(outputDir, baseModule, bundle)
+func writeSurface(outputDir string, baseModule string, surface *Surface) error {
+	w := &surfaceWriter{
+		outputDir:  outputDir,
+		baseModule: baseModule,
+		tracks:     surface.Tracks,
+	}
+	return w.writeGroup(surface.Root, nil)
 }
 
-func writeGroup(outputDir string, baseModule string, b groupTracks) error {
-	name := groupName(b)
-	if name == "" {
+func (w *surfaceWriter) writeGroup(g *CommandGroup, parentPath []string) error {
+	if g == nil {
 		return nil
 	}
 
-	moduleName := strcase.ToSnake(name)
-	groupDir := filepath.Join(outputDir, moduleName)
+	path := append(parentPath, strcase.ToSnake(g.FileName))
+	groupDir := filepath.Join(w.outputDir, filepath.Join(path...))
 	if err := os.MkdirAll(groupDir, 0755); err != nil {
 		return err
 	}
 
-	if err := writeCommandGroupFile(groupDir, baseModule, name, b); err != nil {
+	if err := w.writeCommandGroupFile(g, path); err != nil {
 		return err
 	}
 
-	if err := writeGroupCommands(groupDir, b); err != nil {
+	if err := w.writeGroupCommands(g, path); err != nil {
 		return err
 	}
 
-	return writeGroupSubgroups(groupDir, baseModule, b)
+	return w.writeGroupSubgroups(g, path)
 }
 
-func groupName(b groupTracks) string {
-	if b.ga != nil {
-		return b.ga.Name
-	}
-	if b.beta != nil {
-		return b.beta.Name
-	}
-	if b.alpha != nil {
-		return b.alpha.Name
-	}
-	return ""
-}
+func (w *surfaceWriter) writeGroupCommands(g *CommandGroup, path []string) error {
+	groupDir := filepath.Join(w.outputDir, filepath.Join(path...))
 
-func writeGroupCommands(groupDir string, b groupTracks) error {
-	cmdNames := make(map[string]bool)
-	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
-	for _, g := range tracks {
-		if g != nil {
-			for n := range g.Commands {
-				cmdNames[n] = true
-			}
-		}
-	}
-
-	for verb := range cmdNames {
-		var gaCmd, betaCmd, alphaCmd *Command
-		if b.ga != nil {
-			gaCmd = b.ga.Commands[verb]
-		}
-		if b.beta != nil {
-			betaCmd = b.beta.Commands[verb]
-		}
-		if b.alpha != nil {
-			alphaCmd = b.alpha.Commands[verb]
-		}
-
-		if err := writeCommandFiles(groupDir, verb, gaCmd, betaCmd, alphaCmd); err != nil {
+	for verb, cmd := range g.Commands {
+		if err := writeCommandFiles(groupDir, verb, cmd, w.tracks); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeGroupSubgroups(groupDir string, baseModule string, b groupTracks) error {
-	subNames := make(map[string]bool)
-	tracks := []*CommandGroup{b.ga, b.beta, b.alpha}
-	for _, g := range tracks {
-		if g != nil {
-			for n := range g.Groups {
-				subNames[n] = true
-			}
-		}
-	}
-
-	for sub := range subNames {
-		subBundle := groupTracks{}
-		if b.ga != nil {
-			subBundle.ga = b.ga.Groups[sub]
-		}
-		if b.beta != nil {
-			subBundle.beta = b.beta.Groups[sub]
-		}
-		if b.alpha != nil {
-			subBundle.alpha = b.alpha.Groups[sub]
-		}
-
-		if err := writeGroup(groupDir, baseModule, subBundle); err != nil {
+func (w *surfaceWriter) writeGroupSubgroups(g *CommandGroup, path []string) error {
+	for _, subGroup := range g.Groups {
+		if err := w.writeGroup(subGroup, path); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func writeCommandGroupFile(dir string, baseModule string, name string, b groupTracks) error {
-	initPath := filepath.Join(dir, "__init__.py")
-	extPath := filepath.Join(dir, "_init_extensions.py")
-
-	var path []string
-	var primaryHelpText string
-	var gaView, betaView, alphaView *trackView
-
-	if b.ga != nil {
-		gaView = &trackView{Name: "GA", HelpText: b.ga.HelpText}
-		primaryHelpText = b.ga.HelpText
-		path = b.ga.Path
+func (w *surfaceWriter) writeCommandGroupFile(g *CommandGroup, path []string) error {
+	groupDir := filepath.Join(w.outputDir, filepath.Join(path...))
+	if err := os.MkdirAll(groupDir, 0755); err != nil {
+		return err
 	}
-	if b.beta != nil {
-		betaView = &trackView{Name: "BETA", HelpText: b.beta.HelpText}
-		if primaryHelpText == "" {
-			primaryHelpText = b.beta.HelpText
+	initPath := filepath.Join(groupDir, "__init__.py")
+	extPath := filepath.Join(groupDir, "_init_extensions.py")
+
+	primaryHelpText := g.HelpText
+	var trackViews []trackView
+	for _, t := range w.tracks {
+		var suffix string
+		switch t {
+		case "GA":
+			suffix = "Ga"
+		case "BETA":
+			suffix = "Beta"
+		case "ALPHA":
+			suffix = "Alpha"
 		}
-		if len(path) == 0 {
-			path = b.beta.Path
-		}
-	}
-	if b.alpha != nil {
-		alphaView = &trackView{Name: "ALPHA", HelpText: b.alpha.HelpText}
-		if primaryHelpText == "" {
-			primaryHelpText = b.alpha.HelpText
-		}
-		if len(path) == 0 {
-			path = b.alpha.Path
-		}
+		trackViews = append(trackViews, trackView{Name: t, Suffix: suffix})
 	}
 
 	modulePathParts := make([]string, 0, 2+len(path))
-	if baseModule != "" {
-		modulePathParts = append(modulePathParts, baseModule)
+	if w.baseModule != "" {
+		modulePathParts = append(modulePathParts, w.baseModule)
 		modulePathParts = append(modulePathParts, "surface")
 	}
-	for _, p := range path {
-		modulePathParts = append(modulePathParts, strcase.ToSnake(p))
-	}
+	modulePathParts = append(modulePathParts, path...)
 	fullModulePath := strings.Join(modulePathParts, ".")
 
 	isRoot := len(path) <= 1
 
 	view := commandGroupView{
-		Name:       name,
+		ClassName:  g.ClassName,
 		ModulePath: fullModulePath,
 		HelpText:   primaryHelpText,
 		Year:       time.Now().Year(),
 		IsRoot:     isRoot,
-		GA:         gaView,
-		BETA:       betaView,
-		ALPHA:      alphaView,
+		Tracks:     trackViews,
 	}
 
 	var buf bytes.Buffer
@@ -205,19 +144,17 @@ func writeCommandGroupFile(dir string, baseModule string, name string, b groupTr
 }
 
 type trackView struct {
-	Name     string
-	HelpText string
+	Name   string
+	Suffix string
 }
 
 type commandGroupView struct {
-	Name       string
+	ClassName  string
 	ModulePath string
 	HelpText   string
 	Year       int
 	IsRoot     bool
-	GA         *trackView
-	BETA       *trackView
-	ALPHA      *trackView
+	Tracks     []trackView
 }
 
 var commandGroupTemplate = template.Must(template.New("__init__.py").Funcs(template.FuncMap{
@@ -228,22 +165,12 @@ from googlecloudsdk.calliope import base
 from {{.ModulePath}} import _init_extensions as extensions
 
 
-{{if .GA}}@base.ReleaseTracks(base.ReleaseTrack.GA)
+{{range .Tracks}}@base.ReleaseTracks(base.ReleaseTrack.{{.Name}})
 @base.Autogenerated
-class {{$.Name | toCamel}}Ga(extensions.{{$.Name | toCamel}}Ga):
-  """{{.GA.HelpText}}"""
-{{end}}{{if .BETA}}
+class {{$.ClassName | toCamel}}{{.Suffix}}(extensions.{{$.ClassName | toCamel}}{{.Suffix}}):
+  """{{$.HelpText}}"""
 
-@base.ReleaseTracks(base.ReleaseTrack.BETA)
-@base.Autogenerated
-class {{$.Name | toCamel}}Beta(extensions.{{$.Name | toCamel}}Beta):
-  """{{.BETA.HelpText}}"""
-{{end}}{{if .ALPHA}}
 
-@base.ReleaseTracks(base.ReleaseTrack.ALPHA)
-@base.Autogenerated
-class {{$.Name | toCamel}}Alpha(extensions.{{$.Name | toCamel}}Alpha):
-  """{{.ALPHA.HelpText}}"""
 {{end}}
 `))
 
@@ -252,17 +179,17 @@ var initExtensionsTemplate = template.Must(template.New("_init_extensions.py").F
 }).Parse(licenseTemplate + `"""File to add optional custom code to extend __init__.py."""` + "\n" + `from googlecloudsdk.calliope import base
 
 
-class {{$.Name | toCamel}}Alpha(base.Group):
+class {{$.ClassName | toCamel}}Alpha(base.Group):
   """Optional no-auto-generated code for ALPHA."""
 {{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
 {{end}}
 
-class {{$.Name | toCamel}}Beta(base.Group):
+class {{$.ClassName | toCamel}}Beta(base.Group):
   """Optional no-auto-generated code for BETA."""
 {{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
 {{end}}
 
-class {{$.Name | toCamel}}Ga(base.Group):
+class {{$.ClassName | toCamel}}Ga(base.Group):
   """Optional no-auto-generated code for GA."""
 {{if .IsRoot}}  category = base.UNCATEGORIZED_CATEGORY
 {{end}}`))
