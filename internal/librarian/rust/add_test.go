@@ -23,7 +23,7 @@ import (
 
 func TestAdd(t *testing.T) {
 	lib := &config.Library{}
-	want := &config.Library{Version: DefaultVersion}
+	want := &config.Library{Version: defaultVersion}
 	got := Add(lib)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

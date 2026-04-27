@@ -64,7 +64,7 @@ var wellKnownMessages = []*Message{
 			{
 				Name:     "paths",
 				JSONName: "paths",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 				Repeated: true,
 			},
 		},

@@ -77,7 +77,7 @@ func TestPathParams(t *testing.T) {
 
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
 
-	got, err := PathParams(sample.MethodCreate(), test.State)
+	got, err := PathParams(sample.MethodCreate(), test)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -86,7 +86,7 @@ func TestPathParams(t *testing.T) {
 		t.Errorf("mismatched query parameters (-want, +got):\n%s", diff)
 	}
 
-	got, err = PathParams(sample.MethodUpdate(), test.State)
+	got, err = PathParams(sample.MethodUpdate(), test)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -165,18 +165,18 @@ func TestFieldIsMap(t *testing.T) {
 		Optional: false,
 		Name:     "children",
 		ID:       ".test.ParentMessage.children",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.ParentMessage.SingularMapEntry",
 	}
 	field1 := &api.Field{
 		Name:  "singular",
 		ID:    ".test.ParentMessage.singular",
-		Typez: api.INT32_TYPE,
+		Typez: api.TypezInt32,
 	}
 	field2 := &api.Field{
 		Name:    "singular",
 		ID:      ".test.ParentMessage.singular",
-		Typez:   api.MESSAGE_TYPE,
+		Typez:   api.TypezMessage,
 		TypezID: "invalid",
 	}
 	parent := &api.Message{
@@ -189,13 +189,13 @@ func TestFieldIsMap(t *testing.T) {
 		Name:     "key",
 		JSONName: "key",
 		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 	}
 	value := &api.Field{
 		Name:     "value",
 		JSONName: "value",
 		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.ParentMessage",
 	}
 	map_message := &api.Message{
@@ -207,13 +207,13 @@ func TestFieldIsMap(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{parent, map_message}, []*api.Enum{}, []*api.Service{})
 
-	if !FieldIsMap(field0, model.State) {
+	if !FieldIsMap(field0, model) {
 		t.Errorf("expected FieldIsMap(field0) to be true")
 	}
-	if FieldIsMap(field1, model.State) {
+	if FieldIsMap(field1, model) {
 		t.Errorf("expected FieldIsMap(field1) to be false")
 	}
-	if FieldIsMap(field2, model.State) {
+	if FieldIsMap(field2, model) {
 		t.Errorf("expected FieldIsMap(field2) to be false")
 	}
 }

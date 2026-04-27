@@ -16,14 +16,15 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 // lookupMessage finds a message in the model by its fully-qualified ID.
 func lookupMessage(model *api.API, id string) (*api.Message, error) {
-	m, ok := model.State.MessageByID[id]
-	if !ok {
+	m := model.Message(id)
+	if m == nil {
 		return nil, fmt.Errorf("unable to lookup message %q", id)
 	}
 	return m, nil
@@ -31,9 +32,20 @@ func lookupMessage(model *api.API, id string) (*api.Message, error) {
 
 // lookupEnum finds an enum in the model by its fully-qualified ID.
 func lookupEnum(model *api.API, id string) (*api.Enum, error) {
-	e, ok := model.State.EnumByID[id]
-	if !ok {
+	e := model.Enum(id)
+	if e == nil {
 		return nil, fmt.Errorf("unable to lookup enum %q", id)
 	}
 	return e, nil
+}
+
+// lookupField finds a field in a message.
+func lookupField(message *api.Message, name string) (*api.Field, error) {
+	idx := slices.IndexFunc(message.Fields, func(f *api.Field) bool {
+		return f.Name == name
+	})
+	if idx == -1 {
+		return nil, fmt.Errorf("consistency error: field %s not found in message %q", name, message.ID)
+	}
+	return message.Fields[idx], nil
 }

@@ -410,35 +410,35 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 func scalarFieldType(f *api.Field) (string, error) {
 	var out string
 	switch f.Typez {
-	case api.DOUBLE_TYPE:
+	case api.TypezDouble:
 		out = "f64"
-	case api.FLOAT_TYPE:
+	case api.TypezFloat:
 		out = "f32"
-	case api.INT64_TYPE:
+	case api.TypezInt64:
 		out = "i64"
-	case api.UINT64_TYPE:
+	case api.TypezUint64:
 		out = "u64"
-	case api.INT32_TYPE:
+	case api.TypezInt32:
 		out = "i32"
-	case api.FIXED64_TYPE:
+	case api.TypezFixed64:
 		out = "u64"
-	case api.FIXED32_TYPE:
+	case api.TypezFixed32:
 		out = "u32"
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		out = "bool"
-	case api.STRING_TYPE:
+	case api.TypezString:
 		out = "std::string::String"
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		out = "::bytes::Bytes"
-	case api.UINT32_TYPE:
+	case api.TypezUint32:
 		out = "u32"
-	case api.SFIXED32_TYPE:
+	case api.TypezSfixed32:
 		out = "i32"
-	case api.SFIXED64_TYPE:
+	case api.TypezSfixed64:
 		out = "i64"
-	case api.SINT32_TYPE:
+	case api.TypezSint32:
 		out = "i32"
-	case api.SINT64_TYPE:
+	case api.TypezSint64:
 		out = "i64"
 
 	default:
@@ -447,19 +447,19 @@ func scalarFieldType(f *api.Field) (string, error) {
 	return out, nil
 }
 
-func (c *codec) oneOfFieldType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) (string, error) {
-	baseType, err := c.baseFieldType(f, state, sourceSpecificationPackageName)
+func (c *codec) oneOfFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
+	baseType, err := c.baseFieldType(f, model, sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
-	return oneOfFieldTypeFormatter(f, language.FieldIsMap(f, state), baseType), nil
+	return oneOfFieldTypeFormatter(f, language.FieldIsMap(f, model), baseType), nil
 }
 
 func oneOfFieldTypeFormatter(f *api.Field, fieldIsMap bool, baseType string) string {
 	switch {
 	case f.Repeated:
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType)
-	case f.Typez == api.MESSAGE_TYPE:
+	case f.Typez == api.TypezMessage:
 		if fieldIsMap {
 			return baseType
 		}
@@ -471,8 +471,8 @@ func oneOfFieldTypeFormatter(f *api.Field, fieldIsMap bool, baseType string) str
 	}
 }
 
-func (c *codec) fieldType(f *api.Field, state *api.APIState, primitive bool, sourceSpecificationPackageName string) (string, error) {
-	baseType, err := c.baseFieldType(f, state, sourceSpecificationPackageName)
+func (c *codec) fieldType(f *api.Field, model *api.API, primitive bool, sourceSpecificationPackageName string) (string, error) {
+	baseType, err := c.baseFieldType(f, model, sourceSpecificationPackageName)
 	if err != nil {
 		return "", err
 	}
@@ -480,14 +480,14 @@ func (c *codec) fieldType(f *api.Field, state *api.APIState, primitive bool, sou
 	case primitive:
 		return baseType, nil
 	case f.IsOneOf:
-		return c.oneOfFieldType(f, state, sourceSpecificationPackageName)
+		return c.oneOfFieldType(f, model, sourceSpecificationPackageName)
 	case f.Repeated:
 		return fmt.Sprintf("std::vec::Vec<%s>", baseType), nil
 	case f.Recursive:
 		if f.Optional {
 			return fmt.Sprintf("std::option::Option<std::boxed::Box<%s>>", baseType), nil
 		}
-		if language.FieldIsMap(f, state) {
+		if language.FieldIsMap(f, model) {
 			// Maps are never boxed.
 			return baseType, nil
 		}
@@ -499,18 +499,18 @@ func (c *codec) fieldType(f *api.Field, state *api.APIState, primitive bool, sou
 	}
 }
 
-func (c *codec) mapType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) (string, error) {
+func (c *codec) mapType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	switch f.Typez {
-	case api.MESSAGE_TYPE:
-		m, ok := state.MessageByID[f.TypezID]
-		if !ok {
+	case api.TypezMessage:
+		m := model.Message(f.TypezID)
+		if m == nil {
 			return "", fmt.Errorf("unable to lookup type (%q) for message field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
 
-	case api.ENUM_TYPE:
-		e, ok := state.EnumByID[f.TypezID]
-		if !ok {
+	case api.TypezEnum:
+		e := model.Enum(f.TypezID)
+		if e == nil {
 			return "", fmt.Errorf("unable to lookup type (%q) for enum field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
@@ -521,32 +521,32 @@ func (c *codec) mapType(f *api.Field, state *api.APIState, sourceSpecificationPa
 
 // baseFieldType returns the field type, ignoring any repeated or optional
 // attributes.
-func (c *codec) baseFieldType(f *api.Field, state *api.APIState, sourceSpecificationPackageName string) (string, error) {
+func (c *codec) baseFieldType(f *api.Field, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	switch f.Typez {
-	case api.MESSAGE_TYPE:
-		m, ok := state.MessageByID[f.TypezID]
-		if !ok {
+	case api.TypezMessage:
+		m := model.Message(f.TypezID)
+		if m == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
 		}
 		if m.IsMap {
-			key, err := c.mapType(m.Fields[0], state, sourceSpecificationPackageName)
+			key, err := c.mapType(m.Fields[0], model, sourceSpecificationPackageName)
 			if err != nil {
 				return "", err
 			}
-			val, err := c.mapType(m.Fields[1], state, sourceSpecificationPackageName)
+			val, err := c.mapType(m.Fields[1], model, sourceSpecificationPackageName)
 			if err != nil {
 				return "", err
 			}
 			return "std::collections::HashMap<" + key + "," + val + ">", nil
 		}
 		return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
-	case api.ENUM_TYPE:
-		e, ok := state.EnumByID[f.TypezID]
-		if !ok {
+	case api.TypezEnum:
+		e := model.Enum(f.TypezID)
+		if e == nil {
 			return "", fmt.Errorf("unable to lookup field type (%q) for field %s", f.TypezID, f.ID)
 		}
 		return c.fullyQualifiedEnumName(e, sourceSpecificationPackageName)
-	case api.GROUP_TYPE:
+	case api.TypezGroup:
 		return "", nil
 	default:
 		return scalarFieldType(f)
@@ -559,12 +559,12 @@ func addQueryParameter(f *api.Field) string {
 	}
 	fieldName := toSnake(f.Name)
 	switch f.Typez {
-	case api.ENUM_TYPE:
+	case api.TypezEnum:
 		if f.Optional || f.Repeated {
 			return fmt.Sprintf(`let builder = req.%s.iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
 		}
 		return fmt.Sprintf(`let builder = builder.query(&[("%s", &req.%s)]);`, f.JSONName, fieldName)
-	case api.MESSAGE_TYPE:
+	case api.TypezMessage:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
@@ -585,9 +585,9 @@ func addQueryParameter(f *api.Field) string {
 func addQueryParameterOneOf(f *api.Field) string {
 	fieldName := toSnake(f.Name)
 	switch f.Typez {
-	case api.ENUM_TYPE:
+	case api.TypezEnum:
 		return fmt.Sprintf(`let builder = req.%s().iter().fold(builder, |builder, p| builder.query(&[("%s", p)]));`, fieldName, f.JSONName)
-	case api.MESSAGE_TYPE:
+	case api.TypezMessage:
 		// Query parameters in nested messages are first converted to a
 		// `serde_json::Value`` and then recursively merged into the request
 		// query. The conversion to `serde_json::Value` is expensive, but very
@@ -599,12 +599,12 @@ func addQueryParameterOneOf(f *api.Field) string {
 	}
 }
 
-func (c *codec) methodInOutTypeName(id string, state *api.APIState, sourceSpecificationPackageName string) (string, error) {
+func (c *codec) methodInOutTypeName(id string, model *api.API, sourceSpecificationPackageName string) (string, error) {
 	if id == "" {
 		return "", nil
 	}
-	m, ok := state.MessageByID[id]
-	if !ok {
+	m := model.Message(id)
+	if m == nil {
 		return "", fmt.Errorf("unable to lookup message %q", id)
 	}
 	return c.fullyQualifiedMessageName(m, sourceSpecificationPackageName)
@@ -888,7 +888,7 @@ func fixSetextHeadings(input string) string {
 //
 // [spec]: https://spec.commonmark.org/0.13/#block-quotes
 func (c *codec) formatDocComments(
-	documentation, elementID string, state *api.APIState, scopes []string) ([]string, error) {
+	documentation, elementID string, model *api.API, scopes []string) ([]string, error) {
 	var results []string
 
 	md := goldmark.New(
@@ -943,7 +943,7 @@ func (c *codec) formatDocComments(
 	})
 
 	for _, link := range protobufLinkMapping(doc, documentationBytes) {
-		rusty, err := c.docLink(link, state, scopes)
+		rusty, err := c.docLink(link, model, scopes)
 		if err != nil {
 			return nil, err
 		}
@@ -1291,7 +1291,7 @@ func fetchLinkDefinitions(node ast.Node, line string, documentationBytes []byte)
 	return linkDefinitions
 }
 
-func (c *codec) docLink(link string, state *api.APIState, scopes []string) (string, error) {
+func (c *codec) docLink(link string, model *api.API, scopes []string) (string, error) {
 	// Sometimes the documentation uses relative links, so instead of saying:
 	//     [google.package.v1.Message]
 	// they just say
@@ -1299,7 +1299,7 @@ func (c *codec) docLink(link string, state *api.APIState, scopes []string) (stri
 	// we need to lookup the local symbols first.
 	for _, s := range scopes {
 		localId := fmt.Sprintf(".%s.%s", s, link)
-		result, err := c.tryDocLinkWithId(localId, state, s)
+		result, err := c.tryDocLinkWithId(localId, model, s)
 		if err != nil {
 			return "", err
 		}
@@ -1312,34 +1312,30 @@ func (c *codec) docLink(link string, state *api.APIState, scopes []string) (stri
 		packageName = scopes[len(scopes)-1]
 	}
 	localId := fmt.Sprintf(".%s", link)
-	return c.tryDocLinkWithId(localId, state, packageName)
+	return c.tryDocLinkWithId(localId, model, packageName)
 }
 
-func (c *codec) tryDocLinkWithId(id string, state *api.APIState, scope string) (string, error) {
-	m, ok := state.MessageByID[id]
-	if ok {
+func (c *codec) tryDocLinkWithId(id string, model *api.API, scope string) (string, error) {
+	if m := model.Message(id); m != nil {
 		return c.fullyQualifiedMessageName(m, scope)
 	}
-	e, ok := state.EnumByID[id]
-	if ok {
+	if e := model.Enum(id); e != nil {
 		return c.fullyQualifiedEnumName(e, scope)
 	}
-	me, ok := state.MethodByID[id]
-	if ok {
-		return c.methodRustdocLink(me, state), nil
+	if me := model.Method(id); me != nil {
+		return c.methodRustdocLink(me, model), nil
 	}
-	s, ok := state.ServiceByID[id]
-	if ok {
+	if s := model.Service(id); s != nil {
 		return c.serviceRustdocLink(s), nil
 	}
-	rdLink, err := c.tryFieldRustdocLink(id, state, scope)
+	rdLink, err := c.tryFieldRustdocLink(id, model, scope)
 	if err != nil {
 		return "", err
 	}
 	if rdLink != "" {
 		return rdLink, nil
 	}
-	rdLink, err = c.tryEnumValueRustdocLink(id, state, scope)
+	rdLink, err = c.tryEnumValueRustdocLink(id, model, scope)
 	if err != nil {
 		return "", err
 	}
@@ -1349,15 +1345,15 @@ func (c *codec) tryDocLinkWithId(id string, state *api.APIState, scope string) (
 	return "", nil
 }
 
-func (c *codec) tryFieldRustdocLink(id string, state *api.APIState, scope string) (string, error) {
+func (c *codec) tryFieldRustdocLink(id string, model *api.API, scope string) (string, error) {
 	idx := strings.LastIndex(id, ".")
 	if idx == -1 {
 		return "", nil
 	}
 	messageId := id[0:idx]
 	fieldName := id[idx+1:]
-	m, ok := state.MessageByID[messageId]
-	if !ok {
+	m := model.Message(messageId)
+	if m == nil {
 		return "", nil
 	}
 	for _, f := range m.Fields {
@@ -1399,15 +1395,15 @@ func (c *codec) tryOneOfRustdocLink(field *api.Field, message *api.Message, scop
 	return "", nil
 }
 
-func (c *codec) tryEnumValueRustdocLink(id string, state *api.APIState, scope string) (string, error) {
+func (c *codec) tryEnumValueRustdocLink(id string, model *api.API, scope string) (string, error) {
 	idx := strings.LastIndex(id, ".")
 	if idx == -1 {
 		return "", nil
 	}
 	enumId := id[0:idx]
 	valueName := id[idx+1:]
-	e, ok := state.EnumByID[enumId]
-	if !ok {
+	e := model.Enum(enumId)
+	if e == nil {
 		return "", nil
 	}
 	for _, v := range e.Values {
@@ -1418,7 +1414,7 @@ func (c *codec) tryEnumValueRustdocLink(id string, state *api.APIState, scope st
 	return "", nil
 }
 
-func (c *codec) methodRustdocLink(m *api.Method, state *api.APIState) string {
+func (c *codec) methodRustdocLink(m *api.Method, model *api.API) string {
 	// Sometimes we remove methods from a service. In that case we cannot
 	// reference the method.
 	if !c.generateMethod(m) {
@@ -1429,8 +1425,8 @@ func (c *codec) methodRustdocLink(m *api.Method, state *api.APIState) string {
 		return ""
 	}
 	serviceId := m.ID[0:idx]
-	s, ok := state.ServiceByID[serviceId]
-	if !ok {
+	s := model.Service(serviceId)
+	if s == nil {
 		return ""
 	}
 	return fmt.Sprintf("%s::%s", c.serviceRustdocLink(s), toSnake(m.Name))
@@ -1466,15 +1462,15 @@ func findUsedPackagesMessage(message *api.Message, model *api.API, c *codec, vis
 	}
 	for _, f := range message.Fields {
 		switch f.Typez {
-		case api.MESSAGE_TYPE:
-			if fm, ok := model.State.MessageByID[f.TypezID]; ok {
+		case api.TypezMessage:
+			if fm := model.Message(f.TypezID); fm != nil {
 				usePackage(fm.Package, model, c)
 				if f.Map {
 					findUsedPackagesMessage(fm, model, c, visited)
 				}
 			}
-		case api.ENUM_TYPE:
-			if fe, ok := model.State.EnumByID[f.TypezID]; ok {
+		case api.TypezEnum:
+			if fe := model.Enum(f.TypezID); fe != nil {
 				usePackage(fe.Package, model, c)
 			}
 		}
@@ -1490,17 +1486,17 @@ func findUsedPackages(model *api.API, c *codec) {
 	}
 	for _, s := range model.Services {
 		for _, method := range s.Methods {
-			if m, ok := model.State.MessageByID[method.InputTypeID]; ok {
+			if m := model.Message(method.InputTypeID); m != nil {
 				findUsedPackagesMessage(m, model, c, map[string]bool{})
 			}
-			if m, ok := model.State.MessageByID[method.OutputTypeID]; ok {
+			if m := model.Message(method.OutputTypeID); m != nil {
 				usePackage(m.Package, model, c)
 			}
 			if method.OperationInfo != nil {
-				if m, ok := model.State.MessageByID[method.OperationInfo.MetadataTypeID]; ok {
+				if m := model.Message(method.OperationInfo.MetadataTypeID); m != nil {
 					usePackage(m.Package, model, c)
 				}
-				if m, ok := model.State.MessageByID[method.OperationInfo.ResponseTypeID]; ok {
+				if m := model.Message(method.OperationInfo.ResponseTypeID); m != nil {
 					usePackage(m.Package, model, c)
 				}
 			}

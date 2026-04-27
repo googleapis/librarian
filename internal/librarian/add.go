@@ -76,7 +76,7 @@ func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Language == config.LanguageGo {
+	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython {
 		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
 		// fully migrating off legacylibrarian.
 		if err := syncToStateYAML(".", cfg); err != nil {
@@ -169,7 +169,7 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		return addPreviewLibrary(cfg, existingLib, paths, name)
 	}
 	if exists {
-		if cfg.Language != config.LanguageGo {
+		if cfg.Language != config.LanguageGo && cfg.Language != config.LanguagePython {
 			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 		}
 		return updateExistingLibrary(cfg, existingLib, paths)
@@ -234,6 +234,11 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis
 			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 		}
 	}
+	if cfg.Language == config.LanguagePython {
+		if err := python.ValidateNewAPIs(existingLib); err != nil {
+			return "", nil, err
+		}
+	}
 	existingLib.APIs = append(existingLib.APIs, apis...)
 	return existingLib.Name, cfg, nil
 }
@@ -249,7 +254,7 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 		legacyLib := state.LibraryByID(lib.Name)
 		if legacyLib == nil {
 			// Add a new library
-			state.Libraries = append(state.Libraries, createLegacyLibrary(lib))
+			state.Libraries = append(state.Libraries, createLegacyLibrary(cfg.Language, lib))
 			continue
 		}
 		existingAPIs := make(map[string]bool)
@@ -268,12 +273,12 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 	return yaml.Write(stateFile, state)
 }
 
-func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
+func createLegacyLibrary(language string, lib *config.Library) *legacyconfig.LibraryState {
 	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
 	for _, api := range lib.APIs {
 		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
 	}
-	return &legacyconfig.LibraryState{
+	legacyLib := &legacyconfig.LibraryState{
 		ID:      lib.Name,
 		Version: lib.Version,
 		APIs:    libAPIs,
@@ -286,4 +291,25 @@ func createLegacyLibrary(lib *config.Library) *legacyconfig.LibraryState {
 		},
 		TagFormat: "{id}/v{version}",
 	}
+	switch language {
+	case config.LanguageGo:
+		legacyLib.SourceRoots = []string{
+			lib.Name,
+			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
+		}
+		legacyLib.ReleaseExcludePaths = []string{
+			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
+		}
+		legacyLib.TagFormat = "{id}/v{version}"
+	case config.LanguagePython:
+		legacyLib.SourceRoots = []string{
+			fmt.Sprintf("packages/%s", lib.Name),
+		}
+		legacyLib.ReleaseExcludePaths = []string{
+			fmt.Sprintf("packages/%s/.repo-metadata.json", lib.Name),
+			fmt.Sprintf("packages/%s/docs/README.rst", lib.Name),
+		}
+		legacyLib.TagFormat = "{id}-v{version}"
+	}
+	return legacyLib
 }

@@ -41,7 +41,7 @@ func TestGenerateService_Files(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -69,7 +69,7 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -105,7 +105,7 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -134,7 +134,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "ext_field",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".google.cloud.external.v1.ExternalMessage",
 			},
 		},
@@ -167,24 +167,20 @@ func TestGenerateService_WithImports(t *testing.T) {
 		},
 	}
 
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{
-					Name:               "GoogleCloudGax",
-					RequiredByServices: true,
-				},
-				{
-					Name:               "GoogleCloudAuth",
-					RequiredByServices: true,
-				},
-				{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "GoogleCloudExternalV1",
-				},
-			},
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
 		},
-	}
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
+		},
+	})
 
 	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
@@ -205,5 +201,141 @@ import GoogleCloudExternalV1`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)
+	}
+}
+
+func TestGenerateService_PathParameters(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		path      *api.PathTemplate
+		wantBlock string
+	}{
+		{
+			name: "Nested",
+			path: (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("secret", "name"),
+			wantBlock: `let path = try { () throws -> String in
+      guard let pathVariable0 = request.secret.map({ $0.name }), !pathVariable0.isEmpty else {
+        throw GoogleCloudGax.RequestError.binding("'request.secret.name' is not set or is empty")
+      }
+      return "/v1/\(pathVariable0)"
+    }()`,
+		},
+		{
+			name: "Plain",
+			path: (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithVariableNamed("name"),
+			wantBlock: `let path = try { () throws -> String in
+      guard let pathVariable0 = request.name as String?, !pathVariable0.isEmpty else {
+        throw GoogleCloudGax.RequestError.binding("'request.name' is not set or is empty")
+      }
+      return "/v1/\(pathVariable0)"
+    }()`,
+		},
+		{
+			name: "Multiple strings",
+			path: (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("projects").
+				WithVariableNamed("project").
+				WithLiteral("locations").
+				WithVariableNamed("location"),
+			wantBlock: `let path = try { () throws -> String in
+      guard let pathVariable0 = request.project as String?, !pathVariable0.isEmpty else {
+        throw GoogleCloudGax.RequestError.binding("'request.project' is not set or is empty")
+      }
+      guard let pathVariable1 = request.location, !pathVariable1.isEmpty else {
+        throw GoogleCloudGax.RequestError.binding("'request.location' is not set or is empty")
+      }
+      return "/v1/projects/\(pathVariable0)/locations/\(pathVariable1)"
+    }()`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+
+			secretMessage := &api.Message{
+				Name:    "Secret",
+				Package: "google.cloud.secretmanager.v1",
+				ID:      ".google.cloud.secretmanager.v1.Secret",
+				Fields: []*api.Field{
+					{
+						Name:  "name",
+						Typez: api.TypezString,
+					},
+				},
+			}
+
+			requestMessage := &api.Message{
+				Name:    "CreateSecretRequest",
+				Package: "google.cloud.secretmanager.v1",
+				ID:      ".google.cloud.secretmanager.v1.CreateSecretRequest",
+				Fields: []*api.Field{
+					{
+						Name:  "name",
+						Typez: api.TypezString,
+					},
+					{
+						Name:     "secret",
+						Typez:    api.TypezMessage,
+						TypezID:  ".google.cloud.secretmanager.v1.Secret",
+						Optional: true,
+					},
+					{
+						Name:  "project",
+						Typez: api.TypezString,
+					},
+					{
+						Name:     "location",
+						Typez:    api.TypezString,
+						Optional: true,
+					},
+				},
+			}
+
+			iam := &api.Service{
+				Name: "SecretManagerService",
+				Methods: []*api.Method{
+					{
+						Name:        "CreateSecret",
+						InputTypeID: requestMessage.ID,
+						InputType:   requestMessage,
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{{
+								Verb:         "POST",
+								PathTemplate: test.path,
+							}},
+						},
+					},
+				},
+			}
+
+			model := api.NewTestAPI([]*api.Message{requestMessage, secretMessage}, nil, []*api.Service{iam})
+			model.PackageName = "google.cloud.secretmanager.v1"
+
+			cfg := &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year": "2038",
+				},
+			}
+
+			if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+				t.Fatal(err)
+			}
+
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService.swift")
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+			contentStr := string(content)
+
+			gotBlock := extractBlock(t, contentStr, "let path = try { () throws -> String in", "    }()")
+			if diff := cmp.Diff(test.wantBlock, gotBlock); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

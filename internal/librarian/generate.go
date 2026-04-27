@@ -22,6 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -39,6 +40,7 @@ var (
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errSkipGenerate            = errors.New("library has skip_generate set")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
+	errUnsupportedLanguage     = errors.New("language does not support generation")
 )
 
 func generateCommand() *cli.Command {
@@ -146,6 +148,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = checkAndClean(library.Output, keep)
 		case config.LanguageSwift:
 			err = checkAndClean(library.Output, library.Keep)
+		case config.LanguageGcloud:
+			// No-op. gcloud generation does not support cleaning yet.
 		default:
 			err = fmt.Errorf("language %q does not support cleaning", language)
 		}
@@ -185,6 +189,17 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return fakePostGenerate()
+	case config.LanguageGcloud:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := gcloud.Generate(gctx, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
@@ -273,7 +288,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	default:
-		return fmt.Errorf("language %q does not support generation", cfg.Language)
+		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}
 	return nil
 }

@@ -26,6 +26,19 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
+func swiftConfig(t *testing.T, extraDependencies []config.SwiftDependency) *config.SwiftPackage {
+	t.Helper()
+	deps := []config.SwiftDependency{
+		{Name: "GoogleCloudWkt", ApiPackage: wellKnownProtobufPackage},
+	}
+	deps = append(deps, extraDependencies...)
+	return &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: deps,
+		},
+	}
+}
+
 func TestGenerateMessage_Files(t *testing.T) {
 	outDir := t.TempDir()
 
@@ -41,7 +54,7 @@ func TestGenerateMessage_Files(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -75,7 +88,7 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -94,16 +107,16 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", "Equatable {")
-	wantBlock1 := "public struct Nested1: Codable, Equatable {"
+	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", "._AnyPackable {")
+	wantBlock1 := "public struct Nested1: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
 	if diff := cmp.Diff(wantBlock1, gotBlock1); diff != "" {
-		t.Errorf("mismatch in Nested1 (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", "Equatable {")
-	wantBlock2 := "public struct Nested2: Codable, Equatable {"
+	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", "._AnyPackable {")
+	wantBlock2 := "public struct Nested2: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
 	if diff := cmp.Diff(wantBlock2, gotBlock2); diff != "" {
-		t.Errorf("mismatch in Nested2 (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -130,7 +143,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -150,7 +163,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	gotBlock := extractBlock(t, contentStr, "public enum NestedEnum", "Equatable {")
 	wantBlock := "public enum NestedEnum: Int, Codable, Equatable {"
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
-		t.Errorf("mismatch in NestedEnum (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -170,7 +183,7 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "ext_field",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".google.cloud.external.v1.ExternalMessage",
 			},
 		},
@@ -190,20 +203,16 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 		},
 	}
 
-	swiftCfg := &config.SwiftPackage{
-		SwiftDefault: config.SwiftDefault{
-			Dependencies: []config.SwiftDependency{
-				{
-					ApiPackage: "google.cloud.external.v1",
-					Name:       "GoogleCloudExternalV1",
-				},
-				{
-					ApiPackage: "google.cloud.unused.v1",
-					Name:       "GoogleCloudUnusedV1",
-				},
-			},
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
 		},
-	}
+		{
+			ApiPackage: "google.cloud.unused.v1",
+			Name:       "GoogleCloudUnusedV1",
+		},
+	})
 
 	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)

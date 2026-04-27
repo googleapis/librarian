@@ -88,11 +88,11 @@ func makeScalarField(model *api.API, message *api.Message, name string, schema *
 func scalarType(model *api.API, messageID, name string, input *schema) (api.Typez, string, error) {
 	if input.Type == "" && input.Ref != "" {
 		typezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Ref)
-		return api.MESSAGE_TYPE, typezID, nil
+		return api.TypezMessage, typezID, nil
 	}
 	switch input.Type {
 	case "boolean":
-		return api.BOOL_TYPE, "bool", nil
+		return api.TypezBool, "bool", nil
 	case "integer":
 		return scalarTypeForIntegerFormats(messageID, name, input)
 	case "number":
@@ -110,13 +110,13 @@ func scalarType(model *api.API, messageID, name string, input *schema) (api.Type
 func scalarTypeForIntegerFormats(messageID, name string, input *schema) (api.Typez, string, error) {
 	switch input.Format {
 	case "int32":
-		return api.INT32_TYPE, "int32", nil
+		return api.TypezInt32, "int32", nil
 	case "uint32":
-		return api.UINT32_TYPE, "uint32", nil
+		return api.TypezUint32, "uint32", nil
 	case "int64":
-		return api.INT64_TYPE, "int64", nil
+		return api.TypezInt64, "int64", nil
 	case "uint64":
-		return api.UINT64_TYPE, "uint64", nil
+		return api.TypezUint64, "uint64", nil
 	}
 	return unknownFormat("integer", messageID, name, input)
 }
@@ -124,34 +124,34 @@ func scalarTypeForIntegerFormats(messageID, name string, input *schema) (api.Typ
 func scalarTypeForNumberFormats(messageID, name string, input *schema) (api.Typez, string, error) {
 	switch input.Format {
 	case "float":
-		return api.FLOAT_TYPE, "float", nil
+		return api.TypezFloat, "float", nil
 	case "double":
-		return api.DOUBLE_TYPE, "double", nil
+		return api.TypezDouble, "double", nil
 	}
 	return unknownFormat("number", messageID, name, input)
 }
 
 func scalarTypeForStringFormats(messageID, name string, input *schema) (api.Typez, string, error) {
 	if input.Enums != nil {
-		return api.ENUM_TYPE, fmt.Sprintf("%s.%s", messageID, name), nil
+		return api.TypezEnum, fmt.Sprintf("%s.%s", messageID, name), nil
 	}
 	switch input.Format {
 	case "":
-		return api.STRING_TYPE, "string", nil
+		return api.TypezString, "string", nil
 	case "byte":
-		return api.BYTES_TYPE, "bytes", nil
+		return api.TypezBytes, "bytes", nil
 	case "date":
-		return api.STRING_TYPE, "string", nil
+		return api.TypezString, "string", nil
 	case "google-duration":
-		return api.MESSAGE_TYPE, ".google.protobuf.Duration", nil
+		return api.TypezMessage, ".google.protobuf.Duration", nil
 	case "date-time", "google-datetime":
-		return api.MESSAGE_TYPE, ".google.protobuf.Timestamp", nil
+		return api.TypezMessage, ".google.protobuf.Timestamp", nil
 	case "google-fieldmask":
-		return api.MESSAGE_TYPE, ".google.protobuf.FieldMask", nil
+		return api.TypezMessage, ".google.protobuf.FieldMask", nil
 	case "int64":
-		return api.INT64_TYPE, "int64", nil
+		return api.TypezInt64, "int64", nil
 	case "uint64":
-		return api.UINT64_TYPE, "uint64", nil
+		return api.TypezUint64, "uint64", nil
 	}
 	return unknownFormat("string", messageID, name, input)
 }
@@ -159,7 +159,7 @@ func scalarTypeForStringFormats(messageID, name string, input *schema) (api.Type
 func scalarTypeForAny(messageID, name string, input *schema) (api.Typez, string, error) {
 	switch input.Format {
 	case "google.protobuf.Value":
-		return api.MESSAGE_TYPE, ".google.protobuf.Value", nil
+		return api.TypezMessage, ".google.protobuf.Value", nil
 	}
 	return unknownFormat("any", messageID, name, input)
 }
@@ -167,9 +167,9 @@ func scalarTypeForAny(messageID, name string, input *schema) (api.Typez, string,
 func scalarTypeForObject(messageID, name string, input *schema) (api.Typez, string, error) {
 	switch input.Format {
 	case "google.protobuf.Struct":
-		return api.MESSAGE_TYPE, ".google.protobuf.Struct", nil
+		return api.TypezMessage, ".google.protobuf.Struct", nil
 	case "google.protobuf.Any":
-		return api.MESSAGE_TYPE, ".google.protobuf.Any", nil
+		return api.TypezMessage, ".google.protobuf.Any", nil
 	}
 	return unknownFormat("object", messageID, name, input)
 }

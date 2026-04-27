@@ -22,7 +22,7 @@ import (
 func openapiParameterBehavior(p *v3.Parameter) []api.FieldBehavior {
 	var behavior []api.FieldBehavior
 	if p.Required != nil && *p.Required {
-		behavior = append(behavior, api.FIELD_BEHAVIOR_REQUIRED)
+		behavior = append(behavior, api.FieldBehaviorRequired)
 	}
 	return behavior
 }

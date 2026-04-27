@@ -433,7 +433,7 @@ func (b *pathBindingAnnotation) HasResourceNameArgs() bool {
 // returns a `Result<>`.
 func (b *pathBindingAnnotation) QueryParamsCanFail() bool {
 	for _, f := range b.QueryParams {
-		if f.Typez == api.MESSAGE_TYPE {
+		if f.Typez == api.TypezMessage {
 			return true
 		}
 	}
@@ -614,7 +614,7 @@ type enumValueAnnotation struct {
 // tags. For example, the Mustache tag {{#Services}} uses the
 // [Template.Services] field.
 func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
-	codec.hasServices = len(model.State.ServiceByID) > 0
+	codec.hasServices = len(model.Services) > 0
 
 	resolveUsedPackages(model, codec.extraPackages)
 	// Annotate enums and messages that we intend to generate. In the
@@ -766,9 +766,9 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		allFeatures = append(allFeatures, svcAnn.FeatureName())
 		deps := api.FindServiceDependencies(model, service.ID)
 		for _, id := range deps.Enums {
-			enum, ok := model.State.EnumByID[id]
+			enum := model.Enum(id)
 			// Some messages are not annotated (e.g. external messages).
-			if !ok || enum.Codec == nil {
+			if enum == nil || enum.Codec == nil {
 				continue
 			}
 			annotation := enum.Codec.(*enumAnnotation)
@@ -777,9 +777,9 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 			annotation.FeatureGatesOp = "any"
 		}
 		for _, id := range deps.Messages {
-			msg, ok := model.State.MessageByID[id]
+			msg := model.Message(id)
 			// Some messages are not annotated (e.g. external messages).
-			if !ok || msg.Codec == nil {
+			if msg == nil || msg.Codec == nil {
 				continue
 			}
 			annotation := msg.Codec.(*messageAnnotation)
@@ -849,18 +849,18 @@ func (c *codec) annotateService(s *api.Service) (*serviceAnnotations, error) {
 		if m.OperationInfo != nil {
 			if _, ok := seenLROTypes[m.OperationInfo.MetadataTypeID]; !ok {
 				seenLROTypes[m.OperationInfo.MetadataTypeID] = true
-				lroTypes = append(lroTypes, s.Model.State.MessageByID[m.OperationInfo.MetadataTypeID])
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.MetadataTypeID))
 			}
 			if _, ok := seenLROTypes[m.OperationInfo.ResponseTypeID]; !ok {
 				seenLROTypes[m.OperationInfo.ResponseTypeID] = true
-				lroTypes = append(lroTypes, s.Model.State.MessageByID[m.OperationInfo.ResponseTypeID])
+				lroTypes = append(lroTypes, s.Model.Message(m.OperationInfo.ResponseTypeID))
 			}
 		}
 	}
 	serviceName := c.ServiceName(s)
 	moduleName := toSnake(serviceName)
 	docLines, err := c.formatDocComments(
-		s.Documentation, s.ID, s.Model.State, []string{s.ID, s.Package})
+		s.Documentation, s.ID, s.Model, []string{s.ID, s.Package})
 	if err != nil {
 		return nil, err
 	}
@@ -935,7 +935,7 @@ func (c *codec) annotateMessage(m *api.Message, model *api.API, full bool) error
 		return !f.IsOneOf
 	})
 
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, model.State, m.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, model, m.Scopes())
 	if err != nil {
 		return err
 	}
@@ -965,7 +965,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			variant.Codec = routingVariantAnnotations
 		}
 	}
-	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model.State, m.Model.PackageName)
+	returnType, err := c.methodInOutTypeName(m.OutputTypeID, m.Model, m.Model.PackageName)
 	if err != nil {
 		return nil, err
 	}
@@ -980,7 +980,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			Value: m.APIVersion,
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model.State, m.Service.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Service.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -1011,11 +1011,11 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		annotation.Attributes = []string{"#[allow(clippy::should_implement_trait)]"}
 	}
 	if m.OperationInfo != nil {
-		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model.State, m.Model.PackageName)
+		metadataType, err := c.methodInOutTypeName(m.OperationInfo.MetadataTypeID, m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
-		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model.State, m.Model.PackageName)
+		responseType, err := c.methodInOutTypeName(m.OperationInfo.ResponseTypeID, m.Model, m.Model.PackageName)
 		if err != nil {
 			return nil, err
 		}
@@ -1069,11 +1069,11 @@ func makeAccessors(fields []string, m *api.Method) ([]string, error) {
 		} else {
 			accessors = append(accessors, fmt.Sprintf(".map(|m| &m.%s)", rustFieldName))
 		}
-		if field.Typez == api.STRING_TYPE {
+		if field.Typez == api.TypezString {
 			accessors = append(accessors, ".map(|s| s.as_str())")
 		}
-		if field.Typez == api.MESSAGE_TYPE {
-			if fieldMessage, ok := m.Model.State.MessageByID[field.TypezID]; ok {
+		if field.Typez == api.TypezMessage {
+			if fieldMessage := m.Model.Message(field.TypezID); fieldMessage != nil {
 				message = fieldMessage
 			}
 		}
@@ -1207,7 +1207,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model.State, message.Scopes())
+	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, message.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -1243,19 +1243,19 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 
 func (c *codec) primitiveSerdeAs(field *api.Field) string {
 	switch field.Typez {
-	case api.INT32_TYPE, api.SFIXED32_TYPE, api.SINT32_TYPE:
+	case api.TypezInt32, api.TypezSfixed32, api.TypezSint32:
 		return "wkt::internal::I32"
-	case api.INT64_TYPE, api.SFIXED64_TYPE, api.SINT64_TYPE:
+	case api.TypezInt64, api.TypezSfixed64, api.TypezSint64:
 		return "wkt::internal::I64"
-	case api.UINT32_TYPE, api.FIXED32_TYPE:
+	case api.TypezUint32, api.TypezFixed32:
 		return "wkt::internal::U32"
-	case api.UINT64_TYPE, api.FIXED64_TYPE:
+	case api.TypezUint64, api.TypezFixed64:
 		return "wkt::internal::U64"
-	case api.FLOAT_TYPE:
+	case api.TypezFloat:
 		return "wkt::internal::F32"
-	case api.DOUBLE_TYPE:
+	case api.TypezDouble:
 		return "wkt::internal::F64"
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		if c.bytesUseUrlSafeAlphabet {
 			return "serde_with::base64::Base64<serde_with::base64::UrlSafe>"
 		}
@@ -1266,14 +1266,14 @@ func (c *codec) primitiveSerdeAs(field *api.Field) string {
 }
 
 func (c *codec) mapKeySerdeAs(field *api.Field) string {
-	if field.Typez == api.BOOL_TYPE {
+	if field.Typez == api.TypezBool {
 		return "serde_with::DisplayFromStr"
 	}
 	return c.primitiveSerdeAs(field)
 }
 
 func (c *codec) mapValueSerdeAs(field *api.Field) string {
-	if field.Typez == api.MESSAGE_TYPE {
+	if field.Typez == api.TypezMessage {
 		return c.messageFieldSerdeAs(field)
 	}
 	return c.primitiveSerdeAs(field)
@@ -1310,15 +1310,15 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocComments(field.Documentation, field.ID, model.State, message.Scopes())
+	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, message.Scopes())
 	if err != nil {
 		return nil, err
 	}
-	fieldType, err := c.fieldType(field, model.State, false, model.PackageName)
+	fieldType, err := c.fieldType(field, model, false, model.PackageName)
 	if err != nil {
 		return nil, err
 	}
-	primitiveFieldType, err := c.fieldType(field, model.State, true, model.PackageName)
+	primitiveFieldType, err := c.fieldType(field, model, true, model.PackageName)
 	if err != nil {
 		return nil, err
 	}
@@ -1332,25 +1332,25 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 		PrimitiveFieldType: primitiveFieldType,
 		AddQueryParameter:  addQueryParameter(field),
 		SerdeAs:            c.primitiveSerdeAs(field),
-		SkipIfIsDefault:    field.Typez != api.STRING_TYPE && field.Typez != api.BYTES_TYPE,
-		IsWktValue:         field.Typez == api.MESSAGE_TYPE && field.TypezID == ".google.protobuf.Value",
-		IsWktNullValue:     field.Typez == api.ENUM_TYPE && field.TypezID == ".google.protobuf.NullValue",
+		SkipIfIsDefault:    field.Typez != api.TypezString && field.Typez != api.TypezBytes,
+		IsWktValue:         field.Typez == api.TypezMessage && field.TypezID == ".google.protobuf.Value",
+		IsWktNullValue:     field.Typez == api.TypezEnum && field.TypezID == ".google.protobuf.NullValue",
 	}
-	if field.Recursive || (field.Typez == api.MESSAGE_TYPE && field.IsOneOf) {
+	if field.Recursive || (field.Typez == api.TypezMessage && field.IsOneOf) {
 		ann.IsBoxed = true
 	}
 	ann.MapToBoxed = mapToBoxed(field, message, model)
 	field.Codec = ann
-	if field.Typez == api.MESSAGE_TYPE {
-		if msg, ok := model.State.MessageByID[field.TypezID]; ok && msg.IsMap {
+	if field.Typez == api.TypezMessage {
+		if msg := model.Message(field.TypezID); msg != nil && msg.IsMap {
 			if len(msg.Fields) != 2 {
 				return nil, fmt.Errorf("expected exactly two fields for field's map message (%q), fieldId=%s", field.TypezID, field.ID)
 			}
-			keyType, err := c.mapType(msg.Fields[0], model.State, model.PackageName)
+			keyType, err := c.mapType(msg.Fields[0], model, model.PackageName)
 			if err != nil {
 				return nil, err
 			}
-			valueType, err := c.mapType(msg.Fields[1], model.State, model.PackageName)
+			valueType, err := c.mapType(msg.Fields[1], model, model.PackageName)
 			if err != nil {
 				return nil, err
 			}
@@ -1446,7 +1446,7 @@ func (c *codec) annotateEnum(e *api.Enum, model *api.API, full bool) error {
 		return nil
 	}
 
-	lines, err := c.formatDocComments(e.Documentation, e.ID, model.State, e.Scopes())
+	lines, err := c.formatDocComments(e.Documentation, e.ID, model, e.Scopes())
 	if err != nil {
 		return err
 	}
@@ -1468,7 +1468,7 @@ func (c *codec) annotateEnumValue(ev *api.EnumValue, model *api.API, full bool) 
 		// We have basic annotations, we are done.
 		return nil
 	}
-	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model.State, ev.Scopes())
+	lines, err := c.formatDocComments(ev.Documentation, ev.ID, model, ev.Scopes())
 	if err != nil {
 		return err
 	}
@@ -1592,7 +1592,7 @@ func isIdempotent(p *api.PathInfo) string {
 // Prost boxes fields that would cause an infinitely sized struct, which happens
 // on recursive cycles that are not broken by a repeated or map field.
 func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
-	if field.Typez != api.MESSAGE_TYPE || field.Repeated || field.Map {
+	if field.Typez != api.TypezMessage || field.Repeated || field.Map {
 		return false
 	}
 
@@ -1605,12 +1605,12 @@ func mapToBoxed(field *api.Field, message *api.Message, model *api.API) bool {
 			return false
 		}
 		visited[typezID] = true
-		msg, ok := model.State.MessageByID[typezID]
-		if !ok {
+		msg := model.Message(typezID)
+		if msg == nil {
 			return false
 		}
 		for _, f := range msg.Fields {
-			if f.Typez != api.MESSAGE_TYPE || f.Repeated || f.Map {
+			if f.Typez != api.TypezMessage || f.Repeated || f.Map {
 				continue
 			}
 			if check(f.TypezID, targetID, visited) {

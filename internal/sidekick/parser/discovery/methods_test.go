@@ -28,8 +28,8 @@ func TestMakeServiceMethods(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..zones.get"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -42,7 +42,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -65,8 +65,8 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..zoneOperations.delete"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -80,7 +80,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -106,8 +106,8 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..projects.moveInstance"
-	got, ok := model.State.MethodByID[id]
-	if !ok {
+	got := model.Method(id)
+	if got == nil {
 		t.Fatalf("expected method %s in the API model", id)
 	}
 	want := &api.Method{
@@ -121,7 +121,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -166,8 +166,8 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 		},
 	} {
 		t.Run(test.id, func(t *testing.T) {
-			got, ok := model.State.MethodByID[test.id]
-			if !ok {
+			got := model.Method(test.id)
+			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
 			if got.APIVersion != test.wantVersion {
@@ -193,7 +193,7 @@ func TestMethodEmptyBody(t *testing.T) {
 				JSONName:      "project",
 				ID:            "..zones.getRequest.project",
 				Documentation: "Project ID for this request.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 			},
 			{
@@ -201,19 +201,19 @@ func TestMethodEmptyBody(t *testing.T) {
 				JSONName:      "zone",
 				ID:            "..zones.getRequest.zone",
 				Documentation: "Name of the zone resource to return.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 			},
 		},
 	}
-	got, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	got := model.Message(want.ID)
+	if got == nil {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, got, want)
 
-	wantParent, ok := model.State.MessageByID["..zones"]
-	if !ok {
+	wantParent := model.Message("..zones")
+	if wantParent == nil {
 		t.Fatalf("expected message %s in the API model", "..zones")
 	}
 	if wantParent != got.Parent {
@@ -238,7 +238,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "filter",
 				ID:            "..zones.listRequest.filter",
 				Documentation: "A filter expression that filters resources listed in the response. Most Compute resources support two types of filter expressions: expressions that support regular expressions and expressions that follow API improvement proposal AIP-160. These two types of filter expressions cannot be mixed in one request. If you want to use AIP-160, your expression must specify the field name, an operator, and the value that you want to use for filtering. The value must be a string, a number, or a boolean. The operator must be either `=`, `!=`, `>`, `<`, `<=`, `>=` or `:`. For example, if you are filtering Compute Engine instances, you can exclude instances named `example-instance` by specifying `name != example-instance`. The `:*` comparison can be used to test whether a key has been defined. For example, to find all objects with `owner` label use: ``` labels.owner:* ``` You can also filter nested fields. For example, you could specify `scheduling.automaticRestart = false` to include instances only if they are not scheduled for automatic restarts. You can use filtering on nested fields to filter based on resource labels. To filter on multiple expressions, provide each separate expression within parentheses. For example: ``` (scheduling.automaticRestart = true) (cpuPlatform = \"Intel Skylake\") ``` By default, each expression is an `AND` expression. However, you can include `AND` and `OR` expressions explicitly. For example: ``` (cpuPlatform = \"Intel Skylake\") OR (cpuPlatform = \"Intel Broadwell\") AND (scheduling.automaticRestart = true) ``` If you want to use a regular expression, use the `eq` (equal) or `ne` (not equal) operator against a single un-parenthesized expression with or without quotes or against multiple parenthesized expressions. Examples: `fieldname eq unquoted literal` `fieldname eq 'single quoted literal'` `fieldname eq \"double quoted literal\"` `(fieldname1 eq literal) (fieldname2 ne \"literal\")` The literal value is interpreted as a regular expression using Google RE2 library syntax. The literal value must match the entire field. For example, to filter for instances that do not end with name \"instance\", you would use `name ne .*instance`. You cannot combine constraints on multiple fields using regular expressions.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -247,7 +247,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "maxResults",
 				ID:            "..zones.listRequest.maxResults",
 				Documentation: "The maximum number of results per page that should be returned. If the number of available results is larger than `maxResults`, Compute Engine returns a `nextPageToken` that can be used to get the next page of results in subsequent list requests. Acceptable values are `0` to `500`, inclusive. (Default: `500`)",
-				Typez:         api.UINT32_TYPE,
+				Typez:         api.TypezUint32,
 				TypezID:       "uint32",
 				Optional:      true,
 			},
@@ -256,7 +256,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "orderBy",
 				ID:            "..zones.listRequest.orderBy",
 				Documentation: "Sorts list results by a certain order. By default, results are returned in alphanumerical order based on the resource name. You can also sort results in descending order based on the creation timestamp using `orderBy=\"creationTimestamp desc\"`. This sorts results based on the `creationTimestamp` field in reverse chronological order (newest result first). Use this to sort resources like operations so that the newest operation is returned first. Currently, only sorting by `name` or `creationTimestamp desc` is supported.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -265,7 +265,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "pageToken",
 				ID:            "..zones.listRequest.pageToken",
 				Documentation: "Specifies a page token to use. Set `pageToken` to the `nextPageToken` returned by a previous list request to get the next page of results.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -274,7 +274,7 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "project",
 				ID:            "..zones.listRequest.project",
 				Documentation: "Project ID for this request.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 			},
 			{
@@ -282,14 +282,14 @@ func TestMethodWithQueryParameters(t *testing.T) {
 				JSONName:      "returnPartialSuccess",
 				ID:            "..zones.listRequest.returnPartialSuccess",
 				Documentation: "Opt-in for partial success behavior which provides partial results in case of failure. The default value is false. For example, when partial success behavior is enabled, aggregatedList for a single zone scope either returns all resources in the zone or no resources, with an error code.",
-				Typez:         api.BOOL_TYPE,
+				Typez:         api.TypezBool,
 				TypezID:       "bool",
 				Optional:      true,
 			},
 		},
 	}
-	gotListRequest, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	gotListRequest := model.Message(want.ID)
+	if gotListRequest == nil {
 		t.Fatalf("expected message %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, gotListRequest, want)
@@ -311,7 +311,7 @@ func TestMethodWithBody(t *testing.T) {
 				JSONName:      "body",
 				ID:            "..addresses.insertRequest.body",
 				Documentation: "Synthetic request body field for the [insert()][.addresses.insert] method.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..Address",
 				Optional:      true,
 			},
@@ -320,7 +320,7 @@ func TestMethodWithBody(t *testing.T) {
 				JSONName:      "project",
 				ID:            "..addresses.insertRequest.project",
 				Documentation: "Project ID for this request.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 			},
 			{
@@ -328,7 +328,7 @@ func TestMethodWithBody(t *testing.T) {
 				JSONName:      "region",
 				ID:            "..addresses.insertRequest.region",
 				Documentation: "Name of the region for this request.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 			},
 			{
@@ -336,14 +336,14 @@ func TestMethodWithBody(t *testing.T) {
 				JSONName:      "requestId",
 				ID:            "..addresses.insertRequest.requestId",
 				Documentation: "An optional request ID to identify requests. Specify a unique request ID so that if you must retry your request, the server will know to ignore the request if it has already been completed. For example, consider a situation where you make an initial request and the request times out. If you make the request again with the same request ID, the server can check if original operation with the same request ID was received, and if so, will ignore the second request. This prevents clients from accidentally creating duplicate commitments. The request ID must be a valid UUID with the exception that zero UUID is not supported ( 00000000-0000-0000-0000-000000000000).",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
 		},
 	}
-	gotGetRequest, ok := model.State.MessageByID[wantInsertRequest.ID]
-	if !ok {
+	gotGetRequest := model.Message(wantInsertRequest.ID)
+	if gotGetRequest == nil {
 		t.Fatalf("expected message %s in the API model", wantInsertRequest.ID)
 	}
 	apitest.CheckMessage(t, gotGetRequest, wantInsertRequest)

@@ -63,6 +63,14 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(protoFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+	orBuilderDir := filepath.Join(protoDir, "com", "google", "cloud", "secretmanager", "v1")
+	if err := os.MkdirAll(orBuilderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	orBuilderFile := filepath.Join(orBuilderDir, "SomeOrBuilder.java")
+	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.secretmanager.v1; public interface SomeOrBuilder {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create a dummy srcjar (which is a zip)
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -138,6 +146,12 @@ func TestPostProcessAPI(t *testing.T) {
 	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
+	}
+
+	// Verify that clirr-ignored-differences.xml is generated.
+	clirrPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "proto-google-cloud-secretmanager-v1", "clirr-ignored-differences.xml")
+	if _, err := os.Stat(clirrPath); err != nil {
+		t.Errorf("expected clirr ignore file at %s, but it was not found: %v", clirrPath, err)
 	}
 
 	// Verify that the apiBase directory was cleaned up
@@ -571,5 +585,74 @@ func TestAddMissingHeaders(t *testing.T) {
 				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
 			}
 		})
+	}
+}
+
+func TestCopyFiles(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	gapicDir := filepath.Join(outdir, apiBase, "gapic")
+	srcPath := "src/main/java/com/google/storage/v2/gapic_metadata.json"
+	destPath := "src/main/resources/com/google/storage/v2/gapic_metadata.json"
+
+	fullSrcPath := filepath.Join(gapicDir, srcPath)
+	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := `{"schema": "1.0"}`
+	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			CopyFiles: []*config.JavaFileCopy{
+				{
+					Source:      srcPath,
+					Destination: destPath,
+				},
+			},
+		},
+	}
+	if err := copyFiles(p); err != nil {
+		t.Fatal(err)
+	}
+	// Verify copy
+	fullDestPath := filepath.Join(gapicDir, destPath)
+	if _, err := os.Stat(fullDestPath); err != nil {
+		t.Errorf("destination file %s does not exist: %v", fullDestPath, err)
+	}
+	if _, err := os.Stat(fullSrcPath); err != nil {
+		t.Errorf("source file %s should still exist", fullSrcPath)
+	}
+	gotContent, err := os.ReadFile(fullDestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(content, string(gotContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopyFiles_Error(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			CopyFiles: []*config.JavaFileCopy{
+				{
+					Source:      "non-existent",
+					Destination: "dest",
+				},
+			},
+		},
+	}
+	if err := copyFiles(p); err == nil {
+		t.Error("copyFiles() error = nil, want error for non-existent source")
 	}
 }

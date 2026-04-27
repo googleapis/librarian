@@ -22,7 +22,7 @@ import (
 )
 
 func TestAnnotateMethod(t *testing.T) {
-	keyField := &api.Field{Name: "key", ID: ".test.Request.key", Typez: api.STRING_TYPE}
+	keyField := &api.Field{Name: "key", ID: ".test.Request.key", Typez: api.TypezString}
 	inputType := &api.Message{
 		Name:   "Request",
 		ID:     ".test.Request",
@@ -32,7 +32,7 @@ func TestAnnotateMethod(t *testing.T) {
 		Name: "Response",
 		ID:   ".test.Response",
 		Fields: []*api.Field{
-			{Name: "value", ID: ".test.Request.value", Typez: api.STRING_TYPE},
+			{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
 		},
 	}
 	for _, test := range []struct {
@@ -49,17 +49,17 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "GET",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("operations"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
 						},
 					},
 				},
 			},
 			want: &methodAnnotations{
-				Name:       "getOperation",
-				Path:       "/v1/operations",
-				DocLines:   []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
-				HTTPMethod: "GET",
-				HasBody:    false,
+				Name:           "getOperation",
+				PathExpression: "/v1/operations",
+				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
+				HTTPMethod:     "GET",
+				HasBody:        false,
 			},
 		},
 		{
@@ -70,7 +70,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "POST",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("keys"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys"),
 						},
 					},
 					BodyFieldPath: "key",
@@ -78,7 +78,7 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			want: &methodAnnotations{
 				Name:           "createKey",
-				Path:           "/v1/keys",
+				PathExpression: "/v1/keys",
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: false,
@@ -93,7 +93,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "POST",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("data"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data"),
 						},
 					},
 					BodyFieldPath: "*",
@@ -101,7 +101,7 @@ func TestAnnotateMethod(t *testing.T) {
 			},
 			want: &methodAnnotations{
 				Name:           "uploadData",
-				Path:           "/v1/data",
+				PathExpression: "/v1/data",
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
@@ -116,19 +116,19 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:            "GET",
-							PathTemplate:    api.NewPathTemplate().WithLiteral("v1").WithLiteral("things"),
+							PathTemplate:    (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"),
 							QueryParameters: map[string]bool{"key": true},
 						},
 					},
 				},
 			},
 			want: &methodAnnotations{
-				Name:        "listThings",
-				Path:        "/v1/things",
-				DocLines:    []string{"Lists things."},
-				HTTPMethod:  "GET",
-				HasBody:     false,
-				QueryParams: []*api.Field{keyField},
+				Name:           "listThings",
+				PathExpression: "/v1/things",
+				DocLines:       []string{"Lists things."},
+				HTTPMethod:     "GET",
+				HasBody:        false,
+				QueryParams:    []*api.Field{keyField},
 			},
 		},
 	} {
@@ -171,14 +171,14 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				Name: "Request",
 				ID:   ".test.Request",
 				Fields: []*api.Field{
-					{Name: "key", ID: ".test.Request.key", Typez: api.STRING_TYPE},
+					{Name: "key", ID: ".test.Request.key", Typez: api.TypezString},
 				},
 			}
 			outputType := &api.Message{
 				Name: "Response",
 				ID:   ".test.Response",
 				Fields: []*api.Field{
-					{Name: "value", ID: ".test.Request.value", Typez: api.STRING_TYPE},
+					{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
 				},
 			}
 			method := &api.Method{
@@ -204,10 +204,10 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 			}
 
 			want := &methodAnnotations{
-				Name:       test.wantName,
-				DocLines:   []string{"Test documentation."},
-				Path:       "/",
-				HTTPMethod: "GET",
+				Name:           test.wantName,
+				DocLines:       []string{"Test documentation."},
+				PathExpression: "/",
+				HTTPMethod:     "GET",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {

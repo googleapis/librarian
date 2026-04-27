@@ -36,9 +36,16 @@ import (
 const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
+	transportOption                     = "transport"
+	gapicNamespaceOption                = "python-gapic-namespace"
+	gapicNameOption                     = "python-gapic-name"
+	warehousePackageNameOption          = "warehouse-package-name"
 )
 
-var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
+var (
+	errNoDefaultVersion        = errors.New("default version must be specified for every library with generated APIs")
+	errExplicitTransportOption = errors.New("transport option is derived from sdk.yaml and must not be specified explicitly")
+)
 
 // Generate generates a Python client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
@@ -296,23 +303,31 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	if err != nil {
 		return nil, err
 	}
+	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
+		opts = append(opts, "rest-numeric-enums")
+	}
+	// The transport option should never be specified explicitly. Ensure it
+	// hasn't been specified, and add the derived transport.
+	if _, explicitTransport := findOption(opts, transportOption); explicitTransport {
+		return nil, fmt.Errorf("error creating GAPIC options for %s: %w", api.Path, errExplicitTransportOption)
+	}
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePython)
 	}
-	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
-		opts = append(opts, "rest-numeric-enums")
-	}
+	opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
 
-	addTransport := true
-	for _, opt := range opts {
-		if strings.HasPrefix(opt, "transport=") {
-			addTransport = false
-		}
+	// Add derived python-gapic-namespace option, if we haven't already got it.
+	if _, ok := findOption(opts, gapicNamespaceOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNamespaceOption, deriveGAPICNamespace(api.Path)))
 	}
-	// Add transport option, if we haven't already got it.
-	if addTransport {
-		opts = append(opts, fmt.Sprintf("transport=%s", transport))
+	// Add derived python-gapic-name option, if we haven't already got it.
+	if _, ok := findOption(opts, gapicNameOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNameOption, deriveGAPICName(api.Path)))
+	}
+	// Add the library name as warehouse-package-name option, if we haven't already got it.
+	if _, ok := findOption(opts, warehousePackageNameOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", warehousePackageNameOption, library.Name))
 	}
 
 	// Add gapic-version from library version
@@ -324,11 +339,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/3827): remove this
-	// hardcoding once we can use the gRPC service config for Compute.
-	if strings.HasPrefix(library.Name, "google-cloud-compute") {
-		grpcConfigPath = ""
 	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
@@ -474,4 +484,48 @@ func DefaultLibraryName(api string) string {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview-packages")
+}
+
+// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
+// it's not specified explicitly. This is the first two components of the API
+// path (excluding any trailing version), dot-separated.
+func deriveGAPICNamespace(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, "/"+version)
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return path
+	}
+	return parts[0] + "." + parts[1]
+}
+
+// deriveGAPICName derives the value to pass as python-gapic-name when it's not
+// specified explicitly. This is the path, without the leading namespace (after
+// replacing dots with slashes), and without any version suffix, and then
+// replacing slashes with underscores. Example:
+// a path of google/cloud/foo/bar/v1 would have a GAPIC name of "foo_bar".
+func deriveGAPICName(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, version)
+	}
+	derivedNamespace := deriveGAPICNamespace(path)
+	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
+	path = strings.Trim(path, "/")
+	return strings.ReplaceAll(path, "/", "_")
+}
+
+// findOption finds the value of a named option within a list of name=value
+// strings. If the option isn't found, an empty string is returned. The second
+// value indicates whether the option was found or not.
+func findOption(options []string, name string) (string, bool) {
+	prefix := name + "="
+	for _, candidate := range options {
+		if strings.HasPrefix(candidate, prefix) {
+			return strings.TrimPrefix(candidate, prefix), true
+		}
+	}
+	return "", false
 }

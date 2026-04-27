@@ -26,7 +26,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
-	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -669,17 +668,6 @@ func TestDeriveNextVersion(t *testing.T) {
 			wantVersion: sample.NextVersion,
 		},
 		{
-			name: "rust new library default version",
-			cfg: func() *config.Config {
-				c := sample.Config()
-				c.Language = config.LanguageRust
-				c.Libraries[0].Version = ""
-				return c
-			}(),
-			versionOpts: languageVersioningOptions[config.LanguageRust],
-			wantVersion: rust.DefaultVersion,
-		},
-		{
 			name:        "default semver options next GA version",
 			cfg:         sample.Config(),
 			wantVersion: sample.NextVersion,
@@ -693,6 +681,15 @@ func TestDeriveNextVersion(t *testing.T) {
 			}(),
 			versionOverride: "1.0.0-override.1",
 			wantVersion:     "1.0.0-override.1",
+		},
+		{
+			name: "unreleased library, default version",
+			cfg: func() *config.Config {
+				c := sample.Config()
+				c.Libraries[0].Version = ""
+				return c
+			}(),
+			wantVersion: defaultVersion,
 		},
 		{
 			name: "version override, already released library, later version",
@@ -712,7 +709,7 @@ func TestDeriveNextVersion(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			got, err := deriveNextVersion(test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			got, err := deriveNextVersion(test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -750,7 +747,7 @@ func TestDeriveNextVersion_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveNextVersion(test.cfg, test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
+			got, err := deriveNextVersion(test.cfg.Libraries[0], test.versionOpts, test.versionOverride)
 			if err == nil {
 				t.Errorf("DeriveNextVersion() expected error; returned no error and version %s", got)
 			}

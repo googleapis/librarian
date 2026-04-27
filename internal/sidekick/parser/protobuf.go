@@ -294,14 +294,14 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		fFQN := "." + f.GetPackage()
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if _, err := processMessage(state, m, mFQN, f.GetPackage(), nil); err != nil {
+			if _, err := processMessage(result, m, mFQN, f.GetPackage(), nil); err != nil {
 				return nil, err
 			}
 		}
 
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
-			_ = processEnum(state, e, eFQN, f.GetPackage(), nil)
+			_ = processEnum(result, e, eFQN, f.GetPackage(), nil)
 		}
 		resources, err := processFileResourceDefinitions(f)
 		if err != nil {
@@ -334,7 +334,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Messages
 		for _, m := range f.MessageType {
 			mFQN := fFQN + "." + m.GetName()
-			if msg, ok := state.MessageByID[mFQN]; ok {
+			if msg := result.Message(mFQN); msg != nil {
 				result.Messages = append(result.Messages, msg)
 			} else {
 				slog.Warn("missing message in symbol table", "message", mFQN)
@@ -344,7 +344,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Enums
 		for _, e := range f.EnumType {
 			eFQN := fFQN + "." + e.GetName()
-			if e, ok := state.EnumByID[eFQN]; ok {
+			if e := result.Enum(eFQN); e != nil {
 				result.Enums = append(result.Enums, e)
 			} else {
 				slog.Warn("missing enum in symbol table", "message", eFQN)
@@ -354,11 +354,11 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		// Services
 		for _, s := range f.Service {
 			sFQN := fFQN + "." + s.GetName()
-			service := processService(state, s, sFQN, f.GetPackage())
+			service := processService(result, s, sFQN, f.GetPackage())
 			for _, m := range s.Method {
 				mFQN := sFQN + "." + m.GetName()
 				apiVersion := parseAPIVersion(sFQN, s.GetOptions())
-				method, err := processMethod(state, m, mFQN, f.GetPackage(), sFQN, apiVersion)
+				method, err := processMethod(result, m, mFQN, f.GetPackage(), sFQN, apiVersion)
 				if err != nil {
 					return nil, err
 				}
@@ -379,13 +379,13 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 				// Because of message nesting we need to call recursively and
 				// strip out parts of the path.
 				m := f.MessageType[p[1]]
-				addMessageDocumentation(state, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
+				addMessageDocumentation(result, m, p[2:], loc.GetLeadingComments(), fFQN+"."+m.GetName())
 			case fileDescriptorEnumType:
 				e := f.EnumType[p[1]]
-				addEnumDocumentation(state, p[2:], loc.GetLeadingComments(), fFQN+"."+e.GetName())
+				addEnumDocumentation(result, p[2:], loc.GetLeadingComments(), fFQN+"."+e.GetName())
 			case fileDescriptorService:
 				sFQN := fFQN + "." + f.GetService()[p[1]].GetName()
-				addServiceDocumentation(state, p[2:], loc.GetLeadingComments(), sFQN)
+				addServiceDocumentation(result, p[2:], loc.GetLeadingComments(), sFQN)
 			case fileDescriptorName, fileDescriptorPackage, fileDescriptorDependency,
 				fileDescriptorExtension, fileDescriptorOptions, fileDescriptorSourceCodeInfo,
 				fileDescriptorPublicDependency, fileDescriptorWeakDependency,
@@ -405,7 +405,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 			fFQN := "." + f.GetPackage()
 			for _, mixinProto := range f.Service {
 				sFQN := fFQN + "." + mixinProto.GetName()
-				mixin := processService(state, mixinProto, sFQN, f.GetPackage())
+				mixin := processService(result, mixinProto, sFQN, f.GetPackage())
 				for _, m := range mixinProto.Method {
 					// We want to include the method in the existing service,
 					// and not on the mixin.
@@ -414,14 +414,14 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 					if !enabledMixinMethods[originalFQN] {
 						continue
 					}
-					if _, ok := state.MethodByID[mFQN]; ok {
+					if result.Method(mFQN) != nil {
 						// The method already exists. This happens when services
 						// require a mixin in the service config yaml *and* also
 						// define the mixin method in the code.
 						continue
 					}
 					apiVersion := parseAPIVersion(sFQN, mixinProto.GetOptions())
-					method, err := processMethod(state, m, mFQN, service.Package, sFQN, apiVersion)
+					method, err := processMethod(result, m, mFQN, service.Package, sFQN, apiVersion)
 					if err != nil {
 						return nil, err
 					}
@@ -461,27 +461,27 @@ func requiresLongrunningMixin(req *pluginpb.CodeGeneratorRequest) bool {
 }
 
 var descriptorpbToTypez = map[descriptorpb.FieldDescriptorProto_Type]api.Typez{
-	descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:   api.DOUBLE_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_FLOAT:    api.FLOAT_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_INT64:    api.INT64_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_UINT64:   api.UINT64_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_INT32:    api.INT32_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_FIXED64:  api.FIXED64_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_FIXED32:  api.FIXED32_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_BOOL:     api.BOOL_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_STRING:   api.STRING_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_BYTES:    api.BYTES_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_UINT32:   api.UINT32_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_SFIXED32: api.SFIXED32_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_SFIXED64: api.SFIXED64_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_SINT32:   api.SINT32_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_SINT64:   api.SINT64_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_GROUP:    api.GROUP_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:  api.MESSAGE_TYPE,
-	descriptorpb.FieldDescriptorProto_TYPE_ENUM:     api.ENUM_TYPE,
+	descriptorpb.FieldDescriptorProto_TYPE_DOUBLE:   api.TypezDouble,
+	descriptorpb.FieldDescriptorProto_TYPE_FLOAT:    api.TypezFloat,
+	descriptorpb.FieldDescriptorProto_TYPE_INT64:    api.TypezInt64,
+	descriptorpb.FieldDescriptorProto_TYPE_UINT64:   api.TypezUint64,
+	descriptorpb.FieldDescriptorProto_TYPE_INT32:    api.TypezInt32,
+	descriptorpb.FieldDescriptorProto_TYPE_FIXED64:  api.TypezFixed64,
+	descriptorpb.FieldDescriptorProto_TYPE_FIXED32:  api.TypezFixed32,
+	descriptorpb.FieldDescriptorProto_TYPE_BOOL:     api.TypezBool,
+	descriptorpb.FieldDescriptorProto_TYPE_STRING:   api.TypezString,
+	descriptorpb.FieldDescriptorProto_TYPE_BYTES:    api.TypezBytes,
+	descriptorpb.FieldDescriptorProto_TYPE_UINT32:   api.TypezUint32,
+	descriptorpb.FieldDescriptorProto_TYPE_SFIXED32: api.TypezSfixed32,
+	descriptorpb.FieldDescriptorProto_TYPE_SFIXED64: api.TypezSfixed64,
+	descriptorpb.FieldDescriptorProto_TYPE_SINT32:   api.TypezSint32,
+	descriptorpb.FieldDescriptorProto_TYPE_SINT64:   api.TypezSint64,
+	descriptorpb.FieldDescriptorProto_TYPE_GROUP:    api.TypezGroup,
+	descriptorpb.FieldDescriptorProto_TYPE_MESSAGE:  api.TypezMessage,
+	descriptorpb.FieldDescriptorProto_TYPE_ENUM:     api.TypezEnum,
 }
 
-func normalizeTypes(state *api.APIState, in *descriptorpb.FieldDescriptorProto, field *api.Field) {
+func normalizeTypes(model *api.API, in *descriptorpb.FieldDescriptorProto, field *api.Field) {
 	field.Typez = descriptorpbToTypez[in.GetType()]
 	field.TypezID = in.GetTypeName()
 	field.Repeated = in.Label != nil && *in.Label == descriptorpb.FieldDescriptorProto_LABEL_REPEATED
@@ -494,7 +494,7 @@ func normalizeTypes(state *api.APIState, in *descriptorpb.FieldDescriptorProto, 
 		// Repeated fields are not optional, they can be empty, but always have
 		// presence.
 		field.Optional = !field.Repeated
-		if message, ok := state.MessageByID[field.TypezID]; ok && message.IsMap {
+		if message := model.Message(field.TypezID); message != nil && message.IsMap {
 			// Map fields appear as repeated in Protobuf. This is confusing,
 			// as they typically are represented by a single `map<k, v>`-like
 			// datatype. Protobuf leaks the wire-representation of maps, i.e.,
@@ -530,7 +530,7 @@ func normalizeTypes(state *api.APIState, in *descriptorpb.FieldDescriptorProto, 
 	}
 }
 
-func processService(state *api.APIState, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez string) *api.Service {
+func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN, packagez string) *api.Service {
 	service := &api.Service{
 		Name:        s.GetName(),
 		ID:          sFQN,
@@ -538,12 +538,12 @@ func processService(state *api.APIState, s *descriptorpb.ServiceDescriptorProto,
 		DefaultHost: parseDefaultHost(s.GetOptions()),
 		Deprecated:  s.GetOptions().GetDeprecated(),
 	}
-	state.ServiceByID[service.ID] = service
+	model.State.ServiceByID[service.ID] = service
 	return service
 }
 
-func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion string) (*api.Method, error) {
-	pathInfo, err := parsePathInfo(m, state)
+func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, packagez, serviceID, apiVersion string) (*api.Method, error) {
+	pathInfo, err := parsePathInfo(m, model)
 	if err != nil {
 		return nil, fmt.Errorf("unsupported http method for %q: %w", mFQN, err)
 	}
@@ -567,11 +567,11 @@ func processMethod(state *api.APIState, m *descriptorpb.MethodDescriptorProto, m
 		SourceServiceID:     serviceID,
 		APIVersion:          apiVersion,
 	}
-	state.MethodByID[mFQN] = method
+	model.State.MethodByID[mFQN] = method
 	return method, nil
 }
 
-func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
+func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packagez string, parent *api.Message) (*api.Message, error) {
 	message := &api.Message{
 		Name:       m.GetName(),
 		ID:         mFQN,
@@ -579,20 +579,20 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		Package:    packagez,
 		Deprecated: m.GetOptions().GetDeprecated(),
 	}
-	state.MessageByID[mFQN] = message
+	model.State.MessageByID[mFQN] = message
 
 	if opts := m.GetOptions(); opts != nil {
 		if opts.GetMapEntry() {
 			message.IsMap = true
 		}
-		if err := processResourceAnnotation(opts, message, state); err != nil {
+		if err := processResourceAnnotation(opts, message, model); err != nil {
 			return nil, err
 		}
 	}
 	if len(m.GetNestedType()) > 0 {
 		for _, nm := range m.GetNestedType() {
 			nmFQN := mFQN + "." + nm.GetName()
-			nmsg, err := processMessage(state, nm, nmFQN, packagez, message)
+			nmsg, err := processMessage(model, nm, nmFQN, packagez, message)
 			if err != nil {
 				return nil, err
 			}
@@ -603,7 +603,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	}
 	for _, e := range m.GetEnumType() {
 		eFQN := mFQN + "." + e.GetName()
-		e := processEnum(state, e, eFQN, packagez, message)
+		e := processEnum(model, e, eFQN, packagez, message)
 		message.Enums = append(message.Enums, e)
 	}
 	for _, oneof := range m.OneofDecl {
@@ -628,7 +628,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 		if err := processResourceReference(mf, field); err != nil {
 			return nil, err
 		}
-		normalizeTypes(state, mf, field)
+		normalizeTypes(model, mf, field)
 		message.Fields = append(message.Fields, field)
 		if field.IsOneOf {
 			message.OneOfs[*mf.OneofIndex].Fields = append(message.OneOfs[*mf.OneofIndex].Fields, field)
@@ -652,7 +652,7 @@ func processMessage(state *api.APIState, m *descriptorpb.DescriptorProto, mFQN, 
 	return message, nil
 }
 
-func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, state *api.APIState) error {
+func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.Message, model *api.API) error {
 	if !proto.HasExtension(opts, eResource) {
 		return nil
 	}
@@ -675,7 +675,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		Self:     message,
 	}
 	message.Resource = resource
-	state.ResourceByType[resource.Type] = resource
+	model.State.ResourceByType[resource.Type] = resource
 	return nil
 }
 
@@ -742,7 +742,7 @@ func processResourceReference(f *descriptorpb.FieldDescriptorProto, field *api.F
 	return nil
 }
 
-func processEnum(state *api.APIState, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {
+func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, packagez string, parent *api.Message) *api.Enum {
 	enum := &api.Enum{
 		Name:       e.GetName(),
 		ID:         eFQN,
@@ -750,7 +750,7 @@ func processEnum(state *api.APIState, e *descriptorpb.EnumDescriptorProto, eFQN,
 		Package:    packagez,
 		Deprecated: e.GetOptions().GetDeprecated(),
 	}
-	state.EnumByID[eFQN] = enum
+	model.State.EnumByID[eFQN] = enum
 	for _, ev := range e.Value {
 		enumValue := &api.EnumValue{
 			Name:       ev.GetName(),
@@ -779,14 +779,14 @@ func processEnum(state *api.APIState, e *descriptorpb.EnumDescriptorProto, eFQN,
 	return enum
 }
 
-func addServiceDocumentation(state *api.APIState, p []int32, doc string, sFQN string) {
+func addServiceDocumentation(model *api.API, p []int32, doc string, sFQN string) {
 	switch {
 	case len(p) == 0:
 		// This is a comment for a service
-		state.ServiceByID[sFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Service(sFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == serviceDescriptorProtoMethod && len(p) == 2:
 		// This is a comment for a method
-		state.ServiceByID[sFQN].Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Service(sFQN).Methods[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == serviceDescriptorProtoMethod:
 		// A comment for something within a method (options, arguments, etc).
 		// Ignored, as these comments do not refer to any artifact in the
@@ -799,24 +799,24 @@ func addServiceDocumentation(state *api.APIState, p []int32, doc string, sFQN st
 	}
 }
 
-func addMessageDocumentation(state *api.APIState, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
+func addMessageDocumentation(model *api.API, m *descriptorpb.DescriptorProto, p []int32, doc string, mFQN string) {
 	// Beware of refactoring the calls to `trimLeadingSpacesInDocumentation`.
 	// We should modify `doc` only once, upon assignment to `.Documentation`
 	switch {
 	case len(p) == 0:
 		// This is a comment for a top level message
-		state.MessageByID[mFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorNestedType:
 		nmsg := m.GetNestedType()[p[1]]
 		nmFQN := mFQN + "." + nmsg.GetName()
-		addMessageDocumentation(state, nmsg, p[2:], doc, nmFQN)
+		addMessageDocumentation(model, nmsg, p[2:], doc, nmFQN)
 	case p[0] == messageDescriptorField && len(p) == 2:
-		state.MessageByID[mFQN].Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).Fields[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorEnum:
 		eFQN := mFQN + "." + m.GetEnumType()[p[1]].GetName()
-		addEnumDocumentation(state, p[2:], doc, eFQN)
+		addEnumDocumentation(model, p[2:], doc, eFQN)
 	case p[0] == messageDescriptorOneOf && len(p) == 2:
-		state.MessageByID[mFQN].OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Message(mFQN).OneOfs[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	case p[0] == messageDescriptorExtensionRange:
 	case p[0] == messageDescriptorOptions:
 	case p[0] == messageDescriptorExtension:
@@ -830,12 +830,12 @@ func addMessageDocumentation(state *api.APIState, m *descriptorpb.DescriptorProt
 }
 
 // addEnumDocumentation adds documentation to an enum.
-func addEnumDocumentation(state *api.APIState, p []int32, doc string, eFQN string) {
+func addEnumDocumentation(model *api.API, p []int32, doc string, eFQN string) {
 	if len(p) == 0 {
 		// This is a comment for an enum
-		state.EnumByID[eFQN].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Enum(eFQN).Documentation = trimLeadingSpacesInDocumentation(doc)
 	} else if len(p) == 2 && p[0] == enumDescriptorValue {
-		state.EnumByID[eFQN].Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
+		model.Enum(eFQN).Values[p[1]].Documentation = trimLeadingSpacesInDocumentation(doc)
 	} else {
 		slog.Warn("enum dropped documentation", "loc", p, "docs", doc)
 	}

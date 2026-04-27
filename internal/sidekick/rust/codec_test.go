@@ -499,7 +499,7 @@ func testOneOfEnumNameImpl(t *testing.T, c *codec, name string, want string) {
 func TestWellKnownTypesExist(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	for _, name := range []string{"Any", "Duration", "Empty", "FieldMask", "Timestamp"} {
-		if _, ok := model.State.MessageByID[fmt.Sprintf(".google.protobuf.%s", name)]; !ok {
+		if model.Message(fmt.Sprintf(".google.protobuf.%s", name)) == nil {
 			t.Errorf("cannot find well-known message %s in API", name)
 		}
 	}
@@ -510,7 +510,7 @@ func TestWellKnownTypesAsMethod(t *testing.T) {
 	c := createRustCodec()
 
 	want := "wkt::Empty"
-	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName(".google.protobuf.Empty", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -589,7 +589,7 @@ func TestMethodInOut(t *testing.T) {
 	c := createRustCodec()
 
 	want := "crate::model::Target"
-	got, err := c.methodInOutTypeName("..Target", model.State, model.PackageName)
+	got, err := c.methodInOutTypeName("..Target", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -598,7 +598,7 @@ func TestMethodInOut(t *testing.T) {
 	}
 
 	want = "crate::model::target::Nested"
-	got, err = c.methodInOutTypeName("..Target.Nested", model.State, model.PackageName)
+	got, err = c.methodInOutTypeName("..Target.Nested", model, model.PackageName)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -617,8 +617,8 @@ func rustFieldTypesCases() *api.API {
 		ID:    "..$MapMessage",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", ID: "..$Message.key", Typez: api.INT32_TYPE},
-			{Name: "value", ID: "..$Message.value", Typez: api.INT32_TYPE},
+			{Name: "key", ID: "..$Message.key", Typez: api.TypezInt32},
+			{Name: "value", ID: "..$Message.value", Typez: api.TypezInt32},
 		},
 	}
 	message := &api.Message{
@@ -627,57 +627,57 @@ func rustFieldTypesCases() *api.API {
 		Fields: []*api.Field{
 			{
 				Name:     "f_int32",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				Optional: false,
 				Repeated: false,
 			},
 			{
 				Name:     "f_int32_optional",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				Optional: true,
 				Repeated: false,
 			},
 			{
 				Name:     "f_int32_repeated",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				Optional: false,
 				Repeated: true,
 			},
 			{
 				Name:     "f_string",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				Optional: false,
 				Repeated: false,
 			},
 			{
 				Name:     "f_string_optional",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				Optional: true,
 				Repeated: false,
 			},
 			{
 				Name:     "f_string_repeated",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				Optional: false,
 				Repeated: true,
 			},
 			{
 				Name:     "f_msg",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..Target",
 				Optional: true,
 				Repeated: false,
 			},
 			{
 				Name:     "f_msg_repeated",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..Target",
 				Optional: false,
 				Repeated: true,
 			},
 			{
 				Name:      "f_msg_recursive",
-				Typez:     api.MESSAGE_TYPE,
+				Typez:     api.TypezMessage,
 				TypezID:   "..Message",
 				Optional:  true,
 				Repeated:  false,
@@ -685,7 +685,7 @@ func rustFieldTypesCases() *api.API {
 			},
 			{
 				Name:      "f_msg_recursive_repeated",
-				Typez:     api.MESSAGE_TYPE,
+				Typez:     api.TypezMessage,
 				TypezID:   "..Message",
 				Optional:  false,
 				Repeated:  true,
@@ -693,21 +693,21 @@ func rustFieldTypesCases() *api.API {
 			},
 			{
 				Name:     "f_timestamp",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
 				Optional: true,
 				Repeated: false,
 			},
 			{
 				Name:     "f_timestamp_repeated",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
 				Optional: false,
 				Repeated: true,
 			},
 			{
 				Name:     "f_map",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..$MapMessage",
 				Optional: false,
 				Repeated: false,
@@ -722,8 +722,8 @@ func rustFieldTypesCases() *api.API {
 
 func TestFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 	expectedTypes := map[string]string{
@@ -762,7 +762,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -774,7 +774,7 @@ func TestFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err = c.fieldType(field, model.State, true, model.PackageName)
+		got, err = c.fieldType(field, model, true, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -786,8 +786,8 @@ func TestFieldType(t *testing.T) {
 
 func TestOneOfFieldType(t *testing.T) {
 	model := rustFieldTypesCases()
-	message, ok := model.State.MessageByID["..Message"]
-	if !ok {
+	message := model.Message("..Message")
+	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
 	}
 
@@ -812,7 +812,7 @@ func TestOneOfFieldType(t *testing.T) {
 		if !ok {
 			t.Fatalf("missing expected value for %s", field.Name)
 		}
-		got, err := c.oneOfFieldType(field, model.State, model.PackageName)
+		got, err := c.oneOfFieldType(field, model, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -830,29 +830,29 @@ func TestFieldMapTypeValues(t *testing.T) {
 	}{
 		{
 			"std::collections::HashMap<i32,std::string::String>",
-			&api.Field{Typez: api.STRING_TYPE},
+			&api.Field{Typez: api.TypezString},
 		},
 		{
 			"std::collections::HashMap<i32,i64>",
-			&api.Field{Typez: api.INT64_TYPE},
+			&api.Field{Typez: api.TypezInt64},
 		},
 		{
 			"std::collections::HashMap<i32,wkt::Any>",
-			&api.Field{Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Any"},
+			&api.Field{Typez: api.TypezMessage, TypezID: ".google.protobuf.Any"},
 		},
 		{
 			"std::collections::HashMap<i32,crate::model::OtherMessage>",
-			&api.Field{Typez: api.MESSAGE_TYPE, TypezID: ".test.OtherMessage"},
+			&api.Field{Typez: api.TypezMessage, TypezID: ".test.OtherMessage"},
 		},
 		{
 			"std::collections::HashMap<i32,crate::model::Message>",
-			&api.Field{Typez: api.MESSAGE_TYPE, TypezID: ".test.Message"},
+			&api.Field{Typez: api.TypezMessage, TypezID: ".test.Message"},
 		},
 	} {
 		field := &api.Field{
 			Name:    "indexed",
 			ID:      ".test.Message.indexed",
-			Typez:   api.MESSAGE_TYPE,
+			Typez:   api.TypezMessage,
 			TypezID: ".test.$MapThing",
 		}
 		other_message := &api.Message{
@@ -874,7 +874,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 		key := &api.Field{
 			Name:  "key",
 			ID:    ".test.$MapThing.key",
-			Typez: api.INT32_TYPE,
+			Typez: api.TypezInt32,
 		}
 		map_thing := &api.Message{
 			Name:   "$MapThing",
@@ -886,7 +886,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -904,21 +904,21 @@ func TestFieldMapTypeKey(t *testing.T) {
 	}{
 		{
 			"std::collections::HashMap<i32,i64>",
-			&api.Field{Typez: api.INT32_TYPE},
+			&api.Field{Typez: api.TypezInt32},
 		},
 		{
 			"std::collections::HashMap<std::string::String,i64>",
-			&api.Field{Typez: api.STRING_TYPE},
+			&api.Field{Typez: api.TypezString},
 		},
 		{
 			"std::collections::HashMap<crate::model::EnumType,i64>",
-			&api.Field{Typez: api.ENUM_TYPE, TypezID: ".test.EnumType"},
+			&api.Field{Typez: api.TypezEnum, TypezID: ".test.EnumType"},
 		},
 	} {
 		field := &api.Field{
 			Name:    "indexed",
 			ID:      ".test.Message.indexed",
-			Typez:   api.MESSAGE_TYPE,
+			Typez:   api.TypezMessage,
 			TypezID: ".test.$MapThing",
 		}
 		message := &api.Message{
@@ -934,7 +934,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		value := &api.Field{
 			Name:  "value",
 			ID:    ".test.$MapThing.value",
-			Typez: api.INT64_TYPE,
+			Typez: api.TypezInt64,
 		}
 		map_thing := &api.Message{
 			Name:   "$MapThing",
@@ -950,7 +950,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 		model.State.MessageByID[map_thing.ID] = map_thing
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
-		got, err := c.fieldType(field, model.State, false, model.PackageName)
+		got, err := c.fieldType(field, model, false, model.PackageName)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -964,56 +964,56 @@ func TestAsQueryParameter(t *testing.T) {
 	optionsField := &api.Field{
 		Name:     "options_field",
 		JSONName: "optionsField",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  "..Options",
 		Optional: true,
 	}
 	requiredField := &api.Field{
 		Name:     "required_field",
 		JSONName: "requiredField",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 	}
 	optionalField := &api.Field{
 		Name:     "optional_field",
 		JSONName: "optionalField",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 		Optional: true,
 	}
 	repeatedField := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 		Repeated: true,
 	}
 
 	requiredEnumField := &api.Field{
 		Name:     "required_enum_field",
 		JSONName: "requiredEnumField",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 	}
 	optionalEnumField := &api.Field{
 		Name:     "optional_enum_field",
 		JSONName: "optionalEnumField",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		Optional: true,
 	}
 	repeatedEnumField := &api.Field{
 		Name:     "repeated_enum_field",
 		JSONName: "repeatedEnumField",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		Repeated: true,
 	}
 
 	requiredFieldMaskField := &api.Field{
 		Name:     "required_field_mask",
 		JSONName: "requiredFieldMask",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.FieldMask",
 	}
 	optionalFieldMaskField := &api.Field{
 		Name:     "optional_field_mask",
 		JSONName: "optionalFieldMask",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.FieldMask",
 		Optional: true,
 	}
@@ -1048,26 +1048,26 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	optionsField := &api.Field{
 		Name:     "options_field",
 		JSONName: "optionsField",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  options.ID,
 		IsOneOf:  true,
 	}
 	typeField := &api.Field{
 		Name:     "type",
 		JSONName: "type",
-		Typez:    api.INT32_TYPE,
+		Typez:    api.TypezInt32,
 		IsOneOf:  true,
 	}
 	singularField := &api.Field{
 		Name:     "singular_field",
 		JSONName: "singularField",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 		IsOneOf:  true,
 	}
 	repeatedField := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 		Repeated: true,
 		IsOneOf:  true,
 	}
@@ -1075,13 +1075,13 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	singularEnumField := &api.Field{
 		Name:     "singular_enum_field",
 		JSONName: "singularEnumField",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		IsOneOf:  true,
 	}
 	repeatedEnumField := &api.Field{
 		Name:     "repeated_enum_field",
 		JSONName: "repeatedEnumField",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		Repeated: true,
 		IsOneOf:  true,
 	}
@@ -1089,7 +1089,7 @@ func TestOneOfAsQueryParameter(t *testing.T) {
 	singularFieldMaskField := &api.Field{
 		Name:     "singular_field_mask",
 		JSONName: "singularFieldMask",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.FieldMask",
 		IsOneOf:  true,
 	}
@@ -1255,7 +1255,7 @@ Maybe they wanted to show some JSON:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1284,7 +1284,7 @@ func TestFormatDocCommentsBullets(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1340,7 +1340,7 @@ func TestFormatDocCommentsNumbers(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := createRustCodec()
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1419,7 +1419,7 @@ block:
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1443,7 +1443,7 @@ func TestFormatDocCommentsImplicitBlockQuoteClosing(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1473,7 +1473,7 @@ Second [example][].
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1567,7 +1567,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1629,7 +1629,7 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1689,7 +1689,7 @@ func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 			}
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 
-			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model.State, []string{})
+			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model, []string{})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -1754,7 +1754,7 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{"test.v1.Message", "test.v1"})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{"test.v1.Message", "test.v1"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1792,7 +1792,7 @@ func TestFormatDocCommentsHTMLTags(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	c := &codec{}
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -1855,7 +1855,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("foo"),
 						},
@@ -1880,7 +1880,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("foo"),
 						},
@@ -1901,7 +1901,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("thing"),
 						},
@@ -1987,7 +1987,7 @@ Truncated link: [text](https://example11.com`
 	// in a separate function to make this more readable.
 	model := makeApiForRustFormatDocCommentsCrossLinks()
 
-	got, err := c.formatDocComments(input, "test-only-ID", model.State, []string{})
+	got, err := c.formatDocComments(input, "test-only-ID", model, []string{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -2080,7 +2080,7 @@ func TestEnumNames(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "automatic",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".test.Automatic",
 				Optional: true,
 				Repeated: false,
@@ -2191,19 +2191,19 @@ func TestPathFmt(t *testing.T) {
 	}{
 		{
 			"/v1/fixed",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("fixed"),
 		},
 		{
 			"/v1/{}",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("parent"),
 		},
 		{
 			"/v1/{}",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariable("parent").
 					WithLiteral("projects").
@@ -2213,14 +2213,14 @@ func TestPathFmt(t *testing.T) {
 		},
 		{
 			"/v1/{}:action",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("parent").
 				WithVerb("action"),
 		},
 		{
 			"/v1/projects/{}/locations/{}/secrets/{}:action",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").

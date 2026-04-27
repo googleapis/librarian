@@ -291,7 +291,7 @@ func newTestAnnotateModelAPI() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "GET",
-							PathTemplate: api.NewPathTemplate().WithLiteral("resource"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("resource"),
 						},
 					},
 				},
@@ -311,7 +311,7 @@ func newTestAnnotateModelAPI() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "GET",
-							PathTemplate: api.NewPathTemplate().WithLiteral("resource"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("resource"),
 						},
 					},
 				},

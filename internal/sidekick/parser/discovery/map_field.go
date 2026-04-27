@@ -42,13 +42,13 @@ func maybeMapOfObjectField(model *api.API, message *api.Message, input *property
 		return nil
 	}
 	valueTypezID := fmt.Sprintf(".%s.%s", model.PackageName, input.Schema.AdditionalProperties.Ref)
-	typezID := insertMapType(model, api.MESSAGE_TYPE, valueTypezID)
+	typezID := insertMapType(model, api.TypezMessage, valueTypezID)
 	field := &api.Field{
 		Name:          input.Name,
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.MESSAGE_TYPE,
+		Typez:         api.TypezMessage,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -64,13 +64,13 @@ func maybeMapOfEnumField(model *api.API, message *api.Message, input *property) 
 		return nil, err
 	}
 	valueTypezID := fmt.Sprintf("%s.%s", message.ID, input.Name)
-	typezID := insertMapType(model, api.ENUM_TYPE, valueTypezID)
+	typezID := insertMapType(model, api.TypezEnum, valueTypezID)
 	field := &api.Field{
 		Name:          input.Name,
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.MESSAGE_TYPE,
+		Typez:         api.TypezMessage,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -89,7 +89,7 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 		JSONName:      input.Name,
 		ID:            fmt.Sprintf("%s.%s", message.ID, input.Name),
 		Documentation: input.Schema.Description,
-		Typez:         api.MESSAGE_TYPE,
+		Typez:         api.TypezMessage,
 		TypezID:       typezID,
 		Deprecated:    input.Schema.Deprecated,
 		Map:           true,
@@ -105,7 +105,7 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) st
 	key := &api.Field{
 		Name:    "key",
 		ID:      fmt.Sprintf("%s.key", id),
-		Typez:   api.STRING_TYPE,
+		Typez:   api.TypezString,
 		TypezID: "string",
 	}
 	value := &api.Field{

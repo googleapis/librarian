@@ -69,7 +69,7 @@ func TestOpenAPI_AllOf(t *testing.T) {
 
 	want := sample.Automatic()
 	want.Package = ""
-	message := test.State.MessageByID[want.ID]
+	message := test.Message(want.ID)
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -119,7 +119,7 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	message := test.State.MessageByID["..Fake"]
+	message := test.Message("..Fake")
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -132,88 +132,88 @@ func TestOpenAPI_BasicTypes(t *testing.T) {
 			{
 				Name:     "fBool",
 				JSONName: "fBool",
-				Typez:    api.BOOL_TYPE,
+				Typez:    api.TypezBool,
 				TypezID:  "bool",
 			},
 			{
 				Name:     "fInt64",
 				JSONName: "fInt64",
-				Typez:    api.INT64_TYPE,
+				Typez:    api.TypezInt64,
 				TypezID:  "int64",
 			},
 			{
 				Name:     "fInt32",
 				JSONName: "fInt32",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				TypezID:  "int32",
 			},
 			{
 				Name:     "fUInt32",
 				JSONName: "fUInt32",
-				Typez:    api.UINT32_TYPE,
+				Typez:    api.TypezUint32,
 				TypezID:  "uint32",
 			},
 			{
 				Name:     "fFloat",
 				JSONName: "fFloat",
-				Typez:    api.FLOAT_TYPE,
+				Typez:    api.TypezFloat,
 				TypezID:  "float",
 			},
 			{
 				Name:     "fDouble",
 				JSONName: "fDouble",
-				Typez:    api.DOUBLE_TYPE,
+				Typez:    api.TypezDouble,
 				TypezID:  "double",
 			},
 			{
 				Name:     "fString",
 				JSONName: "fString",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string",
 			},
 			{
 				Name:     "fOptional",
 				JSONName: "fOptional",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string",
 				Optional: true},
 			{
 				Name:     "fSInt64",
 				JSONName: "fSInt64",
-				Typez:    api.INT64_TYPE,
+				Typez:    api.TypezInt64,
 				TypezID:  "int64",
 			},
 			{
 				Name:     "fSUInt64",
 				JSONName: "fSUInt64",
-				Typez:    api.UINT64_TYPE,
+				Typez:    api.TypezUint64,
 				TypezID:  "uint64",
 			},
 			{
 				Name:     "fDuration",
 				JSONName: "fDuration",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Duration",
 				Optional: true,
 			},
 			{
 				Name:     "fTimestamp",
 				JSONName: "fTimestamp",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
 				Optional: true,
 			},
 			{
 				Name:     "fFieldMask",
 				JSONName: "fFieldMask",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.FieldMask",
 				Optional: true,
 			},
 			{
 				Name:     "fBytes",
 				JSONName: "fBytes",
-				Typez:    api.BYTES_TYPE,
+				Typez:    api.TypezBytes,
 				TypezID:  "bytes",
 			},
 		},
@@ -251,7 +251,7 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	message := test.State.MessageByID["..Fake"]
+	message := test.Message("..Fake")
 	if message == nil {
 		t.Errorf("missing message in MessageByID index")
 		return
@@ -265,70 +265,70 @@ func TestOpenAPI_ArrayTypes(t *testing.T) {
 				Repeated: true,
 				Name:     "fBool",
 				JSONName: "fBool",
-				Typez:    api.BOOL_TYPE,
+				Typez:    api.TypezBool,
 				TypezID:  "bool"},
 			{
 				Repeated: true,
 				Name:     "fInt64",
 				JSONName: "fInt64",
-				Typez:    api.INT64_TYPE,
+				Typez:    api.TypezInt64,
 				TypezID:  "int64"},
 			{
 				Repeated: true,
 				Name:     "fInt32",
 				JSONName: "fInt32",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				TypezID:  "int32"},
 			{
 				Repeated: true,
 				Name:     "fUInt32",
 				JSONName: "fUInt32",
-				Typez:    api.UINT32_TYPE,
+				Typez:    api.TypezUint32,
 				TypezID:  "uint32"},
 			{
 				Repeated: true,
 				Name:     "fString",
 				JSONName: "fString",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string"},
 			{
 				Repeated: true,
 				Name:     "fSInt64",
 				JSONName: "fSInt64",
-				Typez:    api.INT64_TYPE,
+				Typez:    api.TypezInt64,
 				TypezID:  "int64"},
 			{
 				Repeated: true,
 				Name:     "fSUInt64",
 				JSONName: "fSUInt64",
-				Typez:    api.UINT64_TYPE,
+				Typez:    api.TypezUint64,
 				TypezID:  "uint64"},
 			{
 				Repeated: true,
 				Name:     "fDuration",
 				JSONName: "fDuration",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Duration",
 			},
 			{
 				Repeated: true,
 				Name:     "fTimestamp",
 				JSONName: "fTimestamp",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Timestamp",
 			},
 			{
 				Repeated: true,
 				Name:     "fFieldMask",
 				JSONName: "fFieldMask",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.FieldMask",
 			},
 			{
 				Repeated: true,
 				Name:     "fBytes",
 				JSONName: "fBytes",
-				Typez:    api.BYTES_TYPE,
+				Typez:    api.TypezBytes,
 				TypezID:  "bytes",
 			},
 		},
@@ -374,7 +374,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 			{
 				Name:          "fObject",
 				JSONName:      "fObject",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..Foo",
 				Documentation: "An object field.",
 				Optional:      true,
@@ -382,7 +382,7 @@ func TestOpenAPI_SimpleObject(t *testing.T) {
 			{
 				Name:          "fObjectArray",
 				JSONName:      "fObjectArray",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..Bar",
 				Documentation: "An object array field.",
 				Optional:      false,
@@ -418,7 +418,7 @@ func TestOpenAPI_Any(t *testing.T) {
 		ID:            "..Fake",
 		Documentation: "A test message.",
 		Fields: []*api.Field{
-			{Name: "fMap", JSONName: "fMap", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Any", Optional: true},
+			{Name: "fMap", JSONName: "fMap", Typez: api.TypezMessage, TypezID: ".google.protobuf.Any", Optional: true},
 		},
 	})
 }
@@ -454,21 +454,21 @@ func TestOpenAPI_MapString(t *testing.T) {
 			{
 				Name:     "fMap",
 				JSONName: "fMap",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, string>",
 				Map:      true,
 			},
 			{
 				Name:     "fMapS32",
 				JSONName: "fMapS32",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int32>",
 				Map:      true,
 			},
 			{
 				Name:     "fMapS64",
 				JSONName: "fMapS64",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int64>",
 				Map:      true,
 			},
@@ -506,7 +506,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			{
 				Name:     "fMapI32",
 				JSONName: "fMapI32",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int32>",
 				Optional: false,
 				Map:      true,
@@ -514,7 +514,7 @@ func TestOpenAPI_MapInteger(t *testing.T) {
 			{
 				Name:     "fMapI64",
 				JSONName: "fMapI64",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "$map<string, int64>",
 				Optional: false,
 				Map:      true,
@@ -544,7 +544,7 @@ func openapiSecretManagerAPI(t *testing.T) *api.API {
 func TestOpenAPI_MakeAPI(t *testing.T) {
 	test := openapiSecretManagerAPI(t)
 
-	location := test.State.MessageByID["..Location"]
+	location := test.Message("..Location")
 	if location == nil {
 		t.Errorf("missing message (Location) in MessageByID index")
 		return
@@ -558,7 +558,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "name",
 				JSONName:      "name",
 				Documentation: "Resource name for the location, which may vary between implementations." + "\nFor example: `\"projects/example-project/locations/us-east1\"`",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -566,7 +566,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "locationId",
 				JSONName:      "locationId",
 				Documentation: "The canonical id for this location. For example: `\"us-east1\"`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -574,7 +574,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "displayName",
 				JSONName:      "displayName",
 				Documentation: `The friendly name for this location, typically a nearby city name.` + "\n" + `For example, "Tokyo".`,
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -582,7 +582,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "labels",
 				JSONName:      "labels",
 				Documentation: "Cross-service attributes for the location. For example\n\n    {\"cloud.googleapis.com/region\": \"us-east1\"}",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "$map<string, string>",
 				Optional:      false,
 				Map:           true,
@@ -591,14 +591,14 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "metadata",
 				JSONName:      "metadata",
 				Documentation: `Service-specific metadata. For example the available capacity at the given` + "\n" + `location.`,
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       ".google.protobuf.Any",
 				Optional:      true,
 			},
 		},
 	})
 
-	listLocationsResponse := test.State.MessageByID["..ListLocationsResponse"]
+	listLocationsResponse := test.Message("..ListLocationsResponse")
 	if listLocationsResponse == nil {
 		t.Errorf("missing message (ListLocationsResponse) in MessageByID index")
 		return
@@ -612,7 +612,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "locations",
 				JSONName:      "locations",
 				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..Location",
 				Repeated:      true,
 			},
@@ -620,7 +620,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "nextPageToken",
 				JSONName:      "nextPageToken",
 				Documentation: "The standard List next-page token.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -630,7 +630,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "nextPageToken",
 				JSONName:      "nextPageToken",
 				Documentation: "The standard List next-page token.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -638,7 +638,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "locations",
 				JSONName:      "locations",
 				Documentation: "A list of locations that matches the specified filter in the request.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..Location",
 				Repeated:      true,
 			},
@@ -657,9 +657,9 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:     "filter",
@@ -668,7 +668,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 					"\nThe filtering language accepts strings like `\"displayName=tokyo" +
 					"\"`, and\nis documented in more detail in [AIP-160](https://google" +
 					".aip.dev/160).",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string",
 				Optional: true,
 			},
@@ -676,7 +676,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "pageSize",
 				JSONName:      "pageSize",
 				Documentation: "The maximum number of results to return.\nIf not set, the service selects a default.",
-				Typez:         api.INT32_TYPE,
+				Typez:         api.TypezInt32,
 				TypezID:       "int32",
 				Optional:      true,
 			},
@@ -684,14 +684,14 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 				Name:          "pageToken",
 				JSONName:      "pageToken",
 				Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
 		},
 	}
-	listLocationsRequest, ok := test.State.MessageByID[want.ID]
-	if !ok {
+	listLocationsRequest := test.Message(want.ID)
+	if listLocationsRequest == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -699,15 +699,15 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 
 	// This message has a weirdly named field that gets tricky to serialize.
 	sp := sample.SecretPayload()
-	got, ok := test.State.MessageByID[sp.ID]
-	if !ok {
+	got := test.Message(sp.ID)
+	if got == nil {
 		t.Errorf("missing message (SecretPayload) in MessageByID index")
 		return
 	}
 	apitest.CheckMessage(t, got, sp)
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
@@ -730,7 +730,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -747,7 +747,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Name:          "pageToken",
 			JSONName:      "pageToken",
 			Documentation: "A page token received from the `next_page_token` field in the response.\nSend that page token to receive the subsequent page.",
-			Typez:         api.STRING_TYPE,
+			Typez:         api.TypezString,
 			TypezID:       "string",
 			Optional:      true,
 		},
@@ -769,8 +769,8 @@ func TestOpenAPI_ServicePlaceholder(t *testing.T) {
 		Documentation:      "Synthetic messages for the [Service][.Service] service.",
 		ServicePlaceholder: true,
 	}
-	got, ok := test.State.MessageByID["..Service"]
-	if !ok {
+	got := test.Message("..Service")
+	if got == nil {
 		t.Errorf("missing service placeholder message in MessageById index")
 		return
 	}
@@ -840,8 +840,8 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 		Documentation:      "Synthetic messages for the [Service][.Service] service.",
 		ServicePlaceholder: true,
 	}
-	got, ok := test.State.MessageByID[want.ID]
-	if !ok {
+	got := test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -858,38 +858,38 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Name:          "project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "location",
 				JSONName:      "location",
 				Documentation: "The `{location}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "secret",
 				JSONName:      "secret",
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/locations/{location}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "body",
 				JSONName:      "body",
 				Documentation: "The request body.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..SetIamPolicyRequest",
 				Optional:      true,
 			},
 		},
 	}
-	got, ok = test.State.MessageByID[want.ID]
-	if !ok {
+	got = test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -905,30 +905,30 @@ func TestOpenAPI_SyntheticMessageWithExistingBody(t *testing.T) {
 				Name:          "project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "secret",
 				JSONName:      "secret",
 				Documentation: "The `{secret}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/secrets/{secret}:setIamPolicy`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "body",
 				JSONName:      "body",
 				Documentation: "The request body.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..SetIamPolicyRequest",
 				Optional:      true,
 			},
 		},
 	}
-	got, ok = test.State.MessageByID[want.ID]
-	if !ok {
+	got = test.Message(want.ID)
+	if got == nil {
 		t.Errorf("missing message (%s) in MessageByID index", want.ID)
 		return
 	}
@@ -950,8 +950,8 @@ func TestOpenAPI_Pagination(t *testing.T) {
 	}
 	api.UpdateMethodPagination(nil, test)
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("missing service (Service) in ServiceByID index")
 		return
 	}
@@ -968,7 +968,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("projects").
 								WithVariableNamed("project").
@@ -981,15 +981,15 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Name:          "pageToken",
 					JSONName:      "pageToken",
 					Documentation: "The `{pageToken}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
-					Typez:         api.STRING_TYPE,
+					Typez:         api.TypezString,
 					TypezID:       "string",
 					Optional:      true,
 				},
 			},
 		},
 	})
-	resp, ok := test.State.MessageByID["..ListFoosResponse"]
-	if !ok {
+	resp := test.Message("..ListFoosResponse")
+	if resp == nil {
 		t.Errorf("missing message (ListFoosResponse) in MessageByID index")
 		return
 	}
@@ -1006,7 +1006,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			},
 			{
 				Name:     "secrets",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..Foo",
 				JSONName: "secrets",
 				Repeated: true,
@@ -1022,7 +1022,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 			},
 			PageableItem: &api.Field{
 				Name:     "secrets",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..Foo",
 				JSONName: "secrets",
 				Repeated: true,
@@ -1076,7 +1076,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Name:          "requestId",
 		JSONName:      "requestId",
 		Documentation: "Test-only Description",
-		Typez:         api.STRING_TYPE,
+		Typez:         api.TypezString,
 		TypezID:       "string",
 		Optional:      true,
 		AutoPopulated: true,
@@ -1085,7 +1085,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 		Name:          "requestIdExplicitlyNotRequired",
 		JSONName:      "requestIdExplicitlyNotRequired",
 		Documentation: "Test-only Description",
-		Typez:         api.STRING_TYPE,
+		Typez:         api.TypezString,
 		TypezID:       "string",
 		Optional:      true,
 		AutoPopulated: true,
@@ -1101,32 +1101,32 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 				Name:          "project",
 				JSONName:      "project",
 				Documentation: "The `{project}` component of the target path.\n\nThe full target path will be in the form `/v1/projects/{project}/foos`.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "fooId",
 				JSONName:      "fooId",
 				Documentation: "Test-only Description",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			request_id,
 			request_id_explicit,
 			{
 				Name:          "notRequestIdRequired",
 				Documentation: "Test-only Description",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				JSONName:      "notRequestIdRequired",
-				Behavior:      []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior:      []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			{
 				Name:          "notRequestIdMissingFormat",
 				Documentation: "Test-only Description",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingFormat",
 				Optional:      true,
@@ -1134,7 +1134,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			{
 				Name:          "notRequestIdMissingServiceConfig",
 				Documentation: "Test-only Description",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				JSONName:      "notRequestIdMissingServiceConfig",
 				Optional:      true,
@@ -1144,14 +1144,14 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 			},
 		},
 	}
-	message, ok := test.State.MessageByID[wantMessage.ID]
-	if !ok {
+	message := test.Message(wantMessage.ID)
+	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", wantMessage.ID)
 	}
 	apitest.CheckMessage(t, message, wantMessage)
 
-	method, ok := test.State.MethodByID[".test.TestService.CreateFoo"]
-	if !ok {
+	method := test.Method(".test.TestService.CreateFoo")
+	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
 	}
 	wantField := []*api.Field{request_id, request_id_explicit}
@@ -1174,8 +1174,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		t.Fatalf("Error in makeAPI() %q", err)
 	}
 
-	service, ok := test.State.ServiceByID["..Service"]
-	if !ok {
+	service := test.Service("..Service")
+	if service == nil {
 		t.Errorf("cannot find service %s in model", "..Service.ListFoos")
 		return
 	}
@@ -1188,7 +1188,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -1210,7 +1210,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -1222,8 +1222,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		},
 	})
 
-	response, ok := test.State.MessageByID["..Response"]
-	if !ok {
+	response := test.Message("..Response")
+	if response == nil {
 		t.Errorf("cannot find message %s", "..Response")
 		return
 	}
@@ -1233,14 +1233,14 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "name",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string",
 				JSONName: "name",
 				Optional: true,
 			},
 			{
 				Name:       "other",
-				Typez:      api.STRING_TYPE,
+				Typez:      api.TypezString,
 				TypezID:    "string",
 				JSONName:   "other",
 				Deprecated: true,
@@ -1249,8 +1249,8 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		},
 	})
 
-	deprecatedMessage, ok := test.State.MessageByID["..DeprecatedMessage"]
-	if !ok {
+	deprecatedMessage := test.Message("..DeprecatedMessage")
+	if deprecatedMessage == nil {
 		t.Errorf("cannot find message %s", "..DeprecatedMessage")
 		return
 	}
@@ -1261,7 +1261,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "name",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				TypezID:  "string",
 				JSONName: "name",
 				Optional: true,

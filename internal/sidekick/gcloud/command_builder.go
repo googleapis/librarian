@@ -131,7 +131,7 @@ func (b *commandBuilder) async() *Async {
 }
 
 func (b *commandBuilder) hidden() bool {
-	if len(b.overrides.APIs) > 0 {
+	if b.overrides != nil && len(b.overrides.APIs) > 0 {
 		return b.overrides.APIs[0].RootIsHidden
 	}
 	// Default to hidden if no API overrides are provided.
@@ -327,10 +327,10 @@ func tableFormat(message *api.Message) string {
 		}
 
 		// Include scalars and enums.
-		isScalar := f.Typez == api.STRING_TYPE ||
-			f.Typez == api.INT32_TYPE || f.Typez == api.INT64_TYPE ||
-			f.Typez == api.BOOL_TYPE || f.Typez == api.ENUM_TYPE ||
-			f.Typez == api.DOUBLE_TYPE || f.Typez == api.FLOAT_TYPE
+		isScalar := f.Typez == api.TypezString ||
+			f.Typez == api.TypezInt32 || f.Typez == api.TypezInt64 ||
+			f.Typez == api.TypezBool || f.Typez == api.TypezEnum ||
+			f.Typez == api.TypezDouble || f.Typez == api.TypezFloat
 
 		if isScalar {
 			if !first {

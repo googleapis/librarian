@@ -33,19 +33,19 @@ func TestPageSimple(t *testing.T) {
 				Name:     "parent",
 				JSONName: "parent",
 				ID:       ".package.Request.parent",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_token",
 				JSONName: "pageToken",
 				ID:       ".package.Request.pageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_size",
 				JSONName: "pageSize",
 				ID:       ".package.Request.pageSize",
-				Typez:    INT32_TYPE,
+				Typez:    TypezInt32,
 			},
 		},
 	}
@@ -57,13 +57,13 @@ func TestPageSimple(t *testing.T) {
 				Name:     "next_page_token",
 				JSONName: "nextPageToken",
 				ID:       ".package.Request.nextPageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "items",
 				JSONName: "items",
 				ID:       ".package.Request.items",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Resource",
 				Repeated: true,
 			},
@@ -107,19 +107,19 @@ func TestPageWithOverride(t *testing.T) {
 				Name:     "parent",
 				JSONName: "parent",
 				ID:       ".package.Request.parent",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_token",
 				JSONName: "pageToken",
 				ID:       ".package.Request.pageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_size",
 				JSONName: "pageSize",
 				ID:       ".package.Request.pageSize",
-				Typez:    INT32_TYPE,
+				Typez:    TypezInt32,
 			},
 		},
 	}
@@ -131,13 +131,13 @@ func TestPageWithOverride(t *testing.T) {
 				Name:     "next_page_token",
 				JSONName: "nextPageToken",
 				ID:       ".package.Request.nextPageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "warnings",
 				JSONName: "warnings",
 				ID:       ".package.Request.warnings",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Warning",
 				Repeated: true,
 			},
@@ -145,7 +145,7 @@ func TestPageWithOverride(t *testing.T) {
 				Name:     "items",
 				JSONName: "items",
 				ID:       ".package.Request.items",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Resource",
 				Repeated: true,
 			},
@@ -192,13 +192,13 @@ func TestPageMissingInputType(t *testing.T) {
 				Name:     "next_page_token",
 				JSONName: "nextPageToken",
 				ID:       ".package.Request.nextPageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "items",
 				JSONName: "items",
 				ID:       ".package.Request.items",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Resource",
 				Repeated: true,
 			},
@@ -235,19 +235,19 @@ func TestPageMissingOutputType(t *testing.T) {
 				Name:     "parent",
 				JSONName: "parent",
 				ID:       ".package.Request.parent",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_token",
 				JSONName: "pageToken",
 				ID:       ".package.Request.pageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_size",
 				JSONName: "pageSize",
 				ID:       ".package.Request.pageSize",
-				Typez:    INT32_TYPE,
+				Typez:    TypezInt32,
 			},
 		},
 	}
@@ -287,13 +287,13 @@ func TestPageBadRequest(t *testing.T) {
 				Name:     "next_page_token",
 				JSONName: "nextPageToken",
 				ID:       ".package.Request.nextPageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "items",
 				JSONName: "items",
 				ID:       ".package.Request.items",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Resource",
 				Repeated: true,
 			},
@@ -335,19 +335,19 @@ func TestPageBadResponse(t *testing.T) {
 				Name:     "parent",
 				JSONName: "parent",
 				ID:       ".package.Request.parent",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_token",
 				JSONName: "pageToken",
 				ID:       ".package.Request.pageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 			{
 				Name:     "page_size",
 				JSONName: "pageSize",
 				ID:       ".package.Request.pageSize",
-				Typez:    INT32_TYPE,
+				Typez:    TypezInt32,
 			},
 		},
 	}
@@ -378,7 +378,7 @@ func TestPaginationRequestInfoErrors(t *testing.T) {
 				Name:     "page_token",
 				JSONName: "pageToken",
 				ID:       ".package.Request.pageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 		},
 	}
@@ -390,7 +390,7 @@ func TestPaginationRequestInfoErrors(t *testing.T) {
 				Name:     "page_size",
 				JSONName: "pageSize",
 				ID:       ".package.Request.pageSize",
-				Typez:    INT32_TYPE,
+				Typez:    TypezInt32,
 			},
 		},
 	}
@@ -408,12 +408,12 @@ func TestPaginationRequestPageSizeSuccess(t *testing.T) {
 		Typez   Typez
 		TypezID string
 	}{
-		{"pageSize", INT32_TYPE, ""},
-		{"pageSize", UINT32_TYPE, ""},
-		{"maxResults", INT32_TYPE, ""},
-		{"maxResults", UINT32_TYPE, ""},
-		{"maxResults", MESSAGE_TYPE, ".google.protobuf.Int32Value"},
-		{"maxResults", MESSAGE_TYPE, ".google.protobuf.UInt32Value"},
+		{"pageSize", TypezInt32, ""},
+		{"pageSize", TypezUint32, ""},
+		{"maxResults", TypezInt32, ""},
+		{"maxResults", TypezUint32, ""},
+		{"maxResults", TypezMessage, ".google.protobuf.Int32Value"},
+		{"maxResults", TypezMessage, ".google.protobuf.UInt32Value"},
 	} {
 		response := &Message{
 			Name: "Response",
@@ -440,19 +440,19 @@ func TestPaginationRequestPageSizeNotMatching(t *testing.T) {
 		Typez   Typez
 		TypezID string
 	}{
-		{"badName", INT32_TYPE, ""},
-		{"badName", UINT32_TYPE, ""},
-		{"badName", INT32_TYPE, ""},
-		{"badName", UINT32_TYPE, ""},
-		{"badName", MESSAGE_TYPE, ".google.protobuf.Int32Value"},
-		{"badName", MESSAGE_TYPE, ".google.protobuf.UInt32Value"},
+		{"badName", TypezInt32, ""},
+		{"badName", TypezUint32, ""},
+		{"badName", TypezInt32, ""},
+		{"badName", TypezUint32, ""},
+		{"badName", TypezMessage, ".google.protobuf.Int32Value"},
+		{"badName", TypezMessage, ".google.protobuf.UInt32Value"},
 
-		{"pageSize", INT64_TYPE, ""},
-		{"pageSize", UINT64_TYPE, ""},
-		{"maxResults", INT64_TYPE, ""},
-		{"maxResults", UINT64_TYPE, ""},
-		{"maxResults", MESSAGE_TYPE, ".google.protobuf.Int64Value"},
-		{"maxResults", MESSAGE_TYPE, ".google.protobuf.UInt64Value"},
+		{"pageSize", TypezInt64, ""},
+		{"pageSize", TypezUint64, ""},
+		{"maxResults", TypezInt64, ""},
+		{"maxResults", TypezUint64, ""},
+		{"maxResults", TypezMessage, ".google.protobuf.Int64Value"},
+		{"maxResults", TypezMessage, ".google.protobuf.UInt64Value"},
 	} {
 		response := &Message{
 			Name: "Response",
@@ -478,8 +478,8 @@ func TestPaginationRequestToken(t *testing.T) {
 		Name  string
 		Typez Typez
 	}{
-		{"badName", STRING_TYPE},
-		{"nextPageToken", INT32_TYPE},
+		{"badName", TypezString},
+		{"nextPageToken", TypezInt32},
 	} {
 		response := &Message{
 			Name: "Response",
@@ -508,7 +508,7 @@ func TestPaginationResponseErrors(t *testing.T) {
 				Name:     "items",
 				JSONName: "items",
 				ID:       ".package.Request.items",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				TypezID:  ".package.Resource",
 				Repeated: true,
 			},
@@ -522,7 +522,7 @@ func TestPaginationResponseErrors(t *testing.T) {
 				Name:     "next_page_token",
 				JSONName: "nextPageToken",
 				ID:       ".package.Request.nextPageToken",
-				Typez:    STRING_TYPE,
+				Typez:    TypezString,
 			},
 		},
 	}
@@ -541,8 +541,8 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 		Typez    Typez
 		Name     string
 	}{
-		{false, true, MESSAGE_TYPE, "items"},
-		{true, false, MESSAGE_TYPE, "items"},
+		{false, true, TypezMessage, "items"},
+		{true, false, TypezMessage, "items"},
 	} {
 		response := &Message{
 			Name: "Response",
@@ -579,14 +579,14 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 				{
 					Name:     "first",
 					JSONName: "first",
-					Typez:    MESSAGE_TYPE,
+					Typez:    TypezMessage,
 					Repeated: test.Repeated,
 					Map:      test.Map,
 				},
 				{
 					Name:     "second",
 					JSONName: "second",
-					Typez:    MESSAGE_TYPE,
+					Typez:    TypezMessage,
 					Repeated: test.Repeated,
 					Map:      test.Map,
 				},
@@ -607,13 +607,13 @@ func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
 			{
 				Name:     "map",
 				JSONName: "map",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				Map:      true,
 			},
 			{
 				Name:     "repeated",
 				JSONName: "repeated",
-				Typez:    MESSAGE_TYPE,
+				Typez:    TypezMessage,
 				Repeated: true,
 			},
 		},
@@ -634,10 +634,10 @@ func TestPaginationResponseItemNotMatching(t *testing.T) {
 		Typez     Typez
 		Overrides []PaginationOverride
 	}{
-		{"badRepeated", false, MESSAGE_TYPE, nil},
-		{"badType", true, STRING_TYPE, nil},
-		{"bothBad", false, ENUM_TYPE, nil},
-		{"badOverride", true, MESSAGE_TYPE, overrides},
+		{"badRepeated", false, TypezMessage, nil},
+		{"badType", true, TypezString, nil},
+		{"bothBad", false, TypezEnum, nil},
+		{"badOverride", true, TypezMessage, overrides},
 	} {
 		response := &Message{
 			Name: "Response",
@@ -663,8 +663,8 @@ func TestPaginationResponseNextPageToken(t *testing.T) {
 		Name  string
 		Typez Typez
 	}{
-		{"badName", STRING_TYPE},
-		{"nextPageToken", INT32_TYPE},
+		{"badName", TypezString},
+		{"nextPageToken", TypezInt32},
 	} {
 		response := &Message{
 			Name: "Response",

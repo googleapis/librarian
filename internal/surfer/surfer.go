@@ -19,7 +19,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/urfave/cli/v3"
 )
 
@@ -90,7 +89,7 @@ service config yaml, and gcloud.yaml.`,
 			descriptorFiles := cmd.String("descriptor-files")
 			descriptorFilesToGenerate := cmd.String("descriptor-files-to-generate")
 			baseModule := cmd.String("base-module")
-			return gcloud.Generate(gcloud.GenerateConfig{
+			return generate(generateConfig{
 				GcloudConfig:              config,
 				ServiceConfig:             serviceConfig,
 				IncludeList:               includeList,

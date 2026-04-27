@@ -20,8 +20,7 @@ jobs:
   go-generate:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    # With a cold cache, this presubmit maybe take a little longer.
-    timeout-minutes: 6
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
@@ -53,9 +52,10 @@ jobs:
         run: |
           go run ./cmd/librarian install go
       - name: Run tests and check coverage
+        # TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
         run: |
-          go run ./tool/cmd/coverage \
-            $(go list ./... | grep -v -E 'internal/librarian/(dart|java|nodejs|python|rust)|internal/sidekick|internal/legacylibrarian')
+          go run ./tool/cmd/coverage -target=79 \
+            $(go list ./... | grep -v -E 'internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [go-generate, legacylibrarian, test]

@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -172,8 +173,9 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
-	config.LanguageJava: java.Tidy,
-	config.LanguageRust: tidyRustConfig,
+	config.LanguageJava:   java.Tidy,
+	config.LanguagePython: python.Tidy,
+	config.LanguageRust:   tidyRustConfig,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.

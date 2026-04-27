@@ -26,8 +26,9 @@ func TestAdd(t *testing.T) {
 		Name: "test-library",
 	}
 	want := &config.Library{
-		Name:    "test-library",
-		Version: defaultVersion,
+		Name:          "test-library",
+		Version:       defaultVersion,
+		CopyrightYear: "",
 	}
 	got := Add(lib)
 	if diff := cmp.Diff(want, got); diff != "" {

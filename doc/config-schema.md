@@ -252,13 +252,22 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Is the source path. |
-| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
+| `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
+| `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
+
+## JavaFileCopy Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `source` | string | Is the source path relative to the generated GAPIC module directory (e.g., "src/main/java/com/google/storage/v2/gapic_metadata.json"). These paths are used before restructuring the output into Maven modules. |
+| `destination` | string | Is the destination path relative to the generated GAPIC module directory. These paths are used before restructuring the output into Maven modules. |
 
 ## JavaModule Configuration
 
@@ -287,7 +296,7 @@ This document describes the schema for the librarian.yaml.
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
-| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. |
+| `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. TODO(https://github.com/googleapis/librarian/issues/5561): investigate and determine if can remove |
 
 ## NodejsAPI Configuration
 

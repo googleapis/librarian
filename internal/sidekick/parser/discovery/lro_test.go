@@ -44,7 +44,7 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -65,8 +65,8 @@ func TestLroAnnotations(t *testing.T) {
 			PollingPathParameters: []string{"project", "zone"},
 		},
 	}
-	got, ok := model.State.MethodByID[want.ID]
-	if !ok {
+	got := model.Method(want.ID)
+	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
@@ -83,7 +83,7 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -98,8 +98,8 @@ func TestLroAnnotations(t *testing.T) {
 			BodyFieldPath: "",
 		},
 	}
-	gotMixin, ok := model.State.MethodByID[wantMixin.ID]
-	if !ok {
+	gotMixin := model.Method(wantMixin.ID)
+	if gotMixin == nil {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
 	}
 	if diff := cmp.Diff(wantMixin, gotMixin, cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
@@ -130,7 +130,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -150,7 +150,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -176,7 +176,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -196,7 +196,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").

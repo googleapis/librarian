@@ -37,18 +37,28 @@ const (
 	clirrIgnoreFile = "clirr-ignored-differences.xml"
 	// templateName is the name of the template used to generate Clirr ignore file.
 	templateName = "clirr-ignored-differences.xml.tmpl"
+	// protoGooglePrefix is the prefix used to identify proto modules
+	// for Clirr ignore generation.
+	protoGooglePrefix = "proto-google-"
 )
 
-// clirrIgnoreExists checks if the clirr-ignored-differences.xml file exists in the
-// specified directory.
-func clirrIgnoreExists(dir string) (bool, error) {
-	path := filepath.Join(dir, clirrIgnoreFile)
+// clirrIgnoreShouldGenerate determines if the clirr-ignored-differences.xml file
+// should be generated for the specified proto module.
+//
+// It returns true only if the artifactID starts with protoGooglePrefix AND the file
+// does not already exist in the repo directory.
+func clirrIgnoreShouldGenerate(artifactID, repoDir string) (bool, error) {
+	if !strings.HasPrefix(artifactID, protoGooglePrefix) {
+		return false, nil
+	}
+	path := filepath.Join(repoDir, clirrIgnoreFile)
 	_, err := os.Stat(path)
 	if err == nil {
-		return true, nil
+		// File already exists
+		return false, nil
 	}
 	if errors.Is(err, fs.ErrNotExist) {
-		return false, nil
+		return true, nil
 	}
 	return false, fmt.Errorf("failed to check for %s: %w", path, err)
 }

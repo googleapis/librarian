@@ -196,7 +196,7 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 }
 
 func TestPathTemplateBuilder(t *testing.T) {
-	got := NewPathTemplate().
+	got := (&PathTemplate{}).
 		WithLiteral("v1").
 		WithVariable(NewPathVariable("parent", "child").
 			WithLiteral("projects").
@@ -258,25 +258,25 @@ func TestTypezString(t *testing.T) {
 		t    Typez
 		want string
 	}{
-		{"UNDEFINED", UNDEFINED_TYPE, "UNDEFINED"},
-		{"DOUBLE", DOUBLE_TYPE, "DOUBLE"},
-		{"FLOAT", FLOAT_TYPE, "FLOAT"},
-		{"INT64", INT64_TYPE, "INT64"},
-		{"UINT64", UINT64_TYPE, "UINT64"},
-		{"INT32", INT32_TYPE, "INT32"},
-		{"FIXED64", FIXED64_TYPE, "FIXED64"},
-		{"FIXED32", FIXED32_TYPE, "FIXED32"},
-		{"BOOL", BOOL_TYPE, "BOOL"},
-		{"STRING", STRING_TYPE, "STRING"},
-		{"GROUP", GROUP_TYPE, "GROUP"},
-		{"MESSAGE", MESSAGE_TYPE, "MESSAGE"},
-		{"BYTES", BYTES_TYPE, "BYTES"},
-		{"UINT32", UINT32_TYPE, "UINT32"},
-		{"ENUM", ENUM_TYPE, "ENUM"},
-		{"SFIXED32", SFIXED32_TYPE, "SFIXED32"},
-		{"SFIXED64", SFIXED64_TYPE, "SFIXED64"},
-		{"SINT32", SINT32_TYPE, "SINT32"},
-		{"SINT64", SINT64_TYPE, "SINT64"},
+		{"UNDEFINED", TypezUndefined, "UNDEFINED"},
+		{"DOUBLE", TypezDouble, "DOUBLE"},
+		{"FLOAT", TypezFloat, "FLOAT"},
+		{"INT64", TypezInt64, "INT64"},
+		{"UINT64", TypezUint64, "UINT64"},
+		{"INT32", TypezInt32, "INT32"},
+		{"FIXED64", TypezFixed64, "FIXED64"},
+		{"FIXED32", TypezFixed32, "FIXED32"},
+		{"BOOL", TypezBool, "BOOL"},
+		{"STRING", TypezString, "STRING"},
+		{"GROUP", TypezGroup, "GROUP"},
+		{"MESSAGE", TypezMessage, "MESSAGE"},
+		{"BYTES", TypezBytes, "BYTES"},
+		{"UINT32", TypezUint32, "UINT32"},
+		{"ENUM", TypezEnum, "ENUM"},
+		{"SFIXED32", TypezSfixed32, "SFIXED32"},
+		{"SFIXED64", TypezSfixed64, "SFIXED64"},
+		{"SINT32", TypezSint32, "SINT32"},
+		{"SINT64", TypezSint64, "SINT64"},
 		{"Default", Typez(99), "Typez(99)"},
 		{"Negative", Typez(-1), "Typez(-1)"},
 	} {

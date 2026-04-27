@@ -61,18 +61,35 @@ var (
 	// ErrInvalidDistributionName is returned when a distribution name override
 	// is incorrectly formatted.
 	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
+
+	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
+	// but common_resources.proto is also explicitly listed in AdditionalProtos.
+	ErrOmitCommonResourcesConflict = fmt.Errorf("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
 )
 
 // Validate checks that the Java-specific configuration for a library is
 // correctly formatted. It ensures that the distribution name override
-// contains exactly two parts separated by a colon.
+// contains exactly two parts separated by a colon, and that there are no
+// conflicts in common resources configuration.
 func Validate(library *config.Library) error {
-	if library.Java == nil || library.Java.DistributionNameOverride == "" {
+	if library.Java == nil {
 		return nil
 	}
-	parts := strings.Split(library.Java.DistributionNameOverride, ":")
-	if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-		return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
+	if library.Java.DistributionNameOverride != "" {
+		parts := strings.Split(library.Java.DistributionNameOverride, ":")
+		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
+			return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
+		}
+	}
+	for _, javaAPI := range library.Java.JavaAPIs {
+		if !javaAPI.OmitCommonResources {
+			continue
+		}
+		for _, p := range javaAPI.AdditionalProtos {
+			if p == commonResourcesProto {
+				return fmt.Errorf("%s: %w", javaAPI.Path, ErrOmitCommonResourcesConflict)
+			}
+		}
 	}
 	return nil
 }

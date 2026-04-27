@@ -45,13 +45,13 @@ type PaginationInfo struct {
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
 func UpdateMethodPagination(overrides []PaginationOverride, a *API) {
 	for _, m := range a.State.MethodByID {
-		reqMsg := a.State.MessageByID[m.InputTypeID]
+		reqMsg := a.Message(m.InputTypeID)
 		pageTokenField := paginationRequestInfo(reqMsg)
 		if pageTokenField == nil {
 			continue
 		}
 
-		respMsg := a.State.MessageByID[m.OutputTypeID]
+		respMsg := a.Message(m.OutputTypeID)
 		paginationInfo := paginationResponseInfo(overrides, m.ID, respMsg)
 		if paginationInfo == nil {
 			continue
@@ -87,7 +87,7 @@ func paginationRequestPageSize(request *Message) *Field {
 }
 
 func isPaginationPageSizeType(field *Field) bool {
-	return field.Typez == INT32_TYPE || field.Typez == UINT32_TYPE
+	return field.Typez == TypezInt32 || field.Typez == TypezUint32
 }
 
 func isPaginationMaxResultsType(field *Field) bool {
@@ -95,14 +95,14 @@ func isPaginationMaxResultsType(field *Field) bool {
 	if isPaginationPageSizeType(field) {
 		return true
 	}
-	return field.Typez == MESSAGE_TYPE &&
+	return field.Typez == TypezMessage &&
 		(field.TypezID == ".google.protobuf.Int32Value" ||
 			field.TypezID == ".google.protobuf.UInt32Value")
 }
 
 func paginationRequestToken(request *Message) *Field {
 	for _, field := range request.Fields {
-		if field.JSONName == pageToken && field.Typez == STRING_TYPE {
+		if field.JSONName == pageToken && field.Typez == TypezString {
 			return field
 		}
 	}
@@ -140,7 +140,7 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 		if field.Map && mapItems == nil {
 			mapItems = field
 		}
-		if field.Repeated && field.Typez == MESSAGE_TYPE {
+		if field.Repeated && field.Typez == TypezMessage {
 			return field
 		}
 	}
@@ -149,7 +149,7 @@ func paginationResponseItem(overrides []PaginationOverride, methodID string, res
 
 func paginationResponseNextPageToken(response *Message) *Field {
 	for _, field := range response.Fields {
-		if field.JSONName == nextPageToken && field.Typez == STRING_TYPE {
+		if field.JSONName == nextPageToken && field.Typez == TypezString {
 			return field
 		}
 	}

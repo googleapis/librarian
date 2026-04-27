@@ -265,6 +265,43 @@ func TestAnnotateModel_Options_MissingRequired(t *testing.T) {
 	}
 }
 
+func TestAnnotateModel_HasMethods(t *testing.T) {
+	method := sample.MethodListSecretVersions()
+	serviceWithMethods := &api.Service{
+		Name:    "ServiceWithMethods",
+		Methods: []*api.Method{method},
+		Package: sample.Package,
+	}
+	serviceWithoutMethods := &api.Service{
+		Name:    "ServiceWithoutMethods",
+		Methods: []*api.Method{},
+		Package: sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{serviceWithMethods, serviceWithoutMethods},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec1 := serviceWithMethods.Codec.(*serviceAnnotations)
+	if !codec1.HasMethods {
+		t.Errorf("Expected HasMethods to be true for ServiceWithMethods")
+	}
+
+	codec2 := serviceWithoutMethods.Codec.(*serviceAnnotations)
+	if codec2.HasMethods {
+		t.Errorf("Expected HasMethods to be false for ServiceWithoutMethods")
+	}
+}
+
 func TestAnnotateMethod(t *testing.T) {
 	method := sample.MethodListSecretVersions()
 	service := &api.Service{
@@ -307,6 +344,44 @@ func TestAnnotateMethod(t *testing.T) {
 	want = "ListSecretVersionsResponse"
 	if got != want {
 		t.Errorf("mismatched type, got=%q, want=%q", got, want)
+	}
+}
+
+func TestAnnotateMethod_IsLast(t *testing.T) {
+	notLastMethod := sample.MethodListSecretVersions()
+	lastMethod := sample.MethodListSecretVersions()
+	lastMethod.Name = "ListSecretVersions2"
+	lastMethod.ID = notLastMethod.ID + "2"
+
+	service := &api.Service{
+		Name:          sample.ServiceName,
+		Documentation: sample.APIDescription,
+		DefaultHost:   sample.DefaultHost,
+		Methods:       []*api.Method{notLastMethod, lastMethod},
+		Package:       sample.Package,
+	}
+	model := api.NewTestAPI(
+		[]*api.Message{sample.ListSecretVersionsRequest(), sample.ListSecretVersionsResponse(),
+			sample.Secret(), sample.SecretVersion(), sample.Replication(), sample.Automatic(),
+			sample.CustomerManagedEncryption()},
+		[]*api.Enum{sample.EnumState()},
+		[]*api.Service{service},
+	)
+	api.Validate(model)
+	annotate := newAnnotateModel(model)
+	err := annotate.annotateModel(requiredConfig)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	codec1 := notLastMethod.Codec.(*methodAnnotation)
+	if codec1.IsLast {
+		t.Errorf("Expected IsLast to be false for method1")
+	}
+
+	codec2 := lastMethod.Codec.(*methodAnnotation)
+	if !codec2.IsLast {
+		t.Errorf("Expected IsLast to be true for method2")
 	}
 }
 
@@ -577,7 +652,7 @@ func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 			{
 				Name:     "error",
 				JSONName: "error",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  status.ID,
 			},
 		},
@@ -614,7 +689,7 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 			{
 				Name:    "map_field",
 				ID:      ".some.package.HasMap.map_field",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".some.package.HasMap.MapFieldEntry",
 			},
 		},
@@ -627,11 +702,11 @@ func TestAnnotateMessage_OmitGeneration_Map(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:  "key",
-				Typez: api.STRING_TYPE,
+				Typez: api.TypezString,
 			},
 			{
 				Name:    "value",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: status.ID,
 			},
 		},
@@ -663,100 +738,100 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 	}{
 		// primitives
 		{
-			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool},
 			[]string{"if (result.bool$ case final $1 when $1.isNotDefault) 'bool': '${$1}'"},
 		}, {
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.TypezBytes},
 			[]string{"if (result.bytes case final $1 when $1.isNotDefault) 'bytes': encodeBytes($1)!"},
 		}, {
-			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.TypezInt32},
 			[]string{"if (result.int32 case final $1 when $1.isNotDefault) 'int32': '${$1}'"},
 		}, {
-			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
+			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.TypezFixed32},
 			[]string{"if (result.fixed32 case final $1 when $1.isNotDefault) 'fixed32': '${$1}'"},
 		}, {
-			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
+			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.TypezSfixed32},
 			[]string{"if (result.sfixed32 case final $1 when $1.isNotDefault) 'sfixed32': '${$1}'"},
 		}, {
-			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
+			&api.Field{Name: "int64", JSONName: "int64", Typez: api.TypezInt64},
 			[]string{"if (result.int64 case final $1 when $1.isNotDefault) 'int64': '${$1}'"},
 		}, {
-			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
+			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.TypezFixed64},
 			[]string{"if (result.fixed64 case final $1 when $1.isNotDefault) 'fixed64': '${$1}'"},
 		}, {
-			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
+			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.TypezSfixed64},
 			[]string{"if (result.sfixed64 case final $1 when $1.isNotDefault) 'sfixed64': '${$1}'"},
 		}, {
-			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
+			&api.Field{Name: "double", JSONName: "double", Typez: api.TypezDouble},
 			[]string{"if (result.double$ case final $1 when $1.isNotDefault) 'double': '${$1}'"},
 		}, {
-			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
+			&api.Field{Name: "string", JSONName: "string", Typez: api.TypezString},
 			[]string{"if (result.string case final $1 when $1.isNotDefault) 'string': $1"},
 		},
 
 		// optional primitives
 		{
-			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.TypezBool, Optional: true},
 			[]string{"if (result.boolOpt case final $1?) 'bool': '${$1}'"},
 		}, {
-			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
+			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.TypezBytes, Optional: true},
 			[]string{"if (result.bytesOpt case final $1?) 'bytes': encodeBytes($1)!"},
 		}, {
-			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
+			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.TypezInt32, Optional: true},
 			[]string{"if (result.int32Opt case final $1?) 'int32': '${$1}'"},
 		}, {
-			&api.Field{Name: "fixed32_opt", JSONName: "fixed32", Typez: api.FIXED32_TYPE, Optional: true},
+			&api.Field{Name: "fixed32_opt", JSONName: "fixed32", Typez: api.TypezFixed32, Optional: true},
 			[]string{"if (result.fixed32Opt case final $1?) 'fixed32': '${$1}'"},
 		}, {
-			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE, Optional: true},
+			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.TypezSfixed32, Optional: true},
 			[]string{"if (result.sfixed32Opt case final $1?) 'sfixed32': '${$1}'"},
 		}, {
-			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.INT64_TYPE, Optional: true},
+			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.TypezInt64, Optional: true},
 			[]string{"if (result.int64Opt case final $1?) 'int64': '${$1}'"},
 		}, {
-			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
+			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.TypezFixed64, Optional: true},
 			[]string{"if (result.fixed64Opt case final $1?) 'fixed64': '${$1}'"},
 		}, {
-			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE, Optional: true},
+			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.TypezSfixed64, Optional: true},
 			[]string{"if (result.sfixed64Opt case final $1?) 'sfixed64': '${$1}'"},
 		}, {
-			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.DOUBLE_TYPE, Optional: true},
+			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.TypezDouble, Optional: true},
 			[]string{"if (result.doubleOpt case final $1?) 'double': '${$1}'"},
 		}, {
-			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.TypezString, Optional: true},
 			[]string{"if (result.stringOpt case final $1?) 'string': $1"},
 		},
 
 		// one ofs
 		{
-			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool, IsOneOf: true},
 			[]string{"if (result.bool$ case final $1?) 'bool': '${$1}'"},
 		},
 
 		// repeated primitives
 		{
-			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
+			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.TypezBool, Repeated: true},
 			[]string{"if (result.boolList case final $1 when $1.isNotDefault) 'boolList': $1.map((e) => '$e')"},
 		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.TypezBytes, Repeated: true},
 			[]string{"if (result.bytesList case final $1 when $1.isNotDefault) 'bytesList': $1.map((e) => encodeBytes(e)!)"},
 		}, {
-			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
+			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true},
 			[]string{"if (result.int32List case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
 		}, {
-			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.INT64_TYPE, Repeated: true},
+			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.TypezInt64, Repeated: true},
 			[]string{"if (result.int64List case final $1 when $1.isNotDefault) 'int64List': $1.map((e) => '$e')"},
 		}, {
-			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
+			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.TypezDouble, Repeated: true},
 			[]string{"if (result.doubleList case final $1 when $1.isNotDefault) 'doubleList': $1.map((e) => '$e')"},
 		}, {
-			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
+			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.TypezString, Repeated: true},
 			[]string{"if (result.stringList case final $1 when $1.isNotDefault) 'stringList': $1"},
 		},
 
 		// repeated primitives w/ optional
 		{
-			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
+			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true, Optional: true},
 			[]string{"if (result.int32ListOpt case final $1 when $1.isNotDefault) 'int32List': $1.map((e) => '$e')"},
 		},
 	} {
@@ -771,7 +846,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{})
 
-			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.field, model.State)
+			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.field)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 			}
@@ -812,7 +887,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 			&api.Field{
 				Name:     "enumName",
 				JSONName: "jsonEnumName",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  enum.ID},
 			[]string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
@@ -820,7 +895,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 			&api.Field{
 				Name:     "optionalEnum",
 				JSONName: "optionalJsonEnum",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  enum.ID,
 				Optional: true},
 			[]string{"if (result.optionalEnum case final $1?) 'optionalJsonEnum': $1.value"},
@@ -829,14 +904,14 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 			&api.Field{
 				Name:     "enumName",
 				JSONName: "jsonEnumName",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  foreignEnumState.ID,
 				Optional: false},
 			[]string{"if (result.enumName case final $1 when $1.isNotDefault) 'jsonEnumName': $1.value"},
 		},
 	} {
 		t.Run(test.enumField.Name, func(t *testing.T) {
-			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.enumField, model.State)
+			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.enumField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLinesEnums (-want, +got)\n:%s", diff)
 			}
@@ -862,44 +937,44 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	messageField1 := &api.Field{
 		Name:     "message1",
 		JSONName: "message1",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  secretVersion.ID,
 	}
 	messageField2 := &api.Field{
 		Name:     "message2",
 		JSONName: "message2",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  payload.ID,
 	}
 	messageField3 := &api.Field{
 		Name:     "message3",
 		JSONName: "message3",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  updateRequest.ID,
 	}
 	fieldMaskField := &api.Field{
 		Name:     "field_mask",
 		JSONName: "fieldMask",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.FieldMask",
 	}
 
 	durationField := &api.Field{
 		Name:     "duration",
 		JSONName: "duration",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.Duration",
 	}
 
 	timestampField := &api.Field{
 		Name:     "time",
 		JSONName: "time",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".google.protobuf.Timestamp",
 	}
 
 	// messages
-	got := annotate.buildQueryLines([]string{}, "result.", false, "", messageField1, model.State)
+	got := annotate.buildQueryLines([]string{}, "result.", false, "", messageField1)
 	want := []string{
 		"if (result.message1?.name case final $1? when $1.isNotDefault) 'message1.name': $1",
 		"if (result.message1?.state case final $1? when $1.isNotDefault) 'message1.state': $1.value",
@@ -908,7 +983,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField2, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField2)
 	want = []string{
 		"if (result.message2?.data case final $1?) 'message2.data': encodeBytes($1)!",
 		"if (result.message2?.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
@@ -918,7 +993,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	}
 
 	// nested messages
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField3, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField3)
 	want = []string{
 		"if (result.message3?.secret?.name case final $1? when $1.isNotDefault) 'message3.secret.name': $1",
 		"if (result.message3?.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
@@ -928,7 +1003,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	}
 
 	// custom encoded messages
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", fieldMaskField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", fieldMaskField)
 	want = []string{
 		"if (result.fieldMask case final $1?) 'fieldMask': $1.toJson()",
 	}
@@ -936,7 +1011,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", durationField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", durationField)
 	want = []string{
 		"if (result.duration case final $1?) 'duration': $1.toJson()",
 	}
@@ -944,7 +1019,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 	}
 
-	got = annotate.buildQueryLines([]string{}, "result.", false, "", timestampField, model.State)
+	got = annotate.buildQueryLines([]string{}, "result.", false, "", timestampField)
 	want = []string{
 		"if (result.time case final $1?) 'time': $1.toJson()",
 	}
@@ -982,11 +1057,11 @@ func TestCreateFromJsonLine(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:  "key",
-				Typez: api.STRING_TYPE,
+				Typez: api.TypezString,
 			},
 			{
 				Name:  "value",
-				Typez: api.BYTES_TYPE,
+				Typez: api.TypezBytes,
 			},
 		},
 	}
@@ -997,11 +1072,11 @@ func TestCreateFromJsonLine(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:  "key",
-				Typez: api.INT32_TYPE,
+				Typez: api.TypezInt32,
 			},
 			{
 				Name:  "value",
-				Typez: api.BYTES_TYPE,
+				Typez: api.TypezBytes,
 			},
 		},
 	}
@@ -1012,158 +1087,158 @@ func TestCreateFromJsonLine(t *testing.T) {
 	}{
 		// primitives
 		{
-			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool},
 			"switch (json['bool']) { null => false, Object $1 => decodeBool($1)}",
 		}, {
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.TypezBytes},
 			"switch (json['bytes']) { null => Uint8List(0), Object $1 => decodeBytes($1)}",
 		}, {
-			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
+			&api.Field{Name: "double", JSONName: "double", Typez: api.TypezDouble},
 			"switch (json['double']) { null => 0, Object $1 => decodeDouble($1)}",
 		}, {
-			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
+			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.TypezFixed32},
 			"switch (json['fixed32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
+			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.TypezFixed64},
 			"switch (json['fixed64']) { null => BigInt.zero, Object $1 => decodeUint64($1)}",
 		}, {
-			&api.Field{Name: "float", JSONName: "float", Typez: api.FLOAT_TYPE},
+			&api.Field{Name: "float", JSONName: "float", Typez: api.TypezFloat},
 			"switch (json['float']) { null => 0, Object $1 => decodeDouble($1)}",
 		}, {
-			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.TypezInt32},
 			"switch (json['int32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
+			&api.Field{Name: "int64", JSONName: "int64", Typez: api.TypezInt64},
 			"switch (json['int64']) { null => 0, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
+			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.TypezSfixed32},
 			"switch (json['sfixed32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
+			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.TypezSfixed64},
 			"switch (json['sfixed64']) { null => 0, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.SINT64_TYPE},
+			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.TypezSint64},
 			"switch (json['sint64']) { null => 0, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
+			&api.Field{Name: "string", JSONName: "string", Typez: api.TypezString},
 			"switch (json['string']) { null => '', Object $1 => decodeString($1)}",
 		}, {
-			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.UINT32_TYPE},
+			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.TypezUint32},
 			"switch (json['uint32']) { null => 0, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.UINT64_TYPE},
+			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.TypezUint64},
 			"switch (json['uint64']) { null => BigInt.zero, Object $1 => decodeUint64($1)}",
 		},
 
 		// optional primitives
 		{
-			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.BOOL_TYPE, Optional: true},
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.TypezBool, Optional: true},
 			"switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		}, {
-			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.BYTES_TYPE, Optional: true},
+			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.TypezBytes, Optional: true},
 			"switch (json['bytes']) { null => null, Object $1 => decodeBytes($1)}",
 		}, {
-			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.DOUBLE_TYPE, Optional: true},
+			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.TypezDouble, Optional: true},
 			"switch (json['double']) { null => null, Object $1 => decodeDouble($1)}",
 		}, {
-			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.FIXED64_TYPE, Optional: true},
+			&api.Field{Name: "fixed64_opt", JSONName: "fixed64", Typez: api.TypezFixed64, Optional: true},
 			"switch (json['fixed64']) { null => null, Object $1 => decodeUint64($1)}",
 		}, {
-			&api.Field{Name: "float_opt", JSONName: "float", Typez: api.FLOAT_TYPE, Optional: true},
+			&api.Field{Name: "float_opt", JSONName: "float", Typez: api.TypezFloat, Optional: true},
 			"switch (json['float']) { null => null, Object $1 => decodeDouble($1)}",
 		}, {
-			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.INT32_TYPE, Optional: true},
+			&api.Field{Name: "int32_opt", JSONName: "int32", Typez: api.TypezInt32, Optional: true},
 			"switch (json['int32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.INT64_TYPE, Optional: true},
+			&api.Field{Name: "int64_opt", JSONName: "int64", Typez: api.TypezInt64, Optional: true},
 			"switch (json['int64']) { null => null, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE, Optional: true},
+			&api.Field{Name: "sfixed32_opt", JSONName: "sfixed32", Typez: api.TypezSfixed32, Optional: true},
 			"switch (json['sfixed32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE, Optional: true},
+			&api.Field{Name: "sfixed64_opt", JSONName: "sfixed64", Typez: api.TypezSfixed64, Optional: true},
 			"switch (json['sfixed64']) { null => null, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "sint64_opt", JSONName: "sint64", Typez: api.SINT64_TYPE, Optional: true},
+			&api.Field{Name: "sint64_opt", JSONName: "sint64", Typez: api.TypezSint64, Optional: true},
 			"switch (json['sint64']) { null => null, Object $1 => decodeInt64($1)}",
 		}, {
-			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.STRING_TYPE, Optional: true},
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.TypezString, Optional: true},
 			"switch (json['string']) { null => null, Object $1 => decodeString($1)}",
 		}, {
-			&api.Field{Name: "uint32_opt", JSONName: "uint32", Typez: api.UINT32_TYPE, Optional: true},
+			&api.Field{Name: "uint32_opt", JSONName: "uint32", Typez: api.TypezUint32, Optional: true},
 			"switch (json['uint32']) { null => null, Object $1 => decodeInt($1)}",
 		}, {
-			&api.Field{Name: "uint64_opt", JSONName: "uint64", Typez: api.UINT64_TYPE, Optional: true},
+			&api.Field{Name: "uint64_opt", JSONName: "uint64", Typez: api.TypezUint64, Optional: true},
 			"switch (json['uint64']) { null => null, Object $1 => decodeUint64($1)}",
 		},
 
 		// one ofs
 		{
-			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE, IsOneOf: true},
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool, IsOneOf: true},
 			"switch (json['bool']) { null => null, Object $1 => decodeBool($1)}",
 		},
 
 		// repeated primitives
 		{
-			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
+			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.TypezBool, Repeated: true},
 			"switch (json['boolList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBool(i)], _ => throw const FormatException('\"boolList\" is not a list') }",
 		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.TypezBytes, Repeated: true},
 			"switch (json['bytesList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeBytes(i)], _ => throw const FormatException('\"bytesList\" is not a list') }",
 		}, {
-			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
+			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.TypezDouble, Repeated: true},
 			"switch (json['doubleList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeDouble(i)], _ => throw const FormatException('\"doubleList\" is not a list') }",
 		}, {
-			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.FIXED32_TYPE, Repeated: true},
+			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.TypezFixed32, Repeated: true},
 			"switch (json['fixed32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"fixed32List\" is not a list') }",
 		}, {
-			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
+			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true},
 			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"int32List\" is not a list') }",
 		}, {
-			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
+			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.TypezString, Repeated: true},
 			"switch (json['stringList']) { null => [], List<Object?> $1 => [for (final i in $1) decodeString(i)], _ => throw const FormatException('\"stringList\" is not a list') }",
 		},
 
 		// repeated primitives w/ optional
 		{
-			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true, Optional: true},
+			&api.Field{Name: "int32List_opt", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true, Optional: true},
 			"switch (json['int32List']) { null => [], List<Object?> $1 => [for (final i in $1) decodeInt(i)], _ => throw const FormatException('\"int32List\" is not a list') }",
 		},
 
 		// enums
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: enumState.ID},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezEnum, TypezID: enumState.ID},
 			"switch (json['message']) { null => State.$default, Object $1 => State.fromJson($1)}",
 		},
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.ENUM_TYPE, TypezID: foreignEnumState.ID},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezEnum, TypezID: foreignEnumState.ID},
 			"switch (json['message']) { null => foo.ForeignEnum.$default, Object $1 => foo.ForeignEnum.fromJson($1)}",
 		},
 
 		// messages
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: secret.ID},
 			"switch (json['message']) { null => null, Object $1 => Secret.fromJson($1)}",
 		},
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: foreignMessage.ID},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: foreignMessage.ID},
 			"switch (json['message']) { null => null, Object $1 => foo.Foo.fromJson($1)}",
 		},
 		{
 			// Custom encoding.
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: ".google.protobuf.Duration"},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: ".google.protobuf.Duration"},
 			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
 
 		// maps
 		{
 			// string -> bytes
-			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToBytes.ID},
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.TypezMessage, TypezID: mapStringToBytes.ID},
 			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeString(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 		{
 			// int32 -> bytes
-			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt32ToBytes.ID},
+			&api.Field{Name: "message", JSONName: "message", Map: true, Typez: api.TypezMessage, TypezID: mapInt32ToBytes.ID},
 			"switch (json['message']) { null => {}, Map<String, Object?> $1 => {for (final e in $1.entries) decodeIntKey(e.key): decodeBytes(e.value)}, _ => throw const FormatException('\"message\" is not an object') }",
 		},
 	} {
@@ -1184,7 +1259,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 			})
 			codec := test.field.Codec.(*fieldAnnotation)
 
-			got := annotate.createFromJsonLine(test.field, model.State, codec.Required)
+			got := annotate.createFromJsonLine(test.field, codec.Required)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
 			}
@@ -1220,8 +1295,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$StringToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.STRING_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezString},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapInt32ToString := &api.Message{
@@ -1229,8 +1304,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Int32ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.INT32_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezInt32},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapBoolToString := &api.Message{
@@ -1238,8 +1313,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$BoolToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.BOOL_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezBool},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapStringToInt64 := &api.Message{
@@ -1247,8 +1322,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$StringToInt64",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.STRING_TYPE},
-			{Name: "value", Typez: api.INT64_TYPE},
+			{Name: "key", Typez: api.TypezString},
+			{Name: "value", Typez: api.TypezInt64},
 		},
 	}
 	mapInt64ToString := &api.Message{
@@ -1256,8 +1331,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Int64ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.INT64_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezInt64},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapUint32ToString := &api.Message{
@@ -1265,8 +1340,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Uint32ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.UINT32_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezUint32},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapUint64ToString := &api.Message{
@@ -1274,8 +1349,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Uint64ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.UINT64_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezUint64},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapSint32ToString := &api.Message{
@@ -1283,8 +1358,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Sint32ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.SINT32_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezSint32},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapSint64ToString := &api.Message{
@@ -1292,8 +1367,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Sint64ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.SINT64_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezSint64},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapFixed32ToString := &api.Message{
@@ -1301,8 +1376,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Fixed32ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.FIXED32_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezFixed32},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapFixed64ToString := &api.Message{
@@ -1310,8 +1385,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Fixed64ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.FIXED64_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezFixed64},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapSfixed32ToString := &api.Message{
@@ -1319,8 +1394,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Sfixed32ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.SFIXED32_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezSfixed32},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 	mapSfixed64ToString := &api.Message{
@@ -1328,8 +1403,8 @@ func TestCreateToJsonLine(t *testing.T) {
 		ID:    "..$Sfixed64ToString",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.SFIXED64_TYPE},
-			{Name: "value", Typez: api.STRING_TYPE},
+			{Name: "key", Typez: api.TypezSfixed64},
+			{Name: "value", Typez: api.TypezString},
 		},
 	}
 
@@ -1339,175 +1414,175 @@ func TestCreateToJsonLine(t *testing.T) {
 	}{
 		// primitives
 		{
-			&api.Field{Name: "bool", JSONName: "bool", Typez: api.BOOL_TYPE},
+			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool},
 			"bool$",
 		}, {
-			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.BYTES_TYPE},
+			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.TypezBytes},
 			"encodeBytes(bytes)",
 		}, {
-			&api.Field{Name: "double", JSONName: "double", Typez: api.DOUBLE_TYPE},
+			&api.Field{Name: "double", JSONName: "double", Typez: api.TypezDouble},
 			"encodeDouble(double$)",
 		}, {
-			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.FIXED32_TYPE},
+			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.TypezFixed32},
 			"fixed32",
 		}, {
-			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.FIXED64_TYPE},
+			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.TypezFixed64},
 			"fixed64.toString()",
 		}, {
-			&api.Field{Name: "float", JSONName: "float", Typez: api.FLOAT_TYPE},
+			&api.Field{Name: "float", JSONName: "float", Typez: api.TypezFloat},
 			"encodeDouble(float)",
 		}, {
-			&api.Field{Name: "int32", JSONName: "int32", Typez: api.INT32_TYPE},
+			&api.Field{Name: "int32", JSONName: "int32", Typez: api.TypezInt32},
 			"int32",
 		}, {
-			&api.Field{Name: "int64", JSONName: "int64", Typez: api.INT64_TYPE},
+			&api.Field{Name: "int64", JSONName: "int64", Typez: api.TypezInt64},
 			"int64.toString()",
 		}, {
-			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.SFIXED32_TYPE},
+			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.TypezSfixed32},
 			"sfixed32",
 		}, {
-			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.SFIXED64_TYPE},
+			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.TypezSfixed64},
 			"sfixed64.toString()",
 		}, {
-			&api.Field{Name: "sint32", JSONName: "sint32", Typez: api.SINT32_TYPE},
+			&api.Field{Name: "sint32", JSONName: "sint32", Typez: api.TypezSint32},
 			"sint32",
 		}, {
-			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.SINT64_TYPE},
+			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.TypezSint64},
 			"sint64.toString()",
 		}, {
-			&api.Field{Name: "string", JSONName: "string", Typez: api.STRING_TYPE},
+			&api.Field{Name: "string", JSONName: "string", Typez: api.TypezString},
 			"string",
 		}, {
-			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.UINT32_TYPE},
+			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.TypezUint32},
 			"uint32",
 		}, {
-			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.UINT64_TYPE},
+			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.TypezUint64},
 			"uint64.toString()",
 		},
 
 		// enums
 		{
-			&api.Field{Name: "enum1", JSONName: "enum1", Typez: api.ENUM_TYPE, TypezID: enum.ID},
+			&api.Field{Name: "enum1", JSONName: "enum1", Typez: api.TypezEnum, TypezID: enum.ID},
 			"enum1.toJson()",
 		},
 
 		// messages
 		{
-			&api.Field{Name: "message", JSONName: "message", Typez: api.MESSAGE_TYPE, TypezID: secret.ID},
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: secret.ID},
 			"message.toJson()",
 		},
 
 		// repeated primitives
 		{
-			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.BOOL_TYPE, Repeated: true},
+			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.TypezBool, Repeated: true},
 			"boolList",
 		}, {
-			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.BYTES_TYPE, Repeated: true},
+			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.TypezBytes, Repeated: true},
 			"[for (final i in bytesList) encodeBytes(i)]",
 		}, {
-			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.DOUBLE_TYPE, Repeated: true},
+			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.TypezDouble, Repeated: true},
 			"[for (final i in doubleList) encodeDouble(i)]",
 		}, {
-			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.FIXED32_TYPE, Repeated: true},
+			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.TypezFixed32, Repeated: true},
 			"fixed32List",
 		}, {
-			&api.Field{Name: "fixed64List", JSONName: "fixed64List", Typez: api.FIXED64_TYPE, Repeated: true},
+			&api.Field{Name: "fixed64List", JSONName: "fixed64List", Typez: api.TypezFixed64, Repeated: true},
 			"[for (final i in fixed64List) i.toString()]",
 		}, {
-			&api.Field{Name: "floatList", JSONName: "floatList", Typez: api.FLOAT_TYPE, Repeated: true},
+			&api.Field{Name: "floatList", JSONName: "floatList", Typez: api.TypezFloat, Repeated: true},
 			"[for (final i in floatList) encodeDouble(i)]",
 		}, {
-			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.INT32_TYPE, Repeated: true},
+			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true},
 			"int32List",
 		}, {
-			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.INT64_TYPE, Repeated: true},
+			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.TypezInt64, Repeated: true},
 			"[for (final i in int64List) i.toString()]",
 		}, {
-			&api.Field{Name: "sfixed32List", JSONName: "sfixed32List", Typez: api.SFIXED32_TYPE, Repeated: true},
+			&api.Field{Name: "sfixed32List", JSONName: "sfixed32List", Typez: api.TypezSfixed32, Repeated: true},
 			"sfixed32List",
 		}, {
-			&api.Field{Name: "sfixed64List", JSONName: "sfixed64List", Typez: api.SFIXED64_TYPE, Repeated: true},
+			&api.Field{Name: "sfixed64List", JSONName: "sfixed64List", Typez: api.TypezSfixed64, Repeated: true},
 			"[for (final i in sfixed64List) i.toString()]",
 		}, {
-			&api.Field{Name: "sint32List", JSONName: "sint32List", Typez: api.SINT32_TYPE, Repeated: true},
+			&api.Field{Name: "sint32List", JSONName: "sint32List", Typez: api.TypezSint32, Repeated: true},
 			"sint32List",
 		}, {
-			&api.Field{Name: "sint64List", JSONName: "sint64List", Typez: api.SINT64_TYPE, Repeated: true},
+			&api.Field{Name: "sint64List", JSONName: "sint64List", Typez: api.TypezSint64, Repeated: true},
 			"[for (final i in sint64List) i.toString()]",
 		}, {
-			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.STRING_TYPE, Repeated: true},
+			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.TypezString, Repeated: true},
 			"stringList",
 		}, {
-			&api.Field{Name: "uint32List", JSONName: "uint32List", Typez: api.UINT32_TYPE, Repeated: true},
+			&api.Field{Name: "uint32List", JSONName: "uint32List", Typez: api.TypezUint32, Repeated: true},
 			"uint32List",
 		}, {
-			&api.Field{Name: "uint64List", JSONName: "uint64List", Typez: api.UINT64_TYPE, Repeated: true},
+			&api.Field{Name: "uint64List", JSONName: "uint64List", Typez: api.TypezUint64, Repeated: true},
 			"[for (final i in uint64List) i.toString()]",
 		},
 
 		// repeated enums
 		{
-			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.ENUM_TYPE, TypezID: enum.ID, Repeated: true},
+			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.TypezEnum, TypezID: enum.ID, Repeated: true},
 			"[for (final i in enumList) i.toJson()]",
 		},
 
 		// repeated messages
 		{
-			&api.Field{Name: "messageList", JSONName: "messageList", Typez: api.MESSAGE_TYPE, TypezID: secret.ID, Repeated: true},
+			&api.Field{Name: "messageList", JSONName: "messageList", Typez: api.TypezMessage, TypezID: secret.ID, Repeated: true},
 			"[for (final i in messageList) i.toJson()]",
 		},
 
 		// maps
 		{
-			&api.Field{Name: "map_string_to_string", JSONName: "mapStringToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToString.ID},
+			&api.Field{Name: "map_string_to_string", JSONName: "mapStringToString", Map: true, Typez: api.TypezMessage, TypezID: mapStringToString.ID},
 			"mapStringToString",
 		},
 		{
-			&api.Field{Name: "map_int32_to_string", JSONName: "mapInt32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt32ToString.ID},
+			&api.Field{Name: "map_int32_to_string", JSONName: "mapInt32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapInt32ToString.ID},
 			"{for (final e in mapInt32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_bool_to_string", JSONName: "mapBoolToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapBoolToString.ID},
+			&api.Field{Name: "map_bool_to_string", JSONName: "mapBoolToString", Map: true, Typez: api.TypezMessage, TypezID: mapBoolToString.ID},
 			"{for (final e in mapBoolToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_string_to_int64", JSONName: "mapStringToInt64", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapStringToInt64.ID},
+			&api.Field{Name: "map_string_to_int64", JSONName: "mapStringToInt64", Map: true, Typez: api.TypezMessage, TypezID: mapStringToInt64.ID},
 			"{for (final e in mapStringToInt64.entries) e.key: e.value.toString()}",
 		},
 		{
-			&api.Field{Name: "map_int64_to_string", JSONName: "mapInt64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapInt64ToString.ID},
+			&api.Field{Name: "map_int64_to_string", JSONName: "mapInt64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapInt64ToString.ID},
 			"{for (final e in mapInt64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_uint32_to_string", JSONName: "mapUint32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapUint32ToString.ID},
+			&api.Field{Name: "map_uint32_to_string", JSONName: "mapUint32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapUint32ToString.ID},
 			"{for (final e in mapUint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_uint64_to_string", JSONName: "mapUint64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapUint64ToString.ID},
+			&api.Field{Name: "map_uint64_to_string", JSONName: "mapUint64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapUint64ToString.ID},
 			"{for (final e in mapUint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_sint32_to_string", JSONName: "mapSint32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSint32ToString.ID},
+			&api.Field{Name: "map_sint32_to_string", JSONName: "mapSint32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSint32ToString.ID},
 			"{for (final e in mapSint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_sint64_to_string", JSONName: "mapSint64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSint64ToString.ID},
+			&api.Field{Name: "map_sint64_to_string", JSONName: "mapSint64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSint64ToString.ID},
 			"{for (final e in mapSint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_fixed32_to_string", JSONName: "mapFixed32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapFixed32ToString.ID},
+			&api.Field{Name: "map_fixed32_to_string", JSONName: "mapFixed32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapFixed32ToString.ID},
 			"{for (final e in mapFixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_fixed64_to_string", JSONName: "mapFixed64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapFixed64ToString.ID},
+			&api.Field{Name: "map_fixed64_to_string", JSONName: "mapFixed64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapFixed64ToString.ID},
 			"{for (final e in mapFixed64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_sfixed32_to_string", JSONName: "mapSfixed32ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSfixed32ToString.ID},
+			&api.Field{Name: "map_sfixed32_to_string", JSONName: "mapSfixed32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSfixed32ToString.ID},
 			"{for (final e in mapSfixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
-			&api.Field{Name: "map_sfixed64_to_string", JSONName: "mapSfixed64ToString", Map: true, Typez: api.MESSAGE_TYPE, TypezID: mapSfixed64ToString.ID},
+			&api.Field{Name: "map_sfixed64_to_string", JSONName: "mapSfixed64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSfixed64ToString.ID},
 			"{for (final e in mapSfixed64ToString.entries) e.key.toString(): e.value}",
 		},
 	} {
@@ -1531,7 +1606,7 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model.State)
+			got := createToJsonLine(test.field, model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
 			}
@@ -1643,8 +1718,8 @@ func TestAnnotateField(t *testing.T) {
 		ID:    "..MapMessage",
 		IsMap: true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.STRING_TYPE},
-			{Name: "value", Typez: api.INT32_TYPE},
+			{Name: "key", Typez: api.TypezString},
+			{Name: "value", Typez: api.TypezInt32},
 		},
 	}
 
@@ -1658,7 +1733,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "int32_field",
 				JSONName: "int32Field",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 			},
 			want: &fieldAnnotation{
 				Name:                  "int32Field",
@@ -1676,8 +1751,8 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "int32_field",
 				JSONName: "int32Field",
-				Typez:    api.INT32_TYPE,
-				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Typez:    api.TypezInt32,
+				Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			want: &fieldAnnotation{
 				Name:                  "int32Field",
@@ -1695,7 +1770,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "int32_field",
 				JSONName: "int32Field",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				Optional: true,
 			},
 			want: &fieldAnnotation{
@@ -1714,7 +1789,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "int32_list",
 				JSONName: "int32List",
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				Repeated: true,
 			},
 			want: &fieldAnnotation{
@@ -1733,7 +1808,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "map_field",
 				JSONName: "mapField",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..MapMessage",
 				Map:      true,
 			},
@@ -1753,7 +1828,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "message_field",
 				JSONName: "messageField",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "Message",
 			},
 			want: &fieldAnnotation{
@@ -1772,9 +1847,9 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "message_field",
 				JSONName: "messageField",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "Message",
-				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			want: &fieldAnnotation{
 				Name:                  "messageField",
@@ -1792,7 +1867,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "enum_field",
 				JSONName: "enumField",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  "State",
 			},
 			want: &fieldAnnotation{
@@ -1811,9 +1886,9 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "enum_field",
 				JSONName: "enumField",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  "State",
-				Behavior: []api.FieldBehavior{api.FIELD_BEHAVIOR_REQUIRED},
+				Behavior: []api.FieldBehavior{api.FieldBehaviorRequired},
 			},
 			want: &fieldAnnotation{
 				Name:                  "enumField",
@@ -1833,7 +1908,7 @@ func TestAnnotateField(t *testing.T) {
 			field: &api.Field{
 				Name:     "empty_field",
 				JSONName: "emptyField",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.Empty",
 			},
 			want: &fieldAnnotation{
@@ -1852,7 +1927,7 @@ func TestAnnotateField(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumState}, []*api.Service{})
 			model.State.MessageByID[mapMessage.ID] = mapMessage
 			annotate := newAnnotateModel(model)
-			registerMissingWkt(annotate.state)
+			registerMissingWkt(annotate.model)
 
 			annotate.annotateField(test.field)
 			got := test.field.Codec.(*fieldAnnotation)

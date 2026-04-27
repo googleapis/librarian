@@ -28,31 +28,31 @@ func TestParseSegments(t *testing.T) {
 		want        *api.PathTemplate
 		explanation string
 	}{
-		{"/foo", api.NewPathTemplate().WithLiteral("foo"), ""},
-		{"/foo/bar", api.NewPathTemplate().WithLiteral("foo").WithLiteral("bar"), ""},
+		{"/foo", (&api.PathTemplate{}).WithLiteral("foo"), ""},
+		{"/foo/bar", (&api.PathTemplate{}).WithLiteral("foo").WithLiteral("bar"), ""},
 		{"/v1/*/foo", nil, "matchers only exist within a variable segment"},
 		{"/v1/**/foo", nil, "matchers only exist within a variable segment"},
-		{"/foo:bar", api.NewPathTemplate().WithLiteral("foo").WithVerb("bar"), ""},
-		{"/foo/{bar}", api.NewPathTemplate().WithLiteral("foo").WithVariableNamed("bar"), ""},
-		{"/foo/{bar.baz}", api.NewPathTemplate().WithLiteral("foo").WithVariableNamed("bar", "baz"), ""},
-		{"/foo/{bar=baz}", api.NewPathTemplate().WithLiteral("foo").WithVariable(
+		{"/foo:bar", (&api.PathTemplate{}).WithLiteral("foo").WithVerb("bar"), ""},
+		{"/foo/{bar}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar"), ""},
+		{"/foo/{bar.baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar", "baz"), ""},
+		{"/foo/{bar=baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
 			api.NewPathVariable("bar").WithLiteral("baz")), ""},
-		{"/foo/{bar=*}", api.NewPathTemplate().WithLiteral("foo").WithVariable(
+		{"/foo/{bar=*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
 			api.NewPathVariable("bar").WithMatch()), ""},
-		{"/foo/{bar=*}/baz", api.NewPathTemplate().WithLiteral("foo").WithVariable(
+		{"/foo/{bar=*}/baz", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
 			api.NewPathVariable("bar").WithMatch()).
 			WithLiteral("baz"), ""},
-		{"/foo/{bar=**}/baz:qux", api.NewPathTemplate().WithLiteral("foo").WithVariable(
+		{"/foo/{bar=**}/baz:qux", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
 			api.NewPathVariable("bar").WithMatchRecursive()).
 			WithLiteral("baz").WithVerb("qux"), ""},
-		{"/foo/{bar=baz/*/qux/*}", api.NewPathTemplate().WithLiteral("foo").WithVariable(
+		{"/foo/{bar=baz/*/qux/*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
 			api.NewPathVariable("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch()), ""},
-		{"/foo/{bar}/{baz}/{qux}", api.NewPathTemplate().WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux"), ""},
+		{"/foo/{bar}/{baz}/{qux}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux"), ""},
 		{"foo", nil, "path must start with slash"},
 		{"/", nil, "path cannot end with slash"},
 		{"/foo/", nil, "path cannot end with slash"},
 		{"/foo/***/bar", nil, "wildcard literal cannot exceed two *, and * isn't allowed in a LITERAL"},
-		{"/%0f", api.NewPathTemplate().WithLiteral("%0f"), ""},
+		{"/%0f", (&api.PathTemplate{}).WithLiteral("%0f"), ""},
 		{"/%0z", nil, "bad percent encoding"},
 		{"/foo//bar", nil, "segment is too short"},
 		{"/foo/:", nil, "verb is too short"},
@@ -61,7 +61,7 @@ func TestParseSegments(t *testing.T) {
 		{"/foo/{.a}/bar", nil, "var identifier too short"},
 		{"/foo/{a=}/bar", nil, "var value too short"},
 		{"/foo/{9bar}", nil, "var identifier has bad first character"},
-		{"/foo/{bar9}", api.NewPathTemplate().WithLiteral("foo").WithVariableNamed("bar9"), ""},
+		{"/foo/{bar9}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar9"), ""},
 		{"/foo/{b&r}", nil, "var identifier has bad character"},
 		{"/foo/:bar", nil, "verb cannot come after slash"},
 		{"/foo:bar/baz", nil, "verb must be the last segment, and : isn't allowed in a LITERAL"},
@@ -157,14 +157,14 @@ func TestParseResourcePattern(t *testing.T) {
 		{
 			"single wildcard",
 			api.SingleSegmentWildcard,
-			api.NewPathTemplate(),
+			(&api.PathTemplate{}),
 			false,
 			"should parse a single wildcard as a literal segment",
 		},
 		{
 			"standard hierarchical pattern",
 			"projects/{project}/serviceAccounts/{service_account}",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("serviceAccounts").

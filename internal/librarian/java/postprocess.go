@@ -112,7 +112,9 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
-
+	if err := copyFiles(p); err != nil {
+		return fmt.Errorf("failed to copy files: %w", err)
+	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
 	}
@@ -121,13 +123,13 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// We target the staging directory because runOwlBot hasn't moved the files
 	// to their final destination yet.
 	coords := p.coords()
-	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	exists, err := clirrIgnoreExists(protoModuleRepoRoot)
+	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot)
 	if err != nil {
 		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
 	}
-	if !exists {
+	if shouldGenerate {
+		protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
 			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 		}
@@ -158,6 +160,27 @@ func addMissingHeaders(dir string) error {
 		}
 		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
 	})
+}
+
+func copyFiles(p postProcessParams) error {
+	if p.javaAPI == nil || len(p.javaAPI.CopyFiles) == 0 {
+		return nil
+	}
+	gapicDir := p.gapicDir()
+	for _, c := range p.javaAPI.CopyFiles {
+		src := filepath.Join(gapicDir, c.Source)
+		dest := filepath.Join(gapicDir, c.Destination)
+		if _, err := os.Stat(src); err != nil {
+			return fmt.Errorf("failed to stat copy source %s: %w", src, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("failed to create destination directory for %s: %w", dest, err)
+		}
+		if err := filesystem.CopyFile(src, dest); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", src, dest, err)
+		}
+	}
+	return nil
 }
 
 // buildLicenseText constructs the complete license header text for the given year.

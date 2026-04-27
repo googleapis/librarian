@@ -34,10 +34,10 @@ func TestOutputFormat(t *testing.T) {
 			name: "standard list method",
 			method: api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
 				api.NewTestMessage("ListResponse").WithFields(
-					api.NewTestField("things").WithType(api.MESSAGE_TYPE).WithRepeated().WithMessageType(
+					api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
 						api.NewTestMessage("Thing").WithFields(
-							api.NewTestField("name").WithType(api.STRING_TYPE),
-							api.NewTestField("description").WithType(api.STRING_TYPE),
+							api.NewTestField("name").WithType(api.TypezString),
+							api.NewTestField("description").WithType(api.TypezString),
 						).WithResource(api.NewTestResource("test.googleapis.com/Thing")),
 					),
 				),
@@ -96,21 +96,21 @@ func TestRequestMethod(t *testing.T) {
 		{
 			name: "Standard Create",
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 			),
 			want: "",
 		},
 		{
 			name: "Custom Method with Verb",
 			method: api.NewTestMethod("ImportData").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
 			),
 			want: "importData",
 		},
 		{
 			name: "Custom Method without Verb (fallback to camelCase name)",
 			method: api.NewTestMethod("ExportData").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
 			),
 			want: "exportData",
 		},
@@ -168,10 +168,10 @@ func TestAsync(t *testing.T) {
 			name: "Create returns Resource",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
-						api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Thing").WithResource(api.NewTestResource("test.googleapis.com/Thing")),
 						),
 					),
@@ -188,7 +188,7 @@ func TestAsync(t *testing.T) {
 			name: "Delete returns Empty",
 			method: func() *api.Method {
 				m := api.NewTestMethod("DeleteThing").WithVerb("DELETE").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()),
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: ".google.protobuf.Empty"}
 				return m
@@ -202,10 +202,10 @@ func TestAsync(t *testing.T) {
 			name: "Unrelated Response Type returns False",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
-						api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Thing").WithResource(api.NewTestResource("test.googleapis.com/Thing")),
 						),
 					),
@@ -223,7 +223,7 @@ func TestAsync(t *testing.T) {
 			name: "Method Without Resource Returns Base Async",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CustomMethod").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithLiteral("things").WithVerb("doAction"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithLiteral("things").WithVerb("doAction"),
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "ActionResponse"}
 				m.Service = service
@@ -354,16 +354,16 @@ func TestNewCommand(t *testing.T) {
 				m := api.NewTestMethod("ListThings").
 					WithVerb("GET").
 					WithInput(api.NewTestMessage("ListThingsRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Parent"),
+						api.NewTestField("parent").WithType(api.TypezString).WithResourceReference("test.googleapis.com/Parent"),
 					)).
 					WithOutput(api.NewTestMessage("ListThingsResponse").WithFields(
-						api.NewTestField("things").WithType(api.MESSAGE_TYPE).WithRepeated().WithMessageType(
+						api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
 							api.NewTestMessage("Thing").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
 							),
 						),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
 						WithLiteral("things"))
@@ -387,14 +387,14 @@ func TestNewCommand(t *testing.T) {
 				m := api.NewTestMethod("UpdateThing").
 					WithVerb("PATCH").
 					WithInput(api.NewTestMessage("UpdateThingRequest").WithFields(
-						api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Thing").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
 							).WithResource(api.NewTestResource("test.googleapis.com/Thing")),
 						),
-						api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
+						api.NewTestField("update_mask").WithType(api.TypezMessage),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("thing", "name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()))
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
@@ -429,9 +429,9 @@ func TestNewCommand(t *testing.T) {
 				m := api.NewTestMethod("CreateThing").
 					WithVerb("POST").
 					WithInput(api.NewTestMessage("CreateRequest").WithFields(
-						api.NewTestField("thing_id").WithType(api.STRING_TYPE),
+						api.NewTestField("thing_id").WithType(api.TypezString),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
 						WithLiteral("things"))
@@ -486,16 +486,16 @@ func TestTableFormat(t *testing.T) {
 		{
 			name: "Scalar and Repeated Fields",
 			message: api.NewTestMessage("Thing").WithFields(
-				api.NewTestField("name").WithType(api.STRING_TYPE),
-				api.NewTestField("tags").WithType(api.STRING_TYPE).WithRepeated(),
-				api.NewTestField("count").WithType(api.INT32_TYPE),
+				api.NewTestField("name").WithType(api.TypezString),
+				api.NewTestField("tags").WithType(api.TypezString).WithRepeated(),
+				api.NewTestField("count").WithType(api.TypezInt32),
 			),
 			want: "table(\nname,\ntags.join(','),\ncount)",
 		},
 		{
 			name: "Timestamp Field",
 			message: func() *api.Message {
-				f := api.NewTestField("create_time").WithType(api.MESSAGE_TYPE)
+				f := api.NewTestField("create_time").WithType(api.TypezMessage)
 				f.JSONName = "createTime"
 				f.TypezID = ".google.protobuf.Timestamp"
 				f.MessageType = &api.Message{}
@@ -506,8 +506,8 @@ func TestTableFormat(t *testing.T) {
 		{
 			name: "Ignored Unsafe Field",
 			message: api.NewTestMessage("Unsafe").WithFields(
-				api.NewTestField("safe").WithType(api.STRING_TYPE),
-				&api.Field{JSONName: "unsafe;injection", Typez: api.STRING_TYPE},
+				api.NewTestField("safe").WithType(api.TypezString),
+				&api.Field{JSONName: "unsafe;injection", Typez: api.TypezString},
 			),
 			want: "table(\nsafe)",
 		},
@@ -548,13 +548,13 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 			method: func() *api.Method {
 				m := api.NewTestMethod("GetResource").WithVerb("GET").WithInput(
 					api.NewTestMessage("GetRequest").WithFields(
-						api.NewTestField("name").WithType(api.STRING_TYPE),
+						api.NewTestField("name").WithType(api.TypezString),
 					),
 				)
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
 						},
 					},
 				}
@@ -579,7 +579,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 		{
 			name: "Identify parent field",
 			method: func() *api.Method {
-				f := api.NewTestField("parent").WithType(api.STRING_TYPE)
+				f := api.NewTestField("parent").WithType(api.TypezString)
 				f.ResourceReference = &api.ResourceReference{Type: "test.googleapis.com/Resource"}
 
 				m := api.NewTestMethod("ListResources").WithVerb("GET").WithInput(
@@ -588,7 +588,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
 						},
 					},
 				}
@@ -615,11 +615,11 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 			method: func() *api.Method {
 				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
 					api.NewTestMessage("ArchiveRequest").WithFields(
-						api.NewTestField("root_field").WithType(api.STRING_TYPE),
-						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("root_field").WithType(api.TypezString),
+						api.NewTestField("resource").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Resource").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
-								api.NewTestField("field1").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
+								api.NewTestField("field1").WithType(api.TypezString),
 							),
 						),
 					),
@@ -627,7 +627,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -643,13 +643,13 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateResource").WithVerb("POST").WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE),
-						api.NewTestField("resource_id").WithType(api.STRING_TYPE),
-						api.NewTestField("top_level_string").WithType(api.STRING_TYPE),
-						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("parent").WithType(api.TypezString),
+						api.NewTestField("resource_id").WithType(api.TypezString),
+						api.NewTestField("top_level_string").WithType(api.TypezString),
+						api.NewTestField("resource").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Resource").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
-								api.NewTestField("inner_string").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
+								api.NewTestField("inner_string").WithType(api.TypezString),
 							).WithResource(api.NewTestResource("test.googleapis.com/Resource")),
 						),
 					),
@@ -678,14 +678,14 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 		{
 			name: "Map suppression with body *",
 			method: func() *api.Method {
-				f := api.NewTestField("labels").WithType(api.MESSAGE_TYPE)
+				f := api.NewTestField("labels").WithType(api.TypezMessage)
 				f.Map = true
 
 				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
 					api.NewTestMessage("ArchiveRequest").WithFields(
-						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("resource").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Resource").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
 								f,
 							),
 						),
@@ -694,7 +694,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -708,14 +708,14 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 		{
 			name: "Output-only exclusion with body *",
 			method: func() *api.Method {
-				f := api.NewTestField("create_time").WithType(api.STRING_TYPE)
-				f.Behavior = []api.FieldBehavior{api.FIELD_BEHAVIOR_OUTPUT_ONLY}
+				f := api.NewTestField("create_time").WithType(api.TypezString)
+				f.Behavior = []api.FieldBehavior{api.FieldBehaviorOutputOnly}
 
 				m := api.NewTestMethod("ArchiveResource").WithVerb("POST").WithInput(
 					api.NewTestMessage("ArchiveRequest").WithFields(
-						api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("resource").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Resource").WithFields(
-								api.NewTestField("name").WithType(api.STRING_TYPE),
+								api.NewTestField("name").WithType(api.TypezString),
 								f,
 							),
 						),
@@ -724,7 +724,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -765,10 +765,10 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
 	m := api.NewTestMethod("CustomMethod").WithVerb("POST").WithInput(
 		api.NewTestMessage("CustomRequest").WithFields(
-			api.NewTestField("name").WithType(api.STRING_TYPE), // Top level name
-			api.NewTestField("resource").WithType(api.MESSAGE_TYPE).WithMessageType(
+			api.NewTestField("name").WithType(api.TypezString), // Top level name
+			api.NewTestField("resource").WithType(api.TypezMessage).WithMessageType(
 				api.NewTestMessage("Resource").WithFields(
-					api.NewTestField("name").WithType(api.STRING_TYPE), // Inner name
+					api.NewTestField("name").WithType(api.TypezString), // Inner name
 				),
 			),
 		),
@@ -776,7 +776,7 @@ func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
 	m.PathInfo = &api.PathInfo{
 		Bindings: []*api.PathBinding{
 			{
-				PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+				PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
 			},
 		},
 		BodyFieldPath: "*",
@@ -801,7 +801,7 @@ func TestCommandBuilderNewArgumentsResourceError(t *testing.T) {
 
 	badMethod := api.NewTestMethod("DoSomethingError").WithInput(
 		api.NewTestMessage("Request").WithFields(
-			api.NewTestField("bad_nested").WithType(api.MESSAGE_TYPE).WithMessageType(
+			api.NewTestField("bad_nested").WithType(api.TypezMessage).WithMessageType(
 				api.NewTestMessage("Bad").WithFields(
 					api.NewTestField("bad_ref").WithResourceReference("unknown"),
 				),

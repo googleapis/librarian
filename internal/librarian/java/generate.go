@@ -31,6 +31,8 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+const commonResourcesProto = "google/cloud/common_resources.proto"
+
 // nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 var nonRecursivePaths = map[string]bool{
 	"google/api":   true,
@@ -141,10 +143,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		var additionalProtos []string
-		for _, p := range javaAPI.AdditionalProtos {
-			additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-		}
+		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
 		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
@@ -154,6 +153,23 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+// deriveAdditionalProtoPaths returns the absolute paths to additional proto files
+// configured via AdditionalProtos to include in GAPIC generation. It includes
+// google/cloud/common_resources.proto unless opted out via OmitCommonResources.
+func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) []string {
+	var additionalProtos []string
+	if !javaAPI.OmitCommonResources {
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
+	}
+	for _, p := range javaAPI.AdditionalProtos {
+		if p == commonResourcesProto {
+			continue
+		}
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
+	return additionalProtos
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {

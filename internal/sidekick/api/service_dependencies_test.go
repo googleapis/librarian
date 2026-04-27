@@ -35,16 +35,16 @@ func TestFindServiceDependencies(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:  "a",
-					Typez: STRING_TYPE,
+					Typez: TypezString,
 				},
 				{
 					Name:    "b",
-					Typez:   ENUM_TYPE,
+					Typez:   TypezEnum,
 					TypezID: ".test.SomeEnum",
 				},
 				{
 					Name:     "c",
-					Typez:    MESSAGE_TYPE,
+					Typez:    TypezMessage,
 					TypezID:  ".test.Message",
 					Optional: true,
 				},
@@ -61,7 +61,7 @@ func TestFindServiceDependencies(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "body",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.Message",
 				},
 			},

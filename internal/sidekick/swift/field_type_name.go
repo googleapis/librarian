@@ -41,7 +41,7 @@ func (c *codec) fieldTypeName(field *api.Field) (string, error) {
 // baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
 func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
-	case api.MESSAGE_TYPE:
+	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
 			return "", err
@@ -50,7 +50,7 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 			return c.mapFieldTypeName(m)
 		}
 		return c.messageTypeName(m)
-	case api.ENUM_TYPE:
+	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {
 			return "", err
@@ -87,35 +87,35 @@ func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
-	case api.DOUBLE_TYPE:
+	case api.TypezDouble:
 		return "Double", nil
-	case api.FLOAT_TYPE:
+	case api.TypezFloat:
 		return "Float", nil
-	case api.INT64_TYPE:
+	case api.TypezInt64:
 		return "Int64", nil
-	case api.UINT64_TYPE:
+	case api.TypezUint64:
 		return "UInt64", nil
-	case api.INT32_TYPE:
+	case api.TypezInt32:
 		return "Int32", nil
-	case api.FIXED64_TYPE:
+	case api.TypezFixed64:
 		return "UInt64", nil
-	case api.FIXED32_TYPE:
+	case api.TypezFixed32:
 		return "UInt32", nil
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return "Bool", nil
-	case api.STRING_TYPE:
+	case api.TypezString:
 		return "String", nil
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		return "Data", nil
-	case api.UINT32_TYPE:
+	case api.TypezUint32:
 		return "UInt32", nil
-	case api.SFIXED32_TYPE:
+	case api.TypezSfixed32:
 		return "Int32", nil
-	case api.SFIXED64_TYPE:
+	case api.TypezSfixed64:
 		return "Int64", nil
-	case api.SINT32_TYPE:
+	case api.TypezSint32:
 		return "Int32", nil
-	case api.SINT64_TYPE:
+	case api.TypezSint64:
 		return "Int64", nil
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)

@@ -32,7 +32,7 @@ func TestAnnotateMessage(t *testing.T) {
 			{
 				Name:          "secret_key",
 				Documentation: "The key.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 			},
 		},
 	}
@@ -44,6 +44,7 @@ func TestAnnotateMessage(t *testing.T) {
 	want := &messageAnnotations{
 		Name:     "Secret",
 		DocLines: []string{"A secret message.", "With two lines."},
+		TypeURL:  "type.googleapis.com/test.Secret",
 	}
 
 	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
@@ -66,6 +67,7 @@ func TestAnnotateMessage_EscapedName(t *testing.T) {
 	want := &messageAnnotations{
 		Name:     "Protocol_",
 		DocLines: []string{"A message named Protocol."},
+		TypeURL:  "type.googleapis.com/test.Protocol",
 	}
 
 	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
