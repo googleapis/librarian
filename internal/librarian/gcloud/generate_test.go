@@ -46,6 +46,14 @@ func TestGenerate(t *testing.T) {
 			},
 			golden: "testdata/publicca",
 		},
+		{
+			name: "parallelstore",
+			library: &config.Library{
+				Name: "parallelstore",
+				APIs: []*config.API{{Path: "google/cloud/parallelstore/v1"}},
+			},
+			golden: "testdata/parallelstore",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			out := t.TempDir()
