@@ -574,7 +574,7 @@ func TestSyncToStateYAML(t *testing.T) {
 		wantState    *legacyconfig.LibrarianState
 	}{
 		{
-			name: "sync new library",
+			name: "sync new library (go)",
 			initialState: &legacyconfig.LibrarianState{
 				Image: "gcr.io/my-image:latest",
 				Libraries: []*legacyconfig.LibraryState{
@@ -589,7 +589,7 @@ func TestSyncToStateYAML(t *testing.T) {
 				},
 			},
 			cfg: &config.Config{
-				Language: config.LanguageRust,
+				Language: config.LanguageGo,
 				Libraries: []*config.Library{
 					{
 						Name:    "existing",
@@ -632,12 +632,74 @@ func TestSyncToStateYAML(t *testing.T) {
 			},
 		},
 		{
+			name: "sync new library (python)",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-existing",
+						Version:       "1.2.3",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
+						SourceRoots:   []string{"packages/existing"},
+					},
+				},
+			},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-existing",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/existing/v1"},
+						},
+					},
+					{
+						Name:    "google-cloud-new",
+						Version: "0.1.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/new/v1"},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-existing",
+						Version:       "1.2.3",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/existing/v1"}},
+						SourceRoots:   []string{"packages/existing"},
+					},
+					{
+						ID:            "google-cloud-new",
+						Version:       "0.1.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/new/v1"}},
+						SourceRoots:   []string{"packages/google-cloud-new"},
+						ReleaseExcludePaths: []string{
+							"packages/google-cloud-new/.repo-metadata.json",
+							"packages/google-cloud-new/docs/README.rst",
+						},
+						TagFormat: "{id}-v{version}",
+					},
+				},
+			},
+		},
+		{
 			name: "multiple new libraries",
 			initialState: &legacyconfig.LibrarianState{
 				Image:     "gcr.io/my-image:latest",
 				Libraries: []*legacyconfig.LibraryState{},
 			},
 			cfg: &config.Config{
+				Language: config.LanguageGo,
 				Libraries: []*config.Library{
 					{Name: "lib-b", Version: "1.0.0", APIs: []*config.API{{Path: "google/cloud/lib-b/v1"}}},
 					{Name: "lib-a", Version: "2.0.0", APIs: []*config.API{{Path: "google/cloud/lib-a/v1"}}},
@@ -695,6 +757,7 @@ func TestSyncToStateYAML(t *testing.T) {
 				},
 			},
 			cfg: &config.Config{
+				Language: config.LanguageGo,
 				Libraries: []*config.Library{
 					{Name: "lib-b", Version: "1.0.0", APIs: []*config.API{{Path: "google/cloud/lib-b/v1"}}},
 					{Name: "lib-a", Version: "2.0.0", APIs: []*config.API{{Path: "google/cloud/lib-a/v1"}}},
@@ -741,6 +804,7 @@ func TestSyncToStateYAML(t *testing.T) {
 				},
 			},
 			cfg: &config.Config{
+				Language: config.LanguageGo,
 				Libraries: []*config.Library{
 					{
 						Name:    "lib-a",
