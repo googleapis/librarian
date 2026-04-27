@@ -148,6 +148,7 @@
   languages:
     - all
 - path: google/apps/card/v1
+  description: Card interface displayed in a Google Chat message or Google Workspace Add-on.
   documentation_uri: https://developers.google.com/chat
   languages:
     - python
@@ -250,6 +251,7 @@
   transports:
     python: grpc
 - path: google/area120/tables/v1alpha1
+  description: Area 120 Tables is a collaborative database program developed out of Google's Area 120 incubator.
   documentation_uri: https://area120.google.com
   languages:
     - go
@@ -374,6 +376,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/alloydb/connectors/v1
+  description: AlloyDB connectors ensure a secure connection to your AlloyDB instances using IAM.
   languages:
     - all
   skip_rest_numeric_enums:
@@ -381,6 +384,7 @@
   release_level:
     java: stable
 - path: google/cloud/alloydb/connectors/v1alpha
+  description: AlloyDB connectors ensure a secure connection to your AlloyDB instances using IAM.
   languages:
     - go
     - java
@@ -388,6 +392,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/alloydb/connectors/v1beta
+  description: AlloyDB connectors ensure a secure connection to your AlloyDB instances using IAM.
   languages:
     - go
     - java
@@ -414,10 +419,12 @@
     - nodejs
     - python
 - path: google/cloud/apigateway/v1
+  description: API Gateway enables you to provide secure access to your backend services through a well-defined REST API that is consistent across all of your services, regardless of the service implementation.
   documentation_uri: https://cloud.google.com/api-gateway
   languages:
     - all
 - path: google/cloud/apigeeconnect/v1
+  description: Apigee Connect allows the Apigee hybrid management plane to connect securely to the MART service in the runtime plane without requiring you to expose the MART endpoint on the internet. 
   documentation_uri: https://cloud.google.com/apigee/docs/hybrid/v1.4/apigee-connect
   languages:
     - all
@@ -461,6 +468,7 @@
   release_level:
     java: preview
 - path: google/cloud/apphub/v1
+  description: App Hub acts as the foundational data model and central registry for your applications on Google Cloud.
   languages:
     - all
   release_level:
@@ -511,10 +519,12 @@
   transports:
     java: grpc
 - path: google/cloud/assuredworkloads/v1
+  description: Assured Workloads lets you secure your workloads and accelerate your path to running compliant workloads on Google Cloud.
   documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
     - all
 - path: google/cloud/assuredworkloads/v1beta1
+  description: Assured Workloads lets you secure your workloads and accelerate your path to running compliant workloads on Google Cloud.
   documentation_uri: https://cloud.google.com/assured-workloads/
   languages:
     - go
@@ -552,6 +562,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/backupdr/v1
+  description: Backup and DR Service is a managed service that provides backup and recovery of workloads running in Google Cloud.
   languages:
     - all
   release_level:
@@ -883,7 +894,8 @@
   release_level:
     java: preview
 - path: google/cloud/certificatemanager/v1
-  documentation_uri: https://cloud.google.com/python/docs/reference/certificatemanager/latest
+  description: Certificate Manager simplifies the acquisition, deployment, and management of Transport Layer Security (TLS) certificates.
+  documentation_uri: https://docs.cloud.google.com/certificate-manager/docs/overview
   languages:
     - all
   release_level:
@@ -939,6 +951,7 @@
     python: grpc
     ruby: grpc
 - path: google/cloud/cloudsecuritycompliance/v1
+  description: Compliance Manager uses software-defined controls that let you assess support for multiple compliance programs and security requirements within a Google Cloud organization.
   languages:
     - all
   release_level:
@@ -958,6 +971,7 @@
   release_level:
     java: preview
 - path: google/cloud/common
+  description: Provides common protobuf definitions for APIs.
   documentation_uri: https://cloud.google.com
   languages:
     - all
@@ -966,6 +980,7 @@
   transports:
     python: grpc
 - path: google/cloud/compute/v1
+  description: Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.
   discovery: discoveries/compute.v1.json
   documentation_uri: https://cloud.google.com/compute/
   languages:
@@ -978,6 +993,7 @@
   transports:
     all: rest
 - path: google/cloud/compute/v1beta
+  description: Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.
   documentation_uri: https://cloud.google.com/compute/
   languages:
     - go
@@ -1029,6 +1045,7 @@
   languages:
     - all
 - path: google/cloud/contactcenterinsights/v1
+  description: Contact Center Insights provides out-of-the-box and custom modeling techniques to make it easier for contact center teams to better understand customer interaction data.
   documentation_uri: https://cloud.google.com/contact-center/insights/docs
   languages:
     - all
@@ -1047,6 +1064,7 @@
   release_level:
     java: preview
 - path: google/cloud/datacatalog/lineage/v1
+  description: Data lineage is a visual map that tracks the entire lifecycle of your data. It shows you where your data comes from (the origin), where it travels (the destinations), and all the changes or transformations that happen along the way.
   documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
   languages:
     - all
@@ -1136,10 +1154,12 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/datastream/v1
+  description: Datastream is a serverless and easy-to-use change data capture (CDC) and replication service that lets you synchronize data reliably, and with minimal latency.
   documentation_uri: https://cloud.google.com/datastream/
   languages:
     - all
 - path: google/cloud/datastream/v1alpha1
+  description: Datastream is a serverless and easy-to-use change data capture (CDC) and replication service that lets you synchronize data reliably, and with minimal latency.
   documentation_uri: https://cloud.google.com/datastream/
   languages:
     - go
@@ -1147,6 +1167,7 @@
     - nodejs
     - python
 - path: google/cloud/deploy/v1
+  description: Cloud Deploy is a service that automates delivery of your applications to a series of target environments in a defined sequence.
   documentation_uri: https://cloud.google.com/deploy/
   languages:
     - all
@@ -1240,6 +1261,7 @@
     - nodejs
     - python
 - path: google/cloud/edgecontainer/v1
+  description: Google Distributed Cloud Edge is a fully managed product that brings Google Cloud infrastructure and services closer to where data is being generated and consumed.
   documentation_uri: https://cloud.google.com/distributed-cloud/edge
   languages:
     - all
@@ -1258,6 +1280,7 @@
   release_level:
     java: preview
 - path: google/cloud/essentialcontacts/v1
+  description: Essential Contacts helps you direct critical Google Cloud notifications to the appropriate personnel across your projects, folders, and organization resources.
   documentation_uri: https://cloud.google.com/resource-manager/docs/managing-notification-contacts/
   languages:
     - all
@@ -1288,6 +1311,7 @@
     - nodejs
     - python
 - path: google/cloud/financialservices/v1
+  description: A unified AI platform for financial services, leveraging Google's global framework for security and compliance.
   languages:
     - all
   release_level:
@@ -1320,6 +1344,7 @@
     - nodejs
     - python
 - path: google/cloud/gdchardwaremanagement/v1alpha
+  description: GDC is a fully managed software and hardware solution for data centers and edge locations to address regulatory, local data processing, survivability, and low-latency needs.
   languages:
     - java
     - nodejs
@@ -1327,10 +1352,12 @@
   release_level:
     java: preview
 - path: google/cloud/geminidataanalytics/v1alpha
+  description: Developers can use the Conversational Analytics API, accessed through geminidataanalytics.googleapis.com, to build an artificial intelligence (AI)-powered chat interface, or data agent, that answers questions about structured data in BigQuery, Looker, and Looker Studio using natural language.
   languages:
     - nodejs
     - python
 - path: google/cloud/geminidataanalytics/v1beta
+  description: Developers can use the Conversational Analytics API, accessed through geminidataanalytics.googleapis.com, to build an artificial intelligence (AI)-powered chat interface, or data agent, that answers questions about structured data in BigQuery, Looker, and Looker Studio using natural language.
   languages:
     - go
     - java
@@ -1384,10 +1411,12 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   documentation_uri: https://cloud.google.com/anthos/gke/docs/
   languages:
     - all
 - path: google/cloud/gkehub/v1/configmanagement
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - all
   skip_rest_numeric_enums:
@@ -1396,6 +1425,7 @@
   transports:
     python: grpc
 - path: google/cloud/gkehub/v1/multiclusteringress
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - all
   skip_rest_numeric_enums:
@@ -1404,12 +1434,14 @@
   transports:
     python: grpc
 - path: google/cloud/gkehub/v1/rbacrolebindingactuation
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - all
   skip_rest_numeric_enums:
     - python
   title: GKE Hub Types
 - path: google/cloud/gkehub/v1alpha
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1417,6 +1449,7 @@
     - nodejs
     - python
 - path: google/cloud/gkehub/v1alpha/cloudauditlogging
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1425,6 +1458,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1alpha/configmanagement
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1433,6 +1467,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1alpha/metering
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1441,6 +1476,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1alpha/multiclusteringress
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1449,6 +1485,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1alpha/servicemesh
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1457,6 +1494,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1beta
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1464,6 +1502,7 @@
     - nodejs
     - python
 - path: google/cloud/gkehub/v1beta/configmanagement
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1472,6 +1511,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1beta/metering
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1480,6 +1520,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1beta/multiclusteringress
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   languages:
     - dart
     - go
@@ -1488,6 +1529,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/gkehub/v1beta1
+  description: The GKE Hub service handles the registration of many Kubernetes clusters to Google Cloud, and the management of multi-cluster features over those clusters.
   documentation_uri: https://cloud.google.com/anthos/gke/docs/
   languages:
     - go
@@ -1510,6 +1552,7 @@
   release_level:
     java: preview
 - path: google/cloud/gsuiteaddons/v1
+  description: Add-ons are customized applications that extend Google Workspace applications.
   documentation_uri: https://developers.google.com/workspace/add-ons/overview
   languages:
     - all
@@ -1564,6 +1607,7 @@
   skip_rest_numeric_enums:
     - python
 - path: google/cloud/kms/inventory/v1
+  description: Cloud Key Management Service (Cloud KMS) lets you create and manage cryptographic keys for use in compatible Google Cloud services and in your own applications.
   languages:
     - all
   release_level:
@@ -1610,11 +1654,13 @@
   languages:
     - all
 - path: google/cloud/locationfinder/v1
+  description: Cloud Location Finder is a public API that offers a repository of all Google Cloud and Google Distributed Cloud locations, as well as cloud locations for other cloud providers.
   languages:
     - all
   release_level:
     java: preview
 - path: google/cloud/lustre/v1
+  description: Google Cloud Managed Lustre delivers a high-performance, fully managed parallel file system optimized for AI and HPC applications.
   languages:
     - all
   release_level:
@@ -1661,6 +1707,7 @@
   release_level:
     java: preview
 - path: google/cloud/mediatranslation/v1beta1
+  description: The Media Translation API provides enterprise-quality translation from/to various media types.
   documentation_uri: https://cloud.google.com/media-translation
   languages:
     - go
@@ -1688,6 +1735,7 @@
     - nodejs
     - python
 - path: google/cloud/memorystore/v1
+  description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
   languages:
     - all
   release_level:
@@ -1695,6 +1743,7 @@
   transports:
     all: rest
 - path: google/cloud/memorystore/v1beta
+  description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
   languages:
     - go
     - java
@@ -1925,11 +1974,13 @@
     - nodejs
     - python
 - path: google/cloud/parallelstore/v1
+  description: Parallelstore is a high performance, managed parallel file service based on DAOS. It delivers up to 6x greater read throughput performance compared to competitive Lustre scratch offerings.
   languages:
     - all
   release_level:
     java: preview
 - path: google/cloud/parallelstore/v1beta
+  description: Parallelstore is a high performance, managed parallel file service based on DAOS. It delivers up to 6x greater read throughput performance compared to competitive Lustre scratch offerings.
   languages:
     - go
     - java
@@ -1948,6 +1999,7 @@
   skip_rest_numeric_enums:
     - all
 - path: google/cloud/phishingprotection/v1beta1
+  description: Phishing Protection helps prevent users from accessing phishing sites by identifying various signals associated with malicious content, including the use of your brand assets, classifying malicious content that uses your brand and reporting the unsafe URLs to Google Safe Browsing. Once a site is propagated to Safe Browsing, users will see warnings across more than 4 billion devices.
   documentation_uri: https://cloud.google.com/phishing-protection/docs/
   languages:
     - go
@@ -1962,9 +2014,11 @@
   release_level:
     java: preview
 - path: google/cloud/policytroubleshooter/iam/v3
+  description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
   languages:
     - all
 - path: google/cloud/policytroubleshooter/iam/v3beta
+  description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
   languages:
     - dart
     - go
@@ -1972,6 +2026,7 @@
     - nodejs
     - python
 - path: google/cloud/policytroubleshooter/v1
+  description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
   languages:
     - all
 - path: google/cloud/privatecatalog/v1beta1
@@ -2037,6 +2092,7 @@
   languages:
     - all
 - path: google/cloud/recommender/v1
+  description: Recommenders generate recommendations that fall into six value categories that can help you optimize your cloud in a variety of ways.
   documentation_uri: https://cloud.google.com/recommender
   languages:
     - all
@@ -2276,6 +2332,7 @@
   transports:
     java: grpc
 - path: google/cloud/storagebatchoperations/v1
+  description: Cloud Storage Batch Operations is a Cloud Storage capability that lets you perform operations on billions of objects in a serverless manner.
   languages:
     - all
   release_level:
@@ -2423,12 +2480,14 @@
   release_level:
     java: preview
 - path: google/cloud/video/livestream/v1
+  description: The Live Stream API transcodes mezzanine live signals into direct-to-consumer streaming formats, including Dynamic Adaptive Streaming over HTTP (DASH/MPEG-DASH), and HTTP Live Streaming (HLS), for multiple device platforms.
   documentation_uri: https://cloud.google.com/livestream/docs
   languages:
     - all
   release_level:
     java: preview
 - path: google/cloud/video/stitcher/v1
+  description: The Video Stitcher API allows you to manipulate video content to dynamically insert ads prior to delivery to client devices.
   documentation_uri: https://cloud.google.com/video-stitcher
   languages:
     - all
@@ -2516,11 +2575,13 @@
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=status:open%20componentid:187174
 - path: google/cloud/visionai/v1
+  description: Cloud Vision API allows developers to easily integrate vision detection features within applications, including image labeling, face and landmark detection, optical character recognition (OCR), and tagging of explicit content.
   languages:
     - all
   release_level:
     java: preview
 - path: google/cloud/visionai/v1alpha1
+  description: Cloud Vision API allows developers to easily integrate vision detection features within applications, including image labeling, face and landmark detection, optical character recognition (OCR), and tagging of explicit content.
   documentation_uri: https://cloud.google.com/vision-ai/docs
   languages:
     - nodejs
@@ -2542,10 +2603,12 @@
   languages:
     - all
 - path: google/cloud/webrisk/v1
+  description: Web Risk is an enterprise security product that lets your client applications check URLs against Google's constantly updated lists of unsafe web resources.
   documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
     - all
 - path: google/cloud/webrisk/v1beta1
+  description: Web Risk is an enterprise security product that lets your client applications check URLs against Google's constantly updated lists of unsafe web resources.
   documentation_uri: https://cloud.google.com/web-risk/docs/
   languages:
     - go
