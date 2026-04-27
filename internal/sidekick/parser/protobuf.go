@@ -263,16 +263,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		mixinFileDesc       []*descriptorpb.FileDescriptorProto
 		enabledMixinMethods mixinMethods = make(map[string]bool)
 	)
-	state := &api.APIState{
-		ServiceByID:    make(map[string]*api.Service),
-		MethodByID:     make(map[string]*api.Method),
-		MessageByID:    make(map[string]*api.Message),
-		EnumByID:       make(map[string]*api.Enum),
-		ResourceByType: make(map[string]*api.Resource),
-	}
-	result := &api.API{
-		State: state,
-	}
+	result := &api.API{}
 	if serviceConfig != nil {
 		result.Title = serviceConfig.Title
 		if serviceConfig.Documentation != nil {
