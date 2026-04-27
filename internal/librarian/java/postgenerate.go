@@ -36,6 +36,9 @@ const (
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
+	// versionsFileName is the name of the  manifest file that keeps track of
+	// artifact versions for release-please.
+	versionsFileName = "versions.txt"
 )
 
 var (
@@ -92,9 +95,9 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newV
 }
 
 func appendVersions(repoPath string, versions []string) error {
-	versionsPath := filepath.Join(repoPath, "versions.txt")
+	versionsPath := filepath.Join(repoPath, versionsFileName)
 	if err := filesystem.AppendLines(versionsPath, versions); err != nil {
-		return fmt.Errorf("failed to update versions.txt: %w", err)
+		return fmt.Errorf("failed to update %s: %w", versionsFileName, err)
 	}
 	return nil
 }

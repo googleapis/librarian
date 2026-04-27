@@ -283,3 +283,25 @@ func copyDir(src, dest string) error {
 		return filesystem.CopyFile(path, target)
 	})
 }
+
+func TestAppendVersions(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	versionsPath := filepath.Join(tmpDir, versionsFileName)
+	if err := os.WriteFile(versionsPath, []byte("a:1.0.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	versions := []string{"b:2.0.0"}
+	if err := appendVersions(tmpDir, versions); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(versionsPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := "a:1.0.0\nb:2.0.0\n"
+	if diff := cmp.Diff(want, string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
