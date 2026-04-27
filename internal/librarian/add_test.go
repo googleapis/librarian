@@ -338,7 +338,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 							{Path: "google/cloud/kms/v1"},
 						},
 						Python: &config.PythonPackage{
-							DefaultVersion: "v1beta2",
+							DefaultVersion: "v1",
 						},
 					},
 				},
@@ -355,7 +355,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 							{Path: "google/cloud/kms/v1beta2"},
 						},
 						Python: &config.PythonPackage{
-							DefaultVersion: "v1beta2",
+							DefaultVersion: "v1",
 						},
 					},
 				},
