@@ -755,3 +755,9 @@ type NodejsAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 }
+
+// GcloudSurface contains gcloud-specific library configuration.
+type GcloudSurface struct {
+	// GenerateOperations indicates whether to generate top-level operations commands.
+	GenerateOperations *bool `yaml:"generate_operations,omitempty"`
+}
