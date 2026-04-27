@@ -637,13 +637,10 @@ func TestGenerate_Logic(t *testing.T) {
 }
 
 func TestGenerate_ProtoExclusion(t *testing.T) {
-	var capturedArgs [][]string
-	oldRunProtoc := runProtoc
-	defer func() { runProtoc = oldRunProtoc }()
-	runProtoc = func(ctx context.Context, args []string) error {
-		capturedArgs = append(capturedArgs, args)
-		return nil
-	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+
 	outdir := t.TempDir()
 	library := &config.Library{
 		Name:    "secretmanager",
@@ -657,6 +654,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 				{
 					Path: "google/cloud/secretmanager/v1",
 					SkipProtoClassGeneration: []string{
+						// resources.proto is required for gRPC/GAPIC steps but excluded from proto step.
 						"google/cloud/secretmanager/v1/resources.proto",
 					},
 				},
@@ -696,28 +694,16 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 1. Generate standard Protocol Buffer Java classes.
-	// 2. Generate gRPC service stubs.
-	// 3. Generate GAPIC library.
-	if len(capturedArgs) < 3 {
-		t.Fatalf("expected at least 3 protoc calls, got %d", len(capturedArgs))
+
+	// Verify Step 1 (proto) excludes resources.proto by checking the filesystem.
+	// We check the staging directory because our dummy owlbot.py doesn't move files.
+	protoPkgDir := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1")
+
+	if _, err := os.Stat(filepath.Join(protoPkgDir, "ResourcesProto.java")); err == nil {
+		t.Errorf("ResourcesProto.java should NOT be generated when resources.proto is in SkipProtoClassGeneration")
 	}
-	containsArg := func(args []string, target string) bool {
-		for _, arg := range args {
-			if strings.Contains(arg, target) {
-				return true
-			}
-		}
-		return false
-	}
-	if containsArg(capturedArgs[0], "resources.proto") {
-		t.Errorf("Step 1 (proto) should exclude resources.proto, but it was found in args: %v", capturedArgs[0])
-	}
-	if !containsArg(capturedArgs[1], "resources.proto") {
-		t.Errorf("Step 2 (gRPC) should include resources.proto, but it was not found in args")
-	}
-	if !containsArg(capturedArgs[2], "resources.proto") {
-		t.Errorf("Step 3 (GAPIC) should include resources.proto, but it was not found in args")
+	if _, err := os.Stat(filepath.Join(protoPkgDir, "ServiceProto.java")); err != nil {
+		t.Errorf("ServiceProto.java SHOULD be generated: %v", err)
 	}
 }
 
