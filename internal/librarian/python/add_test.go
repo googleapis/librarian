@@ -102,6 +102,16 @@ func TestAdd_Error(t *testing.T) {
 			},
 			wantErr: errNewLibraryMustHaveOneAPI,
 		},
+		{
+			name: "API in unapproved namespace",
+			lib: &config.Library{
+				Name: "google-unapproved-bad",
+				APIs: []*config.API{
+					{Path: "google/unapproved/bad/v1"},
+				},
+			},
+			wantErr: errNewLibraryBadNamespace,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, gotErr := Add(test.lib)

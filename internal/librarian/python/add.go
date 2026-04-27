@@ -16,6 +16,8 @@ package python
 
 import (
 	"errors"
+	"fmt"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -25,7 +27,17 @@ import (
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
 
-var errNewLibraryMustHaveOneAPI = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
+var (
+	approvedGAPICNamespaces = []string{
+		"google.ads",
+		"google.apps",
+		"google.cloud",
+		"google.maps",
+		"google.shopping",
+	}
+	errNewLibraryMustHaveOneAPI = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
+	errNewLibraryBadNamespace   = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details.")
+)
 
 // Add initializes a new Python library with default values.
 func Add(lib *config.Library) (*config.Library, error) {
@@ -33,10 +45,15 @@ func Add(lib *config.Library) (*config.Library, error) {
 	if len(lib.APIs) != 1 {
 		return nil, errNewLibraryMustHaveOneAPI
 	}
-	if packageDefaultVersion := serviceconfig.ExtractVersion(lib.APIs[0].Path); packageDefaultVersion != "" {
+	apiPath := lib.APIs[0].Path
+	if packageDefaultVersion := serviceconfig.ExtractVersion(apiPath); packageDefaultVersion != "" {
 		lib.Python = &config.PythonPackage{
 			DefaultVersion: packageDefaultVersion,
 		}
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(approvedGAPICNamespaces, namespace) {
+		return nil, fmt.Errorf("unapproved namespace %s derived from API path %s: %w", namespace, apiPath, errNewLibraryBadNamespace)
 	}
 	return lib, nil
 }
