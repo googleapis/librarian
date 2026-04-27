@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 const (
@@ -90,25 +91,10 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newV
 	return nil
 }
 
-func appendVersions(repoPath string, versions []string) (err error) {
-	if len(versions) == 0 {
-		return nil
-	}
+func appendVersions(repoPath string, versions []string) error {
 	versionsPath := filepath.Join(repoPath, "versions.txt")
-	f, err := os.OpenFile(versionsPath, os.O_APPEND|os.O_WRONLY, 0644)
-	if err != nil {
-		return fmt.Errorf("failed to open versions.txt: %w", err)
-	}
-	defer func() {
-		if cerr := f.Close(); cerr != nil && err == nil {
-			err = fmt.Errorf("failed to close versions.txt: %w", cerr)
-		}
-	}()
-
-	for _, v := range versions {
-		if _, err := fmt.Fprintf(f, "%s\n", v); err != nil {
-			return fmt.Errorf("failed to write to versions.txt: %w", err)
-		}
+	if err := filesystem.AppendLines(versionsPath, versions); err != nil {
+		return fmt.Errorf("failed to update versions.txt: %w", err)
 	}
 	return nil
 }

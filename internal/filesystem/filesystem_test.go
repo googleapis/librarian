@@ -290,3 +290,67 @@ func createZip(t *testing.T, path string, files map[string]string, modes map[str
 		}
 	}
 }
+
+func TestAppendLines(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		initial string
+		lines   []string
+		want    string
+	}{
+		{
+			name:    "empty file",
+			initial: "",
+			lines:   []string{"a:1.0.0"},
+			want:    "a:1.0.0\n",
+		},
+		{
+			name:    "already has newline",
+			initial: "content\n",
+			lines:   []string{"a:1.0.0"},
+			want:    "content\na:1.0.0\n",
+		},
+		{
+			name:    "missing newline",
+			initial: "content",
+			lines:   []string{"a:1.0.0"},
+			want:    "content\na:1.0.0\n",
+		},
+		{
+			name:    "multiple lines missing newline",
+			initial: "content",
+			lines:   []string{"a:1.0.0", "b:2.0.0"},
+			want:    "content\na:1.0.0\nb:2.0.0\n",
+		},
+		{
+			name:    "no lines does nothing",
+			initial: "content",
+			lines:   nil,
+			want:    "content",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			path := filepath.Join(t.TempDir(), "test.txt")
+			if err := os.WriteFile(path, []byte(test.initial), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := AppendLines(path, test.lines); err != nil {
+				t.Fatalf("AppendLines() error = %v", err)
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAppendLines_Error(t *testing.T) {
+	t.Parallel()
+	if err := AppendLines("/non/existent/path", []string{"line"}); err == nil {
+		t.Error("AppendLines() expected error for non-existent file, got nil")
+	}
+}
