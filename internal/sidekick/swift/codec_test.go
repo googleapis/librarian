@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -44,7 +45,7 @@ func TestParseOptions(t *testing.T) {
 		Model:          model,
 		ApiPackages:    map[string]*Dependency{},
 	}
-	if diff := cmp.Diff(want, got); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
 	}
 }
