@@ -15,6 +15,7 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -24,8 +25,18 @@ import (
 )
 
 func TestInstall_Error(t *testing.T) {
-	if err := Install(t.Context(), nil); err == nil {
-		t.Fatal("expected error when passing nil tools")
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+	}{
+		{"nil tools", nil},
+		{"empty tools", &config.Tools{}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Install(t.Context(), test.tools); !errors.Is(err, errNoToolsSpecified) {
+				t.Fatalf("Install() error = %v, want %v", err, errNoToolsSpecified)
+			}
+		})
 	}
 }
 
