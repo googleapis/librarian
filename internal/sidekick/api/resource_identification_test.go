@@ -529,10 +529,10 @@ func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 	}
 }
 
-func TestIdentifyTargetResources_FallbackHeuristic(t *testing.T) {
-	path := NewPathTemplate().WithLiteral("v2").WithLiteral("DeleteBucket")
+func TestIdentifyTargetResources_FromMessage(t *testing.T) {
+	path := (&PathTemplate{}).WithLiteral("v2").WithLiteral("DeleteBucket")
 	fields := []*Field{
-		{Name: "name", Typez: STRING_TYPE},
+		{Name: "name", Typez: TypezString},
 	}
 
 	model, binding := setupTestModel("storage.googleapis.com", path, fields)

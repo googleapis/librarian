@@ -45,7 +45,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 				}}
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
+				if err := identifyTargetResourceForBinding(model, method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
 			}
@@ -55,14 +55,14 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
+func identifyTargetResourceForBinding(model *API, method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
 
 	// Uses path segment patterns to guess the resource.
 	if enableHeuristics {
-		target, err := identifyHeuristicTarget(method, binding, vocabulary)
+		target, err := identifyTargetFromPath(method, binding, vocabulary)
 		if err != nil {
 			return err
 		}
@@ -83,7 +83,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 
 	// Fallback heuristic for methods without variable path templates
 	if enableHeuristics {
-		target, err := identifyFallbackHeuristicTarget(method, vocabulary)
+		target, err := identifyTargetFromMessage(model, method, vocabulary)
 		if err != nil {
 			return err
 		}
@@ -96,83 +96,7 @@ func identifyTargetResourceForBinding(method *Method, binding *PathBinding, voca
 	return nil
 }
 
-func identifyFallbackHeuristicTarget(method *Method, vocabulary map[string]bool) (*TargetResource, error) {
-	if method.InputType == nil {
-		return nil, nil
-	}
-
-	var targetPath []string
-
-	// Rule 1: Resource Message Check (Strong Signal)
-	for _, f := range method.InputType.Fields {
-		if f.Typez == TypezMessage && f.MessageType != nil && f.MessageType.Resource != nil {
-			for _, nf := range f.MessageType.Fields {
-				if nf.Name == "name" && nf.Typez == TypezString {
-					targetPath = []string{f.Name, nf.Name}
-					break
-				}
-			}
-		}
-		if targetPath != nil {
-			break
-		}
-	}
-
-	// Rule 2: Vocabulary Match (Medium Signal)
-	if targetPath == nil {
-		for _, f := range method.InputType.Fields {
-			if f.Typez == TypezString {
-				if vocabulary[f.Name] {
-					targetPath = []string{f.Name}
-					break
-				}
-				if vocabulary[f.Name+"s"] || vocabulary[f.Name+"es"] {
-					targetPath = []string{f.Name}
-					break
-				}
-			}
-		}
-	}
-
-	// Rule 3: Fallback to Priority List (Weak Signal)
-	if targetPath == nil {
-		priorities := []string{"name", "bucket", "parent", "resource", "destination_name", "parent_id", "target_resource", "destinationName", "parentId", "targetResource"}
-		for _, priority := range priorities {
-			for _, f := range method.InputType.Fields {
-				if f.Name == priority && f.Typez == TypezString {
-					targetPath = []string{f.Name}
-					break
-				}
-			}
-			if targetPath != nil {
-				break
-			}
-		}
-	}
-
-	if targetPath == nil {
-		return nil, nil
-	}
-
-	fieldPaths := [][]string{targetPath}
-
-	host, err := getServiceHost(method)
-	if err != nil {
-		return nil, err
-	}
-	h := "//" + host
-	template := []PathSegment{
-		{Literal: &h},
-		{Variable: &PathVariable{FieldPath: targetPath}},
-	}
-
-	return &TargetResource{
-		FieldPaths: fieldPaths,
-		Template:   template,
-	}, nil
-}
-
-func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
+func identifyTargetFromPath(method *Method, binding *PathBinding, vocabulary map[string]bool) (*TargetResource, error) {
 
 	tmpl := binding.PathTemplate
 	if tmpl == nil {
@@ -273,6 +197,123 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 		}, nil
 	}
 	return nil, nil
+}
+
+// identifyTargetFromMessage attempts to identify the target resource by inspecting
+// the fields of the request message (InputType). This is used as a fallback heuristic
+// for methods without variable path templates (e.g., flat gRPC paths) and lacking
+// explicit annotations.
+func identifyTargetFromMessage(model *API, method *Method, vocabulary map[string]bool) (*TargetResource, error) {
+	if method.InputType == nil {
+		return nil, nil
+	}
+
+	var targetPath []string
+
+	// Rule 1: Look for direct string fields in priority list.
+	targetPath = findResourceInTopLevelFields(method.InputType)
+
+	// Rule 2: Look for fields matching the derived vocabulary.
+	if targetPath == nil {
+		targetPath = findResourceByVocabulary(model, method.InputType, vocabulary)
+	}
+
+	// Rule 3: Look for a "name" field inside nested message fields.
+	if targetPath == nil {
+		targetPath = findResourceInNestedMessageFields(model, method.InputType)
+	}
+
+	if targetPath == nil {
+		return nil, nil
+	}
+
+	fieldPaths := [][]string{targetPath}
+
+	host, err := getServiceHost(method)
+	if err != nil {
+		return nil, err
+	}
+	h := "//" + host
+	template := []PathSegment{
+		{Literal: &h},
+		{Variable: &PathVariable{FieldPath: targetPath}},
+	}
+
+	return &TargetResource{
+		FieldPaths: fieldPaths,
+		Template:   template,
+	}, nil
+}
+
+// findResourceByVocabulary searches for fields whose name (or its plural form)
+// exists in the derived vocabulary of collection names.
+func findResourceByVocabulary(model *API, inputType *Message, vocabulary map[string]bool) []string {
+	for _, f := range inputType.Fields {
+		// Case 1: String field matches vocabulary directly or via pluralization
+		if f.Typez == TypezString {
+			if vocabulary[f.Name] || vocabulary[f.Name+"s"] || vocabulary[f.Name+"es"] {
+				return []string{f.Name}
+			}
+		}
+		// Case 2: Message field matches vocabulary, and has a "name" field inside
+		if f.Typez == TypezMessage && f.TypezID != "" {
+			if vocabulary[f.Name] || vocabulary[f.Name+"s"] || vocabulary[f.Name+"es"] {
+				if msg, ok := model.State.MessageByID[f.TypezID]; ok {
+					for _, nf := range msg.Fields {
+						if nf.Name == "name" && nf.Typez == TypezString {
+							return []string{f.Name, nf.Name}
+						}
+					}
+				}
+			}
+		}
+	}
+	return nil
+}
+
+// findResourceInTopLevelFields searches for top-level string fields that are likely
+// to contain the resource name, based on a prioritized list of common names used across APIs.
+// For example: "bucket" for Storage, "parent" for Storage Control, "parentId" for Compute.
+func findResourceInTopLevelFields(inputType *Message) []string {
+	priorities := []string{
+		"name",
+		"bucket",
+		"parent",
+		"resource",
+		"destination_name",
+		"parent_id",
+		"target_resource",
+		"destinationName",
+		"parentId",
+		"targetResource",
+		"full_resource_name",
+	}
+	for _, priority := range priorities {
+		for _, f := range inputType.Fields {
+			if f.Name == priority && f.Typez == TypezString {
+				return []string{f.Name}
+			}
+		}
+	}
+	return nil
+}
+
+// findResourceInNestedMessageFields searches for a field named "name" inside any
+// nested message field of the input type. This helps identify resources when the
+// top-level request message contains the resource object instead of just its identifier.
+func findResourceInNestedMessageFields(model *API, inputType *Message) []string {
+	for _, f := range inputType.Fields {
+		if f.Typez == TypezMessage && f.TypezID != "" {
+			if msg, ok := model.State.MessageByID[f.TypezID]; ok {
+				for _, nf := range msg.Fields {
+					if (nf.Name == "name" || nf.Name == "service_name") && nf.Typez == TypezString {
+						return []string{f.Name, nf.Name}
+					}
+				}
+			}
+		}
+	}
+	return nil
 }
 
 func identifyExplicitTarget(method *Method, binding *PathBinding) (*TargetResource, error) {
