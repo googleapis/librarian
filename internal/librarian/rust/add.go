@@ -16,16 +16,16 @@ package rust
 
 import "github.com/googleapis/librarian/internal/config"
 
-// DefaultVersion is the first version used for a new library. This is set on
+// defaultVersion is the first version used for a new library. This is set on
 // the initial `librarian add` for a new API.
-const DefaultVersion = "1.0.0"
+const defaultVersion = "1.0.0"
 
 // Add executes Rust-specific mutations of the given [config.Library]
 // entry to be added to the librarian.yaml via `librarian add`.
 //
 // Currently, it only sets the [config.Library.Version] property to the
-// [DefaultVersion] for Rust.
+// [defaultVersion] for Rust.
 func Add(lib *config.Library) *config.Library {
-	lib.Version = DefaultVersion
+	lib.Version = defaultVersion
 	return lib
 }

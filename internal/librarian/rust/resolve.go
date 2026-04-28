@@ -85,11 +85,11 @@ func findExternalPackages(lib *config.Library, sources *sources.Sources) (map[st
 	externalPackages := map[string]bool{}
 	for id := range allDeps {
 		var pkg string
-		if s, ok := model.State.ServiceByID[id]; ok {
+		if s := model.Service(id); s != nil {
 			pkg = s.Package
-		} else if m, ok := model.State.MessageByID[id]; ok {
+		} else if m := model.Message(id); m != nil {
 			pkg = m.Package
-		} else if e, ok := model.State.EnumByID[id]; ok {
+		} else if e := model.Enum(id); e != nil {
 			pkg = e.Package
 		}
 		if pkg != "" && !ownedPackages[pkg] {

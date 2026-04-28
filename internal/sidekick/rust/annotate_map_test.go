@@ -27,17 +27,17 @@ func TestMapKeyAnnotations(t *testing.T) {
 		wantSerdeAs string
 		typez       api.Typez
 	}{
-		{"wkt::internal::I32", api.INT32_TYPE},
-		{"wkt::internal::I32", api.SFIXED32_TYPE},
-		{"wkt::internal::I32", api.SINT32_TYPE},
-		{"wkt::internal::I64", api.INT64_TYPE},
-		{"wkt::internal::I64", api.SFIXED64_TYPE},
-		{"wkt::internal::I64", api.SINT64_TYPE},
-		{"wkt::internal::U32", api.UINT32_TYPE},
-		{"wkt::internal::U32", api.FIXED32_TYPE},
-		{"wkt::internal::U64", api.UINT64_TYPE},
-		{"wkt::internal::U64", api.FIXED64_TYPE},
-		{"serde_with::DisplayFromStr", api.BOOL_TYPE},
+		{"wkt::internal::I32", api.TypezInt32},
+		{"wkt::internal::I32", api.TypezSfixed32},
+		{"wkt::internal::I32", api.TypezSint32},
+		{"wkt::internal::I64", api.TypezInt64},
+		{"wkt::internal::I64", api.TypezSfixed64},
+		{"wkt::internal::I64", api.TypezSint64},
+		{"wkt::internal::U32", api.TypezUint32},
+		{"wkt::internal::U32", api.TypezFixed32},
+		{"wkt::internal::U64", api.TypezUint64},
+		{"wkt::internal::U64", api.TypezFixed64},
+		{"serde_with::DisplayFromStr", api.TypezBool},
 	} {
 		mapMessage := &api.Message{
 			Name:    "$map<unused, unused>",
@@ -54,7 +54,7 @@ func TestMapKeyAnnotations(t *testing.T) {
 				{
 					Name:    "value",
 					ID:      "$map<unused, unused>.value",
-					Typez:   api.STRING_TYPE,
+					Typez:   api.TypezString,
 					TypezID: "unused",
 				},
 			},
@@ -63,7 +63,7 @@ func TestMapKeyAnnotations(t *testing.T) {
 			Name:     "field",
 			JSONName: "field",
 			ID:       ".test.Message.field",
-			Typez:    api.MESSAGE_TYPE,
+			Typez:    api.TypezMessage,
 			TypezID:  "$map<unused, unused>",
 		}
 		message := &api.Message{
@@ -102,27 +102,27 @@ func TestMapValueAnnotations(t *testing.T) {
 		typezID     string
 		wantSerdeAs string
 	}{
-		{libconfig.SpecProtobuf, api.STRING_TYPE, "unused", "serde_with::Same"},
-		{libconfig.SpecDiscovery, api.STRING_TYPE, "unused", "serde_with::Same"},
-		{libconfig.SpecProtobuf, api.BYTES_TYPE, "unused", "serde_with::base64::Base64"},
-		{libconfig.SpecDiscovery, api.BYTES_TYPE, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
-		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
-		{libconfig.SpecDiscovery, api.MESSAGE_TYPE, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{libconfig.SpecProtobuf, api.TypezString, "unused", "serde_with::Same"},
+		{libconfig.SpecDiscovery, api.TypezString, "unused", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.TypezBytes, "unused", "serde_with::base64::Base64"},
+		{libconfig.SpecDiscovery, api.TypezBytes, "unused", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
+		{libconfig.SpecProtobuf, api.TypezMessage, ".google.protobuf.BytesValue", "serde_with::base64::Base64"},
+		{libconfig.SpecDiscovery, api.TypezMessage, ".google.protobuf.BytesValue", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 
-		{libconfig.SpecProtobuf, api.BOOL_TYPE, "unused", "serde_with::Same"},
-		{libconfig.SpecProtobuf, api.INT32_TYPE, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.SFIXED32_TYPE, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.SINT32_TYPE, "unused", "wkt::internal::I32"},
-		{libconfig.SpecProtobuf, api.INT64_TYPE, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.SFIXED64_TYPE, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.SINT64_TYPE, "unused", "wkt::internal::I64"},
-		{libconfig.SpecProtobuf, api.UINT32_TYPE, "unused", "wkt::internal::U32"},
-		{libconfig.SpecProtobuf, api.FIXED32_TYPE, "unused", "wkt::internal::U32"},
-		{libconfig.SpecProtobuf, api.UINT64_TYPE, "unused", "wkt::internal::U64"},
-		{libconfig.SpecProtobuf, api.FIXED64_TYPE, "unused", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.TypezBool, "unused", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.TypezInt32, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.TypezSfixed32, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.TypezSint32, "unused", "wkt::internal::I32"},
+		{libconfig.SpecProtobuf, api.TypezInt64, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.TypezSfixed64, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.TypezSint64, "unused", "wkt::internal::I64"},
+		{libconfig.SpecProtobuf, api.TypezUint32, "unused", "wkt::internal::U32"},
+		{libconfig.SpecProtobuf, api.TypezFixed32, "unused", "wkt::internal::U32"},
+		{libconfig.SpecProtobuf, api.TypezUint64, "unused", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.TypezFixed64, "unused", "wkt::internal::U64"},
 
-		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
-		{libconfig.SpecProtobuf, api.MESSAGE_TYPE, ".test.Message", "serde_with::Same"},
+		{libconfig.SpecProtobuf, api.TypezMessage, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
+		{libconfig.SpecProtobuf, api.TypezMessage, ".test.Message", "serde_with::Same"},
 	} {
 		mapMessage := &api.Message{
 			Name:    "$map<unused, unused>",
@@ -133,7 +133,7 @@ func TestMapValueAnnotations(t *testing.T) {
 				{
 					Name:    "key",
 					ID:      "$map<unused, unused>.key",
-					Typez:   api.INT32_TYPE,
+					Typez:   api.TypezInt32,
 					TypezID: "unused",
 				},
 				{
@@ -148,7 +148,7 @@ func TestMapValueAnnotations(t *testing.T) {
 			Name:     "field",
 			JSONName: "field",
 			ID:       ".test.Message.field",
-			Typez:    api.MESSAGE_TYPE,
+			Typez:    api.TypezMessage,
 			TypezID:  "$map<unused, unused>",
 		}
 		message := &api.Message{
@@ -183,13 +183,13 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 			{
 				Name:    "key",
 				ID:      "$map<string, string>.key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "unused",
 			},
 			{
 				Name:  "value",
 				ID:    "$map<string, string>.value",
-				Typez: api.STRING_TYPE,
+				Typez: api.TypezString,
 			},
 		},
 	}
@@ -197,7 +197,7 @@ func TestMapAnnotationsSameSame(t *testing.T) {
 		Name:     "field",
 		JSONName: "field",
 		ID:       ".test.Message.field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  "$map<string, string>",
 	}
 	message := &api.Message{

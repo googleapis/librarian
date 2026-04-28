@@ -56,7 +56,7 @@ func TestMapFields(t *testing.T) {
 				ID:            ".package.Message.labels",
 				Documentation: "Lots of messages have labels.",
 				Deprecated:    true,
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "$map<string, string>",
 				Map:           true,
 			},
@@ -74,13 +74,13 @@ func TestMapFields(t *testing.T) {
 			{
 				Name:    "key",
 				ID:      "$map<string, string>.key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 			{
 				Name:    "value",
 				ID:      "$map<string, string>.value",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 		},
@@ -125,7 +125,7 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 				ID:            ".package.Message.objectMapField",
 				Documentation: "The description for objectMapField.",
 				Deprecated:    true,
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "$map<string, .package.SomeOtherMessage>",
 				Map:           true,
 			},
@@ -143,13 +143,13 @@ func TestMapFieldWithObjectValues(t *testing.T) {
 			{
 				Name:    "key",
 				ID:      "$map<string, .package.SomeOtherMessage>.key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 			{
 				Name:    "value",
 				ID:      "$map<string, .package.SomeOtherMessage>.value",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".package.SomeOtherMessage",
 			},
 		},
@@ -201,7 +201,7 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 				ID:            ".package.Message.enumMapField",
 				Documentation: "The description for enumMapField.",
 				Deprecated:    true,
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "$map<string, .package.Message.enumMapField>",
 				Map:           true,
 			},
@@ -219,13 +219,13 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 			{
 				Name:    "key",
 				ID:      "$map<string, .package.Message.enumMapField>.key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 			{
 				Name:    "value",
 				ID:      "$map<string, .package.Message.enumMapField>.value",
-				Typez:   api.ENUM_TYPE,
+				Typez:   api.TypezEnum,
 				TypezID: ".package.Message.enumMapField",
 			},
 		},
@@ -256,8 +256,8 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 		},
 	}
 	wantEnum.UniqueNumberValues = wantEnum.Values
-	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	gotEnum := model.Enum(wantEnum.ID)
+	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
@@ -270,25 +270,25 @@ func TestMapScalarTypes(t *testing.T) {
 		WantTypez  api.Typez
 		WantTypeID string
 	}{
-		{"boolean", "", api.BOOL_TYPE, "bool"},
-		{"integer", "int32", api.INT32_TYPE, "int32"},
-		{"integer", "uint32", api.UINT32_TYPE, "uint32"},
-		{"integer", "int64", api.INT64_TYPE, "int64"},
-		{"integer", "uint64", api.UINT64_TYPE, "uint64"},
-		{"number", "float", api.FLOAT_TYPE, "float"},
-		{"number", "double", api.DOUBLE_TYPE, "double"},
-		{"string", "", api.STRING_TYPE, "string"},
-		{"string", "byte", api.BYTES_TYPE, "bytes"},
-		{"string", "date", api.STRING_TYPE, "string"},
-		{"string", "google-duration", api.MESSAGE_TYPE, ".google.protobuf.Duration"},
-		{"string", "google-datetime", api.MESSAGE_TYPE, ".google.protobuf.Timestamp"},
-		{"string", "date-time", api.MESSAGE_TYPE, ".google.protobuf.Timestamp"},
-		{"string", "google-fieldmask", api.MESSAGE_TYPE, ".google.protobuf.FieldMask"},
-		{"string", "int64", api.INT64_TYPE, "int64"},
-		{"string", "uint64", api.UINT64_TYPE, "uint64"},
-		{"any", "google.protobuf.Value", api.MESSAGE_TYPE, ".google.protobuf.Value"},
-		{"object", "google.protobuf.Struct", api.MESSAGE_TYPE, ".google.protobuf.Struct"},
-		{"object", "google.protobuf.Any", api.MESSAGE_TYPE, ".google.protobuf.Any"},
+		{"boolean", "", api.TypezBool, "bool"},
+		{"integer", "int32", api.TypezInt32, "int32"},
+		{"integer", "uint32", api.TypezUint32, "uint32"},
+		{"integer", "int64", api.TypezInt64, "int64"},
+		{"integer", "uint64", api.TypezUint64, "uint64"},
+		{"number", "float", api.TypezFloat, "float"},
+		{"number", "double", api.TypezDouble, "double"},
+		{"string", "", api.TypezString, "string"},
+		{"string", "byte", api.TypezBytes, "bytes"},
+		{"string", "date", api.TypezString, "string"},
+		{"string", "google-duration", api.TypezMessage, ".google.protobuf.Duration"},
+		{"string", "google-datetime", api.TypezMessage, ".google.protobuf.Timestamp"},
+		{"string", "date-time", api.TypezMessage, ".google.protobuf.Timestamp"},
+		{"string", "google-fieldmask", api.TypezMessage, ".google.protobuf.FieldMask"},
+		{"string", "int64", api.TypezInt64, "int64"},
+		{"string", "uint64", api.TypezUint64, "uint64"},
+		{"any", "google.protobuf.Value", api.TypezMessage, ".google.protobuf.Value"},
+		{"object", "google.protobuf.Struct", api.TypezMessage, ".google.protobuf.Struct"},
+		{"object", "google.protobuf.Any", api.TypezMessage, ".google.protobuf.Any"},
 	} {
 		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 		input := &schema{
@@ -317,7 +317,7 @@ func TestMapScalarTypes(t *testing.T) {
 				JSONName:      "mapField",
 				ID:            ".package.Message.mapField",
 				Documentation: "The description for mapField.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				Map:           true,
 			},
 		}

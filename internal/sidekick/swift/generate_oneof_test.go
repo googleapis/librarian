@@ -48,7 +48,7 @@ func TestGenerateOneOf(t *testing.T) {
 				Name:          "string_field",
 				ID:            ".google.cloud.test.v1.Outer.string_field",
 				Documentation: "A string field that is part of the oneof.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				IsOneOf:       true,
 				Group:         oneof,
 			},
@@ -56,7 +56,7 @@ func TestGenerateOneOf(t *testing.T) {
 				Name:          "message_field",
 				ID:            ".google.cloud.test.v1.Outer.message_field",
 				Documentation: "A message field that is part of the oneof.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       ".google.cloud.test.v1.Inner",
 				IsOneOf:       true,
 				Group:         oneof,
@@ -65,13 +65,13 @@ func TestGenerateOneOf(t *testing.T) {
 				Name:          "regular_int32",
 				ID:            ".google.cloud.test.v1.Outer.regular_int32",
 				Documentation: "A regular field.",
-				Typez:         api.INT32_TYPE,
+				Typez:         api.TypezInt32,
 			},
 			{
 				Name:          "regular_string",
 				ID:            ".google.cloud.test.v1.Outer.regular_string",
 				Documentation: "Another regular field.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 			},
 		},
 		OneOfs: []*api.OneOf{oneof},
@@ -81,7 +81,7 @@ func TestGenerateOneOf(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{outer, inner}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 	cfg := &parser.ModelConfig{}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 
@@ -107,7 +107,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable {
+	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable {
 
   /// A regular field.
   public var regularInt32: Int32
@@ -135,6 +135,14 @@ func TestGenerateOneOf(t *testing.T) {
     case stringField(String)
     /// A message field that is part of the oneof.
     indirect case messageField(Inner)
+  }
+
+  public static var _anyTypeUrl: String { return "type.googleapis.com/google.cloud.test.v1.Outer" }
+  public init(fromAny any: GoogleCloudWkt.` + "`Any`" + `) throws {
+    self = try GoogleCloudWkt._slowAnyDeserialize(Self.self, from: any)
+  }
+  public func _pack() throws -> GoogleCloudWkt.Struct {
+    return try GoogleCloudWkt._slowAnySerialize(message: self)
   }
 }
 `

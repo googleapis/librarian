@@ -40,8 +40,8 @@ func newTestCodec(t *testing.T, specificationFormat, packageName string, options
 }
 
 func TestFieldAnnotations(t *testing.T) {
-	key_field := &api.Field{Name: "key", Typez: api.INT32_TYPE}
-	value_field := &api.Field{Name: "value", Typez: api.INT64_TYPE}
+	key_field := &api.Field{Name: "key", Typez: api.TypezInt32}
+	value_field := &api.Field{Name: "value", Typez: api.TypezInt64}
 	map_message := &api.Message{
 		Name:    "$Map",
 		ID:      ".test.v1.$Map",
@@ -53,20 +53,20 @@ func TestFieldAnnotations(t *testing.T) {
 		Name:     "singular_field",
 		JSONName: "singularField",
 		ID:       ".test.v1.Message.singular_field",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 	}
 	repeated_field := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
 		ID:       ".test.v1.Message.repeated_field",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 		Repeated: true,
 	}
 	map_field := &api.Field{
 		Name:     "map_field",
 		JSONName: "mapField",
 		ID:       ".test.v1.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.$Map",
 		Repeated: false,
 	}
@@ -74,7 +74,7 @@ func TestFieldAnnotations(t *testing.T) {
 		Name:     "boxed_field",
 		JSONName: "boxedField",
 		ID:       ".test.v1.Message.boxed_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.TestMessage",
 		Optional: true,
 	}
@@ -199,10 +199,10 @@ func TestFieldAnnotations(t *testing.T) {
 }
 
 func TestRecursiveFieldAnnotations(t *testing.T) {
-	key_field := &api.Field{Name: "key", Typez: api.INT32_TYPE}
+	key_field := &api.Field{Name: "key", Typez: api.TypezInt32}
 	value_field := &api.Field{
 		Name:    "value",
-		Typez:   api.MESSAGE_TYPE,
+		Typez:   api.TypezMessage,
 		TypezID: ".test.v1.TestMessage",
 	}
 	map_message := &api.Message{
@@ -216,7 +216,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		Name:     "map_field",
 		JSONName: "mapField",
 		ID:       ".test.v1.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.$Map",
 		Repeated: false,
 	}
@@ -224,7 +224,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		Name:     "oneof_field",
 		JSONName: "oneofField",
 		ID:       ".test.v1.Message.oneof_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.TestMessage",
 		IsOneOf:  true,
 	}
@@ -237,7 +237,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
 		ID:       ".test.v1.Message.repeated_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.TestMessage",
 		Repeated: true,
 	}
@@ -245,7 +245,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		Name:     "message_field",
 		JSONName: "messageField",
 		ID:       ".test.v1.Message.message_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.TestMessage",
 	}
 	message := &api.Message{
@@ -392,10 +392,10 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		ID:      ".test.v1.inner.TestMessage",
 	}
 
-	key_field := &api.Field{Name: "key", Typez: api.INT32_TYPE}
+	key_field := &api.Field{Name: "key", Typez: api.TypezInt32}
 	value_field := &api.Field{
 		Name:    "value",
-		Typez:   api.MESSAGE_TYPE,
+		Typez:   api.TypezMessage,
 		TypezID: ".test.v1.inner.TestMessage",
 	}
 	map_message := &api.Message{
@@ -409,7 +409,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		Name:     "map_field",
 		JSONName: "mapField",
 		ID:       ".test.v1.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.$Map",
 		Repeated: false,
 	}
@@ -417,7 +417,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		Name:     "oneof_field",
 		JSONName: "oneofField",
 		ID:       ".test.v1.Message.oneof_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.inner.TestMessage",
 		IsOneOf:  true,
 	}
@@ -430,7 +430,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
 		ID:       ".test.v1.Message.repeated_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.inner.TestMessage",
 		Repeated: true,
 	}
@@ -438,7 +438,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		Name:     "message_field",
 		JSONName: "messageField",
 		ID:       ".test.v1.Message.message_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  ".test.v1.inner.TestMessage",
 	}
 	message := &api.Message{
@@ -579,18 +579,18 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		wantSerdeAs string
 		typez       api.Typez
 	}{
-		{"i32", "wkt::internal::I32", api.INT32_TYPE},
-		{"i32", "wkt::internal::I32", api.SFIXED32_TYPE},
-		{"i32", "wkt::internal::I32", api.SINT32_TYPE},
-		{"i64", "wkt::internal::I64", api.INT64_TYPE},
-		{"i64", "wkt::internal::I64", api.SFIXED64_TYPE},
-		{"i64", "wkt::internal::I64", api.SINT64_TYPE},
-		{"u32", "wkt::internal::U32", api.UINT32_TYPE},
-		{"u32", "wkt::internal::U32", api.FIXED32_TYPE},
-		{"u64", "wkt::internal::U64", api.UINT64_TYPE},
-		{"u64", "wkt::internal::U64", api.FIXED64_TYPE},
-		{"f32", "wkt::internal::F32", api.FLOAT_TYPE},
-		{"f64", "wkt::internal::F64", api.DOUBLE_TYPE},
+		{"i32", "wkt::internal::I32", api.TypezInt32},
+		{"i32", "wkt::internal::I32", api.TypezSfixed32},
+		{"i32", "wkt::internal::I32", api.TypezSint32},
+		{"i64", "wkt::internal::I64", api.TypezInt64},
+		{"i64", "wkt::internal::I64", api.TypezSfixed64},
+		{"i64", "wkt::internal::I64", api.TypezSint64},
+		{"u32", "wkt::internal::U32", api.TypezUint32},
+		{"u32", "wkt::internal::U32", api.TypezFixed32},
+		{"u64", "wkt::internal::U64", api.TypezUint64},
+		{"u64", "wkt::internal::U64", api.TypezFixed64},
+		{"f32", "wkt::internal::F32", api.TypezFloat},
+		{"f64", "wkt::internal::F64", api.TypezDouble},
 	} {
 		singular_field := &api.Field{
 			Name:     "singular_field",
@@ -643,7 +643,7 @@ func TestBytesAnnotations(t *testing.T) {
 			Name:     "singular_field",
 			JSONName: "singularField",
 			ID:       ".test.Message.singular_field",
-			Typez:    api.BYTES_TYPE,
+			Typez:    api.TypezBytes,
 			TypezID:  "bytes",
 		}
 		message := &api.Message{
@@ -694,7 +694,7 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 			Name:     "singular_field",
 			JSONName: "singularField",
 			ID:       ".test.Message.singular_field",
-			Typez:    api.MESSAGE_TYPE,
+			Typez:    api.TypezMessage,
 			TypezID:  test.typezID,
 			Optional: true,
 		}
@@ -741,14 +741,14 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		Name:     "singular_field",
 		JSONName: "singularField",
 		ID:       ".test.v1.Message.singular_field",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  ".test.v1.TestEnum",
 	}
 	repeated_field := &api.Field{
 		Name:     "repeated_field",
 		JSONName: "repeatedField",
 		ID:       ".test.v1.Message.repeated_field",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  ".test.v1.TestEnum",
 		Repeated: true,
 	}
@@ -756,7 +756,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		Name:     "optional_field",
 		JSONName: "optionalField",
 		ID:       ".test.v1.Message.optional_field",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  ".test.v1.TestEnum",
 		Optional: true,
 	}
@@ -764,14 +764,14 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		Name:     "null_value_field",
 		JSONName: "nullValueField",
 		ID:       ".test.v1.Message.null_value_field",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  ".google.protobuf.NullValue",
 	}
 	map_field := &api.Field{
 		Name:     "map_field",
 		JSONName: "mapField",
 		ID:       ".test.v1.Message.map_field",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  "$map<string, .test.v1.TestEnum>",
 	}
 	// TODO(#1381) - this is closer to what map message should be called.
@@ -779,13 +779,13 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		Name:     "key",
 		JSONName: "key",
 		ID:       "$map<string, .test.v1.TestEnum>.key",
-		Typez:    api.STRING_TYPE,
+		Typez:    api.TypezString,
 	}
 	value_field := &api.Field{
 		Name:     "value",
 		JSONName: "value",
 		ID:       "$map<string, .test.v1.TestEnum>.value",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  ".test.v1.TestEnum",
 	}
 	map_message := &api.Message{

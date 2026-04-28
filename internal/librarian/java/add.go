@@ -35,6 +35,9 @@ const defaultVersion = "0.1.0-SNAPSHOT"
 // Add initializes a new Java library with default values.
 func Add(lib *config.Library) *config.Library {
 	lib.Version = defaultVersion
+	// Java generation defaults to the system year for license headers,
+	// so we reset it here to avoid redundancy in librarian.yaml.
+	lib.CopyrightYear = ""
 	return lib
 }
 

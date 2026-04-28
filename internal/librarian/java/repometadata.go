@@ -48,6 +48,8 @@ type repoMetadata struct {
 
 	// Optional fields (appended in this order in Python)
 	// Java-specific field.
+	APIReference string `json:"api_reference,omitempty"`
+	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
 	// Java-specific field.
 	ExcludedDependencies string `json:"excluded_dependencies,omitempty"`
@@ -140,6 +142,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		}
 		metadata.RequiresBilling = !library.Java.BillingNotRequired
 		// Java only fields
+		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
@@ -148,9 +151,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
-		if library.Java.TransportOverride != "" {
-			metadata.Transport = library.Java.TransportOverride
-		}
 	}
 
 	// distribution_name default for Java is groupId:artifactId
@@ -164,12 +164,10 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
 	// transport
-	if metadata.Transport == "" {
-		apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
-		if err != nil {
-			return nil, fmt.Errorf("failed to find api config: %w", err)
-		}
-		metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageJava)
+	if err != nil {
+		return nil, fmt.Errorf("failed to find api config: %w", err)
 	}
+	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava, library)
 	return metadata, nil
 }

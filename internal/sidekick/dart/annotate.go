@@ -38,21 +38,21 @@ var defaultValues = map[api.Typez]struct {
 	Value   string
 	IsConst bool
 }{
-	api.BOOL_TYPE:     {"false", true},
-	api.BYTES_TYPE:    {"Uint8List(0)", false},
-	api.DOUBLE_TYPE:   {"0", true},
-	api.FIXED32_TYPE:  {"0", true},
-	api.FIXED64_TYPE:  {"BigInt.zero", false},
-	api.FLOAT_TYPE:    {"0", true},
-	api.INT32_TYPE:    {"0", true},
-	api.INT64_TYPE:    {"0", true},
-	api.SFIXED32_TYPE: {"0", true},
-	api.SFIXED64_TYPE: {"0", true},
-	api.SINT32_TYPE:   {"0", true},
-	api.SINT64_TYPE:   {"0", true},
-	api.STRING_TYPE:   {"''", true},
-	api.UINT32_TYPE:   {"0", true},
-	api.UINT64_TYPE:   {"BigInt.zero", false},
+	api.TypezBool:     {"false", true},
+	api.TypezBytes:    {"Uint8List(0)", false},
+	api.TypezDouble:   {"0", true},
+	api.TypezFixed32:  {"0", true},
+	api.TypezFixed64:  {"BigInt.zero", false},
+	api.TypezFloat:    {"0", true},
+	api.TypezInt32:    {"0", true},
+	api.TypezInt64:    {"0", true},
+	api.TypezSfixed32: {"0", true},
+	api.TypezSfixed64: {"0", true},
+	api.TypezSint32:   {"0", true},
+	api.TypezSint64:   {"0", true},
+	api.TypezString:   {"''", true},
+	api.TypezUint32:   {"0", true},
+	api.TypezUint64:   {"BigInt.zero", false},
 }
 
 type modelAnnotations struct {
@@ -110,6 +110,7 @@ type serviceAnnotations struct {
 	FieldName   string
 	StructName  string
 	DefaultHost string
+	HasMethods  bool
 }
 
 type messageAnnotation struct {
@@ -154,6 +155,7 @@ type methodAnnotation struct {
 	IsLROGetOperation   bool
 	ServerSideStreaming bool // Whether the method produces a stream of results (or list if `EnableSSE` is `false`).
 	EnableSSE           bool // Whether the target API supports Server-Sent Events (SSE).
+	IsLast              bool
 }
 
 // HasBody returns true if the method has a body.
@@ -379,7 +381,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	// Register any missing WKTs.
-	registerMissingWkt(annotate.state)
+	registerMissingWkt(annotate.model)
 
 	model := annotate.model
 
@@ -459,7 +461,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model.State),
+		DocLines:                   formatDocComments(model.Description, model),
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
@@ -602,16 +604,18 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 		return shouldGenerateMethod(m)
 	})
 
-	for _, m := range methods {
+	for i, m := range methods {
 		annotate.annotateMethod(m)
+		m.Codec.(*methodAnnotation).IsLast = (i == len(methods)-1)
 	}
 	ann := &serviceAnnotations{
 		Name:        s.Name,
-		DocLines:    formatDocComments(s.Documentation, annotate.state),
+		DocLines:    formatDocComments(s.Documentation, annotate.model),
 		Methods:     methods,
 		FieldName:   strcase.ToLowerCamel(s.Name),
 		StructName:  s.Name,
 		DefaultHost: s.DefaultHost,
+		HasMethods:  len(methods) > 0,
 	}
 	s.Codec = ann
 }
@@ -654,7 +658,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		Parent:          m,
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
-		DocLines:        formatDocComments(m.Documentation, annotate.state),
+		DocLines:        formatDocComments(m.Documentation, annotate.model),
 		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
@@ -670,7 +674,7 @@ func createToStringLines(message *api.Message) []string {
 		name := codec.Name
 
 		// Don't generate toString() entries for lists, maps, or messages.
-		if field.Repeated || field.Typez == api.MESSAGE_TYPE {
+		if field.Repeated || field.Typez == api.TypezMessage {
 			continue
 		}
 
@@ -732,7 +736,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 	queryParams := language.QueryParams(method, method.PathInfo.Bindings[0])
 	queryLines := []string{}
 	for _, field := range queryParams {
-		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field, state)
+		queryLines = annotate.buildQueryLines(queryLines, "request.", false, "", field)
 	}
 
 	annotation := &methodAnnotation{
@@ -741,7 +745,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
 		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
 		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
-		DocLines:            formatDocComments(method.Documentation, state),
+		DocLines:            formatDocComments(method.Documentation, annotate.model),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
 		QueryLines:          queryLines,
@@ -765,7 +769,7 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {
 	oneof.Codec = &oneOfAnnotation{
 		Name:     strcase.ToLowerCamel(oneof.Name),
-		DocLines: formatDocComments(oneof.Documentation, annotate.state),
+		DocLines: formatDocComments(oneof.Documentation, annotate.model),
 	}
 }
 
@@ -799,7 +803,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	if field.Repeated || field.Map {
 		// Repeated fields and maps have implicit presence (non-nullable).
 		implicitPresence = true
-	} else if field.Typez == api.MESSAGE_TYPE {
+	} else if field.Typez == api.TypezMessage {
 		// In proto3, singular message fields have explicit presence and are nullable.
 		implicitPresence = false
 	} else {
@@ -819,67 +823,66 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	// Calculate the default field value.
 	defaultValue := ""
 	constDefault := true
-	fieldRequired := slices.Contains(field.Behavior, api.FIELD_BEHAVIOR_REQUIRED)
+	fieldRequired := slices.Contains(field.Behavior, api.FieldBehaviorRequired)
 	if implicitPresence && !fieldRequired {
 		switch {
 		case field.Repeated:
 			defaultValue = "const []"
 		case field.Map:
 			defaultValue = "const {}"
-		case field.Typez == api.ENUM_TYPE:
+		case field.Typez == api.TypezEnum:
 			// The default value for enums are the generated MyEnum.$default field,
 			// always set to the first value of that enum.
-			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez].Value
 			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
-	state := annotate.state
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
-		DocLines:              formatDocComments(field.Documentation, state),
+		DocLines:              formatDocComments(field.Documentation, annotate.model),
 		Required:              implicitPresence,
 		Nullable:              !implicitPresence,
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
-		FromJson:              annotate.createFromJsonLine(field, state, implicitPresence),
-		ToJson:                createToJsonLine(field, state),
+		FromJson:              annotate.createFromJsonLine(field, implicitPresence),
+		ToJson:                createToJsonLine(field, annotate.model),
 		ConstDefault:          constDefault,
 	}
 }
 
-func (annotate *annotateModel) decoder(typez api.Typez, typeid string, state *api.APIState) string {
+func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
 	switch typez {
-	case api.INT64_TYPE,
-		api.SINT64_TYPE,
-		api.SFIXED64_TYPE:
+	case api.TypezInt64,
+		api.TypezSint64,
+		api.TypezSfixed64:
 		return "decodeInt64"
-	case api.FIXED64_TYPE,
-		api.UINT64_TYPE:
+	case api.TypezFixed64,
+		api.TypezUint64:
 		return "decodeUint64"
-	case api.FLOAT_TYPE,
-		api.DOUBLE_TYPE:
+	case api.TypezFloat,
+		api.TypezDouble:
 		return "decodeDouble"
-	case api.INT32_TYPE,
-		api.FIXED32_TYPE,
-		api.SFIXED32_TYPE,
-		api.SINT32_TYPE,
-		api.UINT32_TYPE:
+	case api.TypezInt32,
+		api.TypezFixed32,
+		api.TypezSfixed32,
+		api.TypezSint32,
+		api.TypezUint32:
 		return "decodeInt"
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return "decodeBool"
-	case api.STRING_TYPE:
+	case api.TypezString:
 		return "decodeString"
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		return "decodeBytes"
-	case api.ENUM_TYPE:
-		typeName := annotate.resolveEnumName(state.EnumByID[typeid])
+	case api.TypezEnum:
+		typeName := annotate.resolveEnumName(annotate.model.Enum(typeid))
 		return fmt.Sprintf("%s.fromJson", typeName)
-	case api.MESSAGE_TYPE:
-		typeName := annotate.resolveMessageName(state.MessageByID[typeid], false)
+	case api.TypezMessage:
+		typeName := annotate.resolveMessageName(annotate.state.MessageByID[typeid], false)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -891,21 +894,21 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
 	switch typez {
-	case api.STRING_TYPE:
+	case api.TypezString:
 		return "decodeString"
-	case api.INT32_TYPE, // Integer types that can be decoded as Dart `int`.
-		api.FIXED32_TYPE,
-		api.SFIXED32_TYPE,
-		api.SINT32_TYPE,
-		api.UINT32_TYPE,
-		api.INT64_TYPE,
-		api.SINT64_TYPE,
-		api.SFIXED64_TYPE:
+	case api.TypezInt32, // Integer types that can be decoded as Dart `int`.
+		api.TypezFixed32,
+		api.TypezSfixed32,
+		api.TypezSint32,
+		api.TypezUint32,
+		api.TypezInt64,
+		api.TypezSint64,
+		api.TypezSfixed64:
 		return "decodeIntKey"
-	case api.UINT64_TYPE,
-		api.FIXED64_TYPE:
+	case api.TypezUint64,
+		api.TypezFixed64:
 		return "decodeUint64Key"
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return "decodeBoolKey"
 	default:
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
@@ -917,36 +920,36 @@ func (annotate *annotateModel) keyDecoder(typez api.Typez) string {
 //
 // For example:
 //
-//	encoder(api.STRING_TYPE, "a_string_field") => ("a_string_field", false)
-//	encoder(api.MESSAGE_TYPE, "a_message_field") => ("a_message_field.toJson()", true)
+//	encoder(api.TypezString, "a_string_field") => ("a_string_field", false)
+//	encoder(api.TypezMessage, "a_message_field") => ("a_message_field.toJson()", true)
 func encoder(typez api.Typez, name string) (string, bool) {
 	switch typez {
-	case api.INT64_TYPE,
-		api.SINT64_TYPE,
-		api.SFIXED64_TYPE,
-		api.FIXED64_TYPE,
-		api.UINT64_TYPE:
+	case api.TypezInt64,
+		api.TypezSint64,
+		api.TypezSfixed64,
+		api.TypezFixed64,
+		api.TypezUint64:
 		// All 64-bit integer types are encoded as strings. In Dart, these may be
 		// represented as `int` or `BigInt`.
 		return fmt.Sprintf("%s.toString()", name), true
-	case api.FLOAT_TYPE,
-		api.DOUBLE_TYPE:
+	case api.TypezFloat,
+		api.TypezDouble:
 		// A special encoder is needed to handle NaN and Infinity.
 		return fmt.Sprintf("encodeDouble(%s)", name), true
-	case api.INT32_TYPE,
-		api.FIXED32_TYPE,
-		api.SFIXED32_TYPE,
-		api.SINT32_TYPE,
-		api.UINT32_TYPE:
+	case api.TypezInt32,
+		api.TypezFixed32,
+		api.TypezSfixed32,
+		api.TypezSint32,
+		api.TypezUint32:
 		// All 32-bit integer types are encoded as JSON numbers.
 		return name, false
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return name, false
-	case api.STRING_TYPE:
+	case api.TypezString:
 		return name, false
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		return fmt.Sprintf("encodeBytes(%s)", name), true
-	case api.MESSAGE_TYPE, api.ENUM_TYPE:
+	case api.TypezMessage, api.TypezEnum:
 		return fmt.Sprintf("%s.toJson()", name), true
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -958,34 +961,34 @@ func encoder(typez api.Typez, name string) (string, bool) {
 //
 // For example:
 //
-//	keyEncoder(api.STRING_TYPE, "e.key") => ("e.key", false)
-//	keyEncoder(api.INT32_TYPE, "e.key") => ("e.key.toString()", true)
+//	keyEncoder(api.TypezString, "e.key") => ("e.key", false)
+//	keyEncoder(api.TypezInt32, "e.key") => ("e.key.toString()", true)
 func keyEncoder(typez api.Typez, name string) (string, bool) {
 	// JSON objects can only contain string keys so non-String types need to be encoded as strings.
 	// Supported key types are defined here:
 	// https://protobuf.dev/programming-guides/proto3/#maps
 	switch typez {
-	case api.STRING_TYPE:
+	case api.TypezString:
 		return name, false
-	case api.INT32_TYPE,
-		api.FIXED32_TYPE,
-		api.SFIXED32_TYPE,
-		api.SINT32_TYPE,
-		api.UINT32_TYPE,
-		api.INT64_TYPE,
-		api.SINT64_TYPE,
-		api.SFIXED64_TYPE,
-		api.UINT64_TYPE,
-		api.FIXED64_TYPE:
+	case api.TypezInt32,
+		api.TypezFixed32,
+		api.TypezSfixed32,
+		api.TypezSint32,
+		api.TypezUint32,
+		api.TypezInt64,
+		api.TypezSint64,
+		api.TypezSfixed64,
+		api.TypezUint64,
+		api.TypezFixed64:
 		return fmt.Sprintf("%s.toString()", name), true
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return fmt.Sprintf("%s.toString()", name), true
 	default:
 		panic(fmt.Sprintf("unsupported key type: %d", typez))
 	}
 }
 
-func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.APIState, required bool) string {
+func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
 	defaultValue := "null"
@@ -995,9 +998,9 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			defaultValue = "[]"
 		case field.Map:
 			defaultValue = "{}"
-		case field.Typez == api.ENUM_TYPE:
+		case field.Typez == api.TypezEnum:
 			// 'ExecutableCode_Language.$default'
-			typeName := annotate.resolveEnumName(annotate.state.EnumByID[field.TypezID])
+			typeName := annotate.resolveEnumName(annotate.model.Enum(field.TypezID))
 			defaultValue = fmt.Sprintf("%s.$default", typeName)
 		default:
 			defaultValue = defaultValues[field.Typez].Value
@@ -1007,18 +1010,18 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 	switch {
 	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
-		decoder := annotate.decoder(field.Typez, field.TypezID, state)
+		decoder := annotate.decoder(field.Typez, field.TypezID)
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, List<Object?> $1 => [for (final i in $1) %s(i)], "+
 				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
-		message := state.MessageByID[field.TypezID]
+		message := annotate.state.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := message.Fields[1].Typez
 		valueTypeID := message.Fields[1].TypezID
-		valueDecoder := annotate.decoder(valueType, valueTypeID, state)
+		valueDecoder := annotate.decoder(valueType, valueTypeID)
 
 		return fmt.Sprintf(
 			"switch (%s) { null => %s, Map<String, Object?> $1 => {for (final e in $1.entries) %s(e.key): %s(e.value)}, "+
@@ -1026,11 +1029,11 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, state *api.A
 			data, defaultValue, keyDecoder, valueDecoder, field.JSONName)
 	}
 
-	decoder := annotate.decoder(field.Typez, field.TypezID, state)
+	decoder := annotate.decoder(field.Typez, field.TypezID)
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, state *api.APIState) string {
+func createToJsonLine(field *api.Field, model *api.API) string {
 	name := fieldName(field)
 
 	switch {
@@ -1042,7 +1045,7 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 		}
 		return name
 	case field.Map:
-		message := state.MessageByID[field.TypezID]
+		message := model.State.MessageByID[field.TypezID]
 		keyType := message.Fields[0].Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := message.Fields[1].Typez
@@ -1096,9 +1099,9 @@ func createToJsonLine(field *api.Field, state *api.APIState) string {
 //	// if (request.sub?.id case final $1? when $1.isNotDefault) 'sub.id=$1'
 func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
-	paramPrefix string, field *api.Field, state *api.APIState,
+	paramPrefix string, field *api.Field,
 ) []string {
-	message := state.MessageByID[field.TypezID]
+	message := annotate.state.MessageByID[field.TypezID]
 	isMap := message != nil && message.IsMap
 
 	if field.Codec == nil {
@@ -1124,16 +1127,16 @@ func (annotate *annotateModel) buildQueryLines(
 	case field.Repeated:
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
-		case api.STRING_TYPE:
+		case api.TypezString:
 			return append(result, fmt.Sprintf("%s: $1", preamble))
-		case api.ENUM_TYPE:
+		case api.TypezEnum:
 			return append(result, fmt.Sprintf("%s: $1.map((e) => e.value)", preamble))
-		case api.BOOL_TYPE, api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
-			api.FIXED32_TYPE, api.SFIXED32_TYPE, api.INT64_TYPE,
-			api.UINT64_TYPE, api.SINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE,
-			api.FLOAT_TYPE, api.DOUBLE_TYPE:
+		case api.TypezBool, api.TypezInt32, api.TypezUint32, api.TypezSint32,
+			api.TypezFixed32, api.TypezSfixed32, api.TypezInt64,
+			api.TypezUint64, api.TypezSint64, api.TypezFixed64, api.TypezSfixed64,
+			api.TypezFloat, api.TypezDouble:
 			return append(result, fmt.Sprintf("%s: $1.map((e) => '$e')", preamble))
-		case api.BYTES_TYPE:
+		case api.TypezBytes:
 			return append(result, fmt.Sprintf("%s: $1.map((e) => encodeBytes(e)!)", preamble))
 		default:
 			slog.Error("unhandled list query param", "type", field.Typez)
@@ -1145,7 +1148,7 @@ func (annotate *annotateModel) buildQueryLines(
 		slog.Error("unhandled query param", "type", "map")
 		return append(result, fmt.Sprintf("/* unhandled query param type: %d */", field.Typez))
 
-	case field.Typez == api.MESSAGE_TYPE:
+	case field.Typez == api.TypezMessage:
 		deref := "."
 		if codec.Nullable {
 			deref = "?."
@@ -1160,24 +1163,24 @@ func (annotate *annotateModel) buildQueryLines(
 		// Unroll the fields for messages.
 		for _, field := range message.Fields {
 			result = annotate.buildQueryLines(
-				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field, state)
+				result, ref+deref, couldRefPrefixBeNull || codec.Nullable, param+".", field)
 		}
 		return result
 
-	case field.Typez == api.STRING_TYPE:
+	case field.Typez == api.TypezString:
 		return append(result, fmt.Sprintf("%s: $1", preamble))
-	case field.Typez == api.ENUM_TYPE:
+	case field.Typez == api.TypezEnum:
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
-	case field.Typez == api.BOOL_TYPE ||
-		field.Typez == api.INT32_TYPE ||
-		field.Typez == api.UINT32_TYPE || field.Typez == api.SINT32_TYPE ||
-		field.Typez == api.FIXED32_TYPE || field.Typez == api.SFIXED32_TYPE ||
-		field.Typez == api.INT64_TYPE ||
-		field.Typez == api.UINT64_TYPE || field.Typez == api.SINT64_TYPE ||
-		field.Typez == api.FIXED64_TYPE || field.Typez == api.SFIXED64_TYPE ||
-		field.Typez == api.FLOAT_TYPE || field.Typez == api.DOUBLE_TYPE:
+	case field.Typez == api.TypezBool ||
+		field.Typez == api.TypezInt32 ||
+		field.Typez == api.TypezUint32 || field.Typez == api.TypezSint32 ||
+		field.Typez == api.TypezFixed32 || field.Typez == api.TypezSfixed32 ||
+		field.Typez == api.TypezInt64 ||
+		field.Typez == api.TypezUint64 || field.Typez == api.TypezSint64 ||
+		field.Typez == api.TypezFixed64 || field.Typez == api.TypezSfixed64 ||
+		field.Typez == api.TypezFloat || field.Typez == api.TypezDouble:
 		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
-	case field.Typez == api.BYTES_TYPE:
+	case field.Typez == api.TypezBytes:
 		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preamble))
 	default:
 		slog.Error("unhandled query param", "type", field.Typez)
@@ -1227,7 +1230,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 
 	enum.Codec = &enumAnnotation{
 		Name:         enumName(enum),
-		DocLines:     formatDocComments(enum.Documentation, annotate.state),
+		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,
 		Model:        annotate.model,
 	}
@@ -1236,7 +1239,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
 		Name:     enumValueToName[ev],
-		DocLines: formatDocComments(ev.Documentation, annotate.state),
+		DocLines: formatDocComments(ev.Documentation, annotate.model),
 	}
 }
 
@@ -1244,22 +1247,22 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	var out string
 
 	switch f.Typez {
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		out = "bool"
-	case api.INT32_TYPE, api.UINT32_TYPE, api.SINT32_TYPE,
-		api.FIXED32_TYPE, api.SFIXED32_TYPE:
+	case api.TypezInt32, api.TypezUint32, api.TypezSint32,
+		api.TypezFixed32, api.TypezSfixed32:
 		out = "int"
-	case api.INT64_TYPE, api.SINT64_TYPE, api.SFIXED64_TYPE:
+	case api.TypezInt64, api.TypezSint64, api.TypezSfixed64:
 		out = "int"
-	case api.FIXED64_TYPE, api.UINT64_TYPE:
+	case api.TypezFixed64, api.TypezUint64:
 		out = "BigInt"
-	case api.FLOAT_TYPE, api.DOUBLE_TYPE:
+	case api.TypezFloat, api.TypezDouble:
 		out = "double"
-	case api.STRING_TYPE:
+	case api.TypezString:
 		out = "String"
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		out = "Uint8List"
-	case api.MESSAGE_TYPE:
+	case api.TypezMessage:
 		message, ok := annotate.state.MessageByID[f.TypezID]
 		if !ok {
 			slog.Error("unable to lookup type", "id", f.TypezID)
@@ -1272,9 +1275,9 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 		} else {
 			out = annotate.resolveMessageName(message, false)
 		}
-	case api.ENUM_TYPE:
-		e, ok := annotate.state.EnumByID[f.TypezID]
-		if !ok {
+	case api.TypezEnum:
+		e := annotate.model.Enum(f.TypezID)
+		if e == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
@@ -1336,7 +1339,7 @@ func (annotate *annotateModel) updateUsedPackages(packageName string) {
 	}
 }
 
-func registerMissingWkt(state *api.APIState) {
+func registerMissingWkt(model *api.API) {
 	// If these definitions weren't provided by protoc then provide our own
 	// placeholders.
 	for _, message := range []struct {
@@ -1347,9 +1350,9 @@ func registerMissingWkt(state *api.APIState) {
 		{".google.protobuf.Any", "Any", "google.protobuf"},
 		{".google.protobuf.Empty", "Empty", "google.protobuf"},
 	} {
-		_, ok := state.MessageByID[message.ID]
+		_, ok := model.State.MessageByID[message.ID]
 		if !ok {
-			state.MessageByID[message.ID] = &api.Message{
+			model.State.MessageByID[message.ID] = &api.Message{
 				ID:      message.ID,
 				Name:    message.Name,
 				Package: message.Package,

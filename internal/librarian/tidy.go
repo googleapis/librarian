@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -40,8 +41,14 @@ var (
 func tidyCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tidy",
-		Usage:     "format and validate librarian.yaml",
+		Usage:     "tidy and validate librarian.yaml",
 		UsageText: "librarian tidy",
+		Description: `tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
+
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
@@ -172,8 +179,9 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
-	config.LanguageJava: java.Tidy,
-	config.LanguageRust: tidyRustConfig,
+	config.LanguageJava:   java.Tidy,
+	config.LanguagePython: python.Tidy,
+	config.LanguageRust:   tidyRustConfig,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.

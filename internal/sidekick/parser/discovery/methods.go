@@ -118,7 +118,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Name:          name,
 			JSONName:      name,
 			ID:            fmt.Sprintf("%s.%s", requestMessage.ID, name),
-			Typez:         api.MESSAGE_TYPE,
+			Typez:         api.TypezMessage,
 			TypezID:       bodyID,
 			Optional:      true,
 		}

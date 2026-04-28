@@ -54,14 +54,14 @@ func parseOperationInfo(packagez string, m *descriptorpb.MethodDescriptorProto) 
 	return operationInfo
 }
 
-func parsePathInfo(m *descriptorpb.MethodDescriptorProto, state *api.APIState) (*api.PathInfo, error) {
+func parsePathInfo(m *descriptorpb.MethodDescriptorProto, model *api.API) (*api.PathInfo, error) {
 	eHTTP := proto.GetExtension(m.GetOptions(), eHttp)
 	httpRule := eHTTP.(*httpRule)
-	return processRule(httpRule, state, m.GetInputType())
+	return processRule(httpRule, model, m.GetInputType())
 }
 
-func processRule(httpRule *httpRule, state *api.APIState, mID string) (*api.PathInfo, error) {
-	binding, body, err := processRuleShallow(httpRule, state, mID)
+func processRule(httpRule *httpRule, model *api.API, mID string) (*api.PathInfo, error) {
+	binding, body, err := processRuleShallow(httpRule, model, mID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,7 +74,7 @@ func processRule(httpRule *httpRule, state *api.APIState, mID string) (*api.Path
 	}
 
 	for _, binding := range httpRule.GetAdditionalBindings() {
-		binding, body, err := processRuleShallow(binding, state, mID)
+		binding, body, err := processRuleShallow(binding, model, mID)
 		if err != nil {
 			return nil, err
 		}
@@ -90,7 +90,7 @@ func processRule(httpRule *httpRule, state *api.APIState, mID string) (*api.Path
 	return pathInfo, nil
 }
 
-func processRuleShallow(httpRule *httpRule, state *api.APIState, mID string) (*api.PathBinding, string, error) {
+func processRuleShallow(httpRule *httpRule, model *api.API, mID string) (*api.PathBinding, string, error) {
 	var verb string
 	var rawPath string
 	switch httpRule.GetPattern().(type) {
@@ -119,7 +119,7 @@ func processRuleShallow(httpRule *httpRule, state *api.APIState, mID string) (*a
 	if err != nil {
 		return nil, "", err
 	}
-	queryParameters, err := queryParameters(mID, pathTemplate, httpRule.GetBody(), state)
+	queryParameters, err := queryParameters(mID, pathTemplate, httpRule.GetBody(), model)
 	if err != nil {
 		return nil, "", err
 	}
@@ -131,9 +131,9 @@ func processRuleShallow(httpRule *httpRule, state *api.APIState, mID string) (*a
 	}, httpRule.GetBody(), nil
 }
 
-func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, state *api.APIState) (map[string]bool, error) {
-	msg, ok := state.MessageByID[msgID]
-	if !ok {
+func queryParameters(msgID string, pathTemplate *api.PathTemplate, body string, model *api.API) (map[string]bool, error) {
+	msg := model.Message(msgID)
+	if msg == nil {
 		return nil, fmt.Errorf("unable to lookup type %s", msgID)
 	}
 	params := map[string]bool{}

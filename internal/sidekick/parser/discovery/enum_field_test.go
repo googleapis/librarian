@@ -86,8 +86,8 @@ func TestMakeEnumFields(t *testing.T) {
 		},
 	}
 	wantEnum.UniqueNumberValues = wantEnum.Values
-	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	gotEnum := model.Enum(wantEnum.ID)
+	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
@@ -108,7 +108,7 @@ func TestMakeEnumFields(t *testing.T) {
 				JSONName:      "networkTier",
 				ID:            ".package.Message.networkTier",
 				Documentation: "The networking tier.",
-				Typez:         api.ENUM_TYPE,
+				Typez:         api.TypezEnum,
 				TypezID:       ".package.Message.networkTier",
 				Optional:      true,
 			},
@@ -170,8 +170,8 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 		},
 	}
 	wantEnum.UniqueNumberValues = wantEnum.Values
-	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	gotEnum := model.Enum(wantEnum.ID)
+	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
@@ -193,7 +193,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 				ID:            ".package.Message.networkTier",
 				Documentation: "The networking tier.",
 				Deprecated:    true,
-				Typez:         api.ENUM_TYPE,
+				Typez:         api.TypezEnum,
 				TypezID:       ".package.Message.networkTier",
 				Optional:      true,
 			},
@@ -277,8 +277,8 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 		},
 	}
 	wantEnum.UniqueNumberValues = wantEnum.Values
-	gotEnum, ok := model.State.EnumByID[wantEnum.ID]
-	if !ok {
+	gotEnum := model.Enum(wantEnum.ID)
+	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
@@ -299,7 +299,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 				JSONName:      "networkTier",
 				ID:            ".package.Message.networkTier",
 				Documentation: "The networking tier.",
-				Typez:         api.ENUM_TYPE,
+				Typez:         api.TypezEnum,
 				TypezID:       ".package.Message.networkTier",
 				Optional:      true,
 			},

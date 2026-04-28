@@ -53,9 +53,10 @@ var (
 )
 
 type javaGAPICInfo struct {
-	AdditionalProtos []string
-	ProtoOnly        bool
-	Samples          bool
+	AdditionalProtos    []string
+	ProtoOnly           bool
+	Samples             bool
+	OmitCommonResources bool
 }
 
 func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
@@ -66,7 +67,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	if file == nil {
 		return nil, nil
 	}
-	info := &javaGAPICInfo{Samples: false}
+	info := &javaGAPICInfo{Samples: false, OmitCommonResources: true}
 	// 1. From java_gapic_library
 	rules := file.Rules("java_gapic_library")
 	if len(rules) == 0 {
@@ -95,11 +96,14 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 		// a variable or an addition of lists.
 		if attr := rule.Attr("deps"); attr != nil {
 			protoMappings := map[string]string{
-				"//google/cloud:common_resources_proto":  "google/cloud/common_resources.proto",
 				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
 			}
 			for _, dep := range extractStrings(attr) {
+				if dep == "//google/cloud:common_resources_proto" {
+					info.OmitCommonResources = false
+					continue
+				}
 				if protoPath, ok := protoMappings[dep]; ok {
 					info.AdditionalProtos = append(info.AdditionalProtos, protoPath)
 				}
@@ -253,8 +257,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				continue
 			}
 			javaAPI := &config.JavaAPI{
-				Path:             g.ProtoPath,
-				AdditionalProtos: info.AdditionalProtos,
+				Path:                g.ProtoPath,
+				AdditionalProtos:    info.AdditionalProtos,
+				OmitCommonResources: info.OmitCommonResources,
 			}
 			if info.ProtoOnly {
 				javaAPI.ProtoOnly = true
@@ -264,6 +269,23 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			}
 			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
+
+			if name == "storage" && g.ProtoPath == "google/storage/v2" {
+				javaAPI.CopyFiles = []*config.JavaFileCopy{
+					{
+						Source:      "src/main/java/com/google/storage/v2/gapic_metadata.json",
+						Destination: "src/main/resources/com/google/storage/v2/gapic_metadata.json",
+					},
+				}
+			}
+			if name == "storage" && g.ProtoPath == "google/storage/control/v2" {
+				javaAPI.CopyFiles = []*config.JavaFileCopy{
+					{
+						Source:      "src/main/java/com/google/storage/control/v2/gapic_metadata.json",
+						Destination: "src/main/resources/com/google/storage/control/v2/gapic_metadata.json",
+					},
+				}
+			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
 		lib := &config.Library{
@@ -295,6 +317,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				TransportOverride:            l.Transport,
 			},
 		}
+		applyJavaLibraryOverrides(lib)
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)
@@ -418,6 +441,13 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 	}
 }
 
+// applyJavaLibraryOverrides sets library-level overrides.
+func applyJavaLibraryOverrides(lib *config.Library) {
+	if transport, ok := javaTransportOverrides[lib.Name]; ok {
+		lib.Java.TransportOverride = transport
+	}
+}
+
 // applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
 // for specific APIs, mirroring logic in sdk-platform-java.
 func applyJavaProtoOverrides(api *config.JavaAPI) {
@@ -427,6 +457,8 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 	case strings.HasPrefix(api.Path, "google/cloud/aiplatform/v1beta1"):
 		api.ExcludedProtos = append(api.ExcludedProtos,
 			"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+		)
+		api.SkipProtoClassGeneration = append(api.SkipProtoClassGeneration,
 			"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
 			"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
 			"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",

@@ -1,6 +1,18 @@
-# SHA corresponds https://github.com/googleapis/librarian/commit/5074c2a88978b86719c6f0adb76192e44421f767.
-# Captured in v0.10.1.
-librarian-image-sha: sha256:3342660a03b61e67c40b0521a610d321bfaad441c3a3a4ef3d720f09451d803c
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+# SHA corresponds https://github.com/googleapis/librarian/commit/2e86731a438a346f789999998944bc4085c1cab6.
+librarian-image-sha: sha256:7860dfbb8432b6292c493d7c06589a713e52bcaef9e08e2564d3b5f9e66051c7
 repositories:
   - name: "gapic-generator-go"
     full-name: https://github.com/googleapis/gapic-generator-go

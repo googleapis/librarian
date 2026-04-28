@@ -53,7 +53,7 @@ func TestFindDependenciesEnumFields(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "enum",
-					Typez:   ENUM_TYPE,
+					Typez:   TypezEnum,
 					TypezID: ".test.OrphanEnum",
 				},
 			},
@@ -184,7 +184,7 @@ func TestFindDependenciesMessage(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "message",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.Orphan",
 				},
 			},
@@ -228,7 +228,7 @@ func TestFindDependenciesHandlesCycles1(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "self",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.Recursive",
 				},
 			},
@@ -257,12 +257,12 @@ func TestFindDependenciesHandlesCycles2(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "left",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.B",
 				},
 				{
 					Name:    "right",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.B",
 				},
 			},
@@ -273,7 +273,7 @@ func TestFindDependenciesHandlesCycles2(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "value",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.A",
 				},
 			},
@@ -313,7 +313,7 @@ func TestFindDependenciesHandlesCycles3(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "triangle3",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.Triangle3",
 				},
 			},
@@ -324,7 +324,7 @@ func TestFindDependenciesHandlesCycles3(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "triangle1",
-					Typez:   ENUM_TYPE,
+					Typez:   TypezEnum,
 					TypezID: ".test.Triangle2.Triangle1",
 				},
 			},
@@ -470,7 +470,7 @@ func TestFindDependenciesService(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "message",
-					Typez:   MESSAGE_TYPE,
+					Typez:   TypezMessage,
 					TypezID: ".test.ParentMessage.ChildMessage",
 				},
 			},
@@ -481,7 +481,7 @@ func TestFindDependenciesService(t *testing.T) {
 			Fields: []*Field{
 				{
 					Name:    "enum",
-					Typez:   ENUM_TYPE,
+					Typez:   TypezEnum,
 					TypezID: ".test.Enum",
 				},
 			},

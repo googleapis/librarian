@@ -39,19 +39,19 @@ func CleanDocumentation(s string) string {
 // GetGcloudType maps an API field type to the corresponding gcloud argparse type.
 func GetGcloudType(t api.Typez) string {
 	switch t {
-	case api.DOUBLE_TYPE, api.FLOAT_TYPE:
+	case api.TypezDouble, api.TypezFloat:
 		return "float"
-	case api.INT64_TYPE, api.UINT64_TYPE, api.FIXED64_TYPE, api.SFIXED64_TYPE, api.SINT64_TYPE:
+	case api.TypezInt64, api.TypezUint64, api.TypezFixed64, api.TypezSfixed64, api.TypezSint64:
 		return "long"
-	case api.INT32_TYPE, api.FIXED32_TYPE, api.UINT32_TYPE, api.SFIXED32_TYPE, api.SINT32_TYPE:
+	case api.TypezInt32, api.TypezFixed32, api.TypezUint32, api.TypezSfixed32, api.TypezSint32:
 		return "int"
-	case api.BOOL_TYPE:
+	case api.TypezBool:
 		return "bool"
-	case api.STRING_TYPE, api.ENUM_TYPE:
+	case api.TypezString, api.TypezEnum:
 		return "str"
-	case api.BYTES_TYPE:
+	case api.TypezBytes:
 		return "bytes"
-	case api.MESSAGE_TYPE, api.GROUP_TYPE:
+	case api.TypezMessage, api.TypezGroup:
 		return "arg_object"
 	default:
 		panic(fmt.Sprintf("unsupported API type: %v", t))

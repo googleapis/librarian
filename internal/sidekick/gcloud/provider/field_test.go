@@ -26,17 +26,17 @@ func TestGetGcloudType(t *testing.T) {
 		typez api.Typez
 		want  string
 	}{
-		{"String", api.STRING_TYPE, "str"},
-		{"Int32", api.INT32_TYPE, "int"},
-		{"Int64", api.INT64_TYPE, "long"},
-		{"UInt32", api.UINT32_TYPE, "int"},
-		{"UInt64", api.UINT64_TYPE, "long"},
-		{"Bool", api.BOOL_TYPE, "bool"},
-		{"Float", api.FLOAT_TYPE, "float"},
-		{"Double", api.DOUBLE_TYPE, "float"},
-		{"Bytes", api.BYTES_TYPE, "bytes"},
-		{"Enum", api.ENUM_TYPE, "str"},
-		{"Message", api.MESSAGE_TYPE, "arg_object"},
+		{"String", api.TypezString, "str"},
+		{"Int32", api.TypezInt32, "int"},
+		{"Int64", api.TypezInt64, "long"},
+		{"UInt32", api.TypezUint32, "int"},
+		{"UInt64", api.TypezUint64, "long"},
+		{"Bool", api.TypezBool, "bool"},
+		{"Float", api.TypezFloat, "float"},
+		{"Double", api.TypezDouble, "float"},
+		{"Bytes", api.TypezBytes, "bytes"},
+		{"Enum", api.TypezEnum, "str"},
+		{"Message", api.TypezMessage, "arg_object"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

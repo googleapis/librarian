@@ -81,7 +81,7 @@ func lroFindPoller(method *api.Method, model *api.API, discoveryConfig *api.Disc
 			if !strings.HasPrefix(path, candidate.Prefix) {
 				continue
 			}
-			if method, ok := model.State.MethodByID[candidate.MethodID]; ok {
+			if method := model.Method(candidate.MethodID); method != nil {
 				return method, candidate.PathParameters()
 			}
 		}

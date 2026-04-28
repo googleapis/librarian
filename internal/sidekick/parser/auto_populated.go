@@ -32,12 +32,12 @@ func updateAutoPopulatedFields(serviceConfig *serviceconfig.Service, model *api.
 	}
 	for _, m := range serviceConfig.GetPublishing().GetMethodSettings() {
 		selector := m.GetSelector()
-		method, ok := model.State.MethodByID["."+selector]
-		if !ok {
+		method := model.Method("." + selector)
+		if method == nil {
 			continue
 		}
-		message, ok := model.State.MessageByID[method.InputTypeID]
-		if !ok {
+		message := model.Message(method.InputTypeID)
+		if message == nil {
 			continue
 		}
 

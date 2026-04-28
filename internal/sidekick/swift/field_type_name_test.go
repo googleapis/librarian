@@ -29,24 +29,24 @@ func TestScalarFieldTypeName(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"double", api.DOUBLE_TYPE, "Double", false},
-		{"float", api.FLOAT_TYPE, "Float", false},
-		{"int64", api.INT64_TYPE, "Int64", false},
-		{"uint64", api.UINT64_TYPE, "UInt64", false},
-		{"int32", api.INT32_TYPE, "Int32", false},
-		{"fixed64", api.FIXED64_TYPE, "UInt64", false},
-		{"fixed32", api.FIXED32_TYPE, "UInt32", false},
-		{"bool", api.BOOL_TYPE, "Bool", false},
-		{"string", api.STRING_TYPE, "String", false},
-		{"bytes", api.BYTES_TYPE, "Data", false},
-		{"uint32", api.UINT32_TYPE, "UInt32", false},
-		{"sfixed32", api.SFIXED32_TYPE, "Int32", false},
-		{"sfixed64", api.SFIXED64_TYPE, "Int64", false},
-		{"sint32", api.SINT32_TYPE, "Int32", false},
-		{"sint64", api.SINT64_TYPE, "Int64", false},
-		{"default undefined", api.UNDEFINED_TYPE, "", true},
-		{"default message", api.MESSAGE_TYPE, "", true},
-		{"default enum", api.ENUM_TYPE, "", true},
+		{"double", api.TypezDouble, "Double", false},
+		{"float", api.TypezFloat, "Float", false},
+		{"int64", api.TypezInt64, "Int64", false},
+		{"uint64", api.TypezUint64, "UInt64", false},
+		{"int32", api.TypezInt32, "Int32", false},
+		{"fixed64", api.TypezFixed64, "UInt64", false},
+		{"fixed32", api.TypezFixed32, "UInt32", false},
+		{"bool", api.TypezBool, "Bool", false},
+		{"string", api.TypezString, "String", false},
+		{"bytes", api.TypezBytes, "Data", false},
+		{"uint32", api.TypezUint32, "UInt32", false},
+		{"sfixed32", api.TypezSfixed32, "Int32", false},
+		{"sfixed64", api.TypezSfixed64, "Int64", false},
+		{"sint32", api.TypezSint32, "Int32", false},
+		{"sint64", api.TypezSint64, "Int64", false},
+		{"default undefined", api.TypezUndefined, "", true},
+		{"default message", api.TypezMessage, "", true},
+		{"default enum", api.TypezEnum, "", true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := &api.Field{Typez: test.typez, ID: ".test.field"}
@@ -98,7 +98,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 		{
 			name: "simple message",
 			field: &api.Field{
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".google.cloud.test.v1.SimpleMessage",
 				ID:      ".test.field1",
 			},
@@ -107,7 +107,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 		{
 			name: "nested message",
 			field: &api.Field{
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".google.cloud.test.v1.OuterMessage.NestedMessage",
 				ID:      ".test.field2",
 			},
@@ -157,7 +157,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		{
 			name: "simple enum",
 			field: &api.Field{
-				Typez:   api.ENUM_TYPE,
+				Typez:   api.TypezEnum,
 				TypezID: ".google.cloud.test.v1.SimpleEnum",
 				ID:      ".test.field1",
 			},
@@ -166,7 +166,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		{
 			name: "nested enum",
 			field: &api.Field{
-				Typez:   api.ENUM_TYPE,
+				Typez:   api.TypezEnum,
 				TypezID: ".google.cloud.test.v1.OuterMessage.NestedEnum",
 				ID:      ".test.field2",
 			},
@@ -203,7 +203,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		{
 			name: "optional message Secret",
 			field: &api.Field{
-				Typez:       api.MESSAGE_TYPE,
+				Typez:       api.TypezMessage,
 				TypezID:     ".google.cloud.test.v1.Secret",
 				ID:          ".test.field1",
 				Optional:    true,
@@ -214,7 +214,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		{
 			name: "optional string",
 			field: &api.Field{
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				ID:       ".test.field5",
 				Optional: true,
 			},
@@ -223,7 +223,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		{
 			name: "optional bytes",
 			field: &api.Field{
-				Typez:    api.BYTES_TYPE,
+				Typez:    api.TypezBytes,
 				ID:       ".test.field7",
 				Optional: true,
 			},
@@ -232,7 +232,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 		{
 			name: "optional int32",
 			field: &api.Field{
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				ID:       ".test.field9",
 				Optional: true,
 			},
@@ -269,7 +269,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		{
 			name: "repeated message Secret",
 			field: &api.Field{
-				Typez:       api.MESSAGE_TYPE,
+				Typez:       api.TypezMessage,
 				TypezID:     ".google.cloud.test.v1.Secret",
 				ID:          ".test.field2",
 				Repeated:    true,
@@ -280,7 +280,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		{
 			name: "repeated string",
 			field: &api.Field{
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 				ID:       ".test.field6",
 				Repeated: true,
 			},
@@ -289,7 +289,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		{
 			name: "repeated bytes",
 			field: &api.Field{
-				Typez:    api.BYTES_TYPE,
+				Typez:    api.TypezBytes,
 				ID:       ".test.field8",
 				Repeated: true,
 			},
@@ -298,7 +298,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 		{
 			name: "repeated int32",
 			field: &api.Field{
-				Typez:    api.INT32_TYPE,
+				Typez:    api.TypezInt32,
 				ID:       ".test.field10",
 				Repeated: true,
 			},
@@ -324,8 +324,8 @@ func TestFieldTypeName_Map(t *testing.T) {
 		ID:      ".google.cloud.test.v1.WithMap.SingularMapEntry",
 		IsMap:   true,
 		Fields: []*api.Field{
-			{Name: "key", Typez: api.STRING_TYPE, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.key"},
-			{Name: "value", Typez: api.INT32_TYPE, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.value"},
+			{Name: "key", Typez: api.TypezString, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.key"},
+			{Name: "value", Typez: api.TypezInt32, ID: ".google.cloud.test.v1.WithMap.SingularMapEntry.value"},
 		},
 	}
 
@@ -335,7 +335,7 @@ func TestFieldTypeName_Map(t *testing.T) {
 	c := newTestCodec(t, model, map[string]string{})
 
 	field := &api.Field{
-		Typez:   api.MESSAGE_TYPE,
+		Typez:   api.TypezMessage,
 		TypezID: ".google.cloud.test.v1.WithMap.SingularMapEntry",
 		ID:      ".test.field1",
 	}
@@ -384,6 +384,7 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 	wantRequired := map[string]bool{
 		"google.cloud.external.v1": true,
 		"google.cloud.unused.v1":   false,
+		"google.protobuf":          false,
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {
@@ -428,6 +429,7 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 	wantRequired := map[string]bool{
 		"google.cloud.external.v1": true,
 		"google.cloud.unused.v1":   false,
+		"google.protobuf":          false,
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {

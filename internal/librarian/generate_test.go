@@ -20,11 +20,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -351,8 +351,43 @@ libraries:
 		return
 	}
 
-	if strings.Contains(err.Error(), "does not support generation") {
+	if errors.Is(err, errUnsupportedLanguage) {
 		t.Errorf("expected Java to be supported, but got: %v", err)
+	}
+}
+
+func TestGenerate_Gcloud(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
+		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
+	})
+
+	configContent := fmt.Sprintf(`language: gcloud
+sources:
+  googleapis:
+    dir: %s
+libraries:
+  - name: secretmanager
+    output: out
+    apis:
+      - path: google/cloud/secretmanager/v1
+`, googleapisDir)
+
+	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := Run(t.Context(), "librarian", "generate", "secretmanager")
+	if err == nil {
+		return
+	}
+	if errors.Is(err, errUnsupportedLanguage) {
+		t.Errorf("expected gcloud to be supported, but got: %v", err)
+	}
+	if !errors.Is(err, gcloud.ErrNoProtosFound) {
+		t.Errorf("expected error %v, got: %v", gcloud.ErrNoProtosFound, err)
 	}
 }
 

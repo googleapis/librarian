@@ -22,12 +22,35 @@ import (
 type methodAnnotations struct {
 	Name           string
 	DocLines       []string
-	Path           string
+	PathVariables  []*pathVariable
+	PathExpression string
 	HTTPMethod     string
 	HasBody        bool
 	IsBodyWildcard bool
 	BodyField      string
 	QueryParams    []*api.Field
+}
+
+// pathVariable describes a variable used to build a request URL path.
+//
+// Most services have a single path variable, something like `request.parent` or `request.name`,
+// where the field is a (required) string.
+//
+// In general they can take more complex forms, including:
+//   - `request.secret.name` where `secret` is optional and name is a string, typically a full
+//     resource name.
+//   - `request.name` where `name` is an optional string (common in OpenAPI and discovery docs).
+//   - `request.value` where the value is some enum, or integer field.
+//   - `request.project` and `request.resource` where each is a string and are combined to construct
+//     the path (again, common in OpenAPI and discovery docs).
+//
+// And of course all of these can be combined, such as nested fields that point to enums or nested
+// fields that point to nested fields.
+type pathVariable struct {
+	Name       string
+	Expression string
+	Test       string
+	FieldPath  string
 }
 
 // HasQueryParams returns true if the method's default binding has query parameters
@@ -38,30 +61,34 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
 }
 
-func (c *codec) annotateMethod(method *api.Method, model *modelAnnotations) error {
+func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) error {
 	if method.InputType != nil {
-		if err := c.annotateMessage(method.InputType, model); err != nil {
+		if err := c.annotateMessage(method.InputType, modelAnn); err != nil {
 			return err
 		}
 	}
 	if method.OutputType != nil {
-		if err := c.annotateMessage(method.OutputType, model); err != nil {
+		if err := c.annotateMessage(method.OutputType, modelAnn); err != nil {
 			return err
 		}
 	}
 	docLines := c.formatDocumentation(method.Documentation)
 	binding := method.PathInfo.Bindings[0]
-	path := formatPath(binding.PathTemplate)
 	hasBody := method.PathInfo.BodyFieldPath != ""
 	isBodyWildcard := method.PathInfo.BodyFieldPath == "*"
 	var bodyField string
 	if hasBody && !isBodyWildcard {
 		bodyField = camelCase(method.PathInfo.BodyFieldPath)
 	}
+	pathVariables, err := c.pathVariables(method.InputType, binding.PathTemplate)
+	if err != nil {
+		return err
+	}
 	method.Codec = &methodAnnotations{
 		Name:           camelCase(method.Name),
 		DocLines:       docLines,
-		Path:           path,
+		PathExpression: pathExpression(binding.PathTemplate),
+		PathVariables:  pathVariables,
 		HTTPMethod:     binding.Verb,
 		HasBody:        hasBody,
 		IsBodyWildcard: isBodyWildcard,

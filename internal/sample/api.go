@@ -83,7 +83,7 @@ func MethodCreate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -108,7 +108,7 @@ func MethodUpdate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPatch,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariableNamed("secret", "name"),
 					QueryParameters: map[string]bool{
@@ -132,7 +132,7 @@ func MethodAddSecretVersion() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -161,7 +161,7 @@ func MethodListSecretVersions() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("parent").
@@ -187,12 +187,12 @@ func CreateRequest() *api.Message {
 			{
 				Name:     "project",
 				JSONName: "project",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 			},
 			{
 				Name:     "secret_id",
 				JSONName: "secretId",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 			},
 		},
 	}
@@ -209,13 +209,13 @@ func UpdateRequest() *api.Message {
 			{
 				Name:     "secret",
 				JSONName: "secret",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  Secret().ID,
 			},
 			{
 				Name:     "field_mask",
 				JSONName: "fieldMask",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  ".google.protobuf.FieldMask",
 				Optional: true,
 			},
@@ -235,7 +235,7 @@ func ListSecretVersionsRequest() *api.Message {
 				Name:     "parent",
 				JSONName: "parent",
 				ID:       Secret().ID + ".parent",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  Secret().ID,
 			},
 		},
@@ -252,7 +252,7 @@ func ListSecretVersionsResponse() *api.Message {
 			{
 				Name:     "versions",
 				JSONName: "versions",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  SecretVersion().ID,
 				Repeated: true,
 			},
@@ -270,12 +270,12 @@ func Secret() *api.Message {
 			{
 				Name:     "name",
 				JSONName: "name",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 			},
 			{
 				Name:     "replication",
 				JSONName: "replication",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  Replication().ID,
 			},
 		},
@@ -293,12 +293,12 @@ func SecretVersion() *api.Message {
 			{
 				Name:     "name",
 				JSONName: "name",
-				Typez:    api.STRING_TYPE,
+				Typez:    api.TypezString,
 			},
 			{
 				Name:     "state",
 				JSONName: "state",
-				Typez:    api.ENUM_TYPE,
+				Typez:    api.TypezEnum,
 				TypezID:  EnumState().ID,
 			},
 		},
@@ -337,7 +337,7 @@ func Replication() *api.Message {
 		Fields: []*api.Field{
 			{
 				Name:     "automatic",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  "..Automatic",
 				Optional: true,
 				Repeated: false,
@@ -359,7 +359,7 @@ func Automatic() *api.Message {
 				Name:          "customerManagedEncryption",
 				JSONName:      "customerManagedEncryption",
 				Documentation: "Optional. The customer-managed encryption configuration of the Secret.",
-				Typez:         api.MESSAGE_TYPE,
+				Typez:         api.TypezMessage,
 				TypezID:       "..CustomerManagedEncryption",
 				Optional:      true,
 			},
@@ -387,7 +387,7 @@ func SecretPayload() *api.Message {
 				Name:          "data",
 				JSONName:      "data",
 				Documentation: "The secret data. Must be no larger than 64KiB.",
-				Typez:         api.BYTES_TYPE,
+				Typez:         api.TypezBytes,
 				TypezID:       "bytes",
 				Optional:      true,
 			},
@@ -395,7 +395,7 @@ func SecretPayload() *api.Message {
 				Name:          "dataCrc32c",
 				JSONName:      "dataCrc32c",
 				Documentation: "Optional. If specified, SecretManagerService will verify the integrity of the\nreceived data on SecretManagerService.AddSecretVersion calls using\nthe crc32c checksum and store it to include in future\nSecretManagerService.AccessSecretVersion responses. If a checksum is\nnot provided in the SecretManagerService.AddSecretVersion request, the\nSecretManagerService will generate and store one for you.\n\nThe CRC32C value is encoded as a Int64 for compatibility, and can be\nsafely downconverted to uint32 in languages that support this type.\nhttps://cloud.google.com/apis/design/design_patterns#integer_types",
-				Typez:         api.INT64_TYPE,
+				Typez:         api.TypezInt64,
 				TypezID:       "int64",
 				Optional:      true,
 			},

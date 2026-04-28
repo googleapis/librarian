@@ -28,8 +28,8 @@ func TestService(t *testing.T) {
 	}
 
 	id := "..zones"
-	got, ok := model.State.ServiceByID[id]
-	if !ok {
+	got := model.Service(id)
+	if got == nil {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
@@ -49,7 +49,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").
@@ -72,7 +72,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").
@@ -114,8 +114,8 @@ func TestServiceDeprecated(t *testing.T) {
 		Documentation: "Service for the `TestDeprecated` resource.",
 		Deprecated:    true,
 	}
-	got, ok := model.State.ServiceByID[want.ID]
-	if !ok {
+	got := model.Service(want.ID)
+	if got == nil {
 		t.Fatalf("missing service %s", want.ID)
 	}
 	apitest.CheckService(t, got, want)

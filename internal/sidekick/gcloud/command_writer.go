@@ -153,13 +153,13 @@ func mapCommandToYAML(c *Command, track string) *declarative.Command {
 		}
 	}
 	if c.ReadModifyUpdate || c.DisableAutoFieldMask {
-		y.Update = &declarative.UpdateConfig{
+		y.Update = &declarative.Update{
 			ReadModifyUpdate:     c.ReadModifyUpdate,
 			DisableAutoFieldMask: c.DisableAutoFieldMask,
 		}
 	}
 	if c.OutputFormat != "" {
-		y.Output = &declarative.OutputConfig{
+		y.Output = &declarative.Output{
 			Format: c.OutputFormat,
 		}
 	}

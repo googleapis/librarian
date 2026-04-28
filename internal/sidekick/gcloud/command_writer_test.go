@@ -216,14 +216,14 @@ func TestMapCommandToYAML(t *testing.T) {
 			Collection:            []string{"ac"},
 			ExtractResourceResult: true,
 		},
-		Update: &declarative.UpdateConfig{
+		Update: &declarative.Update{
 			ReadModifyUpdate:     true,
 			DisableAutoFieldMask: true,
 		},
 		Response: &declarative.Response{
 			IDField: "id",
 		},
-		Output: &declarative.OutputConfig{
+		Output: &declarative.Output{
 			Format: "table",
 		},
 		Arguments: declarative.Arguments{

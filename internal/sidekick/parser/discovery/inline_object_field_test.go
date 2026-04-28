@@ -60,7 +60,7 @@ func TestMaybeInlineObject(t *testing.T) {
 		Documentation: "A field with an inline object.",
 		Deprecated:    true,
 		Optional:      true,
-		Typez:         api.MESSAGE_TYPE,
+		Typez:         api.TypezMessage,
 		TypezID:       ".package.Message.inline",
 	}
 	if diff := cmp.Diff(wantField, field); diff != "" {
@@ -77,7 +77,7 @@ func TestMaybeInlineObject(t *testing.T) {
 				JSONName:      "stringField",
 				ID:            ".package.Message.inline.stringField",
 				Documentation: "The stringField field.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -86,7 +86,7 @@ func TestMaybeInlineObject(t *testing.T) {
 				JSONName:      "intField",
 				ID:            ".package.Message.inline.intField",
 				Documentation: "The intField field.",
-				Typez:         api.UINT64_TYPE,
+				Typez:         api.TypezUint64,
 				TypezID:       "uint64",
 				Optional:      true,
 			},
@@ -145,7 +145,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 		ID:            ".package.Message.arrayWithObject",
 		Documentation: "An array field with an inline object.",
 		Repeated:      true,
-		Typez:         api.MESSAGE_TYPE,
+		Typez:         api.TypezMessage,
 		TypezID:       ".package.Message.arrayWithObject",
 	}
 	if diff := cmp.Diff(wantField, field); diff != "" {
@@ -162,7 +162,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 				JSONName:      "stringField",
 				ID:            ".package.Message.arrayWithObject.stringField",
 				Documentation: "The stringField field.",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				TypezID:       "string",
 				Optional:      true,
 			},
@@ -171,7 +171,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 				JSONName:      "intField",
 				ID:            ".package.Message.arrayWithObject.intField",
 				Documentation: "The intField field.",
-				Typez:         api.UINT64_TYPE,
+				Typez:         api.TypezUint64,
 				TypezID:       "uint64",
 				Optional:      true,
 			},

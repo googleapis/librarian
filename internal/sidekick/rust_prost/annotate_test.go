@@ -83,8 +83,8 @@ func TestServiceAnnotations(t *testing.T) {
 	want := &serviceAnnotations{
 		ID: "google.cloud.workflows.v1.Workflows",
 	}
-	got, ok := model.State.ServiceByID[".google.cloud.workflows.v1.Workflows"]
-	if !ok {
+	got := model.Service(".google.cloud.workflows.v1.Workflows")
+	if got == nil {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows")
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {
@@ -125,8 +125,8 @@ func TestMethodAnnotations(t *testing.T) {
 	want := &methodAnnotations{
 		ID: "google.cloud.workflows.v1.Workflows.GetWorkflow",
 	}
-	got, ok := model.State.MethodByID[".google.cloud.workflows.v1.Workflows.GetWorkflow"]
-	if !ok {
+	got := model.Method(".google.cloud.workflows.v1.Workflows.GetWorkflow")
+	if got == nil {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows.GetWorkflow")
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {

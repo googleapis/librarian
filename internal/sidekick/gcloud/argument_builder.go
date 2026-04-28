@@ -79,7 +79,7 @@ func (b *argumentBuilder) build() (*Argument, error) {
 		arg.Choices = b.choices()
 	} else {
 		arg.Type = provider.GetGcloudType(b.field.Typez)
-		if b.field.Typez == api.BOOL_TYPE {
+		if b.field.Typez == api.TypezBool {
 			if provider.IsUpdate(b.method) {
 				arg.Action = "store_true_false"
 			} else {
@@ -101,10 +101,10 @@ func (b *argumentBuilder) isIgnored() bool {
 			return true
 		}
 	}
-	if slices.Contains(b.field.Behavior, api.FIELD_BEHAVIOR_OUTPUT_ONLY) {
+	if slices.Contains(b.field.Behavior, api.FieldBehaviorOutputOnly) {
 		return true
 	}
-	if provider.IsUpdate(b.method) && slices.Contains(b.field.Behavior, api.FIELD_BEHAVIOR_IMMUTABLE) {
+	if provider.IsUpdate(b.method) && slices.Contains(b.field.Behavior, api.FieldBehaviorImmutable) {
 		return true
 	}
 	return false

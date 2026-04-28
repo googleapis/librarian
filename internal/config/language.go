@@ -31,6 +31,8 @@ const (
 	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
+	// LanguageGcloud is the language identifier for gcloud command surfaces.
+	LanguageGcloud = "gcloud"
 	// LanguageGo is the language identifier for Go.
 	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
@@ -573,6 +575,8 @@ type JavaModule struct {
 
 	// TransportOverride allows the "transport" field in .repo-metadata.json
 	// to be overridden.
+	// TODO(https://github.com/googleapis/librarian/issues/5561):
+	// investigate and determine if can remove
 	TransportOverride string `yaml:"transport_override,omitempty"`
 }
 
@@ -582,12 +586,27 @@ type JavaAPI struct {
 	Path string `yaml:"path,omitempty"`
 
 	// AdditionalProtos is a list of additional proto files to include in generation.
+	// Note: google/cloud/common_resources.proto is included by default unless
+	// OmitCommonResources is set to true.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// OmitCommonResources indicates whether to omit the default inclusion of
+	// google/cloud/common_resources.proto.
+	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
 
 	// ExcludedProtos is a list of proto files to exclude from generation.
 	// It expects the full path starting from the root of the googleapis
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
+
+	// SkipProtoClassGeneration is a list of proto files to exclude from
+	// generating proto module, but included in generating gRPC or GAPIC
+	// modules and packaged proto files.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto").
+	// TODO(https://github.com/googleapis/librarian/issues/5661):
+	// remove after migration.
+	SkipProtoClassGeneration []string `yaml:"skip_proto_class_generation,omitempty"`
 
 	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
 	// It determines the module's directory name and is used to derive proto
@@ -606,9 +625,24 @@ type JavaAPI struct {
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
 
+	// CopyFiles is a list of file copies to perform after generation.
+	// It applies to files in the GAPIC module.
+	CopyFiles []*JavaFileCopy `yaml:"copy_files,omitempty"`
+
 	// Samples determines whether to generate samples for the API,
 	// default is true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
+}
+
+// JavaFileCopy represents a file copy for Java.
+type JavaFileCopy struct {
+	// Source is the source path relative to the generated GAPIC module directory
+	// (e.g., "src/main/java/com/google/storage/v2/gapic_metadata.json").
+	// These paths are used before restructuring the output into Maven modules.
+	Source string `yaml:"source"`
+	// Destination is the destination path relative to the generated GAPIC module directory.
+	// These paths are used before restructuring the output into Maven modules.
+	Destination string `yaml:"destination"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.

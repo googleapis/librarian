@@ -22,6 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -39,6 +40,7 @@ var (
 	errBothLibraryAndAllFlag   = errors.New("cannot specify both library name and --all flag")
 	errSkipGenerate            = errors.New("library has skip_generate set")
 	errNoPreviewVariant        = errors.New("library does not have a preview variant")
+	errUnsupportedLanguage     = errors.New("language does not support generation")
 )
 
 func generateCommand() *cli.Command {
@@ -46,6 +48,27 @@ func generateCommand() *cli.Command {
 		Name:      "generate",
 		Usage:     "generate a client library",
 		UsageText: "librarian generate <library>",
+		Description: `generate produces client library code from the APIs configured in
+librarian.yaml.
+
+The library name argument selects a single library to regenerate. Use the
+--all flag to regenerate every library in the workspace instead. Exactly
+one of <library> or --all must be provided.
+
+Generation is delegated to the language-specific tooling configured in
+librarian.yaml. Libraries marked with skip_generate are skipped.
+
+Examples:
+
+	librarian generate <library>   # regenerate one library
+	librarian generate --all       # regenerate every library
+
+[after-flags]
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
@@ -146,6 +169,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = checkAndClean(library.Output, keep)
 		case config.LanguageSwift:
 			err = checkAndClean(library.Output, library.Keep)
+		case config.LanguageGcloud:
+			// No-op. gcloud generation does not support cleaning yet.
 		default:
 			err = fmt.Errorf("language %q does not support cleaning", language)
 		}
@@ -185,6 +210,17 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return fakePostGenerate()
+	case config.LanguageGcloud:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := gcloud.Generate(gctx, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
 	case config.LanguageGo:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
@@ -273,7 +309,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	default:
-		return fmt.Errorf("language %q does not support generation", cfg.Language)
+		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}
 	return nil
 }

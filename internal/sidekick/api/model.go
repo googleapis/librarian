@@ -17,6 +17,8 @@ package api
 
 import (
 	"fmt"
+	"iter"
+	"maps"
 	"slices"
 	"strings"
 )
@@ -27,28 +29,28 @@ type Typez int
 // These are the different field types as defined in
 // descriptorpb.FieldDescriptorProto_Type.
 const (
-	UNDEFINED_TYPE Typez = 0
-	DOUBLE_TYPE    Typez = 1
-	FLOAT_TYPE     Typez = 2
-	INT64_TYPE     Typez = 3
-	UINT64_TYPE    Typez = 4
-	INT32_TYPE     Typez = 5
-	FIXED64_TYPE   Typez = 6
-	FIXED32_TYPE   Typez = 7
-	BOOL_TYPE      Typez = 8
-	STRING_TYPE    Typez = 9
-	GROUP_TYPE     Typez = 10
-	MESSAGE_TYPE   Typez = 11
-	BYTES_TYPE     Typez = 12
-	UINT32_TYPE    Typez = 13
-	ENUM_TYPE      Typez = 14
-	SFIXED32_TYPE  Typez = 15
-	SFIXED64_TYPE  Typez = 16
-	SINT32_TYPE    Typez = 17
-	SINT64_TYPE    Typez = 18
+	TypezUndefined Typez = 0
+	TypezDouble    Typez = 1
+	TypezFloat     Typez = 2
+	TypezInt64     Typez = 3
+	TypezUint64    Typez = 4
+	TypezInt32     Typez = 5
+	TypezFixed64   Typez = 6
+	TypezFixed32   Typez = 7
+	TypezBool      Typez = 8
+	TypezString    Typez = 9
+	TypezGroup     Typez = 10
+	TypezMessage   Typez = 11
+	TypezBytes     Typez = 12
+	TypezUint32    Typez = 13
+	TypezEnum      Typez = 14
+	TypezSfixed32  Typez = 15
+	TypezSfixed64  Typez = 16
+	TypezSint32    Typez = 17
+	TypezSint64    Typez = 18
 )
 
-var _typez_name = [...]string{
+var typezName = [...]string{
 	"UNDEFINED",
 	"DOUBLE",
 	"FLOAT",
@@ -72,10 +74,10 @@ var _typez_name = [...]string{
 
 // String returns the symbolic name for the Typez.
 func (t Typez) String() string {
-	if t < 0 || int(t) >= len(_typez_name) {
+	if t < 0 || int(t) >= len(typezName) {
 		return fmt.Sprintf("Typez(%d)", t)
 	}
-	return _typez_name[t]
+	return typezName[t]
 }
 
 // FieldBehavior represents annotations for how the code generator handles a
@@ -87,25 +89,25 @@ func (t Typez) String() string {
 type FieldBehavior int
 
 const (
-	// FIELD_BEHAVIOR_UNSPECIFIED is the default, unspecified field behavior.
-	FIELD_BEHAVIOR_UNSPECIFIED FieldBehavior = iota
+	// FieldBehaviorUnspecified is the default, unspecified field behavior.
+	FieldBehaviorUnspecified FieldBehavior = iota
 
-	// FIELD_BEHAVIOR_OPTIONAL specifically denotes a field as optional.
+	// FieldBehaviorOptional specifically denotes a field as optional.
 	//
 	// While Google Cloud uses proto3, where fields are either optional or have
 	// a default value, this may be specified for emphasis.
-	FIELD_BEHAVIOR_OPTIONAL
+	FieldBehaviorOptional
 
-	// FIELD_BEHAVIOR_REQUIRED denotes a field as required.
+	// FieldBehaviorRequired denotes a field as required.
 	//
 	// This indicates that the field **must** be provided as part of the request,
 	// and failure to do so will cause an error (usually `INVALID_ARGUMENT`).
 	//
 	// Code generators may change the generated types to include this field as a
 	// parameter necessary to construct the request.
-	FIELD_BEHAVIOR_REQUIRED
+	FieldBehaviorRequired
 
-	// FIELD_BEHAVIOR_OUTPUT_ONLY denotes a field as output only.
+	// FieldBehaviorOutputOnly denotes a field as output only.
 	//
 	// Some messages (and their fields) are used in both requests and responses.
 	// This indicates that the field is provided in responses, but including the
@@ -114,35 +116,35 @@ const (
 	//
 	// Code generators that use different builders for "the message as part of a
 	// request" vs. "the standalone message" may omit this field in the former.
-	FIELD_BEHAVIOR_OUTPUT_ONLY
+	FieldBehaviorOutputOnly
 
-	// FIELD_BEHAVIOR_INPUT_ONLY denotes a field as input only.
+	// FieldBehaviorInputOnly denotes a field as input only.
 	//
 	// This indicates that the field is provided in requests, and the
 	// corresponding field is not included in output.
-	FIELD_BEHAVIOR_INPUT_ONLY
+	FieldBehaviorInputOnly
 
-	// FIELD_BEHAVIOR_IMMUTABLE denotes a field as immutable.
+	// FieldBehaviorImmutable denotes a field as immutable.
 	//
 	// This indicates that the field may be set once in a request to create a
 	// resource, but may not be changed thereafter.
-	FIELD_BEHAVIOR_IMMUTABLE
+	FieldBehaviorImmutable
 
-	// FIELD_BEHAVIOR_UNORDERED_LIST denotes that a (repeated) field is an unordered list.
+	// FieldBehaviorUnorderedList denotes that a (repeated) field is an unordered list.
 	//
 	// This indicates that the service may provide the elements of the list
 	// in any arbitrary  order, rather than the order the user originally
 	// provided. Additionally, the list's order may or may not be stable.
-	FIELD_BEHAVIOR_UNORDERED_LIST
+	FieldBehaviorUnorderedList
 
-	// FIELD_BEHAVIOR_UNORDERED_NON_EMPTY_DEFAULT denotes that this field returns a non-empty default value if not set.
+	// FieldBehaviorUnorderedNonEmptyDefault denotes that this field returns a non-empty default value if not set.
 	//
 	// This indicates that if the user provides the empty value in a request,
 	// a non-empty value will be returned. The user will not be aware of what
 	// non-empty value to expect.
-	FIELD_BEHAVIOR_UNORDERED_NON_EMPTY_DEFAULT
+	FieldBehaviorUnorderedNonEmptyDefault
 
-	// FIELD_BEHAVIOR_IDENTIFIER denotes that the field in a resource (a message annotated with
+	// FieldBehaviorIdentifier denotes that the field in a resource (a message annotated with
 	// google.api.resource) is used in the resource name to uniquely identify the
 	// resource.
 	//
@@ -156,7 +158,7 @@ const (
 	// depending on the request it is embedded in (e.g. for Create methods name
 	// is optional and unused, while for Update methods it is required). Instead
 	// of method-specific annotations, only `IDENTIFIER` is required.
-	FIELD_BEHAVIOR_IDENTIFIER
+	FieldBehaviorIdentifier
 )
 
 const (
@@ -225,6 +227,111 @@ func (api *API) HasMessages() bool {
 // *if* the name is unique.
 func (a *API) ModelCodec() any {
 	return a.Codec
+}
+
+// Service returns a service that is associated with the API.
+func (a *API) Service(id string) *Service {
+	return a.State.ServiceByID[id]
+}
+
+// AllServices returns an iterator over the services in the API.
+func (a *API) AllServices() iter.Seq[*Service] {
+	return maps.Values(a.State.ServiceByID)
+}
+
+// AddService adds a service to the API.
+func (a *API) AddService(s *Service) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.ServiceByID == nil {
+		a.State.ServiceByID = make(map[string]*Service)
+	}
+	a.State.ServiceByID[s.ID] = s
+}
+
+// Method returns a method that is associated with the API.
+func (a *API) Method(id string) *Method {
+	return a.State.MethodByID[id]
+}
+
+// AllMethods returns an iterator over the methods in the API.
+func (a *API) AllMethods() iter.Seq[*Method] {
+	return maps.Values(a.State.MethodByID)
+}
+
+// AddMethod adds a method to the API.
+func (a *API) AddMethod(m *Method) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.MethodByID == nil {
+		a.State.MethodByID = make(map[string]*Method)
+	}
+	a.State.MethodByID[m.ID] = m
+}
+
+// Message returns a message that is associated with the API.
+func (a *API) Message(id string) *Message {
+	return a.State.MessageByID[id]
+}
+
+// AllMessages returns an iterator over the messages in the API.
+func (a *API) AllMessages() iter.Seq[*Message] {
+	return maps.Values(a.State.MessageByID)
+}
+
+// AddMessage adds a message to the API.
+func (a *API) AddMessage(m *Message) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.MessageByID == nil {
+		a.State.MessageByID = make(map[string]*Message)
+	}
+	a.State.MessageByID[m.ID] = m
+}
+
+// Enum returns a message that is associated with the API.
+func (a *API) Enum(id string) *Enum {
+	return a.State.EnumByID[id]
+}
+
+// AllEnums returns an iterator over the enums in the API.
+func (a *API) AllEnums() iter.Seq[*Enum] {
+	return maps.Values(a.State.EnumByID)
+}
+
+// AddEnum adds an enum to the API.
+func (a *API) AddEnum(e *Enum) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.EnumByID == nil {
+		a.State.EnumByID = make(map[string]*Enum)
+	}
+	a.State.EnumByID[e.ID] = e
+}
+
+// Resource returns a resource that is associated with the API.
+func (a *API) Resource(typ string) *Resource {
+	return a.State.ResourceByType[typ]
+}
+
+// AllResources returns an iterator over the resources in the API.
+func (a *API) AllResources() iter.Seq[*Resource] {
+	return maps.Values(a.State.ResourceByType)
+}
+
+// AddResource adds a resource to the API.
+func (a *API) AddResource(r *Resource) {
+	if a.State == nil {
+		a.State = &APIState{}
+	}
+	if a.State.ResourceByType == nil {
+		a.State.ResourceByType = make(map[string]*Resource)
+	}
+	a.State.ResourceByType[r.Type] = r
 }
 
 // APIState contains helpful information that can be used when generating
@@ -671,11 +778,6 @@ type PathVariable struct {
 	AllowReserved bool
 }
 
-// NewPathTemplate creates a new PathTemplate.
-func NewPathTemplate() *PathTemplate {
-	return &PathTemplate{}
-}
-
 // NewPathVariable creates a new path variable.
 func NewPathVariable(fields ...string) *PathVariable {
 	return &PathVariable{FieldPath: fields}
@@ -728,11 +830,6 @@ func (v *PathVariable) WithMatch() *PathVariable {
 func (v *PathVariable) WithAllowReserved() *PathVariable {
 	v.AllowReserved = true
 	return v
-}
-
-// NewPathSegment creates a new path segment.
-func NewPathSegment() *PathSegment {
-	return &PathSegment{}
 }
 
 // WithLiteral adds a literal to the path segment.
@@ -897,7 +994,7 @@ type Field struct {
 	// per the requirements in AIP-4235.
 	//
 	// That is:
-	// - It has Typez == STRING_TYPE
+	// - It has Typez == TypezString
 	// - For Protobuf, does not have the `google.api.field_behavior = REQUIRED` annotation
 	// - For Protobuf, has the `google.api.field_info.format = UUID4` annotation
 	// - For OpenAPI, it is an optional field
@@ -924,27 +1021,9 @@ type Field struct {
 	Codec any
 }
 
-// FieldParent returns the Parent field with an alternative name.
-//
-// In some mustache templates we want to access the parent for the
-// enclosing field. In mustache you can get a field from an enclosing context
-// *if* the name is unique.
-func (f *Field) FieldParent() *Message {
-	return f.Parent
-}
-
-// FieldCodec returns the Codec field with an alternative name.
-//
-// In some mustache templates we want to access the codec for the
-// enclosing field. In mustache you can get a field from an enclosing context
-// *if* the name is unique.
-func (f *Field) FieldCodec() any {
-	return f.Codec
-}
-
 // DocumentAsRequired returns true if the field should be documented as required.
 func (field *Field) DocumentAsRequired() bool {
-	return slices.Contains(field.Behavior, FIELD_BEHAVIOR_REQUIRED)
+	return slices.Contains(field.Behavior, FieldBehaviorRequired)
 }
 
 // Singular returns true if the field is not a map or a repeated field.
@@ -957,28 +1036,28 @@ func (f *Field) NameEqualJSONName() bool {
 	return f.JSONName == f.Name
 }
 
-// IsString returns true if the primitive type of a field is `STRING_TYPE`.
+// IsString returns true if the primitive type of a field is `TypezString`.
 //
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsString() bool {
-	return f.Typez == STRING_TYPE
+	return f.Typez == TypezString
 }
 
-// IsBytes returns true if the primitive type of a field is `BYTES_TYPE`.
+// IsBytes returns true if the primitive type of a field is `TypezBytes`.
 //
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsBytes() bool {
-	return f.Typez == BYTES_TYPE
+	return f.Typez == TypezBytes
 }
 
-// IsBool returns true if the primitive type of a field is `BOOL_TYPE`.
+// IsBool returns true if the primitive type of a field is `TypezBool`.
 //
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsBool() bool {
-	return f.Typez == BOOL_TYPE
+	return f.Typez == TypezBool
 }
 
 // IsLikeInt returns true if the primitive type of a field is one of the
@@ -988,9 +1067,9 @@ func (f *Field) IsBool() bool {
 // in the broad category of field type involved.
 func (f *Field) IsLikeInt() bool {
 	switch f.Typez {
-	case INT32_TYPE, INT64_TYPE, SINT32_TYPE, SINT64_TYPE:
+	case TypezInt32, TypezInt64, TypezSint32, TypezSint64:
 		return true
-	case SFIXED32_TYPE, SFIXED64_TYPE:
+	case TypezSfixed32, TypezSfixed64:
 		return true
 	default:
 		return false
@@ -1004,7 +1083,7 @@ func (f *Field) IsLikeInt() bool {
 // in the broad category of field type involved.
 func (f *Field) IsLikeUInt() bool {
 	switch f.Typez {
-	case UINT32_TYPE, UINT64_TYPE, FIXED32_TYPE, FIXED64_TYPE:
+	case TypezUint32, TypezUint64, TypezFixed32, TypezFixed64:
 		return true
 	default:
 		return false
@@ -1017,15 +1096,15 @@ func (f *Field) IsLikeUInt() bool {
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsLikeFloat() bool {
-	return f.Typez == DOUBLE_TYPE || f.Typez == FLOAT_TYPE
+	return f.Typez == TypezDouble || f.Typez == TypezFloat
 }
 
-// IsEnum returns true if the primitive type of a field is `ENUM_TYPE`.
+// IsEnum returns true if the primitive type of a field is `TypezEnum`.
 //
 // This is useful for mustache templates that differ only
 // in the broad category of field type involved.
 func (f *Field) IsEnum() bool {
-	return f.Typez == ENUM_TYPE
+	return f.Typez == TypezEnum
 }
 
 // IsObject returns true if the primitive type of a field is `OBJECT_TYPE`.
@@ -1036,15 +1115,7 @@ func (f *Field) IsEnum() bool {
 // The templates *should* first check if the field is singular, as all maps are
 // also objects.
 func (f *Field) IsObject() bool {
-	return f.Typez == MESSAGE_TYPE
-}
-
-// Pair is a key-value pair.
-type Pair struct {
-	// Key of the pair.
-	Key string
-	// Value of the pair.
-	Value string
+	return f.Typez == TypezMessage
 }
 
 // OneOf is a group of fields that are mutually exclusive. Notably, proto3 optional

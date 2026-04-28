@@ -34,19 +34,19 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
 			switch f.Typez {
-			case MESSAGE_TYPE:
-				t, ok := model.State.MessageByID[f.TypezID]
-				if !ok {
+			case TypezMessage:
+				t := model.Message(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
 				}
 				f.MessageType = t
-			case ENUM_TYPE:
-				t, ok := model.State.EnumByID[f.TypezID]
-				if !ok {
+			case TypezEnum:
+				t := model.Enum(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
 				}
 				f.EnumType = t
@@ -59,13 +59,13 @@ func CrossReference(model *API) error {
 			}
 		}
 	}
-	for _, m := range model.State.MethodByID {
-		input, ok := model.State.MessageByID[m.InputTypeID]
-		if !ok {
+	for m := range model.AllMethods() {
+		input := model.Message(m.InputTypeID)
+		if input == nil {
 			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
 		}
-		output, ok := model.State.MessageByID[m.OutputTypeID]
-		if !ok {
+		output := model.Message(m.OutputTypeID)
+		if output == nil {
 			return fmt.Errorf("cannot find output type %s for method %s", m.OutputTypeID, m.ID)
 		}
 		m.InputType = input
@@ -74,13 +74,12 @@ func CrossReference(model *API) error {
 			m.OperationInfo.Method = m
 		}
 	}
-	for _, s := range model.State.ServiceByID {
+	for s := range model.AllServices() {
 		s.Model = model
 		for _, m := range s.Methods {
 			m.Model = model
 			m.Service = s
-			source, ok := model.State.ServiceByID[m.SourceServiceID]
-			if ok {
+			if source := model.Service(m.SourceServiceID); source != nil {
 				m.SourceService = source
 			} else {
 				// Default to the regular service. OpenAPI does not define the
@@ -96,11 +95,11 @@ func CrossReference(model *API) error {
 // enrichSamples populates the API model with information useful for generating code samples.
 // This includes selecting representative enum values and optimal fields for oneof structures.
 func enrichSamples(model *API) {
-	for _, e := range model.State.EnumByID {
+	for e := range model.AllEnums() {
 		enrichEnumSamples(e)
 	}
 
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, o := range m.OneOfs {
 			if len(o.Fields) > 0 {
 				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
@@ -108,7 +107,7 @@ func enrichSamples(model *API) {
 		}
 	}
 
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		enrichMethodSamples(m)
 	}
 
@@ -356,7 +355,7 @@ func enrichMethodSamples(m *Method) {
 	m.IsLRO = m.OperationInfo != nil
 
 	if m.OperationInfo != nil && m.Model != nil && m.Model.State != nil {
-		m.LongRunningResponseType = m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
@@ -689,7 +688,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 func findResourceIDField(message *Message, singular string) *Field {
 	expectedIDName := fmt.Sprintf("%s_id", singular)
 	for _, f := range message.Fields {
-		if f.Name == expectedIDName && f.Typez == STRING_TYPE {
+		if f.Name == expectedIDName && f.Typez == TypezString {
 			return f
 		}
 	}

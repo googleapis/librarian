@@ -19,6 +19,7 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 {{#Codec.Services}}
 
+/// Request and client builders for [{{Codec.Name}}][crate::client::{{Codec.Name}}].
 {{#Codec.PerServiceFeatures}}
 #[cfg(feature = "{{Codec.FeatureName}}")]
 #[cfg_attr(docsrs, doc(cfg(feature = "{{Codec.FeatureName}}")))]

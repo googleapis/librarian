@@ -238,10 +238,10 @@ func (f *Field) WithBehavior(behaviors ...FieldBehavior) *Field {
 }
 
 // WithMessageType sets the field's message type.
-// It sets MessageType, Typez=MESSAGE_TYPE, and TypezID.
+// It sets MessageType, Typez=TypezMessage, and TypezID.
 func (f *Field) WithMessageType(msg *Message) *Field {
 	f.MessageType = msg
-	f.Typez = MESSAGE_TYPE
+	f.Typez = TypezMessage
 	if msg != nil {
 		f.TypezID = msg.ID
 	}

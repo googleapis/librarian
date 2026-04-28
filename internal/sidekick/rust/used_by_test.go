@@ -352,12 +352,12 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 			{
 				Name:    "value",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".external.ExternalMessage",
 			},
 		},
@@ -370,7 +370,7 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "map_field",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".test.Fake.FakeMapEntry",
 				Map:     true,
 			},

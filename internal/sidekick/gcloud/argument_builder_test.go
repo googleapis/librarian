@@ -29,7 +29,7 @@ func TestNewArgument(t *testing.T) {
 			{
 				Type: "test.googleapis.com/Network",
 				Patterns: []api.ResourcePattern{
-					{*api.NewPathSegment().WithLiteral("projects"), *api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()), *api.NewPathSegment().WithLiteral("networks"), *api.NewPathSegment().WithVariable(api.NewPathVariable("network").WithMatch())},
+					{*(&api.PathSegment{}).WithLiteral("projects"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()), *(&api.PathSegment{}).WithLiteral("networks"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("network").WithMatch())},
 				},
 			},
 		},
@@ -46,7 +46,7 @@ func TestNewArgument(t *testing.T) {
 	}{
 		{
 			name:     "String Field",
-			field:    api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL),
+			field:    api.NewTestField("description").WithType(api.TypezString).WithBehavior(api.FieldBehaviorOptional),
 			apiField: "description",
 			method:   api.NewTestMethod("CreateInstance"),
 			want: Argument{
@@ -61,7 +61,7 @@ func TestNewArgument(t *testing.T) {
 		{
 			name: "String Field with Documentation",
 			field: func() *api.Field {
-				f := api.NewTestField("description").WithType(api.STRING_TYPE).WithBehavior(api.FIELD_BEHAVIOR_OPTIONAL)
+				f := api.NewTestField("description").WithType(api.TypezString).WithBehavior(api.FieldBehaviorOptional)
 				f.Documentation = "My proto comment"
 				return f
 			}(),
@@ -100,7 +100,7 @@ func TestNewArgument(t *testing.T) {
 		},
 		{
 			name:     "Boolean Field in Create Command",
-			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
 			apiField: "validateOnly",
 			method:   api.NewTestMethod("CreateInstance").WithVerb("POST"),
 			want: Argument{
@@ -113,7 +113,7 @@ func TestNewArgument(t *testing.T) {
 		},
 		{
 			name:     "Boolean Field in Update Command",
-			field:    api.NewTestField("validateOnly").WithType(api.BOOL_TYPE),
+			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
 			apiField: "validateOnly",
 			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
 			want: Argument{
@@ -127,7 +127,7 @@ func TestNewArgument(t *testing.T) {
 		{
 			name: "Help Text Override",
 			field: func() *api.Field {
-				f := api.NewTestField("foo").WithType(api.STRING_TYPE)
+				f := api.NewTestField("foo").WithType(api.TypezString)
 				f.ID = "test.foo"
 				return f
 			}(),
@@ -183,12 +183,12 @@ func TestIsIgnored(t *testing.T) {
 	}{
 		{
 			name:  "Primary Resource ID (Create)",
-			field: api.NewTestField("thing_id").WithType(api.STRING_TYPE),
+			field: api.NewTestField("thing_id").WithType(api.TypezString),
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
 				api.NewTestMessage("CreateRequest").WithFields(
-					api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
+					api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
 						api.NewTestMessage("Thing").WithFields(
-							api.NewTestField("name").WithType(api.STRING_TYPE),
+							api.NewTestField("name").WithType(api.TypezString),
 						).WithResource(api.NewTestResource("test.googleapis.com/Thing")),
 					),
 				),
@@ -197,10 +197,10 @@ func TestIsIgnored(t *testing.T) {
 		},
 		{
 			name:  "Update Mask",
-			field: api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
+			field: api.NewTestField("update_mask").WithType(api.TypezMessage),
 			method: api.NewTestMethod("UpdateThing").WithVerb("PATCH").WithInput(
 				api.NewTestMessage("UpdateRequest").WithFields(
-					api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
+					api.NewTestField("update_mask").WithType(api.TypezMessage),
 				),
 			),
 			want: true,
@@ -208,8 +208,8 @@ func TestIsIgnored(t *testing.T) {
 		{
 			name: "Immutable field in Update",
 			field: func() *api.Field {
-				f := api.NewTestField("immutable_field").WithType(api.STRING_TYPE)
-				f.Behavior = []api.FieldBehavior{api.FIELD_BEHAVIOR_IMMUTABLE}
+				f := api.NewTestField("immutable_field").WithType(api.TypezString)
+				f.Behavior = []api.FieldBehavior{api.FieldBehaviorImmutable}
 				return f
 			}(),
 			method: api.NewTestMethod("UpdateThing").WithVerb("PATCH"),
@@ -221,8 +221,8 @@ func TestIsIgnored(t *testing.T) {
 			method: func() *api.Method {
 				m := api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
 					api.NewTestMessage("ListResponse").WithFields(
-						api.NewTestField("things").WithType(api.MESSAGE_TYPE).WithRepeated(),
-						api.NewTestField("next_page_token").WithType(api.STRING_TYPE),
+						api.NewTestField("things").WithType(api.TypezMessage).WithRepeated(),
+						api.NewTestField("next_page_token").WithType(api.TypezString),
 					),
 				)
 				m.OutputType.Pagination = &api.PaginationInfo{
@@ -234,13 +234,13 @@ func TestIsIgnored(t *testing.T) {
 		},
 		{
 			name:   "Immutable Field (Update)",
-			field:  api.NewTestField("immutable").WithBehavior(api.FIELD_BEHAVIOR_IMMUTABLE),
+			field:  api.NewTestField("immutable").WithBehavior(api.FieldBehaviorImmutable),
 			method: api.NewTestMethod("UpdateThing").WithVerb("PATCH"),
 			want:   true,
 		},
 		{
 			name:   "Output Only Field",
-			field:  api.NewTestField("output_only").WithBehavior(api.FIELD_BEHAVIOR_OUTPUT_ONLY),
+			field:  api.NewTestField("output_only").WithBehavior(api.FieldBehaviorOutputOnly),
 			method: api.NewTestMethod("CreateThing").WithVerb("POST"),
 			want:   true,
 		},
@@ -274,17 +274,17 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			name: "Create Instance (Positional)",
 			field: &api.Field{
 				Name:          "thing_id",
-				Typez:         api.STRING_TYPE,
+				Typez:         api.TypezString,
 				Documentation: "The thing to create.",
 			},
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
-						api.NewTestField("thing").WithType(api.MESSAGE_TYPE).WithMessageType(
+						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
 							api.NewTestMessage("Thing").WithFields(
 								&api.Field{
 									Name:          "name",
-									Typez:         api.STRING_TYPE,
+									Typez:         api.TypezString,
 									Documentation: "The thing to create.",
 								},
 							).WithResource(&api.Resource{
@@ -293,10 +293,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 								Plural:   "things",
 								Patterns: []api.ResourcePattern{
 									{
-										*api.NewPathSegment().WithLiteral("projects"),
-										*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-										*api.NewPathSegment().WithLiteral("things"),
-										*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+										*(&api.PathSegment{}).WithLiteral("projects"),
+										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+										*(&api.PathSegment{}).WithLiteral("things"),
+										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 									},
 								},
 							}),
@@ -312,10 +312,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -348,11 +348,11 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 		},
 		{
 			name:  "List Instances (DisableAutoCompleters)",
-			field: api.NewTestField("name").WithType(api.STRING_TYPE),
+			field: api.NewTestField("name").WithType(api.TypezString),
 			method: func() *api.Method {
 				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
 					api.NewTestMessage("ListRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
+						api.NewTestField("parent").WithType(api.TypezString).WithResourceReference("test.googleapis.com/Thing"),
 					),
 				)
 				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
@@ -365,10 +365,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -397,7 +397,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 		{
 			name: "List Instances (Not Positional, Parent)",
 			field: func() *api.Field {
-				f := api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing")
+				f := api.NewTestField("parent").WithType(api.TypezString).WithResourceReference("test.googleapis.com/Thing")
 				f.ResourceReference.ChildType = "test.googleapis.com/Thing"
 				f.Documentation = "The parent of the resource."
 				return f
@@ -405,7 +405,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			method: func() *api.Method {
 				m := api.NewTestMethod("ListThings").WithVerb("GET").WithInput(
 					api.NewTestMessage("ListRequest").WithFields(
-						api.NewTestField("parent").WithType(api.STRING_TYPE).WithResourceReference("test.googleapis.com/Thing"),
+						api.NewTestField("parent").WithType(api.TypezString).WithResourceReference("test.googleapis.com/Thing"),
 					),
 				)
 				m.InputType.Fields[0].ResourceReference.ChildType = "test.googleapis.com/Thing"
@@ -418,10 +418,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -476,7 +476,7 @@ func TestArgumentBuilder_Build(t *testing.T) {
 
 	createMethod := api.NewTestMethod("CreateThing").WithVerb("POST").WithInput(
 		api.NewTestMessage("CreateRequest").WithFields(
-			api.NewTestField("thing_id").WithType(api.STRING_TYPE),
+			api.NewTestField("thing_id").WithType(api.TypezString),
 		),
 	)
 	createMethod.Service = service
@@ -491,13 +491,13 @@ func TestArgumentBuilder_Build(t *testing.T) {
 	}{
 		{
 			name:   "Skips skipped fields",
-			field:  api.NewTestField("update_mask").WithType(api.MESSAGE_TYPE),
+			field:  api.NewTestField("update_mask").WithType(api.TypezMessage),
 			prefix: "update_mask",
 			want:   nil,
 		},
 		{
 			name:   "Handles Simple String Field",
-			field:  api.NewTestField("display_name").WithType(api.STRING_TYPE),
+			field:  api.NewTestField("display_name").WithType(api.TypezString),
 			prefix: "displayName",
 			want: &Argument{
 				ArgName:  "display-name",
@@ -533,10 +533,10 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 				Type: "test.googleapis.com/OtherThing",
 				Patterns: []api.ResourcePattern{
 					{
-						*api.NewPathSegment().WithLiteral("projects"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-						*api.NewPathSegment().WithLiteral("otherThings"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("other_thing").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("otherThings"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("other_thing").WithMatch()),
 					},
 				},
 			},
