@@ -41,7 +41,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 			}
 			if len(method.PathInfo.Bindings) == 0 && enableHeuristics {
 				method.PathInfo.Bindings = []*PathBinding{{
-					PathTemplate: NewPathTemplate().WithLiteral("grpc").WithLiteral(method.InputTypeID),
+					PathTemplate: (&PathTemplate{}).WithLiteral("grpc").WithLiteral(method.InputTypeID),
 				}}
 			}
 			for _, binding := range method.PathInfo.Bindings {
@@ -105,9 +105,9 @@ func identifyFallbackHeuristicTarget(method *Method, vocabulary map[string]bool)
 
 	// Rule 1: Resource Message Check (Strong Signal)
 	for _, f := range method.InputType.Fields {
-		if f.Typez == MESSAGE_TYPE && f.MessageType != nil && f.MessageType.Resource != nil {
+		if f.Typez == TypezMessage && f.MessageType != nil && f.MessageType.Resource != nil {
 			for _, nf := range f.MessageType.Fields {
-				if nf.Name == "name" && nf.Typez == STRING_TYPE {
+				if nf.Name == "name" && nf.Typez == TypezString {
 					targetPath = []string{f.Name, nf.Name}
 					break
 				}
@@ -121,7 +121,7 @@ func identifyFallbackHeuristicTarget(method *Method, vocabulary map[string]bool)
 	// Rule 2: Vocabulary Match (Medium Signal)
 	if targetPath == nil {
 		for _, f := range method.InputType.Fields {
-			if f.Typez == STRING_TYPE {
+			if f.Typez == TypezString {
 				if vocabulary[f.Name] {
 					targetPath = []string{f.Name}
 					break
@@ -139,7 +139,7 @@ func identifyFallbackHeuristicTarget(method *Method, vocabulary map[string]bool)
 		priorities := []string{"name", "bucket", "parent", "resource", "destination_name", "parent_id", "target_resource", "destinationName", "parentId", "targetResource"}
 		for _, priority := range priorities {
 			for _, f := range method.InputType.Fields {
-				if f.Name == priority && f.Typez == STRING_TYPE {
+				if f.Name == priority && f.Typez == TypezString {
 					targetPath = []string{f.Name}
 					break
 				}
