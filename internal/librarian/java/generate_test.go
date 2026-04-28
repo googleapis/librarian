@@ -636,6 +636,77 @@ func TestGenerate_Logic(t *testing.T) {
 	}
 }
 
+func TestGenerate_ProtoExclusion(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+
+	outdir := t.TempDir()
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "0.1.2",
+		Output:  outdir,
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{
+					Path: "google/cloud/secretmanager/v1",
+					SkipProtoClassGeneration: []string{
+						// resources.proto is required for gRPC/GAPIC steps but excluded from proto step.
+						"google/cloud/secretmanager/v1/resources.proto",
+					},
+				},
+			},
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	// Setup mandatory files for postProcessAPI and syncPOMs
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	templatesDir := filepath.Join(filepath.Dir(outdir), owlbotTemplatesRelPath)
+	if err := os.MkdirAll(templatesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageJava,
+		Repo:     "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "1.2.3",
+			},
+		},
+		Libraries: []*config.Library{
+			library,
+			{Name: rootLibrary, Version: "1.2.3"},
+		},
+	}
+	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify Step 1 (proto) excludes resources.proto by checking the filesystem.
+	// We check the staging directory because our dummy owlbot.py doesn't move files.
+	protoPkgDir := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "secretmanager", "v1")
+
+	if _, err := os.Stat(filepath.Join(protoPkgDir, "ResourcesProto.java")); err == nil {
+		t.Errorf("ResourcesProto.java should NOT be generated when resources.proto is in SkipProtoClassGeneration")
+	}
+	if _, err := os.Stat(filepath.Join(protoPkgDir, "ServiceProto.java")); err != nil {
+		t.Errorf("ServiceProto.java SHOULD be generated: %v", err)
+	}
+}
+
 func TestFormat_Success(t *testing.T) {
 	testhelper.RequireCommand(t, "google-java-format")
 	for _, test := range []struct {

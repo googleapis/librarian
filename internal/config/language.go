@@ -599,6 +599,15 @@ type JavaAPI struct {
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
 
+	// SkipProtoClassGeneration is a list of proto files to exclude from
+	// generating proto module, but included in generating gRPC or GAPIC
+	// modules and packaged proto files.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto").
+	// TODO(https://github.com/googleapis/librarian/issues/5661):
+	// remove after migration.
+	SkipProtoClassGeneration []string `yaml:"skip_proto_class_generation,omitempty"`
+
 	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
 	// It determines the module's directory name and is used to derive proto
 	// and gRPC artifact IDs if they are not explicitly overridden.
