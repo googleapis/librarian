@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run -tags docgen ../../tool/cmd/docgen -cmd .
-
 /*
 Librarian manages Google API client libraries by automating onboarding,
 regeneration, and release. It runs language-agnostic workflows while

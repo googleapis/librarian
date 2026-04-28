@@ -17,16 +17,18 @@
 //
 // Usage:
 //
-//	coverage <packages...>
+//	coverage [-target=N] <packages...>
 //
 // It runs "go test -race -coverprofile -covermode=atomic" on the given
 // packages, then uses "go tool cover -func" to extract the total coverage
 // percentage and compares it against the target for the component. The
 // default target is 80%. Components with a different target are listed below.
+// The -target flag overrides both the default and per-component targets.
 package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -48,11 +50,21 @@ var targets = map[string]float64{
 }
 
 func main() {
-	if len(os.Args) < 2 {
-		log.Fatalf("usage: coverage <packages...>")
+	targetFlag := flag.Float64("target", 0, "override coverage target (0 means use per-package default)")
+	flag.Usage = func() {
+		fmt.Fprintf(flag.CommandLine.Output(), "usage: coverage [-target=N] <packages...>\n")
+		flag.PrintDefaults()
 	}
-	pkgs := os.Args[1:]
-	target := targetFor(pkgs)
+	flag.Parse()
+	pkgs := flag.Args()
+	if len(pkgs) == 0 {
+		flag.Usage()
+		os.Exit(2)
+	}
+	target := *targetFlag
+	if target == 0 {
+		target = targetFor(pkgs)
+	}
 	ctx := context.Background()
 	if err := runTests(ctx, pkgs); err != nil {
 		log.Fatalf("go test: %v", err)

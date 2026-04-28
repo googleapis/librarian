@@ -121,3 +121,61 @@ func TestAdd_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateNewAPIs(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		lib     *config.Library
+		wantErr error
+	}{
+		{
+			name: "valid",
+			lib: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+				},
+			},
+		},
+		{
+			name: "no python configuration at all",
+			lib: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+			},
+			wantErr: errExistingLibraryNoDefaultVersion,
+		},
+		{
+			name: "no default version",
+			lib: &config.Library{
+				Name:   "google-cloud-test",
+				APIs:   []*config.API{{Path: "google/cloud/test/v1"}},
+				Python: &config.PythonPackage{},
+			},
+			wantErr: errExistingLibraryNoDefaultVersion,
+		},
+		{
+			name: "custom GAPIC options",
+			lib: &config.Library{
+				Name: "google-cloud-test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+				Python: &config.PythonPackage{
+					DefaultVersion: "v1",
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/test/v1": []string{"x=y"},
+					},
+				},
+			},
+			wantErr: errExistingLibraryCustomGAPICOptions,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := ValidateNewAPIs(test.lib)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}

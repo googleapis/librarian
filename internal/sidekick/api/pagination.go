@@ -44,7 +44,7 @@ type PaginationInfo struct {
 // UpdateMethodPagination marks all methods that conform to
 // [AIP-4233](https://google.aip.dev/client-libraries/4233) as pageable.
 func UpdateMethodPagination(overrides []PaginationOverride, a *API) {
-	for _, m := range a.State.MethodByID {
+	for m := range a.AllMethods() {
 		reqMsg := a.Message(m.InputTypeID)
 		pageTokenField := paginationRequestInfo(reqMsg)
 		if pageTokenField == nil {

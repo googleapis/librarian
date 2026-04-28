@@ -11,7 +11,7 @@ specifications, bumping versions, and publishing releases.
 ## Usage
 
 Run `librarian -help` for a list of commands,
-or see the [command reference](https://pkg.go.dev/github.com/googleapis/librarian/cmd/librarian).
+or see the [command reference on pkg.go.dev](https://pkg.go.dev/github.com/googleapis/librarian@main/cmd/librarian).
 
 To run without installing:
 

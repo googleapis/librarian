@@ -18,6 +18,7 @@ permissions:
 jobs:
   addlicense:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
@@ -28,12 +29,14 @@ jobs:
         run: go test -run TestAddLicense -count=1 .
   typos:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: crate-ci/typos@v1.45.0
   yamlfmt:
     runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6

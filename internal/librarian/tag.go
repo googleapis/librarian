@@ -37,8 +37,25 @@ var (
 func tagCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tag",
-		Usage:     "tags a release commit based on the libraries published",
+		Usage:     "tag a release commit based on the libraries published",
 		UsageText: "librarian tag",
+		Description: `tag creates git tags on a release commit, one tag per library that the
+commit released, using the tag_format declared for each library in
+librarian.yaml.
+
+Run tag after librarian publish has succeeded. By default, the most
+recent release commit reachable from HEAD is used; --release-commit
+overrides this with a specific commit.
+
+The --create-release-tag flag additionally creates a tag of the form
+release-<PR number>; this is used by the legacy release jobs and will be
+removed once those jobs are retired.
+
+Examples:
+
+	librarian tag
+	librarian tag --release-commit=<sha>
+	librarian tag --create-release-tag`,
 		Flags: []cli.Flag{
 			&cli.StringFlag{
 				Name:  "release-commit",

@@ -11,12 +11,21 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: Golang
+name: Go
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
   issues: write
 jobs:
+  test:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-librarian
+      - name: Run tests
+        run: go run ./tool/cmd/coverage ./internal/librarian/golang
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -52,15 +52,15 @@ func Run(ctx context.Context, args ...string) error {
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
-			addCommand(),
-			generateCommand(),
-			bumpCommand(),
 			installCommand(),
 			tidyCommand(),
+			addCommand(),
 			updateCommand(),
-			versionCommand(),
+			generateCommand(),
+			bumpCommand(),
 			publishCommand(),
 			tagCommand(),
+			versionCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
@@ -71,9 +71,17 @@ func installCommand() *cli.Command {
 		Name:      "install",
 		Usage:     "install tool dependencies for a language",
 		UsageText: "librarian install [language]",
-		Description: `Install tool dependencies for the given language.
-If no language is provided, the language is determined
-from librarian.yaml in the current directory.`,
+		Description: `install installs the language-specific tools that librarian uses to
+generate and build client libraries (for example, language SDKs and code
+generators).
+
+If [language] is omitted, the language is read from librarian.yaml in the
+current directory.
+
+Examples:
+
+	librarian install              # use language from librarian.yaml
+	librarian install go           # install Go-specific tools`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			lang := cmd.Args().First()
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
@@ -110,8 +118,11 @@ from librarian.yaml in the current directory.`,
 func versionCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "version",
-		Usage:     "print the version",
+		Usage:     "print the binary version",
 		UsageText: "librarian version",
+		Description: `version prints the librarian binary version and exits. The version is
+embedded at build time and follows the conventions described at
+https://go.dev/ref/mod#versions.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			fmt.Printf("librarian version %s\n", Version())
 			return nil
