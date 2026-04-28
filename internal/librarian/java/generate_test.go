@@ -690,7 +690,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	_, err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
 	if err != nil {
 		t.Fatal(err)
 	}
