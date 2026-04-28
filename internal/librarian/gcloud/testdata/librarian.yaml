@@ -14,7 +14,6 @@
 language: gcloud
 sources:
   googleapis:
-    branch: master
     commit: 66523877d68b34611db9243613850c7211f00571
     sha256: 64845024727cf6208823c741be195c4a921eec5d5f7c4c9c845031d891ae1ffa
 libraries:
