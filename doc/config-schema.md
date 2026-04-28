@@ -44,7 +44,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `branch` | string | Is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
 | `commit` | string | Is the git commit hash or tag to use. |
 | `dir` | string | Is a local directory path to use instead of fetching. If set, Commit and SHA256 are ignored. |
 | `sha256` | string | Is the expected hash of the tarball for this commit. |
