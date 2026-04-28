@@ -204,12 +204,8 @@ func TestNewPathVariable(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{secretMessage, requestMessage}, nil, []*api.Service{})
-	model.State = &api.APIState{
-		MessageByID: map[string]*api.Message{
-			".google.cloud.secretmanager.v1.Secret":              secretMessage,
-			".google.cloud.secretmanager.v1.CreateSecretRequest": requestMessage,
-		},
-	}
+	model.AddMessage(secretMessage)
+	model.AddMessage(requestMessage)
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {

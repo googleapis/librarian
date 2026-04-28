@@ -242,8 +242,8 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 	model.PackageName = "google.cloud.test.v1"
-	model.State.MessageByID[inputMessage.ID] = inputMessage
-	model.State.MessageByID[outputMessage.ID] = outputMessage
+	model.AddMessage(inputMessage)
+	model.AddMessage(outputMessage)
 	codec := newTestCodec(t, model, nil)
 
 	if err := codec.annotateModel(); err != nil {

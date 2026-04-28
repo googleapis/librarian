@@ -155,11 +155,7 @@ func TestGenerateService_WithImports(t *testing.T) {
 
 	model := api.NewTestAPI([]*api.Message{inputMessage}, nil, []*api.Service{iam})
 	model.PackageName = "google.cloud.test.v1"
-	model.State = &api.APIState{
-		MessageByID: map[string]*api.Message{
-			".google.cloud.external.v1.ExternalMessage": externalMessage,
-		},
-	}
+	model.AddMessage(externalMessage)
 
 	cfg := &parser.ModelConfig{
 		Codec: map[string]string{

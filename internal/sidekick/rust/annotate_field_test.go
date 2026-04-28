@@ -87,7 +87,7 @@ func TestFieldAnnotations(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
+	model.AddMessage(map_message)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -258,7 +258,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
+	model.AddMessage(map_message)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -451,8 +451,8 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
-	model.State.MessageByID[inner_message.ID] = inner_message
+	model.AddMessage(map_message)
+	model.AddMessage(inner_message)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
@@ -804,7 +804,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enumz}, []*api.Service{})
-	model.State.MessageByID[map_message.ID] = map_message
+	model.AddMessage(map_message)
 	api.CrossReference(model)
 	api.LabelRecursiveFields(model)
 	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
