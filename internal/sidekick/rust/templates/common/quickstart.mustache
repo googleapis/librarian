@@ -23,20 +23,20 @@ limitations under the License.
 {{> /templates/common/client_method_samples/use_statements}}
 {{/QuickstartMethod}}
 {{/Model.Codec.GenerateRpcSamples}}
-/// # async fn sample() -> Result<(), Box<dyn std::error::Error>> {
+/// async fn sample(
+{{#Model.Codec.GenerateRpcSamples}}
+{{#QuickstartMethod}}
+{{#SampleInfo}}
+{{#Codec.StringParameters}}
+///    {{.}}: &str,
+{{/Codec.StringParameters}}
+{{/SampleInfo}}
+{{/QuickstartMethod}}
+{{/Model.Codec.GenerateRpcSamples}}
+/// ) -> anyhow::Result<()> {
 ///     let client = {{Codec.Name}}::builder().build().await?;
 {{#Model.Codec.GenerateRpcSamples}}
 {{#QuickstartMethod}}
-{{#IsAIPStandard}}
-{{#SampleInfo}}
-{{#ResourceNameField}}
-///     let {{Codec.SetterName}} = "{{Codec.SetterName}}_value";
-{{/ResourceNameField}}
-{{#IsAIPStandardUpdate}}
-///     let name = "name_value";
-{{/IsAIPStandardUpdate}}
-{{/SampleInfo}}
-{{/IsAIPStandard}}
 {{> /templates/common/client_method_samples/method_call}}
 {{/QuickstartMethod}}
 {{^QuickstartMethod}}
@@ -46,6 +46,7 @@ limitations under the License.
 {{^Model.Codec.GenerateRpcSamples}}
 ///     // use `client` to make requests to the {{Codec.APITitle}}.
 {{/Model.Codec.GenerateRpcSamples}}
-/// # Ok(()) }
+///     Ok(())
+/// }
 /// ```
 {{/Model.Codec.InternalBuilders}}
