@@ -25,6 +25,61 @@ Usage:
 
 The commands are:
 
+# config
+
+NAME:
+
+	librarian config - read and write librarian.yaml configuration
+
+USAGE:
+
+	librarian config [get|set] [path] [value]
+
+COMMANDS:
+
+	get  get a configuration value
+	set  set a configuration value
+
+OPTIONS:
+
+	--help, -h  show help
+
+# config get
+
+NAME:
+
+	librarian config get - get a configuration value
+
+USAGE:
+
+	librarian config get [path]
+
+OPTIONS:
+
+	--help, -h  show help
+
+GLOBAL OPTIONS:
+
+	--verbose, -v  enable verbose logging
+
+# config set
+
+NAME:
+
+	librarian config set - set a configuration value
+
+USAGE:
+
+	librarian config set [path] [value]
+
+OPTIONS:
+
+	--help, -h  show help
+
+GLOBAL OPTIONS:
+
+	--verbose, -v  enable verbose logging
+
 # add
 
 NAME:

@@ -52,6 +52,7 @@ func Run(ctx context.Context, args ...string) error {
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
+			configCommand(),
 			addCommand(),
 			generateCommand(),
 			bumpCommand(),
