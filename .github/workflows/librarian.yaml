@@ -48,6 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+      - name: Fetch librarian.yaml from google-cloud-go
+        run: |
+          curl -sSL -o librarian.yaml https://raw.githubusercontent.com/googleapis/google-cloud-go/updateConfigTools/librarian.yaml
       - name: Install tools
         run: |
           go run ./cmd/librarian install go
