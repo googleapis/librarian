@@ -32,7 +32,6 @@ func TestInstall_Error(t *testing.T) {
 func TestInstall_Success(t *testing.T) {
 	gobin := t.TempDir()
 	t.Setenv("GOBIN", gobin)
-	
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -41,11 +40,9 @@ func TestInstall_Success(t *testing.T) {
 			{Name: "google.golang.org/protobuf/cmd/protoc-gen-go", Version: "v1.36.11"},
 		},
 	}
-
 	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
-
 	suffix := ""
 	if runtime.GOOS == "windows" {
 		suffix = ".exe"
@@ -59,7 +56,7 @@ func TestInstall_Success(t *testing.T) {
 		t.Run(tool, func(t *testing.T) {
 			path := filepath.Join(gobin, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
-				t.Errorf("expected tool binary %s to exist: %v", tool, err)
+				t.Error(err)
 			}
 		})
 	}

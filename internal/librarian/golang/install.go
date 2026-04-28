@@ -34,8 +34,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return installGoTools(ctx, tools.Go)
 }
 
-
-
 func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	for _, tool := range goTools {
 		if tool.Version == "" {
