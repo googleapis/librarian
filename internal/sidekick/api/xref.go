@@ -34,7 +34,7 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
 			switch f.Typez {
@@ -59,7 +59,7 @@ func CrossReference(model *API) error {
 			}
 		}
 	}
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		input := model.Message(m.InputTypeID)
 		if input == nil {
 			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
@@ -74,7 +74,7 @@ func CrossReference(model *API) error {
 			m.OperationInfo.Method = m
 		}
 	}
-	for _, s := range model.State.ServiceByID {
+	for s := range model.AllServices() {
 		s.Model = model
 		for _, m := range s.Methods {
 			m.Model = model
@@ -95,11 +95,11 @@ func CrossReference(model *API) error {
 // enrichSamples populates the API model with information useful for generating code samples.
 // This includes selecting representative enum values and optimal fields for oneof structures.
 func enrichSamples(model *API) {
-	for _, e := range model.State.EnumByID {
+	for e := range model.AllEnums() {
 		enrichEnumSamples(e)
 	}
 
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, o := range m.OneOfs {
 			if len(o.Fields) > 0 {
 				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
@@ -107,7 +107,7 @@ func enrichSamples(model *API) {
 		}
 	}
 
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		enrichMethodSamples(m)
 	}
 
