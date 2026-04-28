@@ -21,69 +21,55 @@ Usage:
 
 	librarianops <command> [arguments]
 
-The commands are:
+# Generate libraries across repositories
 
-# generate
-
-NAME:
-
-	librarianops generate - generate libraries across repositories
-
-USAGE:
+Usage:
 
 	librarianops generate [<repo> | -C <dir>]
 
-DESCRIPTION:
+Examples:
 
-	Examples:
-	  librarianops generate google-cloud-rust
-	  librarianops generate -C ~/workspace/google-cloud-rust
+	librarianops generate google-cloud-rust
+	librarianops generate -C ~/workspace/google-cloud-rust
 
-	Specify a repository name to clone and process, or use -C to work in a specific
-	directory (repo name is inferred from the directory basename).
+Specify a repository name to clone and process, or use -C to work in a specific
+directory (repo name is inferred from the directory basename).
 
-	For each repository, librarianops will:
-	  1. Clone the repository to a temporary directory (or use existing directory with -C)
-	  2. Create a branch: librarianops-generateall-YYYY-MM-DD
-	  3. Run librarian tidy
-	  4. Run librarian update for configured sources (discovery, googleapis)
-	  5. Run librarian generate --all
-	  6. Run cargo update --workspace (google-cloud-rust only)
-	  7. Commit changes
-	  8. Create a pull request
+For each repository, librarianops will:
+ 1. Clone the repository to a temporary directory (or use existing directory with -C)
+ 2. Create a branch: librarianops-generateall-YYYY-MM-DD
+ 3. Run librarian tidy
+ 4. Run librarian update for configured sources (discovery, googleapis)
+ 5. Run librarian generate --all
+ 6. Run cargo update --workspace (google-cloud-rust only)
+ 7. Commit changes
+ 8. Create a pull request
 
-OPTIONS:
+Flags:
 
 	-C directory  work in directory (repo name inferred from basename)
 	-v            run librarian with verbose output
 	--docker      run librarian in Docker
-	--help, -h    show help
 
-# upgrade
+# Upgrade librarian version in librarian.yaml
 
-NAME:
-
-	librarianops upgrade - upgrade librarian version in librarian.yaml
-
-USAGE:
+Usage:
 
 	librarianops upgrade [<repo> | -C <dir>]
 
-DESCRIPTION:
+Examples:
 
-	Examples:
-	  librarianops upgrade google-cloud-rust
-	  librarianops upgrade -C ~/workspace/google-cloud-rust
+	librarianops upgrade google-cloud-rust
+	librarianops upgrade -C ~/workspace/google-cloud-rust
 
-	For each repository, librarianops will:
-	  1. Get the latest librarian version from @main.
-	  2. Update the version field in librarian.yaml.
-	  3. Run 'librarian generate --all'.
+For each repository, librarianops will:
+ 1. Get the latest librarian version from @main.
+ 2. Update the version field in librarian.yaml.
+ 3. Run 'librarian generate --all'.
 
-OPTIONS:
+Flags:
 
 	-C directory  work in directory (repo name inferred from basename)
 	-v            run librarian with verbose output
-	--help, -h    show help
 */
 package main

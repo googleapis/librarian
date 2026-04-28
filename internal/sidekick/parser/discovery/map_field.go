@@ -122,6 +122,6 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) st
 		IsMap:         true,
 		Fields:        []*api.Field{key, value},
 	}
-	model.State.MessageByID[message.ID] = message
+	model.AddMessage(message)
 	return id
 }

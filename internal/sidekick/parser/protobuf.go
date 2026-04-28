@@ -538,7 +538,7 @@ func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN
 		DefaultHost: parseDefaultHost(s.GetOptions()),
 		Deprecated:  s.GetOptions().GetDeprecated(),
 	}
-	model.State.ServiceByID[service.ID] = service
+	model.AddService(service)
 	return service
 }
 
@@ -567,7 +567,7 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 		SourceServiceID:     serviceID,
 		APIVersion:          apiVersion,
 	}
-	model.State.MethodByID[mFQN] = method
+	model.AddMethod(method)
 	return method, nil
 }
 
@@ -579,7 +579,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		Package:    packagez,
 		Deprecated: m.GetOptions().GetDeprecated(),
 	}
-	model.State.MessageByID[mFQN] = message
+	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
 		if opts.GetMapEntry() {
@@ -675,7 +675,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		Self:     message,
 	}
 	message.Resource = resource
-	model.State.ResourceByType[resource.Type] = resource
+	model.AddResource(resource)
 	return nil
 }
 
@@ -750,7 +750,7 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 		Package:    packagez,
 		Deprecated: e.GetOptions().GetDeprecated(),
 	}
-	model.State.EnumByID[eFQN] = enum
+	model.AddEnum(enum)
 	for _, ev := range e.Value {
 		enumValue := &api.EnumValue{
 			Name:       ev.GetName(),

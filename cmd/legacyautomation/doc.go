@@ -12,8 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run -tags docgen ../../tool/cmd/docgen -cmd .
-
 /*
 Automation provides logic to trigger Cloud Build jobs that run Librarian commands for
 any repository listed in internal/legacylibrarian/legacyautomation/prod/repositories.yaml.

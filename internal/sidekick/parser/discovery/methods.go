@@ -31,14 +31,14 @@ func makeServiceMethods(model *api.API, service *api.Service, doc *document, res
 		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service", service.Name, service.ID[1:]),
 		ServicePlaceholder: true,
 	}
-	model.State.MessageByID[parent.ID] = parent
+	model.AddMessage(parent)
 	model.Messages = append(model.Messages, parent)
 	for _, input := range resource.Methods {
 		method, err := makeMethod(model, parent, doc, input)
 		if err != nil {
 			return err
 		}
-		model.State.MethodByID[method.ID] = method
+		model.AddMethod(method)
 		service.Methods = append(service.Methods, method)
 	}
 
@@ -69,7 +69,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		Parent:           parent,
 		Deprecated:       input.Deprecated,
 	}
-	model.State.MessageByID[requestMessage.ID] = requestMessage
+	model.AddMessage(requestMessage)
 	parent.Messages = append(parent.Messages, requestMessage)
 
 	var uriTemplate string

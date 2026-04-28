@@ -119,7 +119,7 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 		}
 
 		result.Messages = append(result.Messages, message)
-		result.State.MessageByID[id] = message
+		result.AddMessage(message)
 	}
 
 	err := makeServices(result, model, packageName, serviceName)
@@ -150,7 +150,7 @@ func makeServices(a *api.API, model *libopenapi.DocumentModel[v3.Document], pack
 		return err
 	}
 	a.Services = append(a.Services, service)
-	a.State.ServiceByID[service.ID] = service
+	a.AddService(service)
 	return nil
 }
 
@@ -183,7 +183,7 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 		Documentation:      fmt.Sprintf("Synthetic messages for the [%s][%s] service.", service.Name, service.ID[1:]),
 		ServicePlaceholder: true,
 	}
-	a.State.MessageByID[parent.ID] = parent
+	a.AddMessage(parent)
 	a.Messages = append(a.Messages, parent)
 
 	for pattern, item := range model.Model.Paths.PathItems.FromOldest() {
@@ -239,7 +239,7 @@ func makeMethods(a *api.API, service *api.Service, model *libopenapi.DocumentMod
 				OutputTypeID:  responseMessage.ID,
 				PathInfo:      pathInfo,
 			}
-			a.State.MethodByID[m.ID] = m
+			a.AddMethod(m)
 			service.Methods = append(service.Methods, m)
 		}
 	}
@@ -321,7 +321,7 @@ func makeRequestMessage(a *api.API, parent *api.Message, operation *v3.Operation
 	}
 	// Add the message to the symbol table and the parent.
 	parent.Messages = append(parent.Messages, message)
-	a.State.MessageByID[message.ID] = message
+	a.AddMessage(message)
 
 	return message, bodyFieldPath, nil
 }
@@ -588,7 +588,7 @@ func makeMapMessage(model *api.API, messageName, name string, schema *base.Schem
 			Parent:        nil,
 			Package:       "$",
 		}
-		model.State.MessageByID[id] = placeholder
+		model.AddMessage(placeholder)
 		message = placeholder
 	}
 	return message, nil

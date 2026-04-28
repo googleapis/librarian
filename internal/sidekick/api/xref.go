@@ -34,7 +34,7 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
 			switch f.Typez {
@@ -59,7 +59,7 @@ func CrossReference(model *API) error {
 			}
 		}
 	}
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		input := model.Message(m.InputTypeID)
 		if input == nil {
 			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
@@ -74,7 +74,7 @@ func CrossReference(model *API) error {
 			m.OperationInfo.Method = m
 		}
 	}
-	for _, s := range model.State.ServiceByID {
+	for s := range model.AllServices() {
 		s.Model = model
 		for _, m := range s.Methods {
 			m.Model = model
@@ -95,11 +95,11 @@ func CrossReference(model *API) error {
 // enrichSamples populates the API model with information useful for generating code samples.
 // This includes selecting representative enum values and optimal fields for oneof structures.
 func enrichSamples(model *API) {
-	for _, e := range model.State.EnumByID {
+	for e := range model.AllEnums() {
 		enrichEnumSamples(e)
 	}
 
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, o := range m.OneOfs {
 			if len(o.Fields) > 0 {
 				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
@@ -107,7 +107,7 @@ func enrichSamples(model *API) {
 		}
 	}
 
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		enrichMethodSamples(m)
 	}
 
@@ -403,12 +403,7 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldByType(m.InputType, resourceByType, outputResource.Type)
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type)
 
 	if resourceField == nil {
 		return nil
@@ -433,12 +428,7 @@ func aipStandardDeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
@@ -462,12 +452,7 @@ func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
@@ -604,7 +589,7 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	}
 }
 
-func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
+func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
 		if field.ResourceReference == nil {
@@ -613,8 +598,8 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
+		resource := model.Resource(field.ResourceReference.Type)
+		if resource == nil {
 			continue
 		}
 		if resource.Type == targetType {
@@ -627,7 +612,7 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 	return bestField
 }
 
-func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
+func findBestResourceFieldBySingular(message *Message, model *API, targetSingular string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
 		if field.ResourceReference == nil {
@@ -636,8 +621,8 @@ func findBestResourceFieldBySingular(message *Message, resourcesByType map[strin
 		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
+		resource := model.Resource(field.ResourceReference.Type)
+		if resource == nil {
 			continue
 		}
 		actualSingular := strings.ToLower(resource.Singular)

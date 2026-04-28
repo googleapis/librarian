@@ -87,7 +87,7 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{outer, simple}, nil, nil)
-	model.State.MessageByID[nested.ID] = nested
+	model.AddMessage(nested)
 	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
@@ -146,7 +146,7 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{outer}, []*api.Enum{simple}, nil)
-	model.State.EnumByID[nested.ID] = nested
+	model.AddEnum(nested)
 	c := newTestCodec(t, model, map[string]string{})
 
 	for _, test := range []struct {
@@ -331,7 +331,7 @@ func TestFieldTypeName_Map(t *testing.T) {
 
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = mapEntry.Package
-	model.State.MessageByID[mapEntry.ID] = mapEntry
+	model.AddMessage(mapEntry)
 	c := newTestCodec(t, model, map[string]string{})
 
 	field := &api.Field{
@@ -359,7 +359,7 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = "google.cloud.test.v1"
-	model.State.MessageByID[externalMessage.ID] = externalMessage
+	model.AddMessage(externalMessage)
 	c := newTestCodec(t, model, nil)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
@@ -404,7 +404,7 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = "google.cloud.test.v1"
-	model.State.EnumByID[externalEnum.ID] = externalEnum
+	model.AddEnum(externalEnum)
 	c := newTestCodec(t, model, nil)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
@@ -456,8 +456,8 @@ func TestFieldTypeName_ExternalNestedMessage(t *testing.T) {
 
 	model := api.NewTestAPI(nil, nil, nil)
 	model.PackageName = "google.cloud.test.v1"
-	model.State.MessageByID[externalNested.ID] = externalNested
-	model.State.MessageByID[externalOuter.ID] = externalOuter
+	model.AddMessage(externalNested)
+	model.AddMessage(externalOuter)
 	c := newTestCodec(t, model, nil)
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{

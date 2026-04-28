@@ -715,7 +715,7 @@ func rustFieldTypesCases() *api.API {
 		},
 	}
 	model := api.NewTestAPI([]*api.Message{target, message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[mapMessage.ID] = mapMessage
+	model.AddMessage(mapMessage)
 	return model
 
 }
@@ -883,7 +883,7 @@ func TestFieldMapTypeValues(t *testing.T) {
 			Fields: []*api.Field{key, value},
 		}
 		model := api.NewTestAPI([]*api.Message{message, other_message}, []*api.Enum{}, []*api.Service{})
-		model.State.MessageByID[map_thing.ID] = map_thing
+		model.AddMessage(map_thing)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model, false, model.PackageName)
@@ -947,7 +947,7 @@ func TestFieldMapTypeKey(t *testing.T) {
 			ID:   ".test.EnumType",
 		}
 		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{enum}, []*api.Service{})
-		model.State.MessageByID[map_thing.ID] = map_thing
+		model.AddMessage(map_thing)
 		api.LabelRecursiveFields(model)
 		c := createRustCodec()
 		got, err := c.fieldType(field, model, false, model.PackageName)
@@ -1915,16 +1915,16 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 		[]*api.Enum{someEnum},
 		[]*api.Service{someService, renamedService, yellyService})
 	a.PackageName = "test.v1"
-	a.State.MessageByID[".google.iam.v1.SetIamPolicyRequest"] = &api.Message{
+	a.AddMessage(&api.Message{
 		Name:    "SetIamPolicyRequest",
 		Package: "google.iam.v1",
 		ID:      ".google.iam.v1.SetIamPolicyRequest",
-	}
-	a.State.ServiceByID[".google.iam.v1.IAMPolicy"] = &api.Service{
+	})
+	a.AddService(&api.Service{
 		Name:    "IAMPolicy",
 		Package: "google.iam.v1",
 		ID:      ".google.iam.v1.IAMPolicy",
-	}
+	})
 	return a
 }
 
