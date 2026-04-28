@@ -17,6 +17,7 @@ package librarian
 import (
 	"bytes"
 	"errors"
+	"io/fs"
 	"os"
 	"strings"
 	"testing"
@@ -196,7 +197,7 @@ func TestRunConfigSet_FileNotFound(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected error; got nil")
 	}
-	if !errors.Is(err, errConfigNotFound) {
-		t.Fatalf("got error %v, want %v", err, errConfigNotFound)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Fatalf("got error %v, want %v", err, fs.ErrNotExist)
 	}
 }

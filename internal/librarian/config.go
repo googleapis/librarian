@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/fs"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -27,9 +26,8 @@ import (
 )
 
 var (
-	errPathRequired   = errors.New("path is required")
-	errValueRequired  = errors.New("value is required")
-	errConfigNotFound = errors.New("configuration file not found")
+	errPathRequired  = errors.New("path is required")
+	errValueRequired = errors.New("value is required")
 )
 
 // configCommand returns the CLI command for reading and writing librarian configuration.
@@ -65,9 +63,6 @@ func runConfigGet(w io.Writer, path string) error {
 	}
 	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return errConfigNotFound
-		}
 		return err
 	}
 	val, err := getConfigValue(cfg, path)
@@ -87,9 +82,6 @@ func runConfigSet(path, value string) error {
 	}
 	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return errConfigNotFound
-		}
 		return err
 	}
 	updated, err := setConfigValue(cfg, path, value)
