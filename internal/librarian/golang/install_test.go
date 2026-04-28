@@ -19,14 +19,33 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestInstall(t *testing.T) {
+func TestInstall_Error(t *testing.T) {
+	if err := Install(t.Context(), nil); err == nil {
+		t.Fatal("expected error when passing nil tools")
+	}
+}
+
+func TestInstall_Success(t *testing.T) {
 	gobin := t.TempDir()
 	t.Setenv("GOBIN", gobin)
-	if err := Install(t.Context(), nil); err != nil {
+	
+	tools := &config.Tools{
+		Go: []*config.GoTool{
+			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
+			{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.44.0"},
+			{Name: "google.golang.org/grpc/cmd/protoc-gen-go-grpc", Version: "v1.3.0"},
+			{Name: "google.golang.org/protobuf/cmd/protoc-gen-go", Version: "v1.36.11"},
+		},
+	}
+
+	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
+
 	suffix := ""
 	if runtime.GOOS == "windows" {
 		suffix = ".exe"
