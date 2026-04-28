@@ -50,7 +50,7 @@ jobs:
       - uses: ./.github/actions/setup-librarian
       - name: Fetch librarian.yaml from google-cloud-go
         run: |
-          curl -sSL -o librarian.yaml https://raw.githubusercontent.com/googleapis/google-cloud-go/updateConfigTools/librarian.yaml
+          curl -fsSL -o librarian.yaml https://raw.githubusercontent.com/googleapis/google-cloud-go/b04765d40282a80b9d2aedfdf9d492c9440f9d91/librarian.yaml
       - name: Install tools
         run: |
           go run ./cmd/librarian install go
