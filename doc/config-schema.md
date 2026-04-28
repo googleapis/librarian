@@ -124,8 +124,8 @@ This document describes the schema for the librarian.yaml.
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
-| `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `gcloud` | [GcloudSurface](#gcloudsurface-configuration) (optional) | Contains gcloud-specific library configuration. |
+| `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
