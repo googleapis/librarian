@@ -131,7 +131,7 @@ func (b *commandBuilder) async() *Async {
 }
 
 func (b *commandBuilder) hidden() bool {
-	if len(b.overrides.APIs) > 0 {
+	if b.overrides != nil && len(b.overrides.APIs) > 0 {
 		return b.overrides.APIs[0].RootIsHidden
 	}
 	// Default to hidden if no API overrides are provided.

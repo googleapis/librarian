@@ -483,7 +483,7 @@ func TestProtobuf_Comments(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -902,7 +902,7 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("name").
 									WithLiteral("projects").
@@ -925,7 +925,7 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -948,7 +948,7 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "DELETE",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("name").
 									WithLiteral("projects").
@@ -981,7 +981,7 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("name").
 									WithLiteral("projects").
@@ -1038,7 +1038,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1061,7 +1061,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1159,7 +1159,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1187,7 +1187,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1215,7 +1215,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1243,7 +1243,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1271,7 +1271,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1299,7 +1299,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1320,7 +1320,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1341,7 +1341,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1362,7 +1362,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1383,7 +1383,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1508,7 +1508,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1534,7 +1534,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithVariable(api.NewPathVariable("parent").
 									WithLiteral("projects").
@@ -1560,7 +1560,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v2").
 								WithVariable(api.NewPathVariable("name").
 									WithLiteral("operations").
@@ -1885,10 +1885,10 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Shelf",
 			Patterns: []api.ResourcePattern{
 				{
-					*api.NewPathSegment().WithLiteral("publishers"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*api.NewPathSegment().WithLiteral("shelves"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("publishers"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("shelves"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
 				},
 			},
 		}
@@ -1912,12 +1912,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Book",
 			Patterns: []api.ResourcePattern{
 				{
-					*api.NewPathSegment().WithLiteral("publishers"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*api.NewPathSegment().WithLiteral("shelves"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*api.NewPathSegment().WithLiteral("books"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("book").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("publishers"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("shelves"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("books"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
 				},
 			},
 			Plural:   "books",
@@ -1969,12 +1969,12 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Book",
 			Patterns: []api.ResourcePattern{
 				{
-					*api.NewPathSegment().WithLiteral("publishers"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*api.NewPathSegment().WithLiteral("shelves"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*api.NewPathSegment().WithLiteral("books"),
-					*api.NewPathSegment().WithVariable(api.NewPathVariable("book").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("publishers"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("shelves"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					*(&api.PathSegment{}).WithLiteral("books"),
+					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
 				},
 			},
 			Plural:   "books",
@@ -2169,14 +2169,14 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		want := []api.ResourcePattern{
 			{
-				*api.NewPathSegment().WithLiteral("publishers"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("publisher").WithMatch()),
-				*api.NewPathSegment().WithLiteral("shelves"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("shelf").WithMatch()),
+				*(&api.PathSegment{}).WithLiteral("publishers"),
+				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
+				*(&api.PathSegment{}).WithLiteral("shelves"),
+				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
 			},
 			{
-				*api.NewPathSegment().WithLiteral("projects"),
-				*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
+				*(&api.PathSegment{}).WithLiteral("projects"),
+				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
 			},
 		}
 		got, err := parseResourcePatterns(patterns)

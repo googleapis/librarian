@@ -102,7 +102,6 @@ func TestCreateProtocOptions(t *testing.T) {
 		api      *config.API
 		library  *config.Library
 		expected []string
-		wantErr  bool
 	}{
 		{
 			name: "basic case",
@@ -158,22 +157,6 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 		},
 		{
-			name: "transport specified in OptArgsByAPI",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secret-manager",
-				Python: &config.PythonPackage{
-					OptArgsByAPI: map[string][]string{
-						"google/cloud/secretmanager/v1": {"transport=rest"},
-					},
-				},
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
 			name: "proto-only exists but doesn't include API path",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
@@ -224,12 +207,43 @@ func TestCreateProtocOptions(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := createProtocOptions(test.api, test.library, googleapisDir, "staging")
-			if (err != nil) != test.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
 
 			if diff := cmp.Diff(test.expected, got); diff != "" {
 				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCreateProtocOptions_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "transport specified in OptArgsByAPI",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {"transport=rest"},
+					},
+				},
+			},
+			wantErr: errExplicitTransportOption,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, gotErr := createProtocOptions(test.api, test.library, googleapisDir, "staging")
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("createProtocOptions error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

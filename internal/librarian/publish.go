@@ -29,8 +29,26 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
-		Usage:     "publishes client libraries",
+		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
+		Description: `publish releases the libraries that were updated in a release commit
+prepared by librarian bump.
+
+By default, publish performs a dry run that prints the actions it would
+take. Pass --execute to actually publish. By default, the most recent
+release commit reachable from HEAD is used; --release-commit overrides
+this with a specific commit.
+
+The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
+only honored when the workspace language is Rust; they are retained for
+backwards compatibility with the legacy Rust release jobs and will be
+removed once Rust migrates to the unified flow.
+
+Examples:
+
+	librarian publish                          # dry run
+	librarian publish --execute                # publish for real
+	librarian publish --release-commit=<sha>   # publish a specific commit`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "execute",

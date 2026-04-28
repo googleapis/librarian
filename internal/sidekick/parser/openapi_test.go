@@ -730,7 +730,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -968,7 +968,7 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("projects").
 								WithVariableNamed("project").
@@ -1188,7 +1188,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -1210,7 +1210,7 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").

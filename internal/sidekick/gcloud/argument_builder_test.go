@@ -29,7 +29,7 @@ func TestNewArgument(t *testing.T) {
 			{
 				Type: "test.googleapis.com/Network",
 				Patterns: []api.ResourcePattern{
-					{*api.NewPathSegment().WithLiteral("projects"), *api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()), *api.NewPathSegment().WithLiteral("networks"), *api.NewPathSegment().WithVariable(api.NewPathVariable("network").WithMatch())},
+					{*(&api.PathSegment{}).WithLiteral("projects"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()), *(&api.PathSegment{}).WithLiteral("networks"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("network").WithMatch())},
 				},
 			},
 		},
@@ -293,10 +293,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 								Plural:   "things",
 								Patterns: []api.ResourcePattern{
 									{
-										*api.NewPathSegment().WithLiteral("projects"),
-										*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-										*api.NewPathSegment().WithLiteral("things"),
-										*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+										*(&api.PathSegment{}).WithLiteral("projects"),
+										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+										*(&api.PathSegment{}).WithLiteral("things"),
+										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 									},
 								},
 							}),
@@ -312,10 +312,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -365,10 +365,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -418,10 +418,10 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*api.NewPathSegment().WithLiteral("projects"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-							*api.NewPathSegment().WithLiteral("things"),
-							*api.NewPathSegment().WithVariable(api.NewPathVariable("thing").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("projects"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+							*(&api.PathSegment{}).WithLiteral("things"),
+							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
 						},
 					},
 				},
@@ -533,10 +533,10 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 				Type: "test.googleapis.com/OtherThing",
 				Patterns: []api.ResourcePattern{
 					{
-						*api.NewPathSegment().WithLiteral("projects"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("project").WithMatch()),
-						*api.NewPathSegment().WithLiteral("otherThings"),
-						*api.NewPathSegment().WithVariable(api.NewPathVariable("other_thing").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("otherThings"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("other_thing").WithMatch()),
 					},
 				},
 			},

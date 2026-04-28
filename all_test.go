@@ -43,6 +43,13 @@ func TestYAMLFormat(t *testing.T) {
 	rungo(t, "tool", "yamlfmt", "-lint", ".")
 }
 
+func TestAddLicense(t *testing.T) {
+	// TODO(https://github.com/googleapis/librarian/issues/5576): remove
+	// -ignore after license headers have been added to pom.xml and
+	// *_pom.xml files.
+	rungo(t, "tool", "addlicense", "-check", "-c", "Google LLC", "-l", "apache", "-ignore", "**/*pom.xml", ".")
+}
+
 func rungo(t *testing.T, args ...string) string {
 	t.Helper()
 

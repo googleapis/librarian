@@ -41,8 +41,14 @@ var (
 func tidyCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tidy",
-		Usage:     "format and validate librarian.yaml",
+		Usage:     "tidy and validate librarian.yaml",
 		UsageText: "librarian tidy",
+		Description: `tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
+
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {

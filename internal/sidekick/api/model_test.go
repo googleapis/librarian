@@ -196,7 +196,7 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 }
 
 func TestPathTemplateBuilder(t *testing.T) {
-	got := NewPathTemplate().
+	got := (&PathTemplate{}).
 		WithLiteral("v1").
 		WithVariable(NewPathVariable("parent", "child").
 			WithLiteral("projects").

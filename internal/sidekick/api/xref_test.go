@@ -1788,11 +1788,11 @@ func TestFlatPath(t *testing.T) {
 		Want  string
 	}{
 		{
-			Input: NewPathTemplate(),
+			Input: (&PathTemplate{}),
 			Want:  "",
 		},
 		{
-			Input: NewPathTemplate().
+			Input: (&PathTemplate{}).
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("zones").
@@ -1800,7 +1800,7 @@ func TestFlatPath(t *testing.T) {
 			Want: "projects/{project}/zones/{zone}",
 		},
 		{
-			Input: NewPathTemplate().
+			Input: (&PathTemplate{}).
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("global").
@@ -1808,7 +1808,7 @@ func TestFlatPath(t *testing.T) {
 			Want: "projects/{project}/global/location",
 		},
 		{
-			Input: NewPathTemplate().
+			Input: (&PathTemplate{}).
 				WithLiteral("projects").
 				WithVariable(NewPathVariable("a", "b", "c").WithMatchRecursive()),
 			Want: "projects/{a.b.c}",

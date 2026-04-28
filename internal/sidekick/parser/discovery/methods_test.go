@@ -42,7 +42,7 @@ func TestMakeServiceMethods(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -80,7 +80,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -121,7 +121,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").

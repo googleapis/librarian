@@ -83,7 +83,7 @@ func MethodCreate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -108,7 +108,7 @@ func MethodUpdate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPatch,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariableNamed("secret", "name"),
 					QueryParameters: map[string]bool{
@@ -132,7 +132,7 @@ func MethodAddSecretVersion() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("project").
@@ -161,7 +161,7 @@ func MethodListSecretVersions() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithLiteral("projects").
 						WithVariableNamed("parent").

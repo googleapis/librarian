@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-name: Rust & Sidekick
+name: Sidekick (Rust, Swift)
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
@@ -20,8 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    # With a cold cache, this presubmit maybe take a little longer.
-    timeout-minutes: 6
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
@@ -39,7 +38,7 @@ jobs:
           git --version
           tar --version
       - name: Run tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/sidekick/... ./internal/librarian/rust
+        run: go run ./tool/cmd/coverage ./internal/sidekick/... ./internal/librarian/rust ./internal/librarian/swift
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'

@@ -42,7 +42,10 @@ const (
 	warehousePackageNameOption          = "warehouse-package-name"
 )
 
-var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
+var (
+	errNoDefaultVersion        = errors.New("default version must be specified for every library with generated APIs")
+	errExplicitTransportOption = errors.New("transport option is derived from sdk.yaml and must not be specified explicitly")
+)
 
 // Generate generates a Python client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
@@ -300,18 +303,20 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	if err != nil {
 		return nil, err
 	}
+	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
+		opts = append(opts, "rest-numeric-enums")
+	}
+	// The transport option should never be specified explicitly. Ensure it
+	// hasn't been specified, and add the derived transport.
+	if _, explicitTransport := findOption(opts, transportOption); explicitTransport {
+		return nil, fmt.Errorf("error creating GAPIC options for %s: %w", api.Path, errExplicitTransportOption)
+	}
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePython)
 	}
-	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
-		opts = append(opts, "rest-numeric-enums")
-	}
+	opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
 
-	// Add transport option, if we haven't already got it.
-	if _, ok := findOption(opts, transportOption); !ok {
-		opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
-	}
 	// Add derived python-gapic-namespace option, if we haven't already got it.
 	if _, ok := findOption(opts, gapicNamespaceOption); !ok {
 		opts = append(opts, fmt.Sprintf("%s=%s", gapicNamespaceOption, deriveGAPICNamespace(api.Path)))

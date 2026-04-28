@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -35,9 +36,49 @@ func TestModelAnnotations(t *testing.T) {
 		PackageName:   "GoogleCloudWorkflowsV1",
 		CopyrightYear: "2038",
 		MonorepoRoot:  ".",
+		WktPackage:    "GoogleCloudWkt",
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
+	enum := &api.Enum{
+		Name: "SomeEnum", ID: ".test.SomeSnum", Package: "test",
+		Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
+	}
+	enum.UniqueNumberValues = enum.Values
+	for _, test := range []struct {
+		name  string
+		model *api.API
+		want  map[string]bool
+	}{
+		{
+			name: "Messages with wkt",
+			model: api.NewTestAPI(
+				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
+			want: map[string]bool{"GoogleCloudWkt": true},
+		},
+		{
+			name:  "Enum with wkt",
+			model: api.NewTestAPI(nil, []*api.Enum{enum}, nil),
+			want:  map[string]bool{"GoogleCloudWkt": false},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			codec := newTestCodec(t, test.model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			got := map[string]bool{}
+			for _, d := range codec.Dependencies {
+				got[d.Name] = d.Required
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -89,6 +130,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	want := map[string]bool{
 		"GoogleCloudExternalWithOverrideV1": true,
 		"GoogleCloudGax":                    false, // required by the service, but not messages
+		"GoogleCloudWkt":                    true,
 	}
 	got := map[string]bool{}
 	for name, dep := range ann.DependsOn {
@@ -99,7 +141,7 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1"}
+	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudWkt"}
 	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -123,8 +165,13 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
 		{ApiPackage: "google.cloud.other.v1", Name: "GoogleCloudOtherV1", RequiredByServices: true},
 	})
-	// Make it required to verify the rest of the code works.
-	codec.Dependencies[0].Required = true
+	// Make GoogleCloudPlaceholderV1 required to verify the rest of the code works. Its position may
+	// change as the implementation of `withExtraDependencies()` changes, so search for it:
+	idx := slices.IndexFunc(codec.Dependencies, func(d *Dependency) bool { return d.Name == "GoogleCloudPlaceholderV1" })
+	if idx == -1 {
+		t.Fatalf("GoogleCloudPlaceholderV1 not found")
+	}
+	codec.Dependencies[idx].Required = true
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)

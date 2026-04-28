@@ -49,7 +49,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "GET",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("operations"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
 						},
 					},
 				},
@@ -70,7 +70,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "POST",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("keys"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys"),
 						},
 					},
 					BodyFieldPath: "key",
@@ -93,7 +93,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:         "POST",
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithLiteral("data"),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data"),
 						},
 					},
 					BodyFieldPath: "*",
@@ -116,7 +116,7 @@ func TestAnnotateMethod(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb:            "GET",
-							PathTemplate:    api.NewPathTemplate().WithLiteral("v1").WithLiteral("things"),
+							PathTemplate:    (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"),
 							QueryParameters: map[string]bool{"key": true},
 						},
 					},

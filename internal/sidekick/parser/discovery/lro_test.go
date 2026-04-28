@@ -44,7 +44,7 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -83,7 +83,7 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("compute").
 						WithLiteral("v1").
 						WithLiteral("projects").
@@ -130,7 +130,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -150,7 +150,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -176,7 +176,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").
@@ -196,7 +196,7 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("p").
 								WithVariableNamed("project").
 								WithLiteral("l").

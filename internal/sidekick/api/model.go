@@ -778,11 +778,6 @@ type PathVariable struct {
 	AllowReserved bool
 }
 
-// NewPathTemplate creates a new PathTemplate.
-func NewPathTemplate() *PathTemplate {
-	return &PathTemplate{}
-}
-
 // NewPathVariable creates a new path variable.
 func NewPathVariable(fields ...string) *PathVariable {
 	return &PathVariable{FieldPath: fields}
@@ -835,11 +830,6 @@ func (v *PathVariable) WithMatch() *PathVariable {
 func (v *PathVariable) WithAllowReserved() *PathVariable {
 	v.AllowReserved = true
 	return v
-}
-
-// NewPathSegment creates a new path segment.
-func NewPathSegment() *PathSegment {
-	return &PathSegment{}
 }
 
 // WithLiteral adds a literal to the path segment.

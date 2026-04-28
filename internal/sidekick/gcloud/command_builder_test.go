@@ -96,21 +96,21 @@ func TestRequestMethod(t *testing.T) {
 		{
 			name: "Standard Create",
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 			),
 			want: "",
 		},
 		{
 			name: "Custom Method with Verb",
 			method: api.NewTestMethod("ImportData").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
 			),
 			want: "importData",
 		},
 		{
 			name: "Custom Method without Verb (fallback to camelCase name)",
 			method: api.NewTestMethod("ExportData").WithVerb("POST").WithPathTemplate(
-				api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
+				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
 			),
 			want: "exportData",
 		},
@@ -168,7 +168,7 @@ func TestAsync(t *testing.T) {
 			name: "Create returns Resource",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
@@ -188,7 +188,7 @@ func TestAsync(t *testing.T) {
 			name: "Delete returns Empty",
 			method: func() *api.Method {
 				m := api.NewTestMethod("DeleteThing").WithVerb("DELETE").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()),
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: ".google.protobuf.Empty"}
 				return m
@@ -202,7 +202,7 @@ func TestAsync(t *testing.T) {
 			name: "Unrelated Response Type returns False",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
@@ -223,7 +223,7 @@ func TestAsync(t *testing.T) {
 			name: "Method Without Resource Returns Base Async",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CustomMethod").WithVerb("POST").WithPathTemplate(
-					api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithLiteral("things").WithVerb("doAction"),
+					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithLiteral("things").WithVerb("doAction"),
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "ActionResponse"}
 				m.Service = service
@@ -363,7 +363,7 @@ func TestNewCommand(t *testing.T) {
 							),
 						),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
 						WithLiteral("things"))
@@ -394,7 +394,7 @@ func TestNewCommand(t *testing.T) {
 						),
 						api.NewTestField("update_mask").WithType(api.TypezMessage),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("thing", "name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()))
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
@@ -431,7 +431,7 @@ func TestNewCommand(t *testing.T) {
 					WithInput(api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing_id").WithType(api.TypezString),
 					)).
-					WithPathTemplate(api.NewPathTemplate().
+					WithPathTemplate((&api.PathTemplate{}).
 						WithLiteral("v1").
 						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
 						WithLiteral("things"))
@@ -554,7 +554,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
 						},
 					},
 				}
@@ -588,7 +588,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
 						},
 					},
 				}
@@ -627,7 +627,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -694,7 +694,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -724,7 +724,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
 						},
 					},
 					BodyFieldPath: "*",
@@ -776,7 +776,7 @@ func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
 	m.PathInfo = &api.PathInfo{
 		Bindings: []*api.PathBinding{
 			{
-				PathTemplate: api.NewPathTemplate().WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+				PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
 			},
 		},
 		BodyFieldPath: "*",

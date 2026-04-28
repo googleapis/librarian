@@ -16,7 +16,7 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable {
+public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable {
   {{#Fields}}
   {{^IsOneOf}}
 
@@ -81,4 +81,12 @@ public struct {{Codec.Name}}: Codable, Equatable {
 
   {{> /templates/common/oneof}}
   {{/OneOfs}}
+
+  public static var _anyTypeUrl: String { return "{{Codec.TypeURL}}" }
+  public init(fromAny any: {{Codec.Model.WktPackage}}.`Any`) throws {
+    self = try {{Codec.Model.WktPackage}}._slowAnyDeserialize(Self.self, from: any)
+  }
+  public func _pack() throws -> {{Codec.Model.WktPackage}}.Struct {
+    return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
+  }
 }

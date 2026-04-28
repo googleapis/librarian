@@ -1855,7 +1855,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("foo"),
 						},
@@ -1880,7 +1880,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("foo"),
 						},
@@ -1901,7 +1901,7 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v1").
 								WithLiteral("thing"),
 						},
@@ -2191,19 +2191,19 @@ func TestPathFmt(t *testing.T) {
 	}{
 		{
 			"/v1/fixed",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("fixed"),
 		},
 		{
 			"/v1/{}",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("parent"),
 		},
 		{
 			"/v1/{}",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariable(api.NewPathVariable("parent").
 					WithLiteral("projects").
@@ -2213,14 +2213,14 @@ func TestPathFmt(t *testing.T) {
 		},
 		{
 			"/v1/{}:action",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("parent").
 				WithVerb("action"),
 		},
 		{
 			"/v1/projects/{}/locations/{}/secrets/{}:action",
-			api.NewPathTemplate().
+			(&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").

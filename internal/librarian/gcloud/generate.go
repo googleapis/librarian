@@ -88,7 +88,7 @@ func generateAPI(api *config.API, googleapisDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	return sidekickgcloud.Generate(model, &provider.Config{}, outDir, baseModule)
+	return sidekickgcloud.Generate(model, nil, outDir, baseModule)
 }
 
 // collectProtos returns proto file paths under apiPath, relative to

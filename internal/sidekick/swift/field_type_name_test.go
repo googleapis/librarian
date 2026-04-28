@@ -384,6 +384,7 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 	wantRequired := map[string]bool{
 		"google.cloud.external.v1": true,
 		"google.cloud.unused.v1":   false,
+		"google.protobuf":          false,
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {
@@ -428,6 +429,7 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 	wantRequired := map[string]bool{
 		"google.cloud.external.v1": true,
 		"google.cloud.unused.v1":   false,
+		"google.protobuf":          false,
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {

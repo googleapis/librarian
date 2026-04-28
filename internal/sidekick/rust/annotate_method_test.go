@@ -217,7 +217,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb:         "POST",
-					PathTemplate: api.NewPathTemplate(),
+					PathTemplate: &api.PathTemplate{},
 				},
 			},
 		},
@@ -233,7 +233,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: api.NewPathTemplate().
+					PathTemplate: (&api.PathTemplate{}).
 						WithLiteral("projects").
 						WithVariableNamed("project").
 						WithLiteral("zones").
@@ -259,7 +259,7 @@ func annotateMethodModel(t *testing.T) *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb:         "GET",
-					PathTemplate: api.NewPathTemplate(),
+					PathTemplate: &api.PathTemplate{},
 				},
 			},
 		},
@@ -293,7 +293,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-			m.PathInfo.Bindings[0].PathTemplate = api.NewPathTemplate().
+			m.PathInfo.Bindings[0].PathTemplate = (&api.PathTemplate{}).
 				WithLiteral("projects").
 				WithVariableNamed("project").
 				WithLiteral("zones").
@@ -319,7 +319,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	mSelf.PathInfo.Bindings = []*api.PathBinding{
 		{
 			Verb: "GET",
-			PathTemplate: api.NewPathTemplate().
+			PathTemplate: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
 			TargetResource: &api.TargetResource{
@@ -329,7 +329,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 		{
 			Verb: "GET",
-			PathTemplate: api.NewPathTemplate().
+			PathTemplate: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithLiteral("projects").
 				WithVariableNamed("project").
@@ -344,7 +344,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 		{
 			Verb:         "GET",
-			PathTemplate: api.NewPathTemplate(),
+			PathTemplate: &api.PathTemplate{},
 		},
 	}
 
@@ -476,7 +476,7 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 				},
 			},
 			binding: &api.PathBinding{
-				PathTemplate: api.NewPathTemplate().
+				PathTemplate: (&api.PathTemplate{}).
 					WithLiteral("compute").
 					WithLiteral("v1").
 					WithLiteral("projects").

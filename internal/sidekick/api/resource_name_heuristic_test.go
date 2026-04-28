@@ -37,7 +37,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: NewPathTemplate().
+										PathTemplate: (&PathTemplate{}).
 											WithLiteral("users").WithVariableNamed("user").
 											WithLiteral("widgets").WithVariableNamed("widget"),
 									},
@@ -68,7 +68,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: NewPathTemplate().
+										PathTemplate: (&PathTemplate{}).
 											WithLiteral("internal").WithVariableNamed("id"),
 									},
 								},
@@ -96,7 +96,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: NewPathTemplate().
+										PathTemplate: (&PathTemplate{}).
 											WithLiteral("internal").WithVariableNamed("id"),
 									},
 								},
@@ -124,7 +124,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: NewPathTemplate().
+										PathTemplate: (&PathTemplate{}).
 											WithLiteral("v1").
 											WithVariable(&PathVariable{
 												FieldPath: []string{"name"},
