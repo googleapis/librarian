@@ -349,7 +349,7 @@ func TestAppendLines(t *testing.T) {
 				t.Fatal(err)
 			}
 			if err := appendLines(path, test.lines); err != nil {
-				t.Fatalf("AppendLines() error = %v", err)
+				t.Fatal(err)
 			}
 			got, err := os.ReadFile(path)
 			if err != nil {

@@ -45,9 +45,7 @@ const (
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
-var (
-	errTargetDir = errors.New("target directory does not exist")
-)
+var errTargetDir = errors.New("target directory does not exist")
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
@@ -138,7 +136,6 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 			}
 		}
 	}
-
 	return newVersions, nil
 }
 

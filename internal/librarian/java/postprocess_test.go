@@ -414,11 +414,11 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
 				released, _ := deriveLastReleasedVersion(library.Version)
 				want := []string{
-					fmt.Sprintf("%s:%s:%s", apiCoords.Proto.ArtifactID, released, library.Version),
-					fmt.Sprintf("%s:%s:%s", apiCoords.GRPC.ArtifactID, released, library.Version),
-					fmt.Sprintf("%s:%s:%s", apiCoords.GAPIC.ArtifactID, released, library.Version),
-					fmt.Sprintf("%s:%s:%s", apiCoords.BOM.ArtifactID, released, library.Version),
-					fmt.Sprintf("%s:%s:%s", apiCoords.Parent.ArtifactID, released, library.Version),
+					formatVersionEntry(apiCoords.Proto.ArtifactID, released, library.Version),
+					formatVersionEntry(apiCoords.GRPC.ArtifactID, released, library.Version),
+					formatVersionEntry(apiCoords.GAPIC.ArtifactID, released, library.Version),
+					formatVersionEntry(apiCoords.BOM.ArtifactID, released, library.Version),
+					formatVersionEntry(apiCoords.Parent.ArtifactID, released, library.Version),
 				}
 				sort.Strings(got)
 				sort.Strings(want)
@@ -428,6 +428,10 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func formatVersionEntry(artifactID, released, snapshot string) string {
+	return fmt.Sprintf("%s:%s:%s", artifactID, released, snapshot)
 }
 
 func TestDeriveLastReleasedVersion(t *testing.T) {
