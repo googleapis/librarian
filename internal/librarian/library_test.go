@@ -1098,7 +1098,7 @@ func TestMergeJava(t *testing.T) {
 				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				ClientDocumentationOverride:  "doc",
-				CloudAPI:                     boolPtr(false),
+				CloudAPI:                     new(false),
 				CodeownerTeam:                "team",
 				DistributionNameOverride:     "dist",
 				ExcludedDependencies:         "ex-dep",
@@ -1113,7 +1113,7 @@ func TestMergeJava(t *testing.T) {
 				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
-				BillingRequired:              boolPtr(false),
+				BillingRequired:              new(false),
 				RestDocumentation:            "rest",
 				RpcDocumentation:             "rpc",
 			},
@@ -1122,7 +1122,7 @@ func TestMergeJava(t *testing.T) {
 				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
 				ClientDocumentationOverride:  "doc",
-				CloudAPI:                     boolPtr(false),
+				CloudAPI:                     new(false),
 				CodeownerTeam:                "team",
 				DistributionNameOverride:     "dist",
 				ExcludedDependencies:         "ex-dep",
@@ -1137,7 +1137,7 @@ func TestMergeJava(t *testing.T) {
 				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
-				BillingRequired:              boolPtr(false),
+				BillingRequired:              new(false),
 				RestDocumentation:            "rest",
 				RpcDocumentation:             "rpc",
 			},
@@ -1408,8 +1408,4 @@ func TestMergeRust(t *testing.T) {
 			}
 		})
 	}
-}
-
-func boolPtr(b bool) *bool {
-	return &b
 }
