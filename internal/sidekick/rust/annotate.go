@@ -635,14 +635,14 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 	// used for sample generation.
 	// External enums and messages are the ones that have yet
 	// to be annotated.
-	for _, e := range model.State.EnumByID {
+	for e := range model.AllEnums() {
 		if e.Codec == nil {
 			if err := codec.annotateEnum(e, model, false); err != nil {
 				return nil, err
 			}
 		}
 	}
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		if m.Codec == nil {
 			if err := codec.annotateMessage(m, model, false); err != nil {
 				return nil, err
@@ -801,7 +801,7 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 	// will lack any feature gates, but may depend on messages that do.
 	// Change them to work only if all features are enabled.
 	slices.Sort(allFeatures)
-	for _, msg := range model.State.MessageByID {
+	for msg := range model.AllMessages() {
 		if msg.Codec == nil {
 			continue
 		}
@@ -812,7 +812,7 @@ func (c *codec) addFeatureAnnotations(model *api.API, ann *modelAnnotations) {
 		annotation.FeatureGatesOp = "all"
 		annotation.FeatureGates = allFeatures
 	}
-	for _, enum := range model.State.EnumByID {
+	for enum := range model.AllEnums() {
 		if enum.Codec == nil {
 			continue
 		}
