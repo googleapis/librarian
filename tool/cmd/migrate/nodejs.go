@@ -183,7 +183,7 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 
 		var filteredAPIs []*config.API
 		for _, api := range apis {
-			if strings.HasSuffix(api.Path, "/v1small") {
+			if libraryName == "google-cloud-compute" && api.Path == "google/cloud/compute/v1small" {
 				continue
 			}
 			filteredAPIs = append(filteredAPIs, api)

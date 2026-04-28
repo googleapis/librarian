@@ -554,7 +554,7 @@ func updateSnippetMetadataVersion(outDir, version string) error {
 		// update v1small. This package is not meant to be used and will be
 		// deprecated in the future, but for now (during the migration period) it
 		// will be set to not be maintained.
-		if strings.Contains(path, "v1small") {
+		if filepath.Base(filepath.Dir(path)) == "v1small" {
 			continue
 		}
 		if err := updateVersionInFile(path, version); err != nil {
