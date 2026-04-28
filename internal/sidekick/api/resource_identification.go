@@ -34,7 +34,10 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			if method.PathInfo == nil {
-				continue
+				if !enableHeuristics {
+					continue
+				}
+				method.PathInfo = &PathInfo{}
 			}
 			if len(method.PathInfo.Bindings) == 0 && enableHeuristics {
 				method.PathInfo.Bindings = []*PathBinding{{
@@ -42,7 +45,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 				}}
 			}
 			for _, binding := range method.PathInfo.Bindings {
-				if err := identifyTargetResourceForBinding(model, method, binding, vocabulary, enableHeuristics); err != nil {
+				if err := identifyTargetResourceForBinding(method, binding, vocabulary, enableHeuristics); err != nil {
 					return err
 				}
 			}
@@ -52,7 +55,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 }
 
 // identifyTargetResourceForBinding processes a single path binding to identify its target resource.
-func identifyTargetResourceForBinding(model *API, method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
+func identifyTargetResourceForBinding(method *Method, binding *PathBinding, vocabulary map[string]bool, enableHeuristics bool) error {
 	if binding.PathTemplate == nil {
 		return nil
 	}
@@ -80,7 +83,7 @@ func identifyTargetResourceForBinding(model *API, method *Method, binding *PathB
 
 	// Fallback heuristic for methods without variable path templates
 	if enableHeuristics {
-		target, err := identifyFallbackHeuristicTarget(model, method)
+		target, err := identifyFallbackHeuristicTarget(method, vocabulary)
 		if err != nil {
 			return err
 		}
@@ -93,20 +96,21 @@ func identifyTargetResourceForBinding(model *API, method *Method, binding *PathB
 	return nil
 }
 
-func identifyFallbackHeuristicTarget(model *API, method *Method) (*TargetResource, error) {
+func identifyFallbackHeuristicTarget(method *Method, vocabulary map[string]bool) (*TargetResource, error) {
 	if method.InputType == nil {
 		return nil, nil
 	}
 
 	var targetPath []string
 
-	// Rule 1: Direct String Fields in priority order
-	priorities := []string{"name", "bucket", "parent", "resource", "destination_name", "parent_id", "target_resource", "destinationName", "parentId", "targetResource"}
-	for _, priority := range priorities {
-		for _, f := range method.InputType.Fields {
-			if f.Name == priority && f.Typez == STRING_TYPE {
-				targetPath = []string{f.Name}
-				break
+	// Rule 1: Resource Message Check (Strong Signal)
+	for _, f := range method.InputType.Fields {
+		if f.Typez == MESSAGE_TYPE && f.MessageType != nil && f.MessageType.Resource != nil {
+			for _, nf := range f.MessageType.Fields {
+				if nf.Name == "name" && nf.Typez == STRING_TYPE {
+					targetPath = []string{f.Name, nf.Name}
+					break
+				}
 			}
 		}
 		if targetPath != nil {
@@ -114,17 +118,30 @@ func identifyFallbackHeuristicTarget(model *API, method *Method) (*TargetResourc
 		}
 	}
 
-	// Rule 2: Nested Fields
+	// Rule 2: Vocabulary Match (Medium Signal)
 	if targetPath == nil {
 		for _, f := range method.InputType.Fields {
-			if f.Typez == MESSAGE_TYPE && f.TypezID != "" {
-				if msg, ok := model.State.MessageByID[f.TypezID]; ok {
-					for _, nf := range msg.Fields {
-						if nf.Name == "name" && nf.Typez == STRING_TYPE {
-							targetPath = []string{f.Name, nf.Name}
-							break
-						}
-					}
+			if f.Typez == STRING_TYPE {
+				if vocabulary[f.Name] {
+					targetPath = []string{f.Name}
+					break
+				}
+				if vocabulary[f.Name+"s"] || vocabulary[f.Name+"es"] {
+					targetPath = []string{f.Name}
+					break
+				}
+			}
+		}
+	}
+
+	// Rule 3: Fallback to Priority List (Weak Signal)
+	if targetPath == nil {
+		priorities := []string{"name", "bucket", "parent", "resource", "destination_name", "parent_id", "target_resource", "destinationName", "parentId", "targetResource"}
+		for _, priority := range priorities {
+			for _, f := range method.InputType.Fields {
+				if f.Name == priority && f.Typez == STRING_TYPE {
+					targetPath = []string{f.Name}
+					break
 				}
 			}
 			if targetPath != nil {
