@@ -125,6 +125,7 @@ This document describes the schema for the librarian.yaml.
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
+| `gcloud` | [GcloudSurface](#gcloudsurface-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
@@ -221,6 +222,12 @@ This document describes the schema for the librarian.yaml.
 | `from` | string |  |
 | `to` | string |  |
 | `wire_name` | string |  |
+
+## GcloudSurface Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `generate_operations` | bool (optional) | Indicates whether to generate top-level operations commands. |
 
 ## GoAPI Configuration
 
