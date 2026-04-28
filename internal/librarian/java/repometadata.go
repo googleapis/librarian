@@ -140,7 +140,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		if library.Java.ClientDocumentationOverride != "" {
 			metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 		}
-		metadata.RequiresBilling = !library.Java.BillingNotRequired
+		metadata.RequiresBilling = library.Java.BillingRequired == nil || *library.Java.BillingRequired
 		// Java only fields
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam

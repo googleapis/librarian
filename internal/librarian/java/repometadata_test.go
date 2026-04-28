@@ -102,7 +102,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				NamePrettyOverride:           "Custom Pretty Name",
 				ProductDocumentationOverride: "https://custom.docs",
 				ClientDocumentationOverride:  "https://custom.client.docs",
-				BillingNotRequired:           true,
+				BillingRequired:              new(false),
 				LibraryTypeOverride:          "OTHER",
 			},
 			want: &repoMetadata{
