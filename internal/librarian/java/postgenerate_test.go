@@ -285,27 +285,6 @@ func copyDir(src, dest string) error {
 }
 
 func TestAppendVersions(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-	versionsPath := filepath.Join(tmpDir, versionsFileName)
-	if err := os.WriteFile(versionsPath, []byte("a:1.0.0\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	versions := []string{"b:2.0.0"}
-	if err := appendVersions(tmpDir, versions); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(versionsPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := "a:1.0.0\nb:2.0.0\n"
-	if diff := cmp.Diff(want, string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestAppendLines(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		initial string
@@ -320,38 +299,39 @@ func TestAppendLines(t *testing.T) {
 		},
 		{
 			name:    "already has newline",
-			initial: "content\n",
-			lines:   []string{"a:1.0.0"},
-			want:    "content\na:1.0.0\n",
+			initial: "a:1.0.0\n",
+			lines:   []string{"b:2.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\n",
 		},
 		{
 			name:    "missing newline",
-			initial: "content",
-			lines:   []string{"a:1.0.0"},
-			want:    "content\na:1.0.0\n",
+			initial: "a:1.0.0",
+			lines:   []string{"b:2.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\n",
 		},
 		{
 			name:    "multiple lines missing newline",
-			initial: "content",
-			lines:   []string{"a:1.0.0", "b:2.0.0"},
-			want:    "content\na:1.0.0\nb:2.0.0\n",
+			initial: "a:1.0.0",
+			lines:   []string{"b:2.0.0", "c:3.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\nc:3.0.0\n",
 		},
 		{
 			name:    "no lines does nothing",
-			initial: "content",
+			initial: "a:1.0.0\n",
 			lines:   nil,
-			want:    "content",
+			want:    "a:1.0.0\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			path := filepath.Join(t.TempDir(), "test.txt")
-			if err := os.WriteFile(path, []byte(test.initial), 0644); err != nil {
+			tmpDir := t.TempDir()
+			versionsPath := filepath.Join(tmpDir, versionsFileName)
+			if err := os.WriteFile(versionsPath, []byte(test.initial), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := appendLines(path, test.lines); err != nil {
+			if err := appendVersions(tmpDir, test.lines); err != nil {
 				t.Fatal(err)
 			}
-			got, err := os.ReadFile(path)
+			got, err := os.ReadFile(versionsPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -362,9 +342,9 @@ func TestAppendLines(t *testing.T) {
 	}
 }
 
-func TestAppendLines_Error(t *testing.T) {
+func TestAppendVersions_Error(t *testing.T) {
 	t.Parallel()
-	if err := appendLines("/non/existent/path", []string{"line"}); err == nil {
-		t.Error("AppendLines() expected error for non-existent file, got nil")
+	if err := appendVersions("/non/existent/path", []string{"line"}); err == nil {
+		t.Error("appendVersions() expected error for non-existent file, got nil")
 	}
 }

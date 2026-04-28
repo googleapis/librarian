@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -104,46 +105,25 @@ func appendVersions(repoPath string, versions []string) error {
 // appendLines appends the given lines to an existing file, ensuring that it
 // ends with a newline character before appending. It returns an error if the
 // file does not exist.
-func appendLines(path string, lines []string) (err error) {
+func appendLines(path string, lines []string) error {
 	if len(lines) == 0 {
 		return nil
 	}
-	// os.O_RDWR is required to read the last byte for the trailing newline check.
-	f, err := os.OpenFile(path, os.O_RDWR|os.O_APPEND, 0644)
+	existing, err := os.ReadFile(path)
 	if err != nil {
 		return err
 	}
-	defer func() {
-		if cerr := f.Close(); cerr != nil && err == nil {
-			err = cerr
-		}
-	}()
-	if err := ensureTrailingNewline(f); err != nil {
-		return err
+	var buf bytes.Buffer
+	buf.Write(existing)
+	// Ensure the file ends with a newline before appending.
+	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
+		buf.WriteByte('\n')
 	}
 	for _, line := range lines {
-		if _, err := fmt.Fprintln(f, line); err != nil {
-			return err
-		}
+		buf.WriteString(line)
+		buf.WriteByte('\n')
 	}
-	return nil
-}
-
-func ensureTrailingNewline(f *os.File) error {
-	info, err := f.Stat()
-	if err != nil {
-		return err
-	}
-	if info.Size() == 0 {
-		return nil
-	}
-	var b [1]byte
-	// ReadAt doesn't affect the append offset.
-	if n, _ := f.ReadAt(b[:], info.Size()-1); n > 0 && b[0] != '\n' {
-		_, err := f.WriteString("\n") // Appends because of os.O_APPEND
-		return err
-	}
-	return nil
+	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 var ignoredDirs = map[string]bool{
