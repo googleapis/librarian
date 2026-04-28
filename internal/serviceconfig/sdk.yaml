@@ -2727,6 +2727,9 @@
     - java
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559768
+- path: google/devicesandservices/health/v4
+  languages:
+    - all
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
   languages:
