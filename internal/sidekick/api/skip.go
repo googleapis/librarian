@@ -62,7 +62,7 @@ func skipModelElementsImpl(model *API, skip func(id string) bool) {
 	model.Enums = slices.DeleteFunc(model.Enums, func(x *Enum) bool { return skip(x.ID) })
 	model.Messages = slices.DeleteFunc(model.Messages, func(x *Message) bool { return skip(x.ID) })
 	model.Services = slices.DeleteFunc(model.Services, func(x *Service) bool { return skip(x.ID) })
-	for _, service := range model.State.ServiceByID {
+	for service := range model.AllServices() {
 		service.Methods = slices.DeleteFunc(service.Methods, func(x *Method) bool { return skip(x.ID) })
 	}
 }
