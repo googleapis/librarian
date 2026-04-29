@@ -26,18 +26,18 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+          collection: methodcustom.projects.locations
+          disable_auto_completers: false
           name: location
           plural_name: locations
-          collection: methodcustom.projects.locations
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: target
         api_field: target
@@ -62,18 +62,18 @@
         help_text: The service account to use for the request.
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: service_account
+              help: The service_account id of the {resource} resource.
+              parameter_name: serviceAccountsId
+          collection: methodcustom.projects.serviceAccounts
+          disable_auto_completers: true
           name: service_account
           plural_name: serviceAccounts
-          collection: methodcustom.projects.serviceAccounts
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: serviceAccountsId
-              attribute_name: service_account
-              help: The service_account id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           serviceAccount: '{__relative_name__}'

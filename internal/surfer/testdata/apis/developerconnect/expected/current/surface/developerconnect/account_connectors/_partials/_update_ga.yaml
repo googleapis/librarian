@@ -32,21 +32,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: account_connector
+              help: The account_connector id of the {resource} resource.
+              parameter_name: accountConnectorsId
+          collection: developerconnect.projects.locations.accountConnectors
+          disable_auto_completers: false
           name: account_connector
           plural_name: accountConnectors
-          collection: developerconnect.projects.locations.accountConnectors
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: accountConnectorsId
-              attribute_name: account_connector
-              help: The account_connector id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: provider-oauth-config
         api_field: accountConnector.providerOauthConfig
@@ -129,5 +129,5 @@
       - developerconnect.projects.locations.operations
     extract_resource_result: true
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true

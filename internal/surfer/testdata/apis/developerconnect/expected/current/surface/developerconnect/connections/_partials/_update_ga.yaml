@@ -33,21 +33,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: connection
+              help: The connection id of the {resource} resource.
+              parameter_name: connectionsId
+          collection: developerconnect.projects.locations.connections
+          disable_auto_completers: false
           name: connection
           plural_name: connections
-          collection: developerconnect.projects.locations.connections
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: connectionsId
-              attribute_name: connection
-              help: The connection id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: github-config
         api_field: connection.githubConfig
@@ -200,5 +200,5 @@
       - developerconnect.projects.locations.operations
     extract_resource_result: true
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true

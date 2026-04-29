@@ -38,24 +38,24 @@
         is_primary_resource: true
         request_id_field: gitRepositoryLinkId
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: connection
+              help: The connection id of the {resource} resource.
+              parameter_name: connectionsId
+            - attribute_name: git_repository_link
+              help: The git_repository_link id of the {resource} resource.
+              parameter_name: gitRepositoryLinksId
+          collection: developerconnect.projects.locations.connections.gitRepositoryLinks
+          disable_auto_completers: false
           name: git_repository_link
           plural_name: gitRepositoryLinks
-          collection: developerconnect.projects.locations.connections.gitRepositoryLinks
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: connectionsId
-              attribute_name: connection
-              help: The connection id of the {resource} resource.
-            - parameter_name: gitRepositoryLinksId
-              attribute_name: git_repository_link
-              help: The git_repository_link id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: clone-uri
         api_field: gitRepositoryLink.cloneUri

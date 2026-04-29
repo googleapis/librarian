@@ -29,21 +29,21 @@
           `projects/*/locations/*/accountConnectors/*`.
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: account_connector
+              help: The account_connector id of the {resource} resource.
+              parameter_name: accountConnectorsId
+          collection: developerconnect.projects.locations.accountConnectors
+          disable_auto_completers: true
           name: account_connector
           plural_name: accountConnectors
-          collection: developerconnect.projects.locations.accountConnectors
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: accountConnectorsId
-              attribute_name: account_connector
-              help: The account_connector id of the {resource} resource.
-          disable_auto_completers: true
         required: true
         resource_method_params:
           accountConnector: '{__relative_name__}'

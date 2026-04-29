@@ -189,7 +189,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
-		return errTidyFailed
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
 	log.Printf("Successfully migrated %d Java libraries", len(cfg.Libraries))
 	return nil
