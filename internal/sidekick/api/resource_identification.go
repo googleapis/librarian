@@ -235,7 +235,7 @@ func identifyTargetFromMessage(model *API, method *Method, vocabulary map[string
 	}
 	h := "//" + host
 	template := []PathSegment{
-		{Literal: &h},
+		{Literal: h},
 		{Variable: &PathVariable{FieldPath: targetPath}},
 	}
 
@@ -258,7 +258,7 @@ func findResourceByVocabulary(model *API, inputType *Message, vocabulary map[str
 		// Case 2: Message field matches vocabulary, and has a "name" field inside
 		if f.Typez == TypezMessage && f.TypezID != "" {
 			if vocabulary[f.Name] || vocabulary[f.Name+"s"] || vocabulary[f.Name+"es"] {
-				if msg, ok := model.State.MessageByID[f.TypezID]; ok {
+				if msg := model.Message(f.TypezID); msg != nil {
 					for _, nf := range msg.Fields {
 						if nf.Name == "name" && nf.Typez == TypezString {
 							return []string{f.Name, nf.Name}
@@ -304,7 +304,7 @@ func findResourceInTopLevelFields(inputType *Message) []string {
 func findResourceInNestedMessageFields(model *API, inputType *Message) []string {
 	for _, f := range inputType.Fields {
 		if f.Typez == TypezMessage && f.TypezID != "" {
-			if msg, ok := model.State.MessageByID[f.TypezID]; ok {
+			if msg := model.Message(f.TypezID); msg != nil {
 				for _, nf := range msg.Fields {
 					if (nf.Name == "name" || nf.Name == "service_name") && nf.Typez == TypezString {
 						return []string{f.Name, nf.Name}
