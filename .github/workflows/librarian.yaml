@@ -48,9 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
-      - name: Fetch librarian.yaml from google-cloud-go
+      - name: Use mock librarian.yaml for tests
         run: |
-          curl -fsSL -o librarian.yaml https://raw.githubusercontent.com/googleapis/google-cloud-go/b04765d40282a80b9d2aedfdf9d492c9440f9d91/librarian.yaml
+          cp internal/librarian/golang/testdata/librarian.yaml .
       - name: Install tools
         run: |
           go run ./cmd/librarian install go
