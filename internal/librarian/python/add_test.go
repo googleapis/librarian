@@ -164,7 +164,7 @@ func TestValidateNewAPIs(t *testing.T) {
 				Python: &config.PythonPackage{
 					DefaultVersion: "v1",
 					OptArgsByAPI: map[string][]string{
-						"google/cloud/test/v1": []string{"x=y"},
+						"google/cloud/test/v1": {"x=y"},
 					},
 				},
 			},
