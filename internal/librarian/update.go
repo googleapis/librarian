@@ -123,12 +123,6 @@ func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config
 		return nil
 	}
 
-	// Source configuration specifically references a branch of the
-	// source repository.
-	if source.Branch != "" {
-		repo.Branch = source.Branch
-	}
-
 	oldCommit := source.Commit
 	oldSHA256 := source.SHA256
 
