@@ -128,6 +128,7 @@ func runUpdate(cfg *config.Config, targets []string) (*config.Config, error) {
 				return nil, err
 			}
 		} else {
+			// TODO(https://github.com/googleapis/librarian/issues/5075): change the update command to use hierarchical dot notation for sources.
 			if cfg.Sources == nil {
 				return nil, errEmptySources
 			}
