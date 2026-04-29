@@ -15,11 +15,13 @@
 package librarian
 
 import (
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -212,6 +214,11 @@ func TestGenerateCommand(t *testing.T) {
 				if _, err := os.Stat(postGeneratePath); err != nil {
 					t.Errorf("expected POST_GENERATE_README.md to exist, but got error: %v", err)
 				}
+			}
+
+			lockfilePath := filepath.Join(tempDir, ".librarian.lock")
+			if _, err := os.Stat(lockfilePath); err != nil {
+				t.Errorf("expected .librarian.lock to exist, but got error: %v", err)
 			}
 		})
 	}
@@ -474,5 +481,35 @@ func TestDefaultOutput(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestWriteLockFile(t *testing.T) {
+	tempDir := t.TempDir()
+	t.Chdir(tempDir)
+
+	cfg := &config.Config{
+		Language: "fake",
+		Version:  "v0.1.0",
+	}
+	if err := writeLockFile(cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	lockfilePath := filepath.Join(tempDir, ".librarian.lock")
+	b, err := os.ReadFile(lockfilePath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfgBytes, err := yaml.Marshal(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	expectedHash := sha256.Sum256(cfgBytes)
+	expectedChecksumStr := fmt.Sprintf("%x", expectedHash)
+
+	if !strings.Contains(string(b), expectedChecksumStr) {
+		t.Errorf("expected .librarian.lock to contain checksum %s, got:\n%s", expectedChecksumStr, string(b))
 	}
 }
