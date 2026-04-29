@@ -73,7 +73,7 @@ Examples:
 			&cli.BoolFlag{
 				Name:    "verbose",
 				Aliases: []string{"v"},
-				Usage:   "verbose output",
+				Usage:   "streams output of publishing commands executed",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {

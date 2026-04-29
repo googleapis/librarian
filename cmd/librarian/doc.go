@@ -224,6 +224,7 @@ Flags:
 	--dry-run                print commands without executing (legacy Rust-only flag)
 	--dry-run-keep-going     print commands without executing, don't stop on error (legacy Rust-only flag)
 	--skip-semver-checks     skip semantic versioning checks (legacy Rust-only flag)
+	--verbose, -v            streams output of publishing commands executed
 
 # Tag a release commit based on the libraries published
 
