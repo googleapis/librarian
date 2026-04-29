@@ -996,7 +996,7 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 
 // canBeNull returns whether the given field can have a `null` JSON serialization.
 func canBeNull(field *api.Field) bool {
-	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID];
+	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
 }
 
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
@@ -1025,9 +1025,9 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	// See https://protobuf.dev/programming-guides/json/#null-value
 	if canBeNull(field) {
 		decoder := annotate.decoder(field.Typez, field.TypezID)
-		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
-				"{(false,_) => %s, " +
-				"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) "+
+			"{(false,_) => %s, "+
+			"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
 	}
 
 	switch {
