@@ -56,7 +56,6 @@ var (
 	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
 	protobufTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(protobufTestTarball)))
 	showcaseTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(showcaseTestTarball)))
-	librarianTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(librarianTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
