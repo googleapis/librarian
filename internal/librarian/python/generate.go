@@ -113,10 +113,8 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	if library.Python == nil || !library.Python.SkipReadmeCopy {
-		if err := copyReadmeToDocsDir(outdir); err != nil {
-			return fmt.Errorf("failed to copy README to docs: %w", err)
-		}
+	if err := copyReadmeToDocsDir(library, outdir); err != nil {
+		return fmt.Errorf("failed to copy README to docs: %w", err)
 	}
 	return nil
 }
@@ -393,7 +391,9 @@ python_mono_repo.owlbot_main(%q)
 
 // copyReadmeToDocsDir copies README.rst to docs/README.rst.
 // This handles symlinks properly by reading content and writing a real file.
-func copyReadmeToDocsDir(outdir string) error {
+// This is a no-op if either the source doesn't exist, or the library is
+// handwritten and the target doesn't already exist.
+func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 	sourcePath := filepath.Join(outdir, "README.rst")
 	docsPath := filepath.Join(outdir, "docs")
 	destPath := filepath.Join(docsPath, "README.rst")
@@ -402,7 +402,13 @@ func copyReadmeToDocsDir(outdir string) error {
 	if _, err := os.Lstat(sourcePath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-
+	// If the library is handwritten and the target doesn't already exist, skip
+	// copying.
+	if len(lib.APIs) == 0 {
+		if _, err := os.Lstat(destPath); errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+	}
 	// Read content from source (follows symlinks)
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
