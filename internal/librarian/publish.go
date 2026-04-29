@@ -98,6 +98,7 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
+	command.Verbose = verbose
 	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, IgnoredChanges)
 }
 
