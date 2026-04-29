@@ -68,11 +68,11 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
-
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
+	tidyConfig(cfg)
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
@@ -220,6 +220,34 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	}
 
 	return lib
+}
+
+// isReleaseEmpty returns true if the release configuration is empty.
+func isReleaseEmpty(release *config.Release) bool {
+	return len(release.IgnoredChanges) == 0 && len(release.Preinstalled) == 0 && len(release.Tools) == 0
+}
+
+// isToolsEmpty returns true if the tools configuration is empty.
+func isToolsEmpty(tools *config.Tools) bool {
+	return len(tools.Cargo) == 0 && len(tools.NPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
+}
+
+// isDefaultEmpty returns true if the default configuration is empty.
+func isDefaultEmpty(def *config.Default) bool {
+	return len(def.Keep) == 0 && def.Output == "" && def.TagFormat == "" && def.Dotnet == nil && def.Dart == nil && def.Java == nil && def.Nodejs == nil && def.Rust == nil && def.Python == nil && def.Swift == nil
+}
+
+// tidyConfig removes unused sections from the configuration.
+func tidyConfig(cfg *config.Config) {
+	if cfg.Release != nil && isReleaseEmpty(cfg.Release) {
+		cfg.Release = nil
+	}
+	if cfg.Tools != nil && isToolsEmpty(cfg.Tools) {
+		cfg.Tools = nil
+	}
+	if cfg.Default != nil && isDefaultEmpty(cfg.Default) {
+		cfg.Default = nil
+	}
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
