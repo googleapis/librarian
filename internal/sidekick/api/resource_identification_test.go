@@ -613,8 +613,8 @@ func TestIdentifyTargetFromMessage(t *testing.T) {
 				InputType: &Message{Fields: test.fields},
 			}
 			model := &API{
-				Name:  "test-api",
-				State: &APIState{MessageByID: test.messages},
+				Name:        "test-api",
+				messageByID: test.messages,
 			}
 			method.Model = model
 

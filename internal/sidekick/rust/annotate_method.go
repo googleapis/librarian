@@ -636,19 +636,6 @@ func formatHttpResourceNameArgs(b *api.PathBinding, m *api.Method) []string {
 	return httpArgs
 }
 
-func formatResourceNameArgs(fieldPaths [][]string) []string {
-	var args []string
-	for _, path := range fieldPaths {
-		var rustNames []string
-		for _, p := range path {
-			rustNames = append(rustNames, toSnakeNoMangling(p))
-		}
-		varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
-		args = append(args, varName)
-	}
-	return args
-}
-
 func isIdempotent(p *api.PathInfo) string {
 	if len(p.Bindings) == 0 {
 		return "false"

@@ -42,6 +42,7 @@ func IdentifyTargetResources(model *API, enableHeuristics bool) error {
 			if len(method.PathInfo.Bindings) == 0 && enableHeuristics {
 				method.PathInfo.Bindings = []*PathBinding{{
 					PathTemplate: (&PathTemplate{}).WithLiteral("grpc").WithLiteral(method.InputTypeID),
+					Verb:         "POST",
 				}}
 			}
 			for _, binding := range method.PathInfo.Bindings {
