@@ -90,12 +90,16 @@ latest API definitions is:
 			if err != nil {
 				return err
 			}
-			return runUpdate(cfg, args)
+			updatedCfg, err := runUpdate(cfg, args)
+			if err != nil {
+				return err
+			}
+			return yaml.Write(config.LibrarianYAML, updatedCfg)
 		},
 	}
 }
 
-func runUpdate(cfg *config.Config, targets []string) error {
+func runUpdate(cfg *config.Config, targets []string) (*config.Config, error) {
 	endpoints := &fetch.Endpoints{
 		API:      githubAPI,
 		Download: githubDownload,
@@ -117,30 +121,27 @@ func runUpdate(cfg *config.Config, targets []string) error {
 			repo := fetch.RepoRef{Org: "googleapis", Name: "librarian", Branch: config.BranchMain}
 			commit, _, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			cfg, err = setConfigValue(cfg, "version", commit)
 			if err != nil {
-				return err
-			}
-			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
-				return err
+				return nil, err
 			}
 		} else {
 			if cfg.Sources == nil {
-				return errEmptySources
+				return nil, errEmptySources
 			}
 			source := sourcesMap[target]
 			repo := sourceRepos[target]
-			if err := updateSource(endpoints, repo, source, cfg); err != nil {
-				return err
+			if err := updateSource(endpoints, repo, source); err != nil {
+				return nil, err
 			}
 		}
 	}
-	return nil
+	return cfg, nil
 }
 
-func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config.Source, cfg *config.Config) error {
+func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config.Source) error {
 	if source == nil {
 		return nil
 	}
@@ -156,9 +157,6 @@ func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config
 	if oldCommit != commit || oldSHA256 != sha256 {
 		source.Commit = commit
 		source.SHA256 = sha256
-		if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
-			return err
-		}
 	}
 	return nil
 }
