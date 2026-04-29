@@ -188,35 +188,37 @@ A typical librarian workflow for adding a new client library is:
 	librarian add <api>            # onboard a new API into librarian.yaml
 	librarian generate <library>   # generate the client library
 
-# Update sources to the latest version
+# Update sources or version to the latest version
 
 Usage:
 
-	librarian update <sources...>
+	librarian update <paths...>
 
-update refreshes the upstream source repositories declared in
-librarian.yaml to their latest commits and updates the recorded commit
-SHAs in librarian.yaml accordingly.
+update refreshes the upstream source repositories or the librarian version declared in
+librarian.yaml to their latest commits and updates the recorded values
+in librarian.yaml accordingly.
 
-Each <source> names an upstream repository that librarian consumes:
+Supported paths:
 
-  - conformance: protocolbuffers/protobuf conformance tests
-  - discovery: googleapis/discovery-artifact-manager
-  - googleapis: googleapis/googleapis (the API definitions)
-  - protobuf: protocolbuffers/protobuf
-  - showcase: googleapis/gapic-showcase
+  - sources.conformance: protocolbuffers/protobuf conformance tests
+  - sources.discovery: googleapis/discovery-artifact-manager
+  - sources.googleapis: googleapis/googleapis (the API definitions)
+  - sources.protobuf: protocolbuffers/protobuf
+  - sources.showcase: googleapis/gapic-showcase
+  - version: the librarian tool version
 
-At least one source must be specified.
+At least one path must be specified.
 
 Examples:
 
-	librarian update googleapis
-	librarian update googleapis protobuf
+	librarian update sources.googleapis
+	librarian update sources.googleapis sources.protobuf
+	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
 
-	librarian update googleapis
+	librarian update sources.googleapis
 	librarian generate --all
 
 # Generate a client library

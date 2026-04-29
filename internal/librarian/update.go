@@ -18,6 +18,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -39,47 +40,58 @@ var (
 	errNoSourcesProvided = errors.New("at least one source must be provided")
 	errUnknownSource     = errors.New("unknown source")
 	errEmptySources      = errors.New("sources required in librarian.yaml")
+	errInvalidPath       = errors.New("invalid update path")
 )
 
 // updateCommand returns the `update` subcommand.
 func updateCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "update",
-		Usage: "update sources to the latest version",
-		Description: `update refreshes the upstream source repositories declared in
-librarian.yaml to their latest commits and updates the recorded commit
-SHAs in librarian.yaml accordingly.
+		Usage: "update sources or version to the latest version",
+		Description: `update refreshes the upstream source repositories or the librarian version declared in
+librarian.yaml to their latest commits and updates the recorded values
+in librarian.yaml accordingly.
 
-Each <source> names an upstream repository that librarian consumes:
+Supported paths:
 
-  - conformance: protocolbuffers/protobuf conformance tests
-  - discovery: googleapis/discovery-artifact-manager
-  - googleapis: googleapis/googleapis (the API definitions)
-  - protobuf: protocolbuffers/protobuf
-  - showcase: googleapis/gapic-showcase
+  - sources.conformance: protocolbuffers/protobuf conformance tests
+  - sources.discovery: googleapis/discovery-artifact-manager
+  - sources.googleapis: googleapis/googleapis (the API definitions)
+  - sources.protobuf: protocolbuffers/protobuf
+  - sources.showcase: googleapis/gapic-showcase
+  - version: the librarian tool version
 
-At least one source must be specified.
+At least one path must be specified.
 
 Examples:
 
-	librarian update googleapis
-	librarian update googleapis protobuf
+	librarian update sources.googleapis
+	librarian update sources.googleapis sources.protobuf
+	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
 
-	librarian update googleapis
+	librarian update sources.googleapis
 	librarian generate --all`,
-		UsageText: "librarian update <sources...>",
+		UsageText: "librarian update <paths...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()
 			if len(args) == 0 {
 				return errNoSourcesProvided
 			}
 			for _, arg := range args {
-				if _, ok := sourceRepos[arg]; !ok {
-					return fmt.Errorf("%w: %s", errUnknownSource, arg)
+				if arg == "version" {
+					continue
 				}
+				if strings.HasPrefix(arg, "sources.") {
+					name := strings.TrimPrefix(arg, "sources.")
+					if _, ok := sourceRepos[name]; !ok {
+						return fmt.Errorf("%w: %s", errUnknownSource, arg)
+					}
+					continue
+				}
+				return fmt.Errorf("%w: %s", errInvalidPath, arg)
 			}
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
@@ -90,29 +102,47 @@ latest API definitions is:
 	}
 }
 
-func runUpdate(cfg *config.Config, sourceNames []string) error {
-	if cfg.Sources == nil {
-		return errEmptySources
-	}
-
+func runUpdate(cfg *config.Config, paths []string) error {
 	endpoints := &fetch.Endpoints{
 		API:      githubAPI,
 		Download: githubDownload,
 	}
 
-	sourcesMap := map[string]*config.Source{
-		"conformance": cfg.Sources.Conformance,
-		"discovery":   cfg.Sources.Discovery,
-		"googleapis":  cfg.Sources.Googleapis,
-		"protobuf":    cfg.Sources.ProtobufSrc,
-		"showcase":    cfg.Sources.Showcase,
+	sourcesMap := map[string]*config.Source{}
+	if cfg.Sources != nil {
+		sourcesMap = map[string]*config.Source{
+			"conformance": cfg.Sources.Conformance,
+			"discovery":   cfg.Sources.Discovery,
+			"googleapis":  cfg.Sources.Googleapis,
+			"protobuf":    cfg.Sources.ProtobufSrc,
+			"showcase":    cfg.Sources.Showcase,
+		}
 	}
 
-	for _, name := range sourceNames {
-		source := sourcesMap[name]
-		repo := sourceRepos[name]
-		if err := updateSource(endpoints, repo, source, cfg); err != nil {
-			return err
+	for _, path := range paths {
+		if path == "version" {
+			repo := fetch.RepoRef{Org: "googleapis", Name: "librarian", Branch: config.BranchMain}
+			commit, _, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
+			if err != nil {
+				return err
+			}
+			cfg, err = setConfigValue(cfg, "version", commit)
+			if err != nil {
+				return err
+			}
+			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+				return err
+			}
+		} else if strings.HasPrefix(path, "sources.") {
+			if cfg.Sources == nil {
+				return errEmptySources
+			}
+			name := strings.TrimPrefix(path, "sources.")
+			source := sourcesMap[name]
+			repo := sourceRepos[name]
+			if err := updateSource(endpoints, repo, source, cfg); err != nil {
+				return err
+			}
 		}
 	}
 	return nil

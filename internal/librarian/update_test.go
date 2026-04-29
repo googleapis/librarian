@@ -40,11 +40,13 @@ const (
 	conformanceTestCommit  = "protobuf1234"
 	protobufTestCommit     = "protobuf1234"
 	showcaseTestCommit     = "showcase1234"
+	librarianTestCommit    = "librarian123"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
 	conformanceTestTarball = "protobuf-tarball-content"
 	protobufTestTarball    = "protobuf-tarball-content"
 	showcaseTestTarball    = "showcase-tarball-content"
+	librarianTestTarball   = "librarian-tarball-content"
 	unchangedPlaceholder   = "this-should-not-change"
 )
 
@@ -54,6 +56,7 @@ var (
 	conformanceTestSHA = fmt.Sprintf("%x", sha256.Sum256([]byte(conformanceTestTarball)))
 	protobufTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(protobufTestTarball)))
 	showcaseTestSHA    = fmt.Sprintf("%x", sha256.Sum256([]byte(showcaseTestTarball)))
+	librarianTestSHA   = fmt.Sprintf("%x", sha256.Sum256([]byte(librarianTestTarball)))
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
@@ -74,6 +77,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(protobufTestCommit))
 		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
 			w.Write([]byte(showcaseTestCommit))
+		case "/repos/googleapis/librarian/commits/" + config.BranchMain:
+			w.Write([]byte(librarianTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
@@ -82,6 +87,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(protobufTestTarball))
 		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
 			w.Write([]byte(showcaseTestTarball))
+		case "/googleapis/librarian/archive/" + librarianTestCommit + ".tar.gz":
+			w.Write([]byte(librarianTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -120,7 +127,7 @@ func TestUpdateCommand(t *testing.T) {
 	}{
 		{
 			name: "googleapis",
-			args: []string{"librarian", "update", "googleapis"},
+			args: []string{"librarian", "update", "sources.googleapis"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
 				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
@@ -132,7 +139,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "discovery",
-			args: []string{"librarian", "update", "discovery"},
+			args: []string{"librarian", "update", "sources.discovery"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Discovery.Commit = "this-should-be-changed"
 				cfg.Sources.Discovery.SHA256 = "this-should-be-changed"
@@ -144,7 +151,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "conformance",
-			args: []string{"librarian", "update", "conformance"},
+			args: []string{"librarian", "update", "sources.conformance"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Conformance.Commit = "this-should-be-changed"
 				cfg.Sources.Conformance.SHA256 = "this-should-be-changed"
@@ -156,7 +163,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "protobuf",
-			args: []string{"librarian", "update", "protobuf"},
+			args: []string{"librarian", "update", "sources.protobuf"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.ProtobufSrc.Commit = "this-should-change"
 				cfg.Sources.ProtobufSrc.SHA256 = "this-should-change"
@@ -168,7 +175,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "showcase",
-			args: []string{"librarian", "update", "showcase"},
+			args: []string{"librarian", "update", "sources.showcase"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Showcase.Commit = "this-should-change"
 				cfg.Sources.Showcase.SHA256 = "this-should-change"
@@ -180,7 +187,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "multiple sources",
-			args: []string{"librarian", "update", "discovery", "googleapis"},
+			args: []string{"librarian", "update", "sources.discovery", "sources.googleapis"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
 				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
@@ -192,6 +199,16 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
 				cfg.Sources.Discovery.Commit = discoveryTestCommit
 				cfg.Sources.Discovery.SHA256 = discoveryTestSHA
+			},
+		},
+		{
+			name: "version",
+			args: []string{"librarian", "update", "version"},
+			setup: func(cfg *config.Config) {
+				cfg.Version = "this-should-change"
+			},
+			wantConfig: func(cfg *config.Config) {
+				cfg.Version = librarianTestCommit
 			},
 		},
 	} {
@@ -237,12 +254,17 @@ func TestUpdateCommand_Errors(t *testing.T) {
 		},
 		{
 			name:    "unknown source",
-			args:    []string{"librarian", "update", "unknown"},
+			args:    []string{"librarian", "update", "sources.unknown"},
 			wantErr: errUnknownSource,
 		},
 		{
+			name:    "invalid path",
+			args:    []string{"librarian", "update", "invalid.path"},
+			wantErr: errInvalidPath,
+		},
+		{
 			name: "empty sources",
-			args: []string{"librarian", "update", "googleapis"},
+			args: []string{"librarian", "update", "sources.googleapis"},
 			conf: func() *config.Config {
 				cfg := sample.Config()
 				cfg.Sources = nil
