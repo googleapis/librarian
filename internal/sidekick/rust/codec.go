@@ -369,7 +369,7 @@ type packagez struct {
 }
 
 func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
-	hasServices := len(model.State.ServiceByID) > 0
+	hasServices := len(model.Services) > 0
 	hasLROs := false
 	hasAutoPopulation := false
 	for _, s := range model.Services {
