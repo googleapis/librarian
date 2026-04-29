@@ -402,7 +402,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		cfg     *config.Config
-		library *config.Library
 		setup   func(t *testing.T, outDir string)
 		wantErr error
 	}{
@@ -492,13 +491,9 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, outDir)
 			}
-			l := library
-			if test.library != nil {
-				l = test.library
-			}
 			params := libraryPostProcessParams{
 				cfg:      test.cfg,
-				library:  l,
+				library:  library,
 				outDir:   outDir,
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
