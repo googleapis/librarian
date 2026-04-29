@@ -32,6 +32,104 @@ Global flags:
 
 	--verbose, -v    enable verbose logging
 
+# Read and write librarian.yaml configuration
+
+Usage:
+
+	librarian config [get|set] [path] [value]
+
+# Get a configuration value
+
+Usage:
+
+	librarian config get [path]
+
+# Set a configuration value
+
+Usage:
+
+	librarian config set [path] [value]
+
+# Add a new client library
+
+Usage:
+
+	librarian add <apis...>
+
+add registers one or more APIs as a new client library in librarian.yaml.
+
+Each <api> is a path within the configured googleapis source, such as
+"google/cloud/secretmanager/v1". The library name and other defaults are
+derived from the first API path using language-specific rules.
+
+Multiple API paths may be passed to bundle them into a single library. To
+add a preview client of an existing library, prefix every API path with
+"preview/"; preview and non-preview APIs cannot be mixed in one invocation.
+
+Examples:
+
+	librarian add google/cloud/secretmanager/v1
+	librarian add google/cloud/foo/v1 google/cloud/foo/v1beta
+	librarian add preview/google/cloud/secretmanager/v1beta
+
+A typical librarian workflow for adding a new client library is:
+
+	librarian add <api>            # onboard a new API into librarian.yaml
+	librarian generate <library>   # generate the client library
+
+# Generate a client library
+
+Usage:
+
+	librarian generate <library>
+
+generate produces client library code from the APIs configured in
+librarian.yaml.
+
+The library name argument selects a single library to regenerate. Use the
+--all flag to regenerate every library in the workspace instead. Exactly
+one of <library> or --all must be provided.
+
+Generation is delegated to the language-specific tooling configured in
+librarian.yaml. Libraries marked with skip_generate are skipped.
+
+Examples:
+
+	librarian generate <library>   # regenerate one library
+	librarian generate --all       # regenerate every library
+
+Flags:
+
+	--all       generate all libraries
+
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all
+
+# Bump version numbers and prepare release artifacts
+
+Usage:
+
+	librarian bump <library>
+
+bump updates version numbers and prepares the files needed for a new release.
+
+If a library name is given, only that library is updated. The --all flag updates every
+library in the workspace. When a library is specified explicitly, the --version flag can
+be used to override the new version.
+
+Examples:
+
+	librarian bump <library>           # update version for one library
+	librarian bump --all               # update versions for all libraries
+
+Flags:
+
+	--all             update all libraries in the workspace
+	--version string  specific version to update to; not valid with --all
+
 # Install tool dependencies for a language
 
 Usage:

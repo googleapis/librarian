@@ -247,8 +247,8 @@ func TestExamples(t *testing.T) {
 			t.Fatalf("Failed to make API for Protobuf %v", err)
 		}
 		t.Run(test.methodID, func(t *testing.T) {
-			got, ok := api.State.MethodByID[test.methodID]
-			if !ok {
+			got := api.Method(test.methodID)
+			if got == nil {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
 			}
 			if diff := cmp.Diff(test.want, got.Routing); diff != "" {
