@@ -151,6 +151,7 @@
   description: Card interface displayed in a Google Chat message or Google Workspace Add-on.
   documentation_uri: https://developers.google.com/chat
   languages:
+    - java
     - python
   skip_rest_numeric_enums:
     - python
@@ -534,6 +535,7 @@
 - path: google/cloud/audit
   documentation_uri: https://cloud.google.com/logging/docs/audit
   languages:
+    - java
     - python
 - path: google/cloud/auditmanager/v1
   languages:
@@ -2816,6 +2818,7 @@
 - path: google/geo/type
   documentation_uri: https://mapsplatform.google.com/maps-products
   languages:
+    - java
     - python
   skip_rest_numeric_enums:
     - python
@@ -3254,6 +3257,7 @@
 - path: google/shopping/type
   documentation_uri: https://developers.google.com/merchant/api
   languages:
+    - java
     - go
     - python
   skip_rest_numeric_enums:
