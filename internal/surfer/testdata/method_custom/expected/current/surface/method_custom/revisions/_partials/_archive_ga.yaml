@@ -26,18 +26,18 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: revision
+              help: The revision id of the {resource} resource.
+              parameter_name: revisionsId
+          collection: methodcustom.projects.revisions
+          disable_auto_completers: false
           name: revision
           plural_name: revisions
-          collection: methodcustom.projects.revisions
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: revisionsId
-              attribute_name: revision
-              help: The revision id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1

@@ -37,20 +37,20 @@
         is_positional: false
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: organization
+              help: The organization id of the {resource} resource.
+              parameter_name: organizationsId
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+          collection: iam.organizations.locations
+          disable_auto_completers: true
           name: location
           plural_name: locations
-          collection: iam.organizations.locations
-          attributes:
-            - parameter_name: organizationsId
-              attribute_name: organization
-              help: The organization id of the {resource} resource.
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-          disable_auto_completers: true
         required: true
   request:
-    api_version: v3alpha
+    api_version: v3
     collection:
       - iam.organizations.locations.principalAccessBoundaryPolicies
   response:

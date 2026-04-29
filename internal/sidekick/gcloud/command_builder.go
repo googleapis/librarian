@@ -56,11 +56,16 @@ func (b *commandBuilder) build() (*Command, error) {
 
 	useUpdateMask := b.updateMask()
 
+	apiVersion, err := provider.APIVersionFromMethod(b.method)
+	if err != nil {
+		return nil, err
+	}
+
 	return &Command{
 		Name:                 b.name(),
 		Hidden:               b.hidden(),
 		HelpText:             b.helpText(),
-		APIVersion:           provider.APIVersion(b.overrides),
+		APIVersion:           apiVersion,
 		Collection:           b.collectionPath(false),
 		Method:               b.requestMethod(),
 		Arguments:            args,

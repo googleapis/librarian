@@ -545,3 +545,51 @@ func TestGetMethodHelpText(t *testing.T) {
 		})
 	}
 }
+
+func TestAPIVersionFromMethod(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		method *api.Method
+		want   string
+	}{
+		{
+			name: "Valid Package",
+			method: &api.Method{
+				Service: &api.Service{
+					Package: "google.cloud.parallelstore.v1",
+				},
+			},
+			want: "v1",
+		},
+		{
+			name: "Empty Package",
+			method: &api.Method{
+				Service: &api.Service{
+					Package: "",
+				},
+			},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := APIVersionFromMethod(test.method)
+			if err != nil {
+				t.Fatalf("APIVersionFromMethod() unexpected error: %v", err)
+			}
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestAPIVersionFromMethod_Error(t *testing.T) {
+	method := &api.Method{
+		Service: nil,
+	}
+	_, err := APIVersionFromMethod(method)
+	if err == nil {
+		t.Errorf("APIVersionFromMethod() expected error for nil Service, got nil")
+	}
+}
