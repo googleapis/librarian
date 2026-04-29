@@ -758,6 +758,31 @@ type NodejsAPI struct {
 
 // GcloudSurface contains gcloud-specific library configuration.
 type GcloudSurface struct {
-	// GenerateOperations indicates whether to generate top-level operations commands.
-	GenerateOperations *bool `yaml:"generate_operations,omitempty"`
+	// HelpText contains help text overrides for the surface.
+	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
+}
+
+// GcloudHelpTextRules contains rules for various types of help text within an API
+// surface.
+type GcloudHelpTextRules struct {
+	// MethodRules defines help text rules specifically for API methods (commands).
+	MethodRules []*GcloudHelpTextRule `yaml:"method_rules,omitempty"`
+
+	// FieldRules defines help text rules specifically for individual fields (flags/arguments).
+	FieldRules []*GcloudHelpTextRule `yaml:"field_rules,omitempty"`
+}
+
+// GcloudHelpTextRule maps an API selector to its corresponding help text content.
+type GcloudHelpTextRule struct {
+	// Selector is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method").
+	Selector string `yaml:"selector"`
+
+	// Brief is a concise, single-line summary of the help text.
+	Brief string `yaml:"brief,omitempty"`
+
+	// Description provides a detailed, multi-line description.
+	Description string `yaml:"description,omitempty"`
+
+	// Examples provides a list of examples illustrating how to use the element.
+	Examples []string `yaml:"examples,omitempty"`
 }
