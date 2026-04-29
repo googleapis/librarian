@@ -36,7 +36,7 @@ var (
 		return command.OutputWithEnv(ctx, env, command.Go, arg...)
 	}
 
-	sourceRepos    = map[string]fetch.RepoRef{
+	sourceRepos = map[string]fetch.RepoRef{
 		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
 		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
 		"googleapis":  {Org: "googleapis", Name: "googleapis", Branch: fetch.DefaultBranchMaster},
