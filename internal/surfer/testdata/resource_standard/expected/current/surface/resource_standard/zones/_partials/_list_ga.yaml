@@ -30,15 +30,15 @@
         is_positional: false
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+          collection: resourcestandard.projects
+          disable_auto_completers: true
           name: project
           plural_name: projects
-          collection: resourcestandard.projects
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-          disable_auto_completers: true
         required: true
   request:
     api_version: v1

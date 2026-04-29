@@ -21,25 +21,33 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// InferTrackFromPackage infers the release track from the proto package name.
-// as mandated per AIP-185
-// e.g. "google.cloud.parallelstore.v1beta" -> "beta".
-func InferTrackFromPackage(pkg string) string {
+// apiVersionFromPackage extracts the API version from the package name.
+// e.g. "google.cloud.parallelstore.v1" -> "v1".
+func apiVersionFromPackage(pkg string) string {
 	parts := strings.Split(pkg, ".")
-	version := parts[len(parts)-1]
+	return parts[len(parts)-1]
+}
 
+// APIVersionFromModel extracts the API version from the API model's package name.
+func APIVersionFromModel(model *api.API) string {
+	return apiVersionFromPackage(model.PackageName)
+}
+
+// Tracks infers the release tracks from the API version string.
+// e.g. "v1beta" -> ["BETA"].
+func Tracks(version string) []ReleaseTrack {
 	// AIP-191: The version component MUST follow the pattern `v[0-9]+...`.
 	if !strings.HasPrefix(version, "v") {
-		return "ga"
+		return []ReleaseTrack{ReleaseTrackGA}
 	}
 
 	if strings.Contains(version, "alpha") {
-		return "alpha"
+		return []ReleaseTrack{ReleaseTrackAlpha}
 	}
 	if strings.Contains(version, "beta") {
-		return "beta"
+		return []ReleaseTrack{ReleaseTrackBeta}
 	}
-	return "ga"
+	return []ReleaseTrack{ReleaseTrackGA}
 }
 
 // GetServiceTitle returns the service title for documentation.

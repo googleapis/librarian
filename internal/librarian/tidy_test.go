@@ -64,6 +64,35 @@ func TestValidateLibraries(t *testing.T) {
 			language: config.LanguageJava,
 			wantErr:  java.ErrInvalidDistributionName,
 		},
+		{
+			name: "skipped duplicate api paths",
+			libraries: []*config.Library{
+				{
+					Name: "lib1",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+				{
+					Name: "lib2",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+			},
+			language: config.LanguageJava,
+		},
+		{
+			name: "duplicate api paths not skipped for non-java",
+			libraries: []*config.Library{
+				{
+					Name: "lib1",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+				{
+					Name: "lib2",
+					APIs: []*config.API{{Path: "google/iam/v1"}},
+				},
+			},
+			language: config.LanguagePython,
+			wantErr:  errDuplicateAPIPath,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{

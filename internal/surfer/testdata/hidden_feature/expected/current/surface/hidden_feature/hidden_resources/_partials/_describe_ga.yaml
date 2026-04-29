@@ -30,21 +30,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: hidden_resource
+              help: The hidden_resource id of the {resource} resource.
+              parameter_name: hiddenResourcesId
+          collection: hiddenfeature.projects.locations.hiddenResources
+          disable_auto_completers: false
           name: hidden_resource
           plural_name: hiddenResources
-          collection: hiddenfeature.projects.locations.hiddenResources
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: hiddenResourcesId
-              attribute_name: hidden_resource
-              help: The hidden_resource id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1

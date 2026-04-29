@@ -35,19 +35,19 @@ func TestTidy(t *testing.T) {
 		Python: &config.PythonPackage{
 			ProtoOnlyAPIs: []string{"google/api"},
 			OptArgsByAPI: map[string][]string{
-				"google/cloud/customized/v1": []string{
+				"google/cloud/customized/v1": {
 					"warehouse-package-name=x",
 					"python-gapic-namespace=y",
 					"python-gapic-name=z",
 					"other=123",
 				},
-				"google/cloud/semiderived/v1": []string{
+				"google/cloud/semiderived/v1": {
 					"warehouse-package-name=test-library",
 					"python-gapic-namespace=google.cloud",
 					"python-gapic-name=semiderived",
 					"other=456",
 				},
-				"google/cloud/fullyderived/v1": []string{
+				"google/cloud/fullyderived/v1": {
 					"warehouse-package-name=test-library",
 					"python-gapic-namespace=google.cloud",
 					"python-gapic-name=fullyderived",
@@ -66,13 +66,13 @@ func TestTidy(t *testing.T) {
 		Python: &config.PythonPackage{
 			ProtoOnlyAPIs: []string{"google/api"},
 			OptArgsByAPI: map[string][]string{
-				"google/cloud/customized/v1": []string{
+				"google/cloud/customized/v1": {
 					"warehouse-package-name=x",
 					"python-gapic-namespace=y",
 					"python-gapic-name=z",
 					"other=123",
 				},
-				"google/cloud/semiderived/v1": []string{
+				"google/cloud/semiderived/v1": {
 					"other=456",
 				},
 			},
@@ -102,7 +102,7 @@ func TestTidyAPI(t *testing.T) {
 				Python: &config.PythonPackage{
 					DefaultVersion: "v1",
 					OptArgsByAPI: map[string][]string{
-						"google/cloud/derived/v1": []string{
+						"google/cloud/derived/v1": {
 							"warehouse-package-name=test-library",
 							"python-gapic-namespace=google.cloud",
 							"python-gapic-name=derived",
@@ -151,7 +151,7 @@ func TestTidyAPI(t *testing.T) {
 				Python: &config.PythonPackage{
 					DefaultVersion: "v1",
 					OptArgsByAPI: map[string][]string{
-						"google/cloud/derived/v1": []string{
+						"google/cloud/derived/v1": {
 							"warehouse-package-name=other-package-name",
 							"python-gapic-namespace=google.cloud",
 							"python-gapic-name=other-gapic-name",

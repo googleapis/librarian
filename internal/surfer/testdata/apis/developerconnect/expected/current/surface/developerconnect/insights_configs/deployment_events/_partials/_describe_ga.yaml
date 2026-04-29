@@ -33,24 +33,24 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: insights_config
+              help: The insights_config id of the {resource} resource.
+              parameter_name: insightsConfigsId
+            - attribute_name: deployment_event
+              help: The deployment_event id of the {resource} resource.
+              parameter_name: deploymentEventsId
+          collection: developerconnect.projects.locations.insightsConfigs.deploymentEvents
+          disable_auto_completers: false
           name: deployment_event
           plural_name: deploymentEvents
-          collection: developerconnect.projects.locations.insightsConfigs.deploymentEvents
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: insightsConfigsId
-              attribute_name: insights_config
-              help: The insights_config id of the {resource} resource.
-            - parameter_name: deploymentEventsId
-              attribute_name: deployment_event
-              help: The deployment_event id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1

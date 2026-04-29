@@ -32,36 +32,23 @@ Global flags:
 
 	--verbose, -v    enable verbose logging
 
-# Install tool dependencies for a language
+# Read and write librarian.yaml configuration
 
 Usage:
 
-	librarian install [language]
+	librarian config [get|set] [path] [value]
 
-install installs the language-specific tools that librarian uses to
-generate and build client libraries (for example, language SDKs and code
-generators).
-
-If [language] is omitted, the language is read from librarian.yaml in the
-current directory.
-
-Examples:
-
-	librarian install              # use language from librarian.yaml
-	librarian install go           # install Go-specific tools
-
-# Tidy and validate librarian.yaml
+# Get a configuration value
 
 Usage:
 
-	librarian tidy
+	librarian config get [path]
 
-tidy reads librarian.yaml, validates its contents, applies any
-language-specific defaults and normalization, and writes the file back
-with a canonical formatting.
+# Set a configuration value
 
-Run tidy after editing librarian.yaml by hand, or as a quick check that
-the configuration is well-formed.
+Usage:
+
+	librarian config set [path] [value]
 
 # Add a new client library
 
@@ -89,37 +76,6 @@ A typical librarian workflow for adding a new client library is:
 
 	librarian add <api>            # onboard a new API into librarian.yaml
 	librarian generate <library>   # generate the client library
-
-# Update sources to the latest version
-
-Usage:
-
-	librarian update <sources...>
-
-update refreshes the upstream source repositories declared in
-librarian.yaml to their latest commits and updates the recorded commit
-SHAs in librarian.yaml accordingly.
-
-Each <source> names an upstream repository that librarian consumes:
-
-  - conformance: protocolbuffers/protobuf conformance tests
-  - discovery: googleapis/discovery-artifact-manager
-  - googleapis: googleapis/googleapis (the API definitions)
-  - protobuf: protocolbuffers/protobuf
-  - showcase: googleapis/gapic-showcase
-
-At least one source must be specified.
-
-Examples:
-
-	librarian update googleapis
-	librarian update googleapis protobuf
-
-A typical librarian workflow for regenerating every library against the
-latest API definitions is:
-
-	librarian update googleapis
-	librarian generate --all
 
 # Generate a client library
 
@@ -174,6 +130,68 @@ Flags:
 	--all             update all libraries in the workspace
 	--version string  specific version to update to; not valid with --all
 
+# Install tool dependencies for a language
+
+Usage:
+
+	librarian install [language]
+
+install installs the language-specific tools that librarian uses to
+generate and build client libraries (for example, language SDKs and code
+generators).
+
+If [language] is omitted, the language is read from librarian.yaml in the
+current directory.
+
+Examples:
+
+	librarian install              # use language from librarian.yaml
+	librarian install go           # install Go-specific tools
+
+# Tidy and validate librarian.yaml
+
+Usage:
+
+	librarian tidy
+
+tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
+
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.
+
+# Update sources to the latest version
+
+Usage:
+
+	librarian update <sources...>
+
+update refreshes the upstream source repositories declared in
+librarian.yaml to their latest commits and updates the recorded commit
+SHAs in librarian.yaml accordingly.
+
+Each <source> names an upstream repository that librarian consumes:
+
+  - conformance: protocolbuffers/protobuf conformance tests
+  - discovery: googleapis/discovery-artifact-manager
+  - googleapis: googleapis/googleapis (the API definitions)
+  - protobuf: protocolbuffers/protobuf
+  - showcase: googleapis/gapic-showcase
+
+At least one source must be specified.
+
+Examples:
+
+	librarian update googleapis
+	librarian update googleapis protobuf
+
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update googleapis
+	librarian generate --all
+
 # Publish client libraries
 
 Usage:
@@ -206,6 +224,7 @@ Flags:
 	--dry-run                print commands without executing (legacy Rust-only flag)
 	--dry-run-keep-going     print commands without executing, don't stop on error (legacy Rust-only flag)
 	--skip-semver-checks     skip semantic versioning checks (legacy Rust-only flag)
+	--verbose, -v            streams output of publishing commands executed
 
 # Tag a release commit based on the libraries published
 

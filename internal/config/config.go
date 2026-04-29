@@ -107,10 +107,6 @@ type Sources struct {
 
 // Source represents a source repository.
 type Source struct {
-	// Branch is the source's git branch to pull updates from.
-	// Unset should be interpreted as the repository default branch.
-	Branch string `yaml:"branch,omitempty"`
-
 	// Commit is the git commit hash or tag to use.
 	Commit string `yaml:"commit"`
 
