@@ -34,21 +34,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: instance
+              help: The instance id of the {resource} resource.
+              parameter_name: instancesId
+          collection: parallelstore.projects.locations.instances
+          disable_auto_completers: false
           name: instance
           plural_name: instances
-          collection: parallelstore.projects.locations.instances
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: instancesId
-              attribute_name: instance
-              help: The instance id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: description
         api_field: instance.description
@@ -88,7 +88,7 @@
         is_positional: false
         required: false
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.instances
     static_fields:
@@ -98,5 +98,5 @@
       - parallelstore.projects.locations.operations
     extract_resource_result: true
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true

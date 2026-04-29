@@ -30,21 +30,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: zone
+              help: The zone id of the {resource} resource.
+              parameter_name: zonesId
+            - attribute_name: zone_resource
+              help: The zoneResource id of the {resource} resource.
+              parameter_name: zoneResourcesId
+          collection: resourcestandard.projects.zones.zoneResources
+          disable_auto_completers: false
           name: zoneResource
           plural_name: zoneResources
-          collection: resourcestandard.projects.zones.zoneResources
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: zonesId
-              attribute_name: zone
-              help: The zone id of the {resource} resource.
-            - parameter_name: zoneResourcesId
-              attribute_name: zone_resource
-              help: The zoneResource id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1

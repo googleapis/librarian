@@ -35,20 +35,20 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: organization
+              help: The organization id of the {resource} resource.
+              parameter_name: organizationsId
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: principal_access_boundary_policy
+              help: The principal_access_boundary_policy id of the {resource} resource.
+              parameter_name: principalAccessBoundaryPoliciesId
+          collection: iam.organizations.locations.principalAccessBoundaryPolicies
+          disable_auto_completers: false
           name: principal_access_boundary_policy
           plural_name: principalAccessBoundaryPolicies
-          collection: iam.organizations.locations.principalAccessBoundaryPolicies
-          attributes:
-            - parameter_name: organizationsId
-              attribute_name: organization
-              help: The organization id of the {resource} resource.
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: principalAccessBoundaryPoliciesId
-              attribute_name: principal_access_boundary_policy
-              help: The principal_access_boundary_policy id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: page-size
         api_field: pageSize
@@ -74,7 +74,7 @@
         is_positional: false
         required: false
   request:
-    api_version: v3alpha
+    api_version: v3
     collection:
       - iam.organizations.locations.principalAccessBoundaryPolicies
     method: searchPolicyBindings

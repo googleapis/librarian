@@ -30,39 +30,39 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: resource
+              help: The resource id of the {resource} resource.
+              parameter_name: resourcesId
+          collection: resourcereference.projects.locations.resources
+          disable_auto_completers: false
           name: resource
           plural_name: resources
-          collection: resourcereference.projects.locations.resources
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: resourcesId
-              attribute_name: resource
-              help: The resource id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: reference
         api_field: resource.reference
         help_text: Reference to another resource
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: reference
+              help: The reference id of the {resource} resource.
+              parameter_name: referencesId
+          collection: resourcereference.projects.references
+          disable_auto_completers: true
           name: reference
           plural_name: references
-          collection: resourcereference.projects.references
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: referencesId
-              attribute_name: reference
-              help: The reference id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           resource.reference: '{__relative_name__}'
@@ -71,18 +71,18 @@
         help_text: Reference to another resource
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: another_reference
+              help: The another_reference id of the {resource} resource.
+              parameter_name: anotherReferencesId
+          collection: resourcereference.projects.anotherReferences
+          disable_auto_completers: true
           name: another_reference
           plural_name: anotherReferences
-          collection: resourcereference.projects.anotherReferences
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: anotherReferencesId
-              attribute_name: another_reference
-              help: The another_reference id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           resource.anotherReference: '{__relative_name__}'
@@ -91,18 +91,18 @@
         help_text: Reference to multitype resource
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: multi_reference
+              help: The multiReference id of the {resource} resource.
+              parameter_name: multiReferencesId
+          collection: resourcereference.projects.multiReferences
+          disable_auto_completers: true
           name: multiReference
           plural_name: multiReferences
-          collection: resourcereference.projects.multiReferences
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: multiReferencesId
-              attribute_name: multi_reference
-              help: The multiReference id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           resource.multitypeReference: '{__relative_name__}'
@@ -111,18 +111,18 @@
         help_text: Reference to another multitype resource
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: another_multi_reference
+              help: The another_multi_reference id of the {resource} resource.
+              parameter_name: anotherMultiReferencesId
+          collection: resourcereference.projects.anotherMultiReferences
+          disable_auto_completers: true
           name: another_multi_reference
           plural_name: anotherMultiReferences
-          collection: resourcereference.projects.anotherMultiReferences
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: anotherMultiReferencesId
-              attribute_name: another_multi_reference
-              help: The another_multi_reference id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           resource.anotherMultitypeReference: '{__relative_name__}'
@@ -131,12 +131,12 @@
         help_text: Reference to singleton resource
         is_positional: false
         resource_spec:
-          collection: resourcereference.projects
           attributes:
-            - parameter_name: projectsId
-              attribute_name: project
+            - attribute_name: project
               help: The project id of the {resource} resource.
+              parameter_name: projectsId
               property: core/project
+          collection: resourcereference.projects
           disable_auto_completers: true
         required: false
         resource_method_params:
@@ -146,21 +146,21 @@
         help_text: Reference to another singleton resource
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: parent
+              help: The parent id of the {resource} resource.
+              parameter_name: parentsId
+            - attribute_name: global_reference
+              help: The globalReference id of the {resource} resource.
+              parameter_name: globalReferencesId
+          collection: resourcereference.projects.parents.globalReferences
+          disable_auto_completers: true
           name: globalReference
           plural_name: globalReferences
-          collection: resourcereference.projects.parents.globalReferences
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: parentsId
-              attribute_name: parent
-              help: The parent id of the {resource} resource.
-            - parameter_name: globalReferencesId
-              attribute_name: global_reference
-              help: The globalReference id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           resource.globalReference: '{__relative_name__}'
@@ -229,5 +229,5 @@
     static_fields:
       updateMask: '*'
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true
