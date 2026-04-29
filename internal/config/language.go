@@ -585,6 +585,11 @@ type JavaAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 
+	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
+	// into a single directory. This is currently only used for the grafeas library
+	// to maintain its legacy code structure.
+	Monolithic bool `yaml:"monolithic,omitempty"`
+
 	// AdditionalProtos is a list of additional proto files to include in generation.
 	// Note: google/cloud/common_resources.proto is included by default unless
 	// OmitCommonResources is set to true.

@@ -262,6 +262,110 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	}
 }
 
+func TestRestructureModules_Monolithic(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	apiBase := "v1"
+	libraryID := "grafeas"
+
+	// Create a dummy structure to mimic generator output
+	dirs := []string{
+		filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "grpc"),
+		filepath.Join(tmpDir, apiBase, "proto"),
+	}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Create dummy files
+	gapicFile := filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java", "Gapic.java")
+	if err := os.WriteFile(gapicFile, []byte("public class Gapic {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	grpcFile := filepath.Join(tmpDir, apiBase, "grpc", "Grpc.java")
+	if err := os.WriteFile(grpcFile, []byte("public class Grpc {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoFile := filepath.Join(tmpDir, apiBase, "proto", "Proto.java")
+	if err := os.WriteFile(protoFile, []byte("public class Proto {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir:         tmpDir,
+		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
+		apiBase:        apiBase,
+		googleapisDir:  t.TempDir(), // dummy
+		apiProtos:      nil,
+		includeSamples: false,
+		javaAPI: &config.JavaAPI{
+			Monolithic: true,
+		},
+	}
+	destRoot := filepath.Join(tmpDir, "dest", "src")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify all files are in the same src directory
+	files := []string{
+		filepath.Join(destRoot, "main", "java", "Gapic.java"),
+		filepath.Join(destRoot, "main", "java", "Grpc.java"),
+		filepath.Join(destRoot, "main", "java", "Proto.java"),
+	}
+	for _, f := range files {
+		if _, err := os.Stat(f); err != nil {
+			t.Errorf("expected file %s to exist, but it was not found: %v", f, err)
+		}
+	}
+}
+
+func TestPostProcessAPI_SkipHeaders(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		monolithic bool
+		wantHeader bool
+	}{
+		{"default - adds header", false, true},
+		{"monolithic - skips header", true, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outdir := t.TempDir()
+			apiBase := "v1"
+			gRPCDir := filepath.Join(outdir, apiBase, "grpc")
+			if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
+			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			p := postProcessParams{
+				outDir:  outdir,
+				apiBase: apiBase,
+				library: &config.Library{Java: &config.JavaModule{}},
+				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
+			}
+			// We only care about the skip logic before restructure/cleanup.
+			if err := addHeadersIfRequired(p, []string{gRPCDir}); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := os.ReadFile(grpcFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			hasHeader := bytes.Contains(got, []byte("Copyright"))
+			if hasHeader != test.wantHeader {
+				t.Errorf("hasHeader = %v, want %v", hasHeader, test.wantHeader)
+			}
+		})
+	}
+}
+
 func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
@@ -281,6 +385,76 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	destDir := t.TempDir()
 	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
+	}
+}
+
+func TestPostProcessLibrary(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	defaultCfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: rootLibrary, Version: "1.0.0"},
+		},
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "26.35.0",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		setup   func(t *testing.T, outDir string)
+	}{
+		{
+			name: "success",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				libCoords := DeriveLibraryCoordinates(library)
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
+				for _, dir := range []string{
+					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
+					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
+					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
+					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
+					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
+				} {
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outDir)
+			}
+			params := libraryPostProcessParams{
+				cfg:      test.cfg,
+				library:  library,
+				outDir:   outDir,
+				metadata: &repoMetadata{NamePretty: "Secret Manager"},
+			}
+			if err := postProcessLibrary(t.Context(), params); err != nil {
+				t.Fatalf("error = %v, want nil", err)
+			}
+		})
 	}
 }
 
@@ -367,29 +541,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				}
 			},
 			wantErr: errTargetDir,
-		},
-		{
-			name: "success",
-			cfg:  defaultCfg,
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
-				for _, dir := range []string{
-					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
-					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
-					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
-					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
-					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
-				} {
-					if err := os.MkdirAll(dir, 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
-			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

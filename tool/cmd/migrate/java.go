@@ -318,6 +318,16 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			},
 		}
 		applyJavaLibraryOverrides(lib)
+
+		// Hardcoded configuration for grafeas special case.
+		if name == "grafeas" {
+			for _, ja := range lib.Java.JavaAPIs {
+				if ja.Path == "grafeas/v1" {
+					ja.Monolithic = true
+				}
+			}
+		}
+
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)

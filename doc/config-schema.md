@@ -251,6 +251,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Is the source path. |
+| `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
