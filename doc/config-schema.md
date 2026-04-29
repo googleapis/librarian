@@ -297,7 +297,7 @@ This document describes the schema for the librarian.yaml.
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 | `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. TODO(https://github.com/googleapis/librarian/issues/5561): investigate and determine if can remove |
-| `skip_pom_updates` | bool | Indicates whether to skip updating pom.xml files. |
+| `skip_pom_updates` | bool | Indicates whether to skip updating pom.xml files. TODO(https://github.com/googleapis/librarian/issues/5277): re-evaluate together with ExcludedPOMs |
 
 ## NodejsAPI Configuration
 
