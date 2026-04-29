@@ -1031,6 +1031,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	}
 
 	switch {
+	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
 		decoder := annotate.decoder(field.Typez, field.TypezID)
 		return fmt.Sprintf(
