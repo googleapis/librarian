@@ -61,6 +61,8 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Value":       "",
 }
 
+// canHaveNullJsonSerialization indicates whether the message type's serialized
+// JSON can be `null`.
 var canHaveNullJsonSerialization = map[string]bool{
 	".google.protobuf.NullValue": true,
 	".google.protobuf.Value":     true,

@@ -994,8 +994,8 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
-func validNull(field *api.Field) bool {
-	// canHaveNullJsonSerialization
+// canBeNull returns whether the given field can have a `null` JSON serialization.
+func canBeNull(field *api.Field) bool {
 	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID];
 }
 
@@ -1018,17 +1018,16 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 		}
 	}
 
-	if validNull(field) {
+	// Parsers should accept `null` JSON values but consider the field to be
+	// unset. `NullValue` and `Value` are exceptions to this rule, because their
+	// serialization is/can be `null`.
+	//
+	// See https://protobuf.dev/programming-guides/json/#null-value
+	if canBeNull(field) {
 		decoder := annotate.decoder(field.Typez, field.TypezID)
-		if (required) {
-			return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
 				"{(false,_) => %s, " +
 				"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
-		}
-
-		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
-				"{(false,_) => null, " +
-				"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, decoder)
 	}
 
 	switch {
