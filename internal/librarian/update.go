@@ -18,7 +18,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -28,6 +30,12 @@ import (
 var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
+
+	// runGoList allows mocking go list execution in tests.
+	runGoList = func(ctx context.Context, env map[string]string, arg ...string) (string, error) {
+		return command.OutputWithEnv(ctx, env, command.Go, arg...)
+	}
+
 	sourceRepos    = map[string]fetch.RepoRef{
 		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
 		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
@@ -90,7 +98,7 @@ latest API definitions is:
 			if err != nil {
 				return err
 			}
-			updatedCfg, err := runUpdate(cfg, args)
+			updatedCfg, err := runUpdate(ctx, cfg, args)
 			if err != nil {
 				return err
 			}
@@ -99,7 +107,7 @@ latest API definitions is:
 	}
 }
 
-func runUpdate(cfg *config.Config, targets []string) (*config.Config, error) {
+func runUpdate(ctx context.Context, cfg *config.Config, targets []string) (*config.Config, error) {
 	endpoints := &fetch.Endpoints{
 		API:      githubAPI,
 		Download: githubDownload,
@@ -118,12 +126,12 @@ func runUpdate(cfg *config.Config, targets []string) (*config.Config, error) {
 
 	for _, target := range targets {
 		if target == "version" {
-			repo := fetch.RepoRef{Org: "googleapis", Name: "librarian", Branch: config.BranchMain}
-			commit, _, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
+			env := map[string]string{"GOPROXY": "direct"}
+			version, err := runGoList(ctx, env, "list", "-m", "-f", "{{.Version}}", "github.com/googleapis/librarian@latest")
 			if err != nil {
 				return nil, err
 			}
-			cfg, err = setConfigValue(cfg, "version", commit)
+			cfg, err = setConfigValue(cfg, "version", strings.TrimSpace(version))
 			if err != nil {
 				return nil, err
 			}

@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
@@ -123,6 +124,7 @@ func TestUpdateCommand(t *testing.T) {
 		args       []string
 		setup      func(*config.Config)
 		wantConfig func(*config.Config)
+		before     func(*testing.T)
 	}{
 		{
 			name: "googleapis",
@@ -209,6 +211,13 @@ func TestUpdateCommand(t *testing.T) {
 			wantConfig: func(cfg *config.Config) {
 				cfg.Version = librarianTestCommit
 			},
+			before: func(t *testing.T) {
+				old := runGoList
+				runGoList = func(ctx context.Context, env map[string]string, arg ...string) (string, error) {
+					return librarianTestCommit, nil
+				}
+				t.Cleanup(func() { runGoList = old })
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -221,6 +230,10 @@ func TestUpdateCommand(t *testing.T) {
 
 			setup := setupUpdateTest(t, initialConfig)
 			defer setup.server.Close()
+
+			if test.before != nil {
+				test.before(t)
+			}
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
