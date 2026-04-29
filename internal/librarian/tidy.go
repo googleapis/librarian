@@ -37,11 +37,11 @@ var (
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
 
-	// skipPaths lists special API paths that are allowed to appear in multiple
+	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
 	// libraries in Java without triggering the duplicate API path error.
 	// These are paths are duplicated in java because their generated code splits
 	// between java-iam and java-iam-policy.
-	skipPaths = map[string]bool{
+	javaSkipDuplicatePaths = map[string]bool{
 		"google/iam/v1":     true,
 		"google/iam/v2":     true,
 		"google/iam/v2beta": true,
@@ -151,7 +151,7 @@ func validateLibraries(cfg *config.Config) error {
 		}
 		for _, ch := range lib.APIs {
 			if ch.Path != "" {
-				if cfg.Language == config.LanguageJava && skipPaths[ch.Path] {
+				if cfg.Language == config.LanguageJava && javaSkipDuplicatePaths[ch.Path] {
 					continue
 				}
 				pathCount[ch.Path]++
