@@ -52,12 +52,18 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Int32Value":  "",
 	".google.protobuf.Int64Value":  "",
 	".google.protobuf.ListValue":   "",
+	".google.protobuf.NullValue":   "",
 	".google.protobuf.StringValue": "",
 	".google.protobuf.Struct":      "",
 	".google.protobuf.Timestamp":   "",
 	".google.protobuf.UInt32Value": "",
 	".google.protobuf.UInt64Value": "",
 	".google.protobuf.Value":       "",
+}
+
+var canHaveNullJsonSerialization = map[string]bool{
+	".google.protobuf.NullValue": true,
+	".google.protobuf.Value":     true,
 }
 
 const (

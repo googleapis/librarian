@@ -32,7 +32,17 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoEnum {
 
   const {{Codec.Name}}(super.value);
 
+  {{#Codec.HasCustomEncoding}}
+  factory {{Codec.Name}}.fromJson(Object? json) => _{{Codec.Name}}Helper.decode(json);
+  {{/Codec.HasCustomEncoding}}
+  {{^Codec.HasCustomEncoding}}
   factory {{Codec.Name}}.fromJson(Object? json) => {{Codec.Name}}(json as String);
+  {{/Codec.HasCustomEncoding}}
+
+  {{#Codec.HasCustomEncoding}}
+  @override
+  Object? toJson() => _{{Codec.Name}}Helper.encode(this);
+  {{/Codec.HasCustomEncoding}}
 
   bool get isNotDefault => this != $default;
 

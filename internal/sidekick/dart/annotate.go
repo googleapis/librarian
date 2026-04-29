@@ -198,10 +198,16 @@ type fieldAnnotation struct {
 }
 
 type enumAnnotation struct {
+	Parent       *api.Enum
 	Name         string
 	DocLines     []string
 	DefaultValue string
 	Model        *api.API
+}
+
+func (e *enumAnnotation) HasCustomEncoding() bool {
+	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID]
+	return hasCustomEncoding
 }
 
 type enumValueAnnotation struct {
@@ -988,6 +994,11 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
+func validNull(field *api.Field) bool {
+	// canHaveNullJsonSerialization
+	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID];
+}
+
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
@@ -1007,8 +1018,20 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 		}
 	}
 
+	if validNull(field) {
+		decoder := annotate.decoder(field.Typez, field.TypezID)
+		if (required) {
+			return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
+				"{(false,_) => %s, " +
+				"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
+		}
+
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) " +
+				"{(false,_) => null, " +
+				"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, decoder)
+	}
+
 	switch {
-	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
 		decoder := annotate.decoder(field.Typez, field.TypezID)
 		return fmt.Sprintf(
@@ -1229,6 +1252,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	enum.Codec = &enumAnnotation{
+		Parent:       enum,
 		Name:         enumName(enum),
 		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,
