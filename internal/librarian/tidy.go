@@ -39,6 +39,8 @@ var (
 
 	// skipPaths lists special API paths that are allowed to appear in multiple
 	// libraries in Java without triggering the duplicate API path error.
+	// These are paths are duplicated in java because their generated code splits
+	// between java-iam and java-iam-policy.
 	skipPaths = map[string]bool{
 		"google/iam/v1":     true,
 		"google/iam/v2":     true,
