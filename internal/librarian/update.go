@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -48,33 +47,33 @@ func updateCommand() *cli.Command {
 	return &cli.Command{
 		Name:  "update",
 		Usage: "update sources or version to the latest version",
-		Description: `update refreshes the upstream source repositories or the librarian version declared in
-librarian.yaml to their latest commits and updates the recorded values
-in librarian.yaml accordingly.
+		Description: `update refreshes the upstream source repositories declared in
+librarian.yaml to their latest commits and updates the recorded commit
+SHAs in librarian.yaml accordingly. It also supports updating the librarian version.
 
-Supported paths:
+Supported targets:
 
-  - sources.conformance: protocolbuffers/protobuf conformance tests
-  - sources.discovery: googleapis/discovery-artifact-manager
-  - sources.googleapis: googleapis/googleapis (the API definitions)
-  - sources.protobuf: protocolbuffers/protobuf
-  - sources.showcase: googleapis/gapic-showcase
+  - conformance: protocolbuffers/protobuf conformance tests
+  - discovery: googleapis/discovery-artifact-manager
+  - googleapis: googleapis/googleapis (the API definitions)
+  - protobuf: protocolbuffers/protobuf
+  - showcase: googleapis/gapic-showcase
   - version: the librarian tool version
 
-At least one path must be specified.
+At least one target must be specified.
 
 Examples:
 
-	librarian update sources.googleapis
-	librarian update sources.googleapis sources.protobuf
+	librarian update googleapis
+	librarian update googleapis protobuf
 	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
 
-	librarian update sources.googleapis
+	librarian update googleapis
 	librarian generate --all`,
-		UsageText: "librarian update <paths...>",
+		UsageText: "librarian update <targets...>",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()
 			if len(args) == 0 {
@@ -84,14 +83,9 @@ latest API definitions is:
 				if arg == "version" {
 					continue
 				}
-				if strings.HasPrefix(arg, "sources.") {
-					name := strings.TrimPrefix(arg, "sources.")
-					if _, ok := sourceRepos[name]; !ok {
-						return fmt.Errorf("%w: %s", errUnknownSource, arg)
-					}
-					continue
+				if _, ok := sourceRepos[arg]; !ok {
+					return fmt.Errorf("%w: %s", errUnknownSource, arg)
 				}
-				return fmt.Errorf("%w: %s", errInvalidPath, arg)
 			}
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
@@ -102,7 +96,7 @@ latest API definitions is:
 	}
 }
 
-func runUpdate(cfg *config.Config, paths []string) error {
+func runUpdate(cfg *config.Config, targets []string) error {
 	endpoints := &fetch.Endpoints{
 		API:      githubAPI,
 		Download: githubDownload,
@@ -119,8 +113,8 @@ func runUpdate(cfg *config.Config, paths []string) error {
 		}
 	}
 
-	for _, path := range paths {
-		if path == "version" {
+	for _, target := range targets {
+		if target == "version" {
 			repo := fetch.RepoRef{Org: "googleapis", Name: "librarian", Branch: config.BranchMain}
 			commit, _, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
 			if err != nil {
@@ -133,13 +127,12 @@ func runUpdate(cfg *config.Config, paths []string) error {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				return err
 			}
-		} else if strings.HasPrefix(path, "sources.") {
+		} else {
 			if cfg.Sources == nil {
 				return errEmptySources
 			}
-			name := strings.TrimPrefix(path, "sources.")
-			source := sourcesMap[name]
-			repo := sourceRepos[name]
+			source := sourcesMap[target]
+			repo := sourceRepos[target]
 			if err := updateSource(endpoints, repo, source, cfg); err != nil {
 				return err
 			}
