@@ -33,6 +33,9 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
+	if len(cfg.Tools.Pip) == 0 {
+		return nil
+	}
 	args := []string{"install"}
 	for _, tool := range cfg.Tools.Pip {
 		pkg := tool.Package
