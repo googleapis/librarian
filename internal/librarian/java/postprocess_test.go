@@ -284,6 +284,99 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	}
 }
 
+func TestPostProcessLibrary(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	defaultCfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: rootLibrary, Version: "1.0.0"},
+		},
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "26.35.0",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		library *config.Library
+		setup   func(t *testing.T, outDir string)
+	}{
+		{
+			name: "success with SkipPOMUpdates",
+			cfg:  defaultCfg,
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "success",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				libCoords := DeriveLibraryCoordinates(library)
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
+				for _, dir := range []string{
+					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
+					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
+					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
+					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
+					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
+				} {
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outDir)
+			}
+			l := library
+			if test.library != nil {
+				l = test.library
+			}
+			params := libraryPostProcessParams{
+				cfg:      test.cfg,
+				library:  l,
+				outDir:   outDir,
+				metadata: &repoMetadata{NamePretty: "Secret Manager"},
+			}
+			if err := postProcessLibrary(t.Context(), params); err != nil {
+				t.Fatalf("error = %v, want nil", err)
+			}
+		})
+	}
+}
+
 func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	t.Parallel()
 	testhelper.RequireCommand(t, "python3")
@@ -309,6 +402,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		cfg     *config.Config
+		library *config.Library
 		setup   func(t *testing.T, outDir string)
 		wantErr error
 	}{
@@ -398,9 +492,13 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, outDir)
 			}
+			l := library
+			if test.library != nil {
+				l = test.library
+			}
 			params := libraryPostProcessParams{
 				cfg:      test.cfg,
-				library:  library,
+				library:  l,
 				outDir:   outDir,
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}

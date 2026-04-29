@@ -578,6 +578,9 @@ type JavaModule struct {
 	// TODO(https://github.com/googleapis/librarian/issues/5561):
 	// investigate and determine if can remove
 	TransportOverride string `yaml:"transport_override,omitempty"`
+
+	// SkipPOMUpdates indicates whether to skip updating pom.xml files.
+	SkipPOMUpdates bool `yaml:"skip_pom_updates,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.

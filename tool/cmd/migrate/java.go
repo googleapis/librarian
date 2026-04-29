@@ -318,6 +318,12 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			},
 		}
 		applyJavaLibraryOverrides(lib)
+
+		// Hardcoded configuration for grafeas special case.
+		if name == "grafeas" {
+			lib.Java.SkipPOMUpdates = true
+		}
+
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)
