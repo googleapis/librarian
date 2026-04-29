@@ -411,9 +411,9 @@ func TestPostProcessLibrary(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		setup   func(t *testing.T, outDir string)
+		name  string
+		cfg   *config.Config
+		setup func(t *testing.T, outDir string)
 	}{
 		{
 			name: "success",
