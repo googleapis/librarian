@@ -32,7 +32,11 @@ func pathExpression(t *api.PathTemplate) string {
 			count += 1
 		}
 	}
-	return "/" + strings.Join(pathComponents, "/")
+	path := "/" + strings.Join(pathComponents, "/")
+	if t.Verb != nil {
+		path += ":" + *t.Verb
+	}
+	return path
 }
 
 func (c *codec) pathVariables(message *api.Message, t *api.PathTemplate) ([]*pathVariable, error) {
