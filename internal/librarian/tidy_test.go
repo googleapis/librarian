@@ -828,7 +828,7 @@ func TestTidy_UnusedSections(t *testing.T) {
 					Googleapis: &config.Source{Commit: "commit"},
 				},
 				Release: &config.Release{IgnoredChanges: []string{"foo"}},
-				Tools: &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
+				Tools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
 				Default: &config.Default{Output: "output"},
 			},
 			wantRelease: true,

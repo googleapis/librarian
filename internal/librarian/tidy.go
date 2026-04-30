@@ -72,7 +72,7 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
-	tidyConfig(cfg)
+	cfg = tidyConfig(cfg)
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
@@ -247,7 +247,7 @@ func isDefaultEmpty(defaults *config.Default) bool {
 }
 
 // tidyConfig removes unused sections from the configuration.
-func tidyConfig(cfg *config.Config) {
+func tidyConfig(cfg *config.Config) *config.Config {
 	if cfg.Release != nil && isReleaseEmpty(cfg.Release) {
 		cfg.Release = nil
 	}
@@ -257,6 +257,7 @@ func tidyConfig(cfg *config.Config) {
 	if cfg.Default != nil && isDefaultEmpty(cfg.Default) {
 		cfg.Default = nil
 	}
+	return cfg
 }
 
 func formatConfig(cfg *config.Config) *config.Config {
