@@ -483,4 +483,4 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
-| `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, output location, and template to use. |
+| `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
