@@ -31,7 +31,7 @@ type SwiftPackage struct {
 
 	// Modules specifies generation targets for veneers and test packages.
 	//
-	// Each module defines a source proto path, output location, and template to use.
+	// Each module defines a source proto path, and output location.
 	Modules []*SwiftModule `yaml:"modules,omitempty"`
 }
 
