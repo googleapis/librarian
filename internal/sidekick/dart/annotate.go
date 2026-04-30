@@ -83,8 +83,9 @@ type modelAnnotations struct {
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports []string
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
-	FakeList    string
-	ProtoPrefix string
+	FakeList     string
+	ProtoPrefix  string
+	UseWorkspace bool
 }
 
 // HasServices returns true if the model has services.
@@ -265,6 +266,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		packageVersion             string
 		partFileReference          string
 		doNotPublish               bool
+		useWorkspace               = true
 		dependencies               = []string{}
 		devDependencies            = []string{}
 		repositoryURL              string
@@ -346,6 +348,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			annotate.supportsSSE = value
+		case key == "use-workspace":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return fmt.Errorf(
+					"cannot convert `use-workspace` value %q to boolean: %w",
+					definition,
+					err,
+				)
+			}
+			useWorkspace = value
 		case key == "readme-after-title-text":
 			// Markdown that will be inserted into the README.md after the title section.
 			readMeAfterTitleText = definition
@@ -478,6 +490,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		Exports:                    exports,
 		FakeList:                   strings.Join(fakes, ", "),
 		ProtoPrefix:                protobufPrefix,
+		UseWorkspace:               useWorkspace,
 	}
 
 	model.Codec = ann
