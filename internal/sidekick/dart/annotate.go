@@ -83,8 +83,9 @@ type modelAnnotations struct {
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports []string
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
-	FakeList     string
-	ProtoPrefix  string
+	FakeList    string
+	ProtoPrefix string
+	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
 	UseWorkspace bool
 }
 
