@@ -1191,14 +1191,14 @@ func (annotate *annotateModel) buildQueryLines(
 			case api.TypezString:
 				return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
 			case api.TypezEnum:
-				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => e.value).toList()", param, ref))
+				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => e.value).toList()", param, ref))
 			case api.TypezBool, api.TypezInt32, api.TypezUint32, api.TypezSint32,
 				api.TypezFixed32, api.TypezSfixed32, api.TypezInt64,
 				api.TypezUint64, api.TypezSint64, api.TypezFixed64, api.TypezSfixed64,
 				api.TypezFloat, api.TypezDouble:
-				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => '$e').toList()", param, ref))
+				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => '$e').toList()", param, ref))
 			case api.TypezBytes:
-				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => encodeBytes(e)!).toList()", param, ref))
+				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => encodeBytes(e)!).toList()", param, ref))
 			default:
 				slog.Error("unhandled list query param", "type", field.Typez)
 				return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
@@ -1254,7 +1254,7 @@ func (annotate *annotateModel) buildQueryLines(
 	case field.Typez == api.TypezEnum:
 		if codec.Nullable || couldRefPrefixBeNull {
 			deref := "."
-			if codec.Nullable {
+			if codec.Nullable || couldRefPrefixBeNull {
 				deref = "?."
 			}
 			return append(result, fmt.Sprintf("'%s': ?%s%svalue", param, ref, deref))

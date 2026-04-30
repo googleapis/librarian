@@ -977,7 +977,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 	got := annotate.buildQueryLines([]string{}, "result.", false, "", messageField1)
 	want := []string{
 		"'message1.name': ?result.message1?.name",
-		"'message1.state': ?result.message1?.state.value",
+		"'message1.state': ?result.message1?.state?.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
