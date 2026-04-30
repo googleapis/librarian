@@ -118,8 +118,8 @@ func TestAdd_Error(t *testing.T) {
 			wantErr: errNewLibraryBadNamespace,
 		},
 	} {
-		output := t.TempDir()
 		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
 			_, gotErr := Add(test.lib, output)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
