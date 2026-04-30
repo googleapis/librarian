@@ -162,6 +162,15 @@ var (
 	apiShortnameOverrides = map[string]string{
 		"common-protos": "common-protos",
 	}
+
+	skipPOMUpdates = map[string]bool{
+		"grafeas":       true,
+		"common-protos": true,
+	}
+
+	monolithicJavaAPIs = map[string]bool{
+		"grafeas/v1": true,
+	}
 )
 
 type javaArtifactOverrides struct {

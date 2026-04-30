@@ -319,16 +319,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		}
 		applyJavaLibraryOverrides(lib)
 
-		// Hardcoded configuration for grafeas special case.
-		if name == "grafeas" {
-			lib.Java.SkipPOMUpdates = true
-			for _, ja := range lib.Java.JavaAPIs {
-				if ja.Path == "grafeas/v1" {
-					ja.Monolithic = true
-				}
-			}
-		}
-
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)
@@ -452,13 +442,20 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 	}
 }
 
-// applyJavaLibraryOverrides sets library-level overrides.
 func applyJavaLibraryOverrides(lib *config.Library) {
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
 	}
 	if override, ok := apiShortnameOverrides[lib.Name]; ok {
 		lib.Java.APIShortnameOverride = override
+	}
+	if skip, ok := skipPOMUpdates[lib.Name]; ok && skip {
+		lib.Java.SkipPOMUpdates = true
+	}
+	for _, ja := range lib.Java.JavaAPIs {
+		if mono, ok := monolithicJavaAPIs[ja.Path]; ok && mono {
+			ja.Monolithic = true
+		}
 	}
 }
 
