@@ -470,9 +470,17 @@ This document describes the schema for the librarian.yaml.
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
 
+## SwiftModule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
+| `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
+
 ## SwiftPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
+| `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, output location, and template to use. |
