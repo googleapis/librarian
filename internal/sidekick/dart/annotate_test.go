@@ -644,7 +644,9 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 		[]*api.Service{},
 	)
 	annotate := newAnnotateModel(model)
-	annotate.annotateModel(map[string]string{})
+	if err := annotate.annotateModel(requiredConfig); err != nil {
+		t.Fatal(err)
+	}
 
 	emptyMessage := &api.Message{
 		Name:    "EmptyMessage",
@@ -658,7 +660,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 		annotate.annotateMessage(secret)
 		codec := secret.Codec.(*messageAnnotation)
 		if !codec.HasFields() {
-			t.Errorf("Expected HasFields() to be true")
+			t.Errorf("mismatch got = %v, want true", codec.HasFields())
 		}
 	})
 
@@ -666,7 +668,7 @@ func TestAnnotateMessage_HasFields(t *testing.T) {
 		annotate.annotateMessage(emptyMessage)
 		codec := emptyMessage.Codec.(*messageAnnotation)
 		if codec.HasFields() {
-			t.Errorf("Expected HasFields() to be false")
+			t.Errorf("mismatch got = %v, want false", codec.HasFields())
 		}
 	})
 }
