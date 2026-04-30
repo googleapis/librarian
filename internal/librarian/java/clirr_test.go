@@ -55,6 +55,7 @@ func TestClirrIgnoreShouldGenerate(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		artifactID string
+		monolithic bool
 		setup      func(t *testing.T, dir string)
 		want       bool
 	}{
@@ -81,16 +82,23 @@ func TestClirrIgnoreShouldGenerate(t *testing.T) {
 			},
 			want: false,
 		},
+		{
+			name:       "should not generate - monolithic",
+			artifactID: "proto-google-cloud-test-v1",
+			monolithic: true,
+			setup:      func(t *testing.T, dir string) {},
+			want:       false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.setup(t, dir)
-			got, err := clirrIgnoreShouldGenerate(test.artifactID, dir)
+			got, err := clirrIgnoreShouldGenerate(test.artifactID, dir, test.monolithic)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if got != test.want {
-				t.Errorf("clirrIgnoreShouldGenerate(%q, %q) = %v, want %v", test.artifactID, dir, got, test.want)
+				t.Errorf("clirrIgnoreShouldGenerate(%q, %q, %v) = %v, want %v", test.artifactID, dir, test.monolithic, got, test.want)
 			}
 		})
 	}

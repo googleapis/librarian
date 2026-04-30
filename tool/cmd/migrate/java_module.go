@@ -22,6 +22,10 @@ var (
 		"storage":           true,
 		"spanner":           true,
 		"containeranalysis": true,
+		"common-protos":     true,
+		"grafeas":           true,
+		"iam":               true,
+		"iam-policy":        true,
 	}
 
 	keepOverride = map[string][]string{

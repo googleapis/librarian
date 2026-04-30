@@ -62,6 +62,7 @@
         disable_auto_completers: false
     params:
       - arg_name: show-deleted
+        is_positional: false
         api_field: showDeleted
         required: false
         help_text: Include soft-deleted tokens in the results.

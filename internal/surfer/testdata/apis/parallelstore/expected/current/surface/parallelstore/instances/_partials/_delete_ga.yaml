@@ -73,4 +73,3 @@
   async:
     collection:
       - parallelstore.projects.locations.operations
-    extract_resource_result: false

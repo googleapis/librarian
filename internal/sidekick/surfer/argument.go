@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 // Argument represents a single command-line argument or flag.
 type Argument struct {
@@ -22,10 +22,10 @@ type Argument struct {
 	// TODO(https://github.com/googleapis/librarian/issues/3287): Support arg groups.
 	// TODO(https://github.com/googleapis/librarian/issues/3288): Handle arg name collisions with path prefixes.
 	ArgName string
-	// APIField is the dot-separated path to the field in the API request message
-	// that this argument's value should be placed in (e.g., "instance.name").
+	// APIField is the path segments to the field in the API request message
+	// that this argument's value should be placed in (e.g., ["instance", "name"]).
 	// Origin: Derived from the `json_name` of the proto field, with prefixes for nested messages.
-	APIField string
+	APIField []string
 	// HelpText is the help text for this specific argument.
 	// Origin: From a `field_rule` in `gcloud.yaml`, or a default value is generated if none is provided.
 	HelpText string
@@ -66,10 +66,6 @@ type Argument struct {
 	// Spec defines the structure for complex argument types, such as key-value pairs for a map.
 	// Origin: Generated for `map` fields in a proto message.
 	Spec []ArgSpec
-	// ResourceMethodParams maps API method parameters to resource attributes,
-	// used for non-standard resource name formats.
-	// Origin: Generated for resource reference arguments to map the parsed name correctly.
-	ResourceMethodParams map[string]string
 }
 
 // ArgSpec defines the structure within a complex argument type, such as the

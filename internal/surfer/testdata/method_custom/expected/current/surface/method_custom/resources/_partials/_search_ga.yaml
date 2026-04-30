@@ -58,7 +58,6 @@
         is_positional: false
         required: false
       - arg_name: service-account
-        api_field: serviceAccount
         help_text: The service account to use for the request.
         is_positional: false
         resource_spec:

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 	"github.com/iancoleman/strcase"
 )
 
@@ -169,7 +169,7 @@ func (b *commandBuilder) requestMethod() string {
 
 type fieldWithPrefix struct {
 	field  *api.Field
-	prefix string
+	prefix []string
 }
 
 type classifiedFields struct {
@@ -227,13 +227,20 @@ func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
 	var collected []fieldWithPrefix
 	for _, field := range b.method.InputType.Fields {
 		isExpandableMessage := field.MessageType != nil && !field.Map
-		isBodyField := bodyFieldPath != "" && (bodyFieldPath == field.Name || bodyFieldPath == "*")
+		isBodyWildcard := bodyFieldPath == "*"
+		isBodyField := bodyFieldPath == field.Name || isBodyWildcard
+
+		var prefix []string
+		if isBodyWildcard {
+			prefix = append(prefix, b.method.InputType.Name)
+		}
 
 		if isExpandableMessage && isBodyField {
+			prefix = append(prefix, field.JSONName)
 			for _, f := range field.MessageType.Fields {
 				collected = append(collected, fieldWithPrefix{
 					field:  f,
-					prefix: fmt.Sprintf("%s.%s", field.JSONName, f.JSONName),
+					prefix: append(append([]string{}, prefix...), f.JSONName),
 				})
 			}
 			continue
@@ -241,7 +248,7 @@ func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
 
 		collected = append(collected, fieldWithPrefix{
 			field:  field,
-			prefix: field.JSONName,
+			prefix: append(prefix, field.JSONName),
 		})
 	}
 

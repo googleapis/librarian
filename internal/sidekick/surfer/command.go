@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 // ReleaseTrack represents a gcloud release track.
 type ReleaseTrack string

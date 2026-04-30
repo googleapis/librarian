@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 	"github.com/iancoleman/strcase"
 )
 
@@ -32,11 +32,11 @@ type argumentBuilder struct {
 	model     *api.API
 	service   *api.Service
 	field     *api.Field
-	apiField  string
+	apiField  []string
 }
 
 // newArgumentBuilder constructs a new argumentBuilder.
-func newArgumentBuilder(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service, field *api.Field, apiField string) *argumentBuilder {
+func newArgumentBuilder(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service, field *api.Field, apiField []string) *argumentBuilder {
 	return &argumentBuilder{
 		method:    method,
 		overrides: overrides,
@@ -56,7 +56,7 @@ func (b *argumentBuilder) build() (*Argument, error) {
 
 	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	arg := &Argument{
-		ArgName:   strcase.ToKebab(b.field.Name),
+		ArgName:   b.field.Name,
 		APIField:  b.apiField,
 		Required:  b.field.DocumentAsRequired(),
 		Repeated:  b.repeated(),
@@ -70,9 +70,6 @@ func (b *argumentBuilder) build() (*Argument, error) {
 			return nil, err
 		}
 		arg.ResourceSpec = spec
-		arg.ResourceMethodParams = map[string]string{
-			b.apiField: "{__relative_name__}",
-		}
 	} else if b.field.Map {
 		arg.Spec = b.mapSpec()
 	} else if b.field.EnumType != nil {

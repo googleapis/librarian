@@ -346,5 +346,5 @@ type Async struct {
 	// ExtractResourceResult unwraps the target resource from the operation's
 	// response field when the operation completes. Set when the LRO response
 	// type matches the resource being created or updated.
-	ExtractResourceResult bool `yaml:"extract_resource_result"`
+	ExtractResourceResult bool `yaml:"extract_resource_result,omitempty"`
 }

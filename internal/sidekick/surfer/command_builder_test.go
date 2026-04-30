@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"strings"
@@ -21,7 +21,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 func TestOutputFormat(t *testing.T) {
@@ -653,7 +653,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 			}(),
 			service:       api.NewTestService("TestService"),
 			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
-			wantAPIFields: []string{"", "rootField", "resource.field1"},
+			wantAPIFields: []string{"", "ArchiveRequest.rootField", "ArchiveRequest.resource.field1"},
 		},
 		{
 			name: "Identify both parent and resource_id",
@@ -720,7 +720,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 			}(),
 			service:       api.NewTestService("TestService"),
 			model:         api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
-			wantAPIFields: []string{"", "resource.labels"},
+			wantAPIFields: []string{"", "ArchiveRequest.resource.labels"},
 		},
 		{
 			name: "Output-only exclusion with body *",
@@ -770,7 +770,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 
 			var gotAPIFields []string
 			for _, arg := range args {
-				gotAPIFields = append(gotAPIFields, arg.APIField)
+				gotAPIFields = append(gotAPIFields, strings.Join(arg.APIField, "."))
 			}
 			if diff := cmp.Diff(test.wantAPIFields, gotAPIFields, cmpopts.EquateEmpty()); diff != "" {
 				t.Errorf("api_fields mismatch (-want +got):\n%s", diff)

@@ -100,4 +100,3 @@
       - regionalendpoints.projects.operations
       - regionalendpoints.projects.regions.operations
       - regionalendpoints.projects.zones.operations
-    extract_resource_result: false
