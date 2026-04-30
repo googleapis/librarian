@@ -3293,6 +3293,7 @@
 - path: google/storage/v2
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/issues/new?component=187243&template=1162869
   transports:
     go: grpc
     java: grpc
