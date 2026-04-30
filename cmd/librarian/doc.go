@@ -165,7 +165,7 @@ the configuration is well-formed.
 
 Usage:
 
-	librarian update <targets...>
+	librarian update <version | source>...
 
 update refreshes the upstream source repositories declared in
 librarian.yaml to their latest commits and updates the recorded commit

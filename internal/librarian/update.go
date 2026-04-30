@@ -80,7 +80,7 @@ latest API definitions is:
 
 	librarian update googleapis
 	librarian generate --all`,
-		UsageText: "librarian update <targets...>",
+		UsageText: "librarian update <version | source>...",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			args := cmd.Args().Slice()
 			if len(args) == 0 {
