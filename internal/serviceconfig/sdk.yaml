@@ -1741,8 +1741,6 @@
     - all
   release_level:
     java: stable
-  transports:
-    all: rest
 - path: google/cloud/memorystore/v1beta
   description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
   languages:
@@ -1750,8 +1748,6 @@
     - java
     - nodejs
     - python
-  transports:
-    all: rest
 - path: google/cloud/metastore/v1
   documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
