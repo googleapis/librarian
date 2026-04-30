@@ -83,10 +83,9 @@ type modelAnnotations struct {
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports []string
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
-	FakeList     string
-	ProtoPrefix  string
-	UseWorkspace bool
-	HasDocLines  bool
+	FakeList    string
+	ProtoPrefix string
+	HasDocLines bool
 }
 
 // HasServices returns true if the model has services.
