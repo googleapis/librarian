@@ -233,6 +233,8 @@ func isToolsEmpty(tools *config.Tools) bool {
 }
 
 // isDefaultEmpty returns true if the default configuration is empty.
+// Note that this will not remove {default: language: {}} because we have
+// not yet encountered this edge case.
 func isDefaultEmpty(defaults *config.Default) bool {
 	return len(defaults.Keep) == 0 &&
 		defaults.Output == "" &&
