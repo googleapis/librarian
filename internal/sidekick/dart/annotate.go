@@ -83,8 +83,10 @@ type modelAnnotations struct {
 	// ["export 'package:google_cloud_gax/gax.dart' show Any", "export 'package:google_cloud_gax/gax.dart' show Status"]
 	Exports []string
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
-	FakeList    string
-	ProtoPrefix string
+	FakeList     string
+	ProtoPrefix  string
+	UseWorkspace bool
+	HasDocLines  bool
 }
 
 // HasServices returns true if the model has services.
@@ -448,7 +450,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	slices.Sort(devDependencies)
-
+	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
 		Parent:                    model,
 		PackageName:               pkgName,
@@ -464,7 +466,8 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model),
+		DocLines:                   docLines,
+		HasDocLines:                len(docLines) > 0,
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
