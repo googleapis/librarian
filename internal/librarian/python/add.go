@@ -80,7 +80,7 @@ func ValidateNewAPIs(lib *config.Library) error {
 // "versionless" path, which is just the path with any version removed (so the
 // versionless path of google/cloud/xyz/v1 is google/cloud/xyz/; the versionless
 // path of google/cloud/xyz/type is still google/cloud/xyz/type). A nil pointer
-// is removed if no existing library is suitable for the new API path. The
+// is returned if no existing library is suitable for the new API path. The
 // function observes the following rules:
 //
 //  1. If the versionless path of any path in the library is the same as the
