@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"io/fs"
@@ -29,7 +29,7 @@ import (
 const testGoogleapisDir = "../../testdata/googleapis"
 
 func TestGenerate(t *testing.T) {
-	// sidekickgcloud.Generate calls out to protoc to build a
+	// surfer.Generate calls out to protoc to build a
 	// FileDescriptorSet from the protos.
 	testhelper.RequireCommand(t, "protoc")
 
