@@ -120,6 +120,10 @@ var (
 		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
 	}
+
+	apiShortnameOverrides = map[string]string{
+		"common-protos": "common-protos",
+	}
 )
 
 type javaArtifactOverrides struct {

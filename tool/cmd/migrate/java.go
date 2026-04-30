@@ -336,7 +336,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			if err == nil && api.ShortName != "" {
 				derivedShortName = api.ShortName
 			}
-			if derivedShortName != l.APIShortName {
+			if l.APIShortName != "" && derivedShortName != l.APIShortName {
 				lib.Java.APIShortnameOverride = l.APIShortName
 			}
 		}
@@ -456,6 +456,9 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 func applyJavaLibraryOverrides(lib *config.Library) {
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
+	}
+	if override, ok := apiShortnameOverrides[lib.Name]; ok {
+		lib.Java.APIShortnameOverride = override
 	}
 }
 
