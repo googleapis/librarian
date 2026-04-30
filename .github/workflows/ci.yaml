@@ -58,7 +58,7 @@ jobs:
         # TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
         run: |
           go run ./tool/cmd/coverage -target=79 \
-            $(go list ./... | grep -v -E 'internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
+            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [go-generate, legacylibrarian, test]

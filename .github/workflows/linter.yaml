@@ -45,3 +45,36 @@ jobs:
           go-version-file: "go.mod"
       - name: Run TestYAMLFormat
         run: go test -run TestYAMLFormat -count=1 .
+  goimports:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run TestGoImports
+        run: go test -run TestGoImports -count=1 .
+  golangci-lint:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run TestGolangCILint
+        run: go test -run TestGolangCILint -count=1 .
+  gomodtidy:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: "go.mod"
+      - name: Run TestGoModTidy
+        run: go test -run TestGoModTidy -count=1 .
