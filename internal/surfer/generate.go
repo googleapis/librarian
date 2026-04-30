@@ -15,8 +15,8 @@
 package surfer
 
 import (
-	"github.com/googleapis/librarian/internal/sidekick/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	sidekicksurfer "github.com/googleapis/librarian/internal/sidekick/surfer"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 // generateConfig contains parameters for generating gcloud commands.
@@ -41,5 +41,5 @@ func generate(cfg generateConfig) error {
 	if err != nil {
 		return err
 	}
-	return gcloud.Generate(model, overrides, cfg.Output, cfg.BaseModule)
+	return sidekicksurfer.Generate(model, overrides, cfg.Output, cfg.BaseModule)
 }

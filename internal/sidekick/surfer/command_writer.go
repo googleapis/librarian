@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/declarative"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/declarative"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/iancoleman/strcase"
 )

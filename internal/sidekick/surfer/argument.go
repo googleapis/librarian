@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 // Argument represents a single command-line argument or flag.
 type Argument struct {

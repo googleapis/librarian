@@ -30,8 +30,8 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickgcloud "github.com/googleapis/librarian/internal/sidekick/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	sidekicksurfer "github.com/googleapis/librarian/internal/sidekick/surfer"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -88,7 +88,7 @@ func generateAPI(api *config.API, googleapisDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	return sidekickgcloud.Generate(model, nil, outDir, baseModule)
+	return sidekicksurfer.Generate(model, nil, outDir, baseModule)
 }
 
 // collectProtos returns proto file paths under apiPath, relative to

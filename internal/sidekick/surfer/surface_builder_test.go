@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"fmt"
@@ -22,9 +22,9 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
 	"github.com/iancoleman/strcase"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 func TestSurfaceBuilder_Build_Structure(t *testing.T) {
