@@ -106,9 +106,8 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 		if len(set) <= 1 {
 			continue
 		}
-		for _, api := range lib.APIs {
-			versionlessCandidate := versionless(api.Path)
-			if strings.HasPrefix(apiPath, versionlessCandidate) {
+		for v := range set {
+			if strings.HasPrefix(apiPath, v) {
 				return lib
 			}
 		}
