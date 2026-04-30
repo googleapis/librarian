@@ -31,11 +31,6 @@ var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
 
-	// runGoList allows mocking go list execution in tests.
-	runGoList = func(ctx context.Context, env map[string]string, arg ...string) (string, error) {
-		return command.OutputWithEnv(ctx, env, command.Go, arg...)
-	}
-
 	sourceRepos = map[string]fetch.RepoRef{
 		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
 		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
@@ -127,7 +122,7 @@ func runUpdate(ctx context.Context, cfg *config.Config, targets []string) (*conf
 	for _, target := range targets {
 		if target == "version" {
 			env := map[string]string{"GOPROXY": "direct"}
-			version, err := runGoList(ctx, env, "list", "-m", "-f", "{{.Version}}", "github.com/googleapis/librarian@latest")
+			version, err := command.OutputWithEnv(ctx, env, command.Go, "list", "-m", "-f", "{{.Version}}", "github.com/googleapis/librarian@latest")
 			if err != nil {
 				return nil, err
 			}

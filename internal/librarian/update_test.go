@@ -15,12 +15,12 @@
 package librarian
 
 import (
-	"context"
 	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -209,14 +209,25 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Version = "this-should-change"
 			},
 			wantConfig: func(cfg *config.Config) {
-				cfg.Version = librarianTestCommit
+				cfg.Version = "v1.2.3"
 			},
+			// Use a fake go binary in PATH to mock `go list` execution without
+			// accessing the network. This avoids using test-driven function
+			// abstraction in production code solely for easier mocking.
 			before: func(t *testing.T) {
-				old := runGoList
-				runGoList = func(ctx context.Context, env map[string]string, arg ...string) (string, error) {
-					return librarianTestCommit, nil
+				goDir := t.TempDir()
+				goPath := filepath.Join(goDir, "go")
+				script := `#!/bin/bash
+if [[ "$*" == *"list -m -f {{.Version}} github.com/googleapis/librarian@latest"* ]]; then
+  echo "v1.2.3"
+  exit 0
+fi
+exit 1
+`
+				if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+					t.Fatal(err)
 				}
-				t.Cleanup(func() { runGoList = old })
+				t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 		},
 	} {
