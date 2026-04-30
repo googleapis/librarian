@@ -223,11 +223,28 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
+## GcloudHelpTextRule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
+| `brief` | string | Is a concise, single-line summary of the help text. |
+| `description` | string | Provides a detailed, multi-line description. |
+| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
+
+## GcloudHelpTextRules Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
+| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
+
 ## GcloudSurface Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `generate_operations` | bool (optional) | Indicates whether to generate top-level operations commands. |
+| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
 
 ## GoAPI Configuration
 

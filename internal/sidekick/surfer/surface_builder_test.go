@@ -65,6 +65,25 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 	}
 }
 
+func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
+	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
+
+	model := &api.API{
+		Name:     "parallelstore",
+		Title:    "Parallelstore API",
+		Services: []*api.Service{service},
+	}
+
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(false)}).build()
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	got := flattenTree(root.Root)
+	if len(got) != 0 {
+		t.Errorf("flattenTree() = %v, want empty when GenerateOperations is false", got)
+	}
+}
 
 func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 	service := mockService("parallelstore.googleapis.com", mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}"))
@@ -75,7 +94,7 @@ func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newSurfaceBuilder(model, &provider.Config{}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -249,4 +268,8 @@ func mockService(name string, methods ...*api.Method) *api.Service {
 		m.Service = s
 	}
 	return s
+}
+
+func boolPtr(b bool) *bool {
+	return &b
 }

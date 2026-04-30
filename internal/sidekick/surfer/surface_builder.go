@@ -76,6 +76,9 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 
 	curr := root
 	for i, seg := range segments {
+		if b.isTerminatedSegment(seg) {
+			return nil
+		}
 		isLeaf := i == len(segments)-1
 		if b.isFlattenedSegment(seg) && !isLeaf {
 			continue
@@ -107,4 +110,8 @@ var flattenedSegments = map[string]bool{
 
 func (b *surfaceBuilder) isFlattenedSegment(lit string) bool {
 	return flattenedSegments[lit]
+}
+
+func (b *surfaceBuilder) isTerminatedSegment(lit string) bool {
+	return lit == "operations" && !provider.ShouldGenerateOperations(b.config)
 }

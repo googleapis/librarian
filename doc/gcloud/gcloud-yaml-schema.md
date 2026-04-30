@@ -7,6 +7,7 @@ This document describes the schema for the gcloud.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `service_name` | string | Is the name of a service. Each gcloud.yaml file should correlate to a single service config with one or more APIs defined. |
+| `generate_operations` | bool (optional) | Indicates whether to generate top-level operations commands. |
 | `apis` | list of [API](#api-configuration) | Describes the APIs for which to generate a gcloud surface. |
 | `resource_patterns` | list of [ResourcePattern](#resourcepattern-configuration) | Describes resource patterns not included in descriptors, providing additional patterns that might be used for resource identification or command generation. |
 
