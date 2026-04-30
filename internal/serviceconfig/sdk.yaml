@@ -282,6 +282,9 @@
     - python
   release_level:
     java: preview
+- path: google/cloud
+  languages:
+    - java
 - path: google/cloud/abuseevent/logging/v1
   languages:
     - all
