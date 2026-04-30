@@ -23,7 +23,6 @@
   arguments:
     params:
       - arg_name: git-repository-link
-        api_field: gitRepositoryLink
         help_text: |-
           The resource name of the gitRepositoryLink in the format
           `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.
@@ -49,7 +48,7 @@
           plural_name: gitRepositoryLinks
         required: true
         resource_method_params:
-          gitRepositoryLink: '{__relative_name__}'
+          fetchReadWriteTokenRequest.gitRepositoryLink: '{__relative_name__}'
   request:
     api_version: v1
     collection:

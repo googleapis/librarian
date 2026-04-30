@@ -48,6 +48,9 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+      - name: Setup librarian.yaml for test tool dependency installation
+        run: |
+          cp internal/librarian/golang/testdata/librarian.yaml .
       - name: Install tools
         run: |
           go run ./cmd/librarian install go

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"errors"
@@ -24,7 +24,7 @@ import (
 	"time"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/declarative"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/declarative"
 )
 
 func TestWritePartialFile_Output(t *testing.T) {
@@ -189,6 +189,19 @@ func TestMapCommandToYAML(t *testing.T) {
 				Type:    "bool",
 				Action:  "store_true",
 			},
+			{
+				ArgName:  "arg-with-apifield",
+				Type:     "str",
+				APIField: []string{"Part1", "Part2"},
+			},
+			{
+				ArgName:  "arg-with-apifield-and-resource",
+				Type:     "str",
+				APIField: []string{"Part1", "Part2"},
+				ResourceSpec: &ResourceSpec{
+					Name: "r",
+				},
+			},
 		},
 	}
 
@@ -251,6 +264,19 @@ func TestMapCommandToYAML(t *testing.T) {
 					Type:    "bool",
 					Action:  "store_true",
 					Default: declarative.Default{Value: &nilVal},
+				},
+				{
+					ArgName:  "arg-with-apifield",
+					APIField: "part1.part2",
+				},
+				{
+					ArgName: "arg-with-apifield-and-resource",
+					ResourceSpec: &declarative.ResourceSpec{
+						Name: "r",
+					},
+					ResourceMethodParams: map[string]string{
+						"part1.part2": "{__relative_name__}",
+					},
 				},
 			},
 		},

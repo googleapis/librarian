@@ -43,7 +43,7 @@
           plural_name: resources
         required: true
       - arg_name: string-field
-        api_field: stringField
+        api_field: archiveResourceRequest.stringField
         help_text: String field.
         is_positional: false
         required: false

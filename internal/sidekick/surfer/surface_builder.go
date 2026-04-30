@@ -12,11 +12,11 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 type surfaceBuilder struct {

@@ -23,7 +23,6 @@
   arguments:
     params:
       - arg_name: account-connector
-        api_field: accountConnector
         help_text: |-
           The resource name of the AccountConnector in the format
           `projects/*/locations/*/accountConnectors/*`.

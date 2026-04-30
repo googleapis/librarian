@@ -87,6 +87,11 @@ type modelAnnotations struct {
 	ProtoPrefix string
 }
 
+// HasDocLines returns true if the generated package has doc comments.
+func (m *modelAnnotations) HasDocLines() bool {
+	return len(m.DocLines) > 0
+}
+
 // HasServices returns true if the model has services.
 func (m *modelAnnotations) HasServices() bool {
 	return len(m.Parent.Services) > 0
@@ -448,7 +453,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	slices.Sort(devDependencies)
-
+	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
 		Parent:                    model,
 		PackageName:               pkgName,
@@ -464,7 +469,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model),
+		DocLines:                   docLines,
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,

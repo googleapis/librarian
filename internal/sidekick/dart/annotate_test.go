@@ -57,6 +57,36 @@ func TestAnnotateModel(t *testing.T) {
 	}
 }
 
+func TestAnnotateModel_HasDocLines(t *testing.T) {
+	modelWithDesc := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	modelWithDesc.PackageName = "test"
+	modelWithDesc.Description = "Has a description"
+
+	modelWithoutDesc := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	modelWithoutDesc.PackageName = "test"
+	modelWithoutDesc.Description = ""
+
+	options := maps.Clone(requiredConfig)
+
+	annotate1 := newAnnotateModel(modelWithDesc)
+	if err := annotate1.annotateModel(options); err != nil {
+		t.Fatal(err)
+	}
+	codec1 := modelWithDesc.Codec.(*modelAnnotations)
+	if !codec1.HasDocLines() {
+		t.Errorf("Expected HasDocLines() to be true when description is provided")
+	}
+
+	annotate2 := newAnnotateModel(modelWithoutDesc)
+	if err := annotate2.annotateModel(options); err != nil {
+		t.Fatal(err)
+	}
+	codec2 := modelWithoutDesc.Codec.(*modelAnnotations)
+	if codec2.HasDocLines() {
+		t.Errorf("Expected HasDocLines() to be false when description is empty")
+	}
+}
+
 func TestAnnotateModel_FakeList(t *testing.T) {
 	service1 := &api.Service{Name: "SecretManagerService", Package: "google.cloud.secretmanager"}
 	service2 := &api.Service{Name: "AccessApprovalService", Package: "google.cloud.accessapproval"}
