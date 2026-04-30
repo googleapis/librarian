@@ -17,15 +17,29 @@ package python
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// defaultVersion is the first version used for a new library.
-// This is set on the initial `librarian add` for a new API.
-const defaultVersion = "0.0.0"
+const (
+	// defaultVersion is the first version used for a new library.
+	// This is set on the initial `librarian add` for a new API.
+	defaultVersion = "0.0.0"
+	// changelog is the name of the changelog file to create. A regular file
+	// is created in the package root, and a symlink is created in the docs
+	// directory.
+	changelog         = "CHANGELOG.md"
+	changelogTemplate = `# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/%s/#history
+`
+)
 
 var (
 	approvedGAPICNamespaces = []string{
@@ -42,7 +56,7 @@ var (
 )
 
 // Add initializes a new Python library with default values.
-func Add(lib *config.Library) (*config.Library, error) {
+func Add(lib *config.Library, output string) (*config.Library, error) {
 	lib.Version = defaultVersion
 	if len(lib.APIs) != 1 {
 		return nil, errNewLibraryMustHaveOneAPI
@@ -57,6 +71,9 @@ func Add(lib *config.Library) (*config.Library, error) {
 	if !slices.Contains(approvedGAPICNamespaces, namespace) {
 		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
 	}
+	if err := createChangelog(lib.Name, output); err != nil {
+		return nil, err
+	}
 	return lib, nil
 }
 
@@ -70,6 +87,25 @@ func ValidateNewAPIs(lib *config.Library) error {
 	}
 	if len(lib.Python.OptArgsByAPI) != 0 {
 		return errExistingLibraryCustomGAPICOptions
+	}
+	return nil
+}
+
+// createChangelog creates a regular changelog file for the library with the
+// specified name in the given output directory, and a symlink to that from a
+// docs subdirectory.
+func createChangelog(libName, output string) error {
+	docs := filepath.Join(output, "docs")
+	if err := os.MkdirAll(docs, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf(changelogTemplate, libName)
+	if err := os.WriteFile(filepath.Join(output, changelog), []byte(content), 0644); err != nil {
+		return err
+	}
+	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md
+	if err := os.Symlink(filepath.Join("..", changelog), filepath.Join(docs, changelog)); err != nil {
+		return err
 	}
 	return nil
 }
