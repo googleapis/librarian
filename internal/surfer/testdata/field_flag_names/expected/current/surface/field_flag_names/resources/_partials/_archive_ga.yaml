@@ -43,29 +43,29 @@
           plural_name: resources
         required: true
       - arg_name: field-with-no-parent
-        api_field: resource.fieldWithNoParent
+        api_field: archiveResourceRequest.resource.fieldWithNoParent
         help_text: Field with no parent
         is_positional: false
         required: false
       - arg_name: msg
-        api_field: resource.msg
+        api_field: archiveResourceRequest.resource.msg
         help_text: Message Field.
         is_positional: false
         required: false
         type: arg_object
       - arg_name: quiet
-        api_field: resource.quiet
+        api_field: archiveResourceRequest.resource.quiet
         help_text: Field that conflicts with quiet global flag.
         is_positional: false
         required: false
       - arg_name: billing-info
-        api_field: resource.billingInfo
+        api_field: archiveResourceRequest.resource.billingInfo
         help_text: Field that indirectly conflicts with billing-project global flag.
         is_positional: false
         required: false
         type: arg_object
       - arg_name: labels
-        api_field: resource.labels
+        api_field: archiveResourceRequest.resource.labels
         help_text: |-
           The labels on the resource, which can be used for categorization.
           similar to Kubernetes resource labels.

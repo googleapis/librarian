@@ -23,7 +23,6 @@
   arguments:
     params:
       - arg_name: git-repository-link
-        api_field: gitRepositoryLink
         help_text: |-
           The resource name of GitRepositoryLink in the format
           `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.

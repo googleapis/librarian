@@ -52,4 +52,3 @@
       is_positional: true
   async:
     collection: iam.locations.workforcePools.subjects.operations
-    extract_resource_result: false

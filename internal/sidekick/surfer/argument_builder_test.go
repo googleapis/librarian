@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package gcloud
+package surfer
 
 import (
 	"testing"
@@ -20,7 +20,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 func TestNewArgument(t *testing.T) {
@@ -39,7 +39,7 @@ func TestNewArgument(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		field     *api.Field
-		apiField  string
+		apiField  []string
 		method    *api.Method
 		overrides *provider.Config
 		want      Argument
@@ -47,11 +47,11 @@ func TestNewArgument(t *testing.T) {
 		{
 			name:     "String Field",
 			field:    api.NewTestField("description").WithType(api.TypezString).WithBehavior(api.FieldBehaviorOptional),
-			apiField: "description",
+			apiField: []string{"description"},
 			method:   api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "description",
-				APIField: "description",
+				APIField: []string{"description"},
 				Type:     "str",
 				HelpText: "Value for the `description` field.",
 				Required: false,
@@ -65,11 +65,11 @@ func TestNewArgument(t *testing.T) {
 				f.Documentation = "My proto comment"
 				return f
 			}(),
-			apiField: "description",
+			apiField: []string{"description"},
 			method:   api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "description",
-				APIField: "description",
+				APIField: []string{"description"},
 				Type:     "str",
 				HelpText: "My proto comment",
 				Required: false,
@@ -79,11 +79,11 @@ func TestNewArgument(t *testing.T) {
 		{
 			name:     "Resource Reference Field",
 			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
-			apiField: "network",
+			apiField: []string{"network"},
 			method:   api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "network",
-				APIField: "network",
+				APIField: []string{"network"},
 				HelpText: "Value for the `network` field.",
 				ResourceSpec: &ResourceSpec{
 					Name:       "network",
@@ -95,17 +95,16 @@ func TestNewArgument(t *testing.T) {
 					},
 					DisableAutoCompleters: true,
 				},
-				ResourceMethodParams: map[string]string{"network": "{__relative_name__}"},
 			},
 		},
 		{
 			name:     "Boolean Field in Create Command",
 			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
-			apiField: "validateOnly",
+			apiField: []string{"validateOnly"},
 			method:   api.NewTestMethod("CreateInstance").WithVerb("POST"),
 			want: Argument{
-				ArgName:  "validate-only",
-				APIField: "validateOnly",
+				ArgName:  "validateOnly",
+				APIField: []string{"validateOnly"},
 				Type:     "bool",
 				Action:   "store_true",
 				HelpText: "Value for the `validate-only` field.",
@@ -114,11 +113,11 @@ func TestNewArgument(t *testing.T) {
 		{
 			name:     "Boolean Field in Update Command",
 			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
-			apiField: "validateOnly",
+			apiField: []string{"validateOnly"},
 			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
 			want: Argument{
-				ArgName:  "validate-only",
-				APIField: "validateOnly",
+				ArgName:  "validateOnly",
+				APIField: []string{"validateOnly"},
 				Type:     "bool",
 				Action:   "store_true_false",
 				HelpText: "Value for the `validate-only` field.",
@@ -142,11 +141,11 @@ func TestNewArgument(t *testing.T) {
 					},
 				},
 			},
-			apiField: "foo",
+			apiField: []string{"foo"},
 			method:   api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "foo",
-				APIField: "foo",
+				APIField: []string{"foo"},
 				Type:     "str",
 				HelpText: "Override Foo",
 			},
@@ -253,7 +252,7 @@ func TestIsIgnored(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			builder := newArgumentBuilder(test.method, nil, nil, nil, test.field, "")
+			builder := newArgumentBuilder(test.method, nil, nil, nil, test.field, nil)
 			got := builder.isIgnored()
 			if got != test.want {
 				t.Errorf("isIgnored() = %v, want %v", got, test.want)
@@ -462,7 +461,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			if provider.IsCreate(test.method) {
 				idField = test.field
 			}
-			got := newArgumentBuilder(test.method, nil, model, service, test.field, "").buildPrimaryResource(idField)
+			got := newArgumentBuilder(test.method, nil, model, service, test.field, nil).buildPrimaryResource(idField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceArgument() mismatch (-want +got):\n%s", diff)
 			}
@@ -485,23 +484,23 @@ func TestArgumentBuilder_Build(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		field   *api.Field
-		prefix  string
+		prefix  []string
 		want    *Argument
 		wantErr bool
 	}{
 		{
 			name:   "Skips skipped fields",
 			field:  api.NewTestField("update_mask").WithType(api.TypezMessage),
-			prefix: "update_mask",
+			prefix: []string{"update_mask"},
 			want:   nil,
 		},
 		{
 			name:   "Handles Simple String Field",
 			field:  api.NewTestField("display_name").WithType(api.TypezString),
-			prefix: "displayName",
+			prefix: []string{"displayName"},
 			want: &Argument{
-				ArgName:  "display-name",
-				APIField: "displayName",
+				ArgName:  "display_name",
+				APIField: []string{"displayName"},
 				HelpText: "Value for the `display-name` field.",
 				Required: false,
 				Repeated: false,
@@ -565,7 +564,7 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newArgumentBuilder(nil, nil, model, service, test.field, "").resourceReferenceSpec()
+			got, err := newArgumentBuilder(nil, nil, model, service, test.field, nil).resourceReferenceSpec()
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
@@ -590,7 +589,7 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newArgumentBuilder(nil, nil, &api.API{}, service, test.field, "").resourceReferenceSpec()
+			_, err := newArgumentBuilder(nil, nil, &api.API{}, service, test.field, nil).resourceReferenceSpec()
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}

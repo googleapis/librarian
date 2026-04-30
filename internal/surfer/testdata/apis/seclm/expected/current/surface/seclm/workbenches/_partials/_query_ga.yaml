@@ -54,7 +54,7 @@
           plural_name: workbenches
         required: true
       - arg_name: role
-        api_field: contents.role
+        api_field: workbenchQueryRequest.contents.role
         help_text: |-
           The producer of the content. Must be either 'user' or 'model'.
 
@@ -63,7 +63,7 @@
         is_positional: false
         required: false
       - arg_name: parts
-        api_field: contents.parts
+        api_field: workbenchQueryRequest.contents.parts
         help_text: |-
           Ordered `Parts` that constitute a single message. Parts may have
           different IANA MIME types.
@@ -72,7 +72,7 @@
         repeated: true
         type: arg_object
       - arg_name: category
-        api_field: safetySettings.category
+        api_field: workbenchQueryRequest.safetySettings.category
         help_text: The category for this setting.
         is_positional: false
         required: true
@@ -90,7 +90,7 @@
             enum_value: HARM_CATEGORY_SEXUALLY_EXPLICIT
             help_text: Value for the `harm-category-sexually-explicit` field.
       - arg_name: threshold
-        api_field: safetySettings.threshold
+        api_field: workbenchQueryRequest.safetySettings.threshold
         help_text: Controls the probability threshold at which harm is blocked.
         is_positional: false
         required: true

@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/swift"
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -198,6 +199,8 @@ func isVeneer(language string, lib *config.Library) bool {
 	switch language {
 	case config.LanguageRust:
 		return rust.IsVeneer(lib)
+	case config.LanguageSwift:
+		return swift.IsModule(lib)
 	case config.LanguageNodejs:
 		return lib.Output != "" && len(lib.APIs) == 0
 	default:
@@ -636,18 +639,6 @@ func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
 	}
 	if src.ProtoOnlyAPIs != nil {
 		res.ProtoOnlyAPIs = src.ProtoOnlyAPIs
-	}
-	if src.NamePrettyOverride != "" {
-		res.NamePrettyOverride = src.NamePrettyOverride
-	}
-	if src.ProductDocumentationOverride != "" {
-		res.ProductDocumentationOverride = src.ProductDocumentationOverride
-	}
-	if src.APIShortnameOverride != "" {
-		res.APIShortnameOverride = src.APIShortnameOverride
-	}
-	if src.APIIDOverride != "" {
-		res.APIIDOverride = src.APIIDOverride
 	}
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride

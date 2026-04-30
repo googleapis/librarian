@@ -12,12 +12,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides a code generator for gcloud commands.
-package gcloud
+// Package surfer provides a code generator for gcloud commands.
+package surfer
 
 import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 // Generate builds a gcloud command tree from the parsed API model and

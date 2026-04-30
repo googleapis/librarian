@@ -48,7 +48,6 @@
           plural_name: resources
         required: true
       - arg_name: reference
-        api_field: resource.reference
         help_text: Reference to another resource
         is_positional: false
         resource_spec:
@@ -68,7 +67,6 @@
         resource_method_params:
           resource.reference: '{__relative_name__}'
       - arg_name: another-reference
-        api_field: resource.anotherReference
         help_text: Reference to another resource
         is_positional: false
         resource_spec:
@@ -88,7 +86,6 @@
         resource_method_params:
           resource.anotherReference: '{__relative_name__}'
       - arg_name: multitype-reference
-        api_field: resource.multitypeReference
         help_text: Reference to multitype resource
         is_positional: false
         resource_spec:
@@ -108,7 +105,6 @@
         resource_method_params:
           resource.multitypeReference: '{__relative_name__}'
       - arg_name: another-multitype-reference
-        api_field: resource.anotherMultitypeReference
         help_text: Reference to another multitype resource
         is_positional: false
         resource_spec:
@@ -128,7 +124,6 @@
         resource_method_params:
           resource.anotherMultitypeReference: '{__relative_name__}'
       - arg_name: singleton-reference
-        api_field: resource.singletonReference
         help_text: Reference to singleton resource
         is_positional: false
         resource_spec:
@@ -143,7 +138,6 @@
         resource_method_params:
           resource.singletonReference: '{__relative_name__}'
       - arg_name: global-reference
-        api_field: resource.globalReference
         help_text: Reference to another singleton resource
         is_positional: false
         resource_spec:

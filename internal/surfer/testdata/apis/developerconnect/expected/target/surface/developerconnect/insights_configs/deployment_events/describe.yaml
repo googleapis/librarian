@@ -48,6 +48,7 @@
           disable_auto_completers: false
         required: true
       - arg_name: show-previous-diff
+        is_positional: false
         help_text: |-
           If true, shows the diff between this deployment and the previous one.
         action: store_true
