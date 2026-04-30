@@ -3257,8 +3257,8 @@
 - path: google/shopping/type
   documentation_uri: https://developers.google.com/merchant/api
   languages:
-    - java
     - go
+    - java
     - python
   skip_rest_numeric_enums:
     - python
