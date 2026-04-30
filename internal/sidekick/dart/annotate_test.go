@@ -1080,6 +1080,19 @@ func TestCreateFromJsonLine(t *testing.T) {
 			},
 		},
 	}
+	nullValueEnum := &api.Enum{
+		Name:    "NullValue",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.NullValue",
+		Values: []*api.EnumValue{
+			{Name: "NULL_VALUE", Number: 0},
+		},
+	}
+	valueMessage := &api.Message{
+		Name:    "Value",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.Value",
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1229,6 +1242,15 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: ".google.protobuf.Duration"},
 			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
+		// canBeNull exceptions
+		{
+			&api.Field{Name: "nullValue", JSONName: "nullValue", Typez: api.TypezEnum, TypezID: ".google.protobuf.NullValue"},
+			"switch ((json.containsKey('nullValue'), json['nullValue'])) {(false,_) => NullValue.$default, (true, Object? $1) => NullValue.fromJson($1)}",
+		},
+		{
+			&api.Field{Name: "value", JSONName: "value", Typez: api.TypezMessage, TypezID: ".google.protobuf.Value"},
+			"switch ((json.containsKey('value'), json['value'])) {(false,_) => null, (true, Object? $1) => Value.fromJson($1)}",
+		},
 
 		// maps
 		{
@@ -1250,8 +1272,8 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Fields:  []*api.Field{test.field},
 			}
 			model := api.NewTestAPI([]*api.Message{message,
-				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes},
-				[]*api.Enum{enumState, foreignEnumState},
+				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes, valueMessage},
+				[]*api.Enum{enumState, foreignEnumState, nullValueEnum},
 				[]*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{

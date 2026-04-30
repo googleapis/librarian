@@ -198,10 +198,16 @@ type fieldAnnotation struct {
 }
 
 type enumAnnotation struct {
+	Parent       *api.Enum
 	Name         string
 	DocLines     []string
 	DefaultValue string
 	Model        *api.API
+}
+
+func (e *enumAnnotation) HasCustomEncoding() bool {
+	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID]
+	return hasCustomEncoding
 }
 
 type enumValueAnnotation struct {
@@ -983,6 +989,11 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
+// canBeNull returns whether the given field can have a `null` JSON serialization.
+func canBeNull(field *api.Field) bool {
+	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
+}
+
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
@@ -1000,6 +1011,18 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 		default:
 			defaultValue = defaultValues[field.Typez].Value
 		}
+	}
+
+	// Parsers should accept `null` JSON values but consider the field to be
+	// unset. `NullValue` and `Value` are exceptions to this rule, because their
+	// serialization is/can be `null`.
+	//
+	// See https://protobuf.dev/programming-guides/json/#null-value
+	if canBeNull(field) {
+		decoder := annotate.decoder(field.Typez, field.TypezID)
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) "+
+			"{(false,_) => %s, "+
+			"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
 	}
 
 	switch {
@@ -1224,6 +1247,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	enum.Codec = &enumAnnotation{
+		Parent:       enum,
 		Name:         enumName(enum),
 		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,

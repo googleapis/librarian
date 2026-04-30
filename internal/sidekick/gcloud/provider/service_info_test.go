@@ -21,22 +21,22 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestInferTrackFromPackage(t *testing.T) {
+func TestTracks(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		pkg  string
-		want string
+		want []ReleaseTrack
 	}{
-		{"GA package", "google.cloud.parallelstore.v1", "ga"},
-		{"Beta package", "google.cloud.parallelstore.v1beta", "beta"},
-		{"Alpha package", "google.cloud.parallelstore.v1alpha", "alpha"},
-		{"Empty package", "", "ga"},
-		{"Package without version", "google.cloud.parallelstore", "ga"},
-		{"Other version", "google.cloud.parallelstore.v2", "ga"},
+		{"GA package", "google.cloud.parallelstore.v1", []ReleaseTrack{ReleaseTrackGA}},
+		{"Beta package", "google.cloud.parallelstore.v1beta", []ReleaseTrack{ReleaseTrackBeta}},
+		{"Alpha package", "google.cloud.parallelstore.v1alpha", []ReleaseTrack{ReleaseTrackAlpha}},
+		{"Empty package", "", []ReleaseTrack{ReleaseTrackGA}},
+		{"Package without version", "google.cloud.parallelstore", []ReleaseTrack{ReleaseTrackGA}},
+		{"Other version", "google.cloud.parallelstore.v2", []ReleaseTrack{ReleaseTrackGA}},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := InferTrackFromPackage(test.pkg)
+			got := Tracks(APIVersionFromModel(&api.API{PackageName: test.pkg}))
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -109,6 +109,37 @@ func TestResolveRootPackage(t *testing.T) {
 			got := ResolveRootPackage(test.model)
 			if got != test.want {
 				t.Errorf("ResolveRootPackage(%v) = %q, want %q", test.model, got, test.want)
+			}
+		})
+	}
+}
+
+func TestAPIVersionFromModel(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		model *api.API
+		want  string
+	}{
+		{
+			name: "Valid Package",
+			model: &api.API{
+				PackageName: "google.cloud.parallelstore.v1",
+			},
+			want: "v1",
+		},
+		{
+			name: "Empty Package",
+			model: &api.API{
+				PackageName: "",
+			},
+			want: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := APIVersionFromModel(test.model)
+			if got != test.want {
+				t.Errorf("got %q, want %q", got, test.want)
 			}
 		})
 	}

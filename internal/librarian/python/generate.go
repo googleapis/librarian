@@ -181,18 +181,6 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		repoMetadata.ClientDocumentation = packageOptions.ClientDocumentationOverride
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
-	if packageOptions.NamePrettyOverride != "" {
-		repoMetadata.NamePretty = packageOptions.NamePrettyOverride
-	}
-	if packageOptions.ProductDocumentationOverride != "" {
-		repoMetadata.ProductDocumentation = packageOptions.ProductDocumentationOverride
-	}
-	if packageOptions.APIShortnameOverride != "" {
-		repoMetadata.APIShortname = packageOptions.APIShortnameOverride
-	}
-	if packageOptions.APIIDOverride != "" {
-		repoMetadata.APIID = packageOptions.APIIDOverride
-	}
 	if packageOptions.IssueTrackerOverride != "" {
 		repoMetadata.IssueTracker = packageOptions.IssueTrackerOverride
 	}

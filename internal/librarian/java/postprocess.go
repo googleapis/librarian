@@ -82,6 +82,9 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	if err != nil {
 		return err
 	}
+	if p.library.Java != nil && p.library.Java.SkipPOMUpdates {
+		return nil
+	}
 	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
 		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}

@@ -67,7 +67,7 @@ func runDotnetMigration(ctx context.Context, repoPath string) error {
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
-		return errTidyFailed
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
 	log.Printf("Successfully migrated %d .NET libraries", len(cfg.Libraries))
 	return nil

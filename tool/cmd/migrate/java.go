@@ -189,7 +189,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
-		return errTidyFailed
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
 	log.Printf("Successfully migrated %d Java libraries", len(cfg.Libraries))
 	return nil
@@ -321,6 +321,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 
 		// Hardcoded configuration for grafeas special case.
 		if name == "grafeas" {
+			lib.Java.SkipPOMUpdates = true
 			for _, ja := range lib.Java.JavaAPIs {
 				if ja.Path == "grafeas/v1" {
 					ja.Monolithic = true
