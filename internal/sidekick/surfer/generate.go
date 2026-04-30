@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides a code generator for gcloud commands.
+// Package surfer provides a code generator for gcloud commands.
 package surfer
 
 import (

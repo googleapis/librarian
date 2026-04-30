@@ -23,8 +23,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser/httprule"
-	"github.com/iancoleman/strcase"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
+	"github.com/iancoleman/strcase"
 )
 
 func TestSurfaceBuilder_Build_Structure(t *testing.T) {
