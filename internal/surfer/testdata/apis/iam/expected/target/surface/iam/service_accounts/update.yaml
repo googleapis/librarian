@@ -41,10 +41,12 @@
         disable_auto_completers: false
     params:
       - arg_name: display-name
+        is_positional: false
         api_field: patchServiceAccountRequest.serviceAccount.displayName
         help_text: |
           The new textual name to display for the account.
       - arg_name: description
+        is_positional: false
         api_field: patchServiceAccountRequest.serviceAccount.description
         help_text: |
           The new textual description for the account.

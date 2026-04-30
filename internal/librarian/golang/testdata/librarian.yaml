@@ -11,10 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# TODO(https://github.com/googleapis/librarian/issues/5449): move this file to
-# github.com/googleapis/google-cloud-go after the repository has migrated to
-# librarian.
+# This file is used for sourcing integration test dependencies for Go.
+# It only needs to be updated when integrating a new generator feature
+# (e.g., supporting a new flag).
 language: go
 tools:
   go:

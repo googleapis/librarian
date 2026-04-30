@@ -79,7 +79,6 @@
         required: true
         type: long
       - arg_name: network
-        api_field: instance.network
         help_text: |-
           Immutable. The name of the Compute Engine
           [VPC network](https://cloud.google.com/vpc/docs/vpc) to which the
@@ -102,7 +101,6 @@
         resource_method_params:
           instance.network: '{__relative_name__}'
       - arg_name: reserved-ip-range
-        api_field: instance.reservedIpRange
         help_text: |-
           Immutable. The ID of the IP address range being used by the
           instance's VPC network. See [Configure a VPC

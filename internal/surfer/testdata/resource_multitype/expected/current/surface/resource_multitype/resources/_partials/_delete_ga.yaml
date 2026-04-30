@@ -94,4 +94,3 @@
   async:
     collection:
       - resourcemultitype.organizations.locations.operations
-    extract_resource_result: false

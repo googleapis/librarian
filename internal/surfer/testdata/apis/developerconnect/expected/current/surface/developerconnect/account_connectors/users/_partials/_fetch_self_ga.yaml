@@ -23,7 +23,6 @@
   arguments:
     params:
       - arg_name: name
-        api_field: name
         help_text: Name of the AccountConnector resource
         is_positional: false
         resource_spec:

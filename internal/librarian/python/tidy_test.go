@@ -167,7 +167,7 @@ func TestTidyAPI(t *testing.T) {
 				Python: &config.PythonPackage{
 					DefaultVersion: "v1",
 					OptArgsByAPI: map[string][]string{
-						"google/cloud/derived/v1": []string{
+						"google/cloud/derived/v1": {
 							"warehouse-package-name=other-package-name",
 							"python-gapic-name=other-gapic-name",
 						},

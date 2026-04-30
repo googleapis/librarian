@@ -54,6 +54,10 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := codec.generateServices(outdir, model, provider); err != nil {
 		return err
 	}
+	if codec.Module {
+		// Modules only get the top-level messages, enums, and services generated.
+		return nil
+	}
 	if err := codec.generateSnippets(outdir, model, provider); err != nil {
 		return err
 	}
@@ -61,11 +65,18 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
+func (c *codec) outputPath(name string) string {
+	if c.Module {
+		return name
+	}
+	return filepath.Join("Sources", c.PackageName, name)
+}
+
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, m := range model.Messages {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/message_file.swift.mustache",
-			OutputPath:   filepath.Join("Sources", c.PackageName, m.Name+".swift"),
+			OutputPath:   c.outputPath(m.Name + ".swift"),
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
 			return err
@@ -78,7 +89,7 @@ func (c *codec) generateEnums(outdir string, model *api.API, provider language.T
 	for _, e := range model.Enums {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/enum_file.swift.mustache",
-			OutputPath:   filepath.Join("Sources", c.PackageName, e.Name+".swift"),
+			OutputPath:   c.outputPath(e.Name + ".swift"),
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
 			return err
@@ -91,7 +102,7 @@ func (c *codec) generateServices(outdir string, model *api.API, provider languag
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/service.swift.mustache",
-			OutputPath:   filepath.Join("Sources", c.PackageName, s.Name+".swift"),
+			OutputPath:   c.outputPath(s.Name + ".swift"),
 		}
 		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 			return err

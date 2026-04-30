@@ -49,7 +49,7 @@
           plural_name: instances
         required: true
       - arg_name: uri
-        api_field: sourceGcsBucket.uri
+        api_field: importDataRequest.sourceGcsBucket.uri
         help_text: |-
           URI to a Cloud Storage bucket in the format:
           `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
@@ -57,14 +57,14 @@
         is_positional: false
         required: true
       - arg_name: path
-        api_field: destinationParallelstore.path
+        api_field: importDataRequest.destinationParallelstore.path
         help_text: |-
           Root directory path to the Paralellstore filesystem, starting
           with `/`. Defaults to `/` if unset.
         is_positional: false
         required: false
       - arg_name: request-id
-        api_field: requestId
+        api_field: importDataRequest.requestId
         help_text: |-
           An optional request ID to identify requests. Specify a unique
           request ID so that if you must retry your request, the server will know to
@@ -82,7 +82,6 @@
         is_positional: false
         required: false
       - arg_name: service-account
-        api_field: serviceAccount
         help_text: |-
           User-specified service account credentials to be used when
           performing the transfer.
@@ -111,9 +110,9 @@
           plural_name: serviceAccounts
         required: false
         resource_method_params:
-          serviceAccount: '{__relative_name__}'
+          importDataRequest.serviceAccount: '{__relative_name__}'
       - arg_name: uid
-        api_field: metadataOptions.uid
+        api_field: importDataRequest.metadataOptions.uid
         help_text: The UID preservation behavior.
         is_positional: false
         required: false
@@ -125,7 +124,7 @@
             enum_value: UID_NUMBER_PRESERVE
             help_text: Value for the `uid-number-preserve` field.
       - arg_name: gid
-        api_field: metadataOptions.gid
+        api_field: importDataRequest.metadataOptions.gid
         help_text: The GID preservation behavior.
         is_positional: false
         required: false
@@ -137,7 +136,7 @@
             enum_value: GID_NUMBER_PRESERVE
             help_text: Value for the `gid-number-preserve` field.
       - arg_name: mode
-        api_field: metadataOptions.mode
+        api_field: importDataRequest.metadataOptions.mode
         help_text: The mode preservation behavior.
         is_positional: false
         required: false
@@ -156,4 +155,3 @@
   async:
     collection:
       - parallelstore.projects.locations.operations
-    extract_resource_result: false

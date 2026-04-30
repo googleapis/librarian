@@ -36,6 +36,7 @@
   arguments:
     params:
       - arg_name: resource-name
+        is_positional: false
         api_field: fullResourceName
         help_text: |
           The full resource name of the policy containing the condition to lint.

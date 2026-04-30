@@ -12,13 +12,13 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides gcloud-specific functionality for librarian.
+// Package surfer provides surfer-specific functionality for librarian.
 //
 // Unlike the surfer tool, which reads its command surface configuration from a
 // gcloud.yaml file, this package drives generation directly from the APIs
 // declared in librarian.yaml and the protos and service configs that live
 // beside them in googleapis.
-package gcloud
+package surfer
 
 import (
 	"context"
@@ -30,8 +30,8 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	sidekickgcloud "github.com/googleapis/librarian/internal/sidekick/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	sidekicksurfer "github.com/googleapis/librarian/internal/sidekick/surfer"
+	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
@@ -88,7 +88,7 @@ func generateAPI(api *config.API, googleapisDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	return sidekickgcloud.Generate(model, nil, outDir, baseModule)
+	return sidekicksurfer.Generate(model, nil, outDir, baseModule)
 }
 
 // collectProtos returns proto file paths under apiPath, relative to
@@ -119,7 +119,7 @@ func collectProtos(googleapisDir, apiPath string) ([]string, error) {
 // findServiceConfig returns the absolute path to the service config YAML for
 // apiPath.
 func findServiceConfig(googleapisDir, apiPath string) (string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGcloud)
+	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageSurfer)
 	if err != nil {
 		return "", err
 	}

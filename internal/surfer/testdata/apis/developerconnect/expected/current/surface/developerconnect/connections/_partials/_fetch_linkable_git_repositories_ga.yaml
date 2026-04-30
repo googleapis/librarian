@@ -23,7 +23,6 @@
   arguments:
     params:
       - arg_name: connection
-        api_field: connection
         help_text: |-
           The name of the Connection.
           Format: `projects/*/locations/*/connections/*`.
