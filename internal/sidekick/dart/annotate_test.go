@@ -637,6 +637,40 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 	}
 }
 
+func TestAnnotateMessage_HasFields(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{sample.Secret()},
+		[]*api.Enum{},
+		[]*api.Service{},
+	)
+	annotate := newAnnotateModel(model)
+	annotate.annotateModel(map[string]string{})
+
+	emptyMessage := &api.Message{
+		Name:    "EmptyMessage",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.EmptyMessage",
+		Fields:  []*api.Field{},
+	}
+
+	t.Run("has fields", func(t *testing.T) {
+		secret := sample.Secret()
+		annotate.annotateMessage(secret)
+		codec := secret.Codec.(*messageAnnotation)
+		if !codec.HasFields() {
+			t.Errorf("Expected HasFields() to be true")
+		}
+	})
+
+	t.Run("no fields", func(t *testing.T) {
+		annotate.annotateMessage(emptyMessage)
+		codec := emptyMessage.Codec.(*messageAnnotation)
+		if codec.HasFields() {
+			t.Errorf("Expected HasFields() to be false")
+		}
+	})
+}
+
 // Tests that messages that are allowlisted as not being generated are, in fact, not generated.
 func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	status := &api.Message{
