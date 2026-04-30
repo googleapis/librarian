@@ -85,7 +85,11 @@ type modelAnnotations struct {
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
 	FakeList    string
 	ProtoPrefix string
-	HasDocLines bool
+}
+
+// HasDocLines returns true if the generated package has doc comments.
+func (m *modelAnnotations) HasDocLines() bool {
+	return len(m.DocLines) > 0
 }
 
 // HasServices returns true if the model has services.
@@ -466,7 +470,6 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			return ""
 		}(),
 		DocLines:                   docLines,
-		HasDocLines:                len(docLines) > 0,
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
