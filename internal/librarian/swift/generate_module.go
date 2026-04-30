@@ -23,9 +23,9 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-func generateModule(ctx context.Context, library *config.Library, sources *sources.Sources) error {
+func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
 	for _, module := range library.Swift.Modules {
-		modelConfig := moduleToModelConfig(library, module, sources)
+		modelConfig := moduleToModelConfig(library, module, src)
 		model, err := parser.CreateModel(modelConfig)
 		if err != nil {
 			return err
