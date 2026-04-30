@@ -233,8 +233,17 @@ func isToolsEmpty(tools *config.Tools) bool {
 }
 
 // isDefaultEmpty returns true if the default configuration is empty.
-func isDefaultEmpty(def *config.Default) bool {
-	return len(def.Keep) == 0 && def.Output == "" && def.TagFormat == "" && def.Dotnet == nil && def.Dart == nil && def.Java == nil && def.Nodejs == nil && def.Rust == nil && def.Python == nil && def.Swift == nil
+func isDefaultEmpty(defaults *config.Default) bool {
+	return len(defaults.Keep) == 0 &&
+		defaults.Output == "" &&
+		defaults.TagFormat == "" &&
+		defaults.Dotnet == nil &&
+		defaults.Dart == nil &&
+		defaults.Java == nil &&
+		defaults.Nodejs == nil &&
+		defaults.Rust == nil &&
+		defaults.Python == nil &&
+		defaults.Swift == nil
 }
 
 // tidyConfig removes unused sections from the configuration.
