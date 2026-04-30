@@ -211,24 +211,7 @@ func TestUpdateCommand(t *testing.T) {
 			wantConfig: func(cfg *config.Config) {
 				cfg.Version = "v1.2.3"
 			},
-			// Use a fake go binary in PATH to mock `go list` execution without
-			// accessing the network. This avoids using test-driven function
-			// abstraction in production code solely for easier mocking.
-			before: func(t *testing.T) {
-				goDir := t.TempDir()
-				goPath := filepath.Join(goDir, "go")
-				script := `#!/bin/bash
-if [[ "$*" == *"list -m -f {{.Version}} github.com/googleapis/librarian@latest"* ]]; then
-  echo "v1.2.3"
-  exit 0
-fi
-exit 1
-`
-				if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
-					t.Fatal(err)
-				}
-				t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))
-			},
+			before: fakeGoList("latest", "v1.2.3"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -329,4 +312,21 @@ func updateTestConfig() *config.Config {
 		},
 	}
 	return cfg
+}
+
+// fakeGoList returns a function that mocks `go list` execution by creating a
+// fake go binary in a temporary directory and adding it to the front of PATH.
+// It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
+// and returns the specified <want> version.
+func fakeGoList(target, want string) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		goDir := t.TempDir()
+		goPath := filepath.Join(goDir, "go")
+		script := fmt.Sprintf("#!/bin/bash\nif [[ \"$*\" == *\"list -m -f {{.Version}} github.com/googleapis/librarian@%s\"* ]]; then\n  echo \"%s\"\n  exit 0\nfi\nexit 1\n", target, want)
+		if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 }
