@@ -30,7 +30,7 @@ func generateModule(ctx context.Context, library *config.Library, sources *sourc
 		if err != nil {
 			return err
 		}
-		if err := sidekickswift.Generate(ctx, model, library.Output, modelConfig, library.Swift); err != nil {
+		if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
 			return err
 		}
 	}

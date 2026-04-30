@@ -91,7 +91,7 @@ type SwiftDependency struct {
 
 // SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.
 //
-// Each module specifies what proto source to use, which template to apply, and where to output the generated code.
+// Each module specifies what proto source to use, and where to output the generated code.
 type SwiftModule struct {
 	// Output is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated").
 	Output string `yaml:"output"`

@@ -99,7 +99,7 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		case "module":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
-				return nil, fmt.Errorf("cannot convert `not-for-publication` value %q to boolean: %w", definition, err)
+				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
 			}
 			result.Module = value
 		default:

@@ -42,7 +42,7 @@ func TestGenerateModule(t *testing.T) {
 	library.Swift.Modules = []*config.SwiftModule{
 		{
 			APIPath: "google/type",
-			Output:  "ProtoJSON",
+			Output:  filepath.Join(outDir, "ProtoJSON"),
 		},
 	}
 	src := &sources.Sources{
@@ -54,7 +54,7 @@ func TestGenerateModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedFile := filepath.Join(outDir, "Expr.swift")
+	expectedFile := filepath.Join(outDir, "ProtoJSON", "Expr.swift")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Error(err)
 	}
