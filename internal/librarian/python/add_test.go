@@ -211,6 +211,22 @@ func TestCreateChangelog(t *testing.T) {
 	if linkInfo.Mode()&os.ModeSymlink == 0 {
 		t.Errorf("docs file is not a symlink")
 	}
+	// Check that the target resolves to the regular file.
+	linkTarget, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absRegularFile, err := filepath.Abs(filepath.Join(output, changelog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	absLinkTarget, err := filepath.Abs(filepath.Join(output, "docs", linkTarget))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if absLinkTarget != absRegularFile {
+		t.Errorf("absolute link target is %s; want %s", absLinkTarget, absRegularFile)
+	}
 }
 
 func TestCreateChangelog_Error(t *testing.T) {

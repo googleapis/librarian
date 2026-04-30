@@ -104,7 +104,9 @@ func createChangelog(libName, output string) error {
 		return err
 	}
 	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md
-	if err := os.Symlink(filepath.Join("..", changelog), filepath.Join(docs, changelog)); err != nil {
+	// The target is created directly rather than using filepath.Join to make
+	// sure it always uses a forward-slash, even on Windows.
+	if err := os.Symlink("../"+changelog, filepath.Join(docs, changelog)); err != nil {
 		return err
 	}
 	return nil
