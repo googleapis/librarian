@@ -1115,6 +1115,10 @@ func createToJsonElement(field *api.Field) string {
 	case api.TypezBytes:
 		return fmt.Sprintf("if (%s case final $1?) '%s': encodeBytes($1)", name, jsonName)
 	default:
+		if canBeNull(field) {
+			enc, _ := encoder(field.Typez, "$1")
+			return fmt.Sprintf("if (%s case final $1?) '%s': %s", name, jsonName, enc)
+		}
 		nullAware := createToJsonNullAwareLine(field)
 		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
 	}
@@ -1182,6 +1186,24 @@ func (annotate *annotateModel) buildQueryLines(
 
 	switch {
 	case field.Repeated:
+		if codec.Nullable || couldRefPrefixBeNull {
+			switch field.Typez {
+			case api.TypezString:
+				return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
+			case api.TypezEnum:
+				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => e.value).toList()", param, ref))
+			case api.TypezBool, api.TypezInt32, api.TypezUint32, api.TypezSint32,
+				api.TypezFixed32, api.TypezSfixed32, api.TypezInt64,
+				api.TypezUint64, api.TypezSint64, api.TypezFixed64, api.TypezSfixed64,
+				api.TypezFloat, api.TypezDouble:
+				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => '$e').toList()", param, ref))
+			case api.TypezBytes:
+				return append(result, fmt.Sprintf("'%s': ?%s.map((e) => encodeBytes(e)!).toList()", param, ref))
+			default:
+				slog.Error("unhandled list query param", "type", field.Typez)
+				return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
+			}
+		}
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.TypezString:
@@ -1225,13 +1247,17 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.TypezString:
-		if codec.Nullable {
+		if codec.Nullable || couldRefPrefixBeNull {
 			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
 		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.TypezEnum:
-		if codec.Nullable {
-			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
+		if codec.Nullable || couldRefPrefixBeNull {
+			deref := "."
+			if codec.Nullable {
+				deref = "?."
+			}
+			return append(result, fmt.Sprintf("'%s': ?%s%svalue", param, ref, deref))
 		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.TypezBool ||
@@ -1242,6 +1268,9 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.TypezUint64 || field.Typez == api.TypezSint64 ||
 		field.Typez == api.TypezFixed64 || field.Typez == api.TypezSfixed64 ||
 		field.Typez == api.TypezFloat || field.Typez == api.TypezDouble:
+		if codec.Nullable || couldRefPrefixBeNull {
+			return append(result, fmt.Sprintf("if (%s case final $1?) '%s': '${$1}'", ref, param))
+		}
 		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
 	case field.Typez == api.TypezBytes:
 		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preamble))
