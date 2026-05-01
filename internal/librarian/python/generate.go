@@ -40,6 +40,17 @@ const (
 	gapicNamespaceOption                = "python-gapic-namespace"
 	gapicNameOption                     = "python-gapic-name"
 	warehousePackageNameOption          = "warehouse-package-name"
+
+	// changelog is the name of the changelog file to create. A regular file
+	// is created in the package root, and a symlink is created in the docs
+	// directory.
+	changelog         = "CHANGELOG.md"
+	changelogTemplate = `# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/%s/#history
+`
 )
 
 var (
