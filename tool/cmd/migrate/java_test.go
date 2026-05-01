@@ -101,6 +101,95 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 	}
 }
 
+func TestApplyJavaLibraryOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "transport override",
+			lib: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{
+					TransportOverride: "grpc",
+				},
+			},
+		},
+		{
+			name: "api shortname override",
+			lib: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{
+					APIShortnameOverride: "common-protos",
+					SkipPOMUpdates:       true,
+				},
+			},
+		},
+		{
+			name: "skip pom updates",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+		},
+		{
+			name: "monolithic java api",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1"},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1", Monolithic: true},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+		},
+		{
+			name: "no override",
+			lib: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			applyJavaLibraryOverrides(test.lib)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRunJavaMigration(t *testing.T) {
 	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
