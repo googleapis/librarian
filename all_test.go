@@ -56,7 +56,7 @@ func TestGoGenerate(t *testing.T) {
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
-		t.Fatalf("git status: %v", err)
+		t.Fatal(err)
 	}
 	if stdout.Len() > 0 {
 		t.Fatalf("go generate produced diffs:\n%s", stdout.String())
