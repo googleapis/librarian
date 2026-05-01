@@ -144,7 +144,7 @@ func run(cmdPath *string) error {
 	if err := processFile(cmdPath); err != nil {
 		return err
 	}
-	cmd := exec.Command("goimports", "-w", "doc.go")
+	cmd := exec.Command("go", "tool", "goimports", "-w", "doc.go")
 	if err := cmd.Run(); err != nil {
 		log.Fatalf("goimports: %v", err)
 	}
