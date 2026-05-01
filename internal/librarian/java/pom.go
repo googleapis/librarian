@@ -249,7 +249,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	protoModules := make([]Coordinate, 0, len(library.APIs))
 	gRPCModules := make([]Coordinate, 0, len(library.APIs))
 	for _, api := range library.APIs {
-		apiBase := filepath.Base(api.Path)
+		apiBase := deriveAPIBase(library, api.Path)
 		javaAPI := ResolveJavaAPI(library, api)
 		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 
