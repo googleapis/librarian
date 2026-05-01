@@ -199,9 +199,9 @@ type fieldAnnotation struct {
 	// The default value for the string, e.g. "0" for an integer type.
 	DefaultValue string
 	// Whether the default value is constant or not, e.g. "0" is constant but "Uint8List(0)" is not.
-	ConstDefault  bool
-	FromJson      string
-	ToJson        string
+	ConstDefault bool
+	FromJson     string
+	ToJson       string
 }
 
 type enumAnnotation struct {
