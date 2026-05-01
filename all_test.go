@@ -52,7 +52,7 @@ func TestAddLicense(t *testing.T) {
 
 func TestGoGenerate(t *testing.T) {
 	rungo(t, "generate", "./...")
-	cmd := exec.Command("git", "status", "--porcelain")
+	cmd := exec.CommandContext(t.Context(), "git", "status", "--porcelain")
 	var stdout bytes.Buffer
 	cmd.Stdout = &stdout
 	if err := cmd.Run(); err != nil {
