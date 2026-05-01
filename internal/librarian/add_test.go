@@ -155,6 +155,7 @@ func TestAddCommand(t *testing.T) {
 			name:     "single API",
 			args:     []string{"google/cloud/secretmanager/v1"},
 			wantName: "google-cloud-secretmanager-v1",
+			wantAPIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		},
 		{
 			name: "multiple args",
