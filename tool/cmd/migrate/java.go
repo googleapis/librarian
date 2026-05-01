@@ -326,7 +326,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			if err == nil && api.ShortName != "" {
 				derivedShortName = api.ShortName
 			}
-			if l.APIShortName != "" && derivedShortName != l.APIShortName {
+			if derivedShortName != l.APIShortName {
 				lib.Java.APIShortnameOverride = l.APIShortName
 			}
 		}
@@ -442,6 +442,7 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 	}
 }
 
+// applyJavaLibraryOverrides sets library-level overrides.
 func applyJavaLibraryOverrides(lib *config.Library) {
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
@@ -449,11 +450,11 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 	if override, ok := apiShortnameOverrides[lib.Name]; ok {
 		lib.Java.APIShortnameOverride = override
 	}
-	if skip, ok := skipPOMUpdates[lib.Name]; ok && skip {
+	if skipPOMUpdates[lib.Name] {
 		lib.Java.SkipPOMUpdates = true
 	}
 	for _, ja := range lib.Java.JavaAPIs {
-		if mono, ok := monolithicJavaAPIs[ja.Path]; ok && mono {
+		if monolithicJavaAPIs[ja.Path] {
 			ja.Monolithic = true
 		}
 	}
