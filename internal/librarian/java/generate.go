@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -94,6 +95,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
+func deriveAPIBase(library *config.Library, apiPath string) string {
+	// TODO(https://github.com/googleapis/librarian/issues/5728):
+	// remove this after updated owlbot.py
+	if library.Name == "common-protos" {
+		return "v1"
+	}
+	return path.Base(apiPath)
+}
+
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -102,7 +112,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		javaAPI:        javaAPI,
 		metadata:       metadata,
 		outDir:         outdir,
-		apiBase:        filepath.Base(api.Path),
+		apiBase:        deriveAPIBase(library, api.Path),
 		googleapisDir:  googleapisDir,
 		includeSamples: *javaAPI.Samples,
 	}
