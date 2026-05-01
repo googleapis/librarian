@@ -193,11 +193,18 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 }
 
 func TestRunJavaMigration(t *testing.T) {
-	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+	fetchGoogleapisWithCommitVar = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
 			Commit: commitish,
 			SHA256: "sha123",
 			Dir:    "../../../internal/testdata/googleapis",
+		}, nil
+	}
+	fetchShowcaseWithCommitVar = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+		return &config.Source{
+			Commit: commitish,
+			SHA256: "sha456",
+			Dir:    "../../../internal/testdata/gapic-showcase",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -232,6 +239,17 @@ func TestRunJavaMigration(t *testing.T) {
 				t.Fatal(err)
 			}
 			writeVersionsFile(t, dir, "")
+
+			// Create dummy showcase pom.xml to avoid failure in runJavaMigration
+			showcaseDir := filepath.Join(dir, "sdk-platform-java", "java-showcase", "gapic-showcase")
+			if err := os.MkdirAll(showcaseDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			pomPath := filepath.Join(showcaseDir, "pom.xml")
+			if err := os.WriteFile(pomPath, []byte("<gapic-showcase.version>0.39.0</gapic-showcase.version>"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
 			if test.insert {
 				// Create dummy pom.xml to be updated
 				libDir := filepath.Join(dir, "java-language-v1")

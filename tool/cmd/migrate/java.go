@@ -49,7 +49,8 @@ const (
 )
 
 var (
-	fetchSourceWithCommit = fetchGoogleapisWithCommit
+	fetchGoogleapisWithCommitVar = fetchGoogleapisWithCommit
+	fetchShowcaseWithCommitVar   = fetchShowcaseWithCommit
 )
 
 type javaGAPICInfo struct {
@@ -163,17 +164,17 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if commit == "" {
 		commit = "master"
 	}
-	src, err := fetchSourceWithCommit(ctx, githubEndpoints, commit)
+	src, err := fetchGoogleapisWithCommitVar(ctx, githubEndpoints, commit)
 	if err != nil {
-		return errFetchSource
+		return fmt.Errorf("failed to fetch googleapis source: %w", err)
 	}
 	showcaseVersion, err := getShowcaseVersion(repoPath)
 	if err != nil {
 		return fmt.Errorf("failed to get showcase version: %w", err)
 	}
-	showcaseSrc, err := fetchShowcaseWithCommit(ctx, githubEndpoints, "v"+showcaseVersion)
+	showcaseSrc, err := fetchShowcaseWithCommitVar(ctx, githubEndpoints, "v"+showcaseVersion)
 	if err != nil {
-		return errFetchSource
+		return fmt.Errorf("failed to fetch showcase source: %w", err)
 	}
 
 	versions, err := readVersions(filepath.Join(repoPath, "versions.txt"))
@@ -782,7 +783,7 @@ func extractStrings(expr build.Expr) []string {
 }
 
 func getShowcaseVersion(repoPath string) (string, error) {
-	showcaseDir := filepath.Join(repoPath, "java-showcase")
+	showcaseDir := filepath.Join(repoPath, "sdk-platform-java", "java-showcase")
 	return extractVersionFromPOM(filepath.Join(showcaseDir, "gapic-showcase", "pom.xml"))
 }
 
