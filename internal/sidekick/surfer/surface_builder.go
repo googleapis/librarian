@@ -24,23 +24,15 @@ type surfaceBuilder struct {
 	config *provider.Config
 }
 
-func newSurfaceBuilder(model *api.API, config *provider.Config) *surfaceBuilder {
-	return &surfaceBuilder{
-		model:  model,
-		config: config,
-	}
-}
+// BuildCommandTree builds the gcloud command tree from a parsed API model.
+// It returns only the structural command tree, with no release-track
+// information. config may be nil.
+func BuildCommandTree(model *api.API, config *provider.Config) (*CommandGroup, error) {
+	b := &surfaceBuilder{model: model, config: config}
 
-func (b *surfaceBuilder) build() (*Surface, error) {
 	var root *CommandGroup
-	providerTracks := provider.Tracks(provider.APIVersionFromModel(b.model))
-	var tracks []ReleaseTrack
-	for _, t := range providerTracks {
-		tracks = append(tracks, ReleaseTrack(t))
-	}
-
-	for _, service := range b.model.Services {
-		gb := newGroupBuilder(b.model, service, b.config)
+	for _, service := range model.Services {
+		gb := newGroupBuilder(model, service, config)
 
 		if root == nil {
 			root = gb.buildRoot()
@@ -52,7 +44,20 @@ func (b *surfaceBuilder) build() (*Surface, error) {
 			}
 		}
 	}
+	return root, nil
+}
 
+// BuildSurface builds the gcloud command surface from a parsed API model,
+// including release-track information. config may be nil.
+func BuildSurface(model *api.API, config *provider.Config) (*Surface, error) {
+	root, err := BuildCommandTree(model, config)
+	if err != nil {
+		return nil, err
+	}
+	var tracks []ReleaseTrack
+	for _, t := range provider.Tracks(provider.APIVersionFromModel(model)) {
+		tracks = append(tracks, ReleaseTrack(t))
+	}
 	return &Surface{Root: root, Tracks: tracks}, nil
 }
 

@@ -292,6 +292,9 @@ type Library struct {
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
+	// Gcloud contains gcloud-go-specific library configuration.
+	Gcloud *GcloudPackage `yaml:"gcloud,omitempty"`
+
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
 

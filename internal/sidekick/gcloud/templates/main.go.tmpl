@@ -1,0 +1,26 @@
+{{.LicenseHeader}}
+package main
+
+import (
+	"context"
+	"log"
+	"os"
+
+	"{{.ModulePath}}/cmd"
+	"github.com/urfave/cli/v3"
+)
+
+func main() {
+	app := &cli.Command{
+		Name:        {{goString .RootName}},
+		Description: {{goString .RootHelp}},
+		Commands: []*cli.Command{
+			{{- range .Subgroups}}
+			cmd.{{.GoFuncName}}(),
+			{{- end}}
+		},
+	}
+	if err := app.Run(context.Background(), os.Args); err != nil {
+		log.Fatal(err)
+	}
+}

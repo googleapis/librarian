@@ -1,0 +1,143 @@
+{{.LicenseHeader}}
+package cmd
+
+import (
+	"context"
+	"encoding/json"
+	"fmt"
+	"strings"
+
+	"github.com/urfave/cli/v3"
+)
+
+// {{.Group.GoFuncName}} returns the {{goString .Group.Name}} command group.
+func {{.Group.GoFuncName}}() *cli.Command {
+	return &cli.Command{
+		Name:        {{goString .Group.Name}},
+		Description: {{goString .Group.HelpText}},
+		Commands: []*cli.Command{
+			{{- range .Group.Commands}}
+			{{- $cmd := .}}
+			{
+				Name:        {{goString .Name}},
+				Description: {{goString .HelpText}},
+				{{- if .Positional}}
+				ArgsUsage:   {{goString (printf "<%s>" .Positional.CLIName)}},
+				{{- end}}
+				Flags: []cli.Flag{
+					{{- range .Flags}}
+					{{- if eq .Type "bool"}}
+					&cli.BoolFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString .Help}},
+						Required: {{.Required}},
+					},
+					{{- else if eq .Type "int"}}
+					&cli.IntFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString .Help}},
+						Required: {{.Required}},
+					},
+					{{- else if eq .Type "float"}}
+					&cli.FloatFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString .Help}},
+						Required: {{.Required}},
+					},
+					{{- else if eq .Type "stringSlice"}}
+					&cli.StringSliceFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString .Help}},
+						Required: {{.Required}},
+					},
+					{{- else if eq .Type "map"}}
+					&cli.StringSliceFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString (printf "%s (KEY=VALUE pairs, repeat the flag for multiple entries)" .Help)}},
+						Required: {{.Required}},
+					},
+					{{- else}}
+					&cli.StringFlag{
+						Name:     {{goString .CLIName}},
+						Usage:    {{goString .Help}},
+						Required: {{.Required}},
+					},
+					{{- end}}
+					{{- end}}
+				},
+				Action: func(ctx context.Context, c *cli.Command) error {
+					req := map[string]any{}
+					{{- if .Positional}}
+					if v := c.Args().Get(0); v != "" {
+						req[{{goString .Positional.APIField}}] = v
+					}
+					{{- end}}
+					{{- range .Flags}}
+					{{- if eq .Type "bool"}}
+					if c.IsSet({{goString .CLIName}}) {
+						req[{{goString .APIField}}] = c.Bool({{goString .CLIName}})
+					}
+					{{- else if eq .Type "int"}}
+					if c.IsSet({{goString .CLIName}}) {
+						req[{{goString .APIField}}] = c.Int({{goString .CLIName}})
+					}
+					{{- else if eq .Type "float"}}
+					if c.IsSet({{goString .CLIName}}) {
+						req[{{goString .APIField}}] = c.Float({{goString .CLIName}})
+					}
+					{{- else if eq .Type "stringSlice"}}
+					if vs := c.StringSlice({{goString .CLIName}}); len(vs) > 0 {
+						req[{{goString .APIField}}] = vs
+					}
+					{{- else if eq .Type "map"}}
+					if vs := c.StringSlice({{goString .CLIName}}); len(vs) > 0 {
+						m := map[string]string{}
+						for _, kv := range vs {
+							parts := strings.SplitN(kv, "=", 2)
+							if len(parts) == 2 {
+								m[parts[0]] = parts[1]
+							}
+						}
+						if len(m) > 0 {
+							req[{{goString .APIField}}] = m
+						}
+					}
+					{{- else}}
+					{{- $enumValues := .EnumValues}}
+					if v := c.String({{goString .CLIName}}); v != "" {
+						{{- if .Choices}}
+						allowed := map[string]string{
+							{{- range $i, $choice := .Choices}}
+							{{goString $choice}}: {{goString (index $enumValues $i)}},
+							{{- end}}
+						}
+						mapped, ok := allowed[v]
+						if !ok {
+							return fmt.Errorf("invalid value %q for --{{.CLIName}}", v)
+						}
+						req[{{goString .APIField}}] = mapped
+						{{- else}}
+						req[{{goString .APIField}}] = v
+						{{- end}}
+					}
+					{{- end}}
+					{{- end}}
+					payload := map[string]any{
+						"method": {{goString .HTTPMethod}},
+						"url":    {{goString .URLPattern}},
+						"body":   req,
+					}
+					out, _ := json.MarshalIndent(payload, "", "  ")
+					fmt.Println(string(out))
+					// TODO(https://github.com/googleapis/librarian/issues/5750): wire real HTTP call.
+					return nil
+				},
+			},
+			{{- end}}
+		},
+	}
+}
+
+// Keep strings imported even when no map flags are emitted.
+var _ = strings.TrimSpace
+

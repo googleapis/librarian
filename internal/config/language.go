@@ -33,6 +33,10 @@ const (
 	LanguageFake = "fake"
 	// LanguageSurfer is the language identifier for gcloud command surfaces.
 	LanguageSurfer = "gcloud"
+	// LanguageGcloud is the language identifier for the gcloud-go generator,
+	// which emits a self-contained Go CLI module that mirrors a gcloud
+	// command tree.
+	LanguageGcloud = "gcloud-go"
 	// LanguageGo is the language identifier for Go.
 	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
@@ -462,6 +466,13 @@ type DartPackage struct {
 
 	// Version is the version of the dart package.
 	Version string `yaml:"version,omitempty"`
+}
+
+// GcloudPackage contains gcloud-go-specific library configuration.
+type GcloudPackage struct {
+	// ModulePath is the Go module path used for the generated go.mod file
+	// (e.g., "example.com/parallelstore").
+	ModulePath string `yaml:"module_path,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.
