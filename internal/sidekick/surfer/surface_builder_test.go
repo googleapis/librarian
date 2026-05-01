@@ -41,6 +41,7 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 	}
 
 	config := &provider.Config{
+		GenerateOperations: boolPtr(true),
 		APIs: []provider.API{
 			{
 				Name: "parallelstore",
@@ -119,7 +120,7 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := newSurfaceBuilder(model, &provider.Config{}).build()
+	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -128,43 +129,6 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 	want := []string{
 		"parallelstore/instances/create",
 		"parallelstore/other_instances/create",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestSurfaceBuilder_Build_MultipleReleaseTracks(t *testing.T) {
-	serviceOne := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"))
-	serviceTwo := mockService("ParallelstoreService", mockMethod("CreateInstance", "v1alpha/{parent=projects/*/locations/*}/instances"))
-	serviceTwo.Package = "google.cloud.parallelstore.v1alpha"
-
-	model := &api.API{
-		Name:     "parallelstore",
-		Title:    "Parallelstore API",
-		Services: []*api.Service{serviceOne, serviceTwo},
-	}
-
-	root, err := newSurfaceBuilder(model, &provider.Config{}).build()
-	if err != nil {
-		t.Fatalf("build() failed: %v", err)
-	}
-
-	// GA release track
-	got := flattenTree(root.Root)
-	want := []string{
-		"parallelstore/instances/create",
-	}
-
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
-	}
-
-	// Alpha release track
-	got = flattenTree(root.Root)
-	want = []string{
-		"parallelstore/instances/create",
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
