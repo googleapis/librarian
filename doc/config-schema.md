@@ -243,7 +243,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `generate_operations` | bool (optional) | Indicates whether to generate top-level operations commands. |
 | `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
 
 ## GoAPI Configuration

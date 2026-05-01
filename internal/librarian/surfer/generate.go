@@ -61,14 +61,14 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 
 	for _, api := range library.APIs {
-		if err := generateAPI(api, googleapisDir, outDir); err != nil {
+		if err := generateAPI(api, library.Gcloud, googleapisDir, outDir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return nil
 }
 
-func generateAPI(api *config.API, googleapisDir, outDir string) error {
+func generateAPI(api *config.API, gcloudCfg *config.GcloudSurface, googleapisDir, outDir string) error {
 	protos, err := collectProtos(googleapisDir, api.Path)
 	if err != nil {
 		return err
