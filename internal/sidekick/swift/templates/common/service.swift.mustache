@@ -72,11 +72,11 @@ public class {{Codec.Name}} {
       return "{{Codec.PathExpression}}"
     }()
     {{#Codec.HasQueryParams}}
-    var query = [URLQueryItem(name: "$alt", value: "json")]
+    var query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
     let encoder = GoogleCloudGax.QueryParameterEncoder()
     {{/Codec.HasQueryParams}}
     {{^Codec.HasQueryParams}}
-    let query = [URLQueryItem(name: "$alt", value: "json")]
+    let query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
     {{/Codec.HasQueryParams}}
     {{#Codec.QueryParams}}
     {{!
