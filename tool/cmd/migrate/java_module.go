@@ -69,6 +69,12 @@ var (
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
 		},
+		"google/api": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/apps/card/v1": {
+			protoArtifactID: "proto-google-common-protos",
+		},
 		"google/apps/script/type": {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
@@ -86,6 +92,38 @@ var (
 		},
 		"google/apps/script/type/slides": {
 			protoArtifactID: "proto-google-apps-script-type-protos",
+		},
+		"google/cloud": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/cloud/audit": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/cloud/location": {
+			protoArtifactID: "proto-google-common-protos",
+			grpcArtifactID:  "grpc-google-common-protos",
+		},
+		"google/geo/type": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/logging/type": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/longrunning": {
+			protoArtifactID: "proto-google-common-protos",
+			grpcArtifactID:  "grpc-google-common-protos",
+		},
+		"google/rpc": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/rpc/context": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/shopping/type": {
+			protoArtifactID: "proto-google-common-protos",
+		},
+		"google/type": {
+			protoArtifactID: "proto-google-common-protos",
 		},
 		"google/spanner/admin/database/v1": {
 			protoArtifactID: "proto-google-cloud-spanner-admin-database-v1",
@@ -119,6 +157,19 @@ var (
 		//This is added here instead of sdk.yaml change because this is
 		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
+	}
+
+	apiShortnameOverrides = map[string]string{
+		"common-protos": "common-protos",
+	}
+
+	skipPOMUpdates = map[string]bool{
+		"grafeas":       true,
+		"common-protos": true,
+	}
+
+	monolithicJavaAPIs = map[string]bool{
+		"grafeas/v1": true,
 	}
 )
 

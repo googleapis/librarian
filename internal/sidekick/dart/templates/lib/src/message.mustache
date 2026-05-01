@@ -53,7 +53,7 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
   factory {{Codec.Name}}.fromJson(Object? json) => _{{Codec.Name}}Helper.decode(json);
   {{/Codec.HasCustomEncoding}}
   {{^Codec.HasCustomEncoding}}
-  factory {{Codec.Name}}.fromJson(Object? j) 
+  factory {{Codec.Name}}.fromJson(Object? {{#Codec.HasFields}}j{{/Codec.HasFields}}{{^Codec.HasFields}}_{{/Codec.HasFields}}) 
     {{#Codec.HasFields}}
     {
       final json = j as Map<String, Object?>;

@@ -419,6 +419,207 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 	}
 }
 
+func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
+	t.Run("resource type resolution", func(t *testing.T) {
+		res := &Resource{
+			Type: "test.googleapis.com/Resource",
+			Patterns: []ResourcePattern{
+				{
+					*(&PathSegment{}).WithLiteral("resources"),
+					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+				},
+			},
+		}
+		field := &Field{
+			Name:  "notName",
+			ID:    ".test.ResourceMessage.name",
+			Typez: TypezString,
+			ResourceReference: &ResourceReference{
+				Type: "test.googleapis.com/Resource",
+			},
+		}
+		message := &Message{
+			Name:     "ResourceMessage",
+			ID:       ".test.ResourceMessage",
+			Fields:   []*Field{field},
+			Resource: res,
+		}
+		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
+
+		if err := CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+
+		got := field.ResourceNamePattern
+		want := &ResourceNamePattern{
+			Segments: []ResourceNameSegment{
+				{Literal: "resources", Variable: "resource"},
+			},
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("child type resolution", func(t *testing.T) {
+		res := &Resource{
+			Type: "test.googleapis.com/Child",
+			Patterns: []ResourcePattern{
+				{
+					*(&PathSegment{}).WithLiteral("parents"),
+					*(&PathSegment{}).WithVariable(NewPathVariable("parent").WithMatch()),
+					*(&PathSegment{}).WithLiteral("children"),
+					*(&PathSegment{}).WithVariable(NewPathVariable("child").WithMatch()),
+				},
+			},
+		}
+		field := &Field{
+			Name:  "parent",
+			ID:    ".test.Message.parent",
+			Typez: TypezString,
+			ResourceReference: &ResourceReference{
+				ChildType: "test.googleapis.com/Child",
+			},
+		}
+		message := &Message{
+			Name:   "Message",
+			ID:     ".test.Message",
+			Fields: []*Field{field},
+		}
+		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
+		model.AddResource(res)
+
+		if err := CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+
+		got := field.ResourceNamePattern
+		want := &ResourceNamePattern{
+			Segments: []ResourceNameSegment{
+				{Literal: "parents", Variable: "parent"},
+			},
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+
+	t.Run("name field resolution", func(t *testing.T) {
+		res := &Resource{
+			Type: "test.googleapis.com/Resource",
+			Patterns: []ResourcePattern{
+				{
+					*(&PathSegment{}).WithLiteral("resources"),
+					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+				},
+			},
+		}
+		field := &Field{
+			Name:  "name",
+			ID:    ".test.ResourceMessage.name",
+			Typez: TypezString,
+		}
+		message := &Message{
+			Name:     "ResourceMessage",
+			ID:       ".test.ResourceMessage",
+			Fields:   []*Field{field},
+			Resource: res,
+		}
+		field.MessageType = message
+		model := NewTestAPI([]*Message{message}, []*Enum{}, []*Service{})
+
+		if err := CrossReference(model); err != nil {
+			t.Fatal(err)
+		}
+
+		got := field.ResourceNamePattern
+		want := &ResourceNamePattern{
+			Segments: []ResourceNameSegment{
+				{Literal: "resources", Variable: "resource"},
+			},
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
+	})
+}
+
+func TestToResourceNamePattern(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		pattern  ResourcePattern
+		skipLast bool
+		want     *ResourceNamePattern
+	}{
+		{
+			name: "simple",
+			pattern: ResourcePattern{
+				*(&PathSegment{}).WithLiteral("projects"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
+			},
+			skipLast: false,
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects", Variable: "project"},
+				},
+			},
+		},
+		{
+			name: "multi-segment",
+			pattern: ResourcePattern{
+				*(&PathSegment{}).WithLiteral("projects"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
+				*(&PathSegment{}).WithLiteral("secrets"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
+			},
+			skipLast: false,
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects", Variable: "project"},
+					{Literal: "secrets", Variable: "secret"},
+				},
+			},
+		},
+		{
+			name: "multi-segment-skip-last",
+			pattern: ResourcePattern{
+				*(&PathSegment{}).WithLiteral("projects"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
+				*(&PathSegment{}).WithLiteral("secrets"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
+			},
+			skipLast: true,
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects", Variable: "project"},
+				},
+			},
+		},
+		{
+			name: "with trailing literal",
+			pattern: ResourcePattern{
+				*(&PathSegment{}).WithLiteral("projects"),
+				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
+				*(&PathSegment{}).WithLiteral("config"),
+			},
+			skipLast: false,
+			want: &ResourceNamePattern{
+				Segments: []ResourceNameSegment{
+					{Literal: "projects", Variable: "project"},
+					{Literal: "config", Variable: ""},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := toResourceNamePattern(test.pattern, test.skipLast)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestIsSimpleMethod(t *testing.T) {
 	somePagination := &Field{}
 	someOperationInfo := &OperationInfo{}
@@ -801,7 +1002,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.wildcardResourceField,
+				ResourceNameField:     f.wildcardResourceField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -813,7 +1015,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameField,
+				ResourceNameField:     f.resourceNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -827,7 +1030,8 @@ func TestAIPStandardGetInfo(t *testing.T) {
 				Model: f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameNoSingularField,
+				ResourceNameField:     f.resourceNameNoSingularField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -967,7 +1171,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				Model:        f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.wildcardResourceField,
+				ResourceNameField:     f.wildcardResourceField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -979,7 +1184,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				Model:        f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameField,
+				ResourceNameField:     f.resourceNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -991,7 +1197,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				Model:        f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameNoSingularField,
+				ResourceNameField:     f.resourceNameNoSingularField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1003,7 +1210,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				Model:         f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameField,
+				ResourceNameField:     f.resourceNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1015,7 +1223,8 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 				Model:        f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceOtherNameField,
+				ResourceNameField:     f.resourceOtherNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1097,7 +1306,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				Model: f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.wildcardResourceField,
+				ResourceNameField:     f.wildcardResourceField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1111,7 +1321,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				Model: f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameField,
+				ResourceNameField:     f.resourceNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1125,7 +1336,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				Model: f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameNoSingularField,
+				ResourceNameField:     f.resourceNameNoSingularField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1137,7 +1349,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				Model:         f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceNameField,
+				ResourceNameField:     f.resourceNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1151,7 +1364,8 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 				Model: f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: f.resourceOtherNameField,
+				ResourceNameField:     f.resourceOtherNameField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1257,9 +1471,10 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: parentField,
-				ResourceIDField:   idField,
-				MessageField:      resourceField,
+				ResourceNameField:     parentField,
+				IsRequestResourceName: true,
+				ResourceIDField:       idField,
+				MessageField:          resourceField,
 			},
 		},
 		{
@@ -1277,8 +1492,9 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: parentField,
-				MessageField:      resourceField,
+				ResourceNameField:     parentField,
+				IsRequestResourceName: true,
+				MessageField:          resourceField,
 			},
 		},
 		{
@@ -1314,13 +1530,19 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 	f := newAIPTestFixture()
 
 	// Setup for Update
-	secretMessage := &Message{ID: "secret_message_id"}
+	secretMessage := &Message{
+		ID: "secret_message_id",
+		Fields: []*Field{
+			f.resourceNameField,
+		},
+	}
 	f.resource.Self = secretMessage
 
 	resourceField := &Field{
-		Name:    "secret",
-		Typez:   TypezMessage,
-		TypezID: secretMessage.ID,
+		Name:        "secret",
+		Typez:       TypezMessage,
+		TypezID:     secretMessage.ID,
+		MessageType: secretMessage,
 	}
 	updateMaskField := &Field{
 		Name:    "update_mask",
@@ -1347,8 +1569,10 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				MessageField:    resourceField,
-				UpdateMaskField: updateMaskField,
+				ResourceNameField:     f.resourceNameField,
+				MessageField:          resourceField,
+				IsMessageResourceName: true,
+				UpdateMaskField:       updateMaskField,
 			},
 		},
 		{
@@ -1365,7 +1589,9 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				MessageField: resourceField,
+				ResourceNameField:     f.resourceNameField,
+				MessageField:          resourceField,
+				IsMessageResourceName: true,
 			},
 		},
 		{
@@ -1467,7 +1693,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: parentField,
+				ResourceNameField:     parentField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1479,7 +1706,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: otherParentField,
+				ResourceNameField:     otherParentField,
+				IsRequestResourceName: true,
 			},
 		},
 		{
@@ -1491,7 +1719,8 @@ func TestAIPStandardListInfo(t *testing.T) {
 				Model:      f.model,
 			},
 			want: &SampleInfo{
-				ResourceNameField: plainParentField,
+				ResourceNameField:     plainParentField,
+				IsRequestResourceName: true,
 			},
 		},
 		{

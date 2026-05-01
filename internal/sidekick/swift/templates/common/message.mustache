@@ -69,6 +69,60 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
     {{/OneOfs}}
   }
+
+  {{#Codec.CustomSerialization}}
+  private enum CodingKeys: String, CodingKey {
+    {{#Fields}}
+    case {{Codec.Name}} = "{{JSONName}}"
+    {{/Fields}}
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    {{#Fields}}
+    {{^IsOneOf}}
+    self.{{Codec.Name}} = try container.decode({{Codec.FieldType}}.self, forKey: .{{Codec.Name}})
+    {{/IsOneOf}}
+    {{/Fields}}
+    {{#OneOfs}}
+
+    var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
+    let {{Codec.PropertyName}}CheckAndSet = { (value: {{Codec.Name}}) throws in
+      if {{Codec.PropertyName}} != nil {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
+      }
+      {{Codec.PropertyName}} = value
+    }
+    {{#Fields}}
+    if let {{Codec.Name}} = try container.decodeIfPresent({{Codec.FieldType}}.self, forKey: .{{Codec.Name}}) {
+      try {{Codec.OneOfPropertyName}}CheckAndSet(.{{Codec.Name}}({{Codec.Name}}))
+    }
+    {{/Fields}}
+    self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
+    {{/OneOfs}}
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    {{#Fields}}
+    {{^IsOneOf}}
+    try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+    {{/IsOneOf}}
+    {{/Fields}}
+    {{#OneOfs}}
+
+    if let choice = self.{{Codec.PropertyName}} {
+      switch choice {
+      {{#Fields}}
+      case .{{Codec.Name}}(let value):
+        try container.encode(value, forKey: .{{Codec.Name}})
+      {{/Fields}}
+      }
+    }
+    {{/OneOfs}}
+  }
+  {{/Codec.CustomSerialization}}
+
   {{#Messages}}
 
   {{> /templates/common/message}}

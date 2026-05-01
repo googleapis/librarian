@@ -113,10 +113,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	if library.Python == nil || !library.Python.SkipReadmeCopy {
-		if err := copyReadmeToDocsDir(outdir); err != nil {
-			return fmt.Errorf("failed to copy README to docs: %w", err)
-		}
+	if err := copyReadmeToDocsDir(library, outdir); err != nil {
+		return fmt.Errorf("failed to copy README to docs: %w", err)
+	}
+
+	if err := createChangelog(library.Name, outdir); err != nil {
+		return fmt.Errorf("failed to create changelog: %w", err)
 	}
 	return nil
 }
@@ -393,7 +395,9 @@ python_mono_repo.owlbot_main(%q)
 
 // copyReadmeToDocsDir copies README.rst to docs/README.rst.
 // This handles symlinks properly by reading content and writing a real file.
-func copyReadmeToDocsDir(outdir string) error {
+// This is a no-op if either the source doesn't exist, or the library is
+// handwritten and the target doesn't already exist.
+func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 	sourcePath := filepath.Join(outdir, "README.rst")
 	docsPath := filepath.Join(outdir, "docs")
 	destPath := filepath.Join(docsPath, "README.rst")
@@ -402,7 +406,13 @@ func copyReadmeToDocsDir(outdir string) error {
 	if _, err := os.Lstat(sourcePath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-
+	// If the library is handwritten and the target doesn't already exist, skip
+	// copying.
+	if len(lib.APIs) == 0 {
+		if _, err := os.Lstat(destPath); errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+	}
 	// Read content from source (follows symlinks)
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
@@ -516,4 +526,36 @@ func findOption(options []string, name string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// createChangelog creates a regular changelog file for the library with the
+// specified name in the given output directory, if it doesn't already exist.
+// It also creates a symlink to the new file from a docs subdirectory. If the
+// changelog file already exists in the output directory, this function returns
+// immediately with no error.
+func createChangelog(libName, output string) error {
+	rootChangelog := filepath.Join(output, changelog)
+	_, statErr := os.Stat(rootChangelog)
+	// If the file exists, we're done.
+	if statErr == nil {
+		return nil
+	}
+	if !errors.Is(statErr, fs.ErrNotExist) {
+		return statErr
+	}
+	docs := filepath.Join(output, "docs")
+	if err := os.MkdirAll(docs, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf(changelogTemplate, libName)
+	if err := os.WriteFile(rootChangelog, []byte(content), 0644); err != nil {
+		return err
+	}
+	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md
+	// The target is created directly rather than using filepath.Join to make
+	// sure it always uses a forward-slash, even on Windows.
+	if err := os.Symlink("../"+changelog, filepath.Join(docs, changelog)); err != nil {
+		return err
+	}
+	return nil
 }

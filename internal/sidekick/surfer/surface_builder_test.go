@@ -49,7 +49,7 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 		},
 	}
 
-	root, err := newSurfaceBuilder(model, config).build()
+	root, err := buildSurface(model, config)
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -75,7 +75,7 @@ func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(false)}).build()
+	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(false)})
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -95,7 +95,7 @@ func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -120,7 +120,7 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := newSurfaceBuilder(model, &provider.Config{GenerateOperations: boolPtr(true)}).build()
+	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -133,6 +133,55 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("flattenTree() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestSurfaceBuilder_Build_HelpTextOverride(t *testing.T) {
+	service := mockService("ParallelstoreService",
+		mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"),
+	)
+	model := &api.API{
+		Name:        "parallelstore",
+		PackageName: "google.cloud.parallelstore.v1",
+		Title:       "Parallelstore API",
+		Services:    []*api.Service{service},
+	}
+	service.Methods[0].ID = "google.cloud.parallelstore.v1.Parallelstore.CreateInstance"
+
+	config := &provider.Config{
+		APIs: []provider.API{
+			{
+				Name: "parallelstore",
+				HelpText: &provider.HelpTextRules{
+					MethodRules: []*provider.HelpTextRule{
+						{
+							Selector: "google.cloud.parallelstore.v1.Parallelstore.CreateInstance",
+							HelpText: &provider.HelpTextElement{
+								Brief: "Override Brief",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	root, err := buildSurface(model, config)
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	instancesGroup, ok := root.Root.Groups["instances"]
+	if !ok {
+		t.Fatal("instances group not found")
+	}
+	createCmd, ok := instancesGroup.Commands["create"]
+	if !ok {
+		t.Fatal("create command not found")
+	}
+
+	if createCmd.HelpText.Brief != "Override Brief" {
+		t.Errorf("expected brief to be 'Override Brief', got %q", createCmd.HelpText.Brief)
 	}
 }
 

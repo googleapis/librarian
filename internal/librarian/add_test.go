@@ -721,7 +721,10 @@ func TestSyncToStateYAML(t *testing.T) {
 						SourceRoots:   []string{"packages/google-cloud-new"},
 						ReleaseExcludePaths: []string{
 							"packages/google-cloud-new/.repo-metadata.json",
-							"packages/google-cloud-new/docs/README.rst",
+							"packages/google-cloud-new/noxfile.py",
+							"packages/google-cloud-new/tests/",
+							"packages/google-cloud-new/README.rst",
+							"packages/google-cloud-new/docs/",
 						},
 						TagFormat: "{id}-v{version}",
 					},

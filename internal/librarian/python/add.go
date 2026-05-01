@@ -23,9 +23,21 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// defaultVersion is the first version used for a new library.
-// This is set on the initial `librarian add` for a new API.
-const defaultVersion = "0.0.0"
+const (
+	// defaultVersion is the first version used for a new library.
+	// This is set on the initial `librarian add` for a new API.
+	defaultVersion = "0.0.0"
+	// changelog is the name of the changelog file to create. A regular file
+	// is created in the package root, and a symlink is created in the docs
+	// directory.
+	changelog         = "CHANGELOG.md"
+	changelogTemplate = `# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/%s/#history
+`
+)
 
 var (
 	approvedGAPICNamespaces = []string{

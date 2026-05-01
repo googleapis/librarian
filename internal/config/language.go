@@ -377,12 +377,6 @@ type PythonPackage struct {
 	// DefaultVersion is the default version of the API to use. When omitted,
 	// the version in the first API path is used.
 	DefaultVersion string `yaml:"default_version,omitempty"`
-
-	// SkipReadmeCopy prevents generation from copying README.rst from the root
-	// directory to the docs directory.
-	// TODO(https://github.com/googleapis/librarian/issues/4738): revisit
-	// whether or not this field should exist after migration.
-	SkipReadmeCopy bool `yaml:"skip_readme_copy,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.
@@ -607,9 +601,10 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// ProtoOnly determines whether to generate a Proto-only client.
-	// A proto-only client does not define a service in the proto files.
-	ProtoOnly bool `yaml:"proto_only,omitempty"`
+	// ProtoGRPCOnly determines whether to skip GAPIC client generation.
+	// It is usually used for proto-only clients that do not define a service
+	// in the proto files, with the exception of google/cloud/location.
+	ProtoGRPCOnly bool `yaml:"proto_grpc_only,omitempty"`
 
 	// CopyFiles is a list of file copies to perform after generation.
 	// It applies to files in the GAPIC module.
@@ -754,4 +749,35 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+}
+
+// Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
+type Surfer struct {
+	// HelpText contains help text overrides for the surface.
+	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
+}
+
+// GcloudHelpTextRules contains rules for various types of help text within an API
+// surface.
+type GcloudHelpTextRules struct {
+	// MethodRules defines help text rules specifically for API methods (commands).
+	MethodRules []*GcloudHelpTextRule `yaml:"method_rules,omitempty"`
+
+	// FieldRules defines help text rules specifically for individual fields (flags/arguments).
+	FieldRules []*GcloudHelpTextRule `yaml:"field_rules,omitempty"`
+}
+
+// GcloudHelpTextRule maps an API selector to its corresponding help text content.
+type GcloudHelpTextRule struct {
+	// Selector is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method").
+	Selector string `yaml:"selector"`
+
+	// Brief is a concise, single-line summary of the help text.
+	Brief string `yaml:"brief,omitempty"`
+
+	// Description provides a detailed, multi-line description.
+	Description string `yaml:"description,omitempty"`
+
+	// Examples provides a list of examples illustrating how to use the element.
+	Examples []string `yaml:"examples,omitempty"`
 }

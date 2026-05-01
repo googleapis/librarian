@@ -462,6 +462,14 @@ func (b *pathBindingAnnotation) PathTemplate() string {
 	return template
 }
 
+type sampleInfoAnnotation struct {
+	// StringParameters is the set of parameters of type string that should be shown
+	// on the sample method for any given RPC sample.
+	StringParameters []string
+	// FormatResourceName is true if the resource name format is known and shoulw be shown in the sample.
+	FormatResourceName bool
+}
+
 type oneOfAnnotation struct {
 	// In Rust, `oneof` fields are fields inside a struct. These must be
 	// `snake_case`. Possibly mangled with `r#` if the name is a Rust reserved
@@ -547,6 +555,16 @@ type fieldAnnotations struct {
 	// If this field is part of a oneof group, this will contain the other fields
 	// in the group.
 	OtherFieldsInGroup []*api.Field
+	// FormattedResource contains information on how to format the resource name.
+	FormattedResource *FormattedResource
+}
+
+// FormattedResource contain the format string and the format arguments of a resource name.
+type FormattedResource struct {
+	// The Rust format string, e.g., "projects/{}/secrets/{}"
+	FormatString string
+	// The variables used in the format string.
+	FormatArgs []string
 }
 
 // SkipIfIsEmpty returns true if the field should be skipped if it is empty.
@@ -670,6 +688,9 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 				if err := codec.annotateMessage(m, model, true); err != nil {
 					return nil, err
 				}
+			}
+			if si := m.SampleInfo; si != nil {
+				codec.annotateSampleInfo(si, m)
 			}
 		}
 		if _, err := codec.annotateService(s); err != nil {
@@ -1194,6 +1215,30 @@ func (c *codec) annotatePathInfo(m *api.Method) error {
 	return nil
 }
 
+func (c *codec) annotateSampleInfo(si *api.SampleInfo, m *api.Method) {
+	var parameters []string
+	var formatResourceName bool
+	if rn := si.ResourceNameField; rn != nil {
+		fieldAnn := rn.Codec.(*fieldAnnotations)
+		if fieldAnn.FormattedResource != nil && len(fieldAnn.FormattedResource.FormatArgs) > 0 {
+			parameters = fieldAnn.FormattedResource.FormatArgs
+			formatResourceName = true
+		} else {
+			parameters = []string{fieldAnn.SetterName}
+		}
+	} else if m.IsAIPStandardUpdate {
+		parameters = []string{"name"}
+	} else {
+		parameters = []string{}
+	}
+
+	ann := &sampleInfoAnnotation{
+		StringParameters:   parameters,
+		FormatResourceName: formatResourceName,
+	}
+	si.Codec = ann
+}
+
 func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api.API) (*oneOfAnnotation, error) {
 	scope, err := c.messageScopeName(message, "", model.PackageName)
 	if err != nil {
@@ -1391,6 +1436,32 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 			ann.AliasInExamples = fmt.Sprintf("%sField", ann.AliasInExamples)
 		}
 	}
+
+	if field.ResourceNamePattern != nil && len(field.ResourceNamePattern.Segments) > 0 {
+		fr := &FormattedResource{}
+		var formatString []string
+		hasLiterals := false
+		for _, s := range field.ResourceNamePattern.Segments {
+			if s.Literal != "" {
+				hasLiterals = true
+				formatString = append(formatString, s.Literal)
+			}
+			if s.Variable != "" {
+				// Convert variable to snake_case and add _id suffix if needed
+				arg := toSnakeNoMangling(s.Variable)
+				if !strings.HasSuffix(arg, "_id") && !strings.HasSuffix(arg, "_name") {
+					arg += "_id"
+				}
+				formatString = append(formatString, "{"+arg+"}")
+				fr.FormatArgs = append(fr.FormatArgs, arg)
+			}
+		}
+		if hasLiterals && len(fr.FormatArgs) > 0 {
+			fr.FormatString = strings.Join(formatString, "/")
+			ann.FormattedResource = fr
+		}
+	}
+
 	return ann, nil
 }
 
