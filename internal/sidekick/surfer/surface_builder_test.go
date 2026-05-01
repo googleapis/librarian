@@ -166,7 +166,7 @@ func TestSurfaceBuilder_Build_HelpTextOverride(t *testing.T) {
 		},
 	}
 
-	root, err := newSurfaceBuilder(model, config).build()
+	root, err := buildSurface(model, config)
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
