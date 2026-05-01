@@ -327,7 +327,10 @@ func createLegacyLibrary(language string, lib *config.Library) *legacyconfig.Lib
 		}
 		legacyLib.ReleaseExcludePaths = []string{
 			fmt.Sprintf("packages/%s/.repo-metadata.json", lib.Name),
-			fmt.Sprintf("packages/%s/docs/README.rst", lib.Name),
+			fmt.Sprintf("packages/%s/noxfile.py", lib.Name),
+			fmt.Sprintf("packages/%s/tests/", lib.Name),
+			fmt.Sprintf("packages/%s/README.rst", lib.Name),
+			fmt.Sprintf("packages/%s/docs/", lib.Name),
 		}
 		legacyLib.TagFormat = "{id}-v{version}"
 	}
