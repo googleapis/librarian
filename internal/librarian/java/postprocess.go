@@ -264,8 +264,10 @@ func restructure(actions []moveAction) error {
 func restructureModules(p postProcessParams, destRoot string) error {
 	coords := p.coords()
 	tempProtoSrcDir := p.protoDir()
-	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-		return err
+	if p.library.Name != commonProtosLibrary {
+		if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
+			return err
+		}
 	}
 
 	protoDest := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java")

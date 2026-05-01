@@ -157,10 +157,21 @@ var (
 		//This is added here instead of sdk.yaml change because this is
 		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
+		"common-protos":      "grpc",
 	}
 
 	apiShortnameOverrides = map[string]string{
 		"common-protos": "common-protos",
+	}
+
+	skipAPIID = map[string]bool{
+		"google-auth-library": true,
+		"showcase":            true,
+		"iam":                 true,
+		"api-common":          true,
+		"common-protos":       true,
+		"gax":                 true,
+		"core":                true,
 	}
 
 	skipPOMUpdates = map[string]bool{

@@ -48,7 +48,8 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 		SpecificationSource: module.APIPath,
 		Source:              sourceConfig,
 		Codec: map[string]string{
-			"module": "true",
+			"copyright-year": library.CopyrightYear,
+			"module":         "true",
 		},
 	}
 }

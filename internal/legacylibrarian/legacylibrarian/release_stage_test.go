@@ -1403,7 +1403,7 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 		want            *legacyconfig.LibraryState
 	}{
 		{
-			name:            "libraries in repo with release only mode do not have changelogs",
+			name:            "libraries in repo with release only mode have changelogs",
 			releaseOnlyMode: true,
 			libraryState: &legacyconfig.LibraryState{
 				ID:          "one-id",
@@ -1434,6 +1434,20 @@ func TestProcessLibrary_ReleaseOnlyMode(t *testing.T) {
 				Version:          "1.3.0",
 				SourceRoots:      []string{"one-id"},
 				ReleaseTriggered: true,
+				Changes: []*legacyconfig.Commit{
+					{
+						Type:       "chore",
+						Subject:    "one feat",
+						CommitHash: "1234560000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+					{
+						Type:       "fix",
+						Subject:    "another feat",
+						CommitHash: "6543210000000000000000000000000000000000",
+						LibraryIDs: "one-id",
+					},
+				},
 			},
 		},
 		{
