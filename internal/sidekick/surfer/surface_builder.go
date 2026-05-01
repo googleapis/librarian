@@ -19,35 +19,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
-type surfaceBuilder struct {
-	model  *api.API
-	config *provider.Config
-}
-
-func newSurfaceBuilder(model *api.API, config *provider.Config) *surfaceBuilder {
-	return &surfaceBuilder{
-		model:  model,
-		config: config,
-	}
-}
-
-func (b *surfaceBuilder) build() (*Surface, error) {
+func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
 	var root *CommandGroup
-	providerTracks := provider.Tracks(provider.APIVersionFromModel(b.model))
+	providerTracks := provider.Tracks(provider.APIVersionFromModel(model))
 	var tracks []ReleaseTrack
 	for _, t := range providerTracks {
 		tracks = append(tracks, ReleaseTrack(t))
 	}
 
-	for _, service := range b.model.Services {
-		gb := newGroupBuilder(b.model, service, b.config)
+	for _, service := range model.Services {
+		gb := newGroupBuilder(model, service, config)
 
 		if root == nil {
 			root = gb.buildRoot()
 		}
 
 		for _, method := range service.Methods {
-			if err := b.insert(root, gb, method); err != nil {
+			if err := insert(root, gb, method, model, config); err != nil {
 				return nil, err
 			}
 		}
@@ -59,8 +47,8 @@ func (b *surfaceBuilder) build() (*Surface, error) {
 // insert traverses the tree and attaches a command leaf node. It resolves the
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
-func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
-	if provider.IsSingletonResourceMethod(method, b.model) {
+func insert(root *CommandGroup, gb *groupBuilder, method *api.Method, model *api.API, config *provider.Config) error {
+	if provider.IsSingletonResourceMethod(method, model) {
 		return nil
 	}
 
@@ -76,11 +64,11 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 
 	curr := root
 	for i, seg := range segments {
-		if b.isTerminatedSegment(seg) {
+		if isTerminatedSegment(seg, config) {
 			return nil
 		}
 		isLeaf := i == len(segments)-1
-		if b.isFlattenedSegment(seg) && !isLeaf {
+		if flattenedSegments[seg] && !isLeaf {
 			continue
 		}
 
@@ -90,7 +78,7 @@ func (b *surfaceBuilder) insert(root *CommandGroup, gb *groupBuilder, method *ap
 		curr = curr.Groups[seg]
 	}
 
-	cmd, err := newCommandBuilder(method, b.config, b.model, gb.service).build()
+	cmd, err := newCommandBuilder(method, config, model, gb.service).build()
 	if err != nil {
 		return err
 	}
@@ -108,10 +96,6 @@ var flattenedSegments = map[string]bool{
 	"organizations": true,
 }
 
-func (b *surfaceBuilder) isFlattenedSegment(lit string) bool {
-	return flattenedSegments[lit]
-}
-
-func (b *surfaceBuilder) isTerminatedSegment(lit string) bool {
-	return lit == "operations" && !provider.ShouldGenerateOperations(b.config)
+func isTerminatedSegment(lit string, config *provider.Config) bool {
+	return lit == "operations" && !provider.ShouldGenerateOperations(config)
 }
