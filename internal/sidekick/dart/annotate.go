@@ -1191,7 +1191,7 @@ func (annotate *annotateModel) buildQueryLines(
 
 	switch {
 	case field.Repeated:
-		if codec.Nullable || couldRefPrefixBeNull {
+		if codec.Nullable {
 			switch field.Typez {
 			case api.TypezString:
 				return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
@@ -1252,17 +1252,13 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.TypezString:
-		if codec.Nullable || couldRefPrefixBeNull {
+		if codec.Nullable {
 			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
 		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.TypezEnum:
-		if codec.Nullable || couldRefPrefixBeNull {
-			deref := "."
-			if codec.Nullable || couldRefPrefixBeNull {
-				deref = "?."
-			}
-			return append(result, fmt.Sprintf("'%s': ?%s%svalue", param, ref, deref))
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
 		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.TypezBool ||
@@ -1273,7 +1269,7 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.TypezUint64 || field.Typez == api.TypezSint64 ||
 		field.Typez == api.TypezFixed64 || field.Typez == api.TypezSfixed64 ||
 		field.Typez == api.TypezFloat || field.Typez == api.TypezDouble:
-		if codec.Nullable || couldRefPrefixBeNull {
+		if codec.Nullable {
 			return append(result, fmt.Sprintf("if (%s case final $1?) '%s': '${$1}'", ref, param))
 		}
 		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
