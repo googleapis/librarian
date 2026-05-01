@@ -49,7 +49,8 @@ const (
 )
 
 var (
-	fetchSourceWithCommit = fetchGoogleapisWithCommit
+	fetchGoogleapisWithCommitVar = fetchGoogleapisWithCommit
+	fetchShowcaseWithCommitVar   = fetchShowcaseWithCommit
 )
 
 type javaGAPICInfo struct {
@@ -163,15 +164,24 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if commit == "" {
 		commit = "master"
 	}
-	src, err := fetchSourceWithCommit(ctx, githubEndpoints, commit)
+	src, err := fetchGoogleapisWithCommitVar(ctx, githubEndpoints, commit)
 	if err != nil {
-		return errFetchSource
+		return fmt.Errorf("failed to fetch googleapis source: %w", err)
 	}
+	showcaseVersion, err := getShowcaseVersion(repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to get showcase version: %w", err)
+	}
+	showcaseSrc, err := fetchShowcaseWithCommitVar(ctx, githubEndpoints, "v"+showcaseVersion)
+	if err != nil {
+		return fmt.Errorf("failed to fetch showcase source: %w", err)
+	}
+
 	versions, err := readVersions(filepath.Join(repoPath, "versions.txt"))
 	if err != nil {
 		return err
 	}
-	cfg, err := buildConfig(gen, repoPath, src, versions)
+	cfg, err := buildConfig(gen, repoPath, src, showcaseSrc, versions)
 	if err != nil {
 		return err
 	}
@@ -181,6 +191,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
+	cfg.Sources.Showcase.Dir = ""
 
 	if shouldInsertMarkers {
 		if err := insertMarkers(repoPath, cfg); err != nil {
@@ -223,7 +234,7 @@ func readVersions(path string) (map[string]string, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) (*config.Config, error) {
+func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *config.Source, versions map[string]string) (*config.Config, error) {
 	var libs []*config.Library
 	if v, ok := versions["google-cloud-java"]; ok {
 		libs = append(libs, &config.Library{
@@ -353,6 +364,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		},
 		Sources: &config.Sources{
 			Googleapis: src,
+			Showcase:   showcaseSrc,
 		},
 		Libraries: libs,
 		Repo:      "googleapis/google-cloud-java",
@@ -768,4 +780,22 @@ func extractStrings(expr build.Expr) []string {
 		}
 	})
 	return res
+}
+
+func getShowcaseVersion(repoPath string) (string, error) {
+	showcaseDir := filepath.Join(repoPath, "sdk-platform-java", "java-showcase")
+	return extractVersionFromPOM(filepath.Join(showcaseDir, "gapic-showcase", "pom.xml"))
+}
+
+func extractVersionFromPOM(pomPath string) (string, error) {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return "", fmt.Errorf("read %s: %w", pomPath, err)
+	}
+	re := regexp.MustCompile(`<gapic-showcase\.version>(.*?)</gapic-showcase\.version>`)
+	match := re.FindSubmatch(content)
+	if len(match) < 2 {
+		return "", fmt.Errorf("failed to find gapic-showcase.version in %s", pomPath)
+	}
+	return string(match[1]), nil
 }
