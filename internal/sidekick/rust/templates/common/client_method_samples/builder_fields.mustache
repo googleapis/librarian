@@ -15,17 +15,36 @@ limitations under the License.
 }}
 {{#IsAIPStandard}}
 {{#SampleInfo}}
-{{#ResourceNameField}}
-///         .set_{{Codec.SetterName}}({{Codec.SetterName}})
-{{/ResourceNameField}}
+{{#IsRequestResourceName}}
+{{#Codec.FormatResourceName}}
+///         .set_{{ResourceNameField.Codec.SetterName}}(format!("{{ResourceNameField.Codec.FormattedResource.FormatString}}"))
+{{/Codec.FormatResourceName}}
+{{^Codec.FormatResourceName}}
+///         .set_{{ResourceNameField.Codec.SetterName}}({{#Codec.StringParameters}}{{.}}{{/Codec.StringParameters}})
+{{/Codec.FormatResourceName}}
+{{/IsRequestResourceName}}
 {{#ResourceIDField}}
 ///         .set_{{Codec.SetterName}}("{{Codec.SetterName}}_value")
 {{/ResourceIDField}}
+{{#IsMessageResourceName}}
+{{#Codec.FormatResourceName}}
+///         .set_{{MessageField.Codec.SetterName}}(
+///             {{MessageField.MessageType.Codec.Name}}::new().set_name(format!("{{ResourceNameField.Codec.FormattedResource.FormatString}}"))/* set fields */
+///         )
+{{/Codec.FormatResourceName}}
+{{^Codec.FormatResourceName}}
+///         .set_{{MessageField.Codec.SetterName}}(
+///             {{MessageField.MessageType.Codec.Name}}::new().set_name({{#Codec.StringParameters}}{{.}}{{/Codec.StringParameters}})/* set fields */
+///         )
+{{/Codec.FormatResourceName}}
+{{/IsMessageResourceName}}
+{{^IsMessageResourceName}}
 {{#MessageField}}
 ///         .set_{{Codec.SetterName}}(
-///             {{MessageType.Codec.Name}}::new(){{#IsAIPStandardUpdate}}.set_name(name){{/IsAIPStandardUpdate}}/* set fields */
+///             {{MessageType.Codec.Name}}::new()/* set fields */
 ///         )
 {{/MessageField}}
+{{/IsMessageResourceName}}
 {{#UpdateMaskField}}
 ///         .set_{{Codec.SetterName}}(FieldMask::default().set_paths(["updated.field.path1", "updated.field.path2"]))
 {{/UpdateMaskField}}

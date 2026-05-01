@@ -61,14 +61,14 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 
 	for _, api := range library.APIs {
-		if err := generateAPI(api, googleapisDir, outDir); err != nil {
+		if err := generateAPI(api, library.Surfer, googleapisDir, outDir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return nil
 }
 
-func generateAPI(api *config.API, googleapisDir, outDir string) error {
+func generateAPI(api *config.API, gcloudCfg *config.Surfer, googleapisDir, outDir string) error {
 	protos, err := collectProtos(googleapisDir, api.Path)
 	if err != nil {
 		return err
@@ -88,7 +88,42 @@ func generateAPI(api *config.API, googleapisDir, outDir string) error {
 	if err != nil {
 		return err
 	}
-	return sidekicksurfer.Generate(model, nil, outDir, baseModule)
+	providerCfg := &provider.Config{}
+	if gcloudCfg != nil && gcloudCfg.HelpText != nil {
+		providerCfg.APIs = []provider.API{{
+			Name:     model.Name,
+			HelpText: mapHelpText(gcloudCfg.HelpText),
+		}}
+	}
+	return sidekicksurfer.Generate(model, providerCfg, outDir, baseModule)
+}
+
+func mapHelpText(ht *config.GcloudHelpTextRules) *provider.HelpTextRules {
+	if ht == nil {
+		return nil
+	}
+	rules := &provider.HelpTextRules{}
+	for _, r := range ht.MethodRules {
+		rules.MethodRules = append(rules.MethodRules, &provider.HelpTextRule{
+			Selector: r.Selector,
+			HelpText: &provider.HelpTextElement{
+				Brief:       r.Brief,
+				Description: r.Description,
+				Examples:    r.Examples,
+			},
+		})
+	}
+	for _, r := range ht.FieldRules {
+		rules.FieldRules = append(rules.FieldRules, &provider.HelpTextRule{
+			Selector: r.Selector,
+			HelpText: &provider.HelpTextElement{
+				Brief:       r.Brief,
+				Description: r.Description,
+				Examples:    r.Examples,
+			},
+		})
+	}
+	return rules
 }
 
 // collectProtos returns proto file paths under apiPath, relative to

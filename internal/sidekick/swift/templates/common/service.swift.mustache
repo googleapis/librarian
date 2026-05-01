@@ -108,7 +108,7 @@ public class {{Codec.Name}} {
       ))
     }
     {{^ReturnsEmpty}}
-    return try JSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
+    return try ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
     {{/ReturnsEmpty}}
   }
   {{/Codec.RestMethods}}

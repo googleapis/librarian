@@ -586,7 +586,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                "google/cloud/gkehub/policycontroller/v1beta",
 									Samples:             new(false),
-									ProtoOnly:           true,
+									ProtoGRPCOnly:       true,
 									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
@@ -628,7 +628,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoOnly:               true,
+									ProtoGRPCOnly:           true,
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
@@ -999,7 +999,7 @@ func TestParseJavaBazel(t *testing.T) {
 			want: &javaGAPICInfo{
 				Samples:             false,
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -1012,7 +1012,7 @@ func TestParseJavaBazel(t *testing.T) {
 					"google/iam/v1/iam_policy.proto",
 				},
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -1020,7 +1020,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/omit-common-resources",
 			want: &javaGAPICInfo{
 				OmitCommonResources: true,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 	} {

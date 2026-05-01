@@ -385,7 +385,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
+				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoGRPCOnly: true},
 			},
 		},
 	}
