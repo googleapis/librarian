@@ -636,7 +636,7 @@ func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
-// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): 
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8149):
 // This function is a temporary workaround to preserve v1small exports in the compute library.
 // It must be deleted once v1small is formally deprecated and removed.
 func injectV1SmallExports(outDir string) error {

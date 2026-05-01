@@ -1209,7 +1209,7 @@ func TestInjectV1SmallExports(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "successfully injects",
+			name:  "successfully injects",
 			input: "import * as v1 from './v1';\nimport * as v1beta from './v1beta';\nexport {v1, v1beta};\nexport default {v1, v1beta};\n",
 			want:  "import * as v1small from './v1small';\nimport * as v1 from './v1';\nimport * as v1beta from './v1beta';\nexport {v1small, v1, v1beta};\nexport default {v1small, v1, v1beta};\n",
 		},
