@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	"testing"
@@ -1319,7 +1320,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 	}
 }
 
-func TestCreateToJsonLine(t *testing.T) {
+func TestCreateNonNullableToJsonElement(t *testing.T) {
 	secret := sample.Secret()
 	enum := sample.EnumState()
 
@@ -1658,9 +1659,10 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
+			want := fmt.Sprintf("if (%s.isNotDefault) '%s': %s", fieldName(test.field), test.field.JSONName, test.want)
+			got := createNonNullableToJsonElement(test.field, model)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch in TestCreateNonNullableToJsonElement (-want, +got)\n:%s", diff)
 			}
 		})
 	}
@@ -1796,7 +1798,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "0",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1816,7 +1817,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1836,7 +1836,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'int32Field': ?int32Field",
 			},
 		},
 		{
@@ -1856,7 +1855,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const []",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1877,7 +1875,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "const {}",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1897,7 +1894,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1918,7 +1914,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'messageField': ?messageField?.toJson()",
 			},
 		},
 		{
@@ -1938,7 +1933,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "State.$default",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
@@ -1959,10 +1953,11 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: true,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "",
 			},
 		},
 		{
+			// `google.protobuf.Empty` is a special because, in some cases, it is
+			// converted to the `void` Dart type. `void` is not nullable in Dart.
 			name: "google.protobuf.Empty",
 			field: &api.Field{
 				Name:     "empty_field",
@@ -1979,7 +1974,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "'emptyField': ?emptyField?.toJson()",
 			},
 		},
 		{
@@ -1999,7 +1993,6 @@ func TestAnnotateField(t *testing.T) {
 				FieldBehaviorRequired: false,
 				DefaultValue:          "",
 				ConstDefault:          true,
-				ToJsonElement:         "if (floatField case final $1?) 'floatField': encodeDouble($1)",
 			},
 		},
 	} {

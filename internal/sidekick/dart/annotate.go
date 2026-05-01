@@ -200,7 +200,6 @@ type fieldAnnotation struct {
 	ConstDefault  bool
 	FromJson      string
 	ToJson        string
-	ToJsonElement string
 }
 
 type enumAnnotation struct {
@@ -847,9 +846,11 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
-	var toJsonElement string
+	var toJson string
 	if !implicitPresence {
-		toJsonElement = createToJsonElement(field)
+		toJson = createNullableToJsonElement(field)
+	} else {
+		toJson = createNonNullableToJsonElement(field, annotate.model)
 	}
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
@@ -860,8 +861,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, implicitPresence),
-		ToJson:                createToJsonLine(field, annotate.model),
-		ToJsonElement:         toJsonElement,
+		ToJson:                toJson,
 		ConstDefault:          constDefault,
 	}
 }
@@ -1062,17 +1062,20 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, model *api.API) string {
+func createNonNullableToJsonElement(field *api.Field, model *api.API) string {
 	name := fieldName(field)
+	jsonName := field.JSONName
 
+	var rhs string
 	switch {
 	case field.Repeated:
 		if encoder, encodingRequired := encoder(field.Typez, "i"); encodingRequired {
-			return fmt.Sprintf(
+			rhs = fmt.Sprintf(
 				"[for (final i in %s) %s]",
 				name, encoder)
+		} else {
+			rhs = name
 		}
-		return name
 	case field.Map:
 		message := model.Message(field.TypezID)
 		keyType := message.Fields[0].Typez
@@ -1081,15 +1084,22 @@ func createToJsonLine(field *api.Field, model *api.API) string {
 		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
 		if keyEncodingRequired || valueEncodingRequired {
-			return fmt.Sprintf(
+			rhs = fmt.Sprintf(
 				"{for (final e in %s.entries) %s: %s}",
 				name, keyEncoder, valueEncoder)
+		} else {
+			rhs = name
 		}
-		return name
+	default:
+		enc, _ := encoder(field.Typez, name)
+		rhs = enc
 	}
 
-	enc, _ := encoder(field.Typez, name)
-	return enc
+	fieldRequired := field.Behavior != nil && slices.Contains(field.Behavior, api.FieldBehaviorRequired)
+	if fieldRequired {
+		return fmt.Sprintf("'%s': %s", jsonName, rhs)
+	}
+	return fmt.Sprintf("if (%s.isNotDefault) '%s': %s", name, jsonName, rhs)
 }
 
 // createToJsonNullAwareLine creates a null-aware expression for JSON serialization.
@@ -1109,8 +1119,8 @@ func createToJsonNullAwareLine(field *api.Field) string {
 	return enc
 }
 
-// createToJsonElement creates a JSON element expression for map literals.
-func createToJsonElement(field *api.Field) string {
+// createNullableToJsonElement creates a JSON element expression for map literals for nullable fields.
+func createNullableToJsonElement(field *api.Field) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
 
