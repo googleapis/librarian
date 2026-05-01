@@ -52,12 +52,20 @@ var usesCustomEncoding = map[string]string{
 	".google.protobuf.Int32Value":  "",
 	".google.protobuf.Int64Value":  "",
 	".google.protobuf.ListValue":   "",
+	".google.protobuf.NullValue":   "",
 	".google.protobuf.StringValue": "",
 	".google.protobuf.Struct":      "",
 	".google.protobuf.Timestamp":   "",
 	".google.protobuf.UInt32Value": "",
 	".google.protobuf.UInt64Value": "",
 	".google.protobuf.Value":       "",
+}
+
+// canHaveNullJsonSerialization indicates whether the message type's serialized
+// JSON can be `null`.
+var canHaveNullJsonSerialization = map[string]bool{
+	".google.protobuf.NullValue": true,
+	".google.protobuf.Value":     true,
 }
 
 const (
@@ -192,7 +200,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 // - `[google.rpc.Code][]`.
 var commentRefsRegex = regexp.MustCompile(`\[([\w\d\._]+)\]\[([\d\w\._]*)\]`)
 
-func formatDocComments(documentation string, _ *api.APIState) []string {
+func formatDocComments(documentation string, _ *api.API) []string {
 	lines := strings.Split(documentation, "\n")
 
 	// Remove trailing whitespace.

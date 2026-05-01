@@ -28,6 +28,11 @@ type SwiftPackage struct {
 
 	// IncludeList is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]).
 	IncludeList []string `yaml:"include_list,omitempty"`
+
+	// Modules specifies generation targets for veneers and test packages.
+	//
+	// Each module defines a source proto path, and output location.
+	Modules []*SwiftModule `yaml:"modules,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.
@@ -82,4 +87,15 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
+}
+
+// SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.
+//
+// Each module specifies what proto source to use, and where to output the generated code.
+type SwiftModule struct {
+	// Output is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated").
+	Output string `yaml:"output"`
+
+	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
+	APIPath string `yaml:"api_path"`
 }

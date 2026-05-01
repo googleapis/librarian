@@ -135,7 +135,7 @@ func applyServiceConfigMethodOverrides(
 		if selector != originalID {
 			continue
 		}
-		pathInfo, err := processRule(rule, api.State, targetMethod.InputTypeID)
+		pathInfo, err := processRule(rule, api, targetMethod.InputTypeID)
 		if err != nil {
 			return fmt.Errorf("unsupported http rule %q in method %s", rule, targetMethod.ID)
 		}

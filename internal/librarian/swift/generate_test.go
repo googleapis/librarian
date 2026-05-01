@@ -24,6 +24,19 @@ import (
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
+func defaultSwiftConfig(t *testing.T) *config.SwiftPackage {
+	// A package providing the `google.protobuf` API is required, as that package provides the
+	// well-known types and the support for `Any`.
+	t.Helper()
+	return &config.SwiftPackage{
+		SwiftDefault: config.SwiftDefault{
+			Dependencies: []config.SwiftDependency{
+				{Name: "FakeWkt", ApiPackage: "google.protobuf"},
+			},
+		},
+	}
+}
+
 func TestDefaultLibraryName(t *testing.T) {
 	for _, test := range []struct {
 		api  string
@@ -56,6 +69,7 @@ func TestGenerate(t *testing.T) {
 			Name:          "GoogleType",
 			APIs:          []*config.API{{Path: "google/type"}},
 			CopyrightYear: "2038",
+			Swift:         defaultSwiftConfig(t),
 		},
 	}
 	for _, library := range libraries {

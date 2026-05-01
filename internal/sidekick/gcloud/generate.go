@@ -1,4 +1,4 @@
-// Copyright 2025 Google LLC
+// Copyright 2026 Google LLC
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -12,21 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides a code generator for gcloud commands.
+// Package gcloud provides a code generator for gcloud CLI in Go.
 package gcloud
 
 import (
+	"embed"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
-// Generate builds a gcloud command tree from the parsed API model and
-// overrides and writes the resulting command groups into output under
-// baseModule.
-func Generate(model *api.API, overrides *provider.Config, output, baseModule string) error {
-	tree, err := newCommandTreeBuilder(model, overrides).build()
-	if err != nil {
-		return err
+//go:embed all:templates
+var templates embed.FS
+
+// Generate generates code from the model.
+func Generate(model *api.API, outdir string) error {
+	provider := func(name string) (string, error) {
+		contents, err := templates.ReadFile(name)
+		if err != nil {
+			return "", err
+		}
+		return string(contents), nil
 	}
-	return writeCommandGroupTree(output, baseModule, tree)
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
+	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }

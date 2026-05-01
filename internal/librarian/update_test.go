@@ -37,15 +37,14 @@ type updateTestSetup struct {
 const (
 	googleapisTestCommit   = "123456"
 	discoveryTestCommit    = "abcdef"
-	conformanceTestCommit  = "conformance1234"
+	conformanceTestCommit  = "protobuf1234"
 	protobufTestCommit     = "protobuf1234"
 	showcaseTestCommit     = "showcase1234"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
-	conformanceTestTarball = "conformance-tarball-content"
+	conformanceTestTarball = "protobuf-tarball-content"
 	protobufTestTarball    = "protobuf-tarball-content"
 	showcaseTestTarball    = "showcase-tarball-content"
-	testBranch             = "other"
 	unchangedPlaceholder   = "this-should-not-change"
 )
 
@@ -58,15 +57,12 @@ var (
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
-	// Source.Branch can be empty in the config file. Update should default to
-	// using the branch configured in [sourceRepos], so we only set up the
-	// test server handlers with Source.Branch when it is explicitly set as it
-	// would be in the file on disk.
-	googleapisBranch := determineBranch("googleapis", conf.Sources.Googleapis)
-	discoveryBranch := determineBranch("discovery", conf.Sources.Discovery)
-	conformanceBranch := determineBranch("conformance", conf.Sources.Conformance)
-	protobufBranch := determineBranch("protobuf", conf.Sources.ProtobufSrc)
-	showcaseBranch := determineBranch("showcase", conf.Sources.Showcase)
+	// Update defaults to using the branch configured in [sourceRepos].
+	// We set up the test server handlers accordingly.
+	googleapisBranch := sourceRepos["googleapis"].Branch
+	discoveryBranch := sourceRepos["discovery"].Branch
+	protobufBranch := sourceRepos["protobuf"].Branch
+	showcaseBranch := sourceRepos["showcase"].Branch
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -74,8 +70,6 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(googleapisTestCommit))
 		case "/repos/googleapis/discovery-artifact-manager/commits/" + discoveryBranch:
 			w.Write([]byte(discoveryTestCommit))
-		case "/repos/protocolbuffers/protobuf/commits/" + conformanceBranch:
-			w.Write([]byte(conformanceTestCommit))
 		case "/repos/protocolbuffers/protobuf/commits/" + protobufBranch:
 			w.Write([]byte(protobufTestCommit))
 		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
@@ -84,8 +78,6 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
 			w.Write([]byte(discoveryTestTarball))
-		case "/protocolbuffers/protobuf/archive/" + conformanceTestCommit + ".tar.gz":
-			w.Write([]byte(conformanceTestTarball))
 		case "/protocolbuffers/protobuf/archive/" + protobufTestCommit + ".tar.gz":
 			w.Write([]byte(protobufTestTarball))
 		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
@@ -104,13 +96,6 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 		server:     ts,
 		configPath: cp,
 	}
-}
-
-func determineBranch(repoName string, source *config.Source) string {
-	if source != nil && source.Branch != "" {
-		return source.Branch
-	}
-	return sourceRepos[repoName].Branch
 }
 
 func setupTestConfig(t *testing.T, conf *config.Config) string {
@@ -209,20 +194,6 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Sources.Discovery.SHA256 = discoveryTestSHA
 			},
 		},
-		{
-			name: "googleapis branch",
-			args: []string{"librarian", "update", "googleapis"},
-			setup: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Branch = testBranch
-				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
-				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
-			},
-			wantConfig: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Branch = testBranch
-				cfg.Sources.Googleapis.Commit = googleapisTestCommit
-				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			initialConfig := updateTestConfig()
@@ -309,7 +280,6 @@ func updateTestConfig() *config.Config {
 			SHA256: unchangedPlaceholder,
 		},
 		ProtobufSrc: &config.Source{
-			Branch: testBranch,
 			Commit: unchangedPlaceholder,
 			SHA256: unchangedPlaceholder,
 		},

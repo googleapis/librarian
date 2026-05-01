@@ -1,0 +1,183 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+
+package multi_version_multi_track.v1alpha;
+
+import "resources.proto";
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/longrunning/operations.proto";
+import "google/protobuf/empty.proto";
+
+option go_package = "google.golang.org/genproto/googleapis/multi_version_multi_track/v1alpha;multi_version_multi_track";
+
+// Service example for multiple versions and multiple release tracks.
+// Service One will be available for v1 and v1alpha versions.
+// v1 version will be mapped to GA release track.
+// v1alpha version will be mapped to ALPHA release track.
+service ServiceOne {
+  option (google.api.default_host) = "multiversiontrack.googleapis.com";
+
+  // Create resource one.
+  rpc CreateResourceOne(CreateResourceOneRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1alpha/{parent=projects/*/locations/*}/resourceOnes"
+      body: "resource_one"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "ResourceOne"
+      metadata_type: "OperationMetadata"
+    };
+  }
+
+  // Get resource one.
+  rpc GetResourceOne(GetResourceOneRequest) returns (ResourceOne) {
+    option (google.api.http) = {
+      get: "/v1alpha/{name=projects/*/locations/*/resourceOnes/*}"
+    };
+  }
+
+  // Delete resource one.
+  rpc DeleteResourceOne(DeleteResourceOneRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      delete: "/v1alpha/{name=projects/*/locations/*/resourceOnes/*}"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "google.protobuf.Empty"
+      metadata_type: "OperationMetadata"
+    };
+  }
+
+  // Archives the given resource.
+  rpc ArchiveResourceOne(ArchiveResourceOneRequest) returns (ResourceOne) {
+    option (google.api.http) = {
+      post: "/v1alpha/{name=projects/*/locations/*/resourceOnes/*}:archive"
+      body: "*"
+    };
+  }
+}
+
+// Service example for multiple versions and multiple release tracks.
+// Service Two will only be available for v1alpha version.
+// v1alpha version will be mapped to ALPHA release track.
+service ServiceTwo {
+  option (google.api.default_host) = "multiversiontrack.googleapis.com";
+
+  // Create resource two.
+  rpc CreateResourceTwo(CreateResourceTwoRequest)
+      returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1alpha/{parent=projects/*/locations/*}/resourceTwos"
+      body: "resource_two"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "ResourceTwo"
+      metadata_type: "OperationMetadata"
+    };
+  }
+
+  // Get resource two.
+  rpc GetResourceTwo(GetResourceTwoRequest) returns (ResourceTwo) {
+    option (google.api.http) = {
+      get: "/v1alpha/{name=projects/*/locations/*/resourceTwos/*}"
+    };
+  }
+}
+
+// Message to create a resource one
+message CreateResourceOneRequest {
+  // Required. Location of the resource.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      child_type: "multiversionmultitrack.googleapis.com/ResourceOne"
+    }
+  ];
+
+  // Required. The ID value for the new resource.
+  string resource_one_id = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Resource to create.
+  ResourceOne resource_one = 3;
+}
+
+// Message to request a resource one
+message GetResourceOneRequest {
+  // Required. The name of the resource.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "multiversionmultitrack.googleapis.com/ResourceOne"
+    }
+  ];
+}
+
+// Message to delete a resource one
+message DeleteResourceOneRequest {
+  // Required. The name of the resource.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "multiversionmultitrack.googleapis.com/ResourceOne"
+    }
+  ];
+}
+
+// Message to archive a resource one
+message ArchiveResourceOneRequest {
+  // Required. The name of the resource.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "multiversionmultitrack.googleapis.com/ResourceOne"
+    }
+  ];
+
+  // String field.
+  string string_field = 2;
+}
+
+// Message to create a resource two
+message CreateResourceTwoRequest {
+  // Required. Location of the resource.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      child_type: "multiversionmultitrack.googleapis.com/ResourceTwo"
+    }
+  ];
+
+  // Required. The ID value for the new resource.
+  string resource_two_id = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Resource to create.
+  ResourceTwo resource_two = 3;
+}
+
+// Message to request a resource two
+message GetResourceTwoRequest {
+  // Required. The name of the resource.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {
+      type: "multiversionmultitrack.googleapis.com/ResourceTwo"
+    }
+  ];
+}

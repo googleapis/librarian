@@ -82,6 +82,9 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	if err != nil {
 		return err
 	}
+	if p.library.Java != nil && p.library.Java.SkipPOMUpdates {
+		return nil
+	}
 	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
 		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}
@@ -107,12 +110,12 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{gRPCDir, protoDir} {
-		if err := addMissingHeaders(dir); err != nil {
-			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
-		}
+	if err := addHeadersIfRequired(p, []string{gRPCDir, protoDir}); err != nil {
+		return err
 	}
-
+	if err := copyFiles(p); err != nil {
+		return fmt.Errorf("failed to copy files: %w", err)
+	}
 	if err := restructureToStaging(p); err != nil {
 		return fmt.Errorf("failed to restructure to staging: %w", err)
 	}
@@ -121,13 +124,13 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// We target the staging directory because runOwlBot hasn't moved the files
 	// to their final destination yet.
 	coords := p.coords()
-	protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	exists, err := clirrIgnoreExists(protoModuleRepoRoot)
+	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, p.javaAPI.Monolithic)
 	if err != nil {
 		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
 	}
-	if !exists {
+	if shouldGenerate {
+		protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
 		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
 			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 		}
@@ -136,6 +139,18 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// Cleanup intermediate protoc output directory after restructuring
 	if err := os.RemoveAll(filepath.Join(p.outDir, p.apiBase)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
+	}
+	return nil
+}
+
+func addHeadersIfRequired(p postProcessParams, dirs []string) error {
+	if p.javaAPI.Monolithic {
+		return nil
+	}
+	for _, dir := range dirs {
+		if err := addMissingHeaders(dir); err != nil {
+			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
+		}
 	}
 	return nil
 }
@@ -158,6 +173,27 @@ func addMissingHeaders(dir string) error {
 		}
 		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
 	})
+}
+
+func copyFiles(p postProcessParams) error {
+	if p.javaAPI == nil || len(p.javaAPI.CopyFiles) == 0 {
+		return nil
+	}
+	gapicDir := p.gapicDir()
+	for _, c := range p.javaAPI.CopyFiles {
+		src := filepath.Join(gapicDir, c.Source)
+		dest := filepath.Join(gapicDir, c.Destination)
+		if _, err := os.Stat(src); err != nil {
+			return fmt.Errorf("failed to stat copy source %s: %w", src, err)
+		}
+		if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil {
+			return fmt.Errorf("failed to create destination directory for %s: %w", dest, err)
+		}
+		if err := filesystem.CopyFile(src, dest); err != nil {
+			return fmt.Errorf("failed to copy %s to %s: %w", src, dest, err)
+		}
+	}
+	return nil
 }
 
 // buildLicenseText constructs the complete license header text for the given year.
@@ -193,10 +229,14 @@ func removeConflictingFiles(protoSrcDir string) error {
 // ensure synthtool preserves the module structure.
 func restructureToStaging(p postProcessParams) error {
 	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	destRoot := filepath.Join(stagingDir, p.apiBase)
+	if p.javaAPI.Monolithic {
+		destRoot = filepath.Join(destRoot, "src")
+	}
+	if err := os.MkdirAll(destRoot, 0755); err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
-	return restructureModules(p, filepath.Join(stagingDir, p.apiBase))
+	return restructureModules(p, destRoot)
 }
 
 type moveAction struct {
@@ -227,30 +267,45 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 		return err
 	}
+
+	protoDest := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java")
+	grpcDest := filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java")
+	gapicMainDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main")
+	gapicTestDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test")
+	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
+
+	if p.javaAPI.Monolithic {
+		protoDest = filepath.Join(destRoot, "main", "java")
+		grpcDest = filepath.Join(destRoot, "main", "java")
+		gapicMainDest = filepath.Join(destRoot, "main")
+		gapicTestDest = filepath.Join(destRoot, "test")
+		protoFilesDestDir = filepath.Join(destRoot, "main", "proto")
+	}
+
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
+			dest:        protoDest,
 			description: "proto source",
 		},
 		{
 			src:         p.gRPCDir(),
-			dest:        filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java"),
+			dest:        grpcDest,
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main"),
+			dest:        gapicMainDest,
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test"),
+			dest:        gapicTestDest,
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
+			dest:        protoDest,
 			description: "resource name source",
 		},
 	}
@@ -265,7 +320,6 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
 	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}

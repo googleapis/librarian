@@ -18,6 +18,9 @@ limitations under the License.
 {{#Codec.DocLines}}
 {{{.}}}
 {{/Codec.DocLines}}
+{{^Codec.DocLines}}
+#[allow(missing_docs)]
+{{/Codec.DocLines}}
 {{> /templates/common/feature_gate}}
 #[derive(Clone, Default, PartialEq)]
 #[non_exhaustive]
@@ -35,6 +38,9 @@ pub struct {{Codec.Name}} {
     {{#Codec.DocLines}}
     {{{.}}}
     {{/Codec.DocLines}}
+    {{^Codec.DocLines}}
+    #[allow(missing_docs)]
+    {{/Codec.DocLines}}
     {{#Deprecated}}
     #[deprecated]
     {{/Deprecated}}
@@ -45,6 +51,9 @@ pub struct {{Codec.Name}} {
     {{#Codec.DocLines}}
     {{{.}}}
     {{/Codec.DocLines}}
+    {{^Codec.DocLines}}
+    #[allow(missing_docs)]
+    {{/Codec.DocLines}}
     pub {{Codec.FieldName}}: std::option::Option<{{{Codec.FieldType}}}>,
     {{/OneOfs}}
 
@@ -53,6 +62,7 @@ pub struct {{Codec.Name}} {
 
 {{> /templates/common/feature_gate}}
 impl {{Codec.Name}} {
+    /// Creates a new default instance.
     pub fn new() -> Self {
         std::default::Default::default()
     }

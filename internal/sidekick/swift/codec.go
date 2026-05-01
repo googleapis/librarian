@@ -17,11 +17,20 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
+	"strconv"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
+)
+
+const (
+	// The name of the Protobuf package that contains the well-known Protobuf types.
+	wellKnownProtobufPackage = "google.protobuf"
+	// The name of the corresponding Swift package that contains the Swift implementations of these
+	// types.
+	wellKnownSwiftPackage = "GoogleCloudWkt"
 )
 
 // codec represents the configuration for a Swift sidekick Codec.
@@ -37,7 +46,9 @@ type codec struct {
 	MonorepoRoot   string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
-	RootName     string
+	RootName string
+	// Modules have a different directory structure.
+	Module       bool
 	Model        *api.API
 	Dependencies []*Dependency
 	ApiPackages  map[string]*Dependency
@@ -85,6 +96,12 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 			result.PackageName = definition
 		case "root-name":
 			result.RootName = definition
+		case "module":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
+			}
+			result.Module = value
 		default:
 			// Ignore other options.
 		}

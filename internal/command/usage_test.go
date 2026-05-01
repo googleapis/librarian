@@ -49,6 +49,7 @@ func TestLibrarianUsage(t *testing.T) {
 		{"version", []string{"version"}, "librarian version"},
 		{"publish", []string{"publish"}, "librarian publish"},
 		{"tag", []string{"tag"}, "librarian tag"},
+		{"config", []string{"config"}, "librarian config [get|set] [path] [value]"},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
 			got := runUsage(t, bin, test.args)

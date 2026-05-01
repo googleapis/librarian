@@ -75,16 +75,14 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		candidates = candidates[0 : len(candidates)-1]
 
 		// Recurse one level, depending on the input type.
-		service, ok := model.State.ServiceByID[id]
-		if ok {
+		if service := model.Service(id); service != nil {
 			for _, method := range service.Methods {
 				add(method.ID)
 			}
 			continue
 		}
 
-		method, ok := model.State.MethodByID[id]
-		if ok {
+		if method := model.Method(id); method != nil {
 			add(method.InputTypeID)
 			add(method.OutputTypeID)
 			if method.OperationInfo != nil {
@@ -94,18 +92,16 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 			continue
 		}
 
-		message, ok := model.State.MessageByID[id]
-		if ok {
+		if message := model.Message(id); message != nil {
 			for _, field := range message.Fields {
-				if field.Typez == ENUM_TYPE || field.Typez == MESSAGE_TYPE {
+				if field.Typez == TypezEnum || field.Typez == TypezMessage {
 					add(field.TypezID)
 				}
 			}
 			continue
 		}
 
-		_, ok = model.State.EnumByID[id]
-		if ok {
+		if model.Enum(id) != nil {
 			continue
 		}
 
@@ -122,29 +118,26 @@ func FindDependencies(model *API, ids []string) (map[string]bool, error) {
 		candidates = candidates[0 : len(candidates)-1]
 
 		// Recurse one level, depending on the input type.
-		method, ok := model.State.MethodByID[id]
-		if ok {
+		if method := model.Method(id); method != nil {
 			add(method.Service.ID)
 			continue
 		}
 
-		message, ok := model.State.MessageByID[id]
-		if ok {
+		if message := model.Message(id); message != nil {
 			if message.Parent != nil {
 				add(message.Parent.ID)
 			}
 			// In the current definition of APIState, a message must
 			// includes all of its fields.
 			for _, field := range message.Fields {
-				if field.Typez == ENUM_TYPE || field.Typez == MESSAGE_TYPE {
+				if field.Typez == TypezEnum || field.Typez == TypezMessage {
 					add(field.TypezID)
 				}
 			}
 			continue
 		}
 
-		enum, ok := model.State.EnumByID[id]
-		if ok {
+		if enum := model.Enum(id); enum != nil {
 			if enum.Parent != nil {
 				add(enum.Parent.ID)
 			}

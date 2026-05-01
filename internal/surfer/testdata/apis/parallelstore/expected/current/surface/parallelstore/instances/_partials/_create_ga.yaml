@@ -35,21 +35,21 @@
         is_primary_resource: true
         request_id_field: instanceId
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: instance
+              help: The instance id of the {resource} resource.
+              parameter_name: instancesId
+          collection: parallelstore.projects.locations.instances
+          disable_auto_completers: false
           name: instance
           plural_name: instances
-          collection: parallelstore.projects.locations.instances
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: instancesId
-              attribute_name: instance
-              help: The instance id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: description
         api_field: instance.description
@@ -79,30 +79,28 @@
         required: true
         type: long
       - arg_name: network
-        api_field: instance.network
         help_text: |-
           Immutable. The name of the Compute Engine
           [VPC network](https://cloud.google.com/vpc/docs/vpc) to which the
           instance is connected.
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: network
+              help: The network id of the {resource} resource.
+              parameter_name: networksId
+          collection: parallelstore.projects.networks
+          disable_auto_completers: true
           name: network
           plural_name: networks
-          collection: parallelstore.projects.networks
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: networksId
-              attribute_name: network
-              help: The network id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           instance.network: '{__relative_name__}'
       - arg_name: reserved-ip-range
-        api_field: instance.reservedIpRange
         help_text: |-
           Immutable. The ID of the IP address range being used by the
           instance's VPC network. See [Configure a VPC
@@ -110,21 +108,21 @@
           If no ID is provided, all ranges are considered.
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: region
+              help: The region id of the {resource} resource.
+              parameter_name: regionsId
+            - attribute_name: address
+              help: The address id of the {resource} resource.
+              parameter_name: addressesId
+          collection: parallelstore.projects.regions.addresses
+          disable_auto_completers: true
           name: address
           plural_name: addresses
-          collection: parallelstore.projects.regions.addresses
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: regionsId
-              attribute_name: region
-              help: The region id of the {resource} resource.
-            - parameter_name: addressesId
-              attribute_name: address
-              help: The address id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
           instance.reservedIpRange: '{__relative_name__}'
@@ -209,7 +207,7 @@
         is_positional: false
         required: false
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.instances
   async:

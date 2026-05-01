@@ -1,0 +1,100 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+
+{{!
+Generates a fake for a service class like:
+
+```dart
+/// Testing fake for [Echo].
+base class FakeEcho implements Echo {
+  final Future<EchoResponse> Function(EchoRequest request)? _echo;
+  @override
+  Uri get _endPoint => throw UnsupportedError('_endPoint');
+  @override
+  ServiceClient get _client => throw UnsupportedError('_client');
+
+  bool isClosed = false;
+
+  FakeEcho({
+    Future<EchoResponse> Function(EchoRequest request)? echo,
+  }) : _echo = echo;
+
+  /// This method simply echoes the request. This method showcases unary RPCs.
+  ///
+  /// Throws a [http.ClientException] if there were problems communicating with
+  /// the API service. Throws a [ServiceException] if the API method failed for
+  /// any reason.
+  @override
+  Future<EchoResponse> echo(EchoRequest request) async {
+    if (isClosed) {
+      throw StateError('Service is closed');
+    }
+
+    if (_echo case final echo?) {
+      return echo(request);
+    }
+    throw UnsupportedError('echo');
+  }
+}
+```
+}}
+
+/// Testing fake for [{{Codec.Name}}].
+base class Fake{{Codec.Name}} implements {{Codec.Name}} {
+  {{#Codec.Methods}}
+    final
+    {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}>
+      Function({{Codec.RequestType}} request)
+    {{/Codec.ServerSideStreaming}}
+    {{^Codec.ServerSideStreaming}}
+      {{#Codec.IsLROGetOperation}}
+        Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage,
+                                         S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request)
+      {{/Codec.IsLROGetOperation}}
+      {{^Codec.IsLROGetOperation}}
+        Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}>
+          Function({{Codec.RequestType}} request)
+      {{/Codec.IsLROGetOperation}}
+    {{/Codec.ServerSideStreaming}}?
+    {{#Codec.IsLROGetOperation}}_getOperation{{/Codec.IsLROGetOperation}}
+    {{^Codec.IsLROGetOperation}}_{{Codec.Name}}{{/Codec.IsLROGetOperation}};
+  {{/Codec.Methods}}
+
+  @override
+  Uri get _endPoint => throw UnsupportedError('_endPoint');
+  @override
+  ServiceClient get _client => throw UnsupportedError('_client');
+
+  bool isClosed = false;
+
+  Fake{{Codec.Name}}({
+    {{#Codec.Methods}}
+    {{#Codec.ServerSideStreaming}}Stream<{{Codec.ResponseType}}> Function({{Codec.RequestType}} request){{/Codec.ServerSideStreaming}}{{^Codec.ServerSideStreaming}}{{#Codec.IsLROGetOperation}}Future<Operation<T, S>> Function<T extends {{Model.Codec.ProtoPrefix}}ProtoMessage, S extends {{Model.Codec.ProtoPrefix}}ProtoMessage>(Operation<T, S> request){{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}Future<{{Codec.ResponseType}}{{#OperationInfo}}<{{Codec.ResponseType}}, {{Codec.MetadataType}}>{{/OperationInfo}}> Function({{Codec.RequestType}} request){{/Codec.IsLROGetOperation}}{{/Codec.ServerSideStreaming}}? {{#Codec.IsLROGetOperation}}getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}{{Codec.Name}}{{/Codec.IsLROGetOperation}},
+    {{/Codec.Methods}}
+  }){{#Codec.HasMethods}} : {{/Codec.HasMethods}}
+{{#Codec.Methods}}
+  {{#Codec.IsLROGetOperation}}_getOperation = getOperation{{/Codec.IsLROGetOperation}}{{^Codec.IsLROGetOperation}}_{{Codec.Name}} = {{Codec.Name}}{{/Codec.IsLROGetOperation}}{{^Codec.IsLast}},
+  {{/Codec.IsLast}}{{/Codec.Methods}};
+
+  {{#Codec.Methods}}
+  {{> fake_method}}
+  {{/Codec.Methods}}
+
+  @override
+  void close() {
+    isClosed = true;
+  }
+}

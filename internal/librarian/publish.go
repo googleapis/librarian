@@ -29,8 +29,26 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
-		Usage:     "publishes client libraries",
+		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
+		Description: `publish releases the libraries that were updated in a release commit
+prepared by librarian bump.
+
+By default, publish performs a dry run that prints the actions it would
+take. Pass --execute to actually publish. By default, the most recent
+release commit reachable from HEAD is used; --release-commit overrides
+this with a specific commit.
+
+The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
+only honored when the workspace language is Rust; they are retained for
+backwards compatibility with the legacy Rust release jobs and will be
+removed once Rust migrates to the unified flow.
+
+Examples:
+
+	librarian publish                          # dry run
+	librarian publish --execute                # publish for real
+	librarian publish --release-commit=<sha>   # publish a specific commit`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "execute",
@@ -51,6 +69,11 @@ func publishCommand() *cli.Command {
 			&cli.BoolFlag{
 				Name:  "skip-semver-checks",
 				Usage: "skip semantic versioning checks (legacy Rust-only flag)",
+			},
+			&cli.BoolFlag{
+				Name:    "verbose",
+				Aliases: []string{"v"},
+				Usage:   "streams output of publishing commands executed",
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -74,7 +97,9 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 	dryRun := cmd.Bool("dry-run")
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
-	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, IgnoredChanges)
+	verbose := cmd.Bool("verbose")
+	command.Verbose = verbose
+	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, IgnoredChanges)
 }
 
 // publish implements the publish command. It is provided with the configuration

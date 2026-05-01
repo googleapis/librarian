@@ -28,8 +28,8 @@ func TestService(t *testing.T) {
 	}
 
 	id := "..zones"
-	got, ok := model.State.ServiceByID[id]
-	if !ok {
+	got := model.Service(id)
+	if got == nil {
 		t.Fatalf("expected service %s in the API model", id)
 	}
 	want := &api.Service{
@@ -49,7 +49,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").
@@ -72,7 +72,7 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("compute").
 								WithLiteral("v1").
 								WithLiteral("projects").
@@ -114,8 +114,8 @@ func TestServiceDeprecated(t *testing.T) {
 		Documentation: "Service for the `TestDeprecated` resource.",
 		Deprecated:    true,
 	}
-	got, ok := model.State.ServiceByID[want.ID]
-	if !ok {
+	got := model.Service(want.ID)
+	if got == nil {
 		t.Fatalf("missing service %s", want.ID)
 	}
 	apitest.CheckService(t, got, want)
@@ -127,12 +127,12 @@ func TestServiceMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	getMessage, ok := model.State.MessageByID["..zones.getRequest"]
-	if !ok {
+	getMessage := model.Message("..zones.getRequest")
+	if getMessage == nil {
 		t.Fatalf("expected message %s in the API model", "..zones.getRequest")
 	}
-	listMessage, ok := model.State.MessageByID["..zones.listRequest"]
-	if !ok {
+	listMessage := model.Message("..zones.listRequest")
+	if listMessage == nil {
 		t.Fatalf("expected message %s in the API model", "..zones.listRequest")
 	}
 
@@ -145,8 +145,8 @@ func TestServiceMessages(t *testing.T) {
 		Messages:           []*api.Message{getMessage, listMessage},
 	}
 
-	got, ok := model.State.MessageByID[want.ID]
-	if !ok {
+	got := model.Message(want.ID)
+	if got == nil {
 		t.Fatalf("expected service %s in the API model", want.ID)
 	}
 	apitest.CheckMessage(t, got, want)

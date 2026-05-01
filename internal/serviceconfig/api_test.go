@@ -364,6 +364,7 @@ func TestRepoMetadataTransport(t *testing.T) {
 		name     string
 		sc       *API
 		language string
+		library  *config.Library
 		want     string
 	}{
 		{
@@ -389,20 +390,6 @@ func TestRepoMetadataTransport(t *testing.T) {
 			want:     "grpc+rest",
 		},
 		{
-			name: "python, grpc",
-			sc: &API{
-				Transports: map[string]Transport{config.LanguagePython: GRPC},
-			},
-			language: config.LanguagePython,
-			want:     "",
-		},
-		{
-			name:     "python, default",
-			sc:       &API{},
-			language: config.LanguagePython,
-			want:     "",
-		},
-		{
 			name: "non-java, grpc",
 			sc: &API{
 				Transports: map[string]Transport{config.LanguageGo: GRPC},
@@ -418,9 +405,22 @@ func TestRepoMetadataTransport(t *testing.T) {
 			language: config.LanguageGo,
 			want:     "rest",
 		},
+		{
+			name: "java, transport override",
+			sc: &API{
+				Transports: map[string]Transport{config.LanguageJava: GRPC},
+			},
+			language: config.LanguageJava,
+			library: &config.Library{
+				Java: &config.JavaModule{
+					TransportOverride: "rest",
+				},
+			},
+			want: "http",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.RepoMetadataTransport(test.language)
+			got := test.sc.RepoMetadataTransport(test.language, test.library)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -49,6 +49,8 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 				Path: "google/cloud/aiplatform/v1beta1",
 				ExcludedProtos: []string{
 					"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
+				},
+				SkipProtoClassGeneration: []string{
 					"google/cloud/aiplatform/v1beta1/schema/annotation_payload.proto",
 					"google/cloud/aiplatform/v1beta1/schema/annotation_spec_color.proto",
 					"google/cloud/aiplatform/v1beta1/schema/data_item_payload.proto",
@@ -93,6 +95,96 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			got := &config.JavaAPI{Path: test.path}
 			applyJavaProtoOverrides(got)
 			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyJavaLibraryOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "transport override",
+			lib: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{
+					TransportOverride: "grpc",
+				},
+			},
+		},
+		{
+			name: "api shortname override",
+			lib: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{
+					APIShortnameOverride: "common-protos",
+					SkipPOMUpdates:       true,
+					SkipAPIID:            true,
+				},
+			},
+		},
+		{
+			name: "skip pom updates",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+		},
+		{
+			name: "monolithic java api",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1"},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1", Monolithic: true},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+		},
+		{
+			name: "no override",
+			lib: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			applyJavaLibraryOverrides(test.lib)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -492,9 +584,10 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							JavaAPIs: []*config.JavaAPI{
 								{
-									Path:      "google/cloud/gkehub/policycontroller/v1beta",
-									Samples:   new(false),
-									ProtoOnly: true,
+									Path:                "google/cloud/gkehub/policycontroller/v1beta",
+									Samples:             new(false),
+									ProtoGRPCOnly:       true,
+									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
@@ -535,8 +628,9 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoOnly:               true,
+									ProtoGRPCOnly:           true,
 									Samples:                 new(false),
+									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
@@ -602,7 +696,8 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							JavaAPIs: []*config.JavaAPI{
 								{
-									Path: "google/cloud/translate/v3",
+									Path:                "google/cloud/translate/v3",
+									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
@@ -659,10 +754,11 @@ func TestShouldExcludeSamples(t *testing.T) {
 
 func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		libraryName string
-		protoPath   string
-		wantJavaAPI *config.JavaAPI
+		name          string
+		libraryName   string
+		protoPath     string
+		wantJavaAPI   *config.JavaAPI
+		wantTransport string
 	}{
 		{
 			name:        "datastore admin v1",
@@ -673,6 +769,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				Samples:                 new(false),
 				ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
+				OmitCommonResources:     true, // dummy BUILD.bazel has no deps
 			},
 		},
 		{
@@ -685,7 +782,44 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				GAPICArtifactIDOverride: "google-cloud-storage-control",
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-control-v2",
+				OmitCommonResources:     true, // dummy BUILD.bazel has no deps
+				CopyFiles: []*config.JavaFileCopy{
+					{
+						Source:      "src/main/java/com/google/storage/control/v2/gapic_metadata.json",
+						Destination: "src/main/resources/com/google/storage/control/v2/gapic_metadata.json",
+					},
+				},
 			},
+		},
+		{
+			name:        "storage v2",
+			libraryName: "storage",
+			protoPath:   "google/storage/v2",
+			wantJavaAPI: &config.JavaAPI{
+				Path:                    "google/storage/v2",
+				Samples:                 new(false),
+				GAPICArtifactIDOverride: "gapic-google-cloud-storage-v2",
+				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-v2",
+				ProtoArtifactIDOverride: "proto-google-cloud-storage-v2",
+				OmitCommonResources:     true, // dummy BUILD.bazel has no deps
+				CopyFiles: []*config.JavaFileCopy{
+					{
+						Source:      "src/main/java/com/google/storage/v2/gapic_metadata.json",
+						Destination: "src/main/resources/com/google/storage/v2/gapic_metadata.json",
+					},
+				},
+			},
+		},
+		{
+			name:        "alloydb-connectors transport override",
+			libraryName: "alloydb-connectors",
+			protoPath:   "google/cloud/alloydb/connectors/v1",
+			wantJavaAPI: &config.JavaAPI{
+				Path:                "google/cloud/alloydb/connectors/v1",
+				Samples:             new(false),
+				OmitCommonResources: true, // dummy BUILD.bazel has no deps
+			},
+			wantTransport: "grpc",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -724,7 +858,8 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 							{Path: test.protoPath},
 						},
 						Java: &config.JavaModule{
-							JavaAPIs: []*config.JavaAPI{test.wantJavaAPI},
+							JavaAPIs:          []*config.JavaAPI{test.wantJavaAPI},
+							TransportOverride: test.wantTransport,
 						},
 					},
 				},
@@ -854,21 +989,17 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/success",
 			buildPath:     "google/cloud/bigquery/analyticshub/v1",
 			want: &javaGAPICInfo{
-				Samples: true,
-				AdditionalProtos: []string{
-					"google/cloud/common_resources.proto",
-				},
+				Samples:             true,
+				OmitCommonResources: false,
 			},
 		},
 		{
 			name:          "no GAPIC rules",
 			googleapisDir: "testdata/parse-bazel/no-gapic-rule",
 			want: &javaGAPICInfo{
-				Samples: false,
-				AdditionalProtos: []string{
-					"google/cloud/common_resources.proto",
-				},
-				ProtoOnly: true,
+				Samples:             false,
+				OmitCommonResources: false,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -877,11 +1008,19 @@ func TestParseJavaBazel(t *testing.T) {
 			buildPath:     "google/cloud/aiplatform/v1",
 			want: &javaGAPICInfo{
 				AdditionalProtos: []string{
-					"google/cloud/common_resources.proto",
 					"google/cloud/location/locations.proto",
 					"google/iam/v1/iam_policy.proto",
 				},
-				ProtoOnly: true,
+				OmitCommonResources: false,
+				ProtoGRPCOnly:       true,
+			},
+		},
+		{
+			name:          "omit-common-resources",
+			googleapisDir: "testdata/parse-bazel/omit-common-resources",
+			want: &javaGAPICInfo{
+				OmitCommonResources: true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 	} {

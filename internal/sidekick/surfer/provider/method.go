@@ -1,0 +1,285 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package provider
+
+import (
+	"fmt"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/iancoleman/strcase"
+)
+
+// GetCommandName maps an API method to a standard gcloud command name (in snake_case).
+// This name is typically used for the command's file name.
+func GetCommandName(method *api.Method) (string, error) {
+	if method == nil {
+		return "", fmt.Errorf("method cannot be nil")
+	}
+	switch {
+	case IsGet(method):
+		return "describe", nil
+	case IsList(method):
+		return "list", nil
+	case IsCreate(method):
+		return "create", nil
+	case IsUpdate(method):
+		return "update", nil
+	case IsDelete(method):
+		return "delete", nil
+	default:
+		// For custom methods (AIP-136), we try to extract the custom verb from the HTTP path.
+		// The custom verb is the part after the colon (e.g., .../instances/*:exportData).
+		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+			binding := method.PathInfo.Bindings[0]
+			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
+				return strcase.ToSnake(*binding.PathTemplate.Verb), nil
+			}
+		}
+		// Fallback: use the method name converted to snake_case.
+		return strcase.ToSnake(method.Name), nil
+	}
+}
+
+// IsCreate determines if the method is a standard Create method (AIP-133).
+func IsCreate(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "Create") {
+		return false
+	}
+	if verb := GetHTTPVerb(m); verb != "" {
+		return verb == "POST"
+	}
+	return true
+}
+
+// IsGet determines if the method is a standard Get method (AIP-131).
+func IsGet(m *api.Method) bool {
+	// Use sidekick's robust AIP check if available.
+	if m.IsAIPStandardGet {
+		return true
+	}
+	// Fallback heuristic
+	if !strings.HasPrefix(m.Name, "Get") {
+		return false
+	}
+	if verb := GetHTTPVerb(m); verb != "" {
+		return verb == "GET"
+	}
+	return true
+}
+
+// IsList determines if the method is a standard List method (AIP-132).
+func IsList(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "List") {
+		return false
+	}
+	if verb := GetHTTPVerb(m); verb != "" {
+		return verb == "GET"
+	}
+	return true
+}
+
+// IsUpdate determines if the method is a standard Update method (AIP-134).
+func IsUpdate(m *api.Method) bool {
+	if !strings.HasPrefix(m.Name, "Update") {
+		return false
+	}
+	if verb := GetHTTPVerb(m); verb != "" {
+		return verb == "PATCH" || verb == "PUT"
+	}
+	return true
+}
+
+// IsDelete determines if the method is a standard Delete method (AIP-135).
+func IsDelete(m *api.Method) bool {
+	// Use sidekick's robust AIP check if available.
+	if m.IsAIPStandardDelete {
+		return true
+	}
+	// Fallback heuristic
+	if !strings.HasPrefix(m.Name, "Delete") {
+		return false
+	}
+	if verb := GetHTTPVerb(m); verb != "" {
+		return verb == "DELETE"
+	}
+	return true
+}
+
+// IsStandardMethod determines if the method is one of the standard AIP methods
+// (Get, List, Create, Update, Delete).
+func IsStandardMethod(m *api.Method) bool {
+	return IsGet(m) || IsList(m) || IsCreate(m) || IsUpdate(m) || IsDelete(m)
+}
+
+// PrimaryBinding returns the primary path binding for the method, or nil if not available.
+func PrimaryBinding(m *api.Method) *api.PathBinding {
+	if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+		return nil
+	}
+	return m.PathInfo.Bindings[0]
+}
+
+// GetHTTPVerb returns the HTTP verb from the primary binding, or an empty string if not available.
+func GetHTTPVerb(m *api.Method) string {
+	if b := PrimaryBinding(m); b != nil {
+		return b.Verb
+	}
+	return ""
+}
+
+// IsResourceMethod determines if the method operates on a specific resource instance.
+// This includes standard Get, Update, Delete methods, and custom methods where the
+// HTTP path ends with a variable segment (e.g. `.../instances/{instance}`).
+func IsResourceMethod(m *api.Method) bool {
+	switch {
+	case IsGet(m), IsUpdate(m), IsDelete(m):
+		return true
+	case IsCreate(m), IsList(m):
+		return false
+	default:
+		// Fallback for custom methods
+		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			return false
+		}
+		template := m.PathInfo.Bindings[0].PathTemplate
+		if template == nil || len(template.Segments) == 0 {
+			return false
+		}
+		lastSegment := template.Segments[len(template.Segments)-1]
+		// If the path ends with a variable, it's a resource method.
+		return lastSegment.Variable != nil
+	}
+}
+
+// IsCollectionMethod determines if the method operates on a collection of resources.
+// This includes standard List and Create methods, and custom methods where the
+// HTTP path ends with a literal segment (e.g. `.../instances`).
+func IsCollectionMethod(m *api.Method) bool {
+	switch {
+	case IsList(m), IsCreate(m):
+		return true
+	case IsGet(m), IsUpdate(m), IsDelete(m):
+		return false
+	default:
+		// Fallback for custom methods
+		if m.PathInfo == nil || len(m.PathInfo.Bindings) == 0 {
+			return false
+		}
+		template := m.PathInfo.Bindings[0].PathTemplate
+		if template == nil || len(template.Segments) == 0 {
+			return false
+		}
+		lastSegment := template.Segments[len(template.Segments)-1]
+		// If the path ends with a literal, it's a collection method.
+		return lastSegment.Literal != nil
+	}
+}
+
+// FindResourceMessage identifies the primary resource message within a List response.
+// Per AIP-132, this is usually the repeated field in the response message.
+func FindResourceMessage(outputType *api.Message) *api.Message {
+	if outputType == nil {
+		return nil
+	}
+	for _, f := range outputType.Fields {
+		if f.Repeated && f.MessageType != nil {
+			return f.MessageType
+		}
+	}
+	return nil
+}
+
+// IsSingletonResourceMethod determines whether a resource is a singleton.
+// It checks if the resource associated with the method is a singleton.
+func IsSingletonResourceMethod(method *api.Method, model *api.API) bool {
+	if method == nil {
+		return false
+	}
+
+	resource := GetResourceForMethod(method, model)
+	return isSingletonResource(resource)
+}
+
+// HelpText holds the brief and detailed help text for the command.
+type HelpText struct {
+	Brief       string
+	Description string
+	Examples    string
+}
+
+// GetMethodHelpText extracts help text from overrides or generates fallbacks.
+func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) HelpText {
+	rule := FindHelpTextRule(overrides, strings.TrimPrefix(method.ID, "."))
+	if rule != nil {
+		return HelpText{
+			Brief:       rule.HelpText.Brief,
+			Description: rule.HelpText.Description,
+			Examples:    strings.Join(rule.HelpText.Examples, "\n\n"),
+		}
+	}
+
+	commandName, _ := GetCommandName(method)
+	singular := GetSingularResourceNameForMethod(method, model)
+	plural := GetPluralResourceNameForMethod(method, model)
+
+	if singular == "" {
+		singular = "resource"
+	}
+	if plural == "" {
+		plural = "resources"
+	}
+
+	brief := ""
+	description := ""
+	examples := ""
+
+	switch commandName {
+	case "describe":
+		brief = fmt.Sprintf("Describe %s", plural)
+		description = fmt.Sprintf("Describe a %s", singular)
+		examples = fmt.Sprintf("To describe the %s, run:\n\n    $ {command}", singular)
+	case "list":
+		brief = fmt.Sprintf("List %s", plural)
+		description = fmt.Sprintf("List %s", plural)
+		examples = fmt.Sprintf("To list all %s, run:\n\n    $ {command}", plural)
+	case "create":
+		brief = fmt.Sprintf("Create %s", plural)
+		description = fmt.Sprintf("Create a %s", singular)
+		examples = fmt.Sprintf("To create the %s, run:\n\n    $ {command}", singular)
+	case "delete":
+		brief = fmt.Sprintf("Delete %s", plural)
+		description = fmt.Sprintf("Delete a %s", singular)
+		examples = fmt.Sprintf("To delete the %s, run:\n\n    $ {command}", singular)
+	case "update":
+		brief = fmt.Sprintf("Update %s", plural)
+		description = fmt.Sprintf("Update a %s", singular)
+		examples = fmt.Sprintf("To update the %s, run:\n\n    $ {command}", singular)
+	}
+
+	return HelpText{
+		Brief:       brief,
+		Description: description,
+		Examples:    examples,
+	}
+}
+
+// APIVersionFromMethod extracts the API version from the method's service package name.
+func APIVersionFromMethod(method *api.Method) (string, error) {
+	if method.Service == nil {
+		return "", fmt.Errorf("method %s has nil Service", method.Name)
+	}
+	return apiVersionFromPackage(method.Service.Package), nil
+}

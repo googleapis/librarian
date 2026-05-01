@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -30,6 +31,8 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )
+
+const commonResourcesProto = "google/cloud/common_resources.proto"
 
 // nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 var nonRecursivePaths = map[string]bool{
@@ -92,6 +95,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
+func deriveAPIBase(library *config.Library, apiPath string) string {
+	// TODO(https://github.com/googleapis/librarian/issues/5728):
+	// remove this after updated owlbot.py
+	if library.Name == "common-protos" {
+		return "v1"
+	}
+	return path.Base(apiPath)
+}
+
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
@@ -100,7 +112,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		javaAPI:        javaAPI,
 		metadata:       metadata,
 		outDir:         outdir,
-		apiBase:        filepath.Base(api.Path),
+		apiBase:        deriveAPIBase(library, api.Path),
 		googleapisDir:  googleapisDir,
 		includeSamples: *javaAPI.Samples,
 	}
@@ -125,7 +137,8 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	p.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	if err := runProtoc(ctx, protoProtocArgs(apiProtos, googleapisDir, protoDir)); err != nil {
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, googleapisDir)
+	if err := runProtoc(ctx, protoProtocArgs(protoProtos, googleapisDir, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
@@ -136,15 +149,12 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 	// 3. Generate GAPIC library.
-	if !javaAPI.ProtoOnly {
+	if !javaAPI.ProtoGRPCOnly {
 		gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		var additionalProtos []string
-		for _, p := range javaAPI.AdditionalProtos {
-			additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-		}
+		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
 		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
@@ -154,6 +164,23 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil
+}
+
+// deriveAdditionalProtoPaths returns the absolute paths to additional proto files
+// configured via AdditionalProtos to include in GAPIC generation. It includes
+// google/cloud/common_resources.proto unless opted out via OmitCommonResources.
+func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) []string {
+	var additionalProtos []string
+	if !javaAPI.OmitCommonResources {
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
+	}
+	for _, p := range javaAPI.AdditionalProtos {
+		if p == commonResourcesProto {
+			continue
+		}
+		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+	}
+	return additionalProtos
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {

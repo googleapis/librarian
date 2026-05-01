@@ -26,7 +26,7 @@ func TestAnnotateField(t *testing.T) {
 		Name:          "secret_payload",
 		Documentation: "The secret version payload.",
 		ID:            ".test.SecretVersion.secret_payload",
-		Typez:         api.STRING_TYPE,
+		Typez:         api.TypezString,
 	}
 	msg := &api.Message{
 		Name:    "Secret",
@@ -56,9 +56,9 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 		typez    api.Typez
 		wantType string
 	}{
-		{"string", api.STRING_TYPE, "String"},
-		{"int32", api.INT32_TYPE, "Int32"},
-		{"bytes", api.BYTES_TYPE, "Data"},
+		{"string", api.TypezString, "String"},
+		{"int32", api.TypezInt32, "Int32"},
+		{"bytes", api.TypezBytes, "Data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := &api.Field{

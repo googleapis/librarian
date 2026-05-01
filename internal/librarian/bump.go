@@ -61,7 +61,7 @@ var (
 func bumpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "bump",
-		Usage:     "update versions and prepare release artifacts",
+		Usage:     "bump version numbers and prepare release artifacts",
 		UsageText: "librarian bump <library>",
 		Description: `bump updates version numbers and prepares the files needed for a new release.
 
@@ -70,8 +70,9 @@ library in the workspace. When a library is specified explicitly, the --version 
 be used to override the new version.
 
 Examples:
-  librarian bump <library>           # update version for one library
-  librarian bump --all               # update versions for all libraries`,
+
+	librarian bump <library>           # update version for one library
+	librarian bump --all               # update versions for all libraries`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "all",
@@ -212,7 +213,7 @@ func hasChangesIn(dir, exclusion string, filesChanged []string) bool {
 // to update manifests, version files etc.
 func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}
@@ -246,7 +247,7 @@ func postBump(ctx context.Context, cfg *config.Config) error {
 	return nil
 }
 
-func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
+func deriveNextVersion(library *config.Library, opts semver.DeriveNextOptions, versionOverride string) (string, error) {
 	// If a version override has been specified, use it - but
 	// check that it's not a regression or a no-op.
 	if versionOverride != "" {
@@ -256,13 +257,10 @@ func deriveNextVersion(cfg *config.Config, library *config.Library, opts semver.
 		return versionOverride, nil
 	}
 
-	// First release, use the appropriate default starting version.
+	// First release, use the appropriate default starting version. Many languages
+	// have their own default starting version, set at add time. This is a
+	// fallback for the case where it wasn't.
 	if library.Version == "" {
-		// Keep this logic until we know we no longer need it i.e. all entries
-		// have a version set.
-		if cfg.Language == config.LanguageRust {
-			return rust.DefaultVersion, nil
-		}
 		return defaultVersion, nil
 	}
 
@@ -412,7 +410,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 // the next version.)
 func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, gitExe, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
-	version, err := deriveNextVersion(cfg, lib, opts, versionOverride)
+	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
 		return err
 	}

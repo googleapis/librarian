@@ -32,31 +32,31 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: instance
+              help: The instance id of the {resource} resource.
+              parameter_name: instancesId
+          collection: parallelstore.projects.locations.instances
+          disable_auto_completers: false
           name: instance
           plural_name: instances
-          collection: parallelstore.projects.locations.instances
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: instancesId
-              attribute_name: instance
-              help: The instance id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: path
-        api_field: sourceParallelstore.path
+        api_field: exportDataRequest.sourceParallelstore.path
         help_text: |-
           Root directory path to the Paralellstore filesystem, starting
           with `/`. Defaults to `/` if unset.
         is_positional: false
         required: false
       - arg_name: uri
-        api_field: destinationGcsBucket.uri
+        api_field: exportDataRequest.destinationGcsBucket.uri
         help_text: |-
           URI to a Cloud Storage bucket in the format:
           `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
@@ -64,7 +64,7 @@
         is_positional: false
         required: true
       - arg_name: request-id
-        api_field: requestId
+        api_field: exportDataRequest.requestId
         help_text: |-
           An optional request ID to identify requests. Specify a unique
           request ID so that if you must retry your request, the server will know to
@@ -82,7 +82,6 @@
         is_positional: false
         required: false
       - arg_name: service-account
-        api_field: serviceAccount
         help_text: |-
           User-specified Service Account (SA) credentials to be used when
           performing the transfer.
@@ -96,23 +95,23 @@
           `service-<PROJECT_NUMBER>@gcp-sa-parallelstore.iam.gserviceaccount.com`
         is_positional: false
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: service_account
+              help: The service_account id of the {resource} resource.
+              parameter_name: serviceAccountsId
+          collection: parallelstore.projects.serviceAccounts
+          disable_auto_completers: true
           name: service_account
           plural_name: serviceAccounts
-          collection: parallelstore.projects.serviceAccounts
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: serviceAccountsId
-              attribute_name: service_account
-              help: The service_account id of the {resource} resource.
-          disable_auto_completers: true
         required: false
         resource_method_params:
-          serviceAccount: '{__relative_name__}'
+          exportDataRequest.serviceAccount: '{__relative_name__}'
       - arg_name: uid
-        api_field: metadataOptions.uid
+        api_field: exportDataRequest.metadataOptions.uid
         help_text: The UID preservation behavior.
         is_positional: false
         required: false
@@ -124,7 +123,7 @@
             enum_value: UID_NUMBER_PRESERVE
             help_text: Value for the `uid-number-preserve` field.
       - arg_name: gid
-        api_field: metadataOptions.gid
+        api_field: exportDataRequest.metadataOptions.gid
         help_text: The GID preservation behavior.
         is_positional: false
         required: false
@@ -136,7 +135,7 @@
             enum_value: GID_NUMBER_PRESERVE
             help_text: Value for the `gid-number-preserve` field.
       - arg_name: mode
-        api_field: metadataOptions.mode
+        api_field: exportDataRequest.metadataOptions.mode
         help_text: The mode preservation behavior.
         is_positional: false
         required: false
@@ -148,7 +147,7 @@
             enum_value: MODE_PRESERVE
             help_text: Value for the `mode-preserve` field.
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.instances
     method: exportData

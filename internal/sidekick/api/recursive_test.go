@@ -21,11 +21,11 @@ import (
 func TestSimple(t *testing.T) {
 	field0 := &Field{
 		Name:  "a",
-		Typez: STRING_TYPE,
+		Typez: TypezString,
 	}
 	field1 := &Field{
 		Name:     "b",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.Message",
 		Optional: true,
 	}
@@ -54,7 +54,7 @@ func TestSimpleMap(t *testing.T) {
 		Optional: false,
 		Name:     "children",
 		ID:       ".test.ParentMessage.children",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.ParentMessage.SingularMapEntry",
 	}
 	parent := &Message{
@@ -67,13 +67,13 @@ func TestSimpleMap(t *testing.T) {
 		Name:     "key",
 		JSONName: "key",
 		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    STRING_TYPE,
+		Typez:    TypezString,
 	}
 	value := &Field{
 		Name:     "value",
 		JSONName: "value",
 		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.ParentMessage",
 	}
 	map_message := &Message{
@@ -99,19 +99,19 @@ func TestSimpleMap(t *testing.T) {
 func TestIndirect(t *testing.T) {
 	field0 := &Field{
 		Name:     "child",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.ChildMessage",
 		Optional: true,
 	}
 	field1 := &Field{
 		Name:     "grand_child",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.GrandChildMessage",
 		Optional: true,
 	}
 	field2 := &Field{
 		Name:     "back_to_grand_parent",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.Message",
 		Optional: true,
 	}
@@ -145,7 +145,7 @@ func TestViaMap(t *testing.T) {
 	field0 := &Field{
 		Name:    "parent",
 		ID:      ".test.ChildMessage.parent",
-		Typez:   MESSAGE_TYPE,
+		Typez:   TypezMessage,
 		TypezID: ".test.ParentMessage",
 	}
 	child := &Message{
@@ -159,7 +159,7 @@ func TestViaMap(t *testing.T) {
 		Optional: false,
 		Name:     "children",
 		ID:       ".test.ParentMessage.children",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.ParentMessage.SingularMapEntry",
 	}
 	parent := &Message{
@@ -174,7 +174,7 @@ func TestViaMap(t *testing.T) {
 		Name:     "key",
 		JSONName: "key",
 		ID:       ".test.ParentMessage.SingularMapEntry.key",
-		Typez:    STRING_TYPE,
+		Typez:    TypezString,
 	}
 	value := &Field{
 		Repeated: false,
@@ -182,7 +182,7 @@ func TestViaMap(t *testing.T) {
 		Name:     "value",
 		JSONName: "value",
 		ID:       ".test.ParentMessage.SingularMapEntry.value",
-		Typez:    MESSAGE_TYPE,
+		Typez:    TypezMessage,
 		TypezID:  ".test.ChildMessage",
 	}
 	map_message := &Message{
@@ -209,7 +209,7 @@ func TestReferencedCycle(t *testing.T) {
 	field0 := &Field{
 		Name:    "parent",
 		ID:      ".test.ChildMessage.parent",
-		Typez:   MESSAGE_TYPE,
+		Typez:   TypezMessage,
 		TypezID: ".test.ParentMessage",
 	}
 	child := &Message{
@@ -220,7 +220,7 @@ func TestReferencedCycle(t *testing.T) {
 	field1 := &Field{
 		Name:    "child",
 		ID:      ".test.ParentMessage.child",
-		Typez:   MESSAGE_TYPE,
+		Typez:   TypezMessage,
 		TypezID: ".test.ChildMessage",
 	}
 	parent := &Message{
@@ -232,7 +232,7 @@ func TestReferencedCycle(t *testing.T) {
 	field2 := &Field{
 		Name:    "ref",
 		ID:      ".test.Holder.ref",
-		Typez:   MESSAGE_TYPE,
+		Typez:   TypezMessage,
 		TypezID: ".test.ParentMessage",
 	}
 	holder := &Message{

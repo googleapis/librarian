@@ -164,14 +164,6 @@ func TestClean_Error(t *testing.T) {
 			wantErr: syscall.ENOTDIR,
 		},
 		{
-			name: "cleanGAPIC fails",
-			lib: &config.Library{
-				Name: "gapic-bad-path",
-				APIs: []*config.API{{Path: "google"}},
-			},
-			wantErr: errBadAPIPath,
-		},
-		{
 			name: "cleanGAPICCommon fails",
 			lib: &config.Library{
 				Name: "google-cloud-functions",
@@ -225,11 +217,11 @@ func TestDeriveGAPICGenerationInfo(t *testing.T) {
 		},
 		{
 			name:    "overridden configuration",
-			apiPath: "google/cloud/secrets/v1beta1",
+			apiPath: "google/other/secrets/v1beta1",
 			lib: &config.Library{
 				Python: &config.PythonPackage{
 					OptArgsByAPI: map[string][]string{
-						"google/cloud/secrets/v1beta1": {"python-gapic-namespace=google.cloud", "python-gapic-name=secretmanager"},
+						"google/other/secrets/v1beta1": {"python-gapic-namespace=google.cloud", "python-gapic-name=secretmanager"},
 					},
 				},
 			},
@@ -244,104 +236,8 @@ func TestDeriveGAPICGenerationInfo(t *testing.T) {
 			api := &config.API{
 				Path: test.apiPath,
 			}
-			info, err := deriveGAPICGenerationInfo(api, test.lib)
-			if err != nil {
-				t.Fatal(err)
-			}
+			info := deriveGAPICGenerationInfo(api, test.lib)
 			if diff := cmp.Diff(test.want, info); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDeriveGAPICGenerationInfo_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		apiPath string
-		lib     *config.Library
-		wantErr error
-	}{
-		{
-			name:    "no path",
-			apiPath: "",
-			wantErr: errBadAPIPath,
-		},
-		{
-			name:    "single-element path",
-			apiPath: "google",
-			wantErr: errBadAPIPath,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			api := &config.API{
-				Path: test.apiPath,
-			}
-			_, gotErr := deriveGAPICGenerationInfo(api, test.lib)
-			if !errors.Is(gotErr, test.wantErr) {
-				t.Errorf("deriveGAPICGenerationInfo error = %v, wantErr %v", gotErr, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestFindOptArg(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		cfg  *config.PythonPackage
-		want string
-	}{
-		{
-			name: "option present",
-			cfg: &config.PythonPackage{
-				OptArgsByAPI: map[string][]string{
-					"path/to/api": {"other=x", "findme=foundvalue"},
-				},
-			},
-			want: "foundvalue",
-		},
-		{
-			name: "nil config",
-			cfg:  nil,
-		},
-		{
-			name: "nil OptArgsByAPI",
-			cfg: &config.PythonPackage{
-				ProtoOnlyAPIs: []string{"ignored"},
-			},
-		},
-		{
-			name: "no args for specified API",
-			cfg: &config.PythonPackage{
-				OptArgsByAPI: map[string][]string{
-					"path/to/other": {"other=x", "findme=foundvalue"},
-				},
-			},
-		},
-		{
-			name: "args for specified API, but none with given name",
-			cfg: &config.PythonPackage{
-				OptArgsByAPI: map[string][]string{
-					"path/to/api": {"other=x"},
-				},
-			},
-		},
-		{
-			name: "args for specified API, but only a prefix match",
-			cfg: &config.PythonPackage{
-				OptArgsByAPI: map[string][]string{
-					"path/to/api": {"other=x,findmenot=xyz"},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			api := &config.API{
-				Path: "path/to/api",
-			}
-			optName := "findme"
-			got := findOptArg(api, test.cfg, optName)
-			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -481,13 +377,6 @@ func TestCleanGAPIC_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "bad API path",
-			lib: &config.Library{
-				APIs: []*config.API{{Path: "google"}},
-			},
-			wantErr: errBadAPIPath,
-		},
-		{
 			name: "error during deletion",
 			lib: &config.Library{
 				APIs: []*config.API{{Path: "google/cloud/functions/v1"}},
@@ -580,13 +469,6 @@ func TestCleanGAPICCommon_Error(t *testing.T) {
 		lib     *config.Library
 		wantErr error
 	}{
-		{
-			name: "bad API path",
-			lib: &config.Library{
-				APIs: []*config.API{{Path: "google"}},
-			},
-			wantErr: errBadAPIPath,
-		},
 		{
 			name: "no python configuration",
 			lib: &config.Library{

@@ -21,18 +21,96 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func formatPath(t *api.PathTemplate) string {
+func pathExpression(t *api.PathTemplate) string {
+	count := 0
 	var pathComponents []string
 	for _, segment := range t.Segments {
 		if segment.Literal != nil {
 			pathComponents = append(pathComponents, *segment.Literal)
 		} else if segment.Variable != nil {
-			var fieldParts []string
-			for _, p := range segment.Variable.FieldPath {
-				fieldParts = append(fieldParts, camelCase(p))
-			}
-			pathComponents = append(pathComponents, fmt.Sprintf(`\(request.%s)`, strings.Join(fieldParts, ".")))
+			pathComponents = append(pathComponents, fmt.Sprintf(`\(pathVariable%d)`, count))
+			count += 1
 		}
 	}
 	return "/" + strings.Join(pathComponents, "/")
+}
+
+func (c *codec) pathVariables(message *api.Message, t *api.PathTemplate) ([]*pathVariable, error) {
+	count := 0
+	var variables []*pathVariable
+	for _, segment := range t.Segments {
+		if segment.Variable != nil {
+			pathVar, err := c.newPathVariable(message, segment.Variable, count)
+			if err != nil {
+				return nil, err
+			}
+			variables = append(variables, pathVar)
+			count += 1
+		}
+	}
+	return variables, nil
+}
+
+func (c *codec) newPathVariable(message *api.Message, variable *api.PathVariable, count int) (*pathVariable, error) {
+	test := ""
+	name := fmt.Sprintf("pathVariable%d", count)
+	var expression strings.Builder
+	optional := false
+	current := message
+	for _, v := range variable.FieldPath {
+		field, err := lookupField(current, v)
+		if err != nil {
+			return nil, err
+		}
+		expr, err := c.fieldPathParameterExpression(optional, field)
+		if err != nil {
+			return nil, err
+		}
+		expression.WriteString(expr)
+		optional = field.Optional
+		switch field.Typez {
+		case api.TypezMessage:
+			if !field.Optional {
+				// Panics are the right way to deal with bugs in other parts of the code.
+				panic(fmt.Sprintf("invalid state: field %s in message %s has message type but is not optional", field.Name, current.ID))
+			}
+			current, err = lookupMessage(c.Model, field.TypezID)
+			if err != nil {
+				return nil, err
+			}
+		case api.TypezString:
+			test = fmt.Sprintf("!%s.isEmpty", name)
+		case api.TypezBytes:
+			return nil, fmt.Errorf("unsupported path parameter type %q, message=%q, path=%q", field.Typez.String(), message.ID, strings.Join(variable.FieldPath, "."))
+		default:
+			test = ""
+		}
+	}
+	pathVar := &pathVariable{
+		Name:       name,
+		Expression: expression.String(),
+		Test:       test,
+		FieldPath:  strings.Join(variable.FieldPath, "."),
+	}
+	return pathVar, nil
+}
+
+func (*codec) fieldPathParameterExpression(optional bool, field *api.Field) (string, error) {
+	if field.IsOneOf {
+		return "", fmt.Errorf("unsupported path parameter: field %s", field.ID)
+	}
+	fieldCodec, ok := field.Codec.(*fieldAnnotations)
+	if !ok {
+		return "", fmt.Errorf("internal error: field %s does not have swift fieldAnnotations", field.ID)
+	}
+	if optional && field.Optional {
+		return fmt.Sprintf(".flatMap({ $0.%s })", fieldCodec.Name), nil
+	}
+	if optional {
+		return fmt.Sprintf(".map({ $0.%s })", fieldCodec.Name), nil
+	}
+	if field.Optional {
+		return fmt.Sprintf(".%s", fieldCodec.Name), nil
+	}
+	return fmt.Sprintf(".%s as %s?", fieldCodec.Name, fieldCodec.FieldType), nil
 }

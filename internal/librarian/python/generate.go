@@ -36,9 +36,27 @@ import (
 const (
 	cloudGoogleComDocumentationTemplate = "https://cloud.google.com/python/docs/reference/%s/latest"
 	googleapisDevDocumentationTemplate  = "https://googleapis.dev/python/%s/latest"
+	transportOption                     = "transport"
+	gapicNamespaceOption                = "python-gapic-namespace"
+	gapicNameOption                     = "python-gapic-name"
+	warehousePackageNameOption          = "warehouse-package-name"
+
+	// changelog is the name of the changelog file to create. A regular file
+	// is created in the package root, and a symlink is created in the docs
+	// directory.
+	changelog         = "CHANGELOG.md"
+	changelogTemplate = `# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/%s/#history
+`
 )
 
-var errNoDefaultVersion = errors.New("default version must be specified for every library with generated APIs")
+var (
+	errNoDefaultVersion        = errors.New("default version must be specified for every library with generated APIs")
+	errExplicitTransportOption = errors.New("transport option is derived from sdk.yaml and must not be specified explicitly")
+)
 
 // Generate generates a Python client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
@@ -106,10 +124,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	if library.Python == nil || !library.Python.SkipReadmeCopy {
-		if err := copyReadmeToDocsDir(outdir); err != nil {
-			return fmt.Errorf("failed to copy README to docs: %w", err)
-		}
+	if err := copyReadmeToDocsDir(library, outdir); err != nil {
+		return fmt.Errorf("failed to copy README to docs: %w", err)
+	}
+
+	if err := createChangelog(library.Name, outdir); err != nil {
+		return fmt.Errorf("failed to create changelog: %w", err)
 	}
 	return nil
 }
@@ -174,18 +194,6 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		repoMetadata.ClientDocumentation = packageOptions.ClientDocumentationOverride
 	}
 	// TODO(https://github.com/googleapis/librarian/issues/4175): remove these.
-	if packageOptions.NamePrettyOverride != "" {
-		repoMetadata.NamePretty = packageOptions.NamePrettyOverride
-	}
-	if packageOptions.ProductDocumentationOverride != "" {
-		repoMetadata.ProductDocumentation = packageOptions.ProductDocumentationOverride
-	}
-	if packageOptions.APIShortnameOverride != "" {
-		repoMetadata.APIShortname = packageOptions.APIShortnameOverride
-	}
-	if packageOptions.APIIDOverride != "" {
-		repoMetadata.APIID = packageOptions.APIIDOverride
-	}
 	if packageOptions.IssueTrackerOverride != "" {
 		repoMetadata.IssueTracker = packageOptions.IssueTrackerOverride
 	}
@@ -296,23 +304,31 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	if err != nil {
 		return nil, err
 	}
+	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
+		opts = append(opts, "rest-numeric-enums")
+	}
+	// The transport option should never be specified explicitly. Ensure it
+	// hasn't been specified, and add the derived transport.
+	if _, explicitTransport := findOption(opts, transportOption); explicitTransport {
+		return nil, fmt.Errorf("error creating GAPIC options for %s: %w", api.Path, errExplicitTransportOption)
+	}
 	transport := serviceconfig.GRPCRest
 	if apiMetadata != nil {
 		transport = apiMetadata.Transport(config.LanguagePython)
 	}
-	if apiMetadata.HasRESTNumericEnums(config.LanguagePython) {
-		opts = append(opts, "rest-numeric-enums")
-	}
+	opts = append(opts, fmt.Sprintf("%s=%s", transportOption, transport))
 
-	addTransport := true
-	for _, opt := range opts {
-		if strings.HasPrefix(opt, "transport=") {
-			addTransport = false
-		}
+	// Add derived python-gapic-namespace option, if we haven't already got it.
+	if _, ok := findOption(opts, gapicNamespaceOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNamespaceOption, deriveGAPICNamespace(api.Path)))
 	}
-	// Add transport option, if we haven't already got it.
-	if addTransport {
-		opts = append(opts, fmt.Sprintf("transport=%s", transport))
+	// Add derived python-gapic-name option, if we haven't already got it.
+	if _, ok := findOption(opts, gapicNameOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", gapicNameOption, deriveGAPICName(api.Path)))
+	}
+	// Add the library name as warehouse-package-name option, if we haven't already got it.
+	if _, ok := findOption(opts, warehousePackageNameOption); !ok {
+		opts = append(opts, fmt.Sprintf("%s=%s", warehousePackageNameOption, library.Name))
 	}
 
 	// Add gapic-version from library version
@@ -324,11 +340,6 @@ func createProtocOptions(api *config.API, library *config.Library, googleapisDir
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
 	if err != nil {
 		return nil, err
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/3827): remove this
-	// hardcoding once we can use the gRPC service config for Compute.
-	if strings.HasPrefix(library.Name, "google-cloud-compute") {
-		grpcConfigPath = ""
 	}
 	if grpcConfigPath != "" {
 		opts = append(opts, fmt.Sprintf("retry-config=%s", grpcConfigPath))
@@ -395,7 +406,9 @@ python_mono_repo.owlbot_main(%q)
 
 // copyReadmeToDocsDir copies README.rst to docs/README.rst.
 // This handles symlinks properly by reading content and writing a real file.
-func copyReadmeToDocsDir(outdir string) error {
+// This is a no-op if either the source doesn't exist, or the library is
+// handwritten and the target doesn't already exist.
+func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 	sourcePath := filepath.Join(outdir, "README.rst")
 	docsPath := filepath.Join(outdir, "docs")
 	destPath := filepath.Join(docsPath, "README.rst")
@@ -404,7 +417,13 @@ func copyReadmeToDocsDir(outdir string) error {
 	if _, err := os.Lstat(sourcePath); errors.Is(err, fs.ErrNotExist) {
 		return nil
 	}
-
+	// If the library is handwritten and the target doesn't already exist, skip
+	// copying.
+	if len(lib.APIs) == 0 {
+		if _, err := os.Lstat(destPath); errors.Is(err, fs.ErrNotExist) {
+			return nil
+		}
+	}
 	// Read content from source (follows symlinks)
 	content, err := os.ReadFile(sourcePath)
 	if err != nil {
@@ -474,4 +493,80 @@ func DefaultLibraryName(api string) string {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview-packages")
+}
+
+// deriveGAPICNamespace derives the value to pass as python-gapic-namespace when
+// it's not specified explicitly. This is the first two components of the API
+// path (excluding any trailing version), dot-separated.
+func deriveGAPICNamespace(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, "/"+version)
+	}
+	parts := strings.Split(path, "/")
+	if len(parts) < 2 {
+		return path
+	}
+	return parts[0] + "." + parts[1]
+}
+
+// deriveGAPICName derives the value to pass as python-gapic-name when it's not
+// specified explicitly. This is the path, without the leading namespace (after
+// replacing dots with slashes), and without any version suffix, and then
+// replacing slashes with underscores. Example:
+// a path of google/cloud/foo/bar/v1 would have a GAPIC name of "foo_bar".
+func deriveGAPICName(path string) string {
+	version := serviceconfig.ExtractVersion(path)
+	if version != "" {
+		path = strings.TrimSuffix(path, version)
+	}
+	derivedNamespace := deriveGAPICNamespace(path)
+	path = strings.TrimPrefix(path, strings.ReplaceAll(derivedNamespace, ".", "/"))
+	path = strings.Trim(path, "/")
+	return strings.ReplaceAll(path, "/", "_")
+}
+
+// findOption finds the value of a named option within a list of name=value
+// strings. If the option isn't found, an empty string is returned. The second
+// value indicates whether the option was found or not.
+func findOption(options []string, name string) (string, bool) {
+	prefix := name + "="
+	for _, candidate := range options {
+		if strings.HasPrefix(candidate, prefix) {
+			return strings.TrimPrefix(candidate, prefix), true
+		}
+	}
+	return "", false
+}
+
+// createChangelog creates a regular changelog file for the library with the
+// specified name in the given output directory, if it doesn't already exist.
+// It also creates a symlink to the new file from a docs subdirectory. If the
+// changelog file already exists in the output directory, this function returns
+// immediately with no error.
+func createChangelog(libName, output string) error {
+	rootChangelog := filepath.Join(output, changelog)
+	_, statErr := os.Stat(rootChangelog)
+	// If the file exists, we're done.
+	if statErr == nil {
+		return nil
+	}
+	if !errors.Is(statErr, fs.ErrNotExist) {
+		return statErr
+	}
+	docs := filepath.Join(output, "docs")
+	if err := os.MkdirAll(docs, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf(changelogTemplate, libName)
+	if err := os.WriteFile(rootChangelog, []byte(content), 0644); err != nil {
+		return err
+	}
+	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md
+	// The target is created directly rather than using filepath.Join to make
+	// sure it always uses a forward-slash, even on Windows.
+	if err := os.Symlink("../"+changelog, filepath.Join(docs, changelog)); err != nil {
+		return err
+	}
+	return nil
 }

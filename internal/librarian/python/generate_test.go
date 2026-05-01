@@ -102,15 +102,16 @@ func TestCreateProtocOptions(t *testing.T) {
 		api      *config.API
 		library  *config.Library
 		expected []string
-		wantErr  bool
 	}{
 		{
-			name:    "basic case",
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{},
+			name: "basic case",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -127,7 +128,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,opt1,opt2,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -139,7 +140,7 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,gapic-version=1.2.3,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
@@ -152,25 +153,79 @@ func TestCreateProtocOptions(t *testing.T) {
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
 		{
-			name: "library starting google-cloud-compute does not use gRPC service config",
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name: "proto-only exists but doesn't include API path",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{
-				// It's odd to use a Compute name for a path that's using secretmanager,
-				// but it's simpler than making the test realistic by importing the
-				// (huge) Compute protos etc.
-				Name: "google-cloud-compute-beta",
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
+				},
 			},
 			expected: []string{
 				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,python-gapic-namespace=google.cloud,python-gapic-name=secretmanager,warehouse-package-name=google-cloud-secret-manager,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 			},
 		},
+		{
+			name: "proto-only exists and includes API path",
+			api:  &config.API{Path: "google/cloud/secretmanager/type"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
+				},
+			},
+			expected: []string{
+				"--python_out=staging",
+				"--pyi_out=staging",
+			},
+		},
+		{
+			name: "potentially derived options specified explicitly",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secret-manager",
+				Python: &config.PythonPackage{
+					OptArgsByAPI: map[string][]string{
+						"google/cloud/secretmanager/v1": {
+							"python-gapic-namespace=x",
+							"python-gapic-name=y",
+							"warehouse-package-name=z",
+						},
+					},
+				},
+			},
+			expected: []string{
+				"--python_gapic_out=staging",
+				"--python_gapic_opt=metadata,python-gapic-namespace=x,python-gapic-name=y,warehouse-package-name=z,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := createProtocOptions(test.api, test.library, googleapisDir, "staging")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.expected, got); diff != "" {
+				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCreateProtocOptions_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		api     *config.API
+		library *config.Library
+		wantErr error
+	}{
 		{
 			name: "transport specified in OptArgsByAPI",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
@@ -182,46 +237,13 @@ func TestCreateProtocOptions(t *testing.T) {
 					},
 				},
 			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,transport=rest,rest-numeric-enums,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
-			name: "proto-only exists but doesn't include API path",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Python: &config.PythonPackage{
-					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
-				},
-			},
-			expected: []string{
-				"--python_gapic_out=staging",
-				"--python_gapic_opt=metadata,rest-numeric-enums,transport=grpc+rest,retry-config=google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json,service-yaml=google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-			},
-		},
-		{
-			name: "proto-only exists and includes API path",
-			api:  &config.API{Path: "google/cloud/secretmanager/type"},
-			library: &config.Library{
-				Python: &config.PythonPackage{
-					ProtoOnlyAPIs: []string{"google/cloud/secretmanager/type"},
-				},
-			},
-			expected: []string{
-				"--python_out=staging",
-				"--pyi_out=staging",
-			},
+			wantErr: errExplicitTransportOption,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := createProtocOptions(test.api, test.library, googleapisDir, "staging")
-			if (err != nil) != test.wantErr {
-				t.Fatalf("createProtocOptions() error = %v, wantErr %v", err, test.wantErr)
-			}
-
-			if diff := cmp.Diff(test.expected, got); diff != "" {
-				t.Errorf("createProtocOptions() returned diff (-want +got):\n%s", diff)
+			_, gotErr := createProtocOptions(test.api, test.library, googleapisDir, "staging")
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("createProtocOptions error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}
@@ -313,6 +335,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		name            string
 		setup           func(t *testing.T, outdir string)
 		expectedContent string
+		handwritten     bool
 		expectedErr     bool
 	}{
 		{
@@ -320,6 +343,31 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 			setup: func(t *testing.T, outdir string) {
 				// No setup needed
 			},
+		},
+		{
+			name: "handwritten library, target already exists",
+			setup: func(t *testing.T, outdir string) {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(outdir, "docs", "README.rst"), []byte("before"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			handwritten:     true,
+			expectedContent: "after",
+		},
+		{
+			name: "handwritten library, target doesn't already exist",
+			setup: func(t *testing.T, outdir string) {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			handwritten: true,
 		},
 		{
 			name: "readme is a regular file",
@@ -385,7 +433,14 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
 			test.setup(t, outdir)
-			err := copyReadmeToDocsDir(outdir)
+			lib := &config.Library{
+				Name: "test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+			}
+			if test.handwritten {
+				lib.APIs = nil
+			}
+			err := copyReadmeToDocsDir(lib, outdir)
 			if (err != nil) != test.expectedErr {
 				t.Fatalf("copyReadmeToDocsDir() error = %v, wantErr %v", err, test.expectedErr)
 			}
@@ -893,6 +948,26 @@ func TestGenerate_Error(t *testing.T) {
 			},
 			wantErr: syscall.EISDIR,
 		},
+		{
+			name: "provoke changelog link error",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				if err := os.MkdirAll(filepath.Join(lib.Output, "docs"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(lib.Output, "docs", changelog), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: fs.ErrExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			absGoogleapisDir, err := filepath.Abs(googleapisDir)
@@ -939,91 +1014,73 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
 
-	for _, test := range []struct {
-		name           string
-		skipReadmeCopy bool
-	}{
-		{
-			name:           "copy readme",
-			skipReadmeCopy: false,
+	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
+	library := &config.Library{
+		Name:                "google-cloud-secret-manager",
+		Output:              outdir,
+		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
 		},
-		{
-			name:           "skip readme copy",
-			skipReadmeCopy: true,
+		Python: &config.PythonPackage{
+			MetadataNameOverride: "secretmanager",
+			PythonDefault: config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			DefaultVersion: "v1",
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			repoRoot := t.TempDir()
-			createReplacementScripts(t, repoRoot)
-			outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			cfg := &config.Config{
-				Language: config.LanguagePython,
-				Repo:     "googleapis/google-cloud-python",
-			}
-
-			library := &config.Library{
-				Name:                "google-cloud-secret-manager",
-				Output:              outdir,
-				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-				},
-				Python: &config.PythonPackage{
-					MetadataNameOverride: "secretmanager",
-					PythonDefault: config.PythonDefault{
-						LibraryType: "GAPIC_AUTO",
-					},
-					SkipReadmeCopy: test.skipReadmeCopy,
-					DefaultVersion: "v1",
-				},
-			}
-			srcs := &sources.Sources{
-				Googleapis: googleapisDir,
-			}
-			if err := Generate(t.Context(), cfg, library, srcs); err != nil {
-				t.Fatal(err)
-			}
-			gotMetadata, err := repometadata.Read(outdir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			wantMetadata := &repometadata.RepoMetadata{
-				// Fields set by repometadata.FromLibrary.
-				Name:                 "secretmanager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguagePython,
-				Repo:                 "googleapis/google-cloud-python",
-				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores, manages, and secures access to application secrets.",
-				// Fields set by Generate.
-				LibraryType:         "GAPIC_AUTO",
-				ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-				DefaultVersion:      "v1",
-			}
-			if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
-				t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
-			}
-
-			_, gotReadmeStatErr := os.Stat(filepath.Join(outdir, "docs", "README.rst"))
-			var wantReadmeStatErr error
-			if test.skipReadmeCopy {
-				wantReadmeStatErr = fs.ErrNotExist
-			}
-			if !errors.Is(gotReadmeStatErr, wantReadmeStatErr) {
-				t.Errorf("stat error on readme = %v, want %v", gotReadmeStatErr, wantReadmeStatErr)
-			}
-		})
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	if err := Generate(t.Context(), cfg, library, srcs); err != nil {
+		t.Fatal(err)
+	}
+	gotMetadata, err := repometadata.Read(outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantMetadata := &repometadata.RepoMetadata{
+		// Fields set by repometadata.FromLibrary.
+		Name:                 "secretmanager",
+		NamePretty:           "Secret Manager",
+		ProductDocumentation: "https://cloud.google.com/secret-manager/",
+		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+		ReleaseLevel:         "stable",
+		Language:             config.LanguagePython,
+		Repo:                 "googleapis/google-cloud-python",
+		DistributionName:     "google-cloud-secret-manager",
+		APIID:                "secretmanager.googleapis.com",
+		APIShortname:         "secretmanager",
+		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		// Fields set by Generate.
+		LibraryType:         "GAPIC_AUTO",
+		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+		DefaultVersion:      "v1",
+	}
+	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
+		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
+	}
+	_, err = os.Stat(filepath.Join(outdir, "docs", "README.rst"))
+	if err != nil {
+		t.Errorf("stat error on readme = %v", err)
+	}
+	_, gotChangelogStatErr := os.Stat(filepath.Join(outdir, changelog))
+	if gotChangelogStatErr != nil {
+		t.Errorf("stat error on changelog = %v", gotChangelogStatErr)
 	}
 }
 
@@ -1193,14 +1250,10 @@ func TestCreateRepoMetadata(t *testing.T) {
 					{Path: "google/cloud/secrets/v1beta1"},
 				},
 				Python: &config.PythonPackage{
-					DefaultVersion:               "v1beta1",
-					MetadataNameOverride:         "secretmanager",
-					NamePrettyOverride:           "overridden name_pretty",
-					ClientDocumentationOverride:  "overridden client_documentation",
-					IssueTrackerOverride:         "overridden issue_tracker",
-					ProductDocumentationOverride: "overridden product_documentation",
-					APIShortnameOverride:         "overridden api_shortname",
-					APIIDOverride:                "overridden api_id",
+					DefaultVersion:              "v1beta1",
+					MetadataNameOverride:        "secretmanager",
+					ClientDocumentationOverride: "overridden client_documentation",
+					IssueTrackerOverride:        "overridden issue_tracker",
 					PythonDefault: config.PythonDefault{
 						LibraryType: "CORE",
 					},
@@ -1208,15 +1261,15 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 			want: &repometadata.RepoMetadata{
 				Name:                 "secretmanager",
-				NamePretty:           "overridden name_pretty",
-				ProductDocumentation: "overridden product_documentation",
+				NamePretty:           "Secret Manager",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "overridden issue_tracker",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
 				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "overridden api_id",
-				APIShortname:         "overridden api_shortname",
+				APIID:                "secretmanager.googleapis.com",
+				APIShortname:         "secretmanager",
 				APIDescription:       "overridden description",
 				LibraryType:          "CORE",
 				ClientDocumentation:  "overridden client_documentation",
@@ -1339,6 +1392,224 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 			}
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("stageProtoFiles error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDeriveGAPICNamespace(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "single path element",
+			path: "grafeas",
+			want: "grafeas",
+		},
+		{
+			name: "single path element with version",
+			path: "grafeas/v1",
+			want: "grafeas",
+		},
+		{
+			name: "multiple path elements",
+			path: "google/cloud/datacatalog/lineage/v1",
+			want: "google.cloud",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveGAPICNamespace(test.path)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveGAPICName(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want string
+	}{
+		{
+			name: "single path element in name",
+			path: "google/cloud/datacatalog/v1",
+			want: "datacatalog",
+		},
+		{
+			name: "multiple path elements in name",
+			path: "google/cloud/datacatalog/lineage/v1",
+			want: "datacatalog_lineage",
+		},
+		{
+			name: "no version",
+			path: "google/apps/script/type",
+			want: "script_type",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveGAPICName(test.path)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindOption(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		options   []string
+		wantValue string
+		wantOk    bool
+	}{
+		{
+			name:    "empty options",
+			options: []string{},
+		},
+		{
+			name:    "requested option not present",
+			options: []string{"a=b"},
+		},
+		{
+			name:    "requested option not present, but similar names are",
+			options: []string{"othertest=a", "testother=b"},
+		},
+		{
+			name:      "option present with value",
+			options:   []string{"a=b", "test=test-value", "c=d"},
+			wantValue: "test-value",
+			wantOk:    true,
+		},
+		{
+			name:    "option present without value",
+			options: []string{"a=b", "test=", "c=d"},
+			wantOk:  true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotValue, gotOk := findOption(test.options, "test")
+			if diff := cmp.Diff(test.wantValue, gotValue); diff != "" {
+				t.Errorf("mismatch in value (-want +got):\n%s", diff)
+			}
+			if test.wantOk != gotOk {
+				t.Errorf("mismatch in found: want %v, got %v", test.wantOk, gotOk)
+			}
+		})
+	}
+}
+
+func TestCreateChangelog(t *testing.T) {
+	libName := "google-cloud-test"
+	output := t.TempDir()
+	if err := createChangelog(libName, output); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(filepath.Join(output, changelog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	textContent := string(content)
+	if !strings.Contains(textContent, "pypi") {
+		t.Errorf("expected changelog to contain pypi link; was %s", textContent)
+	}
+	if !strings.Contains(textContent, libName) {
+		t.Errorf("expected changelog to contain %s; was %s", libName, textContent)
+	}
+	linkPath := filepath.Join(output, "docs", changelog)
+	linkInfo, err := os.Lstat(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if linkInfo.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("docs file is not a symlink")
+	}
+	// Check that the target resolves to the regular file.
+	linkTarget, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absRegularFile, err := filepath.Abs(filepath.Join(output, changelog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	absLinkTarget, err := filepath.Abs(filepath.Join(output, "docs", linkTarget))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if absLinkTarget != absRegularFile {
+		t.Errorf("absolute link target is %s; want %s", absLinkTarget, absRegularFile)
+	}
+}
+
+func TestCreateChangelog_FileExists(t *testing.T) {
+	libName := "google-cloud-test"
+	output := t.TempDir()
+	if err := os.WriteFile(filepath.Join(output, changelog), []byte{}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := createChangelog(libName, output); err != nil {
+		t.Fatal(err)
+	}
+	// Because the target changelog file already exists, we shouldn't have
+	// created a docs directory.
+	_, gotErr := os.Stat(filepath.Join(output, "docs"))
+	wantErr := fs.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("checking for docs directory error = %v, wantErr %v", gotErr, wantErr)
+	}
+
+}
+
+func TestCreateChangelog_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, output string)
+		wantErr error
+	}{
+		{
+			name: "docs is an existing file",
+			setup: func(t *testing.T, output string) {
+				if err := os.WriteFile(filepath.Join(output, "docs"), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "output directory is readonly",
+			setup: func(t *testing.T, output string) {
+				if err := os.Chmod(output, 0644); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(output, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+		{
+			name: "docs changelog is an existing directory",
+			setup: func(t *testing.T, output string) {
+				if err := os.MkdirAll(filepath.Join(output, "docs", changelog), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EEXIST,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			test.setup(t, output)
+			gotErr := createChangelog("google-cloud-test", output)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

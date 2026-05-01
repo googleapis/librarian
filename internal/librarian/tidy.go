@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -35,13 +36,31 @@ var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
+
+	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
+	// libraries in Java without triggering the duplicate API path error.
+	// These are paths are duplicated in java because their generated code splits
+	// between java-iam and java-iam-policy.
+	javaSkipDuplicatePaths = map[string]bool{
+		"google/iam/v1":     true,
+		"google/iam/v2":     true,
+		"google/iam/v2beta": true,
+		"google/iam/v3":     true,
+		"google/iam/v3beta": true,
+	}
 )
 
 func tidyCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tidy",
-		Usage:     "format and validate librarian.yaml",
+		Usage:     "tidy and validate librarian.yaml",
 		UsageText: "librarian tidy",
+		Description: `tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
+
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.`,
 		Action: func(ctx context.Context, cmd *cli.Command) error {
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
@@ -61,11 +80,11 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
-
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
 	cfg.Libraries = tidyLibraries(cfg)
+	cfg = tidyConfig(cfg)
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
@@ -132,6 +151,9 @@ func validateLibraries(cfg *config.Config) error {
 		}
 		for _, ch := range lib.APIs {
 			if ch.Path != "" {
+				if cfg.Language == config.LanguageJava && javaSkipDuplicatePaths[ch.Path] {
+					continue
+				}
 				pathCount[ch.Path]++
 			}
 		}
@@ -172,8 +194,9 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
 var languageTidiers = map[string]func(*config.Library) *config.Library{
-	config.LanguageJava: java.Tidy,
-	config.LanguageRust: tidyRustConfig,
+	config.LanguageJava:   java.Tidy,
+	config.LanguagePython: python.Tidy,
+	config.LanguageRust:   tidyRustConfig,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
@@ -212,6 +235,46 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	}
 
 	return lib
+}
+
+// isReleaseEmpty returns true if the release configuration is empty.
+func isReleaseEmpty(release *config.Release) bool {
+	return len(release.IgnoredChanges) == 0 && len(release.Preinstalled) == 0 && len(release.Tools) == 0
+}
+
+// isToolsEmpty returns true if the tools configuration is empty.
+func isToolsEmpty(tools *config.Tools) bool {
+	return len(tools.Cargo) == 0 && len(tools.NPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
+}
+
+// isDefaultEmpty returns true if the default configuration is empty.
+// Note that this will not remove {default: language: {}} because we have
+// not yet encountered this edge case.
+func isDefaultEmpty(defaults *config.Default) bool {
+	return len(defaults.Keep) == 0 &&
+		defaults.Output == "" &&
+		defaults.TagFormat == "" &&
+		defaults.Dotnet == nil &&
+		defaults.Dart == nil &&
+		defaults.Java == nil &&
+		defaults.Nodejs == nil &&
+		defaults.Rust == nil &&
+		defaults.Python == nil &&
+		defaults.Swift == nil
+}
+
+// tidyConfig removes unused sections from the configuration.
+func tidyConfig(cfg *config.Config) *config.Config {
+	if cfg.Release != nil && isReleaseEmpty(cfg.Release) {
+		cfg.Release = nil
+	}
+	if cfg.Tools != nil && isToolsEmpty(cfg.Tools) {
+		cfg.Tools = nil
+	}
+	if cfg.Default != nil && isDefaultEmpty(cfg.Default) {
+		cfg.Default = nil
+	}
+	return cfg
 }
 
 func formatConfig(cfg *config.Config) *config.Config {

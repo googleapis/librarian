@@ -36,6 +36,7 @@ type semverData struct {
 	lastTag         string
 	cargoPath       string
 	gitPath         string
+	verbose         bool
 }
 
 // semverCheckCPUDivisor scales the concurrency limit based on available CPUs to balance
@@ -63,7 +64,7 @@ var errSemverCheck = errors.New("semver check failed")
 
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
-func Publish(ctx context.Context, cfg *config.Config, dryRun, dryRunKeepGoing, skipSemverChecks bool, ignoredChanges []string) error {
+func Publish(ctx context.Context, cfg *config.Config, dryRun, dryRunKeepGoing, skipSemverChecks, verbose bool, ignoredChanges []string) error {
 	release := cfg.Release
 	if err := preFlight(ctx, release.Preinstalled, cargoTools(cfg)); err != nil {
 		return err
@@ -80,7 +81,7 @@ func Publish(ctx context.Context, cfg *config.Config, dryRun, dryRunKeepGoing, s
 	if err != nil {
 		return err
 	}
-	return publishCrates(ctx, release, dryRun, dryRunKeepGoing, skipSemverChecks, lastTag, files)
+	return publishCrates(ctx, release, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, lastTag, files)
 }
 
 // cargoTools returns cargo tools from Config.Tools if available,
@@ -102,7 +103,7 @@ func cargoTools(cfg *config.Config) []config.Tool {
 }
 
 // publishCrates publishes the crates that have changed.
-func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks bool, lastTag string, files []string) error {
+func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepGoing, skipSemverChecks, verbose bool, lastTag string, files []string) error {
 	manifests := map[string]string{}
 	for _, manifest := range findCargoManifests(files) {
 		names, err := publishedCrate(manifest)
@@ -136,6 +137,7 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 			lastTag:         lastTag,
 			cargoPath:       cargoPath,
 			gitPath:         gitPath,
+			verbose:         verbose,
 		}); err != nil {
 			return err
 		}
@@ -145,6 +147,9 @@ func publishCrates(ctx context.Context, cfg *config.Release, dryRun, dryRunKeepG
 		args = append(args, "--dry-run", "--keep-going")
 	} else if dryRun {
 		args = append(args, "--dry-run")
+	}
+	if verbose {
+		return command.RunStreaming(ctx, cargoPath, args...)
 	}
 	return command.Run(ctx, cargoPath, args...)
 }
@@ -170,7 +175,12 @@ func semverCheck(ctx context.Context, semverData semverData, name string, manife
 		// If the manifest is new, we can skip semver checks, since there is no previous version to compare against.
 		return nil
 	}
-	err := command.Run(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
+	var err error
+	if semverData.verbose {
+		err = command.RunStreaming(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
+	} else {
+		err = command.Run(ctx, semverData.cargoPath, "semver-checks", "--all-features", "-p", name)
+	}
 	if err != nil && semverData.dryRunKeepGoing {
 		slog.Warn("semver check failed, but continuing due to --keep-going", "crate", name, "error", err)
 		return nil

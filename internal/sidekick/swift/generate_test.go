@@ -58,7 +58,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
 		t.Fatal(err)
 	}
 	filename := filepath.Join(outDir, "README.md")

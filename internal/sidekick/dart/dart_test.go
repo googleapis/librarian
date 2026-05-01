@@ -63,7 +63,7 @@ func TestEnumNames(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:     "automatic",
-				Typez:    api.MESSAGE_TYPE,
+				Typez:    api.TypezMessage,
 				TypezID:  sample.Automatic().ID,
 				Optional: true,
 				Repeated: false,
@@ -120,7 +120,6 @@ func TestResolveMessageName(t *testing.T) {
 
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
-	state := model.State
 
 	for _, test := range []struct {
 		typeId string
@@ -131,7 +130,7 @@ func TestResolveMessageName(t *testing.T) {
 		{".google.protobuf.Timestamp", "Timestamp"},
 		{".google.protobuf.Duration", "Duration"},
 	} {
-		got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+		got := annotate.resolveMessageName(model.Message(test.typeId), true)
 		if got != test.want {
 			t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 		}
@@ -158,7 +157,6 @@ func TestResolveMessageName_ImportsMessages(t *testing.T) {
 
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
-	state := model.State
 
 	annotate.packageMapping = map[string]string{
 		"google.protobuf": "package:google_cloud_protobuf/protobuf.dart",
@@ -175,7 +173,7 @@ func TestResolveMessageName_ImportsMessages(t *testing.T) {
 		{".google.type.Expr", "package:google_cloud_type/type.dart"},
 	} {
 		annotate.imports = map[string]bool{}
-		annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+		annotate.resolveMessageName(model.Message(test.typeId), true)
 		if _, ok := annotate.imports[test.want]; !ok {
 			t.Errorf("import not added, got: %v want: %s", annotate.imports, test.want)
 		}
@@ -203,7 +201,7 @@ func TestFieldType_EnumImports(t *testing.T) {
 
 	field := &api.Field{
 		Name:    "testField",
-		Typez:   api.ENUM_TYPE,
+		Typez:   api.TypezEnum,
 		TypezID: ".google.type.DayOfWeek",
 	}
 	annotate.imports = map[string]bool{}
@@ -240,7 +238,6 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		"prefix:google.protobuf": "protobuf",
 		"prefix:google.type":     "type",
 	})
-	state := model.State
 
 	for _, test := range []struct {
 		typeId string
@@ -252,7 +249,7 @@ func TestResolveMessageNameImportPrefixes(t *testing.T) {
 		{".google.type.DayOfWeek", "type.DayOfWeek"},
 	} {
 		t.Run(test.want, func(t *testing.T) {
-			got := annotate.resolveMessageName(state.MessageByID[test.typeId], true)
+			got := annotate.resolveMessageName(model.Message(test.typeId), true)
 			if got != test.want {
 				t.Errorf("unexpected type name, got: %s want: %s", got, test.want)
 			}
@@ -266,19 +263,19 @@ func TestFieldType(t *testing.T) {
 		typez api.Typez
 		want  string
 	}{
-		{api.BOOL_TYPE, "bool"},
-		{api.INT32_TYPE, "int"},
-		{api.UINT32_TYPE, "int"},
-		{api.FIXED32_TYPE, "int"},
-		{api.SFIXED32_TYPE, "int"},
-		{api.INT64_TYPE, "int"},
-		{api.UINT64_TYPE, "BigInt"},
-		{api.FIXED64_TYPE, "BigInt"},
-		{api.SFIXED64_TYPE, "int"},
-		{api.FLOAT_TYPE, "double"},
-		{api.DOUBLE_TYPE, "double"},
-		{api.STRING_TYPE, "String"},
-		{api.BYTES_TYPE, "Uint8List"},
+		{api.TypezBool, "bool"},
+		{api.TypezInt32, "int"},
+		{api.TypezUint32, "int"},
+		{api.TypezFixed32, "int"},
+		{api.TypezSfixed32, "int"},
+		{api.TypezInt64, "int"},
+		{api.TypezUint64, "BigInt"},
+		{api.TypezFixed64, "BigInt"},
+		{api.TypezSfixed64, "int"},
+		{api.TypezFloat, "double"},
+		{api.TypezDouble, "double"},
+		{api.TypezString, "String"},
+		{api.TypezBytes, "Uint8List"},
 	} {
 		field := &api.Field{
 			Name:     "parent",
@@ -309,13 +306,13 @@ func TestFieldType(t *testing.T) {
 	field1 := &api.Field{
 		Name:     "parent",
 		JSONName: "parent",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  sampleMessage.ID,
 	}
 	field2 := &api.Field{
 		Name:     "parent",
 		JSONName: "parent",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  sampleEnum.ID,
 	}
 	message := &api.Message{
@@ -354,22 +351,22 @@ func TestFieldType_Maps(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:  "key",
-				Typez: api.STRING_TYPE,
+				Typez: api.TypezString,
 			},
 			{
 				Name:  "value",
-				Typez: api.INT32_TYPE,
+				Typez: api.TypezInt32,
 			},
 		},
 	}
 	field := &api.Field{
 		Name:     "map",
 		JSONName: "map",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  map1.ID,
 	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[map1.ID] = map1
+	model.AddMessage(map1)
 	annotate := newAnnotateModel(model)
 	annotate.annotateModel(map[string]string{})
 
@@ -384,7 +381,7 @@ func TestFieldType_Bytes(t *testing.T) {
 	field := &api.Field{
 		Name:     "test",
 		JSONName: "test",
-		Typez:    api.BYTES_TYPE,
+		Typez:    api.TypezBytes,
 	}
 	message := &api.Message{
 		Name:   "$test",
@@ -412,18 +409,18 @@ func TestFieldType_Repeated(t *testing.T) {
 		typez api.Typez
 		want  string
 	}{
-		{api.BOOL_TYPE, "List<bool>"},
-		{api.INT32_TYPE, "List<int>"},
-		{api.UINT32_TYPE, "List<int>"},
-		{api.FIXED32_TYPE, "List<int>"},
-		{api.SFIXED32_TYPE, "List<int>"},
-		{api.INT64_TYPE, "List<int>"},
-		{api.UINT64_TYPE, "List<BigInt>"},
-		{api.FIXED64_TYPE, "List<BigInt>"},
-		{api.SFIXED64_TYPE, "List<int>"},
-		{api.FLOAT_TYPE, "List<double>"},
-		{api.DOUBLE_TYPE, "List<double>"},
-		{api.STRING_TYPE, "List<String>"},
+		{api.TypezBool, "List<bool>"},
+		{api.TypezInt32, "List<int>"},
+		{api.TypezUint32, "List<int>"},
+		{api.TypezFixed32, "List<int>"},
+		{api.TypezSfixed32, "List<int>"},
+		{api.TypezInt64, "List<int>"},
+		{api.TypezUint64, "List<BigInt>"},
+		{api.TypezFixed64, "List<BigInt>"},
+		{api.TypezSfixed64, "List<int>"},
+		{api.TypezFloat, "List<double>"},
+		{api.TypezDouble, "List<double>"},
+		{api.TypezString, "List<String>"},
 	} {
 		field := &api.Field{
 			Name:     "parent",
@@ -455,14 +452,14 @@ func TestFieldType_Repeated(t *testing.T) {
 	field1 := &api.Field{
 		Name:     "parent",
 		JSONName: "parent",
-		Typez:    api.MESSAGE_TYPE,
+		Typez:    api.TypezMessage,
 		TypezID:  sampleMessage.ID,
 		Repeated: true,
 	}
 	field2 := &api.Field{
 		Name:     "parent",
 		JSONName: "parent",
-		Typez:    api.ENUM_TYPE,
+		Typez:    api.TypezEnum,
 		TypezID:  sampleEnum.ID,
 		Repeated: true,
 	}
@@ -511,8 +508,7 @@ We want to respect whitespace at the beginning, because it important in Markdown
 		"///   - A nested thing",
 		"/// - The next thing",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -522,8 +518,7 @@ func TestFormatDocCommentsEmpty(t *testing.T) {
 	input := ``
 
 	want := []string{}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -539,8 +534,7 @@ This line has trailing spaces.  `
 		"///",
 		"/// This line has trailing spaces.",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -558,16 +552,13 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 		"/// sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
 		"/// Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
 	}
-	state := &api.APIState{}
-	got := formatDocComments(input, state)
+	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
 }
 
 func TestFormatDocCommentsRewriteReferences(t *testing.T) {
-	state := &api.APIState{}
-
 	for _, test := range []struct {
 		testName string
 		input    string
@@ -609,7 +600,7 @@ is set to true, this field will contain the sentiment for the sentence.`,
 		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {
-			gotLines := formatDocComments(test.input, state)
+			gotLines := formatDocComments(test.input, nil)
 			got := strings.Join(gotLines, "\n")
 			if diff := cmp.Diff(test.output, got); diff != "" {
 				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)

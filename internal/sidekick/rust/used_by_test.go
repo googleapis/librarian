@@ -300,16 +300,16 @@ func TestFindUsedPackages(t *testing.T) {
 		{Name: "CreateResource", ID: ".test.Resource"},
 	}, []*api.Enum{}, []*api.Service{service})
 
-	model.State.MessageByID[".google.longrunning.Operation"] = &api.Message{
+	model.AddMessage(&api.Message{
 		Name:    "Operation",
 		ID:      ".google.longrunning.Operation",
 		Package: "google.longrunning",
-	}
-	model.State.MessageByID[".google.cloud.common.OperationMetadata"] = &api.Message{
+	})
+	model.AddMessage(&api.Message{
 		Name:    "OperationMetadata",
 		ID:      ".google.cloud.common.OperationMetadata",
 		Package: "google.cloud.common",
-	}
+	})
 
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:common":      "package=google-cloud-common,source=google.cloud.common",
@@ -352,12 +352,12 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "key",
-				Typez:   api.STRING_TYPE,
+				Typez:   api.TypezString,
 				TypezID: "string",
 			},
 			{
 				Name:    "value",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".external.ExternalMessage",
 			},
 		},
@@ -370,7 +370,7 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:    "map_field",
-				Typez:   api.MESSAGE_TYPE,
+				Typez:   api.TypezMessage,
 				TypezID: ".test.Fake.FakeMapEntry",
 				Map:     true,
 			},
@@ -378,8 +378,8 @@ func TestFindUsedPackages_MapFields(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-	model.State.MessageByID[".external.ExternalMessage"] = externalMessage
-	model.State.MessageByID[".test.Fake.FakeMapEntry"] = mapEntry
+	model.AddMessage(externalMessage)
+	model.AddMessage(mapEntry)
 
 	c, err := newCodec(libconfig.SpecProtobuf, map[string]string{
 		"package:external": "package=external-package,source=external",

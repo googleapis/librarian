@@ -17,6 +17,9 @@ limitations under the License.
 {{#Codec.DocLines}}
 {{{.}}}
 {{/Codec.DocLines}}
+{{^Codec.DocLines}}
+#[allow(missing_docs)]
+{{/Codec.DocLines}}
 {{> /templates/common/feature_gate}}
 #[derive(Clone, Debug, PartialEq)]
 #[non_exhaustive]
@@ -24,6 +27,9 @@ pub enum {{Codec.EnumName}} {
     {{#Fields}}
     {{#Codec.DocLines}}
     {{{.}}}
+    {{/Codec.DocLines}}
+    {{^Codec.DocLines}}
+    #[allow(missing_docs)]
     {{/Codec.DocLines}}
     {{#Deprecated}}
     #[deprecated]

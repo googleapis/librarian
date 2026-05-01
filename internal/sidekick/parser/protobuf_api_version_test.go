@@ -34,8 +34,8 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 		t.Fatalf("Failed to make API for Protobuf %v", err)
 	}
 	id := ".test.Service"
-	service, ok := model.State.ServiceByID[id]
-	if !ok {
+	service := model.Service(id)
+	if service == nil {
 		t.Fatalf("Cannot find service %s in API State", id)
 	}
 	want := &api.Service{
@@ -56,7 +56,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v7").
 								WithLiteral("thing"),
 							QueryParameters: map[string]bool{"parent": true}},
@@ -75,7 +75,7 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: api.NewPathTemplate().
+							PathTemplate: (&api.PathTemplate{}).
 								WithLiteral("v7").
 								WithLiteral("thing").
 								WithVerb("make"),

@@ -63,6 +63,14 @@ func TestPostProcessAPI(t *testing.T) {
 	if err := os.WriteFile(protoFile, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
+	orBuilderDir := filepath.Join(protoDir, "com", "google", "cloud", "secretmanager", "v1")
+	if err := os.MkdirAll(orBuilderDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	orBuilderFile := filepath.Join(orBuilderDir, "SomeOrBuilder.java")
+	if err := os.WriteFile(orBuilderFile, []byte("package com.google.cloud.secretmanager.v1; public interface SomeOrBuilder {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	// Create a dummy srcjar (which is a zip)
 	srcjarPath := filepath.Join(gapicDir, "temp-codegen.srcjar")
@@ -138,6 +146,12 @@ func TestPostProcessAPI(t *testing.T) {
 	unzippedTestPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "google-cloud-secretmanager", "src", "test", "java", "com", "google", "cloud", "secretmanager", "v1", "SomeTest.java")
 	if _, err := os.Stat(unzippedTestPath); err != nil {
 		t.Errorf("expected unzipped test file at %s, but it was not found: %v", unzippedTestPath, err)
+	}
+
+	// Verify that clirr-ignored-differences.xml is generated.
+	clirrPath := filepath.Join(outdir, "owl-bot-staging", apiBase, "proto-google-cloud-secretmanager-v1", "clirr-ignored-differences.xml")
+	if _, err := os.Stat(clirrPath); err != nil {
+		t.Errorf("expected clirr ignore file at %s, but it was not found: %v", clirrPath, err)
 	}
 
 	// Verify that the apiBase directory was cleaned up
@@ -248,6 +262,110 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	}
 }
 
+func TestRestructureModules_Monolithic(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	apiBase := "v1"
+	libraryID := "grafeas"
+
+	// Create a dummy structure to mimic generator output
+	dirs := []string{
+		filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java"),
+		filepath.Join(tmpDir, apiBase, "grpc"),
+		filepath.Join(tmpDir, apiBase, "proto"),
+	}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	// Create dummy files
+	gapicFile := filepath.Join(tmpDir, apiBase, "gapic", "src", "main", "java", "Gapic.java")
+	if err := os.WriteFile(gapicFile, []byte("public class Gapic {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	grpcFile := filepath.Join(tmpDir, apiBase, "grpc", "Grpc.java")
+	if err := os.WriteFile(grpcFile, []byte("public class Grpc {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoFile := filepath.Join(tmpDir, apiBase, "proto", "Proto.java")
+	if err := os.WriteFile(protoFile, []byte("public class Proto {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir:         tmpDir,
+		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
+		apiBase:        apiBase,
+		googleapisDir:  t.TempDir(), // dummy
+		apiProtos:      nil,
+		includeSamples: false,
+		javaAPI: &config.JavaAPI{
+			Monolithic: true,
+		},
+	}
+	destRoot := filepath.Join(tmpDir, "dest", "src")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify all files are in the same src directory
+	files := []string{
+		filepath.Join(destRoot, "main", "java", "Gapic.java"),
+		filepath.Join(destRoot, "main", "java", "Grpc.java"),
+		filepath.Join(destRoot, "main", "java", "Proto.java"),
+	}
+	for _, f := range files {
+		if _, err := os.Stat(f); err != nil {
+			t.Errorf("expected file %s to exist, but it was not found: %v", f, err)
+		}
+	}
+}
+
+func TestPostProcessAPI_SkipHeaders(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name       string
+		monolithic bool
+		wantHeader bool
+	}{
+		{"default - adds header", false, true},
+		{"monolithic - skips header", true, false},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outdir := t.TempDir()
+			apiBase := "v1"
+			gRPCDir := filepath.Join(outdir, apiBase, "grpc")
+			if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
+			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			p := postProcessParams{
+				outDir:  outdir,
+				apiBase: apiBase,
+				library: &config.Library{Java: &config.JavaModule{}},
+				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
+			}
+			// We only care about the skip logic before restructure/cleanup.
+			if err := addHeadersIfRequired(p, []string{gRPCDir}); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := os.ReadFile(grpcFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			hasHeader := bytes.Contains(got, []byte("Copyright"))
+			if hasHeader != test.wantHeader {
+				t.Errorf("hasHeader = %v, want %v", hasHeader, test.wantHeader)
+			}
+		})
+	}
+}
+
 func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
@@ -267,6 +385,99 @@ func TestCopyProtos_ErrorCase(t *testing.T) {
 	destDir := t.TempDir()
 	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
+	}
+}
+
+func TestPostProcessLibrary(t *testing.T) {
+	t.Parallel()
+	testhelper.RequireCommand(t, "python3")
+
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	defaultCfg := &config.Config{
+		Libraries: []*config.Library{
+			{Name: rootLibrary, Version: "1.0.0"},
+		},
+		Default: &config.Default{
+			Java: &config.JavaModule{
+				LibrariesBOMVersion: "26.35.0",
+			},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		library *config.Library
+		setup   func(t *testing.T, outDir string)
+	}{
+		{
+			name: "success with SkipPOMUpdates",
+			cfg:  defaultCfg,
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+		{
+			name: "success",
+			cfg:  defaultCfg,
+			setup: func(t *testing.T, outDir string) {
+				writeOwlBot(t, outDir, "sys.exit(0)")
+				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				libCoords := DeriveLibraryCoordinates(library)
+				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
+				for _, dir := range []string{
+					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
+					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
+					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
+					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
+					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
+				} {
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			outDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, outDir)
+			}
+			l := library
+			if test.library != nil {
+				l = test.library
+			}
+			params := libraryPostProcessParams{
+				cfg:      test.cfg,
+				library:  l,
+				outDir:   outDir,
+				metadata: &repoMetadata{NamePretty: "Secret Manager"},
+			}
+			if err := postProcessLibrary(t.Context(), params); err != nil {
+				t.Fatalf("error = %v, want nil", err)
+			}
+		})
 	}
 }
 
@@ -353,29 +564,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				}
 			},
 			wantErr: errTargetDir,
-		},
-		{
-			name: "success",
-			cfg:  defaultCfg,
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
-				for _, dir := range []string{
-					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
-					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),
-					filepath.Join(outDir, apiCoords.GAPIC.ArtifactID),
-					filepath.Join(outDir, apiCoords.Parent.ArtifactID),
-					filepath.Join(outDir, apiCoords.BOM.ArtifactID),
-				} {
-					if err := os.MkdirAll(dir, 0755); err != nil {
-						t.Fatal(err)
-					}
-				}
-			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -571,5 +759,74 @@ func TestAddMissingHeaders(t *testing.T) {
 				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
 			}
 		})
+	}
+}
+
+func TestCopyFiles(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	gapicDir := filepath.Join(outdir, apiBase, "gapic")
+	srcPath := "src/main/java/com/google/storage/v2/gapic_metadata.json"
+	destPath := "src/main/resources/com/google/storage/v2/gapic_metadata.json"
+
+	fullSrcPath := filepath.Join(gapicDir, srcPath)
+	if err := os.MkdirAll(filepath.Dir(fullSrcPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := `{"schema": "1.0"}`
+	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			CopyFiles: []*config.JavaFileCopy{
+				{
+					Source:      srcPath,
+					Destination: destPath,
+				},
+			},
+		},
+	}
+	if err := copyFiles(p); err != nil {
+		t.Fatal(err)
+	}
+	// Verify copy
+	fullDestPath := filepath.Join(gapicDir, destPath)
+	if _, err := os.Stat(fullDestPath); err != nil {
+		t.Errorf("destination file %s does not exist: %v", fullDestPath, err)
+	}
+	if _, err := os.Stat(fullSrcPath); err != nil {
+		t.Errorf("source file %s should still exist", fullSrcPath)
+	}
+	gotContent, err := os.ReadFile(fullDestPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(content, string(gotContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopyFiles_Error(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	p := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		javaAPI: &config.JavaAPI{
+			CopyFiles: []*config.JavaFileCopy{
+				{
+					Source:      "non-existent",
+					Destination: "dest",
+				},
+			},
+		},
+	}
+	if err := copyFiles(p); err == nil {
+		t.Error("copyFiles() error = nil, want error for non-existent source")
 	}
 }

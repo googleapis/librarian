@@ -16,37 +16,25 @@ package golang
 
 import (
 	"context"
-	_ "embed"
 	"errors"
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
-var (
-	//go:embed librarian.yaml
-	librarianYAML []byte
+// errMissingToolVersion indicates a go tool entry is missing its version.
+var errMissingToolVersion = errors.New("go tool missing version")
 
-	// errMissingToolVersion indicates a go tool entry is missing its version.
-	errMissingToolVersion = errors.New("go tool missing version")
-)
+// errNoToolsSpecified indicates no Go tools were provided in the configuration.
+var errNoToolsSpecified = errors.New("no tools specified in configuration")
 
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil && len(tools.Go) > 0 {
-		return installGoTools(ctx, tools.Go)
+	if tools == nil || len(tools.Go) == 0 {
+		return errNoToolsSpecified
 	}
-	return installFallbackTools(ctx)
-}
-
-func installFallbackTools(ctx context.Context) error {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
-	}
-	return installGoTools(ctx, cfg.Tools.Go)
+	return installGoTools(ctx, tools.Go)
 }
 
 func installGoTools(ctx context.Context, goTools []*config.GoTool) error {

@@ -16,6 +16,7 @@ package swift
 
 import (
 	"cmp"
+	"fmt"
 	"maps"
 	"slices"
 
@@ -28,6 +29,7 @@ type modelAnnotations struct {
 	PackageName    string
 	MonorepoRoot   string
 	DependsOn      map[string]*Dependency
+	WktPackage     string
 	ServiceImports []string
 	MessageImports []string
 }
@@ -61,6 +63,10 @@ func (c *codec) annotateModel() error {
 		PackageName:   c.PackageName,
 		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
+		WktPackage:    wellKnownSwiftPackage,
+	}
+	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+		annotations.WktPackage = dep.Name
 	}
 	c.Model.Codec = annotations
 	for _, message := range c.Model.Messages {
@@ -71,6 +77,15 @@ func (c *codec) annotateModel() error {
 	for _, enum := range c.Model.Enums {
 		if err := c.annotateEnum(enum, annotations); err != nil {
 			return err
+		}
+	}
+	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
+	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
+	if len(c.Model.Messages) != 0 {
+		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+			dep.Required = true
+		} else {
+			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
 	}
 	for _, service := range c.Model.Services {

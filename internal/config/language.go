@@ -31,6 +31,8 @@ const (
 	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
+	// LanguageSurfer is the language identifier for gcloud command surfaces.
+	LanguageSurfer = "gcloud"
 	// LanguageGo is the language identifier for Go.
 	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
@@ -354,30 +356,6 @@ type PythonPackage struct {
 	// should use regular protoc Python generation instead of GAPIC.
 	ProtoOnlyAPIs []string `yaml:"proto_only_apis,omitempty"`
 
-	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
-	// to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
-
-	// ProductDocumentationOverride allows the "product_documentation" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
-
-	// APIShortnameOverride allows the "api_shortname" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
-
-	// APIIDOverride allows the "api_id" field in
-	// .repo-metadata.json to be overridden, to reduce diffs while migrating.
-	// TODO(https://github.com/googleapis/librarian/issues/4175): remove this
-	// field.
-	APIIDOverride string `yaml:"api_id_override,omitempty"`
-
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	// TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses
@@ -399,12 +377,6 @@ type PythonPackage struct {
 	// DefaultVersion is the default version of the API to use. When omitted,
 	// the version in the first API path is used.
 	DefaultVersion string `yaml:"default_version,omitempty"`
-
-	// SkipReadmeCopy prevents generation from copying README.rst from the root
-	// directory to the docs directory.
-	// TODO(https://github.com/googleapis/librarian/issues/4738): revisit
-	// whether or not this field should exist after migration.
-	SkipReadmeCopy bool `yaml:"skip_readme_copy,omitempty"`
 }
 
 // PythonDefault contains Python-specific default configuration.
@@ -573,7 +545,17 @@ type JavaModule struct {
 
 	// TransportOverride allows the "transport" field in .repo-metadata.json
 	// to be overridden.
+	// TODO(https://github.com/googleapis/librarian/issues/5561):
+	// investigate and determine if can remove
 	TransportOverride string `yaml:"transport_override,omitempty"`
+
+	// SkipPOMUpdates indicates whether to skip updating pom.xml files.
+	// TODO(https://github.com/googleapis/librarian/issues/5277):
+	// re-evaluate together with ExcludedPOMs
+	SkipPOMUpdates bool `yaml:"skip_pom_updates,omitempty"`
+
+	// SkipAPIID indicates whether to skip adding api_id to .repo-metadata.json.
+	SkipAPIID bool `yaml:"skip_api_id,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.
@@ -581,13 +563,33 @@ type JavaAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 
+	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
+	// into a single directory. This is currently only used for the grafeas library
+	// to maintain its legacy code structure.
+	Monolithic bool `yaml:"monolithic,omitempty"`
+
 	// AdditionalProtos is a list of additional proto files to include in generation.
+	// Note: google/cloud/common_resources.proto is included by default unless
+	// OmitCommonResources is set to true.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// OmitCommonResources indicates whether to omit the default inclusion of
+	// google/cloud/common_resources.proto.
+	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
 
 	// ExcludedProtos is a list of proto files to exclude from generation.
 	// It expects the full path starting from the root of the googleapis
 	// directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto").
 	ExcludedProtos []string `yaml:"excluded_protos,omitempty"`
+
+	// SkipProtoClassGeneration is a list of proto files to exclude from
+	// generating proto module, but included in generating gRPC or GAPIC
+	// modules and packaged proto files.
+	// It expects the full path starting from the root of the googleapis
+	// directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto").
+	// TODO(https://github.com/googleapis/librarian/issues/5661):
+	// remove after migration.
+	SkipProtoClassGeneration []string `yaml:"skip_proto_class_generation,omitempty"`
 
 	// GAPICArtifactIDOverride overrides the artifact ID for the GAPIC module.
 	// It determines the module's directory name and is used to derive proto
@@ -602,13 +604,29 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// ProtoOnly determines whether to generate a Proto-only client.
-	// A proto-only client does not define a service in the proto files.
-	ProtoOnly bool `yaml:"proto_only,omitempty"`
+	// ProtoGRPCOnly determines whether to skip GAPIC client generation.
+	// It is usually used for proto-only clients that do not define a service
+	// in the proto files, with the exception of google/cloud/location.
+	ProtoGRPCOnly bool `yaml:"proto_grpc_only,omitempty"`
+
+	// CopyFiles is a list of file copies to perform after generation.
+	// It applies to files in the GAPIC module.
+	CopyFiles []*JavaFileCopy `yaml:"copy_files,omitempty"`
 
 	// Samples determines whether to generate samples for the API,
 	// default is true when omitted.
 	Samples *bool `yaml:"samples,omitempty"`
+}
+
+// JavaFileCopy represents a file copy for Java.
+type JavaFileCopy struct {
+	// Source is the source path relative to the generated GAPIC module directory
+	// (e.g., "src/main/java/com/google/storage/v2/gapic_metadata.json").
+	// These paths are used before restructuring the output into Maven modules.
+	Source string `yaml:"source"`
+	// Destination is the destination path relative to the generated GAPIC module directory.
+	// These paths are used before restructuring the output into Maven modules.
+	Destination string `yaml:"destination"`
 }
 
 // DotnetPackage contains .NET-specific library configuration.
@@ -734,4 +752,35 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+}
+
+// Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
+type Surfer struct {
+	// HelpText contains help text overrides for the surface.
+	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
+}
+
+// GcloudHelpTextRules contains rules for various types of help text within an API
+// surface.
+type GcloudHelpTextRules struct {
+	// MethodRules defines help text rules specifically for API methods (commands).
+	MethodRules []*GcloudHelpTextRule `yaml:"method_rules,omitempty"`
+
+	// FieldRules defines help text rules specifically for individual fields (flags/arguments).
+	FieldRules []*GcloudHelpTextRule `yaml:"field_rules,omitempty"`
+}
+
+// GcloudHelpTextRule maps an API selector to its corresponding help text content.
+type GcloudHelpTextRule struct {
+	// Selector is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method").
+	Selector string `yaml:"selector"`
+
+	// Brief is a concise, single-line summary of the help text.
+	Brief string `yaml:"brief,omitempty"`
+
+	// Description provides a detailed, multi-line description.
+	Description string `yaml:"description,omitempty"`
+
+	// Examples provides a list of examples illustrating how to use the element.
+	Examples []string `yaml:"examples,omitempty"`
 }

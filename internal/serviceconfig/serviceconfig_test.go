@@ -157,6 +157,7 @@ func TestFind(t *testing.T) {
 			name: "discovery",
 			api:  "discoveries/compute.v1.json",
 			want: &API{
+				Description:          "Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				Discovery:            "discoveries/compute.v1.json",
 				DocumentationURI:     "https://cloud.google.com/compute/",
 				NewIssueURI:          "https://issuetracker.google.com/issues/new?component=187134&template=0",
@@ -166,7 +167,7 @@ func TestFind(t *testing.T) {
 				ShortName:            "compute",
 				Title:                "Google Compute Engine API",
 				Languages:            []string{config.LanguageAll},
-				Transports:           map[string]Transport{config.LanguageCsharp: Rest, config.LanguageGo: Rest, config.LanguageJava: Rest, config.LanguagePhp: Rest},
+				Transports:           map[string]Transport{config.LanguageAll: Rest},
 				SkipRESTNumericEnums: []string{"go", "java", "python"},
 			},
 		},

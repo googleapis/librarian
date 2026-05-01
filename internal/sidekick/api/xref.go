@@ -34,19 +34,19 @@ import (
 // codecs need. For example, the `oneof` fields use the containing `OneOf` to
 // reference any types or names of the `OneOf` during their generation.
 func CrossReference(model *API) error {
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, f := range m.Fields {
 			f.Parent = m
 			switch f.Typez {
-			case MESSAGE_TYPE:
-				t, ok := model.State.MessageByID[f.TypezID]
-				if !ok {
+			case TypezMessage:
+				t := model.Message(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find message type %s for field %s", f.TypezID, f.ID)
 				}
 				f.MessageType = t
-			case ENUM_TYPE:
-				t, ok := model.State.EnumByID[f.TypezID]
-				if !ok {
+			case TypezEnum:
+				t := model.Enum(f.TypezID)
+				if t == nil {
 					return fmt.Errorf("cannot find enum type %s for field %s", f.TypezID, f.ID)
 				}
 				f.EnumType = t
@@ -59,13 +59,13 @@ func CrossReference(model *API) error {
 			}
 		}
 	}
-	for _, m := range model.State.MethodByID {
-		input, ok := model.State.MessageByID[m.InputTypeID]
-		if !ok {
+	for m := range model.AllMethods() {
+		input := model.Message(m.InputTypeID)
+		if input == nil {
 			return fmt.Errorf("cannot find input type %s for method %s", m.InputTypeID, m.ID)
 		}
-		output, ok := model.State.MessageByID[m.OutputTypeID]
-		if !ok {
+		output := model.Message(m.OutputTypeID)
+		if output == nil {
 			return fmt.Errorf("cannot find output type %s for method %s", m.OutputTypeID, m.ID)
 		}
 		m.InputType = input
@@ -74,13 +74,12 @@ func CrossReference(model *API) error {
 			m.OperationInfo.Method = m
 		}
 	}
-	for _, s := range model.State.ServiceByID {
+	for s := range model.AllServices() {
 		s.Model = model
 		for _, m := range s.Methods {
 			m.Model = model
 			m.Service = s
-			source, ok := model.State.ServiceByID[m.SourceServiceID]
-			if ok {
+			if source := model.Service(m.SourceServiceID); source != nil {
 				m.SourceService = source
 			} else {
 				// Default to the regular service. OpenAPI does not define the
@@ -96,19 +95,22 @@ func CrossReference(model *API) error {
 // enrichSamples populates the API model with information useful for generating code samples.
 // This includes selecting representative enum values and optimal fields for oneof structures.
 func enrichSamples(model *API) {
-	for _, e := range model.State.EnumByID {
+	for e := range model.AllEnums() {
 		enrichEnumSamples(e)
 	}
 
-	for _, m := range model.State.MessageByID {
+	for m := range model.AllMessages() {
 		for _, o := range m.OneOfs {
 			if len(o.Fields) > 0 {
 				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
 			}
 		}
+		for _, f := range m.Fields {
+			enrichWithResourceNamePattern(f, m, model)
+		}
 	}
 
-	for _, m := range model.State.MethodByID {
+	for m := range model.AllMethods() {
 		enrichMethodSamples(m)
 	}
 
@@ -356,7 +358,7 @@ func enrichMethodSamples(m *Method) {
 	m.IsLRO = m.OperationInfo != nil
 
 	if m.OperationInfo != nil && m.Model != nil && m.Model.State != nil {
-		m.LongRunningResponseType = m.Model.State.MessageByID[m.OperationInfo.ResponseTypeID]
+		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
@@ -382,6 +384,69 @@ func enrichMethodSamples(m *Method) {
 	m.IsAIPStandard = m.SampleInfo != nil
 }
 
+func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
+	var resource *Resource
+	truncateChild := false
+
+	if f.ResourceReference != nil {
+		// The field is a resource reference.
+		if res := model.Resource(f.ResourceReference.Type); res != nil {
+			resource = res
+		} else if res := model.Resource(f.ResourceReference.ChildType); res != nil {
+			resource = res
+			truncateChild = true
+		}
+	} else if f.Name == StandardFieldNameForResourceRef {
+		// The field is the `name` field.
+		resource = m.Resource
+	}
+
+	if resource != nil && len(resource.Patterns) > 0 {
+		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns[0], truncateChild)
+	}
+}
+
+// toResourceNamePattern converts a ResourcePattern into a ResourceNamePattern.
+func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceNamePattern {
+	var segments []ResourceNameSegment
+	for i := 0; i < len(pattern); i++ {
+		s := pattern[i]
+		if s.Literal != nil && strings.HasPrefix(*s.Literal, "//") {
+			continue
+		}
+		seg := ResourceNameSegment{}
+		if s.Literal != nil {
+			seg.Literal = *s.Literal
+		}
+		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
+			// The parser used for parsing resource name patterns is the same used for
+			// parsing HTTP rules. Resource patterns do not have "field paths",
+			// instead they only have "placeholders" for each of the resource IDs of
+			// the resources that are part of the resource name hierarchy.
+			// These placeholders end up on the first, and only, field path
+			// that results when parsing a segment of a resource name pattern.
+			seg.Variable = s.Variable.FieldPath[0]
+		}
+
+		// Try to combine with next segment if this is a literal and next is variable
+		if s.Literal != nil && i+1 < len(pattern) && pattern[i+1].Variable != nil {
+			if len(pattern[i+1].Variable.FieldPath) > 0 {
+				seg.Variable = pattern[i+1].Variable.FieldPath[0]
+			}
+			i++
+		}
+
+		// Clean up leading and trailing slashes
+		seg.Literal = strings.TrimSuffix(strings.TrimPrefix(seg.Literal, "/"), "/")
+
+		segments = append(segments, seg)
+	}
+	if skipLast && len(segments) > 0 {
+		segments = segments[:len(segments)-1]
+	}
+	return &ResourceNamePattern{Segments: segments}
+}
+
 func aipStandardGetInfo(m *Method) *SampleInfo {
 	if !m.IsSimple || m.InputType == nil || m.ReturnsEmpty {
 		return nil
@@ -404,19 +469,15 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldByType(m.InputType, resourceByType, outputResource.Type)
+	resourceField := findBestResourceFieldByType(m.InputType, m.Model, outputResource.Type)
 
 	if resourceField == nil {
 		return nil
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -434,18 +495,14 @@ func aipStandardDeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -463,18 +520,14 @@ func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 		return nil
 	}
 
-	var resourceByType map[string]*Resource
-	if m.Model != nil && m.Model.State != nil {
-		resourceByType = m.Model.State.ResourceByType
-	}
-
-	resourceField := findBestResourceFieldBySingular(m.InputType, resourceByType, maybeSingular)
+	resourceField := findBestResourceFieldBySingular(m.InputType, m.Model, maybeSingular)
 	if resourceField == nil {
 		return nil
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -518,8 +571,9 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
 
 	info := &SampleInfo{
-		ResourceNameField: parentField,
-		MessageField:      resourceField,
+		ResourceNameField:     parentField,
+		IsRequestResourceName: true,
+		MessageField:          resourceField,
 	}
 	if resourceIDField != nil {
 		info.ResourceIDField = resourceIDField
@@ -564,9 +618,21 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		}
 	}
 
+	var resourceNameField *Field
+	if resourceField.MessageType != nil {
+		for _, f := range resourceField.MessageType.Fields {
+			if f.Name == StandardFieldNameForResourceRef {
+				resourceNameField = f
+				break
+			}
+		}
+	}
+
 	return &SampleInfo{
-		MessageField:    resourceField,
-		UpdateMaskField: updateMaskField,
+		ResourceNameField:     resourceNameField,
+		IsMessageResourceName: true,
+		MessageField:          resourceField,
+		UpdateMaskField:       updateMaskField,
 	}
 }
 
@@ -601,11 +667,12 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	}
 
 	return &SampleInfo{
-		ResourceNameField: parentField,
+		ResourceNameField:     parentField,
+		IsRequestResourceName: true,
 	}
 }
 
-func findBestResourceFieldByType(message *Message, resourcesByType map[string]*Resource, targetType string) *Field {
+func findBestResourceFieldByType(message *Message, model *API, targetType string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
 		if field.ResourceReference == nil {
@@ -614,8 +681,8 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
+		resource := model.Resource(field.ResourceReference.Type)
+		if resource == nil {
 			continue
 		}
 		if resource.Type == targetType {
@@ -628,7 +695,7 @@ func findBestResourceFieldByType(message *Message, resourcesByType map[string]*R
 	return bestField
 }
 
-func findBestResourceFieldBySingular(message *Message, resourcesByType map[string]*Resource, targetSingular string) *Field {
+func findBestResourceFieldBySingular(message *Message, model *API, targetSingular string) *Field {
 	var bestField *Field
 	for _, field := range message.Fields {
 		if field.ResourceReference == nil {
@@ -637,8 +704,8 @@ func findBestResourceFieldBySingular(message *Message, resourcesByType map[strin
 		if field.ResourceReference.Type == GenericResourceType && field.Name == StandardFieldNameForResourceRef {
 			return field
 		}
-		resource, ok := resourcesByType[field.ResourceReference.Type]
-		if !ok {
+		resource := model.Resource(field.ResourceReference.Type)
+		if resource == nil {
 			continue
 		}
 		actualSingular := strings.ToLower(resource.Singular)
@@ -689,7 +756,7 @@ func findBodyField(message *Message, pathInfo *PathInfo, targetTypeID string, si
 func findResourceIDField(message *Message, singular string) *Field {
 	expectedIDName := fmt.Sprintf("%s_id", singular)
 	for _, f := range message.Fields {
-		if f.Name == expectedIDName && f.Typez == STRING_TYPE {
+		if f.Name == expectedIDName && f.Typez == TypezString {
 			return f
 		}
 	}
