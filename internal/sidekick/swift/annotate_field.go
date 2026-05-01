@@ -19,9 +19,10 @@ import (
 )
 
 type fieldAnnotations struct {
-	Name      string
-	FieldType string
-	DocLines  []string
+	Name              string
+	FieldType         string
+	DocLines          []string
+	OneOfPropertyName string
 }
 
 func (c *codec) annotateField(field *api.Field) error {
@@ -33,6 +34,11 @@ func (c *codec) annotateField(field *api.Field) error {
 		Name:      camelCase(field.Name),
 		FieldType: fieldType,
 		DocLines:  c.formatDocumentation(field.Documentation),
+	}
+	if field.IsOneOf && field.Group != nil {
+		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
+			annotations.OneOfPropertyName = oneofAnn.PropertyName
+		}
 	}
 	field.Codec = annotations
 	return nil

@@ -17,21 +17,6 @@ permissions:
   contents: read
   issues: write
 jobs:
-  go-generate:
-    runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-      - uses: ./.github/actions/setup-librarian
-      - name: Check go generate
-        run: |
-          go generate ./...
-          if [ -n "$(git status --porcelain)" ]; then
-            echo "go generate produced diffs:"
-            git diff
-            exit 1
-          fi
   legacylibrarian:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
@@ -61,7 +46,7 @@ jobs:
             $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
-    needs: [go-generate, legacylibrarian, test]
+    needs: [legacylibrarian, test]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@v6

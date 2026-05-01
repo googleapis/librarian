@@ -105,6 +105,9 @@ func enrichSamples(model *API) {
 				o.ExampleField = slices.MaxFunc(o.Fields, sortOneOfFieldForExamples)
 			}
 		}
+		for _, f := range m.Fields {
+			enrichWithResourceNamePattern(f, m, model)
+		}
 	}
 
 	for m := range model.AllMethods() {
@@ -381,6 +384,69 @@ func enrichMethodSamples(m *Method) {
 	m.IsAIPStandard = m.SampleInfo != nil
 }
 
+func enrichWithResourceNamePattern(f *Field, m *Message, model *API) {
+	var resource *Resource
+	truncateChild := false
+
+	if f.ResourceReference != nil {
+		// The field is a resource reference.
+		if res := model.Resource(f.ResourceReference.Type); res != nil {
+			resource = res
+		} else if res := model.Resource(f.ResourceReference.ChildType); res != nil {
+			resource = res
+			truncateChild = true
+		}
+	} else if f.Name == StandardFieldNameForResourceRef {
+		// The field is the `name` field.
+		resource = m.Resource
+	}
+
+	if resource != nil && len(resource.Patterns) > 0 {
+		f.ResourceNamePattern = toResourceNamePattern(resource.Patterns[0], truncateChild)
+	}
+}
+
+// toResourceNamePattern converts a ResourcePattern into a ResourceNamePattern.
+func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceNamePattern {
+	var segments []ResourceNameSegment
+	for i := 0; i < len(pattern); i++ {
+		s := pattern[i]
+		if s.Literal != nil && strings.HasPrefix(*s.Literal, "//") {
+			continue
+		}
+		seg := ResourceNameSegment{}
+		if s.Literal != nil {
+			seg.Literal = *s.Literal
+		}
+		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
+			// The parser used for parsing resource name patterns is the same used for
+			// parsing HTTP rules. Resource patterns do not have "field paths",
+			// instead they only have "placeholders" for each of the resource IDs of
+			// the resources that are part of the resource name hierarchy.
+			// These placeholders end up on the first, and only, field path
+			// that results when parsing a segment of a resource name pattern.
+			seg.Variable = s.Variable.FieldPath[0]
+		}
+
+		// Try to combine with next segment if this is a literal and next is variable
+		if s.Literal != nil && i+1 < len(pattern) && pattern[i+1].Variable != nil {
+			if len(pattern[i+1].Variable.FieldPath) > 0 {
+				seg.Variable = pattern[i+1].Variable.FieldPath[0]
+			}
+			i++
+		}
+
+		// Clean up leading and trailing slashes
+		seg.Literal = strings.TrimSuffix(strings.TrimPrefix(seg.Literal, "/"), "/")
+
+		segments = append(segments, seg)
+	}
+	if skipLast && len(segments) > 0 {
+		segments = segments[:len(segments)-1]
+	}
+	return &ResourceNamePattern{Segments: segments}
+}
+
 func aipStandardGetInfo(m *Method) *SampleInfo {
 	if !m.IsSimple || m.InputType == nil || m.ReturnsEmpty {
 		return nil
@@ -410,7 +476,8 @@ func aipStandardGetInfo(m *Method) *SampleInfo {
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -434,7 +501,8 @@ func aipStandardDeleteInfo(m *Method) *SampleInfo {
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -458,7 +526,8 @@ func aipStandardUndeleteInfo(m *Method) *SampleInfo {
 	}
 
 	return &SampleInfo{
-		ResourceNameField: resourceField,
+		ResourceNameField:     resourceField,
+		IsRequestResourceName: true,
 	}
 }
 
@@ -502,8 +571,9 @@ func aipStandardCreateInfo(m *Method) *SampleInfo {
 	resourceIDField := findResourceIDField(m.InputType, maybeSingular)
 
 	info := &SampleInfo{
-		ResourceNameField: parentField,
-		MessageField:      resourceField,
+		ResourceNameField:     parentField,
+		IsRequestResourceName: true,
+		MessageField:          resourceField,
 	}
 	if resourceIDField != nil {
 		info.ResourceIDField = resourceIDField
@@ -548,9 +618,21 @@ func aipStandardUpdateInfo(m *Method) *SampleInfo {
 		}
 	}
 
+	var resourceNameField *Field
+	if resourceField.MessageType != nil {
+		for _, f := range resourceField.MessageType.Fields {
+			if f.Name == StandardFieldNameForResourceRef {
+				resourceNameField = f
+				break
+			}
+		}
+	}
+
 	return &SampleInfo{
-		MessageField:    resourceField,
-		UpdateMaskField: updateMaskField,
+		ResourceNameField:     resourceNameField,
+		IsMessageResourceName: true,
+		MessageField:          resourceField,
+		UpdateMaskField:       updateMaskField,
 	}
 }
 
@@ -585,7 +667,8 @@ func aipStandardListInfo(m *Method) *SampleInfo {
 	}
 
 	return &SampleInfo{
-		ResourceNameField: parentField,
+		ResourceNameField:     parentField,
+		IsRequestResourceName: true,
 	}
 }
 

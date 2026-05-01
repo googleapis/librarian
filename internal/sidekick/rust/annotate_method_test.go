@@ -511,3 +511,46 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateSampleInfo(t *testing.T) {
+	field := &api.Field{
+		Name:  "name",
+		ID:    ".test.v1.Message.name",
+		Typez: api.TypezString,
+		ResourceNamePattern: &api.ResourceNamePattern{
+			Segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "project"},
+			},
+		},
+	}
+	message := &api.Message{
+		Name:    "TestMessage",
+		Package: "test.v1",
+		ID:      ".test.v1.TestMessage",
+		Fields:  []*api.Field{field},
+	}
+	method := &api.Method{
+		Name: "TestMethod",
+		ID:   ".test.v1.Service.TestMethod",
+	}
+	si := &api.SampleInfo{
+		ResourceNameField: field,
+	}
+
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
+	annotateModel(model, codec)
+
+	codec.annotateSampleInfo(si, method)
+
+	got := si.Codec.(*sampleInfoAnnotation)
+	want := &sampleInfoAnnotation{
+		StringParameters:   []string{"project_id"},
+		FormatResourceName: true,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

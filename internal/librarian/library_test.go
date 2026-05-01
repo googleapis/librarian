@@ -1236,7 +1236,6 @@ func TestMergePython(t *testing.T) {
 				IssueTrackerOverride:        "issue",
 				MetadataNameOverride:        "meta",
 				DefaultVersion:              "v1",
-				SkipReadmeCopy:              true,
 			},
 			want: &config.PythonPackage{
 				PythonDefault: config.PythonDefault{
@@ -1249,7 +1248,6 @@ func TestMergePython(t *testing.T) {
 				IssueTrackerOverride:        "issue",
 				MetadataNameOverride:        "meta",
 				DefaultVersion:              "v1",
-				SkipReadmeCopy:              true,
 			},
 		},
 	} {
