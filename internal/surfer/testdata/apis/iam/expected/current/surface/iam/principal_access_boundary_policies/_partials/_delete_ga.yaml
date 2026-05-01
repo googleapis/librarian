@@ -85,3 +85,4 @@
   async:
     collection:
       - iam.organizations.locations.operations
+    extract_resource_result: false

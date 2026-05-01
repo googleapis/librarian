@@ -908,3 +908,74 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
 	}
 }
+
+func TestFormattedResourceAnnotations(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		segments   []api.ResourceNameSegment
+		wantString string
+		wantArgs   []string
+	}{
+		{name: "standard",
+			segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "project"},
+				{Literal: "locations"},
+				{Variable: "location"},
+				{Literal: "secrets"},
+				{Variable: "secret"},
+			},
+			wantString: "projects/{project_id}/locations/{location_id}/secrets/{secret_id}",
+			wantArgs:   []string{"project_id", "location_id", "secret_id"},
+		},
+		{
+			name: "with name suffix",
+			segments: []api.ResourceNameSegment{
+				{Literal: "topics"},
+				{Variable: "topicName"},
+			},
+			wantString: "topics/{topic_name}",
+			wantArgs:   []string{"topic_name"},
+		},
+		{
+			name: "already has id suffix",
+			segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "projectId"},
+			},
+			wantString: "projects/{project_id}",
+			wantArgs:   []string{"project_id"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field := &api.Field{
+				Name:  "name",
+				ID:    ".test.v1.Message.name",
+				Typez: api.TypezString,
+				ResourceNamePattern: &api.ResourceNamePattern{
+					Segments: test.segments,
+				},
+			}
+			message := &api.Message{
+				Name:    "TestMessage",
+				Package: "test.v1",
+				ID:      ".test.v1.TestMessage",
+				Fields:  []*api.Field{field},
+			}
+
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
+			annotateModel(model, codec)
+
+			got := field.Codec.(*fieldAnnotations).FormattedResource
+			want := &FormattedResource{
+				FormatString: test.wantString,
+				FormatArgs:   test.wantArgs,
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
