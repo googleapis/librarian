@@ -21,6 +21,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -100,7 +101,7 @@ func deriveAPIBase(library *config.Library, apiPath string) string {
 	if library.Name == "common-protos" {
 		return "v1"
 	}
-	return filepath.Base(apiPath)
+	return path.Base(apiPath)
 }
 
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
