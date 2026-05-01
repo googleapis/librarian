@@ -756,8 +756,8 @@ type NodejsAPI struct {
 	Path string `yaml:"path,omitempty"`
 }
 
-// GcloudSurface contains gcloud-specific library configuration.
-type GcloudSurface struct {
+// Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
+type Surfer struct {
 	// HelpText contains help text overrides for the surface.
 	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
 }
