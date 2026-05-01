@@ -67,6 +67,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
+
+	if library.Name == "google-cloud-compute" {
+		if err := injectV1SmallExports(outdir); err != nil {
+			return fmt.Errorf("failed to inject v1small exports: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -629,4 +636,23 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+func injectV1SmallExports(outDir string) error {
+	indexPath := filepath.Join(outDir, "src", "index.ts")
+	data, err := os.ReadFile(indexPath)
+	if err != nil {
+		return err
+	}
+	content := string(data)
+
+	// 1. Inject the import
+	importLine := "import * as v1small from './v1small';\nimport * as v1 from './v1';"
+	content = strings.Replace(content, "import * as v1 from './v1';", importLine, 1)
+
+	// 2. Inject into export blocks (both named and default)
+	// We search for "{v1," and replace with "{v1small, v1,"
+	content = strings.ReplaceAll(content, "{v1,", "{v1small, v1,")
+
+	return os.WriteFile(indexPath, []byte(content), 0644)
 }
