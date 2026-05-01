@@ -998,7 +998,7 @@ func TestParseJavaBazel(t *testing.T) {
 			want: &javaGAPICInfo{
 				Samples:             false,
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -1011,7 +1011,7 @@ func TestParseJavaBazel(t *testing.T) {
 					"google/iam/v1/iam_policy.proto",
 				},
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -1019,7 +1019,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/omit-common-resources",
 			want: &javaGAPICInfo{
 				OmitCommonResources: true,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 	} {

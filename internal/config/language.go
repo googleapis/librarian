@@ -609,7 +609,7 @@ type JavaAPI struct {
 
 	// ProtoGRPCOnly determines whether to generate a Proto-gRPC-only client.
 	// A Proto-gRPC-only client does not define a service in the proto files.
-	ProtoGRPCOnly bool `yaml:"proto_only,omitempty"`
+	ProtoGRPCOnly bool `yaml:"proto_grpc_only,omitempty"`
 
 	// CopyFiles is a list of file copies to perform after generation.
 	// It applies to files in the GAPIC module.

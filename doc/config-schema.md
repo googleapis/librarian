@@ -259,7 +259,7 @@ This document describes the schema for the librarian.yaml.
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
-| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
+| `proto_grpc_only` | bool | Determines whether to generate a Proto-gRPC-only client. A Proto-gRPC-only client does not define a service in the proto files. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
