@@ -19,7 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -60,5 +62,79 @@ func TestFromProtobuf(t *testing.T) {
 			t.Fatalf("missing %s: %s", filename, err)
 		}
 		t.Fatal(err)
+	}
+}
+
+func TestParallelstoreMock(t *testing.T) {
+	stringPtr := func(s string) *string { return &s }
+
+	// TODO(https://github.com/googleapis/librarian/issues/5769): once we
+	// implement the model building, we should remove the hardcoded data and
+	// construct it from internal/testdata/googleapis instead.
+	method := &api.Method{
+		Name: "CreateInstance",
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{
+				{
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: stringPtr("v1")},
+							{Literal: stringPtr("projects")},
+							{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+							{Literal: stringPtr("locations")},
+							{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
+							{Literal: stringPtr("instances")},
+						},
+					},
+				},
+			},
+		},
+		InputType: &api.Message{
+			Fields: []*api.Field{},
+		},
+	}
+
+	service := &api.Service{
+		Name:        "Parallelstore",
+		DefaultHost: "parallelstore.googleapis.com",
+		Methods:     []*api.Method{method},
+	}
+	method.Service = service
+
+	model := &api.API{
+		Name:     "parallelstore",
+		Title:    "Parallelstore API",
+		Services: []*api.Service{service},
+	}
+
+	outDir := t.TempDir()
+	if err := Generate(model, outDir); err != nil {
+		t.Fatal(err)
+	}
+
+	mainFile := filepath.Join(outDir, "main.go")
+	gotMain, err := os.ReadFile(mainFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantMain, err := os.ReadFile(filepath.Join("testdata", "parallelstore", "main.go.golden"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(wantMain), string(gotMain)); diff != "" {
+		t.Errorf("main.go mismatch (-want +got):\n%s", diff)
+	}
+
+	readmeFile := filepath.Join(outDir, "README.md")
+	gotReadme, err := os.ReadFile(readmeFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantReadme, err := os.ReadFile(filepath.Join("testdata", "parallelstore", "README.md.golden"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(wantReadme), string(gotReadme)); diff != "" {
+		t.Errorf("README.md mismatch (-want +got):\n%s", diff)
 	}
 }
