@@ -34,8 +34,10 @@ publish_to: none
 {{/Codec.DoNotPublish}}
 environment:
   sdk: ^3.9.0
+{{#Codec.UseWorkspace}}
 
 resolution: workspace
+{{/Codec.UseWorkspace}}
 {{#Codec.HasDependencies}}
 
 dependencies:

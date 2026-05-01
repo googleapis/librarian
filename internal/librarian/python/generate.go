@@ -40,6 +40,17 @@ const (
 	gapicNamespaceOption                = "python-gapic-namespace"
 	gapicNameOption                     = "python-gapic-name"
 	warehousePackageNameOption          = "warehouse-package-name"
+
+	// changelog is the name of the changelog file to create. A regular file
+	// is created in the package root, and a symlink is created in the docs
+	// directory.
+	changelog         = "CHANGELOG.md"
+	changelogTemplate = `# Changelog
+
+[PyPI History][1]
+
+[1]: https://pypi.org/project/%s/#history
+`
 )
 
 var (
@@ -115,6 +126,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 
 	if err := copyReadmeToDocsDir(library, outdir); err != nil {
 		return fmt.Errorf("failed to copy README to docs: %w", err)
+	}
+
+	if err := createChangelog(library.Name, outdir); err != nil {
+		return fmt.Errorf("failed to create changelog: %w", err)
 	}
 	return nil
 }
@@ -522,4 +537,36 @@ func findOption(options []string, name string) (string, bool) {
 		}
 	}
 	return "", false
+}
+
+// createChangelog creates a regular changelog file for the library with the
+// specified name in the given output directory, if it doesn't already exist.
+// It also creates a symlink to the new file from a docs subdirectory. If the
+// changelog file already exists in the output directory, this function returns
+// immediately with no error.
+func createChangelog(libName, output string) error {
+	rootChangelog := filepath.Join(output, changelog)
+	_, statErr := os.Stat(rootChangelog)
+	// If the file exists, we're done.
+	if statErr == nil {
+		return nil
+	}
+	if !errors.Is(statErr, fs.ErrNotExist) {
+		return statErr
+	}
+	docs := filepath.Join(output, "docs")
+	if err := os.MkdirAll(docs, 0755); err != nil {
+		return err
+	}
+	content := fmt.Sprintf(changelogTemplate, libName)
+	if err := os.WriteFile(rootChangelog, []byte(content), 0644); err != nil {
+		return err
+	}
+	// Create a relative symlink in docs: CHANGELOG.md => ../CHANGELOG.md
+	// The target is created directly rather than using filepath.Join to make
+	// sure it always uses a forward-slash, even on Windows.
+	if err := os.Symlink("../"+changelog, filepath.Join(docs, changelog)); err != nil {
+		return err
+	}
+	return nil
 }

@@ -948,6 +948,26 @@ func TestGenerate_Error(t *testing.T) {
 			},
 			wantErr: syscall.EISDIR,
 		},
+		{
+			name: "provoke changelog link error",
+			library: &config.Library{
+				Name:   "google-cloud-secret-manager",
+				Output: "packages/google-cloud-secret-manager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Python: &config.PythonPackage{DefaultVersion: "v1"},
+			},
+			setup: func(t *testing.T, lib *config.Library) {
+				if err := os.MkdirAll(filepath.Join(lib.Output, "docs"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(lib.Output, "docs", changelog), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: fs.ErrExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			absGoogleapisDir, err := filepath.Abs(googleapisDir)
@@ -1054,10 +1074,13 @@ func TestGenerate(t *testing.T) {
 	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
 		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
 	}
-
 	_, err = os.Stat(filepath.Join(outdir, "docs", "README.rst"))
 	if err != nil {
 		t.Errorf("stat error on readme = %v", err)
+	}
+	_, gotChangelogStatErr := os.Stat(filepath.Join(outdir, changelog))
+	if gotChangelogStatErr != nil {
+		t.Errorf("stat error on changelog = %v", gotChangelogStatErr)
 	}
 }
 
@@ -1474,6 +1497,119 @@ func TestFindOption(t *testing.T) {
 			}
 			if test.wantOk != gotOk {
 				t.Errorf("mismatch in found: want %v, got %v", test.wantOk, gotOk)
+			}
+		})
+	}
+}
+
+func TestCreateChangelog(t *testing.T) {
+	libName := "google-cloud-test"
+	output := t.TempDir()
+	if err := createChangelog(libName, output); err != nil {
+		t.Fatal(err)
+	}
+	content, err := os.ReadFile(filepath.Join(output, changelog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	textContent := string(content)
+	if !strings.Contains(textContent, "pypi") {
+		t.Errorf("expected changelog to contain pypi link; was %s", textContent)
+	}
+	if !strings.Contains(textContent, libName) {
+		t.Errorf("expected changelog to contain %s; was %s", libName, textContent)
+	}
+	linkPath := filepath.Join(output, "docs", changelog)
+	linkInfo, err := os.Lstat(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if linkInfo.Mode()&os.ModeSymlink == 0 {
+		t.Errorf("docs file is not a symlink")
+	}
+	// Check that the target resolves to the regular file.
+	linkTarget, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	absRegularFile, err := filepath.Abs(filepath.Join(output, changelog))
+	if err != nil {
+		t.Fatal(err)
+	}
+	absLinkTarget, err := filepath.Abs(filepath.Join(output, "docs", linkTarget))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if absLinkTarget != absRegularFile {
+		t.Errorf("absolute link target is %s; want %s", absLinkTarget, absRegularFile)
+	}
+}
+
+func TestCreateChangelog_FileExists(t *testing.T) {
+	libName := "google-cloud-test"
+	output := t.TempDir()
+	if err := os.WriteFile(filepath.Join(output, changelog), []byte{}, 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := createChangelog(libName, output); err != nil {
+		t.Fatal(err)
+	}
+	// Because the target changelog file already exists, we shouldn't have
+	// created a docs directory.
+	_, gotErr := os.Stat(filepath.Join(output, "docs"))
+	wantErr := fs.ErrNotExist
+	if !errors.Is(gotErr, wantErr) {
+		t.Errorf("checking for docs directory error = %v, wantErr %v", gotErr, wantErr)
+	}
+
+}
+
+func TestCreateChangelog_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, output string)
+		wantErr error
+	}{
+		{
+			name: "docs is an existing file",
+			setup: func(t *testing.T, output string) {
+				if err := os.WriteFile(filepath.Join(output, "docs"), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "output directory is readonly",
+			setup: func(t *testing.T, output string) {
+				if err := os.Chmod(output, 0644); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					if err := os.Chmod(output, 0755); err != nil {
+						t.Fatal(err)
+					}
+				})
+			},
+			wantErr: fs.ErrPermission,
+		},
+		{
+			name: "docs changelog is an existing directory",
+			setup: func(t *testing.T, output string) {
+				if err := os.MkdirAll(filepath.Join(output, "docs", changelog), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.EEXIST,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			test.setup(t, output)
+			gotErr := createChangelog("google-cloud-test", output)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
 			}
 		})
 	}

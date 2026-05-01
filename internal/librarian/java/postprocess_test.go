@@ -221,6 +221,69 @@ func TestRestructureModules(t *testing.T) {
 	}
 }
 
+func TestRestructureModules_CommonProtos(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	apiBase := "v1"
+	setupLocationProtoFile(t, tmpDir, apiBase)
+	p := postProcessParams{
+		outDir:         tmpDir,
+		library:        &config.Library{Name: commonProtosLibrary},
+		apiBase:        apiBase,
+		googleapisDir:  googleapisDir,
+		apiProtos:      nil,
+		includeSamples: false,
+		javaAPI: &config.JavaAPI{
+			ProtoArtifactIDOverride: "proto-google-common-protos",
+		},
+	}
+	destRoot := filepath.Join(tmpDir, "dest")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
+	}
+	wantPath := filepath.Join(destRoot, "proto-google-common-protos", "src", "main", "java", "com", "google", "cloud", "location", "LocationsProto.java")
+	if _, err := os.Stat(wantPath); err != nil {
+		t.Errorf("expected file at %s to exist, but it was not found: %v", wantPath, err)
+	}
+}
+
+func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	apiBase := "v1"
+	setupLocationProtoFile(t, tmpDir, apiBase)
+	p := postProcessParams{
+		outDir:         tmpDir,
+		library:        &config.Library{Name: "secretmanager"},
+		apiBase:        apiBase,
+		googleapisDir:  googleapisDir,
+		apiProtos:      nil,
+		includeSamples: false,
+		javaAPI:        &config.JavaAPI{},
+	}
+	destRoot := filepath.Join(tmpDir, "dest")
+	if err := restructureModules(p, destRoot); err != nil {
+		t.Fatal(err)
+	}
+	wantPath := filepath.Join(destRoot, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "location", "LocationsProto.java")
+	if _, err := os.Stat(wantPath); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected file at %s to be missing, but it exists", wantPath)
+	}
+}
+
+func setupLocationProtoFile(t *testing.T, tmpDir, apiBase string) {
+	t.Helper()
+	protoSrcDir := filepath.Join(tmpDir, apiBase, "proto")
+	locationDir := filepath.Join(protoSrcDir, "com", "google", "cloud", "location")
+	if err := os.MkdirAll(locationDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	dummyFile := filepath.Join(locationDir, "LocationsProto.java")
+	if err := os.WriteFile(dummyFile, []byte("public class LocationsProto {}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()

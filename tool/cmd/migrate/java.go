@@ -453,6 +453,9 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 	if skipPOMUpdates[lib.Name] {
 		lib.Java.SkipPOMUpdates = true
 	}
+	if skipAPIID[lib.Name] {
+		lib.Java.SkipAPIID = true
+	}
 	for _, ja := range lib.Java.JavaAPIs {
 		if monolithicJavaAPIs[ja.Path] {
 			ja.Monolithic = true
