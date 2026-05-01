@@ -335,6 +335,7 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		name            string
 		setup           func(t *testing.T, outdir string)
 		expectedContent string
+		handwritten     bool
 		expectedErr     bool
 	}{
 		{
@@ -342,6 +343,31 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 			setup: func(t *testing.T, outdir string) {
 				// No setup needed
 			},
+		},
+		{
+			name: "handwritten library, target already exists",
+			setup: func(t *testing.T, outdir string) {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(outdir, "docs"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(outdir, "docs", "README.rst"), []byte("before"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			handwritten:     true,
+			expectedContent: "after",
+		},
+		{
+			name: "handwritten library, target doesn't already exist",
+			setup: func(t *testing.T, outdir string) {
+				if err := os.WriteFile(filepath.Join(outdir, "README.rst"), []byte("after"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			handwritten: true,
 		},
 		{
 			name: "readme is a regular file",
@@ -407,7 +433,14 @@ func TestCopyReadmeToDocsDir(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
 			test.setup(t, outdir)
-			err := copyReadmeToDocsDir(outdir)
+			lib := &config.Library{
+				Name: "test",
+				APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+			}
+			if test.handwritten {
+				lib.APIs = nil
+			}
+			err := copyReadmeToDocsDir(lib, outdir)
 			if (err != nil) != test.expectedErr {
 				t.Fatalf("copyReadmeToDocsDir() error = %v, wantErr %v", err, test.expectedErr)
 			}
@@ -961,91 +994,70 @@ func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "ruff")
 	requireSynthtool(t)
 
-	for _, test := range []struct {
-		name           string
-		skipReadmeCopy bool
-	}{
-		{
-			name:           "copy readme",
-			skipReadmeCopy: false,
+	repoRoot := t.TempDir()
+	createReplacementScripts(t, repoRoot)
+	outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{
+		Language: config.LanguagePython,
+		Repo:     "googleapis/google-cloud-python",
+	}
+
+	library := &config.Library{
+		Name:                "google-cloud-secret-manager",
+		Output:              outdir,
+		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
 		},
-		{
-			name:           "skip readme copy",
-			skipReadmeCopy: true,
+		Python: &config.PythonPackage{
+			MetadataNameOverride: "secretmanager",
+			PythonDefault: config.PythonDefault{
+				LibraryType: "GAPIC_AUTO",
+			},
+			DefaultVersion: "v1",
 		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			repoRoot := t.TempDir()
-			createReplacementScripts(t, repoRoot)
-			outdir, err := filepath.Abs(filepath.Join(repoRoot, "packages", "google-cloud-secret-manager"))
-			if err != nil {
-				t.Fatal(err)
-			}
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	if err := Generate(t.Context(), cfg, library, srcs); err != nil {
+		t.Fatal(err)
+	}
+	gotMetadata, err := repometadata.Read(outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantMetadata := &repometadata.RepoMetadata{
+		// Fields set by repometadata.FromLibrary.
+		Name:                 "secretmanager",
+		NamePretty:           "Secret Manager",
+		ProductDocumentation: "https://cloud.google.com/secret-manager/",
+		IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+		ReleaseLevel:         "stable",
+		Language:             config.LanguagePython,
+		Repo:                 "googleapis/google-cloud-python",
+		DistributionName:     "google-cloud-secret-manager",
+		APIID:                "secretmanager.googleapis.com",
+		APIShortname:         "secretmanager",
+		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		// Fields set by Generate.
+		LibraryType:         "GAPIC_AUTO",
+		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
+		DefaultVersion:      "v1",
+	}
+	if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
+		t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
+	}
 
-			cfg := &config.Config{
-				Language: config.LanguagePython,
-				Repo:     "googleapis/google-cloud-python",
-			}
-
-			library := &config.Library{
-				Name:                "google-cloud-secret-manager",
-				Output:              outdir,
-				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-					},
-				},
-				Python: &config.PythonPackage{
-					MetadataNameOverride: "secretmanager",
-					PythonDefault: config.PythonDefault{
-						LibraryType: "GAPIC_AUTO",
-					},
-					SkipReadmeCopy: test.skipReadmeCopy,
-					DefaultVersion: "v1",
-				},
-			}
-			srcs := &sources.Sources{
-				Googleapis: googleapisDir,
-			}
-			if err := Generate(t.Context(), cfg, library, srcs); err != nil {
-				t.Fatal(err)
-			}
-			gotMetadata, err := repometadata.Read(outdir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			wantMetadata := &repometadata.RepoMetadata{
-				// Fields set by repometadata.FromLibrary.
-				Name:                 "secretmanager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguagePython,
-				Repo:                 "googleapis/google-cloud-python",
-				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores, manages, and secures access to application secrets.",
-				// Fields set by Generate.
-				LibraryType:         "GAPIC_AUTO",
-				ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
-				DefaultVersion:      "v1",
-			}
-			if diff := cmp.Diff(wantMetadata, gotMetadata); diff != "" {
-				t.Errorf("mismatch in metadata (-want +got):\n%s", diff)
-			}
-
-			_, gotReadmeStatErr := os.Stat(filepath.Join(outdir, "docs", "README.rst"))
-			var wantReadmeStatErr error
-			if test.skipReadmeCopy {
-				wantReadmeStatErr = fs.ErrNotExist
-			}
-			if !errors.Is(gotReadmeStatErr, wantReadmeStatErr) {
-				t.Errorf("stat error on readme = %v, want %v", gotReadmeStatErr, wantReadmeStatErr)
-			}
-		})
+	_, err = os.Stat(filepath.Join(outdir, "docs", "README.rst"))
+	if err != nil {
+		t.Errorf("stat error on readme = %v", err)
 	}
 }
 

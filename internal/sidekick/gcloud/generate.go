@@ -12,34 +12,28 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swift
+// Package gcloud provides a code generator for gcloud CLI in Go.
+package gcloud
 
 import (
+	"embed"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
-type fieldAnnotations struct {
-	Name              string
-	FieldType         string
-	DocLines          []string
-	OneOfPropertyName string
-}
+//go:embed all:templates
+var templates embed.FS
 
-func (c *codec) annotateField(field *api.Field) error {
-	fieldType, err := c.fieldTypeName(field)
-	if err != nil {
-		return err
-	}
-	annotations := &fieldAnnotations{
-		Name:      camelCase(field.Name),
-		FieldType: fieldType,
-		DocLines:  c.formatDocumentation(field.Documentation),
-	}
-	if field.IsOneOf && field.Group != nil {
-		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
-			annotations.OneOfPropertyName = oneofAnn.PropertyName
+// Generate generates code from the model.
+func Generate(model *api.API, outdir string) error {
+	provider := func(name string) (string, error) {
+		contents, err := templates.ReadFile(name)
+		if err != nil {
+			return "", err
 		}
+		return string(contents), nil
 	}
-	field.Codec = annotations
-	return nil
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/package")
+	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }

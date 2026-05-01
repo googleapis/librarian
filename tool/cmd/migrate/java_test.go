@@ -101,6 +101,95 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 	}
 }
 
+func TestApplyJavaLibraryOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "transport override",
+			lib: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{
+					TransportOverride: "grpc",
+				},
+			},
+		},
+		{
+			name: "api shortname override",
+			lib: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{
+					APIShortnameOverride: "common-protos",
+					SkipPOMUpdates:       true,
+				},
+			},
+		},
+		{
+			name: "skip pom updates",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+		},
+		{
+			name: "monolithic java api",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1"},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1", Monolithic: true},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+		},
+		{
+			name: "no override",
+			lib: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			applyJavaLibraryOverrides(test.lib)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRunJavaMigration(t *testing.T) {
 	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
@@ -496,7 +585,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                "google/cloud/gkehub/policycontroller/v1beta",
 									Samples:             new(false),
-									ProtoOnly:           true,
+									ProtoGRPCOnly:       true,
 									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
@@ -538,7 +627,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoOnly:               true,
+									ProtoGRPCOnly:           true,
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
@@ -909,7 +998,7 @@ func TestParseJavaBazel(t *testing.T) {
 			want: &javaGAPICInfo{
 				Samples:             false,
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -922,7 +1011,7 @@ func TestParseJavaBazel(t *testing.T) {
 					"google/iam/v1/iam_policy.proto",
 				},
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -930,7 +1019,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/omit-common-resources",
 			want: &javaGAPICInfo{
 				OmitCommonResources: true,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 	} {

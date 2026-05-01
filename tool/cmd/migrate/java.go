@@ -54,7 +54,7 @@ var (
 
 type javaGAPICInfo struct {
 	AdditionalProtos    []string
-	ProtoOnly           bool
+	ProtoGRPCOnly       bool
 	Samples             bool
 	OmitCommonResources bool
 }
@@ -71,7 +71,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	// 1. From java_gapic_library
 	rules := file.Rules("java_gapic_library")
 	if len(rules) == 0 {
-		info.ProtoOnly = true
+		info.ProtoGRPCOnly = true
 	} else {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
@@ -261,8 +261,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				AdditionalProtos:    info.AdditionalProtos,
 				OmitCommonResources: info.OmitCommonResources,
 			}
-			if info.ProtoOnly {
-				javaAPI.ProtoOnly = true
+			if info.ProtoGRPCOnly {
+				javaAPI.ProtoGRPCOnly = true
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
@@ -318,16 +318,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			},
 		}
 		applyJavaLibraryOverrides(lib)
-
-		// Hardcoded configuration for grafeas special case.
-		if name == "grafeas" {
-			lib.Java.SkipPOMUpdates = true
-			for _, ja := range lib.Java.JavaAPIs {
-				if ja.Path == "grafeas/v1" {
-					ja.Monolithic = true
-				}
-			}
-		}
 
 		if len(apis) > 0 {
 			derivedShortName := name
@@ -456,6 +446,17 @@ func applyJavaArtifactOverrides(api *config.JavaAPI) {
 func applyJavaLibraryOverrides(lib *config.Library) {
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
+	}
+	if override, ok := apiShortnameOverrides[lib.Name]; ok {
+		lib.Java.APIShortnameOverride = override
+	}
+	if skipPOMUpdates[lib.Name] {
+		lib.Java.SkipPOMUpdates = true
+	}
+	for _, ja := range lib.Java.JavaAPIs {
+		if monolithicJavaAPIs[ja.Path] {
+			ja.Monolithic = true
+		}
 	}
 }
 

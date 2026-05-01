@@ -51,7 +51,7 @@ func TestOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := newCommandBuilder(test.method, nil, nil, nil).outputFormat()
+			got := outputFormat()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("outputFormat() mismatch (-want +got):\n%s", diff)
 			}
@@ -80,7 +80,7 @@ func TestOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := newCommandBuilder(test.method, nil, nil, nil).outputFormat(); got != "" {
+			if got := outputFormat(); got != "" {
 				t.Errorf("outputFormat() = %v, want empty string", got)
 			}
 		})
@@ -121,7 +121,7 @@ func TestRequestMethod(t *testing.T) {
 			service.DefaultHost = "test.googleapis.com"
 			test.method.Service = service
 
-			got := newCommandBuilder(test.method, &provider.Config{}, nil, service).requestMethod()
+			got := requestMethod(test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("requestMethod() mismatch (-want +got):\n%s", diff)
 			}
@@ -148,7 +148,7 @@ func TestCommandName(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := newCommandBuilder(test.method, nil, nil, test.method.Service).name()
+			got := name(test.method)
 			if got != test.want {
 				t.Errorf("name() = %v, want %v", got, test.want)
 			}
@@ -242,7 +242,7 @@ func TestAsync(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			test.method.Service = service
 
-			got := newCommandBuilder(test.method, nil, model, service).async()
+			got := async(test.method, model, service)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("async() mismatch (-want +got):\n%s", diff)
 			}
@@ -333,7 +333,7 @@ func TestCollectionPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got := newCommandBuilder(test.method, nil, nil, service).collectionPath(test.isAsync)
+			got := collectionPath(test.method, service, test.isAsync)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("collectionPath() mismatch (-want +got):\n%s", diff)
 			}
@@ -467,9 +467,9 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := newCommandBuilder(test.method, test.overrides, model, service).build()
+			got, err := buildCommand(test.method, test.overrides, model, service)
 			if err != nil {
-				t.Fatalf("newCommandBuilder().build() unexpected error: %v", err)
+				t.Fatalf("buildCommand() unexpected error: %v", err)
 			}
 
 			opts := cmpopts.IgnoreFields(Command{}, "Arguments", "Collection", "Method", "HelpText")
@@ -488,7 +488,7 @@ func TestNewCommand_Error(t *testing.T) {
 	service.DefaultHost = "test.googleapis.com"
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
-	_, err := newCommandBuilder(m, &provider.Config{}, model, service).build()
+	_, err := buildCommand(m, &provider.Config{}, model, service)
 	if err == nil {
 		t.Errorf("build() expected error for nil Service, got nil")
 	}
@@ -754,13 +754,7 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			b := &commandBuilder{
-				method:    test.method,
-				service:   test.service,
-				model:     test.model,
-				overrides: &provider.Config{},
-			}
-			args, err := b.newArguments()
+			args, err := newArguments(test.method, &provider.Config{}, test.model, test.service)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("newArguments() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -799,14 +793,7 @@ func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
 		BodyFieldPath: "*",
 	}
 
-	b := &commandBuilder{
-		method:    m,
-		service:   api.NewTestService("TestService"),
-		model:     api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}),
-		overrides: &provider.Config{},
-	}
-
-	_, err := b.newArguments()
+	_, err := newArguments(m, &provider.Config{}, api.NewTestAPI([]*api.Message{}, nil, []*api.Service{api.NewTestService("TestService")}), api.NewTestService("TestService"))
 	if err == nil {
 		t.Errorf("newArguments() expected error for duplicate resource fields, got nil")
 	}
@@ -827,14 +814,7 @@ func TestCommandBuilderNewArgumentsResourceError(t *testing.T) {
 	)
 	badMethod.PathInfo.BodyFieldPath = "bad_nested"
 
-	b := &commandBuilder{
-		method:    badMethod,
-		service:   service,
-		model:     model,
-		overrides: &provider.Config{},
-	}
-
-	_, err := b.newArguments()
+	_, err := newArguments(badMethod, &provider.Config{}, model, service)
 	if err == nil {
 		t.Fatalf("newArguments() expected error, got nil")
 	}

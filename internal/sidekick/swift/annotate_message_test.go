@@ -23,54 +23,84 @@ import (
 )
 
 func TestAnnotateMessage(t *testing.T) {
-	msg := &api.Message{
-		Name:          "Secret",
-		Documentation: "A secret message.\nWith two lines.",
-		ID:            ".test.Secret",
-		Package:       "test",
-		Fields: []*api.Field{
-			{
-				Name:          "secret_key",
-				Documentation: "The key.",
-				Typez:         api.TypezString,
+	for _, test := range []struct {
+		name    string
+		message *api.Message
+		want    *messageAnnotations
+	}{
+		{
+			name: "simple",
+			message: &api.Message{
+				Name:          "Secret",
+				Documentation: "A secret message.\nWith two lines.",
+				ID:            ".test.Secret",
+				Package:       "test",
+				Fields: []*api.Field{
+					{Name: "secret_key", JSONName: "secretKey", Typez: api.TypezString},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				DocLines:            []string{"A secret message.", "With two lines."},
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: false,
 			},
 		},
-	}
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
-		t.Fatal(err)
-	}
-	want := &messageAnnotations{
-		Name:     "Secret",
-		DocLines: []string{"A secret message.", "With two lines."},
-		TypeURL:  "type.googleapis.com/test.Secret",
-	}
-
-	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
-	}
-}
-
-func TestAnnotateMessage_EscapedName(t *testing.T) {
-	msg := &api.Message{
-		Name:          "Protocol",
-		Documentation: "A message named Protocol.",
-		ID:            ".test.Protocol",
-		Package:       "test",
-	}
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
-		t.Fatal(err)
-	}
-	want := &messageAnnotations{
-		Name:     "Protocol_",
-		DocLines: []string{"A message named Protocol."},
-		TypeURL:  "type.googleapis.com/test.Protocol",
-	}
-
-	if diff := cmp.Diff(want, msg.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		{
+			name: "escaped name",
+			message: &api.Message{
+				Name:          "Protocol",
+				Documentation: "A message named Protocol.",
+				ID:            ".test.Protocol",
+				Package:       "test",
+			},
+			want: &messageAnnotations{
+				Name:                "Protocol_",
+				DocLines:            []string{"A message named Protocol."},
+				TypeURL:             "type.googleapis.com/test.Protocol",
+				CustomSerialization: false,
+			},
+		},
+		{
+			name: "with oneof",
+			message: &api.Message{
+				Name:    "WithOneof",
+				ID:      ".test.WithOneof",
+				Package: "test",
+				OneOfs:  []*api.OneOf{{Name: "choice"}},
+			},
+			want: &messageAnnotations{
+				Name:                "WithOneof",
+				TypeURL:             "type.googleapis.com/test.WithOneof",
+				CustomSerialization: true,
+			},
+		},
+		{
+			name: "with custom json name",
+			message: &api.Message{
+				Name:    "WithCustomJSON",
+				ID:      ".test.WithCustomJSON",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "secret_key", JSONName: "specialKey", Typez: api.TypezString},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "WithCustomJSON",
+				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
+				CustomSerialization: true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
 	}
 }
