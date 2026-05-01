@@ -157,6 +157,7 @@ var (
 		//This is added here instead of sdk.yaml change because this is
 		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
+		"common-protos":      "grpc",
 	}
 
 	apiShortnameOverrides = map[string]string{
