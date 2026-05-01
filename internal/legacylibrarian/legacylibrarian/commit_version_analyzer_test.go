@@ -693,13 +693,13 @@ func TestNextVersion(t *testing.T) {
 			wantVersion:    "2.0.0",
 		},
 		{
-			name: "a chore commit causes a minor bump in release only mode",
+			name: "a chore commit keeps current version in release only mode",
 			commits: []*legacygitrepo.ConventionalCommit{
 				{Type: "chore"},
 			},
 			currentVersion:  "1.2.3",
 			releaseOnlyMode: true,
-			wantVersion:     "1.3.0",
+			wantVersion:     "1.2.3",
 		},
 		{
 			name: "a feat commit causes a minor bump in release only mode",
