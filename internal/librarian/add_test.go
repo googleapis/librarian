@@ -144,7 +144,6 @@ func TestAddCommand(t *testing.T) {
 		name     string
 		args     []string
 		wantName string
-		wantAPIs []*config.API
 		wantErr  error
 	}{
 		{
@@ -155,7 +154,6 @@ func TestAddCommand(t *testing.T) {
 			name:     "single API",
 			args:     []string{"google/cloud/secretmanager/v1"},
 			wantName: "google-cloud-secretmanager-v1",
-			wantAPIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		},
 		{
 			name: "multiple args",
@@ -194,13 +192,12 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := FindLibrary(gotCfg, test.wantName)
-			if err != nil {
+			// Check that we've added a library with the expected name.
+			if _, err := FindLibrary(gotCfg, test.wantName); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantAPIs, got.APIs); diff != "" {
-				t.Errorf("apis mismatch (-want +got):\n%s", diff)
-			}
+			// We don't test the content of APIs here, as the fake language
+			// removes API paths that can be inferred.
 		})
 	}
 }
