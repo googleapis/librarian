@@ -553,6 +553,9 @@ type JavaModule struct {
 	// TODO(https://github.com/googleapis/librarian/issues/5277):
 	// re-evaluate together with ExcludedPOMs
 	SkipPOMUpdates bool `yaml:"skip_pom_updates,omitempty"`
+
+	// SkipAPIID indicates whether to skip adding api_id to .repo-metadata.json.
+	SkipAPIID bool `yaml:"skip_api_id,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.

@@ -163,6 +163,16 @@ var (
 		"common-protos": "common-protos",
 	}
 
+	skipAPIID = map[string]bool{
+		"google-auth-library": true,
+		"showcase":            true,
+		"iam":                 true,
+		"api-common":          true,
+		"common-protos":       true,
+		"gax":                 true,
+		"core":                true,
+	}
+
 	skipPOMUpdates = map[string]bool{
 		"grafeas":       true,
 		"common-protos": true,
