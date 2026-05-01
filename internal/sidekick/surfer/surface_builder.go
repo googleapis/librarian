@@ -78,7 +78,7 @@ func insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
 		curr = curr.Groups[seg]
 	}
 
-	cmd, err := newCommandBuilder(method, gb.config, gb.model, gb.service).build()
+	cmd, err := buildCommand(method, gb.config, gb.model, gb.service)
 	if err != nil {
 		return err
 	}

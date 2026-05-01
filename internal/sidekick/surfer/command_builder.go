@@ -24,70 +24,45 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-// commandBuilder encapsulates the state required to build a gcloud command
-// definition from an API method.
-type commandBuilder struct {
-	method    *api.Method
-	overrides *provider.Config
-	model     *api.API
-	service   *api.Service
-}
-
-// newCommandBuilder constructs a new commandBuilder for a specific method execution.
-func newCommandBuilder(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) *commandBuilder {
-	return &commandBuilder{
-		method:    method,
-		overrides: overrides,
-		model:     model,
-		service:   service,
-	}
-}
-
-// Build constructs a single gcloud command definition from an API method.
-// This function assembles all the necessary pieces: help text, arguments,
-// request details, and async configuration. It takes no parameters, relying
-// on the commandBuilder's state, and returns the constructed Command and
-// any error encountered during assembly.
-func (b *commandBuilder) build() (*Command, error) {
-	args, err := b.newArguments()
+func buildCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+	args, err := newArguments(method, overrides, model, service)
 	if err != nil {
 		return nil, err
 	}
 
-	useUpdateMask := b.updateMask()
-
-	apiVersion, err := provider.APIVersionFromMethod(b.method)
+	apiVersion, err := provider.APIVersionFromMethod(method)
 	if err != nil {
 		return nil, err
 	}
 
+	useUpdateMask := updateMask(method)
 	return &Command{
-		Name:                 b.name(),
-		Hidden:               b.hidden(),
-		HelpText:             b.helpText(),
+		Name:                 name(method),
+		Hidden:               hidden(overrides),
+		HelpText:             helpText(overrides, method, model),
 		APIVersion:           apiVersion,
-		Collection:           b.collectionPath(false),
-		Method:               b.requestMethod(),
+		Collection:           collectionPath(method, service, false),
+		Method:               requestMethod(method),
 		Arguments:            args,
-		ResponseIDField:      b.responseIDField(),
-		OutputFormat:         b.outputFormat(),
-		ReadModifyUpdate:     provider.IsUpdate(b.method),
+		ResponseIDField:      responseIDField(method),
+		OutputFormat:         outputFormat(),
+		ReadModifyUpdate:     provider.IsUpdate(method),
 		StarUpdateMask:       useUpdateMask,
 		DisableAutoFieldMask: useUpdateMask,
-		Async:                b.async(),
+		Async:                async(method, model, service),
 	}, nil
 }
 
-func (b *commandBuilder) name() string {
-	name, err := provider.GetCommandName(b.method)
+func name(method *api.Method) string {
+	name, err := provider.GetCommandName(method)
 	if err != nil {
 		return ""
 	}
 	return name
 }
 
-func (b *commandBuilder) responseIDField() string {
-	if provider.IsList(b.method) {
+func responseIDField(method *api.Method) string {
+	if provider.IsList(method) {
 		// List commands should have an id_field to enable the --uri flag.
 		return "name"
 	}
@@ -97,37 +72,37 @@ func (b *commandBuilder) responseIDField() string {
 // outputFormat generates the string output format for List commands.
 // TODO(https://github.com/googleapis/librarian/issues/5231): Make this default configurable by gcloud.yaml.
 // Use tableFormat if specified.
-func (b *commandBuilder) outputFormat() string {
+func outputFormat() string {
 	return ""
 }
 
 // async creates the `Async` part of the command definition for long-running operations.
-func (b *commandBuilder) async() *Async {
-	if b.method.OperationInfo == nil {
+func async(method *api.Method, model *api.API, service *api.Service) *Async {
+	if method.OperationInfo == nil {
 		return nil
 	}
 
 	async := &Async{
-		Collection: b.collectionPath(true),
+		Collection: collectionPath(method, service, true),
 	}
 
 	// Extract the resource result if the LRO response type matches the
 	// method's resource type.
-	resource := provider.GetResourceForMethod(b.method, b.model)
+	resource := provider.GetResourceForMethod(method, model)
 	if resource == nil {
 		return async
 	}
 
 	// Heuristic: Check if response type ID (e.g. ".google.cloud.parallelstore.v1.Instance")
 	// matches the resource singular name or type.
-	responseTypeID := b.method.OperationInfo.ResponseTypeID
+	responseTypeID := method.OperationInfo.ResponseTypeID
 	// Extract short name from FQN (last element after dot)
 	responseTypeName := responseTypeID
 	if idx := strings.LastIndex(responseTypeID, "."); idx != -1 {
 		responseTypeName = responseTypeID[idx+1:]
 	}
 
-	singular := provider.GetSingularResourceNameForMethod(b.method, b.model)
+	singular := provider.GetSingularResourceNameForMethod(method, model)
 	if strings.EqualFold(responseTypeName, singular) || strings.HasSuffix(resource.Type, "/"+responseTypeName) {
 		async.ExtractResourceResult = true
 	}
@@ -135,16 +110,16 @@ func (b *commandBuilder) async() *Async {
 	return async
 }
 
-func (b *commandBuilder) hidden() bool {
-	if b.overrides != nil && len(b.overrides.APIs) > 0 {
-		return b.overrides.APIs[0].RootIsHidden
+func hidden(overrides *provider.Config) bool {
+	if overrides != nil && len(overrides.APIs) > 0 {
+		return overrides.APIs[0].RootIsHidden
 	}
 	// Default to hidden if no API overrides are provided.
 	return true
 }
 
-func (b *commandBuilder) helpText() HelpText {
-	h := provider.GetMethodHelpText(b.overrides, b.method, b.model)
+func helpText(overrides *provider.Config, method *api.Method, model *api.API) HelpText {
+	h := provider.GetMethodHelpText(overrides, method, model)
 	return HelpText{
 		Brief:       h.Brief,
 		Description: h.Description,
@@ -153,13 +128,13 @@ func (b *commandBuilder) helpText() HelpText {
 }
 
 // requestMethod determines the API method name for the command execution.
-func (b *commandBuilder) requestMethod() string {
+func requestMethod(method *api.Method) string {
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if b.method.PathInfo != nil && len(b.method.PathInfo.Bindings) > 0 && b.method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		return *b.method.PathInfo.Bindings[0].PathTemplate.Verb
-	} else if !provider.IsStandardMethod(b.method) {
-		commandName, _ := provider.GetCommandName(b.method)
+	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
+		return *method.PathInfo.Bindings[0].PathTemplate.Verb
+	} else if !provider.IsStandardMethod(method) {
+		commandName, _ := provider.GetCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
 		return strcase.ToLowerCamel(commandName)
 	}
@@ -180,13 +155,13 @@ type classifiedFields struct {
 
 // newArguments generates the set of arguments for a command by parsing the
 // fields of the method's request message.
-func (b *commandBuilder) newArguments() ([]Argument, error) {
+func newArguments(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) ([]Argument, error) {
 	var args []Argument
-	if b.method.InputType == nil {
+	if method.InputType == nil {
 		return args, nil
 	}
 
-	cf, err := b.categorizeFields()
+	cf, err := categorizeFields(method, model)
 	if err != nil {
 		return nil, err
 	}
@@ -196,12 +171,12 @@ func (b *commandBuilder) newArguments() ([]Argument, error) {
 		if cf.resourceIdField != nil {
 			idField = cf.resourceIdField.field
 		}
-		arg := newArgumentBuilder(b.method, b.overrides, b.model, b.service, cf.primaryField.field, cf.primaryField.prefix).buildPrimaryResource(idField)
+		arg := newArgumentBuilder(method, overrides, model, service, cf.primaryField.field, cf.primaryField.prefix).buildPrimaryResource(idField)
 		args = append(args, arg)
 	}
 
 	for _, fwp := range cf.other {
-		arg, err := newArgumentBuilder(b.method, b.overrides, b.model, b.service, fwp.field, fwp.prefix).build()
+		arg, err := newArgumentBuilder(method, overrides, model, service, fwp.field, fwp.prefix).build()
 		if err != nil {
 			return nil, err
 		}
@@ -217,22 +192,22 @@ func (b *commandBuilder) newArguments() ([]Argument, error) {
 // categorizeFields gathers fields from the method input type, expanding the body field
 // if present, and separates them into at most one primary resource field, at most one
 // resource ID field, and other fields. Returns an error if multiple are found.
-func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
+func categorizeFields(method *api.Method, model *api.API) (classifiedFields, error) {
 	var cf classifiedFields
 	bodyFieldPath := ""
-	if b.method.PathInfo != nil {
-		bodyFieldPath = b.method.PathInfo.BodyFieldPath
+	if method.PathInfo != nil {
+		bodyFieldPath = method.PathInfo.BodyFieldPath
 	}
 
 	var collected []fieldWithPrefix
-	for _, field := range b.method.InputType.Fields {
+	for _, field := range method.InputType.Fields {
 		isExpandableMessage := field.MessageType != nil && !field.Map
 		isBodyWildcard := bodyFieldPath == "*"
 		isBodyField := bodyFieldPath == field.Name || isBodyWildcard
 
 		var prefix []string
 		if isBodyWildcard {
-			prefix = append(prefix, b.method.InputType.Name)
+			prefix = append(prefix, method.InputType.Name)
 		}
 
 		if isExpandableMessage && isBodyField {
@@ -254,17 +229,17 @@ func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
 
 	for _, fwp := range collected {
 		switch {
-		case provider.IsPrimaryResourceField(fwp.field, b.method):
+		case provider.IsPrimaryResourceField(fwp.field, method):
 			if cf.primaryField != nil {
-				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", b.method.Name, cf.primaryField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", method.Name, cf.primaryField.field.Name, fwp.field.Name)
 			}
 			cf.primaryField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsResourceIdField(fwp.field, b.method, b.model):
+		case provider.IsResourceIdField(fwp.field, method, model):
 			if cf.resourceIdField != nil {
-				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", b.method.Name, cf.resourceIdField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", method.Name, cf.resourceIdField.field.Name, fwp.field.Name)
 			}
 			cf.resourceIdField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsCreate(b.method) && fwp.field.Name == "name":
+		case provider.IsCreate(method) && fwp.field.Name == "name":
 			// Ignore name field in Create methods as it's redundant with resource_id
 		default:
 			cf.other = append(cf.other, fwp)
@@ -277,13 +252,13 @@ func (b *commandBuilder) categorizeFields() (classifiedFields, error) {
 // collectionPath constructs the gcloud collection path(s) for a request or async operation.
 // It follows AIP-127 and AIP-132 by extracting the collection structure directly from
 // the method's HTTP annotation (PathInfo).
-func (b *commandBuilder) collectionPath(isAsync bool) []string {
+func collectionPath(method *api.Method, service *api.Service, isAsync bool) []string {
 	var collections []string
-	hostParts := strings.Split(b.service.DefaultHost, ".")
+	hostParts := strings.Split(service.DefaultHost, ".")
 	shortServiceName := hostParts[0]
 
 	// Iterate over all bindings (primary + additional) to support multitype resources (AIP-127).
-	for _, binding := range b.method.PathInfo.Bindings {
+	for _, binding := range method.PathInfo.Bindings {
 		if binding.PathTemplate == nil {
 			continue
 		}
@@ -315,11 +290,11 @@ func (b *commandBuilder) collectionPath(isAsync bool) []string {
 	return slices.Compact(collections)
 }
 
-func (b *commandBuilder) updateMask() bool {
-	if !provider.IsUpdate(b.method) || b.method.InputType == nil {
+func updateMask(method *api.Method) bool {
+	if !provider.IsUpdate(method) || method.InputType == nil {
 		return false
 	}
-	for _, f := range b.method.InputType.Fields {
+	for _, f := range method.InputType.Fields {
 		if f.Name == "update_mask" {
 			return true
 		}
