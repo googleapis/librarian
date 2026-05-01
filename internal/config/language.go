@@ -553,6 +553,9 @@ type JavaModule struct {
 	// TODO(https://github.com/googleapis/librarian/issues/5277):
 	// re-evaluate together with ExcludedPOMs
 	SkipPOMUpdates bool `yaml:"skip_pom_updates,omitempty"`
+
+	// SkipAPIID indicates whether to skip adding api_id to .repo-metadata.json.
+	SkipAPIID bool `yaml:"skip_api_id,omitempty"`
 }
 
 // JavaAPI represents configuration for a single API within a Java module.
@@ -749,4 +752,35 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+}
+
+// Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
+type Surfer struct {
+	// HelpText contains help text overrides for the surface.
+	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
+}
+
+// GcloudHelpTextRules contains rules for various types of help text within an API
+// surface.
+type GcloudHelpTextRules struct {
+	// MethodRules defines help text rules specifically for API methods (commands).
+	MethodRules []*GcloudHelpTextRule `yaml:"method_rules,omitempty"`
+
+	// FieldRules defines help text rules specifically for individual fields (flags/arguments).
+	FieldRules []*GcloudHelpTextRule `yaml:"field_rules,omitempty"`
+}
+
+// GcloudHelpTextRule maps an API selector to its corresponding help text content.
+type GcloudHelpTextRule struct {
+	// Selector is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method").
+	Selector string `yaml:"selector"`
+
+	// Brief is a concise, single-line summary of the help text.
+	Brief string `yaml:"brief,omitempty"`
+
+	// Description provides a detailed, multi-line description.
+	Description string `yaml:"description,omitempty"`
+
+	// Examples provides a list of examples illustrating how to use the element.
+	Examples []string `yaml:"examples,omitempty"`
 }

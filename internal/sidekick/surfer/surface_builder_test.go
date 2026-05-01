@@ -136,6 +136,55 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 	}
 }
 
+func TestSurfaceBuilder_Build_HelpTextOverride(t *testing.T) {
+	service := mockService("ParallelstoreService",
+		mockMethod("CreateInstance", "v1/{parent=projects/*/locations/*}/instances"),
+	)
+	model := &api.API{
+		Name:        "parallelstore",
+		PackageName: "google.cloud.parallelstore.v1",
+		Title:       "Parallelstore API",
+		Services:    []*api.Service{service},
+	}
+	service.Methods[0].ID = "google.cloud.parallelstore.v1.Parallelstore.CreateInstance"
+
+	config := &provider.Config{
+		APIs: []provider.API{
+			{
+				Name: "parallelstore",
+				HelpText: &provider.HelpTextRules{
+					MethodRules: []*provider.HelpTextRule{
+						{
+							Selector: "google.cloud.parallelstore.v1.Parallelstore.CreateInstance",
+							HelpText: &provider.HelpTextElement{
+								Brief: "Override Brief",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	root, err := buildSurface(model, config)
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	instancesGroup, ok := root.Root.Groups["instances"]
+	if !ok {
+		t.Fatal("instances group not found")
+	}
+	createCmd, ok := instancesGroup.Commands["create"]
+	if !ok {
+		t.Fatal("create command not found")
+	}
+
+	if createCmd.HelpText.Brief != "Override Brief" {
+		t.Errorf("expected brief to be 'Override Brief', got %q", createCmd.HelpText.Brief)
+	}
+}
+
 func flattenTree(g *CommandGroup) []string {
 	var paths []string
 	var walk func(prefix string, current *CommandGroup)

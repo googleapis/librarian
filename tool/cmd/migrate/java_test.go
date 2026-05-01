@@ -131,6 +131,8 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 				Java: &config.JavaModule{
 					APIShortnameOverride: "common-protos",
 					SkipPOMUpdates:       true,
+					SkipAPIID:            true,
+					TransportOverride:    "grpc",
 				},
 			},
 		},

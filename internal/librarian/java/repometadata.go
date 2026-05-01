@@ -119,6 +119,9 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		if library.Java.APIIDOverride != "" {
 			metadata.APIID = library.Java.APIIDOverride
 		}
+		if library.Java.SkipAPIID {
+			metadata.APIID = ""
+		}
 		if library.Java.APIDescriptionOverride != "" {
 			metadata.APIDescription = library.Java.APIDescriptionOverride
 		}

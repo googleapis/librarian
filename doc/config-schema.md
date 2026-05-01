@@ -122,13 +122,14 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
+| `surfer` | [Surfer](#surfer-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
 ## API Configuration
@@ -222,6 +223,22 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
+## GcloudHelpTextRule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
+| `brief` | string | Is a concise, single-line summary of the help text. |
+| `description` | string | Provides a detailed, multi-line description. |
+| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
+
+## GcloudHelpTextRules Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
+| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
+
 ## GoAPI Configuration
 
 | Field | Type | Description |
@@ -299,6 +316,7 @@ This document describes the schema for the librarian.yaml.
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 | `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. TODO(https://github.com/googleapis/librarian/issues/5561): investigate and determine if can remove |
 | `skip_pom_updates` | bool | Indicates whether to skip updating pom.xml files. TODO(https://github.com/googleapis/librarian/issues/5277): re-evaluate together with ExcludedPOMs |
+| `skip_api_id` | bool | Indicates whether to skip adding api_id to .repo-metadata.json. |
 
 ## NodejsAPI Configuration
 
@@ -449,6 +467,12 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
 | `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
+
+## Surfer Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
 
 ## SwiftDefault Configuration
 
