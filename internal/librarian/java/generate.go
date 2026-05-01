@@ -149,7 +149,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 	// 3. Generate GAPIC library.
-	if !javaAPI.ProtoOnly {
+	if !javaAPI.ProtoGRPCOnly {
 		gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)

@@ -262,7 +262,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				OmitCommonResources: info.OmitCommonResources,
 			}
 			if info.ProtoOnly {
-				javaAPI.ProtoOnly = true
+				javaAPI.ProtoGRPCOnly = true
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)

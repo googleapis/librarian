@@ -607,9 +607,9 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// ProtoOnly determines whether to generate a Proto-only client.
-	// A proto-only client does not define a service in the proto files.
-	ProtoOnly bool `yaml:"proto_only,omitempty"`
+	// ProtoGRPCOnly determines whether to generate a Proto-gRPC-only client.
+	// A Proto-gRPC-only client does not define a service in the proto files.
+	ProtoGRPCOnly bool `yaml:"proto_only,omitempty"`
 
 	// CopyFiles is a list of file copies to perform after generation.
 	// It applies to files in the GAPIC module.

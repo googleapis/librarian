@@ -346,7 +346,7 @@ func TestCollectModules(t *testing.T) {
 				},
 				Java: &config.JavaModule{
 					JavaAPIs: []*config.JavaAPI{
-						{Path: "google/cloud/secretmanager/v1", ProtoOnly: true},
+						{Path: "google/cloud/secretmanager/v1", ProtoGRPCOnly: true},
 					},
 				},
 			},
@@ -387,7 +387,7 @@ func TestCollectModules(t *testing.T) {
 				},
 				Java: &config.JavaModule{
 					JavaAPIs: []*config.JavaAPI{
-						{Path: "google/identity/accesscontextmanager/type", ProtoOnly: true},
+						{Path: "google/identity/accesscontextmanager/type", ProtoGRPCOnly: true},
 					},
 				},
 			},

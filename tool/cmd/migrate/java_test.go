@@ -585,7 +585,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                "google/cloud/gkehub/policycontroller/v1beta",
 									Samples:             new(false),
-									ProtoOnly:           true,
+									ProtoGRPCOnly:       true,
 									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
@@ -627,7 +627,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoOnly:               true,
+									ProtoGRPCOnly:           true,
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
