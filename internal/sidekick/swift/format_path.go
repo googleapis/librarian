@@ -34,6 +34,7 @@ func pathExpression(t *api.PathTemplate) string {
 	}
 	path := "/" + strings.Join(pathComponents, "/")
 	if t.Verb != nil {
+		// t.Verb cannot be an empty string, the parsers reject empty verbs.
 		path += ":" + *t.Verb
 	}
 	return path
