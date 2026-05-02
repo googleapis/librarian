@@ -21,7 +21,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -66,43 +65,31 @@ func TestFromProtobuf(t *testing.T) {
 }
 
 func TestParallelstoreMock(t *testing.T) {
-	// TODO(https://github.com/googleapis/librarian/issues/5769): once we
-	// implement the model building, we should remove the hardcoded data and
-	// construct it from internal/testdata/googleapis instead.
-	method := &api.Method{
-		Name: "CreateInstance",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("locations").
-						WithVariableNamed("location").
-						WithLiteral("instances"),
-				},
-			},
-		},
-		InputType: &api.Message{
-			Fields: []*api.Field{},
-		},
+	testhelper.RequireCommand(t, "protoc")
+	testdataDir, err := filepath.Abs("../../testdata")
+	if err != nil {
+		t.Fatal(err)
 	}
-
-	service := &api.Service{
-		Name:        "Parallelstore",
-		DefaultHost: "parallelstore.googleapis.com",
-		Methods:     []*api.Method{method},
-	}
-	method.Service = service
-
-	model := &api.API{
-		Name:     "parallelstore",
-		Title:    "Parallelstore API",
-		Services: []*api.Service{service},
-	}
-
 	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecProtobuf,
+		ServiceConfig:       "google/cloud/parallelstore/v1/service.yaml",
+		SpecificationSource: "google/cloud/parallelstore/v1",
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
+				Googleapis: filepath.Join(testdataDir, "googleapis"),
+			},
+			ActiveRoots: []string{"googleapis"},
+		},
+		Codec: map[string]string{
+			"copyright-year": "2026",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if err := Generate(model, outDir); err != nil {
 		t.Fatal(err)
 	}
