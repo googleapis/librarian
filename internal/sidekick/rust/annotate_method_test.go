@@ -554,3 +554,19 @@ func TestAnnotateSampleInfo(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestMethodAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	method := model.Method(".test.v1.ResourceService.GetResource")
+	if method == nil {
+		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	annotateModel(model, codec)
+	got := method.Codec.(*methodAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
+	}
+}

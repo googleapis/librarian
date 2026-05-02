@@ -979,3 +979,129 @@ func TestFormattedResourceAnnotations(t *testing.T) {
 		})
 	}
 }
+
+func TestJsonNameAnnotations(t *testing.T) {
+	parent := &api.Field{
+		Name:     "parent",
+		JSONName: "parent",
+		ID:       ".test.Request.parent",
+		Typez:    api.TypezString,
+	}
+	publicKey := &api.Field{
+		Name:     "public_key",
+		JSONName: "public_key",
+		ID:       ".test.Request.public_key",
+		Typez:    api.TypezString,
+	}
+	readTime := &api.Field{
+		Name:     "read_time",
+		JSONName: "readTime",
+		ID:       ".test.Request.read_time",
+		Typez:    api.TypezInt32,
+	}
+	optional := &api.Field{
+		Name:     "optional",
+		JSONName: "optional",
+		ID:       ".test.Request.optional",
+		Typez:    api.TypezInt32,
+		Optional: true,
+	}
+	repeated := &api.Field{
+		Name:     "repeated",
+		JSONName: "repeated",
+		ID:       ".test.Request.repeated",
+		Typez:    api.TypezInt32,
+		Repeated: true,
+	}
+	message := &api.Message{
+		Name:          "Request",
+		Package:       "test",
+		ID:            ".test.Request",
+		Documentation: "A test message.",
+		Fields:        []*api.Field{parent, publicKey, readTime, optional, repeated},
+	}
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+	annotateModel(model, codec)
+
+	want := &fieldAnnotations{
+		FieldName:          "parent",
+		SetterName:         "parent",
+		BranchName:         "Parent",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = builder.query(&[("parent", &req.parent)]);`,
+		KeyType:            "",
+		ValueType:          "",
+	}
+	if diff := cmp.Diff(want, parent.Codec); diff != "" {
+		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "public_key",
+		SetterName:         "public_key",
+		BranchName:         "PublicKey",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.public_key)]);`,
+		KeyType:            "",
+		ValueType:          "",
+	}
+	if diff := cmp.Diff(want, publicKey.Codec); diff != "" {
+		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "read_time",
+		SetterName:         "read_time",
+		BranchName:         "ReadTime",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "i32",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = builder.query(&[("readTime", &req.read_time)]);`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, readTime.Codec); diff != "" {
+		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "optional",
+		SetterName:         "optional",
+		BranchName:         "Optional",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::option::Option<i32>",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = req.optional.iter().fold(builder, |builder, p| builder.query(&[("optional", p)]));`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, optional.Codec); diff != "" {
+		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "repeated",
+		SetterName:         "repeated",
+		BranchName:         "Repeated",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::vec::Vec<i32>",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = req.repeated.iter().fold(builder, |builder, p| builder.query(&[("repeated", p)]));`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, repeated.Codec); diff != "" {
+		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+	}
+}

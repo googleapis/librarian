@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	libconfig "github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -324,4 +325,152 @@ func newTestAnnotateModelAPI() *api.API {
 		[]*api.Service{service0, service1})
 	api.CrossReference(model)
 	return model
+}
+
+func TestPackageNames(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{}, []*api.Enum{},
+		[]*api.Service{{Name: "Workflows", Package: "google.cloud.workflows.v1"}})
+	err := api.CrossReference(model)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Override the default name for test APIs ("Test").
+	model.Name = "workflows-v1"
+	codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{
+		"version":                     "1.2.3",
+		"release-level":               "stable",
+		"copyright-year":              "2035",
+		"per-service-features":        "true",
+		"extra-modules":               "operation",
+		"generate-setter-samples":     "true",
+		"generate-rpc-samples":        "true",
+		"detailed-tracing-attributes": "true",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	codec.packageMapping = map[string]*packagez{
+		"google.protobuf": {name: "wkt"},
+	}
+	got, err := annotateModel(model, codec)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &modelAnnotations{
+		PackageName:               "google-cloud-workflows-v1",
+		PackageVersion:            "1.2.3",
+		ReleaseLevel:              "stable",
+		PackageNamespace:          "google_cloud_workflows_v1",
+		RequiredPackages:          []string{},
+		ExternPackages:            []string{},
+		HasLROs:                   false,
+		CopyrightYear:             "2035",
+		Services:                  []*api.Service{},
+		NameToLower:               "workflows-v1",
+		PerServiceFeatures:        false, // no services
+		ExtraModules:              []string{"operation"},
+		GenerateSetterSamples:     true,
+		GenerateRpcSamples:        true,
+		DetailedTracingAttributes: true,
+	}
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
+		t.Errorf("mismatch in modelAnnotations list (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestAnnotateModelWithDetailedTracing(t *testing.T) {
+	tests := []struct {
+		name    string
+		options map[string]string
+		want    bool
+	}{
+		{
+			name:    "DetailedTracingTrue",
+			options: map[string]string{"detailed-tracing-attributes": "true"},
+			want:    true,
+		},
+		{
+			name:    "DetailedTracingFalse",
+			options: map[string]string{"detailed-tracing-attributes": "false"},
+			want:    false,
+		},
+		{
+			name:    "DetailedTracingMissing",
+			options: map[string]string{},
+			want:    false,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.DetailedTracingAttributes != test.want {
+				t.Errorf("annotateModel() DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, test.want)
+			}
+		})
+	}
+}
+
+func TestRoutingRequired(t *testing.T) {
+	message := &api.Message{
+		Name:    "Message",
+		ID:      ".test.Message",
+		Package: "test",
+	}
+	method := &api.Method{
+		Name:         "DoFoo",
+		ID:           ".test.Service.DoFoo",
+		InputTypeID:  ".test.Message",
+		OutputTypeID: ".test.Message",
+		PathInfo:     &api.PathInfo{},
+	}
+	service := &api.Service{
+		Name:    "FooService",
+		ID:      ".test.FooService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	model := api.NewTestAPI([]*api.Message{message},
+		[]*api.Enum{},
+		[]*api.Service{service})
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"include-grpc-only-methods": "true",
+		"routing-required":          "true",
+	})
+	annotateModel(model, codec)
+
+	if !method.Codec.(*methodAnnotation).RoutingRequired {
+		t.Errorf("codec setting `routing-required` not respected")
+	}
+}
+
+func TestGenerateRpcSamples(t *testing.T) {
+	model := serviceAnnotationsModel()
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"generate-rpc-samples": "true",
+	})
+	annotateModel(model, codec)
+	if !model.Codec.(*modelAnnotations).GenerateRpcSamples {
+		t.Errorf("GenerateRpcSamples should be true")
+	}
+}
+
+func TestGenerateSetterSamples(t *testing.T) {
+	model := serviceAnnotationsModel()
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"generate-setter-samples": "true",
+	})
+	annotateModel(model, codec)
+	if !model.Codec.(*modelAnnotations).GenerateSetterSamples {
+		t.Errorf("GenerateSetterSamples should be true")
+	}
 }
