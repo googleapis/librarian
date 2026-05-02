@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -63,7 +64,7 @@ func TestDefaultFeatures(t *testing.T) {
 		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DefaultFeatures); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -98,7 +99,7 @@ func TestRustdocWarnings(t *testing.T) {
 		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledRustdocWarnings); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -133,7 +134,7 @@ func TestClippyWarnings(t *testing.T) {
 		}
 		t.Logf("Options=%v", test.Options)
 		if diff := cmp.Diff(test.Want, got.DisabledClippyWarnings); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -272,12 +273,12 @@ func TestQuickstartServiceAnnotation(t *testing.T) {
 		if err == nil {
 			t.Fatal("expected error, got nil")
 		}
-		expectedErr := `quickstart_service_override "NonExistentService" not found in generated services for package "google-cloud-Test"`
-		if err.Error() != expectedErr {
-			t.Errorf("expected error %q, got %q", expectedErr, err.Error())
+		if !errors.Is(err, errQuickstartServiceNotFound) {
+			t.Errorf("expected error to be errQuickstartServiceNotFound, got %v", err)
 		}
 	})
 }
+
 func newTestAnnotateModelAPI() *api.API {
 	service0 := &api.Service{
 		Name: "Service0",
@@ -375,12 +376,12 @@ func TestPackageNames(t *testing.T) {
 		DetailedTracingAttributes: true,
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch in modelAnnotations list (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestAnnotateModelWithDetailedTracing(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		options map[string]string
 		want    bool
@@ -400,9 +401,7 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 			options: map[string]string{},
 			want:    false,
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)

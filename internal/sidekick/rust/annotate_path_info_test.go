@@ -119,62 +119,63 @@ func TestPathInfoAnnotations(t *testing.T) {
 		}
 	}
 
-	type TestCase struct {
+	for _, test := range []struct {
+		name               string
 		Bindings           []*api.PathBinding
 		DefaultIdempotency string
-	}
-	testCases := []TestCase{
-		{[]*api.PathBinding{}, "false"},
-		{[]*api.PathBinding{binding("GET")}, "true"},
-		{[]*api.PathBinding{binding("PUT")}, "true"},
-		{[]*api.PathBinding{binding("DELETE")}, "true"},
-		{[]*api.PathBinding{binding("POST")}, "false"},
-		{[]*api.PathBinding{binding("PATCH")}, "false"},
-		{[]*api.PathBinding{binding("GET"), binding("GET")}, "true"},
-		{[]*api.PathBinding{binding("GET"), binding("POST")}, "false"},
-		{[]*api.PathBinding{binding("POST"), binding("POST")}, "false"},
-	}
-	for _, testCase := range testCases {
-		request := &api.Message{
-			Name:    "Request",
-			Package: "test.v1",
-			ID:      ".test.v1.Request",
-		}
-		response := &api.Message{
-			Name:    "Response",
-			Package: "test.v1",
-			ID:      ".test.v1.Response",
-		}
-		method := &api.Method{
-			Name:         "GetResource",
-			ID:           ".test.v1.Service.GetResource",
-			InputTypeID:  ".test.v1.Request",
-			OutputTypeID: ".test.v1.Response",
-			PathInfo: &api.PathInfo{
-				Bindings: testCase.Bindings,
-			},
-		}
-		service := &api.Service{
-			Name:    "ResourceService",
-			ID:      ".test.v1.ResourceService",
-			Package: "test.v1",
-			Methods: []*api.Method{method},
-		}
+	}{
+		{"empty", []*api.PathBinding{}, "false"},
+		{"GET", []*api.PathBinding{binding("GET")}, "true"},
+		{"PUT", []*api.PathBinding{binding("PUT")}, "true"},
+		{"DELETE", []*api.PathBinding{binding("DELETE")}, "true"},
+		{"POST", []*api.PathBinding{binding("POST")}, "false"},
+		{"PATCH", []*api.PathBinding{binding("PATCH")}, "false"},
+		{"GET_GET", []*api.PathBinding{binding("GET"), binding("GET")}, "true"},
+		{"GET_POST", []*api.PathBinding{binding("GET"), binding("POST")}, "false"},
+		{"POST_POST", []*api.PathBinding{binding("POST"), binding("POST")}, "false"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			request := &api.Message{
+				Name:    "Request",
+				Package: "test.v1",
+				ID:      ".test.v1.Request",
+			}
+			response := &api.Message{
+				Name:    "Response",
+				Package: "test.v1",
+				ID:      ".test.v1.Response",
+			}
+			method := &api.Method{
+				Name:         "GetResource",
+				ID:           ".test.v1.Service.GetResource",
+				InputTypeID:  ".test.v1.Request",
+				OutputTypeID: ".test.v1.Response",
+				PathInfo: &api.PathInfo{
+					Bindings: test.Bindings,
+				},
+			}
+			service := &api.Service{
+				Name:    "ResourceService",
+				ID:      ".test.v1.ResourceService",
+				Package: "test.v1",
+				Methods: []*api.Method{method},
+			}
 
-		model := api.NewTestAPI(
-			[]*api.Message{request, response},
-			[]*api.Enum{},
-			[]*api.Service{service})
-		api.CrossReference(model)
-		codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{
-			"include-grpc-only-methods": "true",
+			model := api.NewTestAPI(
+				[]*api.Message{request, response},
+				[]*api.Enum{},
+				[]*api.Service{service})
+			api.CrossReference(model)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "test.v1", map[string]string{
+				"include-grpc-only-methods": "true",
+			})
+			annotateModel(model, codec)
+
+			pathInfoAnn := method.PathInfo.Codec.(*pathInfoAnnotation)
+			if pathInfoAnn.IsIdempotent != test.DefaultIdempotency {
+				t.Errorf("fail")
+			}
 		})
-		annotateModel(model, codec)
-
-		pathInfoAnn := method.PathInfo.Codec.(*pathInfoAnnotation)
-		if pathInfoAnn.IsIdempotent != testCase.DefaultIdempotency {
-			t.Errorf("fail")
-		}
 	}
 }
 
@@ -374,17 +375,17 @@ func TestPathBindingAnnotations(t *testing.T) {
 	annotateModel(model, codec)
 
 	if diff := cmp.Diff(want_b0, b0.Codec); diff != "" {
-		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(want_b1, b1.Codec); diff != "" {
-		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(want_b2, b2.Codec); diff != "" {
-		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	if diff := cmp.Diff(want_b3, b3.Codec); diff != "" {
-		t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -519,7 +520,7 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 		annotateModel(model, codec)
 		if diff := cmp.Diff(wantBinding, binding.Codec); diff != "" {
-			t.Errorf("mismatch in path binding annotations (-want, +got)\n:%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 	}
@@ -551,7 +552,7 @@ func TestPathBindingAnnotationsErrors(t *testing.T) {
 }
 
 func TestPathTemplateGeneration(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		binding *pathBindingAnnotation
 		want    string
@@ -636,9 +637,7 @@ func TestPathTemplateGeneration(t *testing.T) {
 			},
 			want: "/v1/projects/{child.project}/locations/{child.location}/ids/{child.id}:actionOnChild",
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			if got := test.binding.PathTemplate(); got != test.want {
 				t.Errorf("PathTemplate() = %v, want %v", got, test.want)

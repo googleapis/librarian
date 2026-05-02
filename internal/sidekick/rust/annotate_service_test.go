@@ -91,7 +91,7 @@ func TestServiceAnnotationsPerServiceFeatures(t *testing.T) {
 		Incomplete:         true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
-		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -250,7 +250,7 @@ func TestServiceAnnotationsLROTypes(t *testing.T) {
 		t.Errorf("HasLRO should be true. The service has several LROs.")
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
-		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -277,7 +277,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		Incomplete: true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, serviceFilter); diff != "" {
-		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	methodFilter := cmpopts.IgnoreFields(methodAnnotation{}, "Name", "NameNoMangling", "BuilderName", "Body", "PathInfo", "SystemParameters", "ReturnType")
@@ -287,7 +287,7 @@ func TestServiceAnnotationsNameOverrides(t *testing.T) {
 		ServiceNameToSnake:  "renamed",
 	}
 	if diff := cmp.Diff(wantMethod, method.Codec, methodFilter); diff != "" {
-		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -314,7 +314,7 @@ func TestServiceAnnotations(t *testing.T) {
 		Incomplete:        true,
 	}
 	if diff := cmp.Diff(wantService, service.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "Methods")); diff != "" {
-		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// The `noHttpMethod` should be excluded from the list of methods in the
@@ -322,7 +322,7 @@ func TestServiceAnnotations(t *testing.T) {
 	serviceAnn := service.Codec.(*serviceAnnotations)
 	wantMethodList := []*api.Method{method, emptyMethod}
 	if diff := cmp.Diff(wantMethodList, serviceAnn.Methods, cmpopts.IgnoreFields(api.Method{}, "Model", "Service", "SourceService")); diff != "" {
-		t.Errorf("mismatch in method list (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethod := &methodAnnotation{
@@ -340,7 +340,7 @@ func TestServiceAnnotations(t *testing.T) {
 		ReturnType:          "crate::model::Response",
 	}
 	if diff := cmp.Diff(wantMethod, method.Codec); diff != "" {
-		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethod = &methodAnnotation{
@@ -358,6 +358,6 @@ func TestServiceAnnotations(t *testing.T) {
 		ReturnType:          "()",
 	}
 	if diff := cmp.Diff(wantMethod, emptyMethod.Codec); diff != "" {
-		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

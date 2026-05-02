@@ -55,7 +55,7 @@ func TestMessageAnnotations(t *testing.T) {
 		BasicFields:       []*api.Field{},
 	}
 	if diff := cmp.Diff(want, message.Codec); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	want = &messageAnnotation{
@@ -71,7 +71,7 @@ func TestMessageAnnotations(t *testing.T) {
 		BasicFields:       []*api.Field{},
 	}
 	if diff := cmp.Diff(want, nested.Codec); diff != "" {
-		t.Errorf("mismatch in nested message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

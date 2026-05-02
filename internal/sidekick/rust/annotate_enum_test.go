@@ -77,7 +77,7 @@ func TestEnumAnnotations(t *testing.T) {
 		NameInExamples: "google_cloud_test_v1::model::TestEnum",
 	}
 	if diff := cmp.Diff(wantEnumCodec, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantEnumValueCodec := &enumValueAnnotation{
@@ -87,7 +87,7 @@ func TestEnumAnnotations(t *testing.T) {
 		DocLines:    []string{"/// week5 is also documented."},
 	}
 	if diff := cmp.Diff(wantEnumValueCodec, v0.Codec); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantEnumValueCodec = &enumValueAnnotation{
@@ -97,7 +97,7 @@ func TestEnumAnnotations(t *testing.T) {
 		DocLines:    []string{"/// MULTI_WORD_VALUE is also documented."},
 	}
 	if diff := cmp.Diff(wantEnumValueCodec, v1.Codec); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantEnumValueCodec = &enumValueAnnotation{
@@ -107,7 +107,7 @@ func TestEnumAnnotations(t *testing.T) {
 		DocLines:    []string{"/// VALUE is also documented."},
 	}
 	if diff := cmp.Diff(wantEnumValueCodec, v2.Codec); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantEnumValueCodec = &enumValueAnnotation{
@@ -116,7 +116,7 @@ func TestEnumAnnotations(t *testing.T) {
 		EnumType:    "TestEnum",
 	}
 	if diff := cmp.Diff(wantEnumValueCodec, v3.Codec); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantEnumValueCodec = &enumValueAnnotation{
@@ -125,7 +125,7 @@ func TestEnumAnnotations(t *testing.T) {
 		EnumType:    "TestEnum",
 	}
 	if diff := cmp.Diff(wantEnumValueCodec, v4.Codec); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -176,6 +176,6 @@ func TestDuplicateEnumValueAnnotations(t *testing.T) {
 	}
 
 	if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(api.EnumValue{}, "Codec", "Parent")); diff != "" {
-		t.Errorf("mismatch in enum annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

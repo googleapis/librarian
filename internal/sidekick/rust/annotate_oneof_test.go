@@ -105,7 +105,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		DocLines:            []string{"/// Say something clever about this oneof."},
 	}
 	if diff := cmp.Diff(wantOneOfCodec, group.Codec, cmpopts.IgnoreFields(api.OneOf{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Stops the recursion when comparing fields.
@@ -124,7 +124,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{repeated, map_field, integer_field, boxed_field},
 	}
 	if diff := cmp.Diff(wantFieldCodec, singular.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantFieldCodec = &fieldAnnotations{
@@ -141,7 +141,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{singular, map_field, integer_field, boxed_field},
 	}
 	if diff := cmp.Diff(wantFieldCodec, repeated.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantFieldCodec = &fieldAnnotations{
@@ -163,7 +163,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{singular, repeated, integer_field, boxed_field},
 	}
 	if diff := cmp.Diff(wantFieldCodec, map_field.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantFieldCodec = &fieldAnnotations{
@@ -180,7 +180,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, boxed_field},
 	}
 	if diff := cmp.Diff(wantFieldCodec, integer_field.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantFieldCodec = &fieldAnnotations{
@@ -199,7 +199,7 @@ func TestOneOfAnnotations(t *testing.T) {
 		OtherFieldsInGroup: []*api.Field{singular, repeated, map_field, integer_field},
 	}
 	if diff := cmp.Diff(wantFieldCodec, boxed_field.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestOneOfConflictAnnotations(t *testing.T) {
 		DocLines:            []string{"/// Say something clever about this oneof."},
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -300,6 +300,6 @@ func TestOneOfUnqualifiedConflictAnnotations(t *testing.T) {
 		EnumNameInExamples:  "MessageOneOf",
 	}
 	if diff := cmp.Diff(want, group.Codec, ignore); diff != "" {
-		t.Errorf("mismatch in oneof annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
