@@ -29,7 +29,18 @@ func TestNewArgument(t *testing.T) {
 			{
 				Type: "test.googleapis.com/Network",
 				Patterns: []api.ResourcePattern{
-					{*(&api.PathSegment{}).WithLiteral("projects"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()), *(&api.PathSegment{}).WithLiteral("networks"), *(&api.PathSegment{}).WithVariable(api.NewPathVariable("network").WithMatch())},
+					{
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"project"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+						{Literal: "networks"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"network"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+					},
 				},
 			},
 		},
@@ -292,10 +303,16 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 								Plural:   "things",
 								Patterns: []api.ResourcePattern{
 									{
-										*(&api.PathSegment{}).WithLiteral("projects"),
-										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-										*(&api.PathSegment{}).WithLiteral("things"),
-										*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
+										{Literal: "projects"},
+										{Variable: &api.PathVariable{
+											FieldPath: []string{"project"},
+											Segments:  []string{api.SingleSegmentWildcard},
+										}},
+										{Literal: "things"},
+										{Variable: &api.PathVariable{
+											FieldPath: []string{"thing"},
+											Segments:  []string{api.SingleSegmentWildcard},
+										}},
 									},
 								},
 							}),
@@ -311,10 +328,16 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*(&api.PathSegment{}).WithLiteral("projects"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-							*(&api.PathSegment{}).WithLiteral("things"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"thing"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
 						},
 					},
 				},
@@ -364,10 +387,16 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*(&api.PathSegment{}).WithLiteral("projects"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-							*(&api.PathSegment{}).WithLiteral("things"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"thing"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
 						},
 					},
 				},
@@ -417,10 +446,16 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 					Plural:   "things",
 					Patterns: []api.ResourcePattern{
 						{
-							*(&api.PathSegment{}).WithLiteral("projects"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-							*(&api.PathSegment{}).WithLiteral("things"),
-							*(&api.PathSegment{}).WithVariable(api.NewPathVariable("thing").WithMatch()),
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"thing"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
 						},
 					},
 				},
@@ -532,10 +567,16 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 				Type: "test.googleapis.com/OtherThing",
 				Patterns: []api.ResourcePattern{
 					{
-						*(&api.PathSegment{}).WithLiteral("projects"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-						*(&api.PathSegment{}).WithLiteral("otherThings"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("other_thing").WithMatch()),
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"project"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+						{Literal: "otherThings"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"other_thing"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
 					},
 				},
 			},

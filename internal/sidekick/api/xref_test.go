@@ -425,8 +425,11 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			Type: "test.googleapis.com/Resource",
 			Patterns: []ResourcePattern{
 				{
-					*(&PathSegment{}).WithLiteral("resources"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+					{Literal: "resources"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"resource"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
 				},
 			},
 		}
@@ -466,10 +469,16 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			Type: "test.googleapis.com/Child",
 			Patterns: []ResourcePattern{
 				{
-					*(&PathSegment{}).WithLiteral("parents"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("parent").WithMatch()),
-					*(&PathSegment{}).WithLiteral("children"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("child").WithMatch()),
+					{Literal: "parents"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"parent"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
+					{Literal: "children"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"child"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
 				},
 			},
 		}
@@ -509,8 +518,11 @@ func TestEnrichSamplesWithResourceNamePattern(t *testing.T) {
 			Type: "test.googleapis.com/Resource",
 			Patterns: []ResourcePattern{
 				{
-					*(&PathSegment{}).WithLiteral("resources"),
-					*(&PathSegment{}).WithVariable(NewPathVariable("resource").WithMatch()),
+					{Literal: "resources"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"resource"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
 				},
 			},
 		}
@@ -554,8 +566,11 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "simple",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
+				{Literal: "projects"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
 			},
 			skipLast: false,
 			want: &ResourceNamePattern{
@@ -567,10 +582,16 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "multi-segment",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
-				*(&PathSegment{}).WithLiteral("secrets"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
+				{Literal: "projects"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
+				{Literal: "secrets"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"secret"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
 			},
 			skipLast: false,
 			want: &ResourceNamePattern{
@@ -583,10 +604,16 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "multi-segment-skip-last",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
-				*(&PathSegment{}).WithLiteral("secrets"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("secret").WithMatch()),
+				{Literal: "projects"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
+				{Literal: "secrets"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"secret"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
 			},
 			skipLast: true,
 			want: &ResourceNamePattern{
@@ -598,9 +625,12 @@ func TestToResourceNamePattern(t *testing.T) {
 		{
 			name: "with trailing literal",
 			pattern: ResourcePattern{
-				*(&PathSegment{}).WithLiteral("projects"),
-				*(&PathSegment{}).WithVariable(NewPathVariable("project").WithMatch()),
-				*(&PathSegment{}).WithLiteral("config"),
+				{Literal: "projects"},
+				{Variable: &PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{SingleSegmentWildcard},
+				}},
+				{Literal: "config"},
 			},
 			skipLast: false,
 			want: &ResourceNamePattern{
@@ -2021,25 +2051,46 @@ func TestFlatPath(t *testing.T) {
 			Want:  "",
 		},
 		{
-			Input: (&PathTemplate{}).
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("zones").
-				WithVariableNamed("zone"),
+			Input: &PathTemplate{
+				Segments: []PathSegment{
+					{Literal: "projects"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
+					{Literal: "zones"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"zone"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
+				},
+			},
 			Want: "projects/{project}/zones/{zone}",
 		},
 		{
-			Input: (&PathTemplate{}).
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("global").
-				WithLiteral("location"),
+			Input: &PathTemplate{
+				Segments: []PathSegment{
+					{Literal: "projects"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{SingleSegmentWildcard},
+					}},
+					{Literal: "global"},
+					{Literal: "location"},
+				},
+			},
 			Want: "projects/{project}/global/location",
 		},
 		{
-			Input: (&PathTemplate{}).
-				WithLiteral("projects").
-				WithVariable(NewPathVariable("a", "b", "c").WithMatchRecursive()),
+			Input: &PathTemplate{
+				Segments: []PathSegment{
+					{Literal: "projects"},
+					{Variable: &PathVariable{
+						FieldPath: []string{"a", "b", "c"},
+						Segments:  []string{MultiSegmentWildcard},
+					}},
+				},
+			},
 			Want: "projects/{a.b.c}",
 		},
 	} {

@@ -27,31 +27,81 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 		input string
 		want  *api.PathTemplate
 	}{
-		{"locations/global/firewallPolicies", (&api.PathTemplate{}).
-			WithLiteral("locations").
-			WithLiteral("global").
-			WithLiteral("firewallPolicies")},
-		{"locations/global/operations/{operation}", (&api.PathTemplate{}).
-			WithLiteral("locations").
-			WithLiteral("global").
-			WithLiteral("operations").
-			WithVariableNamed("operation")},
-		{"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks", (&api.PathTemplate{}).
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("zones").
-			WithVariableNamed("zone").
-			WithVariableNamed("parentName").
-			WithLiteral("reservationSubBlocks")},
-		{"v1/{+parent}/externalAccountKeys", (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("parent").WithAllowReserved().WithMatchRecursive()).
-			WithLiteral("externalAccountKeys")},
-		{"dns/v1/{+resource}:getIamPolicy", (&api.PathTemplate{}).
-			WithLiteral("dns").
-			WithLiteral("v1").
-			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).
-			WithVerb("getIamPolicy")},
+		{
+			"locations/global/firewallPolicies",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "locations"},
+					{Literal: "global"},
+					{Literal: "firewallPolicies"},
+				},
+			},
+		},
+		{
+			"locations/global/operations/{operation}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "locations"},
+					{Literal: "global"},
+					{Literal: "operations"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"operation"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+		},
+		{
+			"projects/{project}/zones/{zone}/{parentName}/reservationSubBlocks",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "zones"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"zone"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"parentName"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "reservationSubBlocks"},
+				},
+			},
+		},
+		{
+			"v1/{+parent}/externalAccountKeys",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath:     []string{"parent"},
+						Segments:      []string{api.MultiSegmentWildcard},
+						AllowReserved: true,
+					}},
+					{Literal: "externalAccountKeys"},
+				},
+			},
+		},
+		{
+			"dns/v1/{+resource}:getIamPolicy",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "dns"},
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath:     []string{"resource"},
+						Segments:      []string{api.MultiSegmentWildcard},
+						AllowReserved: true,
+					}},
+				},
+				Verb: "getIamPolicy",
+			},
+		},
 	} {
 		got, err := ParseUriTemplate(test.input)
 		if err != nil {
@@ -100,7 +150,11 @@ func TestParseExpression(t *testing.T) {
 			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
 			continue
 		}
-		if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
+		want := &api.PathSegment{Variable: &api.PathVariable{
+			FieldPath: []string{test.want},
+			Segments:  []string{api.SingleSegmentWildcard},
+		}}
+		if diff := cmp.Diff(want, gotSegment); diff != "" {
 			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
 		}
 		if len(test.want)+2 != gotWidth {
@@ -141,7 +195,7 @@ func TestParseLiteral(t *testing.T) {
 			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
 			continue
 		}
-		if diff := cmp.Diff(&api.PathSegment{Literal: &test.want}, gotSegment); diff != "" {
+		if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
 			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
 		}
 		if len(test.want) != gotWidth {

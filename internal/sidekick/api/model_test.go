@@ -195,45 +195,6 @@ func TestRoutingInfoVariantTemplateAsString(t *testing.T) {
 	}
 }
 
-func TestPathTemplateBuilder(t *testing.T) {
-	got := (&PathTemplate{}).
-		WithLiteral("v1").
-		WithVariable(NewPathVariable("parent", "child").
-			WithLiteral("projects").
-			WithMatch().
-			WithAllowReserved().
-			WithLiteral("locations").
-			WithMatchRecursive()).
-		WithVariableNamed("v2", "field").
-		WithVerb("verb")
-	name := "v1"
-	verb := "verb"
-	want := &PathTemplate{
-		Segments: []PathSegment{
-			{
-				Literal: &name,
-			},
-			{
-				Variable: &PathVariable{
-					FieldPath:     []string{"parent", "child"},
-					Segments:      []string{"projects", "*", "locations", "**"},
-					AllowReserved: true,
-				},
-			},
-			{
-				Variable: &PathVariable{
-					FieldPath: []string{"v2", "field"},
-					Segments:  []string{"*"},
-				},
-			},
-		},
-		Verb: &verb,
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("bad builder result (-want, +got):\n%s", diff)
-	}
-}
-
 func TestPathBindingHeuristic(t *testing.T) {
 	heuristic := &TargetResource{
 		FieldPaths: [][]string{{"project"}, {"zone"}, {"instance"}},

@@ -44,14 +44,23 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("instances"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "compute"},
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "zones"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"zone"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "instances"},
+						},
+					},
 					QueryParameters: map[string]bool{
 						"requestId":              true,
 						"sourceInstanceTemplate": true,
@@ -83,15 +92,27 @@ func TestLroAnnotations(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("operations").
-						WithVariableNamed("operation"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "compute"},
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "zones"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"zone"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "operations"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"operation"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -130,13 +151,25 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "p"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "l"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"zone"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "foo"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"id"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -150,13 +183,25 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("foo").
-								WithVariableNamed("id"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "p"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "l"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"region"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "foo"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"id"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -176,13 +221,25 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("zone").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "p"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "l"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"zone"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "operations"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"operation"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -196,13 +253,25 @@ func TestLroAnnotationsError(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("p").
-								WithVariableNamed("project").
-								WithLiteral("l").
-								WithVariableNamed("region").
-								WithLiteral("operations").
-								WithVariableNamed("operation"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "p"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "l"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"region"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "operations"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"operation"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},

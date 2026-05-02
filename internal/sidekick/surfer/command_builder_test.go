@@ -96,21 +96,47 @@ func TestRequestMethod(t *testing.T) {
 		{
 			name: "Standard Create",
 			method: api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+				&api.PathTemplate{
+					Segments: []api.PathSegment{
+						{Literal: "v1"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"parent"},
+							Segments:  []string{"projects", api.SingleSegmentWildcard},
+						}},
+						{Literal: "things"},
+					},
+				},
 			),
 			want: "",
 		},
 		{
 			name: "Custom Method with Verb",
 			method: api.NewTestMethod("ImportData").WithVerb("POST").WithPathTemplate(
-				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithVerb("importData"),
+				&api.PathTemplate{
+					Segments: []api.PathSegment{
+						{Literal: "v1"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"name"},
+							Segments:  []string{"projects", api.SingleSegmentWildcard},
+						}},
+					},
+					Verb: "importData",
+				},
 			),
 			want: "importData",
 		},
 		{
 			name: "Custom Method without Verb (fallback to camelCase name)",
 			method: api.NewTestMethod("ExportData").WithVerb("POST").WithPathTemplate(
-				(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()),
+				&api.PathTemplate{
+					Segments: []api.PathSegment{
+						{Literal: "v1"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"name"},
+							Segments:  []string{"projects", api.SingleSegmentWildcard},
+						}},
+					},
+				},
 			),
 			want: "exportData",
 		},
@@ -168,7 +194,16 @@ func TestAsync(t *testing.T) {
 			name: "Create returns Resource",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"parent"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+						},
+					},
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
@@ -188,7 +223,15 @@ func TestAsync(t *testing.T) {
 			name: "Delete returns Empty",
 			method: func() *api.Method {
 				m := api.NewTestMethod("DeleteThing").WithVerb("DELETE").WithPathTemplate(
-					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()),
+					&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard, "things", api.SingleSegmentWildcard},
+							}},
+						},
+					},
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: ".google.protobuf.Empty"}
 				return m
@@ -202,7 +245,16 @@ func TestAsync(t *testing.T) {
 			name: "Unrelated Response Type returns False",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CreateThing").WithVerb("POST").WithPathTemplate(
-					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).WithLiteral("things"),
+					&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"parent"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+						},
+					},
 				).WithInput(
 					api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
@@ -223,7 +275,17 @@ func TestAsync(t *testing.T) {
 			name: "Method Without Resource Returns Base Async",
 			method: func() *api.Method {
 				m := api.NewTestMethod("CustomMethod").WithVerb("POST").WithPathTemplate(
-					(&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch()).WithLiteral("things").WithVerb("doAction"),
+					&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+						},
+						Verb: "doAction",
+					},
 				)
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "ActionResponse"}
 				m.Service = service
@@ -255,8 +317,6 @@ func TestCollectionPath(t *testing.T) {
 		DefaultHost: "test.googleapis.com",
 	}
 
-	stringPtr := func(s string) *string { return &s }
-
 	for _, test := range []struct {
 		name    string
 		method  *api.Method
@@ -271,12 +331,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -295,12 +355,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -319,8 +379,8 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("instances")},
+									{Literal: "v1"},
+									{Literal: "instances"},
 								},
 							},
 						},
@@ -363,10 +423,16 @@ func TestNewCommand(t *testing.T) {
 							),
 						),
 					)).
-					WithPathTemplate((&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
-						WithLiteral("things"))
+					WithPathTemplate(&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"parent"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+						},
+					})
 				m.OutputType.Pagination = &api.PaginationInfo{PageableItem: m.OutputType.Fields[0]}
 				return m
 			}(),
@@ -395,9 +461,15 @@ func TestNewCommand(t *testing.T) {
 						),
 						api.NewTestField("update_mask").WithType(api.TypezMessage),
 					)).
-					WithPathTemplate((&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("thing", "name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()))
+					WithPathTemplate(&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"thing", "name"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard, "things", api.SingleSegmentWildcard},
+							}},
+						},
+					})
 				m.ID = "google.cloud.test.v1.Service.UpdateThing"
 				return m
 			}(),
@@ -433,10 +505,16 @@ func TestNewCommand(t *testing.T) {
 					WithInput(api.NewTestMessage("CreateRequest").WithFields(
 						api.NewTestField("thing_id").WithType(api.TypezString),
 					)).
-					WithPathTemplate((&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("parent").WithLiteral("projects").WithMatch()).
-						WithLiteral("things"))
+					WithPathTemplate(&api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"parent"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard},
+							}},
+							{Literal: "things"},
+						},
+					})
 				m.ID = "google.cloud.test.v1.Service.CreateThing"
 				m.OperationInfo = &api.OperationInfo{ResponseTypeID: "Thing", MetadataTypeID: "Metadata"}
 				return m
@@ -571,7 +649,15 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"name"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 						},
 					},
 				}
@@ -605,7 +691,15 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("parent").WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 						},
 					},
 				}
@@ -644,7 +738,15 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"resource.name"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 						},
 					},
 					BodyFieldPath: "*",
@@ -711,7 +813,15 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"resource.name"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 						},
 					},
 					BodyFieldPath: "*",
@@ -741,7 +851,15 @@ func TestCommandBuilderNewArguments(t *testing.T) {
 				m.PathInfo = &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("resource.name").WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"resource.name"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 						},
 					},
 					BodyFieldPath: "*",
@@ -787,7 +905,15 @@ func TestCommandBuilderNewArgumentsDuplicatesError(t *testing.T) {
 	m.PathInfo = &api.PathInfo{
 		Bindings: []*api.PathBinding{
 			{
-				PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithVariable(api.NewPathVariable("name").WithMatch()),
+				PathTemplate: &api.PathTemplate{
+					Segments: []api.PathSegment{
+						{Literal: "v1"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"name"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+					},
+				},
 			},
 		},
 		BodyFieldPath: "*",

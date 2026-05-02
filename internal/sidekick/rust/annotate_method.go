@@ -593,8 +593,8 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		if i > 0 {
 			sb.WriteString("/")
 		}
-		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
+		if seg.Literal != "" {
+			sb.WriteString(seg.Literal)
 		} else if seg.Variable != nil {
 			sb.WriteString("{}")
 		}

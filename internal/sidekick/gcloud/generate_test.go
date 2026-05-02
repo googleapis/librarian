@@ -74,13 +74,22 @@ func TestParallelstoreMock(t *testing.T) {
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("locations").
-						WithVariableNamed("location").
-						WithLiteral("instances"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "locations"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"location"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "instances"},
+						},
+					},
 				},
 			},
 		},

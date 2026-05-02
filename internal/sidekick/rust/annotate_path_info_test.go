@@ -52,9 +52,12 @@ func serviceAnnotationsModel() *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("resource"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "resource"},
+						},
+					},
 				},
 			},
 		},
@@ -69,9 +72,12 @@ func serviceAnnotationsModel() *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("resource"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "resource"},
+						},
+					},
 				},
 			},
 		},
@@ -113,9 +119,12 @@ func TestPathInfoAnnotations(t *testing.T) {
 	binding := func(verb string) *api.PathBinding {
 		return &api.PathBinding{
 			Verb: verb,
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("resource"),
+			PathTemplate: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "resource"},
+				},
+			},
 		}
 	}
 
@@ -245,14 +254,21 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	b0 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
-				WithLiteral("projects").
-				WithMatch().
-				WithLiteral("locations").
-				WithMatch()).
-			WithVerb("create"),
+		PathTemplate: &api.PathTemplate{
+			Segments: []api.PathSegment{
+				{Literal: "v2"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"name"},
+					Segments: []string{
+						"projects",
+						api.SingleSegmentWildcard,
+						"locations",
+						api.SingleSegmentWildcard,
+					},
+				}},
+			},
+			Verb: "create",
+		},
 		QueryParameters: map[string]bool{
 			"id": true,
 		},
@@ -271,15 +287,27 @@ func TestPathBindingAnnotations(t *testing.T) {
 
 	b1 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("project").
-			WithLiteral("locations").
-			WithVariableNamed("location").
-			WithLiteral("ids").
-			WithVariableNamed("id").
-			WithVerb("action"),
+		PathTemplate: &api.PathTemplate{
+			Segments: []api.PathSegment{
+				{Literal: "v1"},
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "locations"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"location"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "ids"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"id"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+			},
+			Verb: "action",
+		},
 	}
 	want_b1 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:action",
@@ -303,15 +331,27 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 	b2 := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v1").
-			WithLiteral("projects").
-			WithVariableNamed("child", "project").
-			WithLiteral("locations").
-			WithVariableNamed("child", "location").
-			WithLiteral("ids").
-			WithVariableNamed("child", "id").
-			WithVerb("actionOnChild"),
+		PathTemplate: &api.PathTemplate{
+			Segments: []api.PathSegment{
+				{Literal: "v1"},
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"child", "project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "locations"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"child", "location"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "ids"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"child", "id"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+			},
+			Verb: "actionOnChild",
+		},
 	}
 	want_b2 := &pathBindingAnnotation{
 		PathFmt: "/v1/projects/{}/locations/{}/ids/{}:actionOnChild",
@@ -335,9 +375,12 @@ func TestPathBindingAnnotations(t *testing.T) {
 	}
 	b3 := &api.PathBinding{
 		Verb: "GET",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithLiteral("foos"),
+		PathTemplate: &api.PathTemplate{
+			Segments: []api.PathSegment{
+				{Literal: "v2"},
+				{Literal: "foos"},
+			},
+		},
 		QueryParameters: map[string]bool{
 			"name":     true,
 			"optional": true,
@@ -408,12 +451,19 @@ func TestPathBindingAnnotationsDetailedTracing(t *testing.T) {
 	}
 	binding := &api.PathBinding{
 		Verb: "POST",
-		PathTemplate: (&api.PathTemplate{}).
-			WithLiteral("v2").
-			WithVariable(api.NewPathVariable("name").
-				WithLiteral("projects").
-				WithMatch()).
-			WithVerb("create"),
+		PathTemplate: &api.PathTemplate{
+			Segments: []api.PathSegment{
+				{Literal: "v2"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"name"},
+					Segments: []string{
+						"projects",
+						api.SingleSegmentWildcard,
+					},
+				}},
+			},
+			Verb: "create",
+		},
 	}
 	method := &api.Method{
 		Name:         "DoFoo",
@@ -477,12 +527,17 @@ func TestPathBindingAnnotationsStyle(t *testing.T) {
 		}
 		binding := &api.PathBinding{
 			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("machines").
-				WithVariable(api.NewPathVariable(test.FieldName).
-					WithMatch()).
-				WithVerb("create"),
+			PathTemplate: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "machines"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{test.FieldName},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+				Verb: "create",
+			},
 			QueryParameters: map[string]bool{},
 		}
 		wantBinding := &pathBindingAnnotation{

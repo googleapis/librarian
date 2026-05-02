@@ -41,9 +41,12 @@ func TestGetPluralFromSegments(t *testing.T) {
 		{
 			name: "No Variable End",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("locations"),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "locations"},
 			},
 			want: "",
 		},
@@ -82,16 +85,19 @@ func TestGetParentFromSegments(t *testing.T) {
 		{
 			name: "Too Short",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
+				{Literal: "projects"},
 			},
 			want: nil,
 		},
 		{
 			name: "Invalid Pattern (Ends in Literal)",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("locations"),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "locations"},
 			},
 			want: nil,
 		},
@@ -130,9 +136,12 @@ func TestGetSingularFromSegments(t *testing.T) {
 		{
 			name: "No Variable End",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("locations"),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "locations"},
 			},
 			want: "",
 		},
@@ -208,25 +217,31 @@ func TestExtractPathFromSegments(t *testing.T) {
 		{
 			name: "Complex Variable",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("v1"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch().WithLiteral("instances").WithMatch()),
+				{Literal: "v1"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"name"},
+					Segments:  []string{"projects", api.SingleSegmentWildcard, "locations", api.SingleSegmentWildcard, "instances", api.SingleSegmentWildcard},
+				}},
 			},
 			want: "projects.locations.instances",
 		},
 		{
 			name: "Trailing Literal (List)",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("v1"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("name").WithLiteral("projects").WithMatch().WithLiteral("locations").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("instances"),
+				{Literal: "v1"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"name"},
+					Segments:  []string{"projects", api.SingleSegmentWildcard, "locations", api.SingleSegmentWildcard},
+				}},
+				{Literal: "instances"},
 			},
 			want: "projects.locations.instances",
 		},
 		{
 			name: "No Version",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
 			},
 			want: "projects",
 		},
@@ -720,9 +735,12 @@ func parseResourcePattern(pattern string) []api.PathSegment {
 	for part := range strings.SplitSeq(pattern, "/") {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			name := part[1 : len(part)-1]
-			segments = append(segments, *(&api.PathSegment{}).WithVariable(api.NewPathVariable(name).WithMatch()))
+			segments = append(segments, api.PathSegment{Variable: &api.PathVariable{
+				FieldPath: []string{name},
+				Segments:  []string{api.SingleSegmentWildcard},
+			}})
 		} else {
-			segments = append(segments, *(&api.PathSegment{}).WithLiteral(part))
+			segments = append(segments, api.PathSegment{Literal: part})
 		}
 	}
 	return segments
@@ -747,8 +765,11 @@ func TestGetLiteralSegments(t *testing.T) {
 		{
 			name: "With Wildcards",
 			segments: []api.PathSegment{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("name").WithLiteral("foo").WithMatch().WithLiteral("bar")),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"name"},
+					Segments:  []string{"foo", api.SingleSegmentWildcard, "bar"},
+				}},
 			},
 			want: []string{"projects", "foo", "bar"},
 		},

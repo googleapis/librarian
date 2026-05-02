@@ -42,13 +42,22 @@ func TestMakeServiceMethods(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "compute"},
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "zones"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"zone"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -80,15 +89,27 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						WithLiteral("operations").
-						WithVariableNamed("operation"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "compute"},
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "zones"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"zone"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "operations"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"operation"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -121,12 +142,18 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("moveInstance"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "compute"},
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "moveInstance"},
+						},
+					},
 					QueryParameters: map[string]bool{"requestId": true},
 				},
 			},

@@ -56,9 +56,12 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v7").
-								WithLiteral("thing"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v7"},
+									{Literal: "thing"},
+								},
+							},
 							QueryParameters: map[string]bool{"parent": true}},
 					},
 				},
@@ -75,10 +78,13 @@ func TestProtobuf_ApiVersion(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v7").
-								WithLiteral("thing").
-								WithVerb("make"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v7"},
+									{Literal: "thing"},
+								},
+								Verb: "make",
+							},
 							QueryParameters: map[string]bool{"parent": true}},
 					},
 				},

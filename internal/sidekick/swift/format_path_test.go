@@ -29,31 +29,54 @@ func TestPathExpression(t *testing.T) {
 	}{
 		{
 			name: "literals only",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("operations"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "operations"},
+				},
+			},
 			want: "/v1/operations",
 		},
 		{
 			name: "with variable",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			want: "/v1/\\(pathVariable0)",
 		},
 		{
 			name: "with multiple variables",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "separator"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"second"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
 		},
 		{
 			name: "with verb",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("operations").
-				WithVerb("cancel"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "operations"},
+				},
+				Verb: "cancel",
+			},
 			want: "/v1/operations:cancel",
 		},
 	} {
@@ -99,14 +122,20 @@ func TestPathVariables(t *testing.T) {
 	}{
 		{
 			name:     "no variables",
-			template: (&api.PathTemplate{}).WithLiteral("v1"),
+			template: &api.PathTemplate{Segments: []api.PathSegment{{Literal: "v1"}}},
 			want:     nil,
 		},
 		{
 			name: "one variable",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
@@ -118,11 +147,20 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "two variables",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name").
-				WithLiteral("sep").
-				WithVariableNamed("second"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "sep"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"second"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
@@ -140,9 +178,15 @@ func TestPathVariables(t *testing.T) {
 		},
 		{
 			name: "error - lookup field missing",
-			template: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("missing"),
+			template: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"missing"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			wantErr: true,
 		},
 	} {

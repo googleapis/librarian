@@ -124,7 +124,7 @@ const (
 func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	var pos int
 	var segments []api.PathSegment
-	var verb *string
+	var verb string
 	if len(pathTemplate) < 2 {
 		return nil, fmt.Errorf("invalid path template, expected at least two characters: %s", pathTemplate)
 	} else if pathTemplate[0] != slash {
@@ -151,21 +151,21 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 
 }
 
-func parseVerb(verbString string) (*string, int, error) {
+func parseVerb(verbString string) (string, int, error) {
 	if len(verbString) == 0 {
-		return nil, 0, nil
+		return "", 0, nil
 	}
 	var pos int
 	if verbString[pos] != verbSep {
-		return nil, 0, fmt.Errorf("invalid verb, must start with '%q': %s", verbSep, verbString)
+		return "", 0, fmt.Errorf("invalid verb, must start with '%q': %s", verbSep, verbString)
 	}
 	pos++ // Skip verbSep
 	verb, width, err := parseLiteral(verbString[pos:])
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 	pos += width
-	return (*string)(verb), pos, nil
+	return string(*verb), pos, nil
 }
 
 // parseSegments parses a sequence of variable and/or plain segments starting at the beginning of the provided string.
@@ -204,7 +204,7 @@ func parseLiteralSegment(literalSegment string) (*api.PathSegment, int, error) {
 		return nil, 0, err
 	}
 	return &api.PathSegment{
-		Literal: (*string)(literal),
+		Literal: string(*literal),
 	}, width, nil
 }
 

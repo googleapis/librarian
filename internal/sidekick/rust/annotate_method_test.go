@@ -233,15 +233,27 @@ func annotateMethodModel(t *testing.T) *api.API {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone").
-						// This is unlikely, but want to test variables that
-						// are reserved words.
-						WithLiteral("types").
-						WithVariableNamed("type"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "zones"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"zone"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							// This is unlikely, but want to test variables that
+							// are reserved words.
+							{Literal: "types"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"type"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+					},
 				},
 			},
 		},
@@ -293,13 +305,25 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			t.Fatalf("missing method %s", methodID)
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
-			m.PathInfo.Bindings[0].PathTemplate = (&api.PathTemplate{}).
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("zones").
-				WithVariableNamed("zone").
-				WithLiteral("types").
-				WithVariableNamed("type")
+			m.PathInfo.Bindings[0].PathTemplate = &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "zones"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"zone"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "types"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"type"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			}
 			m.PathInfo.Bindings[0].TargetResource = &api.TargetResource{
 				Template:   api.ParseTemplateForTest(template),
 				FieldPaths: fields,
@@ -319,9 +343,15 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 	mSelf.PathInfo.Bindings = []*api.PathBinding{
 		{
 			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name"),
+			PathTemplate: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			TargetResource: &api.TargetResource{
 				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
 				FieldPaths: [][]string{{"name"}},
@@ -329,14 +359,26 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		},
 		{
 			Verb: "GET",
-			PathTemplate: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("locations").
-				WithVariableNamed("location").
-				WithLiteral("clusters").
-				WithVariableNamed("cluster"),
+			PathTemplate: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "locations"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"location"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "clusters"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"cluster"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			TargetResource: &api.TargetResource{
 				Template:   api.ParseTemplateForTest("//Test.googleapis.com/projects/{project}/locations/{location}/clusters/{cluster}"),
 				FieldPaths: [][]string{{"project"}, {"location"}, {"cluster"}},
@@ -476,13 +518,22 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 				},
 			},
 			binding: &api.PathBinding{
-				PathTemplate: (&api.PathTemplate{}).
-					WithLiteral("compute").
-					WithLiteral("v1").
-					WithLiteral("projects").
-					WithVariableNamed("project").
-					WithLiteral("zones").
-					WithVariableNamed("zone"),
+				PathTemplate: &api.PathTemplate{
+					Segments: []api.PathSegment{
+						{Literal: "compute"},
+						{Literal: "v1"},
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"project"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+						{Literal: "zones"},
+						{Variable: &api.PathVariable{
+							FieldPath: []string{"zone"},
+							Segments:  []string{api.SingleSegmentWildcard},
+						}},
+					},
+				},
 				TargetResource: &api.TargetResource{
 					// Notice that constructTemplate already stripped out "compute/v1"
 					Template: api.ParseTemplateForTest("//compute.googleapis.com/projects/{project}/zones/{zone}"),

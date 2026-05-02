@@ -49,13 +49,22 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones").
-								WithVariableNamed("zone"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "compute"},
+									{Literal: "v1"},
+									{Literal: "projects"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "zones"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"zone"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -72,12 +81,18 @@ func TestService(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("compute").
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("zones"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "compute"},
+									{Literal: "v1"},
+									{Literal: "projects"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "zones"},
+								},
+							},
 							QueryParameters: map[string]bool{
 								"filter":               true,
 								"maxResults":           true,

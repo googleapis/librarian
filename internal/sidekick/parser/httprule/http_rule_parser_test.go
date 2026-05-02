@@ -28,45 +28,272 @@ func TestParseSegments(t *testing.T) {
 		want        *api.PathTemplate
 		explanation string
 	}{
-		{"/foo", (&api.PathTemplate{}).WithLiteral("foo"), ""},
-		{"/foo/bar", (&api.PathTemplate{}).WithLiteral("foo").WithLiteral("bar"), ""},
-		{"/v1/*/foo", nil, "matchers only exist within a variable segment"},
-		{"/v1/**/foo", nil, "matchers only exist within a variable segment"},
-		{"/foo:bar", (&api.PathTemplate{}).WithLiteral("foo").WithVerb("bar"), ""},
-		{"/foo/{bar}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar"), ""},
-		{"/foo/{bar.baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar", "baz"), ""},
-		{"/foo/{bar=baz}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz")), ""},
-		{"/foo/{bar=*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()), ""},
-		{"/foo/{bar=*}/baz", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatch()).
-			WithLiteral("baz"), ""},
-		{"/foo/{bar=**}/baz:qux", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithMatchRecursive()).
-			WithLiteral("baz").WithVerb("qux"), ""},
-		{"/foo/{bar=baz/*/qux/*}", (&api.PathTemplate{}).WithLiteral("foo").WithVariable(
-			api.NewPathVariable("bar").WithLiteral("baz").WithMatch().WithLiteral("qux").WithMatch()), ""},
-		{"/foo/{bar}/{baz}/{qux}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar").WithVariableNamed("baz").WithVariableNamed("qux"), ""},
-		{"foo", nil, "path must start with slash"},
-		{"/", nil, "path cannot end with slash"},
-		{"/foo/", nil, "path cannot end with slash"},
-		{"/foo/***/bar", nil, "wildcard literal cannot exceed two *, and * isn't allowed in a LITERAL"},
-		{"/%0f", (&api.PathTemplate{}).WithLiteral("%0f"), ""},
-		{"/%0z", nil, "bad percent encoding"},
-		{"/foo//bar", nil, "segment is too short"},
-		{"/foo/:", nil, "verb is too short"},
-		{"/foo/{}/bar", nil, "var too short"},
-		{"/foo/{a.}/bar", nil, "var identifier too short"},
-		{"/foo/{.a}/bar", nil, "var identifier too short"},
-		{"/foo/{a=}/bar", nil, "var value too short"},
-		{"/foo/{9bar}", nil, "var identifier has bad first character"},
-		{"/foo/{bar9}", (&api.PathTemplate{}).WithLiteral("foo").WithVariableNamed("bar9"), ""},
-		{"/foo/{b&r}", nil, "var identifier has bad character"},
-		{"/foo/:bar", nil, "verb cannot come after slash"},
-		{"/foo:bar/baz", nil, "verb must be the last segment, and : isn't allowed in a LITERAL"},
-		{":foo", nil, "verb cannot be the first segment"},
-		{"/foo/{bar={baz}}", nil, "variables cannot be nested"},
+		{
+			"/foo",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/bar",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Literal: "bar"},
+				},
+			},
+			"",
+		},
+		{
+			"/v1/*/foo",
+			nil,
+			"matchers only exist within a variable segment",
+		},
+		{
+			"/v1/**/foo",
+			nil,
+			"matchers only exist within a variable segment",
+		},
+		{
+			"/foo:bar",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+				},
+				Verb: "bar",
+			},
+			"",
+		},
+		{
+			"/foo/{bar}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar.baz}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar", "baz"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar=baz}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{"baz"},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar=*}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar=*}/baz",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "baz"},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar=**}/baz:qux",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{api.MultiSegmentWildcard},
+					}},
+					{Literal: "baz"},
+				},
+				Verb: "qux",
+			},
+			"",
+		},
+		{
+			"/foo/{bar=baz/*/qux/*}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments: []string{
+							"baz",
+							api.SingleSegmentWildcard,
+							"qux",
+							api.SingleSegmentWildcard,
+						},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{bar}/{baz}/{qux}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"baz"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"qux"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"foo",
+			nil,
+			"path must start with slash",
+		},
+		{
+			"/",
+			nil,
+			"path cannot end with slash",
+		},
+		{
+			"/foo/",
+			nil,
+			"path cannot end with slash",
+		},
+		{
+			"/foo/***/bar",
+			nil,
+			"wildcard literal cannot exceed two *, and * isn't allowed in a LITERAL",
+		},
+		{
+			"/%0f",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "%0f"},
+				},
+			},
+			"",
+		},
+		{
+			"/%0z",
+			nil,
+			"bad percent encoding",
+		},
+		{
+			"/foo//bar",
+			nil,
+			"segment is too short",
+		},
+		{
+			"/foo/:",
+			nil,
+			"verb is too short",
+		},
+		{
+			"/foo/{}/bar",
+			nil,
+			"var too short",
+		},
+		{
+			"/foo/{a.}/bar",
+			nil,
+			"var identifier too short",
+		},
+		{
+			"/foo/{.a}/bar",
+			nil,
+			"var identifier too short",
+		},
+		{
+			"/foo/{a=}/bar",
+			nil,
+			"var value too short",
+		},
+		{
+			"/foo/{9bar}",
+			nil,
+			"var identifier has bad first character",
+		},
+		{
+			"/foo/{bar9}",
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "foo"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"bar9"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
+			"",
+		},
+		{
+			"/foo/{b&r}",
+			nil,
+			"var identifier has bad character",
+		},
+		{
+			"/foo/:bar",
+			nil,
+			"verb cannot come after slash",
+		},
+		{
+			"/foo:bar/baz",
+			nil,
+			"verb must be the last segment, and : isn't allowed in a LITERAL",
+		},
+		{
+			":foo",
+			nil,
+			"verb cannot be the first segment",
+		},
+		{
+			"/foo/{bar={baz}}",
+			nil,
+			"variables cannot be nested",
+		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
 			got, err := ParseSegments(test.path)
@@ -164,11 +391,20 @@ func TestParseResourcePattern(t *testing.T) {
 		{
 			"standard hierarchical pattern",
 			"projects/{project}/serviceAccounts/{service_account}",
-			(&api.PathTemplate{}).
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("serviceAccounts").
-				WithVariableNamed("service_account"),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "serviceAccounts"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"service_account"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			false,
 			"should parse a standard hierarchical resource pattern correctly",
 		},

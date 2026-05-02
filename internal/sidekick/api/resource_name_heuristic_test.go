@@ -37,9 +37,20 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("users").WithVariableNamed("user").
-											WithLiteral("widgets").WithVariableNamed("widget"),
+										PathTemplate: &PathTemplate{
+											Segments: []PathSegment{
+												{Literal: "users"},
+												{Variable: &PathVariable{
+													FieldPath: []string{"user"},
+													Segments:  []string{SingleSegmentWildcard},
+												}},
+												{Literal: "widgets"},
+												{Variable: &PathVariable{
+													FieldPath: []string{"widget"},
+													Segments:  []string{SingleSegmentWildcard},
+												}},
+											},
+										},
 									},
 								},
 							},
@@ -68,8 +79,15 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("internal").WithVariableNamed("id"),
+										PathTemplate: &PathTemplate{
+											Segments: []PathSegment{
+												{Literal: "internal"},
+												{Variable: &PathVariable{
+													FieldPath: []string{"id"},
+													Segments:  []string{SingleSegmentWildcard},
+												}},
+											},
+										},
 									},
 								},
 							},
@@ -96,8 +114,15 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("internal").WithVariableNamed("id"),
+										PathTemplate: &PathTemplate{
+											Segments: []PathSegment{
+												{Literal: "internal"},
+												{Variable: &PathVariable{
+													FieldPath: []string{"id"},
+													Segments:  []string{SingleSegmentWildcard},
+												}},
+											},
+										},
 									},
 								},
 							},
@@ -124,12 +149,15 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 							PathInfo: &PathInfo{
 								Bindings: []*PathBinding{
 									{
-										PathTemplate: (&PathTemplate{}).
-											WithLiteral("v1").
-											WithVariable(&PathVariable{
-												FieldPath: []string{"name"},
-												Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
-											}),
+										PathTemplate: &PathTemplate{
+											Segments: []PathSegment{
+												{Literal: "v1"},
+												{Variable: &PathVariable{
+													FieldPath: []string{"name"},
+													Segments:  []string{"projects", SingleSegmentWildcard, "instances", MultiSegmentWildcard},
+												}},
+											},
+										},
 									},
 								},
 							},

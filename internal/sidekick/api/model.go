@@ -749,7 +749,7 @@ const (
 // PathTemplate is a template for a path.
 type PathTemplate struct {
 	Segments []PathSegment
-	Verb     *string
+	Verb     string
 }
 
 // FlatPath returns a simplified representation of the path template as a string.
@@ -763,8 +763,8 @@ func (template *PathTemplate) FlatPath() string {
 	sep := ""
 	for _, segment := range template.Segments {
 		buffer.WriteString(sep)
-		if segment.Literal != nil {
-			buffer.WriteString(*segment.Literal)
+		if segment.Literal != "" {
+			buffer.WriteString(segment.Literal)
 		} else if segment.Variable != nil {
 			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath, "."))
 		}
@@ -775,7 +775,7 @@ func (template *PathTemplate) FlatPath() string {
 
 // PathSegment is a segment of a path.
 type PathSegment struct {
-	Literal  *string
+	Literal  string
 	Variable *PathVariable
 }
 
@@ -791,67 +791,6 @@ type PathVariable struct {
 // NewPathVariable creates a new path variable.
 func NewPathVariable(fields ...string) *PathVariable {
 	return &PathVariable{FieldPath: fields}
-}
-
-// WithLiteral adds a literal to the path template.
-func (p *PathTemplate) WithLiteral(l string) *PathTemplate {
-	p.Segments = append(p.Segments, PathSegment{Literal: &l})
-	return p
-}
-
-// WithVariable adds a variable to the path template.
-func (p *PathTemplate) WithVariable(v *PathVariable) *PathTemplate {
-	p.Segments = append(p.Segments, PathSegment{Variable: v})
-	return p
-}
-
-// WithVariableNamed adds a variable with the given name to the path template.
-func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
-	v := PathVariable{FieldPath: fields}
-	p.Segments = append(p.Segments, PathSegment{Variable: v.WithMatch()})
-	return p
-}
-
-// WithVerb adds a verb to the path template.
-func (p *PathTemplate) WithVerb(v string) *PathTemplate {
-	p.Verb = &v
-	return p
-}
-
-// WithLiteral adds a literal to the path variable.
-func (v *PathVariable) WithLiteral(l string) *PathVariable {
-	v.Segments = append(v.Segments, l)
-	return v
-}
-
-// WithMatchRecursive adds a recursive match to the path variable.
-func (v *PathVariable) WithMatchRecursive() *PathVariable {
-	v.Segments = append(v.Segments, MultiSegmentWildcard)
-	return v
-}
-
-// WithMatch adds a match to the path variable.
-func (v *PathVariable) WithMatch() *PathVariable {
-	v.Segments = append(v.Segments, SingleSegmentWildcard)
-	return v
-}
-
-// WithAllowReserved marks the variable as allowing reserved characters to remain unescaped.
-func (v *PathVariable) WithAllowReserved() *PathVariable {
-	v.AllowReserved = true
-	return v
-}
-
-// WithLiteral adds a literal to the path segment.
-func (s *PathSegment) WithLiteral(l string) *PathSegment {
-	s.Literal = &l
-	return s
-}
-
-// WithVariable adds a variable to the path segment.
-func (s *PathSegment) WithVariable(v *PathVariable) *PathSegment {
-	s.Variable = v
-	return s
 }
 
 // Message defines a message used in request/response handling.

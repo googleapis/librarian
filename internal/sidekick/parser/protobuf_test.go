@@ -483,12 +483,16 @@ func TestProtobuf_Comments(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "*",
@@ -902,13 +906,15 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"name"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard, "foos", api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "",
@@ -925,12 +931,16 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"foo_id": true},
 						},
 					},
@@ -948,13 +958,15 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "DELETE",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"name"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard, "foos", api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 				},
@@ -981,14 +993,16 @@ func TestProtobuf_Service(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()).
-								WithVerb("Download"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"name"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard, "foos", api.SingleSegmentWildcard},
+									}},
+								},
+								Verb: "Download",
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "",
@@ -1038,12 +1052,16 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"foo_id": true},
 						},
 					},
@@ -1061,14 +1079,16 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch().
-									WithLiteral("foos").
-									WithMatch()).
-								WithVerb("addFoo"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard, "foos", api.SingleSegmentWildcard},
+									}},
+								},
+								Verb: "addFoo",
+							},
 							QueryParameters: map[string]bool{},
 						},
 					},
@@ -1159,12 +1179,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
 						},
 					},
@@ -1187,12 +1211,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
 						},
 					},
@@ -1215,12 +1243,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
 						},
 					},
@@ -1243,12 +1275,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
 						},
 					},
@@ -1271,12 +1307,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
 						},
 					},
@@ -1299,12 +1339,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"max_results": true, "page_token": true},
 						},
 					},
@@ -1320,12 +1364,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
 						},
 					},
@@ -1341,12 +1389,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"page_token": true},
 						},
 					},
@@ -1362,12 +1414,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"page_size": true},
 						},
 					},
@@ -1383,12 +1439,16 @@ func TestProtobuf_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"page_size": true, "page_token": true},
 						},
 					},
@@ -1508,12 +1568,16 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "foo",
@@ -1534,12 +1598,16 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "POST",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithVariable(api.NewPathVariable("parent").
-									WithLiteral("projects").
-									WithMatch()).
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"parent"},
+										Segments:  []string{"projects", api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "foo",
@@ -1560,11 +1628,15 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v2").
-								WithVariable(api.NewPathVariable("name").
-									WithLiteral("operations").
-									WithMatch()),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v2"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"name"},
+										Segments:  []string{"operations", api.SingleSegmentWildcard},
+									}},
+								},
+							},
 							QueryParameters: map[string]bool{}},
 					},
 					BodyFieldPath: "*",
@@ -1885,10 +1957,16 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Shelf",
 			Patterns: []api.ResourcePattern{
 				{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+					{Literal: "publishers"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"publisher"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "shelves"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"shelf"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
 				},
 			},
 		}
@@ -1912,12 +1990,21 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Book",
 			Patterns: []api.ResourcePattern{
 				{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					{Literal: "publishers"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"publisher"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "shelves"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"shelf"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "books"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"book"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
 				},
 			},
 			Plural:   "books",
@@ -1969,12 +2056,21 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			Type: "library.googleapis.com/Book",
 			Patterns: []api.ResourcePattern{
 				{
-					*(&api.PathSegment{}).WithLiteral("publishers"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("shelves"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
-					*(&api.PathSegment{}).WithLiteral("books"),
-					*(&api.PathSegment{}).WithVariable(api.NewPathVariable("book").WithMatch()),
+					{Literal: "publishers"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"publisher"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "shelves"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"shelf"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "books"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"book"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
 				},
 			},
 			Plural:   "books",
@@ -2169,14 +2265,23 @@ func TestParseResourcePatterns(t *testing.T) {
 		}
 		want := []api.ResourcePattern{
 			{
-				*(&api.PathSegment{}).WithLiteral("publishers"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("publisher").WithMatch()),
-				*(&api.PathSegment{}).WithLiteral("shelves"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("shelf").WithMatch()),
+				{Literal: "publishers"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"publisher"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
+				{Literal: "shelves"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"shelf"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
 			},
 			{
-				*(&api.PathSegment{}).WithLiteral("projects"),
-				*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+				{Literal: "projects"},
+				{Variable: &api.PathVariable{
+					FieldPath: []string{"project"},
+					Segments:  []string{api.SingleSegmentWildcard},
+				}},
 			},
 		}
 		got, err := parseResourcePatterns(patterns)

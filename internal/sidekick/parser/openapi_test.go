@@ -730,11 +730,17 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("locations"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "locations"},
+						},
+					},
 					QueryParameters: map[string]bool{
 						"filter":    true,
 						"pageSize":  true,
@@ -968,11 +974,17 @@ func TestOpenAPI_Pagination(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("projects").
-								WithVariableNamed("project").
-								WithLiteral("foos"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "projects"},
+									{Variable: &api.PathVariable{
+										FieldPath: []string{"project"},
+										Segments:  []string{api.SingleSegmentWildcard},
+									}},
+									{Literal: "foos"},
+								},
+							},
 							QueryParameters: map[string]bool{"pageSize": true, "pageToken": true},
 						},
 					},
@@ -1188,12 +1200,18 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("a"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "rpc"},
+							{Literal: "a"},
+						},
+					},
 					QueryParameters: map[string]bool{"filter": true},
 				},
 			},
@@ -1210,12 +1228,18 @@ func TestOpenAPI_Deprecated(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("rpc").
-						WithLiteral("b"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "rpc"},
+							{Literal: "b"},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},

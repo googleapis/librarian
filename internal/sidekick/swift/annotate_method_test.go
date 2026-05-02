@@ -48,8 +48,13 @@ func TestAnnotateMethod(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:         "GET",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
+							Verb: "GET",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "operations"},
+								},
+							},
 						},
 					},
 				},
@@ -69,8 +74,13 @@ func TestAnnotateMethod(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("keys"),
+							Verb: "POST",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "keys"},
+								},
+							},
 						},
 					},
 					BodyFieldPath: "key",
@@ -92,8 +102,13 @@ func TestAnnotateMethod(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:         "POST",
-							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("data"),
+							Verb: "POST",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "data"},
+								},
+							},
 						},
 					},
 					BodyFieldPath: "*",
@@ -115,8 +130,13 @@ func TestAnnotateMethod(t *testing.T) {
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{
 						{
-							Verb:            "GET",
-							PathTemplate:    (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things"),
+							Verb: "GET",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "things"},
+								},
+							},
 							QueryParameters: map[string]bool{"key": true},
 						},
 					},

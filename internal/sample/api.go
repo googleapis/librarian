@@ -83,11 +83,17 @@ func MethodCreate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "secrets"},
+						},
+					},
 					QueryParameters: map[string]bool{"secretId": true},
 				},
 			},
@@ -108,9 +114,15 @@ func MethodUpdate() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPatch,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariableNamed("secret", "name"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"secret", "name"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{
 						"field_mask": true,
 					},
@@ -132,13 +144,22 @@ func MethodAddSecretVersion() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("addVersion"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"project"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "secrets"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"secret"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+						Verb: "addVersion",
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -161,13 +182,22 @@ func MethodListSecretVersions() *api.Method {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: http.MethodPost,
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("parent").
-						WithLiteral("secrets").
-						WithVariableNamed("secret").
-						WithVerb("listSecretVersions"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Literal: "projects"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"parent"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+							{Literal: "secrets"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"secret"},
+								Segments:  []string{api.SingleSegmentWildcard},
+							}},
+						},
+						Verb: "listSecretVersions",
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},

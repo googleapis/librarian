@@ -80,13 +80,15 @@ func TestProtobuf_LocationMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("projects").
-							WithMatch().
-							WithLiteral("locations").
-							WithMatch()),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"projects", api.SingleSegmentWildcard, "locations", api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -151,12 +153,16 @@ func TestProtobuf_IAMMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "POST",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("resource").
-							WithLiteral("services").
-							WithMatch()).
-						WithVerb("getIamPolicy"),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"resource"},
+								Segments:  []string{"services", api.SingleSegmentWildcard},
+							}},
+						},
+						Verb: "getIamPolicy",
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -228,11 +234,15 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v2").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v2"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"operations", api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -316,11 +326,15 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "DELETE",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v2").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v2"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"operations", api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},
@@ -401,11 +415,15 @@ func TestProtobuf_DuplicateMixin(t *testing.T) {
 			Bindings: []*api.PathBinding{
 				{
 					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("v1").
-						WithVariable(api.NewPathVariable("name").
-							WithLiteral("operations").
-							WithMatch()),
+					PathTemplate: &api.PathTemplate{
+						Segments: []api.PathSegment{
+							{Literal: "v1"},
+							{Variable: &api.PathVariable{
+								FieldPath: []string{"name"},
+								Segments:  []string{"operations", api.SingleSegmentWildcard},
+							}},
+						},
+					},
 					QueryParameters: map[string]bool{},
 				},
 			},

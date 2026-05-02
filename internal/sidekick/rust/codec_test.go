@@ -1855,9 +1855,12 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("foo"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "foo"},
+								},
+							},
 						},
 					},
 				},
@@ -1880,9 +1883,12 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("foo"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "foo"},
+								},
+							},
 						},
 					},
 				},
@@ -1901,9 +1907,12 @@ func makeApiForRustFormatDocCommentsCrossLinks() *api.API {
 					Bindings: []*api.PathBinding{
 						{
 							Verb: "GET",
-							PathTemplate: (&api.PathTemplate{}).
-								WithLiteral("v1").
-								WithLiteral("thing"),
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									{Literal: "v1"},
+									{Literal: "thing"},
+								},
+							},
 						},
 					},
 				},
@@ -2191,44 +2200,73 @@ func TestPathFmt(t *testing.T) {
 	}{
 		{
 			"/v1/fixed",
-			(&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("fixed"),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "fixed"},
+				},
+			},
 		},
 		{
 			"/v1/{}",
-			(&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("parent"),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"parent"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 		},
 		{
 			"/v1/{}",
-			(&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariable(api.NewPathVariable("parent").
-					WithLiteral("projects").
-					WithMatch().
-					WithLiteral("locations").
-					WithMatch()),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"parent"},
+						Segments:  []string{"projects", api.SingleSegmentWildcard, "locations", api.SingleSegmentWildcard},
+					}},
+				},
+			},
 		},
 		{
 			"/v1/{}:action",
-			(&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("parent").
-				WithVerb("action"),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"parent"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+				Verb: "action",
+			},
 		},
 		{
 			"/v1/projects/{}/locations/{}/secrets/{}:action",
-			(&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("locations").
-				WithVariableNamed("location").
-				WithLiteral("secrets").
-				WithVariableNamed("secret").
-				WithVerb("action"),
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "locations"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"location"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "secrets"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"secret"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+				Verb: "action",
+			},
 		},
 	} {
 		got := httpPathFmt(test.template)

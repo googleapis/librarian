@@ -129,7 +129,6 @@ func TestIsDelete(t *testing.T) {
 }
 
 func TestGetCommandName(t *testing.T) {
-	v := "exportData"
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -138,7 +137,7 @@ func TestGetCommandName(t *testing.T) {
 		{"Standard Create", &api.Method{Name: "CreateInstance"}, "create"},
 		{"Standard List", &api.Method{Name: "ListInstances"}, "list"},
 		{"Standard Get", &api.Method{Name: "GetInstance"}, "describe"},
-		{"Custom Verb in Path", api.NewTestMethod("ExportData").WithPathTemplate(&api.PathTemplate{Verb: &v}), "export_data"},
+		{"Custom Verb in Path", api.NewTestMethod("ExportData").WithPathTemplate(&api.PathTemplate{Verb: "exportData"}), "export_data"},
 		{"Fallback to Name", &api.Method{Name: "ExportData"}, "export_data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -236,10 +235,16 @@ func TestIsResourceMethod(t *testing.T) {
 		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), true},
 		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), false},
 		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance"))}},
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"instance"},
+					}},
+				},
+			},
 		), true},
 		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithLiteral("instances")}},
+			&api.PathTemplate{Segments: []api.PathSegment{{Literal: "instances"}}},
 		), false},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
@@ -264,10 +269,16 @@ func TestIsCollectionMethod(t *testing.T) {
 		{"Standard Get", api.NewTestMethod("GetInstance").WithVerb("GET"), false},
 		{"Standard List", api.NewTestMethod("ListInstances").WithVerb("GET"), true},
 		{"Custom Resource", api.NewTestMethod("CustomInstance").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance"))}},
+			&api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"instance"},
+					}},
+				},
+			},
 		), false},
 		{"Custom Collection", api.NewTestMethod("CustomCollection").WithPathTemplate(
-			&api.PathTemplate{Segments: []api.PathSegment{*(&api.PathSegment{}).WithLiteral("instances")}},
+			&api.PathTemplate{Segments: []api.PathSegment{{Literal: "instances"}}},
 		), true},
 		{"Nil PathInfo", &api.Method{Name: "CustomMethod", PathInfo: nil}, false},
 		{"Empty Bindings", &api.Method{Name: "CustomMethod", PathInfo: &api.PathInfo{Bindings: []*api.PathBinding{}}}, false},
@@ -313,9 +324,9 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/Singleton",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*(&api.PathSegment{}).WithLiteral("projects"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
-						*(&api.PathSegment{}).WithLiteral("singletonConfig"),
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+						{Literal: "singletonConfig"},
 					},
 				},
 			},
@@ -323,11 +334,11 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/AdjacentLiterals",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*(&api.PathSegment{}).WithLiteral("projects"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
-						*(&api.PathSegment{}).WithLiteral("literal1"),
-						*(&api.PathSegment{}).WithLiteral("literal2"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance")),
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+						{Literal: "literal1"},
+						{Literal: "literal2"},
+						{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 					},
 				},
 			},
@@ -335,10 +346,10 @@ func TestIsSingletonResourceMethod(t *testing.T) {
 				Type: "test.googleapis.com/Standard",
 				Patterns: []api.ResourcePattern{
 					[]api.PathSegment{
-						*(&api.PathSegment{}).WithLiteral("projects"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project")),
-						*(&api.PathSegment{}).WithLiteral("instances"),
-						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("instance")),
+						{Literal: "projects"},
+						{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
+						{Literal: "instances"},
+						{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 					},
 				},
 			},
@@ -554,7 +565,6 @@ func TestGetMethodHelpText(t *testing.T) {
 		{
 			name: "Custom Verb Fallback",
 			method: func() *api.Method {
-				v := "exportData"
 				m := api.NewTestMethod("ExportData")
 				m.ID = ".ExportData"
 				m.InputType = &api.Message{
@@ -569,7 +579,7 @@ func TestGetMethodHelpText(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							PathTemplate: &api.PathTemplate{
-								Verb: &v,
+								Verb: "exportData",
 							},
 						},
 					},

@@ -208,9 +208,15 @@ func TestGenerateService_PathParameters(t *testing.T) {
 	}{
 		{
 			name: "Nested",
-			path: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("secret", "name"),
+			path: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"secret", "name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.secret.map({ $0.name }), !pathVariable0.isEmpty else {
         throw GoogleCloudGax.RequestError.binding("'request.secret.name' is not set or is empty")
@@ -220,9 +226,15 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Plain",
-			path: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithVariableNamed("name"),
+			path: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"name"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.name as String?, !pathVariable0.isEmpty else {
         throw GoogleCloudGax.RequestError.binding("'request.name' is not set or is empty")
@@ -232,12 +244,21 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		},
 		{
 			name: "Multiple strings",
-			path: (&api.PathTemplate{}).
-				WithLiteral("v1").
-				WithLiteral("projects").
-				WithVariableNamed("project").
-				WithLiteral("locations").
-				WithVariableNamed("location"),
+			path: &api.PathTemplate{
+				Segments: []api.PathSegment{
+					{Literal: "v1"},
+					{Literal: "projects"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"project"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+					{Literal: "locations"},
+					{Variable: &api.PathVariable{
+						FieldPath: []string{"location"},
+						Segments:  []string{api.SingleSegmentWildcard},
+					}},
+				},
+			},
 			wantBlock: `let path = try { () throws -> String in
       guard let pathVariable0 = request.project as String?, !pathVariable0.isEmpty else {
         throw GoogleCloudGax.RequestError.binding("'request.project' is not set or is empty")
