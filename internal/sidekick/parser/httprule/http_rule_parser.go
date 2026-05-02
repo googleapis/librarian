@@ -165,6 +165,9 @@ func parseVerb(verbString string) (string, int, error) {
 		return "", 0, err
 	}
 	pos += width
+	if verb == nil {
+		return "", pos, nil
+	}
 	return string(*verb), pos, nil
 }
 
