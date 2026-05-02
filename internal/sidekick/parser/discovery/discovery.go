@@ -41,12 +41,6 @@ func NewAPI(serviceConfig *serviceconfig.Service, contents []byte, discoveryConf
 		Description: doc.Description,
 		Revision:    doc.Revision,
 		Messages:    make([]*api.Message, 0),
-		State: &api.APIState{
-			ServiceByID: make(map[string]*api.Service),
-			MethodByID:  make(map[string]*api.Method),
-			MessageByID: make(map[string]*api.Message),
-			EnumByID:    make(map[string]*api.Enum),
-		},
 	}
 	// Discovery docs use some well-known types inspired by Protobuf. With
 	// protoc these types are automatically included via `import` statements.
