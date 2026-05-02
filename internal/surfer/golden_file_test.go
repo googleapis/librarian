@@ -136,7 +136,7 @@ func TestGolden(t *testing.T) {
 			protoRoot, outDir := setupVirtualEnvironment(t, scenarioPath, coreGoogleapisPath, tmpDir)
 
 			// 2. Act: Execute the CLI compiler
-			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, serviceFile, protoRoot, outDir, test.protos)
+			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, serviceFile, protoRoot, inputDir, outDir, test.protos)
 
 			// 3. Assert: Validate the outputs against the goldens
 			t.Run("current", func(t *testing.T) {
@@ -189,11 +189,11 @@ func setupVirtualEnvironment(t *testing.T, scenarioPath, coreGoogleapisPath, tmp
 	return protoRoot, outDir
 }
 
-func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFile, protoRoot, outDir string, protos []string) (string, string) {
+func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFile, protoRoot, inputDir, outDir string, protos []string) (string, string) {
 	t.Helper()
 	protoFiles := protos
 	if len(protoFiles) == 0 {
-		protoFiles = findProtos(protoRoot)
+		protoFiles = findProtos(inputDir)
 	}
 	for i, p := range protoFiles {
 		protoFiles[i] = filepath.ToSlash(p)
