@@ -997,3 +997,46 @@ func TestDeriveAPIBase(t *testing.T) {
 		})
 	}
 }
+
+func TestGetAbsSourceDir(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		srcs    *sources.Sources
+		want    string
+	}{
+		{
+			name:    "default to googleapis",
+			library: &config.Library{Name: "secretmanager"},
+			srcs: &sources.Sources{
+				Googleapis: "/path/to/googleapis",
+				Showcase:   "/path/to/showcase",
+			},
+			want: "/path/to/googleapis",
+		},
+		{
+			name:    "showcase library with showcase dir",
+			library: &config.Library{Name: "showcase"},
+			srcs: &sources.Sources{
+				Googleapis: "/path/to/googleapis",
+				Showcase:   "/path/to/showcase",
+			},
+			want: "/path/to/showcase",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := getAbsSourceDir(test.library, test.srcs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := test.want
+			if test.srcs.Showcase == "" && test.library.Name == "showcase" {
+				want, _ = filepath.Abs("")
+			}
+			if got != want {
+				t.Errorf("getAbsSourceDir() = %v, want %v", got, want)
+			}
+		})
+	}
+}
