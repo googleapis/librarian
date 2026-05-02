@@ -66,8 +66,6 @@ func TestFromProtobuf(t *testing.T) {
 }
 
 func TestParallelstoreMock(t *testing.T) {
-	stringPtr := func(s string) *string { return &s }
-
 	// TODO(https://github.com/googleapis/librarian/issues/5769): once we
 	// implement the model building, we should remove the hardcoded data and
 	// construct it from internal/testdata/googleapis instead.
@@ -76,16 +74,13 @@ func TestParallelstoreMock(t *testing.T) {
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
-					PathTemplate: &api.PathTemplate{
-						Segments: []api.PathSegment{
-							{Literal: stringPtr("v1")},
-							{Literal: stringPtr("projects")},
-							{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-							{Literal: stringPtr("locations")},
-							{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-							{Literal: stringPtr("instances")},
-						},
-					},
+					PathTemplate: (&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithLiteral("projects").
+						WithVariableNamed("project").
+						WithLiteral("locations").
+						WithVariableNamed("location").
+						WithLiteral("instances"),
 				},
 			},
 		},
@@ -122,7 +117,7 @@ func TestParallelstoreMock(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(string(wantMain), string(gotMain)); diff != "" {
-		t.Errorf("main.go mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	readmeFile := filepath.Join(outDir, "README.md")
@@ -135,6 +130,6 @@ func TestParallelstoreMock(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(string(wantReadme), string(gotReadme)); diff != "" {
-		t.Errorf("README.md mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
