@@ -64,7 +64,7 @@ func TestFromProtobuf(t *testing.T) {
 	}
 }
 
-func TestParallelstoreMock(t *testing.T) {
+func TestParallelstore(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testdataDir, err := filepath.Abs("../../testdata")
 	if err != nil {
