@@ -22,6 +22,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -169,6 +170,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = checkAndClean(library.Output, keep)
 		case config.LanguageSwift:
 			err = checkAndClean(library.Output, library.Keep)
+		case config.LanguageGcloud:
+			// No-op. gcloud generation does not support cleaning yet.
 		case config.LanguageSurfer:
 			// No-op. surfer generation does not support cleaning yet.
 		default:
@@ -210,6 +213,13 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return fakePostGenerate()
+	case config.LanguageGcloud:
+		for _, library := range libraries {
+			if err := gcloud.Generate(ctx, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+		}
+		return nil
 	case config.LanguageSurfer:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
