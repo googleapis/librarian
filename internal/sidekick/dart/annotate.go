@@ -1138,19 +1138,18 @@ func createNullableToJson(field *api.Field) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
 
-	switch field.Typez {
-	case api.TypezFloat, api.TypezDouble:
-		return fmt.Sprintf("if (%s case final $1?) '%s': encodeDouble($1)", name, jsonName)
-	case api.TypezBytes:
-		return fmt.Sprintf("if (%s case final $1?) '%s': encodeBytes($1)", name, jsonName)
-	default:
-		if canBeNull(field) {
-			enc, _ := encoder(field.Typez, "$1")
-			return fmt.Sprintf("if (%s case final $1?) '%s': %s", name, jsonName, enc)
-		}
-		nullAware := createToJsonNullAwareLine(field)
-		return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
+	// Float, Double, and Bytes use function-based encoders (e.g., `encodeDouble`, `encodeBytes`),
+	// and certain fields (like `NullValue` or `Value`) can serialize to `null`.
+	// Standalone function calls are not null-aware expressions, so we cannot use Dart's null-aware
+	// map element syntax `?expression` with them. Instead, we use `if (name case final $1?)`
+	// to safely extract the value before encoding.
+	if field.Typez == api.TypezFloat || field.Typez == api.TypezDouble || field.Typez == api.TypezBytes || canBeNull(field) {
+		enc, _ := encoder(field.Typez, "$1")
+		return fmt.Sprintf("if (%s case final $1?) '%s': %s", name, jsonName, enc)
 	}
+
+	nullAware := createToJsonNullAwareLine(field)
+	return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
 }
 
 // buildQueryLines builds a string or strings representing query parameters for the given field.
