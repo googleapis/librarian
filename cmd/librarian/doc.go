@@ -161,30 +161,32 @@ with a canonical formatting.
 Run tidy after editing librarian.yaml by hand, or as a quick check that
 the configuration is well-formed.
 
-# Update sources to the latest version
+# Update sources or version to the latest version
 
 Usage:
 
-	librarian update <sources...>
+	librarian update <version | source>...
 
 update refreshes the upstream source repositories declared in
 librarian.yaml to their latest commits and updates the recorded commit
-SHAs in librarian.yaml accordingly.
+SHAs in librarian.yaml accordingly. It also supports updating the librarian version.
 
-Each <source> names an upstream repository that librarian consumes:
+Supported targets:
 
   - conformance: protocolbuffers/protobuf conformance tests
   - discovery: googleapis/discovery-artifact-manager
   - googleapis: googleapis/googleapis (the API definitions)
   - protobuf: protocolbuffers/protobuf
   - showcase: googleapis/gapic-showcase
+  - version: the librarian tool version
 
-At least one source must be specified.
+At least one target must be specified.
 
 Examples:
 
 	librarian update googleapis
 	librarian update googleapis protobuf
+	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:

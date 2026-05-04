@@ -45,7 +45,7 @@ func TestLibrarianUsage(t *testing.T) {
 		{"generate", []string{"generate"}, "librarian generate <library>"},
 		{"bump", []string{"bump"}, "librarian bump <library>"},
 		{"tidy", []string{"tidy"}, "librarian tidy"},
-		{"update", []string{"update"}, "librarian update <sources...>"},
+		{"update", []string{"update"}, "librarian update <version | source>..."},
 		{"version", []string{"version"}, "librarian version"},
 		{"publish", []string{"publish"}, "librarian publish"},
 		{"tag", []string{"tag"}, "librarian tag"},
