@@ -25,3 +25,5 @@ tools:
       version: v1.3.0
     - name: google.golang.org/protobuf/cmd/protoc-gen-go
       version: v1.36.11
+    - name: golang.org/dl/go1.22.3
+      version: latest
