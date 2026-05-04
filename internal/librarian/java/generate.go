@@ -103,7 +103,7 @@ type librarySources struct {
 
 	// googleapisDir is the absolute path to the googleapis source directory.
 	// This is always needed (even for showcase) because common proto resources always reside in
-	//  the googleapis repository.
+	// the googleapis repository.
 	googleapisDir string
 
 	// includeDirs contains the ordered list of import directories to pass to protoc via -I flags.
