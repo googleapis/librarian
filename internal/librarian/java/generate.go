@@ -262,7 +262,7 @@ func gapicProtocArgs(apiProtos, additionalProtos []string, includeDirs []string,
 	return args
 }
 
-func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, googleapisDir string, apiCfg *serviceconfig.API) ([]string, error) {
+func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *config.API, sourceDir string, apiCfg *serviceconfig.API) ([]string, error) {
 	// gapicOpts are passed to the GAPIC generator via --java_gapic_opt.
 	// "metadata" enables the generation of gapic_metadata.json and GraalVM reflect-config.json.
 	gapicOpts := []string{"metadata"}
@@ -273,26 +273,26 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	if apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
 		// contains documentation, HTTP rules, and other API-level configuration.
-		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(googleapisDir, apiCfg.ServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("api-service-config", filepath.Join(sourceDir, apiCfg.ServiceConfig)))
 	}
 
-	gapicConfig, err := serviceconfig.FindGAPICConfig(googleapisDir, api.Path)
+	gapicConfig, err := serviceconfig.FindGAPICConfig(sourceDir, api.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find gapic config: %w", err)
 	}
 	if gapicConfig != "" {
 		// gapic-config specifies the GAPIC configuration (e.g., logging_gapic.yaml) which
 		// contains batching, LRO retries, and language settings.
-		gapicOpts = append(gapicOpts, gapicOpt("gapic-config", filepath.Join(googleapisDir, gapicConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("gapic-config", filepath.Join(sourceDir, gapicConfig)))
 	}
 
-	gRPCServiceConfig, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, api.Path)
+	gRPCServiceConfig, err := serviceconfig.FindGRPCServiceConfig(sourceDir, api.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to find gRPC service config: %w", err)
 	}
 	if gRPCServiceConfig != "" {
 		// grpc-service-config specifies the retry and timeout settings for the gRPC client.
-		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(googleapisDir, gRPCServiceConfig)))
+		gapicOpts = append(gapicOpts, gapicOpt("grpc-service-config", filepath.Join(sourceDir, gRPCServiceConfig)))
 	}
 
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
