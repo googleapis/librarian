@@ -29,7 +29,8 @@ func main() {
 									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing list...")
+									parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
+									fmt.Printf("Executing list on %s\n", parent)
 									return nil
 								},
 							},
@@ -42,7 +43,8 @@ func main() {
 									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing describe...")
+									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
+									fmt.Printf("Executing describe on %s\n", name)
 									return nil
 								},
 							},
@@ -54,7 +56,8 @@ func main() {
 									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing create...")
+									parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
+									fmt.Printf("Executing create on %s\n", parent)
 									return nil
 								},
 							},
@@ -67,7 +70,8 @@ func main() {
 									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing update...")
+									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
+									fmt.Printf("Executing update on %s\n", name)
 									return nil
 								},
 							},
@@ -80,7 +84,8 @@ func main() {
 									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing delete...")
+									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
+									fmt.Printf("Executing delete on %s\n", name)
 									return nil
 								},
 							},
@@ -93,7 +98,8 @@ func main() {
 									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing import-data...")
+									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
+									fmt.Printf("Executing import-data on %s\n", name)
 									return nil
 								},
 							},
@@ -106,7 +112,8 @@ func main() {
 									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing export-data...")
+									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
+									fmt.Printf("Executing export-data on %s\n", name)
 									return nil
 								},
 							},

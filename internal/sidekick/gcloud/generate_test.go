@@ -327,3 +327,121 @@ func TestPathFlagsFromSegments(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandHasPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want bool
+	}{
+		{"empty", Command{}, false},
+		{"with-path", Command{PathFormat: "projects/%s"}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.HasPath()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommandPathFormatArgs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want string
+	}{
+		{"empty", Command{}, ""},
+		{"single", Command{Args: []string{"project"}}, `cmd.String("project")`},
+		{
+			"multi",
+			Command{Args: []string{"project", "location", "instance"}},
+			`cmd.String("project"), cmd.String("location"), cmd.String("instance")`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.PathFormatArgs()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPathFormatFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     string
+	}{
+		{"nil", nil, ""},
+		{
+			"no-variable",
+			(&api.PathTemplate{}).WithLiteral("projects").Segments,
+			"",
+		},
+		{
+			"single",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				Segments,
+			"projects/%s",
+		},
+		{
+			"multi",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			"projects/%s/locations/%s/instances/%s",
+		},
+		{
+			"trailing-literal",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("config").
+				Segments,
+			"projects/%s/config",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pathFormatFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPathArgsFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     []string
+	}{
+		{"nil", nil, nil},
+		{
+			"no-variable",
+			(&api.PathTemplate{}).WithLiteral("projects").Segments,
+			nil,
+		},
+		{
+			"multi",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			[]string{"project", "location", "instance"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pathArgsFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

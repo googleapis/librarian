@@ -71,7 +71,12 @@ func main() {
 	},
 	{{- end}}
 	Action: func(ctx context.Context, cmd *cli.Command) error {
+		{{- if .HasPath}}
+		{{.PathLabel}} := fmt.Sprintf("{{.PathFormat}}", {{.PathFormatArgs}})
+		fmt.Printf("Executing {{.Name}} on %s\n", {{.PathLabel}})
+		{{- else}}
 		fmt.Println("Executing {{.Name}}...")
+		{{- end}}
 		return nil
 	},
 }

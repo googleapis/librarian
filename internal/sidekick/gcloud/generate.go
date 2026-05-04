@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/iancoleman/strcase"
@@ -53,13 +54,6 @@ type Subgroup struct {
 	Name     string
 	Usage    string
 	Commands []Command
-}
-
-// Command represents a leaf command.
-type Command struct {
-	Flags []Flag
-	Name  string
-	Usage string
 }
 
 // Generate is the package entry point. It builds the model, renders main.go,
@@ -125,23 +119,19 @@ func constructCLIModel(model *api.API) CLIModel {
 	}
 
 	subgroups := make(map[string]*Subgroup)
-
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			binding := provider.PrimaryBinding(method)
 			if binding == nil {
 				continue
 			}
+
 			segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
 			if len(segments) == 0 {
 				continue
 			}
 
 			subgroupName := strcase.ToKebab(segments[len(segments)-1])
-
-			commandName, _ := provider.GetCommandName(method)
-			commandName = strcase.ToKebab(commandName)
-
 			if subgroups[subgroupName] == nil {
 				subgroups[subgroupName] = &Subgroup{
 					Name:  subgroupName,
@@ -149,6 +139,8 @@ func constructCLIModel(model *api.API) CLIModel {
 				}
 			}
 
+			commandName, _ := provider.GetCommandName(method)
+			commandName = strcase.ToKebab(commandName)
 			cmd := buildCommand(method, model, commandName, subgroupName)
 			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, cmd)
 		}
@@ -158,35 +150,40 @@ func constructCLIModel(model *api.API) CLIModel {
 	for k := range subgroups {
 		keys = append(keys, k)
 	}
+
 	sort.Strings(keys)
 	for _, k := range keys {
 		rootGroup.Subgroups = append(rootGroup.Subgroups, *subgroups[k])
 	}
-
 	return CLIModel{
 		Groups: []Group{rootGroup},
 	}
 }
 
 // buildCommand constructs a Command for a method. The command's flags name
-// each component of the resource the method operates on.
+// each component of the resource the method operates on, and (when the
+// resource has any variables) the path is composed at runtime via
+// [fmt.Sprintf].
 func buildCommand(method *api.Method, model *api.API, commandName, subgroupName string) Command {
-	return Command{
+	segments := resourceSegments(method, model)
+	cmd := Command{
 		Name:  commandName,
 		Usage: fmt.Sprintf("%s %s", commandName, subgroupName),
-		Flags: pathFlagsForMethod(method, model),
+		Flags: pathFlagsFromSegments(segments),
 	}
+	if format := pathFormatFromSegments(segments); format != "" {
+		cmd.PathFormat = format
+		cmd.Args = pathArgsFromSegments(segments)
+		cmd.PathLabel = pathLabel(method)
+	}
+	return cmd
 }
 
-// pathFlagsForMethod returns the required flags that name each component of
-// the resource the method operates on. For collection methods (List,
-// Create, custom collection) it walks up to the parent of the resource
-// pattern; for resource methods it uses the resource pattern directly.
-//
-// The flag name is the last component of each variable segment's
-// FieldPath, per AIP-123. Resources without a pattern, or methods whose
-// resource cannot be resolved, contribute no flags.
-func pathFlagsForMethod(method *api.Method, model *api.API) []Flag {
+// resourceSegments returns the resource pattern segments for a method, or
+// nil when the method's resource cannot be resolved or has no pattern. For
+// collection methods (List, Create, custom collection) the pattern is
+// trimmed to the parent.
+func resourceSegments(method *api.Method, model *api.API) []api.PathSegment {
 	resource := provider.GetResourceForMethod(method, model)
 	if resource == nil || len(resource.Patterns) == 0 {
 		return nil
@@ -197,7 +194,7 @@ func pathFlagsForMethod(method *api.Method, model *api.API) []Flag {
 			segments = parent
 		}
 	}
-	return pathFlagsFromSegments(segments)
+	return segments
 }
 
 // pathFlagsFromSegments returns one required string flag for each variable
@@ -218,4 +215,47 @@ func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
 		flags = append(flags, pathFlag(name))
 	}
 	return flags
+}
+
+// pathFormatFromSegments returns a "/"-joined format string with literals
+// as themselves and variables as "%s", or "" if there are no variables.
+func pathFormatFromSegments(segments []api.PathSegment) string {
+	hasVar := false
+	var parts []string
+	for _, seg := range segments {
+		switch {
+		case seg.Literal != nil:
+			parts = append(parts, *seg.Literal)
+		case seg.Variable != nil && len(seg.Variable.FieldPath) > 0:
+			parts = append(parts, "%s")
+			hasVar = true
+		}
+	}
+	if !hasVar {
+		return ""
+	}
+	return strings.Join(parts, "/")
+}
+
+// pathArgsFromSegments returns the variable names in segment order, one
+// per "%s" position in the format string from pathFormatFromSegments.
+func pathArgsFromSegments(segments []api.PathSegment) []string {
+	var args []string
+	for _, seg := range segments {
+		if seg.Variable == nil || len(seg.Variable.FieldPath) == 0 {
+			continue
+		}
+		args = append(args, seg.Variable.FieldPath[len(seg.Variable.FieldPath)-1])
+	}
+	return args
+}
+
+// pathLabel returns the local variable name used in the generated action
+// to hold the composed path. Collection methods compose the parent path,
+// so the label is "parent"; resource methods compose the resource name.
+func pathLabel(method *api.Method) string {
+	if provider.IsCollectionMethod(method) {
+		return "parent"
+	}
+	return "name"
 }

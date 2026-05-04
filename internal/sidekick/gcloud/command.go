@@ -19,6 +19,29 @@ import (
 	"strings"
 )
 
+// Command represents a leaf command.
+type Command struct {
+	Args       []string
+	Flags      []Flag
+	Name       string
+	PathFormat string
+	PathLabel  string
+	Usage      string
+}
+
+// HasPath reports whether the command composes a resource path.
+func (c Command) HasPath() bool { return c.PathFormat != "" }
+
+// PathFormatArgs returns the comma-separated cmd.String("X") arguments
+// passed to the generated [fmt.Sprintf] call.
+func (c Command) PathFormatArgs() string {
+	parts := make([]string, len(c.Args))
+	for i, a := range c.Args {
+		parts[i] = fmt.Sprintf("cmd.String(%q)", a)
+	}
+	return strings.Join(parts, ", ")
+}
+
 // Flag represents a single CLI flag.
 type Flag struct {
 	// Name is the long flag name without leading dashes (e.g. "project").
