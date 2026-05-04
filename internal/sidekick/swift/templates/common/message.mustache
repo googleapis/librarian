@@ -16,7 +16,7 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable {
+public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable, Sendable {
   {{#Fields}}
   {{^IsOneOf}}
 
