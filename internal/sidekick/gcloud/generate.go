@@ -59,28 +59,40 @@ type Command struct {
 	Usage string
 }
 
-// Generate generates code from the model.
+// Generate is the package entry point. It builds the model, renders main.go,
+// writes it, then renders any other generated files via
+// language.GenerateFromModel.
 func Generate(model *api.API, outdir string) error {
 	cliModel := constructCLIModel(model)
+	contents, err := renderMain(cliModel)
+	if err != nil {
+		return err
+	}
+	if err := writeMain(outdir, contents); err != nil {
+		return err
+	}
+	return renderReadme(outdir, model)
+}
 
+// renderMain renders the main.go contents from the CLI model.
+func renderMain(model CLIModel) (string, error) {
 	templateContents, err := templates.ReadFile("templates/package/cli.go.mustache")
 	if err != nil {
-		return err
+		return "", err
 	}
+	return mustache.Render(string(templateContents), model)
+}
 
-	s, err := mustache.Render(string(templateContents), cliModel)
-	if err != nil {
-		return err
-	}
-
+func writeMain(outdir, contents string) error {
 	destination := filepath.Join(outdir, "main.go")
 	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
 		return err
 	}
-	if err := os.WriteFile(destination, []byte(s), 0666); err != nil {
-		return err
-	}
+	return os.WriteFile(destination, []byte(contents), 0666)
+}
 
+// renderReadme renders README.md via language.GenerateFromModel.
+func renderReadme(outdir string, model *api.API) error {
 	provider := func(name string) (string, error) {
 		contents, err := templates.ReadFile(name)
 		if err != nil {
@@ -113,10 +125,7 @@ func constructCLIModel(model *api.API) CLIModel {
 				continue
 			}
 
-			subgroupName := "default"
-			if len(segments) >= 1 {
-				subgroupName = strcase.ToKebab(segments[len(segments)-1])
-			}
+			subgroupName := strcase.ToKebab(segments[len(segments)-1])
 
 			commandName, _ := provider.GetCommandName(method)
 			commandName = strcase.ToKebab(commandName)
