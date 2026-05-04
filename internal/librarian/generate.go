@@ -222,10 +222,10 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageGo:
+		goCmd := golang.GoCommand(cfg.Tools)
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				goCmd := golang.GoCommand(cfg.Tools)
 				if err := golang.Generate(gctx, library, src, goCmd); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
