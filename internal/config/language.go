@@ -31,8 +31,8 @@ const (
 	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
-	// LanguageSurfer is the language identifier for gcloud command surfaces.
-	LanguageSurfer = "gcloud"
+	// LanguageGcloud is the language identifier for gcloud command binaries.
+	LanguageGcloud = "gcloud"
 	// LanguageGo is the language identifier for Go.
 	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
@@ -47,6 +47,8 @@ const (
 	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
 	LanguageRust = "rust"
+	// LanguageSurfer is the language identifier for gcloud command surfaces.
+	LanguageSurfer = "surfer"
 	// LanguageSwift is the language identifier for Swift.
 	LanguageSwift = "swift"
 )

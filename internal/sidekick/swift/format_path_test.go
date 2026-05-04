@@ -48,6 +48,14 @@ func TestPathExpression(t *testing.T) {
 				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
 		},
+		{
+			name: "with verb",
+			template: (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("operations").
+				WithVerb("cancel"),
+			want: "/v1/operations:cancel",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := pathExpression(test.template)

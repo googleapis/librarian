@@ -97,5 +97,6 @@
   async:
     collection:
       - parallelstore.projects.locations.operations
+    extract_resource_result: true
   update:
     read_modify_update: true

@@ -439,6 +439,11 @@ func TestGetMethodHelpText(t *testing.T) {
 				Plural:   "instances",
 				Singular: "instance",
 			},
+			{
+				Type:     "test.googleapis.com/Book",
+				Plural:   "books",
+				Singular: "book",
+			},
 		},
 	}
 
@@ -486,8 +491,28 @@ func TestGetMethodHelpText(t *testing.T) {
 			method: methodMock("GetInstance"),
 			want: HelpText{
 				Brief:       "Describe instances",
-				Description: "Describe a instance",
+				Description: "Describe an instance",
 				Examples:    "To describe the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name: "Describe Fallback with A",
+			method: &api.Method{
+				Name: "GetBook",
+				ID:   ".GetBook",
+				InputType: &api.Message{
+					Fields: []*api.Field{{
+						Name: "name",
+						ResourceReference: &api.ResourceReference{
+							Type: "test.googleapis.com/Book",
+						},
+					}},
+				},
+			},
+			want: HelpText{
+				Brief:       "Describe books",
+				Description: "Describe a book",
+				Examples:    "To describe the book, run:\n\n    $ {command}",
 			},
 		},
 		{
@@ -504,7 +529,7 @@ func TestGetMethodHelpText(t *testing.T) {
 			method: methodMock("CreateInstance"),
 			want: HelpText{
 				Brief:       "Create instances",
-				Description: "Create a instance",
+				Description: "Create an instance",
 				Examples:    "To create the instance, run:\n\n    $ {command}",
 			},
 		},
@@ -513,7 +538,7 @@ func TestGetMethodHelpText(t *testing.T) {
 			method: methodMock("DeleteInstance"),
 			want: HelpText{
 				Brief:       "Delete instances",
-				Description: "Delete a instance",
+				Description: "Delete an instance",
 				Examples:    "To delete the instance, run:\n\n    $ {command}",
 			},
 		},
@@ -522,8 +547,39 @@ func TestGetMethodHelpText(t *testing.T) {
 			method: methodMock("UpdateInstance"),
 			want: HelpText{
 				Brief:       "Update instances",
-				Description: "Update a instance",
+				Description: "Update an instance",
 				Examples:    "To update the instance, run:\n\n    $ {command}",
+			},
+		},
+		{
+			name: "Custom Verb Fallback",
+			method: func() *api.Method {
+				v := "exportData"
+				m := api.NewTestMethod("ExportData")
+				m.ID = ".ExportData"
+				m.InputType = &api.Message{
+					Fields: []*api.Field{{
+						Name: "name",
+						ResourceReference: &api.ResourceReference{
+							Type: "test.googleapis.com/Instance",
+						},
+					}},
+				}
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Verb: &v,
+							},
+						},
+					},
+				}
+				return m
+			}(),
+			want: HelpText{
+				Brief:       "Export data instances",
+				Description: "Export data an instance",
+				Examples:    "To export data the instance, run:\n\n    $ {command}",
 			},
 		},
 		{

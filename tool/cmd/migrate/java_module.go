@@ -151,12 +151,17 @@ var (
 			grpcArtifactID:  "grpc-google-cloud-storage-control-v2",
 			gapicArtifactID: "google-cloud-storage-control",
 		},
+		"schema/google/showcase/v1beta1": {
+			protoArtifactID: "proto-gapic-showcase-v1beta1",
+			grpcArtifactID:  "grpc-gapic-showcase-v1beta1",
+		},
 	}
 
 	javaTransportOverrides = map[string]string{
 		//This is added here instead of sdk.yaml change because this is
 		//a proto-only library and transport does not affect Java code generated.
 		"alloydb-connectors": "grpc",
+		"common-protos":      "grpc",
 	}
 
 	apiShortnameOverrides = map[string]string{
@@ -180,6 +185,19 @@ var (
 
 	monolithicJavaAPIs = map[string]bool{
 		"grafeas/v1": true,
+	}
+
+	javaAdditionalProtosOverrides = map[string][]string{
+		"schema/google/showcase/v1beta1": {
+			"google/cloud/location/locations.proto",
+			"google/iam/v1/iam_policy.proto",
+		},
+		"google/cloud/filestore": {
+			"google/cloud/common/operation_metadata.proto",
+		},
+		"google/cloud/oslogin": {
+			"google/cloud/oslogin/common/common.proto",
+		},
 	}
 )
 

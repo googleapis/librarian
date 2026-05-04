@@ -364,7 +364,7 @@ func TestGenerate_Surfer(t *testing.T) {
 		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
 	})
 
-	configContent := fmt.Sprintf(`language: gcloud
+	configContent := fmt.Sprintf(`language: surfer
 sources:
   googleapis:
     dir: %s
@@ -384,7 +384,7 @@ libraries:
 		return
 	}
 	if errors.Is(err, errUnsupportedLanguage) {
-		t.Errorf("expected gcloud to be supported, but got: %v", err)
+		t.Errorf("expected surfer to be supported, but got: %v", err)
 	}
 	if !errors.Is(err, surfer.ErrNoProtosFound) {
 		t.Errorf("expected error %v, got: %v", surfer.ErrNoProtosFound, err)

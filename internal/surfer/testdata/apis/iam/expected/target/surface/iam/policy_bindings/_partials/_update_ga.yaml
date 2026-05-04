@@ -195,5 +195,6 @@
       - iam.folders.locations.operations
       - iam.organizations.locations.operations
       - iam.projects.locations.operations
+    extract_resource_result: true
   update:
     read_modify_update: true

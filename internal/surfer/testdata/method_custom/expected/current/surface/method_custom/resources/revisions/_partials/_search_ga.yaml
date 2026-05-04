@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Search revisions
+    description: Search a revision
+    examples: |-
+      To search the revision, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: The parent of the resource.

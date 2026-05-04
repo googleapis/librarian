@@ -3327,6 +3327,8 @@
   languages:
     - all
   service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
+  skip_rest_numeric_enums:
+    - java
 - path: src/google/protobuf
   languages:
     - all

@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Finish oauth flow resources
+    description: Finish oauth flow a resource
+    examples: |-
+      To finish oauth flow the resource, run:
+
+          $ {command}
   arguments:
     params:
       - arg_name: oauth-params

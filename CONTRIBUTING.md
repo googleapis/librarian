@@ -445,6 +445,14 @@ tools are not available in the development environment. See
 [doc/onboarding.md](https://github.com/googleapis/librarian/blob/main/doc/onboarding.md)
 for information on how to configure your development environment.
 
+### Testdata
+
+Librarian accepts protos, discovery documentation, OpenAPI specifications, and service configurations as input. These live in `internal/testdata/`.
+
+- `internal/testdata/googleapis`: Contains a subset of [googleapis](https://github.com/googleapis/googleapis) protos. To update, clone the repository and copy the required protos maintaining the directory structure.
+- `internal/testdata/discovery`: Contains discovery documents from https://github.com/googleapis/discovery-artifact-manager.
+- `internal/testdata/gapic-showcase`: Contains protos from https://github.com/googleapis/gapic-showcase.
+
 ### Handling Dependency Updates
 
 We only update dependencies for security vulnerabilities, bug fixes, or to add

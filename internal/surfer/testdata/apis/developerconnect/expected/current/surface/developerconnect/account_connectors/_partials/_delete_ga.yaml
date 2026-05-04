@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Delete accountConnectors
-    description: Delete a accountConnector
+    description: Delete an accountConnector
     examples: |-
       To delete the accountConnector, run:
 

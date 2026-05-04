@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Create accountConnectors
-    description: Create a accountConnector
+    description: Create an accountConnector
     examples: |-
       To create the accountConnector, run:
 
