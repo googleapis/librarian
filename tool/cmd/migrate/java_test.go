@@ -90,6 +90,17 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 				Path: "google/cloud/language/v1",
 			},
 		},
+		{
+			name: "showcase",
+			path: "schema/google/showcase/v1beta1",
+			want: &config.JavaAPI{
+				Path: "schema/google/showcase/v1beta1",
+				AdditionalProtos: []string{
+					"google/cloud/location/locations.proto",
+					"google/iam/v1/iam_policy.proto",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := &config.JavaAPI{Path: test.path}
