@@ -27,7 +27,15 @@ import (
 	"golang.org/x/mod/semver"
 )
 
+// Force Go commands to first consult the official proxy, but fallback to and
+// retry with direct-to-source-control mode if that fails for any reason.
+// This differs from the default value with the same proxies, but which uses
+// a selective fallback mode that only retries on certain 4xx errors.
+// See https://golang.org/cl/226460 for more information.
+const testGoProxyValue = "https://proxy.golang.org|direct"
+
 func TestRunUpgrade(t *testing.T) {
+	t.Setenv("GOPROXY", testGoProxyValue)
 	wantVersion, err := getLibrarianVersionAtMain(t.Context())
 	if err != nil {
 		t.Fatal(err)
@@ -85,6 +93,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 		{
 			name: "UpdateLibrarianVersion error",
 			setup: func(t *testing.T) string {
+				t.Setenv("GOPROXY", testGoProxyValue)
 				// Make writing the config file fail by creating a directory at its path.
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
@@ -98,6 +107,7 @@ func TestRunUpgrade_Error(t *testing.T) {
 		{
 			name: "runLibrarianWithVersion error",
 			setup: func(t *testing.T) string {
+				t.Setenv("GOPROXY", testGoProxyValue)
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
 				// Use an invalid config that will cause `librarian generate` to fail.
@@ -129,6 +139,7 @@ func TestUpgradeCommand(t *testing.T) {
 	// current working directory.
 	repoDir := t.TempDir()
 	t.Chdir(repoDir)
+	t.Setenv("GOPROXY", testGoProxyValue)
 
 	configPath := generateLibrarianConfigPath(t, ".")
 	initialConfig := sample.Config()
