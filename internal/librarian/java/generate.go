@@ -95,6 +95,47 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
+type librarySources struct {
+	// primaryDir is the main source directory for the library being generated.
+	// It maps to srcs.Showcase for the showcase library, and srcs.Googleapis for all others.
+	// Used for finding the library's protos, service configs, and defining the proto source root.
+	primaryDir string
+
+	// googleapisDir is the absolute path to the googleapis source directory.
+	// This is always needed (even for showcase) because common proto resources always reside in
+	//  the googleapis repository.
+	googleapisDir string
+
+	// includeDirs contains the ordered list of import directories to pass to protoc via -I flags.
+	// Pre-calculated to keep generateAPI simple: includes [Showcase, Googleapis] for showcase,
+	// and just [Googleapis] for others.
+	includeDirs []string
+}
+
+func getLibrarySources(library *config.Library, srcs *sources.Sources) (*librarySources, error) {
+	// Ensure source dir is absolute to avoid issues with relative paths in protoc.
+	absGoogleapis, err := filepath.Abs(srcs.Googleapis)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path for googleapis: %w", err)
+	}
+	if library.Name == "showcase" {
+		absShowcase, err := filepath.Abs(srcs.Showcase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve absolute path for showcase: %w", err)
+		}
+		return &librarySources{
+			primaryDir:    absShowcase,
+			googleapisDir: absGoogleapis,
+			includeDirs:   []string{absShowcase, absGoogleapis},
+		}, nil
+	}
+	return &librarySources{
+		primaryDir:    absGoogleapis,
+		googleapisDir: absGoogleapis,
+		includeDirs:   []string{absGoogleapis},
+	}, nil
+}
+
 func deriveAPIBase(library *config.Library, apiPath string) string {
 	// TODO(https://github.com/googleapis/librarian/issues/5728):
 	// remove this after updated owlbot.py
@@ -389,46 +430,4 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 		filtered = append(filtered, p)
 	}
 	return filtered
-}
-
-type librarySources struct {
-	// primaryDir is the main source directory for the library being generated.
-	// It maps to srcs.Showcase for the showcase library, and srcs.Googleapis for all others.
-	// Used for finding the library's protos, service configs, and defining the proto source root.
-	primaryDir string
-
-	// googleapisDir is the absolute path to the googleapis source directory.
-	// This is always needed (even for showcase) because common proto resources
-	// (like google/cloud/common_resources.proto) always reside in the googleapis repository.
-	googleapisDir string
-
-	// includeDirs contains the ordered list of import directories to pass to protoc via -I flags.
-	// Pre-calculated to keep generateAPI simple: includes [Showcase, Googleapis] for showcase,
-	// and just [Googleapis] for others.
-	includeDirs []string
-}
-
-func getLibrarySources(library *config.Library, srcs *sources.Sources) (*librarySources, error) {
-	absGoogleapis, err := filepath.Abs(srcs.Googleapis)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve absolute path for googleapis: %w", err)
-	}
-
-	if library.Name == "showcase" {
-		absShowcase, err := filepath.Abs(srcs.Showcase)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve absolute path for showcase: %w", err)
-		}
-		return &librarySources{
-			primaryDir:    absShowcase,
-			googleapisDir: absGoogleapis,
-			includeDirs:   []string{absShowcase, absGoogleapis},
-		}, nil
-	}
-
-	return &librarySources{
-		primaryDir:    absGoogleapis,
-		googleapisDir: absGoogleapis,
-		includeDirs:   []string{absGoogleapis},
-	}, nil
 }
