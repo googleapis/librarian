@@ -171,7 +171,8 @@ func isUnderAnyPath(file string, paths []string) bool {
 // NextVersion calculates the next semantic version based on a slice of conventional commits.
 func NextVersion(commits []*legacygitrepo.ConventionalCommit, currentVersion string, releaseOnlyMode bool) (string, error) {
 	highestChange := getHighestChange(commits)
-	if releaseOnlyMode && len(commits) > 0 && highestChange != semver.None {
+	// In release-only mode, any releasable change is treated as a minor bump.
+	if releaseOnlyMode && highestChange != semver.None {
 		highestChange = semver.Minor
 	}
 	return semver.DeriveNext(highestChange, currentVersion, semver.DeriveNextOptions{})
