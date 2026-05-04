@@ -32,10 +32,10 @@ import (
 // This differs from the default value with the same proxies, but which uses
 // a selective fallback mode that only retries on certain 4xx errors.
 // See https://golang.org/cl/226460 for more information.
-const testGoProxyValue = "https://proxy.golang.org|direct"
+const testRetryingGoProxy = "https://proxy.golang.org|direct"
 
 func TestRunUpgrade(t *testing.T) {
-	t.Setenv("GOPROXY", testGoProxyValue)
+	t.Setenv("GOPROXY", testRetryingGoProxy)
 	wantVersion, err := getLibrarianVersionAtMain(t.Context())
 	if err != nil {
 		t.Fatal(err)
@@ -76,7 +76,7 @@ func TestRunUpgrade(t *testing.T) {
 }
 
 func TestRunUpgrade_Error(t *testing.T) {
-	t.Setenv("GOPROXY", testGoProxyValue)
+	t.Setenv("GOPROXY", testRetryingGoProxy)
 
 	for _, test := range []struct {
 		name           string
@@ -139,7 +139,7 @@ func TestUpgradeCommand(t *testing.T) {
 	// current working directory.
 	repoDir := t.TempDir()
 	t.Chdir(repoDir)
-	t.Setenv("GOPROXY", testGoProxyValue)
+	t.Setenv("GOPROXY", testRetryingGoProxy)
 
 	configPath := generateLibrarianConfigPath(t, ".")
 	initialConfig := sample.Config()
