@@ -42,6 +42,13 @@ func main() {
 							{
 								Name:  "{{Name}}",
 								Usage: "{{Usage}}",
+								{{#HasFlags}}
+								Flags: []cli.Flag{
+									{{#Flags}}
+									&cli.{{Kind}}Flag{Name: "{{Name}}", Usage: "{{Usage}}", Required: {{Required}}},
+									{{/Flags}}
+								},
+								{{/HasFlags}}
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing {{Name}}...")
 									return nil
@@ -55,6 +62,13 @@ func main() {
 					{
 						Name:  "{{Name}}",
 						Usage: "{{Usage}}",
+						{{#HasFlags}}
+						Flags: []cli.Flag{
+							{{#Flags}}
+							&cli.{{Kind}}Flag{Name: "{{Name}}", Usage: "{{Usage}}", Required: {{Required}}},
+							{{/Flags}}
+						},
+						{{/HasFlags}}
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							fmt.Println("Executing {{Name}}...")
 							return nil

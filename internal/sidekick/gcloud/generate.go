@@ -55,9 +55,13 @@ type Subgroup struct {
 
 // Command represents a leaf command.
 type Command struct {
+	Flags []Flag
 	Name  string
 	Usage string
 }
+
+// HasFlags reports whether the command has any flags.
+func (c Command) HasFlags() bool { return len(c.Flags) > 0 }
 
 // Generate is the package entry point. It builds the model, renders main.go,
 // writes it, then renders any other generated files via
@@ -137,10 +141,8 @@ func constructCLIModel(model *api.API) CLIModel {
 				}
 			}
 
-			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, Command{
-				Name:  commandName,
-				Usage: fmt.Sprintf("%s %s", commandName, subgroupName),
-			})
+			cmd := buildCommand(method, model, commandName, subgroupName)
+			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, cmd)
 		}
 	}
 
@@ -156,4 +158,56 @@ func constructCLIModel(model *api.API) CLIModel {
 	return CLIModel{
 		Groups: []Group{rootGroup},
 	}
+}
+
+// buildCommand constructs a Command for a method. The command's flags name
+// each component of the resource the method operates on.
+func buildCommand(method *api.Method, model *api.API, commandName, subgroupName string) Command {
+	return Command{
+		Name:  commandName,
+		Usage: fmt.Sprintf("%s %s", commandName, subgroupName),
+		Flags: pathFlagsForMethod(method, model),
+	}
+}
+
+// pathFlagsForMethod returns the required flags that name each component of
+// the resource the method operates on. For collection methods (List,
+// Create, custom collection) it walks up to the parent of the resource
+// pattern; for resource methods it uses the resource pattern directly.
+//
+// The flag name is the last component of each variable segment's
+// FieldPath, per AIP-123. Resources without a pattern, or methods whose
+// resource cannot be resolved, contribute no flags.
+func pathFlagsForMethod(method *api.Method, model *api.API) []Flag {
+	resource := provider.GetResourceForMethod(method, model)
+	if resource == nil || len(resource.Patterns) == 0 {
+		return nil
+	}
+	segments := resource.Patterns[0]
+	if provider.IsCollectionMethod(method) {
+		if parent := provider.GetParentFromSegments(segments); parent != nil {
+			segments = parent
+		}
+	}
+	return pathFlagsFromSegments(segments)
+}
+
+// pathFlagsFromSegments returns one required string flag for each variable
+// segment in the pattern, named after the variable's last FieldPath
+// component. Duplicates (same FieldPath) are skipped.
+func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
+	var flags []Flag
+	seen := map[string]bool{}
+	for _, seg := range segments {
+		if seg.Variable == nil || len(seg.Variable.FieldPath) == 0 {
+			continue
+		}
+		name := seg.Variable.FieldPath[len(seg.Variable.FieldPath)-1]
+		if seen[name] {
+			continue
+		}
+		seen[name] = true
+		flags = append(flags, pathFlag(name))
+	}
+	return flags
 }
