@@ -78,7 +78,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
 		// metadata is needed for pom.xml generation in post process
-		if err := generateAPI(ctx, cfg, api, library, libSrcs, outdir, metadata, apiCfg); err != nil {
+		if err := generateAPI(ctx, generateAPIParams{
+			cfg:      cfg,
+			api:      api,
+			library:  library,
+			libSrcs:  libSrcs,
+			outdir:   outdir,
+			metadata: metadata,
+			apiCfg:   apiCfg,
+		}); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -145,46 +153,56 @@ func deriveAPIBase(library *config.Library, apiPath string) string {
 	return path.Base(apiPath)
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, libSrcs *librarySources, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
-	javaAPI := ResolveJavaAPI(library, api)
-	p := postProcessParams{
-		cfg:            cfg,
-		library:        library,
+type generateAPIParams struct {
+	cfg      *config.Config
+	api      *config.API
+	library  *config.Library
+	libSrcs  *librarySources
+	outdir   string
+	metadata *repoMetadata
+	apiCfg   *serviceconfig.API
+}
+
+func generateAPI(ctx context.Context, params generateAPIParams) error {
+	javaAPI := ResolveJavaAPI(params.library, params.api)
+	postParams := postProcessParams{
+		cfg:            params.cfg,
+		library:        params.library,
 		javaAPI:        javaAPI,
-		metadata:       metadata,
-		outDir:         outdir,
-		apiBase:        deriveAPIBase(library, api.Path),
-		protoSourceDir: libSrcs.primaryDir,
+		metadata:       params.metadata,
+		outDir:         params.outdir,
+		apiBase:        deriveAPIBase(params.library, params.api.Path),
+		protoSourceDir: params.libSrcs.primaryDir,
 		includeSamples: *javaAPI.Samples,
 	}
-	gapicDir := p.gapicDir()
-	gRPCDir := p.gRPCDir()
-	protoDir := p.protoDir()
+	gapicDir := postParams.gapicDir()
+	gRPCDir := postParams.gRPCDir()
+	protoDir := postParams.protoDir()
 	for _, dir := range []string{gapicDir, gRPCDir, protoDir} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			return fmt.Errorf("failed to create directory %q: %w", dir, err)
 		}
 	}
 
-	apiDir := filepath.Join(libSrcs.primaryDir, api.Path)
-	apiProtos, err := gatherProtos(apiDir, api.Path)
+	apiDir := filepath.Join(params.libSrcs.primaryDir, params.api.Path)
+	apiProtos, err := gatherProtos(apiDir, params.api.Path)
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
-	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, libSrcs.primaryDir)
+	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, params.libSrcs.primaryDir)
 	if len(apiProtos) == 0 {
-		return fmt.Errorf("%s: %w", api.Path, errNoProtos)
+		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
 	}
-	p.apiProtos = apiProtos
+	postParams.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, libSrcs.primaryDir)
-	includeDirs := libSrcs.includeDirs
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, params.libSrcs.primaryDir)
+	includeDirs := params.libSrcs.includeDirs
 	if err := runProtoc(ctx, protoProtocArgs(protoProtos, includeDirs, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
-	transport := apiCfg.Transport(config.LanguageJava)
+	transport := params.apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
 		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, includeDirs, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
@@ -192,17 +210,17 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 	}
 	// 3. Generate GAPIC library.
 	if !javaAPI.ProtoGRPCOnly {
-		gapicOpts, err := resolveGAPICOptions(cfg, library, api, libSrcs.primaryDir, apiCfg)
+		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, params.libSrcs.primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		additionalProtos := deriveAdditionalProtoPaths(javaAPI, libSrcs.googleapisDir)
+		additionalProtos := deriveAdditionalProtoPaths(javaAPI, params.libSrcs.googleapisDir)
 		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, includeDirs, gapicDir, gapicOpts)); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
 
-	if err := postProcessAPI(ctx, p); err != nil {
+	if err := postProcessAPI(ctx, postParams); err != nil {
 		return fmt.Errorf("failed to post process: %w", err)
 	}
 	return nil

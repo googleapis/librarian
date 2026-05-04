@@ -336,23 +336,22 @@ func TestGenerateAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(
-		t.Context(),
-		cfg,
-		&config.API{Path: "google/cloud/secretmanager/v1"},
-		library,
-		&librarySources{
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+		library: library,
+		libSrcs: &librarySources{
 			primaryDir:    googleapisDir,
 			googleapisDir: googleapisDir,
 			includeDirs:   []string{googleapisDir},
 		},
-		outdir,
-		&repoMetadata{
+		outdir: outdir,
+		metadata: &repoMetadata{
 			NamePretty:     "Secret Manager",
 			APIDescription: "Secret Manager API",
 		},
-		apiCfg,
-	)
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -405,22 +404,21 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(
-		t.Context(),
-		cfg,
-		&config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
-		library,
-		&librarySources{
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     &config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		library: library,
+		libSrcs: &librarySources{
 			primaryDir:    googleapisDir,
 			googleapisDir: googleapisDir,
 			includeDirs:   []string{googleapisDir},
 		},
-		outdir,
-		&repoMetadata{
+		outdir: outdir,
+		metadata: &repoMetadata{
 			NamePretty: "GKE Hub API",
 		},
-		apiCfg,
-	)
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -470,14 +468,22 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(t.Context(), cfg, api, library, &librarySources{
-		primaryDir:    googleapisDir,
-		googleapisDir: googleapisDir,
-		includeDirs:   []string{googleapisDir},
-	}, outdir, &repoMetadata{
-		NamePretty:     "Secret Manager",
-		APIDescription: "Secret Manager API",
-	}, apiCfg)
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     api,
+		library: library,
+		libSrcs: &librarySources{
+			primaryDir:    googleapisDir,
+			googleapisDir: googleapisDir,
+			includeDirs:   []string{googleapisDir},
+		},
+		outdir: outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
