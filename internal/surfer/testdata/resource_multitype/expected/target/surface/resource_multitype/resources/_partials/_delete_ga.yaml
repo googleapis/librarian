@@ -137,3 +137,4 @@
       - resourcemultitype.organizations.locations.operations
       - resourcemultitype.projects.locations.operations
       - resourcemultitype.projects.nesteds.operations
+    extract_resource_result: false

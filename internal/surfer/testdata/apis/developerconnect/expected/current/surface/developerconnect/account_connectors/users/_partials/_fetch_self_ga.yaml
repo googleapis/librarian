@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Fetch self accountConnectors
+    description: Fetch self an accountConnector
+    examples: |-
+      To fetch self the accountConnector, run:
+
+          $ {command}
   arguments:
     params:
       - arg_name: name

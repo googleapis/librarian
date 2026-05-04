@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Describe accountConnectors
-    description: Describe a accountConnector
+    description: Describe an accountConnector
     examples: |-
       To describe the accountConnector, run:
 

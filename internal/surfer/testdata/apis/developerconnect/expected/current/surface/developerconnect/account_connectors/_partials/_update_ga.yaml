@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Update accountConnectors
-    description: Update a accountConnector
+    description: Update an accountConnector
     examples: |-
       To update the accountConnector, run:
 

@@ -168,6 +168,7 @@
   async:
     collection:
       - helptext.projects.locations.operations
+    extract_resource_result: true
   update:
     read_modify_update: true
     disable_auto_field_mask: true

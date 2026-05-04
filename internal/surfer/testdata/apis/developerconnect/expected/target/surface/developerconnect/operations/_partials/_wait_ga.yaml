@@ -53,3 +53,4 @@
   async:
     collection:
       - developerconnect.projects.locations.operations
+    extract_resource_result: false

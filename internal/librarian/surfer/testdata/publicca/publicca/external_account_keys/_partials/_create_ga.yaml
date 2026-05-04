@@ -20,7 +20,7 @@
   hidden: true
   help_text:
     brief: Create externalAccountKeys
-    description: Create a external_account_key
+    description: Create an external_account_key
     examples: |-
       To create the external_account_key, run:
 

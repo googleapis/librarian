@@ -16,6 +16,7 @@
 package rust
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"slices"
@@ -25,6 +26,9 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
+
+// errQuickstartServiceNotFound is returned when the requested quickstart service override is not found.
+var errQuickstartServiceNotFound = errors.New("quickstart_service_override not found")
 
 type modelAnnotations struct {
 	PackageName      string
@@ -214,7 +218,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		if idx != -1 {
 			quickstartService = servicesSubset[idx]
 		} else {
-			return nil, fmt.Errorf("quickstart_service_override %q not found in generated services for package %q", codec.quickstartServiceOverride, codec.packageName(model))
+			return nil, fmt.Errorf("%w: %q not found in generated services for package %q", errQuickstartServiceNotFound, codec.quickstartServiceOverride, codec.packageName(model))
 		}
 	} else if model.QuickstartService != nil {
 		if slices.ContainsFunc(servicesSubset, func(s *api.Service) bool { return s == model.QuickstartService }) {

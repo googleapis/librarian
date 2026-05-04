@@ -68,12 +68,6 @@ func makeAPIForOpenAPI(serviceConfig *serviceconfig.Service, model *libopenapi.D
 		Title:       model.Model.Info.Title,
 		Description: model.Model.Info.Description,
 		Messages:    make([]*api.Message, 0),
-		State: &api.APIState{
-			ServiceByID: make(map[string]*api.Service),
-			MethodByID:  make(map[string]*api.Method),
-			MessageByID: make(map[string]*api.Message),
-			EnumByID:    make(map[string]*api.Enum),
-		},
 	}
 	// OpenAPI (for Google) uses some well-known types inspired by Protobuf.
 	// With protoc these types are automatically included via `import`

@@ -179,3 +179,116 @@ func TestValidateNewAPIs(t *testing.T) {
 		})
 	}
 }
+
+func TestFindExistingLibraryForNewAPI(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		libraries []*config.Library
+		apiPath   string
+		// The name of the library that should be returned, or empty if nill
+		// should be returned.
+		wantName string
+	}{
+		{
+			name:      "no libraries",
+			libraries: []*config.Library{},
+			apiPath:   "google/cloud/test/v2",
+		},
+		{
+			name: "exact match of versionless",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-other",
+					APIs: []*config.API{{Path: "google/cloud/other"}},
+				},
+				{
+					Name: "google-cloud-test",
+					APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+				},
+			},
+			apiPath:  "google/cloud/test/v2",
+			wantName: "google-cloud-test",
+		},
+		{
+			name: "prefix match of versionless with existing nested APIs",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-other",
+					APIs: []*config.API{{Path: "google/cloud/other"}},
+				},
+				{
+					Name: "google-cloud-test",
+					APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+				},
+			},
+			apiPath: "google/cloud/test/admin/v2",
+		},
+		{
+			name: "prefix match of versionless with existing nested APIs",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-other",
+					APIs: []*config.API{{Path: "google/cloud/other"}},
+				},
+				{
+					Name: "google-cloud-test",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/admin/v2",
+			wantName: "google-cloud-test",
+		},
+		{
+			name: "prefix match of type library with existing nested APIs",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-other",
+					APIs: []*config.API{{Path: "google/cloud/other"}},
+				},
+				{
+					Name: "google-cloud-test",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/type",
+			wantName: "google-cloud-test",
+		},
+		{
+			name: "prefix match observes slashes",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-other",
+					APIs: []*config.API{{Path: "google/cloud/other"}},
+				},
+				{
+					Name: "google-cloud-xy",
+					APIs: []*config.API{
+						// These aren't a prefix match for google/cloud/xyz/admin,
+						// even though google/cloud/xy is a prefix of it.
+						{Path: "google/cloud/xy/v1"},
+						{Path: "google/cloud/xy/other/v1"},
+					},
+				},
+			},
+			apiPath: "google/cloud/xyz/admin/v2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FindExistingLibraryForNewAPI(test.libraries, test.apiPath)
+			gotName := ""
+			if got != nil {
+				gotName = got.Name
+			}
+			if diff := cmp.Diff(gotName, test.wantName); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

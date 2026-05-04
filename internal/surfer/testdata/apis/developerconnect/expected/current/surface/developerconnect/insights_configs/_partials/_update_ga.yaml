@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Update insightsConfigs
-    description: Update a insightsConfig
+    description: Update an insightsConfig
     examples: |-
       To update the insightsConfig, run:
 

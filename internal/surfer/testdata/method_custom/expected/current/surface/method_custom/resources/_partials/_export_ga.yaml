@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Export resources
+    description: Export a resource
+    examples: |-
+      To export the resource, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: The resource name of the resource within a service.

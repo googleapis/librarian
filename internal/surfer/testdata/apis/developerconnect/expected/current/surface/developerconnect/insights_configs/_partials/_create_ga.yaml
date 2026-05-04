@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Create insightsConfigs
-    description: Create a insightsConfig
+    description: Create an insightsConfig
     examples: |-
       To create the insightsConfig, run:
 

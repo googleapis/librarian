@@ -61,3 +61,4 @@
   async:
     collection:
       - multiversiontrack.projects.locations.operations
+    extract_resource_result: true

@@ -478,6 +478,11 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 // applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
 // for specific APIs, mirroring logic in sdk-platform-java.
 func applyJavaProtoOverrides(api *config.JavaAPI) {
+	for prefix, protos := range javaAdditionalProtosOverrides {
+		if strings.HasPrefix(api.Path, prefix) {
+			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
+		}
+	}
 	switch {
 	case api.Path == "google/cloud":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")
@@ -492,10 +497,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
 			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
 		)
-	case strings.HasPrefix(api.Path, "google/cloud/filestore"):
-		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
-	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
-		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
 	case api.Path == "google/rpc":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
@@ -783,7 +784,7 @@ func extractStrings(expr build.Expr) []string {
 }
 
 func getShowcaseVersion(repoPath string) (string, error) {
-	showcaseDir := filepath.Join(repoPath, "sdk-platform-java", "java-showcase")
+	showcaseDir := filepath.Join(repoPath, "java-showcase")
 	return extractVersionFromPOM(filepath.Join(showcaseDir, "gapic-showcase", "pom.xml"))
 }
 

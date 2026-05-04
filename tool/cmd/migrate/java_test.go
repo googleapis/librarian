@@ -90,6 +90,17 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 				Path: "google/cloud/language/v1",
 			},
 		},
+		{
+			name: "showcase",
+			path: "schema/google/showcase/v1beta1",
+			want: &config.JavaAPI{
+				Path: "schema/google/showcase/v1beta1",
+				AdditionalProtos: []string{
+					"google/cloud/location/locations.proto",
+					"google/iam/v1/iam_policy.proto",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := &config.JavaAPI{Path: test.path}
@@ -241,7 +252,7 @@ func TestRunJavaMigration(t *testing.T) {
 			writeVersionsFile(t, dir, "")
 
 			// Create dummy showcase pom.xml to avoid failure in runJavaMigration
-			showcaseDir := filepath.Join(dir, "sdk-platform-java", "java-showcase", "gapic-showcase")
+			showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
 			if err := os.MkdirAll(showcaseDir, 0755); err != nil {
 				t.Fatal(err)
 			}

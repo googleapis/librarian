@@ -29,6 +29,7 @@
       - help_text: |-
           The name of the operation's parent resource.
         is_positional: false
+        is_primary_resource: true
         resource_spec:
           name: location
           plural_name: locations

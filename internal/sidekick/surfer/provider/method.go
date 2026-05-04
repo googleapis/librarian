@@ -246,10 +246,18 @@ func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) He
 	description := ""
 	examples := ""
 
+	aOrAn := "a"
+	if len(singular) > 0 {
+		c := strings.ToLower(string(singular[0]))
+		if strings.Contains("aeiou", c) {
+			aOrAn = "an"
+		}
+	}
+
 	switch commandName {
 	case "describe":
 		brief = fmt.Sprintf("Describe %s", plural)
-		description = fmt.Sprintf("Describe a %s", singular)
+		description = fmt.Sprintf("Describe %s %s", aOrAn, singular)
 		examples = fmt.Sprintf("To describe the %s, run:\n\n    $ {command}", singular)
 	case "list":
 		brief = fmt.Sprintf("List %s", plural)
@@ -257,16 +265,28 @@ func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) He
 		examples = fmt.Sprintf("To list all %s, run:\n\n    $ {command}", plural)
 	case "create":
 		brief = fmt.Sprintf("Create %s", plural)
-		description = fmt.Sprintf("Create a %s", singular)
+		description = fmt.Sprintf("Create %s %s", aOrAn, singular)
 		examples = fmt.Sprintf("To create the %s, run:\n\n    $ {command}", singular)
 	case "delete":
 		brief = fmt.Sprintf("Delete %s", plural)
-		description = fmt.Sprintf("Delete a %s", singular)
+		description = fmt.Sprintf("Delete %s %s", aOrAn, singular)
 		examples = fmt.Sprintf("To delete the %s, run:\n\n    $ {command}", singular)
 	case "update":
 		brief = fmt.Sprintf("Update %s", plural)
-		description = fmt.Sprintf("Update a %s", singular)
+		description = fmt.Sprintf("Update %s %s", aOrAn, singular)
 		examples = fmt.Sprintf("To update the %s, run:\n\n    $ {command}", singular)
+	default:
+		verb := commandName
+		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
+			binding := method.PathInfo.Bindings[0]
+			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
+				verb = *binding.PathTemplate.Verb
+			}
+		}
+		sentenceCaseVerb := ToSentenceCase(verb)
+		brief = fmt.Sprintf("%s %s", sentenceCaseVerb, plural)
+		description = fmt.Sprintf("%s %s %s", sentenceCaseVerb, aOrAn, singular)
+		examples = fmt.Sprintf("To %s the %s, run:\n\n    $ {command}", strings.ToLower(sentenceCaseVerb), singular)
 	}
 
 	return HelpText{
@@ -274,6 +294,21 @@ func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) He
 		Description: description,
 		Examples:    examples,
 	}
+}
+
+// ToSentenceCase converts a string to sentence case (e.g., "exportData" -> "Export data").
+func ToSentenceCase(s string) string {
+	camel := strcase.ToCamel(s)
+	var sb strings.Builder
+	for i, r := range camel {
+		if i > 0 && r >= 'A' && r <= 'Z' {
+			sb.WriteByte(' ')
+			sb.WriteString(strings.ToLower(string(r)))
+		} else {
+			sb.WriteRune(r)
+		}
+	}
+	return sb.String()
 }
 
 // APIVersionFromMethod extracts the API version from the method's service package name.

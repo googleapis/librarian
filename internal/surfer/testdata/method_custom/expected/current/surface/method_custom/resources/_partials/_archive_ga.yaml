@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Archive resources
+    description: Archive a resource
+    examples: |-
+      To archive the resource, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: The resource name of the resource within a service.
