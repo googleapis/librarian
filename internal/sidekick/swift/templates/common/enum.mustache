@@ -16,7 +16,7 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public enum {{Codec.Name}}: Int, Codable, Equatable {
+public enum {{Codec.Name}}: Int, Codable, Equatable, Sendable {
     {{#UniqueNumberValues}}
     {{#DocLines}}
     /// {{{.}}}

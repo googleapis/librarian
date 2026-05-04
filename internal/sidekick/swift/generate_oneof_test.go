@@ -111,7 +111,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable {
+	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {
 
   /// A regular field.
   public var regularInt32: Int32
@@ -178,7 +178,7 @@ func TestGenerateOneOf(t *testing.T) {
 
 
   /// A group of fields where only one is set.
-  public enum OneOf_Choice: Codable, Equatable {
+  public enum OneOf_Choice: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(String)
     /// A message field that is part of the oneof.

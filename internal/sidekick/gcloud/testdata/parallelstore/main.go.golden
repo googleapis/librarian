@@ -24,6 +24,10 @@ func main() {
 							{
 								Name:  "list",
 								Usage: "list instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing list...")
 									return nil
@@ -32,6 +36,11 @@ func main() {
 							{
 								Name:  "describe",
 								Usage: "describe instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing describe...")
 									return nil
@@ -40,6 +49,10 @@ func main() {
 							{
 								Name:  "create",
 								Usage: "create instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing create...")
 									return nil
@@ -48,6 +61,11 @@ func main() {
 							{
 								Name:  "update",
 								Usage: "update instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing update...")
 									return nil
@@ -56,6 +74,11 @@ func main() {
 							{
 								Name:  "delete",
 								Usage: "delete instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing delete...")
 									return nil
@@ -64,6 +87,11 @@ func main() {
 							{
 								Name:  "import-data",
 								Usage: "import-data instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing import-data...")
 									return nil
@@ -72,6 +100,11 @@ func main() {
 							{
 								Name:  "export-data",
 								Usage: "export-data instances",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									fmt.Println("Executing export-data...")
 									return nil

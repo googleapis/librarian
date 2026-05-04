@@ -274,3 +274,74 @@ func TestRenderReadme(t *testing.T) {
 		})
 	}
 }
+
+func TestCommandHasFlags(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want bool
+	}{
+		{"empty", Command{}, false},
+		{"with-flag", Command{Flags: []Flag{{Name: "x"}}}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.HasFlags()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPathFlagsFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     []Flag
+	}{
+		{"nil", nil, nil},
+		{
+			"single",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				Segments,
+			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+		},
+		{
+			"multi",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			[]Flag{
+				{Name: "project", Kind: "String", Required: true, Usage: "The project."},
+				{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+				{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+			},
+		},
+		{
+			"dedup",
+			(&api.PathTemplate{}).
+				WithLiteral("users").WithVariable(api.NewPathVariable("user")).
+				WithLiteral("users").WithVariable(api.NewPathVariable("user")).
+				Segments,
+			[]Flag{{Name: "user", Kind: "String", Required: true, Usage: "The user."}},
+		},
+		{
+			"trailing-literal",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("config").
+				Segments,
+			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pathFlagsFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
