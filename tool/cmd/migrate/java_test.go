@@ -241,7 +241,7 @@ func TestRunJavaMigration(t *testing.T) {
 			writeVersionsFile(t, dir, "")
 
 			// Create dummy showcase pom.xml to avoid failure in runJavaMigration
-			showcaseDir := filepath.Join(dir, "sdk-platform-java", "java-showcase", "gapic-showcase")
+			showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
 			if err := os.MkdirAll(showcaseDir, 0755); err != nil {
 				t.Fatal(err)
 			}

@@ -783,7 +783,7 @@ func extractStrings(expr build.Expr) []string {
 }
 
 func getShowcaseVersion(repoPath string) (string, error) {
-	showcaseDir := filepath.Join(repoPath, "sdk-platform-java", "java-showcase")
+	showcaseDir := filepath.Join(repoPath, "java-showcase")
 	return extractVersionFromPOM(filepath.Join(showcaseDir, "gapic-showcase", "pom.xml"))
 }
 
