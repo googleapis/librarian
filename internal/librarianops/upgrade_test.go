@@ -76,6 +76,8 @@ func TestRunUpgrade(t *testing.T) {
 }
 
 func TestRunUpgrade_Error(t *testing.T) {
+	t.Setenv("GOPROXY", testGoProxyValue)
+
 	for _, test := range []struct {
 		name           string
 		setup          func(t *testing.T) (repoDir string)
@@ -93,7 +95,6 @@ func TestRunUpgrade_Error(t *testing.T) {
 		{
 			name: "UpdateLibrarianVersion error",
 			setup: func(t *testing.T) string {
-				t.Setenv("GOPROXY", testGoProxyValue)
 				// Make writing the config file fail by creating a directory at its path.
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
@@ -107,7 +108,6 @@ func TestRunUpgrade_Error(t *testing.T) {
 		{
 			name: "runLibrarianWithVersion error",
 			setup: func(t *testing.T) string {
-				t.Setenv("GOPROXY", testGoProxyValue)
 				repoDir := t.TempDir()
 				configPath := generateLibrarianConfigPath(t, repoDir)
 				// Use an invalid config that will cause `librarian generate` to fail.
