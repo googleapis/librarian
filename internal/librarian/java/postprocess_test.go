@@ -114,7 +114,7 @@ func TestPostProcessAPI(t *testing.T) {
 			APIs: []*config.API{api},
 		},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
@@ -194,7 +194,7 @@ func TestRestructureModules(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
@@ -230,7 +230,7 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: commonProtosLibrary},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
@@ -256,7 +256,7 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: "secretmanager"},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
@@ -309,7 +309,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
@@ -359,7 +359,7 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
 		apiBase:        apiBase,
-		googleapisDir:  t.TempDir(), // dummy
+		protoSourceDir: t.TempDir(), // dummy
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{

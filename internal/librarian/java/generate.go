@@ -59,26 +59,26 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
-	// generate repo metadata prior to client because info is needed for
-	// owlbot.py to generate README.md
-	sourceDir, err := getAbsSourceDir(library, srcs)
+	libSrcs, err := getLibrarySources(library, srcs)
 	if err != nil {
 		return err
 	}
-	metadata, err := generateRepoMetadata(cfg, library, outdir, sourceDir)
+	// generate repo metadata prior to client because info is needed for
+	// owlbot.py to generate README.md
+	metadata, err := generateRepoMetadata(cfg, library, outdir, libSrcs.primaryDir)
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
 	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
-		apiCfg, err := serviceconfig.Find(sourceDir, api.Path, config.LanguageJava)
+		apiCfg, err := serviceconfig.Find(libSrcs.primaryDir, api.Path, config.LanguageJava)
 		if err != nil {
 			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
 		}
 		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
 		// metadata is needed for pom.xml generation in post process
-		if err := generateAPI(ctx, cfg, api, library, sourceDir, outdir, metadata, apiCfg); err != nil {
+		if err := generateAPI(ctx, cfg, api, library, libSrcs, outdir, metadata, apiCfg); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -104,7 +104,7 @@ func deriveAPIBase(library *config.Library, apiPath string) string {
 	return path.Base(apiPath)
 }
 
-func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
+func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, libSrcs *librarySources, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
 	javaAPI := ResolveJavaAPI(library, api)
 	p := postProcessParams{
 		cfg:            cfg,
@@ -113,7 +113,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		metadata:       metadata,
 		outDir:         outdir,
 		apiBase:        deriveAPIBase(library, api.Path),
-		googleapisDir:  googleapisDir,
+		protoSourceDir: libSrcs.primaryDir,
 		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := p.gapicDir()
@@ -125,37 +125,38 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 
-	apiDir := filepath.Join(googleapisDir, api.Path)
+	apiDir := filepath.Join(libSrcs.primaryDir, api.Path)
 	apiProtos, err := gatherProtos(apiDir, api.Path)
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
-	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, googleapisDir)
+	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, libSrcs.primaryDir)
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", api.Path, errNoProtos)
 	}
 	p.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, googleapisDir)
-	if err := runProtoc(ctx, protoProtocArgs(protoProtos, googleapisDir, protoDir)); err != nil {
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, libSrcs.primaryDir)
+	includeDirs := libSrcs.includeDirs
+	if err := runProtoc(ctx, protoProtocArgs(protoProtos, includeDirs, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
-		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, googleapisDir, gRPCDir)); err != nil {
+		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, includeDirs, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 	// 3. Generate GAPIC library.
 	if !javaAPI.ProtoGRPCOnly {
-		gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
+		gapicOpts, err := resolveGAPICOptions(cfg, library, api, libSrcs.primaryDir, apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
-		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, gapicDir, gapicOpts)); err != nil {
+		additionalProtos := deriveAdditionalProtoPaths(javaAPI, libSrcs.googleapisDir)
+		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, includeDirs, gapicDir, gapicOpts)); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
@@ -187,29 +188,32 @@ var runProtoc = func(ctx context.Context, args []string) error {
 	return command.Run(ctx, "protoc", args...)
 }
 
-func baseProtocArgs(googleapisDir string) []string {
-	return []string{
+func baseProtocArgs(includeDirs ...string) []string {
+	args := []string{
 		"--experimental_allow_proto3_optional",
-		"-I=" + googleapisDir,
 	}
+	for _, dir := range includeDirs {
+		args = append(args, "-I="+dir)
+	}
+	return args
 }
 
-func protoProtocArgs(apiProtos []string, googleapisDir, protoDir string) []string {
-	args := baseProtocArgs(googleapisDir)
+func protoProtocArgs(apiProtos []string, includeDirs []string, protoDir string) []string {
+	args := baseProtocArgs(includeDirs...)
 	args = append(args, fmt.Sprintf("--java_out=%s", protoDir))
 	args = append(args, apiProtos...)
 	return args
 }
 
-func gRPCProtocArgs(apiProtos []string, googleapisDir, gRPCDir string) []string {
-	args := baseProtocArgs(googleapisDir)
+func gRPCProtocArgs(apiProtos []string, includeDirs []string, gRPCDir string) []string {
+	args := baseProtocArgs(includeDirs...)
 	args = append(args, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
 	args = append(args, apiProtos...)
 	return args
 }
 
-func gapicProtocArgs(apiProtos, additionalProtos []string, googleapisDir, gapicDir string, gapicOpts []string) []string {
-	args := baseProtocArgs(googleapisDir)
+func gapicProtocArgs(apiProtos, additionalProtos []string, includeDirs []string, gapicDir string, gapicOpts []string) []string {
+	args := baseProtocArgs(includeDirs...)
 	args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
 	args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
 	args = append(args, apiProtos...)
@@ -387,12 +391,44 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 	return filtered
 }
 
-// getAbsSourceDir returns the absolute path of the source directory for the library,
-// resolving either the Googleapis or Showcase source path depending on the library name.
-// Use absolute path to avoid issues with relative paths in protoc.
-func getAbsSourceDir(library *config.Library, srcs *sources.Sources) (string, error) {
-	if library.Name == "showcase" {
-		return filepath.Abs(srcs.Showcase)
+type librarySources struct {
+	// primaryDir is the main source directory for the library being generated.
+	// It maps to srcs.Showcase for the showcase library, and srcs.Googleapis for all others.
+	// Used for finding the library's protos, service configs, and defining the proto source root.
+	primaryDir string
+
+	// googleapisDir is the absolute path to the googleapis source directory.
+	// This is always needed (even for showcase) because common proto resources
+	// (like google/cloud/common_resources.proto) always reside in the googleapis repository.
+	googleapisDir string
+
+	// includeDirs contains the ordered list of import directories to pass to protoc via -I flags.
+	// Pre-calculated to keep generateAPI simple: includes [Showcase, Googleapis] for showcase,
+	// and just [Googleapis] for others.
+	includeDirs []string
+}
+
+func getLibrarySources(library *config.Library, srcs *sources.Sources) (*librarySources, error) {
+	absGoogleapis, err := filepath.Abs(srcs.Googleapis)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path for googleapis: %w", err)
 	}
-	return filepath.Abs(srcs.Googleapis)
+
+	if library.Name == "showcase" {
+		absShowcase, err := filepath.Abs(srcs.Showcase)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve absolute path for showcase: %w", err)
+		}
+		return &librarySources{
+			primaryDir:    absShowcase,
+			googleapisDir: absGoogleapis,
+			includeDirs:   []string{absShowcase, absGoogleapis},
+		}, nil
+	}
+
+	return &librarySources{
+		primaryDir:    absGoogleapis,
+		googleapisDir: absGoogleapis,
+		includeDirs:   []string{absGoogleapis},
+	}, nil
 }

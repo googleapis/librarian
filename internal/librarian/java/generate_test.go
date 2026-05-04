@@ -179,7 +179,7 @@ func TestProtoProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 	}
-	got := protoProtocArgs(apiProtos, googleapisDir, "proto-out")
+	got := protoProtocArgs(apiProtos, []string{googleapisDir}, "proto-out")
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -197,7 +197,7 @@ func TestGRPCProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 	}
-	got := gRPCProtocArgs(apiProtos, googleapisDir, "grpc-out")
+	got := gRPCProtocArgs(apiProtos, []string{googleapisDir}, "grpc-out")
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -218,7 +218,7 @@ func TestGAPICProtocArgs(t *testing.T) {
 	additionalProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
 	}
-	got := gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", []string{"opt1", "opt2"})
+	got := gapicProtocArgs(apiProtos, additionalProtos, []string{googleapisDir}, "gapic-out", []string{"opt1", "opt2"})
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -341,7 +341,11 @@ func TestGenerateAPI(t *testing.T) {
 		cfg,
 		&config.API{Path: "google/cloud/secretmanager/v1"},
 		library,
-		googleapisDir,
+		&librarySources{
+			primaryDir:    googleapisDir,
+			googleapisDir: googleapisDir,
+			includeDirs:   []string{googleapisDir},
+		},
 		outdir,
 		&repoMetadata{
 			NamePretty:     "Secret Manager",
@@ -406,7 +410,11 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		cfg,
 		&config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
 		library,
-		googleapisDir,
+		&librarySources{
+			primaryDir:    googleapisDir,
+			googleapisDir: googleapisDir,
+			includeDirs:   []string{googleapisDir},
+		},
 		outdir,
 		&repoMetadata{
 			NamePretty: "GKE Hub API",
@@ -462,7 +470,11 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
+	err = generateAPI(t.Context(), cfg, api, library, &librarySources{
+		primaryDir:    googleapisDir,
+		googleapisDir: googleapisDir,
+		includeDirs:   []string{googleapisDir},
+	}, outdir, &repoMetadata{
 		NamePretty:     "Secret Manager",
 		APIDescription: "Secret Manager API",
 	}, apiCfg)
@@ -998,13 +1010,13 @@ func TestDeriveAPIBase(t *testing.T) {
 	}
 }
 
-func TestGetAbsSourceDir(t *testing.T) {
+func TestGetLibrarySources(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		library *config.Library
 		srcs    *sources.Sources
-		want    string
+		want    *librarySources
 	}{
 		{
 			name:    "default to googleapis",
@@ -1013,7 +1025,11 @@ func TestGetAbsSourceDir(t *testing.T) {
 				Googleapis: "/path/to/googleapis",
 				Showcase:   "/path/to/showcase",
 			},
-			want: "/path/to/googleapis",
+			want: &librarySources{
+				primaryDir:    "/path/to/googleapis",
+				googleapisDir: "/path/to/googleapis",
+				includeDirs:   []string{"/path/to/googleapis"},
+			},
 		},
 		{
 			name:    "showcase library with showcase dir",
@@ -1022,20 +1038,20 @@ func TestGetAbsSourceDir(t *testing.T) {
 				Googleapis: "/path/to/googleapis",
 				Showcase:   "/path/to/showcase",
 			},
-			want: "/path/to/showcase",
+			want: &librarySources{
+				primaryDir:    "/path/to/showcase",
+				googleapisDir: "/path/to/googleapis",
+				includeDirs:   []string{"/path/to/showcase", "/path/to/googleapis"},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := getAbsSourceDir(test.library, test.srcs)
+			got, err := getLibrarySources(test.library, test.srcs)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := test.want
-			if test.srcs.Showcase == "" && test.library.Name == "showcase" {
-				want, _ = filepath.Abs("")
-			}
-			if got != want {
-				t.Errorf("getAbsSourceDir() = %v, want %v", got, want)
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(librarySources{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
