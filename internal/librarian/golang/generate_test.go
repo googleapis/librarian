@@ -29,7 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const googleapisDir = "../../testdata/googleapis"
@@ -1105,29 +1104,20 @@ func setupSnippets(t *testing.T, repoRoot string) {
 }
 
 func TestGoCommand(t *testing.T) {
-	cfg, err := yaml.Read[config.Config]("testdata/librarian.yaml")
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := GoCommand(cfg.Tools)
-	want := "go1.22.3"
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestGoCommand_Default(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		tools *config.Tools
+		want  string
 	}{
 		{
 			name:  "nil tools",
 			tools: nil,
+			want:  "go",
 		},
 		{
 			name:  "empty tools",
 			tools: &config.Tools{},
+			want:  "go",
 		},
 		{
 			name: "go tools but no compiler",
@@ -1136,12 +1126,21 @@ func TestGoCommand_Default(t *testing.T) {
 					{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.1.0"},
 				},
 			},
+			want: "go",
+		},
+		{
+			name: "custom Go compiler wrapper version",
+			tools: &config.Tools{
+				Go: []*config.GoTool{
+					{Name: "golang.org/dl/go1.22.3", Version: "v0.1.0"},
+				},
+			},
+			want: "go1.22.3",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := GoCommand(test.tools)
-			want := "go"
-			if diff := cmp.Diff(want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
