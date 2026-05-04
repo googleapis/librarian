@@ -862,9 +862,9 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	}
 	var toJson string
 	if !implicitPresence {
-		toJson = createNullableToJsonElement(field)
+		toJson = createNullableToJson(field)
 	} else {
-		toJson = createNonNullableToJsonElement(field, annotate.model)
+		toJson = createNonNullableToJson(field, annotate.model)
 	}
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
@@ -1076,7 +1076,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createNonNullableToJsonElement(field *api.Field, model *api.API) string {
+func createNonNullableToJson(field *api.Field, model *api.API) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
 
@@ -1109,7 +1109,7 @@ func createNonNullableToJsonElement(field *api.Field, model *api.API) string {
 		rhs = enc
 	}
 
-	fieldRequired := field.Behavior != nil && slices.Contains(field.Behavior, api.FieldBehaviorRequired)
+	fieldRequired := slices.Contains(field.Behavior, api.FieldBehaviorRequired)
 	if fieldRequired {
 		return fmt.Sprintf("'%s': %s", jsonName, rhs)
 	}
@@ -1133,8 +1133,8 @@ func createToJsonNullAwareLine(field *api.Field) string {
 	return enc
 }
 
-// createNullableToJsonElement creates a JSON element expression for map literals for nullable fields.
-func createNullableToJsonElement(field *api.Field) string {
+// createNullableToJson creates a JSON element expression for map literals for nullable fields.
+func createNullableToJson(field *api.Field) string {
 	name := fieldName(field)
 	jsonName := field.JSONName
 
@@ -1215,24 +1215,6 @@ func (annotate *annotateModel) buildQueryLines(
 
 	switch {
 	case field.Repeated:
-		if codec.Nullable {
-			switch field.Typez {
-			case api.TypezString:
-				return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
-			case api.TypezEnum:
-				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => e.value).toList()", param, ref))
-			case api.TypezBool, api.TypezInt32, api.TypezUint32, api.TypezSint32,
-				api.TypezFixed32, api.TypezSfixed32, api.TypezInt64,
-				api.TypezUint64, api.TypezSint64, api.TypezFixed64, api.TypezSfixed64,
-				api.TypezFloat, api.TypezDouble:
-				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => '$e').toList()", param, ref))
-			case api.TypezBytes:
-				return append(result, fmt.Sprintf("'%s': ?%s?.map((e) => encodeBytes(e)!).toList()", param, ref))
-			default:
-				slog.Error("unhandled list query param", "type", field.Typez)
-				return append(result, fmt.Sprintf("/* unhandled list query param type: %d */", field.Typez))
-			}
-		}
 		// Handle lists; these should be lists of strings or other primitives.
 		switch field.Typez {
 		case api.TypezString:
