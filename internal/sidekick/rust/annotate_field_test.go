@@ -107,7 +107,7 @@ func TestFieldAnnotations(t *testing.T) {
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
 	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec", "Codec")); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField := &fieldAnnotations{
@@ -120,7 +120,7 @@ func TestFieldAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
 	}
 	if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples := ""
 	gotFA, _ := singular_field.Codec.(*fieldAnnotations)
@@ -139,7 +139,7 @@ func TestFieldAnnotations(t *testing.T) {
 		AddQueryParameter:  `let builder = req.repeated_field.iter().fold(builder, |builder, p| builder.query(&[("repeatedField", p)]));`,
 	}
 	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = ""
 	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
@@ -164,7 +164,7 @@ func TestFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 	}
 	if diff := cmp.Diff(wantField, map_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = ""
 	gotFA, _ = map_field.Codec.(*fieldAnnotations)
@@ -188,7 +188,7 @@ func TestFieldAnnotations(t *testing.T) {
 		FieldTypeIsParentType: true,
 	}
 	if diff := cmp.Diff(wantField, boxed_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
 	gotFA, _ = boxed_field.Codec.(*fieldAnnotations)
@@ -279,7 +279,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
 	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec", "Codec")); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField := &fieldAnnotations{
@@ -301,7 +301,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldTypeIsParentType: true,
 	}
 	if diff := cmp.Diff(wantField, map_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples := "TestMessage"
 	gotFA, _ := map_field.Codec.(*fieldAnnotations)
@@ -326,7 +326,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldTypeIsParentType: true,
 	}
 	if diff := cmp.Diff(wantField, oneof_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
 	gotFA, _ = oneof_field.Codec.(*fieldAnnotations)
@@ -350,7 +350,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldTypeIsParentType: true,
 	}
 	if diff := cmp.Diff(wantField, repeated_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
 	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
@@ -374,7 +374,7 @@ func TestRecursiveFieldAnnotations(t *testing.T) {
 		FieldTypeIsParentType: true,
 	}
 	if diff := cmp.Diff(wantField, message_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "TestMessage"
 	gotFA, _ = message_field.Codec.(*fieldAnnotations)
@@ -474,7 +474,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 	// as those point to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
 	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec", "MessageType.Codec")); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField := &fieldAnnotations{
@@ -494,7 +494,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		AliasInExamples:    "MapField",
 	}
 	if diff := cmp.Diff(wantField, map_field.Codec, cmpopts.IgnoreFields(api.Field{}, "Codec")); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples := "MapField"
 	gotFA, _ := map_field.Codec.(*fieldAnnotations)
@@ -519,7 +519,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		AliasInExamples:    "OneofField",
 	}
 	if diff := cmp.Diff(wantField, oneof_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "OneofField"
 	gotFA, _ = oneof_field.Codec.(*fieldAnnotations)
@@ -541,7 +541,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		AliasInExamples:    "RepeatedField",
 	}
 	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "RepeatedField"
 	gotFA, _ = repeated_field.Codec.(*fieldAnnotations)
@@ -563,7 +563,7 @@ func TestSameTypeNameFieldAnnotations(t *testing.T) {
 		AliasInExamples:    "MessageField",
 	}
 	if diff := cmp.Diff(wantField, message_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantMessageNameInExamples = "MessageField"
 	gotFA, _ = message_field.Codec.(*fieldAnnotations)
@@ -592,40 +592,41 @@ func TestPrimitiveFieldAnnotations(t *testing.T) {
 		{"f32", "wkt::internal::F32", api.TypezFloat},
 		{"f64", "wkt::internal::F64", api.TypezDouble},
 	} {
-		singular_field := &api.Field{
-			Name:     "singular_field",
-			JSONName: "singularField",
-			ID:       ".test.Message.singular_field",
-			Typez:    test.typez,
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{singular_field},
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
-		annotateModel(model, codec)
+		t.Run(fmt.Sprintf("%s_%v", test.wantType, test.typez), func(t *testing.T) {
+			singular_field := &api.Field{
+				Name:     "singular_field",
+				JSONName: "singularField",
+				ID:       ".test.Message.singular_field",
+				Typez:    test.typez,
+			}
+			message := &api.Message{
+				Name:          "TestMessage",
+				Package:       "test",
+				ID:            ".test.TestMessage",
+				Documentation: "A test message.",
+				Fields:        []*api.Field{singular_field},
+			}
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			api.LabelRecursiveFields(model)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
+			annotateModel(model, codec)
 
-		wantField := &fieldAnnotations{
-			FieldName:          "singular_field",
-			SetterName:         "singular_field",
-			BranchName:         "SingularField",
-			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          test.wantType,
-			PrimitiveFieldType: test.wantType,
-			SerdeAs:            test.wantSerdeAs,
-			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
-			SkipIfIsDefault:    true,
-		}
-		if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-		}
-
+			wantField := &fieldAnnotations{
+				FieldName:          "singular_field",
+				SetterName:         "singular_field",
+				BranchName:         "SingularField",
+				FQMessageName:      "crate::model::TestMessage",
+				FieldType:          test.wantType,
+				PrimitiveFieldType: test.wantType,
+				SerdeAs:            test.wantSerdeAs,
+				AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
+				SkipIfIsDefault:    true,
+			}
+			if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -639,39 +640,41 @@ func TestBytesAnnotations(t *testing.T) {
 		{libconfig.SpecOpenAPI, "::bytes::Bytes", "serde_with::base64::Base64"},
 		{libconfig.SpecDiscovery, "::bytes::Bytes", "serde_with::base64::Base64<serde_with::base64::UrlSafe>"},
 	} {
-		singular_field := &api.Field{
-			Name:     "singular_field",
-			JSONName: "singularField",
-			ID:       ".test.Message.singular_field",
-			Typez:    api.TypezBytes,
-			TypezID:  "bytes",
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{singular_field},
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec := newTestCodec(t, test.sourceSpecification, "test", map[string]string{})
-		annotateModel(model, codec)
+		t.Run(test.sourceSpecification, func(t *testing.T) {
+			singular_field := &api.Field{
+				Name:     "singular_field",
+				JSONName: "singularField",
+				ID:       ".test.Message.singular_field",
+				Typez:    api.TypezBytes,
+				TypezID:  "bytes",
+			}
+			message := &api.Message{
+				Name:          "TestMessage",
+				Package:       "test",
+				ID:            ".test.TestMessage",
+				Documentation: "A test message.",
+				Fields:        []*api.Field{singular_field},
+			}
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			api.LabelRecursiveFields(model)
+			codec := newTestCodec(t, test.sourceSpecification, "test", map[string]string{})
+			annotateModel(model, codec)
 
-		wantField := &fieldAnnotations{
-			FieldName:          "singular_field",
-			SetterName:         "singular_field",
-			BranchName:         "SingularField",
-			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          test.wantType,
-			PrimitiveFieldType: test.wantType,
-			SerdeAs:            test.wantSerdeAs,
-			AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
-		}
-		if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-		}
+			wantField := &fieldAnnotations{
+				FieldName:          "singular_field",
+				SetterName:         "singular_field",
+				BranchName:         "SingularField",
+				FQMessageName:      "crate::model::TestMessage",
+				FieldType:          test.wantType,
+				PrimitiveFieldType: test.wantType,
+				SerdeAs:            test.wantSerdeAs,
+				AddQueryParameter:  `let builder = builder.query(&[("singularField", &req.singular_field)]);`,
+			}
+			if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -690,44 +693,46 @@ func TestWrapperFieldAnnotations(t *testing.T) {
 		{"wkt::DoubleValue", "wkt::internal::F64", ".google.protobuf.DoubleValue"},
 		{"wkt::BoolValue", "", ".google.protobuf.BoolValue"},
 	} {
-		singular_field := &api.Field{
-			Name:     "singular_field",
-			JSONName: "singularField",
-			ID:       ".test.Message.singular_field",
-			Typez:    api.TypezMessage,
-			TypezID:  test.typezID,
-			Optional: true,
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{singular_field},
-		}
-		model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec := createRustCodec()
-		annotateModel(model, codec)
+		t.Run(test.typezID, func(t *testing.T) {
+			singular_field := &api.Field{
+				Name:     "singular_field",
+				JSONName: "singularField",
+				ID:       ".test.Message.singular_field",
+				Typez:    api.TypezMessage,
+				TypezID:  test.typezID,
+				Optional: true,
+			}
+			message := &api.Message{
+				Name:          "TestMessage",
+				Package:       "test",
+				ID:            ".test.TestMessage",
+				Documentation: "A test message.",
+				Fields:        []*api.Field{singular_field},
+			}
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			api.LabelRecursiveFields(model)
+			codec := createRustCodec()
+			annotateModel(model, codec)
 
-		wantField := &fieldAnnotations{
-			FieldName:          "singular_field",
-			SetterName:         "singular_field",
-			BranchName:         "SingularField",
-			FQMessageName:      "crate::model::TestMessage",
-			FieldType:          fmt.Sprintf("std::option::Option<%s>", test.wantType),
-			PrimitiveFieldType: test.wantType,
-			SerdeAs:            test.wantSerdeAs,
-			SkipIfIsDefault:    true,
-		}
-		if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter", "MessageType")); diff != "" {
-			t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
-		}
-		got, _ := singular_field.Codec.(*fieldAnnotations)
-		if got.MessageType.ID != test.typezID {
-			t.Errorf("mismatch in field annotations MessageType.ID, want %s, got %s", test.typezID, got.MessageType.ID)
-		}
+			wantField := &fieldAnnotations{
+				FieldName:          "singular_field",
+				SetterName:         "singular_field",
+				BranchName:         "SingularField",
+				FQMessageName:      "crate::model::TestMessage",
+				FieldType:          fmt.Sprintf("std::option::Option<%s>", test.wantType),
+				PrimitiveFieldType: test.wantType,
+				SerdeAs:            test.wantSerdeAs,
+				SkipIfIsDefault:    true,
+			}
+			if diff := cmp.Diff(wantField, singular_field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "AddQueryParameter", "MessageType")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			got, _ := singular_field.Codec.(*fieldAnnotations)
+			if got.MessageType.ID != test.typezID {
+				t.Errorf("mismatch in field annotations MessageType.ID, want %s, got %s", test.typezID, got.MessageType.ID)
+			}
+		})
 	}
 }
 
@@ -828,7 +833,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 	// We ignore the Parent.Codec field of Fields, as that points to the message annotations itself and was causing
 	// the test to fail because of cyclic dependencies.
 	if diff := cmp.Diff(wantMessage, message.Codec, cmpopts.IgnoreFields(api.Field{}, "Parent.Codec")); diff != "" {
-		t.Errorf("mismatch in message annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField := &fieldAnnotations{
@@ -842,7 +847,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 	}
 	if diff := cmp.Diff(wantField, singular_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField = &fieldAnnotations{
@@ -856,7 +861,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 	}
 	if diff := cmp.Diff(wantField, repeated_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField = &fieldAnnotations{
@@ -870,7 +875,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 	}
 	if diff := cmp.Diff(wantField, optional_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// In the .proto specification this is represented as an enum. Which we
@@ -887,7 +892,7 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		IsWktNullValue:     true,
 	}
 	if diff := cmp.Diff(wantField, null_value_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantField = &fieldAnnotations{
@@ -905,6 +910,203 @@ func TestEnumFieldAnnotations(t *testing.T) {
 		SkipIfIsDefault:    true,
 	}
 	if diff := cmp.Diff(wantField, map_field.Codec); diff != "" {
-		t.Errorf("mismatch in field annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFormattedResourceAnnotations(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		segments   []api.ResourceNameSegment
+		wantString string
+		wantArgs   []string
+	}{
+		{name: "standard",
+			segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "project"},
+				{Literal: "locations"},
+				{Variable: "location"},
+				{Literal: "secrets"},
+				{Variable: "secret"},
+			},
+			wantString: "projects/{project_id}/locations/{location_id}/secrets/{secret_id}",
+			wantArgs:   []string{"project_id", "location_id", "secret_id"},
+		},
+		{
+			name: "with name suffix",
+			segments: []api.ResourceNameSegment{
+				{Literal: "topics"},
+				{Variable: "topicName"},
+			},
+			wantString: "topics/{topic_name}",
+			wantArgs:   []string{"topic_name"},
+		},
+		{
+			name: "already has id suffix",
+			segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "projectId"},
+			},
+			wantString: "projects/{project_id}",
+			wantArgs:   []string{"project_id"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field := &api.Field{
+				Name:  "name",
+				ID:    ".test.v1.Message.name",
+				Typez: api.TypezString,
+				ResourceNamePattern: &api.ResourceNamePattern{
+					Segments: test.segments,
+				},
+			}
+			message := &api.Message{
+				Name:    "TestMessage",
+				Package: "test.v1",
+				ID:      ".test.v1.TestMessage",
+				Fields:  []*api.Field{field},
+			}
+
+			model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
+			annotateModel(model, codec)
+
+			got := field.Codec.(*fieldAnnotations).FormattedResource
+			want := &FormattedResource{
+				FormatString: test.wantString,
+				FormatArgs:   test.wantArgs,
+			}
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestJsonNameAnnotations(t *testing.T) {
+	parent := &api.Field{
+		Name:     "parent",
+		JSONName: "parent",
+		ID:       ".test.Request.parent",
+		Typez:    api.TypezString,
+	}
+	publicKey := &api.Field{
+		Name:     "public_key",
+		JSONName: "public_key",
+		ID:       ".test.Request.public_key",
+		Typez:    api.TypezString,
+	}
+	readTime := &api.Field{
+		Name:     "read_time",
+		JSONName: "readTime",
+		ID:       ".test.Request.read_time",
+		Typez:    api.TypezInt32,
+	}
+	optional := &api.Field{
+		Name:     "optional",
+		JSONName: "optional",
+		ID:       ".test.Request.optional",
+		Typez:    api.TypezInt32,
+		Optional: true,
+	}
+	repeated := &api.Field{
+		Name:     "repeated",
+		JSONName: "repeated",
+		ID:       ".test.Request.repeated",
+		Typez:    api.TypezInt32,
+		Repeated: true,
+	}
+	message := &api.Message{
+		Name:          "Request",
+		Package:       "test",
+		ID:            ".test.Request",
+		Documentation: "A test message.",
+		Fields:        []*api.Field{parent, publicKey, readTime, optional, repeated},
+	}
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
+	annotateModel(model, codec)
+
+	want := &fieldAnnotations{
+		FieldName:          "parent",
+		SetterName:         "parent",
+		BranchName:         "Parent",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = builder.query(&[("parent", &req.parent)]);`,
+		KeyType:            "",
+		ValueType:          "",
+	}
+	if diff := cmp.Diff(want, parent.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "public_key",
+		SetterName:         "public_key",
+		BranchName:         "PublicKey",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::string::String",
+		PrimitiveFieldType: "std::string::String",
+		AddQueryParameter:  `let builder = builder.query(&[("public_key", &req.public_key)]);`,
+		KeyType:            "",
+		ValueType:          "",
+	}
+	if diff := cmp.Diff(want, publicKey.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "read_time",
+		SetterName:         "read_time",
+		BranchName:         "ReadTime",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "i32",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = builder.query(&[("readTime", &req.read_time)]);`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, readTime.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "optional",
+		SetterName:         "optional",
+		BranchName:         "Optional",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::option::Option<i32>",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = req.optional.iter().fold(builder, |builder, p| builder.query(&[("optional", p)]));`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, optional.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	want = &fieldAnnotations{
+		FieldName:          "repeated",
+		SetterName:         "repeated",
+		BranchName:         "Repeated",
+		FQMessageName:      "crate::model::Request",
+		DocLines:           nil,
+		FieldType:          "std::vec::Vec<i32>",
+		PrimitiveFieldType: "i32",
+		AddQueryParameter:  `let builder = req.repeated.iter().fold(builder, |builder, p| builder.query(&[("repeated", p)]));`,
+		SerdeAs:            "wkt::internal::I32",
+		SkipIfIsDefault:    true,
+	}
+	if diff := cmp.Diff(want, repeated.Codec); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

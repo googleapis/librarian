@@ -47,8 +47,8 @@ const (
 //
 // It returns true only if the artifactID starts with protoGooglePrefix AND the file
 // does not already exist in the repo directory.
-func clirrIgnoreShouldGenerate(artifactID, repoDir string) (bool, error) {
-	if !strings.HasPrefix(artifactID, protoGooglePrefix) {
+func clirrIgnoreShouldGenerate(artifactID, repoDir string, monolithic bool) (bool, error) {
+	if monolithic || !strings.HasPrefix(artifactID, protoGooglePrefix) {
 		return false, nil
 	}
 	path := filepath.Join(repoDir, clirrIgnoreFile)

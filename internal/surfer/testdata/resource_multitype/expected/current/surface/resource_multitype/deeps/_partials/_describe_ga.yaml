@@ -30,18 +30,18 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: deep
+              help: The deep id of the {resource} resource.
+              parameter_name: deepsId
+          collection: resourcemultitype.projects.deeps
+          disable_auto_completers: false
           name: deep
           plural_name: deeps
-          collection: resourcemultitype.projects.deeps
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: deepsId
-              attribute_name: deep
-              help: The deep id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1

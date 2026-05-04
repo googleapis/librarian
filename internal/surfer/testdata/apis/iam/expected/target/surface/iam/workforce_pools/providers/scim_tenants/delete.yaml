@@ -63,6 +63,7 @@
       is_positional: true
     params:
       - arg_name: hard-delete
+        is_positional: false
         api_field: hardDelete
         required: false
         help_text: Deletes the SCIM tenant immediately. This operation cannot be undone.

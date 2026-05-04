@@ -18,6 +18,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -72,4 +73,51 @@ func ValidateNewAPIs(lib *config.Library) error {
 		return errExistingLibraryCustomGAPICOptions
 	}
 	return nil
+}
+
+// FindExistingLibraryForNewAPI attempts to find an existing library that should
+// contain the given new API path. This function uses the concept of a
+// "versionless" path, which is just the path with any version removed (so the
+// versionless path of google/cloud/xyz/v1 is google/cloud/xyz/; the versionless
+// path of google/cloud/xyz/type is still google/cloud/xyz/type). A nil pointer
+// is returned if no existing library is suitable for the new API path. The
+// function observes the following rules:
+//
+//  1. If the versionless path of any path in the library is the same as the
+//     versionless apiPath, that library is returned.
+//  2. If the versionless path of any path in the library is a prefix of apiPath
+//     *and* the library contains multiple different versionless paths, that
+//     library is returned.
+//  3. Otherwise, nil is returned.
+func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *config.Library {
+	versionlessApiPath := versionless(apiPath)
+	for _, lib := range libraries {
+		for _, api := range lib.APIs {
+			if versionless(api.Path) == versionlessApiPath {
+				return lib
+			}
+		}
+	}
+	for _, lib := range libraries {
+		set := make(map[string]struct{})
+		for _, api := range lib.APIs {
+			set[versionless(api.Path)] = struct{}{}
+		}
+		if len(set) <= 1 {
+			continue
+		}
+		for v := range set {
+			if strings.HasPrefix(apiPath, v) {
+				return lib
+			}
+		}
+	}
+	return nil
+}
+
+// versionless trims the version (if any) from apiPath, leaving any trailing
+// slash.
+func versionless(apiPath string) string {
+	version := serviceconfig.ExtractVersion(apiPath)
+	return strings.TrimSuffix(apiPath, version)
 }

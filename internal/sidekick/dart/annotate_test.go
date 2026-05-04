@@ -57,6 +57,36 @@ func TestAnnotateModel(t *testing.T) {
 	}
 }
 
+func TestAnnotateModel_HasDocLines(t *testing.T) {
+	modelWithDesc := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	modelWithDesc.PackageName = "test"
+	modelWithDesc.Description = "Has a description"
+
+	modelWithoutDesc := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+	modelWithoutDesc.PackageName = "test"
+	modelWithoutDesc.Description = ""
+
+	options := maps.Clone(requiredConfig)
+
+	annotate1 := newAnnotateModel(modelWithDesc)
+	if err := annotate1.annotateModel(options); err != nil {
+		t.Fatal(err)
+	}
+	codec1 := modelWithDesc.Codec.(*modelAnnotations)
+	if !codec1.HasDocLines() {
+		t.Errorf("Expected HasDocLines() to be true when description is provided")
+	}
+
+	annotate2 := newAnnotateModel(modelWithoutDesc)
+	if err := annotate2.annotateModel(options); err != nil {
+		t.Fatal(err)
+	}
+	codec2 := modelWithoutDesc.Codec.(*modelAnnotations)
+	if codec2.HasDocLines() {
+		t.Errorf("Expected HasDocLines() to be false when description is empty")
+	}
+}
+
 func TestAnnotateModel_FakeList(t *testing.T) {
 	service1 := &api.Service{Name: "SecretManagerService", Package: "google.cloud.secretmanager"}
 	service2 := &api.Service{Name: "AccessApprovalService", Package: "google.cloud.accessapproval"}
@@ -637,6 +667,42 @@ func TestAnnotateMessage_ToString(t *testing.T) {
 	}
 }
 
+func TestAnnotateMessage_HasFields(t *testing.T) {
+	model := api.NewTestAPI(
+		[]*api.Message{sample.Secret()},
+		[]*api.Enum{},
+		[]*api.Service{},
+	)
+	annotate := newAnnotateModel(model)
+	if err := annotate.annotateModel(requiredConfig); err != nil {
+		t.Fatal(err)
+	}
+
+	emptyMessage := &api.Message{
+		Name:    "EmptyMessage",
+		Package: "google.cloud.foo",
+		ID:      "google.cloud.foo.EmptyMessage",
+		Fields:  []*api.Field{},
+	}
+
+	t.Run("has fields", func(t *testing.T) {
+		secret := sample.Secret()
+		annotate.annotateMessage(secret)
+		codec := secret.Codec.(*messageAnnotation)
+		if !codec.HasFields() {
+			t.Errorf("mismatch got = %v, want true", codec.HasFields())
+		}
+	})
+
+	t.Run("no fields", func(t *testing.T) {
+		annotate.annotateMessage(emptyMessage)
+		codec := emptyMessage.Codec.(*messageAnnotation)
+		if codec.HasFields() {
+			t.Errorf("mismatch got = %v, want false", codec.HasFields())
+		}
+	})
+}
+
 // Tests that messages that are allowlisted as not being generated are, in fact, not generated.
 func TestAnnotateMessage_OmitGeneration_Allowlisted(t *testing.T) {
 	status := &api.Message{
@@ -1080,6 +1146,19 @@ func TestCreateFromJsonLine(t *testing.T) {
 			},
 		},
 	}
+	nullValueEnum := &api.Enum{
+		Name:    "NullValue",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.NullValue",
+		Values: []*api.EnumValue{
+			{Name: "NULL_VALUE", Number: 0},
+		},
+	}
+	valueMessage := &api.Message{
+		Name:    "Value",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.Value",
+	}
 
 	for _, test := range []struct {
 		field *api.Field
@@ -1229,6 +1308,15 @@ func TestCreateFromJsonLine(t *testing.T) {
 			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: ".google.protobuf.Duration"},
 			"switch (json['message']) { null => null, Object $1 => Duration.fromJson($1)}",
 		},
+		// canBeNull exceptions
+		{
+			&api.Field{Name: "nullValue", JSONName: "nullValue", Typez: api.TypezEnum, TypezID: ".google.protobuf.NullValue"},
+			"switch ((json.containsKey('nullValue'), json['nullValue'])) {(false,_) => NullValue.$default, (true, Object? $1) => NullValue.fromJson($1)}",
+		},
+		{
+			&api.Field{Name: "value", JSONName: "value", Typez: api.TypezMessage, TypezID: ".google.protobuf.Value"},
+			"switch ((json.containsKey('value'), json['value'])) {(false,_) => null, (true, Object? $1) => Value.fromJson($1)}",
+		},
 
 		// maps
 		{
@@ -1250,8 +1338,8 @@ func TestCreateFromJsonLine(t *testing.T) {
 				Fields:  []*api.Field{test.field},
 			}
 			model := api.NewTestAPI([]*api.Message{message,
-				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes},
-				[]*api.Enum{enumState, foreignEnumState},
+				secret, foreignMessage, mapStringToBytes, mapInt32ToBytes, valueMessage},
+				[]*api.Enum{enumState, foreignEnumState, nullValueEnum},
 				[]*api.Service{})
 			annotate := newAnnotateModel(model)
 			annotate.annotateModel(map[string]string{

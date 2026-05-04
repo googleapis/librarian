@@ -53,10 +53,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
 	for _, api := range library.APIs {
-		// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 		// generate v1small. This package is not meant to be used and will be
-		// deprecated in the future, but for now (during the migration period) it
-		// will be set to not be maintained.
+		// deprecated and removed in a future major release. Remove this workaround once resolved.
 		if api.Path == "google/cloud/compute/v1small" {
 			continue
 		}
@@ -67,6 +66,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
+
+	if library.Name == "google-cloud-compute" {
+		if err := injectV1SmallExports(outdir); err != nil {
+			return fmt.Errorf("failed to inject v1small exports: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -550,10 +556,9 @@ func updateSnippetMetadataVersion(outDir, version string) error {
 		return fmt.Errorf("failed to glob snippet metadata files: %w", err)
 	}
 	for _, path := range matches {
-		// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 		// update v1small. This package is not meant to be used and will be
-		// deprecated in the future, but for now (during the migration period) it
-		// will be set to not be maintained.
+		// deprecated and removed in a future major release. Remove this workaround once resolved.
 		if filepath.Base(filepath.Dir(path)) == "v1small" {
 			continue
 		}
@@ -629,4 +634,39 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8149):
+// This function is a temporary workaround to preserve v1small exports in the compute library.
+// It must be deleted once v1small is formally deprecated and removed.
+func injectV1SmallExports(outDir string) error {
+	indexPath := filepath.Join(outDir, "src", "index.ts")
+	data, err := os.ReadFile(indexPath)
+	if err != nil {
+		return err
+	}
+	content := string(data)
+
+	// Avoid double injection if the function is called multiple times.
+	if strings.Contains(content, "v1small") {
+		return nil
+	}
+
+	// 1. Inject the import
+	importLine := "import * as v1small from './v1small';\nimport * as v1 from './v1';"
+	updated := strings.Replace(content, "import * as v1 from './v1';", importLine, 1)
+	if updated == content {
+		return fmt.Errorf("could not find v1 import in %s", indexPath)
+	}
+	content = updated
+
+	// 2. Inject into export blocks (both named and default)
+	// We search for \"{v1,\" and replace with \"{v1small, v1,\"
+	updated = strings.ReplaceAll(content, "{v1,", "{v1small, v1,")
+	if updated == content {
+		return fmt.Errorf("could not find v1 export in %s", indexPath)
+	}
+	content = updated
+
+	return os.WriteFile(indexPath, []byte(content), 0644)
 }

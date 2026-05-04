@@ -90,6 +90,17 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 				Path: "google/cloud/language/v1",
 			},
 		},
+		{
+			name: "showcase",
+			path: "schema/google/showcase/v1beta1",
+			want: &config.JavaAPI{
+				Path: "schema/google/showcase/v1beta1",
+				AdditionalProtos: []string{
+					"google/cloud/location/locations.proto",
+					"google/iam/v1/iam_policy.proto",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := &config.JavaAPI{Path: test.path}
@@ -101,12 +112,110 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 	}
 }
 
+func TestApplyJavaLibraryOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "transport override",
+			lib: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "alloydb-connectors",
+				Java: &config.JavaModule{
+					TransportOverride: "grpc",
+				},
+			},
+		},
+		{
+			name: "api shortname override",
+			lib: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "common-protos",
+				Java: &config.JavaModule{
+					APIShortnameOverride: "common-protos",
+					SkipPOMUpdates:       true,
+					SkipAPIID:            true,
+					TransportOverride:    "grpc",
+				},
+			},
+		},
+		{
+			name: "skip pom updates",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+				},
+			},
+		},
+		{
+			name: "monolithic java api",
+			lib: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1"},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+			want: &config.Library{
+				Name: "grafeas",
+				Java: &config.JavaModule{
+					SkipPOMUpdates: true,
+					JavaAPIs: []*config.JavaAPI{
+						{Path: "grafeas/v1", Monolithic: true},
+						{Path: "grafeas/v1beta1"},
+					},
+				},
+			},
+		},
+		{
+			name: "no override",
+			lib: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+			want: &config.Library{
+				Name: "language",
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			applyJavaLibraryOverrides(test.lib)
+			if diff := cmp.Diff(test.want, test.lib); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestRunJavaMigration(t *testing.T) {
-	fetchSourceWithCommit = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+	fetchGoogleapisWithCommitVar = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
 			Commit: commitish,
 			SHA256: "sha123",
 			Dir:    "../../../internal/testdata/googleapis",
+		}, nil
+	}
+	fetchShowcaseWithCommitVar = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+		return &config.Source{
+			Commit: commitish,
+			SHA256: "sha456",
+			Dir:    "../../../internal/testdata/gapic-showcase",
 		}, nil
 	}
 	for _, test := range []struct {
@@ -141,6 +250,17 @@ func TestRunJavaMigration(t *testing.T) {
 				t.Fatal(err)
 			}
 			writeVersionsFile(t, dir, "")
+
+			// Create dummy showcase pom.xml to avoid failure in runJavaMigration
+			showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
+			if err := os.MkdirAll(showcaseDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			pomPath := filepath.Join(showcaseDir, "pom.xml")
+			if err := os.WriteFile(pomPath, []byte("<gapic-showcase.version>0.39.0</gapic-showcase.version>"), 0644); err != nil {
+				t.Fatal(err)
+			}
+
 			if test.insert {
 				// Create dummy pom.xml to be updated
 				libDir := filepath.Join(dir, "java-language-v1")
@@ -496,7 +616,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                "google/cloud/gkehub/policycontroller/v1beta",
 									Samples:             new(false),
-									ProtoOnly:           true,
+									ProtoGRPCOnly:       true,
 									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
@@ -538,7 +658,7 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoOnly:               true,
+									ProtoGRPCOnly:           true,
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
@@ -617,7 +737,7 @@ func TestBuildConfig(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildConfig(test.gen, ".", test.src, test.versions)
+			got, err := buildConfig(test.gen, ".", test.src, nil, test.versions)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -775,7 +895,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				},
 			}
 
-			got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil)
+			got, err := buildConfig(gen, ".", &config.Source{Dir: srcDir}, nil, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -878,6 +998,47 @@ func TestReadVersions_MissingFile(t *testing.T) {
 	}
 }
 
+func TestExtractVersionFromPOM(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		content     string
+		wantVersion string
+		wantErr     bool
+	}{
+		{
+			name:        "success",
+			content:     "<project><properties><gapic-showcase.version>0.39.0</gapic-showcase.version></properties></project>",
+			wantVersion: "0.39.0",
+		},
+		{
+			name:    "missing version",
+			content: "<project><properties></properties></project>",
+			wantErr: true,
+		},
+		{
+			name:    "malformed tag",
+			content: "<gapic-showcase.version>0.39.0",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			pomPath := filepath.Join(tmpDir, "pom.xml")
+			if err := os.WriteFile(pomPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := extractVersionFromPOM(pomPath)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("extractVersionFromPOM() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if !test.wantErr && got != test.wantVersion {
+				t.Errorf("extractVersionFromPOM() = %v, want %v", got, test.wantVersion)
+			}
+		})
+	}
+}
+
 func writeVersionsFile(t *testing.T, dir, content string) string {
 	t.Helper()
 	path := filepath.Join(dir, "versions.txt")
@@ -909,7 +1070,7 @@ func TestParseJavaBazel(t *testing.T) {
 			want: &javaGAPICInfo{
 				Samples:             false,
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -922,7 +1083,7 @@ func TestParseJavaBazel(t *testing.T) {
 					"google/iam/v1/iam_policy.proto",
 				},
 				OmitCommonResources: false,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 		{
@@ -930,7 +1091,7 @@ func TestParseJavaBazel(t *testing.T) {
 			googleapisDir: "testdata/parse-bazel/omit-common-resources",
 			want: &javaGAPICInfo{
 				OmitCommonResources: true,
-				ProtoOnly:           true,
+				ProtoGRPCOnly:       true,
 			},
 		},
 	} {

@@ -85,6 +85,13 @@ type modelAnnotations struct {
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
 	FakeList    string
 	ProtoPrefix string
+	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
+	UseWorkspace bool
+}
+
+// HasDocLines returns true if the generated package has doc comments.
+func (m *modelAnnotations) HasDocLines() bool {
+	return len(m.DocLines) > 0
 }
 
 // HasServices returns true if the model has services.
@@ -198,10 +205,16 @@ type fieldAnnotation struct {
 }
 
 type enumAnnotation struct {
+	Parent       *api.Enum
 	Name         string
 	DocLines     []string
 	DefaultValue string
 	Model        *api.API
+}
+
+func (e *enumAnnotation) HasCustomEncoding() bool {
+	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID]
+	return hasCustomEncoding
 }
 
 type enumValueAnnotation struct {
@@ -259,6 +272,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		packageVersion             string
 		partFileReference          string
 		doNotPublish               bool
+		useWorkspace               = true
 		dependencies               = []string{}
 		devDependencies            = []string{}
 		repositoryURL              string
@@ -340,6 +354,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			annotate.supportsSSE = value
+		case key == "use-workspace":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return fmt.Errorf(
+					"cannot convert `use-workspace` value %q to boolean: %w",
+					definition,
+					err,
+				)
+			}
+			useWorkspace = value
 		case key == "readme-after-title-text":
 			// Markdown that will be inserted into the README.md after the title section.
 			readMeAfterTitleText = definition
@@ -442,7 +466,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	slices.Sort(devDependencies)
-
+	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
 		Parent:                    model,
 		PackageName:               pkgName,
@@ -458,7 +482,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model),
+		DocLines:                   docLines,
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
@@ -472,6 +496,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		Exports:                    exports,
 		FakeList:                   strings.Join(fakes, ", "),
 		ProtoPrefix:                protobufPrefix,
+		UseWorkspace:               useWorkspace,
 	}
 
 	model.Codec = ann
@@ -983,6 +1008,11 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
+// canBeNull returns whether the given field can have a `null` JSON serialization.
+func canBeNull(field *api.Field) bool {
+	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
+}
+
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
@@ -1000,6 +1030,18 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 		default:
 			defaultValue = defaultValues[field.Typez].Value
 		}
+	}
+
+	// Parsers should accept `null` JSON values but consider the field to be
+	// unset. `NullValue` and `Value` are exceptions to this rule, because their
+	// serialization is/can be `null`.
+	//
+	// See https://protobuf.dev/programming-guides/json/#null-value
+	if canBeNull(field) {
+		decoder := annotate.decoder(field.Typez, field.TypezID)
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) "+
+			"{(false,_) => %s, "+
+			"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
 	}
 
 	switch {
@@ -1224,6 +1266,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	enum.Codec = &enumAnnotation{
+		Parent:       enum,
 		Name:         enumName(enum),
 		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,

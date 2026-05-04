@@ -30,21 +30,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: resource
+              help: The resource id of the {resource} resource.
+              parameter_name: resourcesId
+          collection: methodasync.projects.locations.resources
+          disable_auto_completers: false
           name: resource
           plural_name: resources
-          collection: methodasync.projects.locations.resources
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: resourcesId
-              attribute_name: resource
-              help: The resource id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: labels
         api_field: resource.labels
@@ -109,5 +109,5 @@
       - methodasync.projects.locations.operations
     extract_resource_result: true
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true

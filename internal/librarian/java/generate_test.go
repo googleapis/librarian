@@ -385,7 +385,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
+				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoGRPCOnly: true},
 			},
 		},
 	}
@@ -956,6 +956,41 @@ func TestDeriveAdditionalProtoPaths(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := deriveAdditionalProtoPaths(test.javaAPI, googleapisDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveAPIBase(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		apiPath string
+		want    string
+	}{
+		{
+			name:    "regular library",
+			library: &config.Library{Name: "secretmanager"},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "v1",
+		},
+		{
+			name:    "common-protos fallback to v1",
+			library: &config.Library{Name: "common-protos"},
+			apiPath: "google/cloud/audit",
+			want:    "v1",
+		},
+		{
+			name:    "common-protos with versioned path",
+			library: &config.Library{Name: "common-protos"},
+			apiPath: "google/apps/card/v1",
+			want:    "v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveAPIBase(test.library, test.apiPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

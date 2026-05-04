@@ -49,12 +49,13 @@ const (
 )
 
 var (
-	fetchSourceWithCommit = fetchGoogleapisWithCommit
+	fetchGoogleapisWithCommitVar = fetchGoogleapisWithCommit
+	fetchShowcaseWithCommitVar   = fetchShowcaseWithCommit
 )
 
 type javaGAPICInfo struct {
 	AdditionalProtos    []string
-	ProtoOnly           bool
+	ProtoGRPCOnly       bool
 	Samples             bool
 	OmitCommonResources bool
 }
@@ -71,7 +72,7 @@ func parseJavaBazel(googleapisDir, dir string) (*javaGAPICInfo, error) {
 	// 1. From java_gapic_library
 	rules := file.Rules("java_gapic_library")
 	if len(rules) == 0 {
-		info.ProtoOnly = true
+		info.ProtoGRPCOnly = true
 	} else {
 		if len(rules) > 1 {
 			log.Printf("Warning: multiple java_gapic_library in %s/BUILD.bazel, using first", dir)
@@ -163,15 +164,24 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if commit == "" {
 		commit = "master"
 	}
-	src, err := fetchSourceWithCommit(ctx, githubEndpoints, commit)
+	src, err := fetchGoogleapisWithCommitVar(ctx, githubEndpoints, commit)
 	if err != nil {
-		return errFetchSource
+		return fmt.Errorf("failed to fetch googleapis source: %w", err)
 	}
+	showcaseVersion, err := getShowcaseVersion(repoPath)
+	if err != nil {
+		return fmt.Errorf("failed to get showcase version: %w", err)
+	}
+	showcaseSrc, err := fetchShowcaseWithCommitVar(ctx, githubEndpoints, "v"+showcaseVersion)
+	if err != nil {
+		return fmt.Errorf("failed to fetch showcase source: %w", err)
+	}
+
 	versions, err := readVersions(filepath.Join(repoPath, "versions.txt"))
 	if err != nil {
 		return err
 	}
-	cfg, err := buildConfig(gen, repoPath, src, versions)
+	cfg, err := buildConfig(gen, repoPath, src, showcaseSrc, versions)
 	if err != nil {
 		return err
 	}
@@ -181,6 +191,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
+	cfg.Sources.Showcase.Dir = ""
 
 	if shouldInsertMarkers {
 		if err := insertMarkers(repoPath, cfg); err != nil {
@@ -189,7 +200,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	}
 
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
-		return errTidyFailed
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
 	log.Printf("Successfully migrated %d Java libraries", len(cfg.Libraries))
 	return nil
@@ -223,7 +234,7 @@ func readVersions(path string) (map[string]string, error) {
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, versions map[string]string) (*config.Config, error) {
+func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *config.Source, versions map[string]string) (*config.Config, error) {
 	var libs []*config.Library
 	if v, ok := versions["google-cloud-java"]; ok {
 		libs = append(libs, &config.Library{
@@ -261,8 +272,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 				AdditionalProtos:    info.AdditionalProtos,
 				OmitCommonResources: info.OmitCommonResources,
 			}
-			if info.ProtoOnly {
-				javaAPI.ProtoOnly = true
+			if info.ProtoGRPCOnly {
+				javaAPI.ProtoGRPCOnly = true
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
@@ -318,6 +329,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 			},
 		}
 		applyJavaLibraryOverrides(lib)
+
 		if len(apis) > 0 {
 			derivedShortName := name
 			serviceconfig.SortAPIs(apis)
@@ -352,6 +364,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src *config.Source, ver
 		},
 		Sources: &config.Sources{
 			Googleapis: src,
+			Showcase:   showcaseSrc,
 		},
 		Libraries: libs,
 		Repo:      "googleapis/google-cloud-java",
@@ -446,11 +459,30 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
 	}
+	if override, ok := apiShortnameOverrides[lib.Name]; ok {
+		lib.Java.APIShortnameOverride = override
+	}
+	if skipPOMUpdates[lib.Name] {
+		lib.Java.SkipPOMUpdates = true
+	}
+	if skipAPIID[lib.Name] {
+		lib.Java.SkipAPIID = true
+	}
+	for _, ja := range lib.Java.JavaAPIs {
+		if monolithicJavaAPIs[ja.Path] {
+			ja.Monolithic = true
+		}
+	}
 }
 
 // applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
 // for specific APIs, mirroring logic in sdk-platform-java.
 func applyJavaProtoOverrides(api *config.JavaAPI) {
+	for prefix, protos := range javaAdditionalProtosOverrides {
+		if strings.HasPrefix(api.Path, prefix) {
+			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
+		}
+	}
 	switch {
 	case api.Path == "google/cloud":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")
@@ -465,10 +497,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
 			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
 		)
-	case strings.HasPrefix(api.Path, "google/cloud/filestore"):
-		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/common/operation_metadata.proto")
-	case strings.HasPrefix(api.Path, "google/cloud/oslogin"):
-		api.AdditionalProtos = append(api.AdditionalProtos, "google/cloud/oslogin/common/common.proto")
 	case api.Path == "google/rpc":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
@@ -753,4 +781,22 @@ func extractStrings(expr build.Expr) []string {
 		}
 	})
 	return res
+}
+
+func getShowcaseVersion(repoPath string) (string, error) {
+	showcaseDir := filepath.Join(repoPath, "java-showcase")
+	return extractVersionFromPOM(filepath.Join(showcaseDir, "gapic-showcase", "pom.xml"))
+}
+
+func extractVersionFromPOM(pomPath string) (string, error) {
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		return "", fmt.Errorf("read %s: %w", pomPath, err)
+	}
+	re := regexp.MustCompile(`<gapic-showcase\.version>(.*?)</gapic-showcase\.version>`)
+	match := re.FindSubmatch(content)
+	if len(match) < 2 {
+		return "", fmt.Errorf("failed to find gapic-showcase.version in %s", pomPath)
+	}
+	return string(match[1]), nil
 }

@@ -1200,3 +1200,62 @@ func TestResolveNodejsAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestInjectV1SmallExports(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		input   string
+		want    string
+		wantErr bool
+	}{
+		{
+			name:  "successfully injects",
+			input: "import * as v1 from './v1';\nimport * as v1beta from './v1beta';\nexport {v1, v1beta};\nexport default {v1, v1beta};\n",
+			want:  "import * as v1small from './v1small';\nimport * as v1 from './v1';\nimport * as v1beta from './v1beta';\nexport {v1small, v1, v1beta};\nexport default {v1small, v1, v1beta};\n",
+		},
+		{
+			name:  "skips if already injected",
+			input: "import * as v1small from './v1small';\nimport * as v1 from './v1';\nexport {v1small, v1};\n",
+			want:  "import * as v1small from './v1small';\nimport * as v1 from './v1';\nexport {v1small, v1};\n",
+		},
+		{
+			name:    "fails if v1 import missing",
+			input:   "import * as v1beta from './v1beta';\nexport {v1, v1beta};\n",
+			wantErr: true,
+		},
+		{
+			name:    "fails if v1 export missing",
+			input:   "import * as v1 from './v1';\nexport {v1beta};\n",
+			wantErr: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			srcDir := filepath.Join(outDir, "src")
+			if err := os.MkdirAll(srcDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			indexPath := filepath.Join(srcDir, "index.ts")
+			if err := os.WriteFile(indexPath, []byte(test.input), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			err := injectV1SmallExports(outDir)
+			if (err != nil) != test.wantErr {
+				t.Errorf("injectV1SmallExports() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if test.wantErr {
+				return
+			}
+
+			got, err := os.ReadFile(indexPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

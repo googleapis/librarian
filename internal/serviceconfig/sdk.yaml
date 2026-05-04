@@ -151,6 +151,7 @@
   description: Card interface displayed in a Google Chat message or Google Workspace Add-on.
   documentation_uri: https://developers.google.com/chat
   languages:
+    - java
     - python
   skip_rest_numeric_enums:
     - python
@@ -281,6 +282,9 @@
     - python
   release_level:
     java: preview
+- path: google/cloud
+  languages:
+    - java
 - path: google/cloud/abuseevent/logging/v1
   languages:
     - all
@@ -534,6 +538,7 @@
 - path: google/cloud/audit
   documentation_uri: https://cloud.google.com/logging/docs/audit
   languages:
+    - java
     - python
 - path: google/cloud/auditmanager/v1
   languages:
@@ -1741,8 +1746,6 @@
     - all
   release_level:
     java: stable
-  transports:
-    all: rest
 - path: google/cloud/memorystore/v1beta
   description: Memorystore for Valkey is a fully managed Valkey service for Google Cloud which supports both Cluster Mode Enabled and Cluster Mode Disabled instances.
   languages:
@@ -1750,8 +1753,6 @@
     - java
     - nodejs
     - python
-  transports:
-    all: rest
 - path: google/cloud/metastore/v1
   documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
@@ -2820,6 +2821,7 @@
 - path: google/geo/type
   documentation_uri: https://mapsplatform.google.com/maps-products
   languages:
+    - java
     - python
   skip_rest_numeric_enums:
     - python
@@ -3259,6 +3261,7 @@
   documentation_uri: https://developers.google.com/merchant/api
   languages:
     - go
+    - java
     - python
   skip_rest_numeric_enums:
     - python
@@ -3293,6 +3296,7 @@
 - path: google/storage/v2
   languages:
     - all
+  new_issue_uri: https://issuetracker.google.com/issues/new?component=187243&template=1162869
   transports:
     go: grpc
     java: grpc
@@ -3323,6 +3327,8 @@
   languages:
     - all
   service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
+  skip_rest_numeric_enums:
+    - java
 - path: src/google/protobuf
   languages:
     - all

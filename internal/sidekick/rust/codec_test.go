@@ -43,7 +43,7 @@ func createRustCodec() *codec {
 }
 
 func TestParseOptions(t *testing.T) {
-	for _, test := range []struct {
+	for i, test := range []struct {
 		Format  string
 		Options map[string]string
 		Update  func(*codec)
@@ -343,29 +343,31 @@ func TestParseOptions(t *testing.T) {
 			},
 		},
 	} {
-		want, err := newCodec(test.Format, map[string]string{})
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		test.Update(want)
-		got, err := newCodec(test.Format, test.Options)
-		if err != nil {
-			t.Error(err)
-			continue
-		}
-		if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{}), cmpopts.IgnoreFields(codec{}, "extraPackages")); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
-		}
-		lessPackagez := func(a, b *packagez) bool { return a.name < b.name }
-		if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(lessPackagez)); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
-		}
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			want, err := newCodec(test.Format, map[string]string{})
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			test.Update(want)
+			got, err := newCodec(test.Format, test.Options)
+			if err != nil {
+				t.Error(err)
+				return
+			}
+			if diff := cmp.Diff(want, got, cmp.AllowUnexported(codec{}, packagez{}), cmpopts.IgnoreFields(codec{}, "extraPackages")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			lessPackagez := func(a, b *packagez) bool { return a.name < b.name }
+			if diff := cmp.Diff(want.extraPackages, got.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(lessPackagez)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
 func TestParseOptionsErrors(t *testing.T) {
-	for _, test := range []struct {
+	for i, test := range []struct {
 		Options map[string]string
 	}{
 		{Options: map[string]string{"name-overrides": "a=b,c"}},
@@ -382,9 +384,11 @@ func TestParseOptionsErrors(t *testing.T) {
 		{Options: map[string]string{"internal-builders": ""}},
 		{Options: map[string]string{"--invalid--": ""}},
 	} {
-		if got, err := newCodec("disco", test.Options); err == nil {
-			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Options)
-		}
+		t.Run(fmt.Sprintf("case_%d", i), func(t *testing.T) {
+			if got, err := newCodec("disco", test.Options); err == nil {
+				t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Options)
+			}
+		})
 	}
 }
 
@@ -397,9 +401,11 @@ func TestParsePackageOptionError(t *testing.T) {
 		{Definition: "force-used=,package=a"},
 		{Definition: "--invalid--=a,package=b"},
 	} {
-		if got, err := parsePackageOption("package:test", test.Definition); err == nil {
-			t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Definition)
-		}
+		t.Run(test.Definition, func(t *testing.T) {
+			if got, err := parsePackageOption("package:test", test.Definition); err == nil {
+				t.Errorf("expected an error parsing the options, got=%v, options=%v", got, test.Definition)
+			}
+		})
 	}
 	if got, err := parsePackageOption("package:", "unused"); err == nil {
 		t.Errorf("expected an error parsing the options, got=%v", got)
@@ -849,50 +855,52 @@ func TestFieldMapTypeValues(t *testing.T) {
 			&api.Field{Typez: api.TypezMessage, TypezID: ".test.Message"},
 		},
 	} {
-		field := &api.Field{
-			Name:    "indexed",
-			ID:      ".test.Message.indexed",
-			Typez:   api.TypezMessage,
-			TypezID: ".test.$MapThing",
-		}
-		other_message := &api.Message{
-			Name:   "OtherMessage",
-			ID:     ".test.OtherMessage",
-			IsMap:  true,
-			Fields: []*api.Field{},
-		}
-		message := &api.Message{
-			Name:   "Message",
-			ID:     ".test.Message",
-			IsMap:  true,
-			Fields: []*api.Field{field},
-		}
-		// Complete the value field
-		value := test.value
-		value.Name = "value"
-		value.ID = ".test.$MapThing.value"
-		key := &api.Field{
-			Name:  "key",
-			ID:    ".test.$MapThing.key",
-			Typez: api.TypezInt32,
-		}
-		map_thing := &api.Message{
-			Name:   "$MapThing",
-			ID:     ".test.$MapThing",
-			IsMap:  true,
-			Fields: []*api.Field{key, value},
-		}
-		model := api.NewTestAPI([]*api.Message{message, other_message}, []*api.Enum{}, []*api.Service{})
-		model.AddMessage(map_thing)
-		api.LabelRecursiveFields(model)
-		c := createRustCodec()
-		got, err := c.fieldType(field, model, false, model.PackageName)
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got != test.want {
-			t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
-		}
+		t.Run(test.want, func(t *testing.T) {
+			field := &api.Field{
+				Name:    "indexed",
+				ID:      ".test.Message.indexed",
+				Typez:   api.TypezMessage,
+				TypezID: ".test.$MapThing",
+			}
+			other_message := &api.Message{
+				Name:   "OtherMessage",
+				ID:     ".test.OtherMessage",
+				IsMap:  true,
+				Fields: []*api.Field{},
+			}
+			message := &api.Message{
+				Name:   "Message",
+				ID:     ".test.Message",
+				IsMap:  true,
+				Fields: []*api.Field{field},
+			}
+			// Complete the value field
+			value := test.value
+			value.Name = "value"
+			value.ID = ".test.$MapThing.value"
+			key := &api.Field{
+				Name:  "key",
+				ID:    ".test.$MapThing.key",
+				Typez: api.TypezInt32,
+			}
+			map_thing := &api.Message{
+				Name:   "$MapThing",
+				ID:     ".test.$MapThing",
+				IsMap:  true,
+				Fields: []*api.Field{key, value},
+			}
+			model := api.NewTestAPI([]*api.Message{message, other_message}, []*api.Enum{}, []*api.Service{})
+			model.AddMessage(map_thing)
+			api.LabelRecursiveFields(model)
+			c := createRustCodec()
+			got, err := c.fieldType(field, model, false, model.PackageName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("mismatched field type for %s, got=%s, want=%s", field.Name, got, test.want)
+			}
+		})
 	}
 }
 
@@ -1260,7 +1268,7 @@ Maybe they wanted to show some JSON:
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1289,7 +1297,7 @@ func TestFormatDocCommentsBullets(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1345,7 +1353,7 @@ func TestFormatDocCommentsNumbers(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1424,7 +1432,7 @@ block:
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1448,7 +1456,7 @@ func TestFormatDocCommentsImplicitBlockQuoteClosing(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1478,7 +1486,7 @@ Second [example][].
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1572,7 +1580,7 @@ func TestFormatDocCommentsCrossLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1634,12 +1642,12 @@ func TestFormatDocCommentsRelativeCrossLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestFormatDocCommentsSetextHeadings(t *testing.T) {
-	for _, testCase := range []struct {
+	for _, test := range []struct {
 		name  string
 		input string
 		want  string
@@ -1679,7 +1687,7 @@ func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 ///   API`,
 		},
 	} {
-		t.Run(testCase.name, func(t *testing.T) {
+		t.Run(test.name, func(t *testing.T) {
 			model := api.NewTestAPI(
 				[]*api.Message{}, []*api.Enum{},
 				[]*api.Service{})
@@ -1689,12 +1697,12 @@ func TestFormatDocCommentsSetextHeadings(t *testing.T) {
 			}
 			codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{})
 
-			comments, err := codec.formatDocComments(testCase.input, "test-only-ID", model, []string{})
+			comments, err := codec.formatDocComments(test.input, "test-only-ID", model, []string{})
 			if err != nil {
 				t.Fatal(err)
 			}
 			got := strings.Join(comments, "\n")
-			if diff := cmp.Diff(testCase.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -1759,7 +1767,7 @@ implied enum value reference [SomeMessage.SomeEnum.ENUM_VALUE][]
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1797,7 +1805,7 @@ func TestFormatDocCommentsHTMLTags(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1992,7 +2000,7 @@ Truncated link: [text](https://example11.com`
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -2162,7 +2170,7 @@ func TestEnumValueVariantName(t *testing.T) {
 	}
 	want := []string{"Unspecified", "EnumName1", "A", "Partial", "Green"}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in enum variant names (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = []string{}
@@ -2171,7 +2179,7 @@ func TestEnumValueVariantName(t *testing.T) {
 	}
 	want = []string{"Unspecified", "InheritFromSubnetwork"}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in enum variant names (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = []string{}
@@ -2180,7 +2188,7 @@ func TestEnumValueVariantName(t *testing.T) {
 	}
 	want = []string{"Unknown", "Verify"}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in enum variant names (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

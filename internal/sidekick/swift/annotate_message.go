@@ -25,10 +25,11 @@ const (
 )
 
 type messageAnnotations struct {
-	Name     string
-	DocLines []string
-	Model    *modelAnnotations
-	TypeURL  string
+	Name                string
+	DocLines            []string
+	Model               *modelAnnotations
+	TypeURL             string
+	CustomSerialization bool
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
@@ -40,10 +41,11 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	}
 	docLines := c.formatDocumentation(message.Documentation)
 	annotations := &messageAnnotations{
-		Name:     pascalCase(message.Name),
-		DocLines: docLines,
-		Model:    model,
-		TypeURL:  typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		Name:                pascalCase(message.Name),
+		DocLines:            docLines,
+		Model:               model,
+		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
+		CustomSerialization: len(message.OneOfs) > 0,
 	}
 
 	message.Codec = annotations
@@ -54,7 +56,11 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err := c.annotateField(field); err != nil {
 			return err
 		}
+		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok && fieldCodec.Name != field.JSONName {
+			annotations.CustomSerialization = true
+		}
 	}
+
 	for _, nested := range message.Messages {
 		if err := c.annotateMessage(nested, model); err != nil {
 			return err

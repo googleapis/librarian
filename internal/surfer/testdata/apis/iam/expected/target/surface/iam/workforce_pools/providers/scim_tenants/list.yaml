@@ -58,6 +58,7 @@
       is_positional: false
     params:
       - arg_name: show-deleted
+        is_positional: false
         api_field: showDeleted
         required: false
         help_text: Include SCIM tenants that have been deleted.

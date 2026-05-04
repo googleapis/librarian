@@ -36,21 +36,21 @@
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: workbench
+              help: The workbench id of the {resource} resource.
+              parameter_name: workbenchesId
+          collection: seclm.projects.locations.workbenches
+          disable_auto_completers: false
           name: workbench
           plural_name: workbenches
-          collection: seclm.projects.locations.workbenches
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: workbenchesId
-              attribute_name: workbench
-              help: The workbench id of the {resource} resource.
-          disable_auto_completers: false
         required: true
       - arg_name: labels
         api_field: workbench.labels
@@ -91,5 +91,5 @@
       - seclm.projects.locations.operations
     extract_resource_result: true
   update:
-    read_modify_update: true
     disable_auto_field_mask: true
+    read_modify_update: true

@@ -15,16 +15,46 @@
 package golang
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestInstall(t *testing.T) {
+func TestInstall_Error(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+	}{
+		{"nil tools", nil},
+		{"empty tools", &config.Tools{}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Install(t.Context(), test.tools); !errors.Is(err, errNoToolsSpecified) {
+				t.Fatalf("Install() error = %v, want %v", err, errNoToolsSpecified)
+			}
+		})
+	}
+}
+
+func TestInstall_Success(t *testing.T) {
 	gobin := t.TempDir()
 	t.Setenv("GOBIN", gobin)
-	if err := Install(t.Context(), nil); err != nil {
+	// Although these are used in tests, they do not need to be updated since they are only testing
+	// that the tools can be read and installed, but not necessarily whether their version is compatible
+	// with librarian
+	tools := &config.Tools{
+		Go: []*config.GoTool{
+			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
+			{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.44.0"},
+			{Name: "google.golang.org/grpc/cmd/protoc-gen-go-grpc", Version: "v1.3.0"},
+			{Name: "google.golang.org/protobuf/cmd/protoc-gen-go", Version: "v1.36.11"},
+		},
+	}
+	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
 	suffix := ""
@@ -40,7 +70,7 @@ func TestInstall(t *testing.T) {
 		t.Run(tool, func(t *testing.T) {
 			path := filepath.Join(gobin, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
-				t.Errorf("expected tool binary %s to exist: %v", tool, err)
+				t.Error(err)
 			}
 		})
 	}

@@ -19,8 +19,12 @@
   auto_generated: true
   hidden: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Cancel resources
+    description: Cancel a resource
+    examples: |-
+      To cancel the resource, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: ""
@@ -31,7 +35,7 @@
           disable_auto_completers: false
         required: true
   request:
-    api_version: v1alpha
+    api_version: v1
     collection:
       - parallelstore.projects.locations.operations
     method: cancel

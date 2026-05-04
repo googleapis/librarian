@@ -50,6 +50,19 @@ func TestAddLicense(t *testing.T) {
 	rungo(t, "tool", "addlicense", "-check", "-c", "Google LLC", "-l", "apache", "-ignore", "**/*pom.xml", ".")
 }
 
+func TestGoGenerate(t *testing.T) {
+	rungo(t, "generate", "./...")
+	cmd := exec.CommandContext(t.Context(), "git", "status", "--porcelain")
+	var stdout bytes.Buffer
+	cmd.Stdout = &stdout
+	if err := cmd.Run(); err != nil {
+		t.Fatal(err)
+	}
+	if stdout.Len() > 0 {
+		t.Fatalf("go generate produced diffs:\n%s", stdout.String())
+	}
+}
+
 func rungo(t *testing.T, args ...string) string {
 	t.Helper()
 
