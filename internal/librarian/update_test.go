@@ -60,13 +60,11 @@ var (
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
-	// Update defaults to using the branch configured in [sourceRepos].
-	// We set up the test server handlers accordingly.
-	googleapisBranch := sourceRepos["googleapis"].Branch
-	discoveryBranch := sourceRepos["discovery"].Branch
-	protobufBranch := sourceRepos["protobuf"].Branch
-	showcaseBranch := sourceRepos["showcase"].Branch
-
+	t.Helper()
+	googleapisBranch := sourceRepos["sources.googleapis"].Branch
+	discoveryBranch := sourceRepos["sources.discovery"].Branch
+	protobufBranch := sourceRepos["sources.protobuf"].Branch
+	showcaseBranch := sourceRepos["sources.showcase"].Branch
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/repos/googleapis/googleapis/commits/" + googleapisBranch:
@@ -93,12 +91,15 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			http.NotFound(w, r)
 		}
 	}))
-
+	originalAPI := githubAPI
+	originalDownload := githubDownload
+	t.Cleanup(func() {
+		githubAPI = originalAPI
+		githubDownload = originalDownload
+	})
 	githubAPI = ts.URL
 	githubDownload = ts.URL
-
 	cp := setupTestConfig(t, conf)
-
 	return &updateTestSetup{
 		server:     ts,
 		configPath: cp,
@@ -106,6 +107,7 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 }
 
 func setupTestConfig(t *testing.T, conf *config.Config) string {
+	t.Helper()
 	if conf == nil {
 		return ""
 	}
@@ -128,7 +130,7 @@ func TestUpdateCommand(t *testing.T) {
 	}{
 		{
 			name: "googleapis",
-			args: []string{"librarian", "update", "googleapis"},
+			args: []string{"librarian", "update", "sources.googleapis"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
 				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
@@ -140,7 +142,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "discovery",
-			args: []string{"librarian", "update", "discovery"},
+			args: []string{"librarian", "update", "sources.discovery"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Discovery.Commit = "this-should-be-changed"
 				cfg.Sources.Discovery.SHA256 = "this-should-be-changed"
@@ -152,7 +154,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "conformance",
-			args: []string{"librarian", "update", "conformance"},
+			args: []string{"librarian", "update", "sources.conformance"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Conformance.Commit = "this-should-be-changed"
 				cfg.Sources.Conformance.SHA256 = "this-should-be-changed"
@@ -164,7 +166,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "protobuf",
-			args: []string{"librarian", "update", "protobuf"},
+			args: []string{"librarian", "update", "sources.protobuf"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.ProtobufSrc.Commit = "this-should-change"
 				cfg.Sources.ProtobufSrc.SHA256 = "this-should-change"
@@ -176,7 +178,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "showcase",
-			args: []string{"librarian", "update", "showcase"},
+			args: []string{"librarian", "update", "sources.showcase"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Showcase.Commit = "this-should-change"
 				cfg.Sources.Showcase.SHA256 = "this-should-change"
@@ -188,7 +190,7 @@ func TestUpdateCommand(t *testing.T) {
 		},
 		{
 			name: "multiple sources",
-			args: []string{"librarian", "update", "discovery", "googleapis"},
+			args: []string{"librarian", "update", "sources.discovery", "sources.googleapis"},
 			setup: func(cfg *config.Config) {
 				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
 				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
@@ -217,28 +219,22 @@ func TestUpdateCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			initialConfig := updateTestConfig()
 			test.setup(initialConfig)
-
 			wantConfig := updateTestConfig()
 			test.setup(wantConfig)
 			test.wantConfig(wantConfig)
-
 			setup := setupUpdateTest(t, initialConfig)
 			defer setup.server.Close()
-
 			if test.before != nil {
 				test.before(t)
 			}
-
 			err := Run(t.Context(), test.args...)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			gotConfig, err := yaml.Read[config.Config](setup.configPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -265,7 +261,7 @@ func TestUpdateCommand_Errors(t *testing.T) {
 		},
 		{
 			name: "empty sources",
-			args: []string{"librarian", "update", "googleapis"},
+			args: []string{"librarian", "update", "sources.googleapis"},
 			conf: func() *config.Config {
 				cfg := sample.Config()
 				cfg.Sources = nil
@@ -314,10 +310,6 @@ func updateTestConfig() *config.Config {
 	return cfg
 }
 
-// fakeGoList returns a function that mocks `go list` execution by creating a
-// fake go binary in a temporary directory and adding it to the front of PATH.
-// It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
-// and returns the specified <want> version.
 func fakeGoList(target, want string) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
