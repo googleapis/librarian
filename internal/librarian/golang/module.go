@@ -260,3 +260,15 @@ func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output s
 	}
 	return snippetDir
 }
+
+// TidyModule tidies the Go module by running 'go mod tidy' in the output directory.
+func TidyModule(ctx context.Context, library *config.Library, goCmd string) error {
+	outDir, err := filepath.Abs(library.Output)
+	if err != nil {
+		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
+	}
+	if err := command.RunInDir(ctx, outDir, goCmd, "mod", "tidy"); err != nil {
+		return fmt.Errorf("failed to tidy module %s: %w", outDir, err)
+	}
+	return nil
+}

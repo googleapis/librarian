@@ -119,7 +119,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	} else if err != nil {
 		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
-	return nil
+	return TidyModule(ctx, library, goCmd)
 }
 
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
