@@ -16,15 +16,17 @@
 package gcloud
 
 import (
+	"bytes"
 	"embed"
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
 	"sort"
+	"text/template"
 
 	"github.com/iancoleman/strcase"
 
-	"github.com/cbroglie/mustache"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
@@ -60,9 +62,6 @@ type Command struct {
 	Usage string
 }
 
-// HasFlags reports whether the command has any flags.
-func (c Command) HasFlags() bool { return len(c.Flags) > 0 }
-
 // Generate is the package entry point. It builds the model, renders main.go,
 // writes it, then renders any other generated files via
 // language.GenerateFromModel.
@@ -78,13 +77,22 @@ func Generate(model *api.API, outdir string) error {
 	return renderReadme(outdir, model)
 }
 
-// renderMain renders the main.go contents from the CLI model.
+// renderMain renders the main.go contents from the CLI model. The template
+// output is run through go/format so the golden file is gofmt-stable.
 func renderMain(model CLIModel) (string, error) {
-	templateContents, err := templates.ReadFile("templates/package/cli.go.mustache")
+	t, err := template.ParseFS(templates, "templates/package/cli.go.tmpl")
 	if err != nil {
 		return "", err
 	}
-	return mustache.Render(string(templateContents), model)
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, model); err != nil {
+		return "", err
+	}
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("formatting generated main.go: %w", err)
+	}
+	return string(formatted), nil
 }
 
 func writeMain(outdir, contents string) error {

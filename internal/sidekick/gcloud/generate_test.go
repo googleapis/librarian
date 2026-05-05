@@ -275,24 +275,6 @@ func TestRenderReadme(t *testing.T) {
 	}
 }
 
-func TestCommandHasFlags(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		cmd  Command
-		want bool
-	}{
-		{"empty", Command{}, false},
-		{"with-flag", Command{Flags: []Flag{{Name: "x"}}}, true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.cmd.HasFlags()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestPathFlagsFromSegments(t *testing.T) {
 	for _, test := range []struct {
 		name     string
