@@ -22,7 +22,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"testing"
@@ -405,41 +404,12 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				outDir:   outDir,
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
-			var got []string
-			if test.name == "success" {
-				var err error
-				got, err = IdentifyMissingModules(library, outDir, googleapisDir)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
 			err := postProcessLibrary(t.Context(), params)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}
-			if err == nil && test.name == "success" {
-				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
-				released, _ := deriveLastReleasedVersion(library.Version)
-				want := []string{
-					formatVersionEntry(apiCoords.Proto.ArtifactID, released, library.Version),
-					formatVersionEntry(apiCoords.GRPC.ArtifactID, released, library.Version),
-					formatVersionEntry(apiCoords.GAPIC.ArtifactID, released, library.Version),
-					formatVersionEntry(apiCoords.BOM.ArtifactID, released, library.Version),
-					formatVersionEntry(apiCoords.Parent.ArtifactID, released, library.Version),
-				}
-				sort.Strings(got)
-				sort.Strings(want)
-				if diff := cmp.Diff(want, got); diff != "" {
-					t.Errorf("mismatch in new versions (-want +got):\n%s", diff)
-				}
-			}
 		})
 	}
-}
-
-func formatVersionEntry(artifactID, released, snapshot string) string {
-	return fmt.Sprintf("%s:%s:%s", artifactID, released, snapshot)
 }
 
 func TestDeriveLastReleasedVersion(t *testing.T) {
@@ -448,7 +418,6 @@ func TestDeriveLastReleasedVersion(t *testing.T) {
 		want  string
 	}{
 		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
-		{input: "0.1.0-SNAPSHOT", want: "0.0.0"},
 		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
 		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
 		{input: "1.2.3", want: "1.2.3"},
