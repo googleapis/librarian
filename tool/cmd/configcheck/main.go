@@ -116,7 +116,7 @@ func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config, lcfg *l
 	}
 	for _, lib := range cfg.Libraries {
 		if lib.SkipRelease != releaseBlocked[lib.Name] {
-			return fmt.Errorf("%w: library %s: 'skip_release' does not match 'release_blocked'", errLibraryReleaseBlockedNotSame, lib.Name)
+			return fmt.Errorf("%w: library %s: skip_release=%v != release_blocked=%v", errLibraryReleaseBlockedNotSame, lib.Name, lib.SkipRelease, releaseBlocked[lib.Name])
 		}
 	}
 	return nil
