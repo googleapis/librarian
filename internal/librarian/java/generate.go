@@ -59,20 +59,19 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
-	libSrcs, err := getLibrarySources(library, srcs)
-	if err != nil {
-		return err
-	}
+	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
+	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
+
 	// generate repo metadata prior to client because info is needed for
 	// owlbot.py to generate README.md
-	metadata, err := generateRepoMetadata(cfg, library, outdir, libSrcs.primaryDir)
+	metadata, err := generateRepoMetadata(cfg, library, outdir, primaryDir)
 	if err != nil {
 		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
 	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
-		apiCfg, err := serviceconfig.Find(libSrcs.primaryDir, api.Path, config.LanguageJava)
+		apiCfg, err := serviceconfig.Find(primaryDir, api.Path, config.LanguageJava)
 		if err != nil {
 			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
 		}
@@ -82,7 +81,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			cfg:      cfg,
 			api:      api,
 			library:  library,
-			libSrcs:  libSrcs,
+			srcCfg:   srcCfg,
 			outdir:   outdir,
 			metadata: metadata,
 			apiCfg:   apiCfg,
@@ -103,47 +102,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return nil
 }
 
-type librarySources struct {
-	// primaryDir is the main source directory for the library being generated.
-	// It maps to srcs.Showcase for the showcase library, and srcs.Googleapis for all others.
-	// Used for finding the library's protos, service configs, and defining the proto source root.
-	primaryDir string
-
-	// googleapisDir is the absolute path to the googleapis source directory.
-	// This is always needed (even for showcase) because common proto resources always reside in
-	// the googleapis repository.
-	googleapisDir string
-
-	// includeDirs contains the ordered list of import directories to pass to protoc via -I flags.
-	// Pre-calculated to keep generateAPI simple: includes [Showcase, Googleapis] for showcase,
-	// and just [Googleapis] for others.
-	includeDirs []string
-}
-
-func getLibrarySources(library *config.Library, srcs *sources.Sources) (*librarySources, error) {
-	// Ensure source dir is absolute to avoid issues with relative paths in protoc.
-	absGoogleapis, err := filepath.Abs(srcs.Googleapis)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve absolute path for googleapis: %w", err)
-	}
-	if library.Name == "showcase" {
-		absShowcase, err := filepath.Abs(srcs.Showcase)
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve absolute path for showcase: %w", err)
-		}
-		return &librarySources{
-			primaryDir:    absShowcase,
-			googleapisDir: absGoogleapis,
-			includeDirs:   []string{absShowcase, absGoogleapis},
-		}, nil
-	}
-	return &librarySources{
-		primaryDir:    absGoogleapis,
-		googleapisDir: absGoogleapis,
-		includeDirs:   []string{absGoogleapis},
-	}, nil
-}
-
 func deriveAPIBase(library *config.Library, apiPath string) string {
 	// TODO(https://github.com/googleapis/librarian/issues/5728):
 	// remove this after updated owlbot.py
@@ -157,7 +115,7 @@ type generateAPIParams struct {
 	cfg      *config.Config
 	api      *config.API
 	library  *config.Library
-	libSrcs  *librarySources
+	srcCfg   *sources.SourceConfig
 	outdir   string
 	metadata *repoMetadata
 	apiCfg   *serviceconfig.API
@@ -165,6 +123,9 @@ type generateAPIParams struct {
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
 	javaAPI := ResolveJavaAPI(params.library, params.api)
+	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
+	googleapisDir := params.srcCfg.Root("googleapis")
+
 	postParams := postProcessParams{
 		cfg:            params.cfg,
 		library:        params.library,
@@ -172,7 +133,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		metadata:       params.metadata,
 		outDir:         params.outdir,
 		apiBase:        deriveAPIBase(params.library, params.api.Path),
-		protoSourceDir: params.libSrcs.primaryDir,
+		protoSourceDir: primaryDir,
 		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := postParams.gapicDir()
@@ -184,38 +145,37 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		}
 	}
 
-	apiDir := filepath.Join(params.libSrcs.primaryDir, params.api.Path)
+	apiDir := filepath.Join(primaryDir, params.api.Path)
 	apiProtos, err := gatherProtos(apiDir, params.api.Path)
 	if err != nil {
 		return fmt.Errorf("failed to find protos: %w", err)
 	}
-	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, params.libSrcs.primaryDir)
+	apiProtos = filterProtos(apiProtos, javaAPI.ExcludedProtos, primaryDir)
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
 	}
 	postParams.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, params.libSrcs.primaryDir)
-	includeDirs := params.libSrcs.includeDirs
-	if err := runProtoc(ctx, protoProtocArgs(protoProtos, includeDirs, protoDir)); err != nil {
+	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
+	if err := runProtoc(ctx, protoProtocArgs(protoProtos, params.srcCfg, protoDir)); err != nil {
 		return fmt.Errorf("failed to generate proto: %w", err)
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if transport != "rest" {
-		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, includeDirs, gRPCDir)); err != nil {
+		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 	// 3. Generate GAPIC library.
 	if !javaAPI.ProtoGRPCOnly {
-		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, params.libSrcs.primaryDir, params.apiCfg)
+		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		additionalProtos := deriveAdditionalProtoPaths(javaAPI, params.libSrcs.googleapisDir)
-		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, includeDirs, gapicDir, gapicOpts)); err != nil {
+		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
+		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, params.srcCfg, gapicDir, gapicOpts)); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
@@ -247,32 +207,32 @@ var runProtoc = func(ctx context.Context, args []string) error {
 	return command.Run(ctx, "protoc", args...)
 }
 
-func baseProtocArgs(includeDirs ...string) []string {
+func baseProtocArgs(srcCfg *sources.SourceConfig) []string {
 	args := []string{
 		"--experimental_allow_proto3_optional",
 	}
-	for _, dir := range includeDirs {
-		args = append(args, "-I="+dir)
+	for _, root := range srcCfg.ActiveRoots {
+		args = append(args, "-I="+srcCfg.Root(root))
 	}
 	return args
 }
 
-func protoProtocArgs(apiProtos []string, includeDirs []string, protoDir string) []string {
-	args := baseProtocArgs(includeDirs...)
+func protoProtocArgs(apiProtos []string, srcCfg *sources.SourceConfig, protoDir string) []string {
+	args := baseProtocArgs(srcCfg)
 	args = append(args, fmt.Sprintf("--java_out=%s", protoDir))
 	args = append(args, apiProtos...)
 	return args
 }
 
-func gRPCProtocArgs(apiProtos []string, includeDirs []string, gRPCDir string) []string {
-	args := baseProtocArgs(includeDirs...)
+func gRPCProtocArgs(apiProtos []string, srcCfg *sources.SourceConfig, gRPCDir string) []string {
+	args := baseProtocArgs(srcCfg)
 	args = append(args, fmt.Sprintf("--java_grpc_out=%s", gRPCDir))
 	args = append(args, apiProtos...)
 	return args
 }
 
-func gapicProtocArgs(apiProtos, additionalProtos []string, includeDirs []string, gapicDir string, gapicOpts []string) []string {
-	args := baseProtocArgs(includeDirs...)
+func gapicProtocArgs(apiProtos, additionalProtos []string, srcCfg *sources.SourceConfig, gapicDir string, gapicOpts []string) []string {
+	args := baseProtocArgs(srcCfg)
 	args = append(args, fmt.Sprintf("--java_gapic_out=metadata:%s", gapicDir))
 	args = append(args, "--java_gapic_opt="+strings.Join(gapicOpts, ","))
 	args = append(args, apiProtos...)
