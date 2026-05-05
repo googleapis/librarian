@@ -33,8 +33,11 @@ func TestGroupBuilder_BuildRoot(t *testing.T) {
 		},
 	}
 
-	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
-	group := builder.buildRoot()
+	group := buildRootGroup(&groupParams{
+		model:   model,
+		service: model.Services[0],
+		config:  &provider.Config{},
+	})
 
 	if group.ClassName != "parallelstore" {
 		t.Errorf("group.ClassName = %q, want %q", group.ClassName, "parallelstore")
@@ -63,8 +66,11 @@ func TestGroupBuilder_BuildGroup(t *testing.T) {
 		},
 	}
 
-	builder := newGroupBuilder(model, model.Services[0], &provider.Config{})
-	group := builder.build([]string{"instances"})
+	group := buildGroup(&groupParams{
+		model:   model,
+		service: model.Services[0],
+		config:  &provider.Config{},
+	}, []string{"instances"})
 
 	if group.ClassName != "instances" {
 		t.Errorf("group.ClassName = %q, want %q", group.ClassName, "instances")

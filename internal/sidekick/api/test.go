@@ -24,7 +24,7 @@ import (
 // NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 	packageName := ""
-	state := &APIState{
+	state := &state{
 		MessageByID:    make(map[string]*Message),
 		MethodByID:     make(map[string]*Method),
 		EnumByID:       make(map[string]*Enum),
@@ -74,7 +74,7 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		Messages:    messages,
 		Enums:       enums,
 		Services:    services,
-		State:       state,
+		state:       state,
 	}
 	model.LoadWellKnownTypes()
 	return model

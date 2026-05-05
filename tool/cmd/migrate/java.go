@@ -299,9 +299,14 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
+		var roots []string
+		if name == "showcase" {
+			roots = []string{"showcase", "googleapis"}
+		}
 		lib := &config.Library{
 			Name:    name,
 			Version: version,
+			Roots:   roots,
 			APIs:    apis,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
@@ -497,8 +502,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
 			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
 		)
-	case api.Path == "google/rpc":
-		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
 }
 

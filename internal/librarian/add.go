@@ -39,34 +39,34 @@ import (
 )
 
 var (
-	errLibraryAlreadyExists      = errors.New("library already exists in config")
-	errAPIAlreadyExists          = errors.New("api already exists in library")
-	errAPIDuplicate              = errors.New("api duplicate in input")
-	errMissingAPI                = errors.New("must provide at least one API")
-	errMixedPreviewAndNonPreview = errors.New("cannot mix preview and non-preview APIs")
-	errPreviewRequiresLibrary    = errors.New("only APIs with an existing Library can have a Preview")
-	errPreviewAlreadyExists      = errors.New("preview library config already exists")
+	errAPIAlreadyExists       = errors.New("api already exists in library")
+	errLibraryAlreadyExists   = errors.New("library already exists in config")
+	errPreviewAlreadyExists   = errors.New("preview library config already exists")
+	errPreviewRequiresLibrary = errors.New("only APIs with an existing Library can have a Preview")
+	errWrongAPICount          = errors.New("must provide exactly one API path")
 )
 
 func addCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "add",
 		Usage:     "add a new client library",
-		UsageText: "librarian add <apis...>",
-		Description: `add registers one or more APIs as a new client library in librarian.yaml.
+		UsageText: "librarian add <api>",
+		Description: `add registers a single API in librarian.yaml.
 
-Each <api> is a path within the configured googleapis source, such as
+The <api> is a path within the configured googleapis source, such as
 "google/cloud/secretmanager/v1". The library name and other defaults are
 derived from the first API path using language-specific rules.
 
-Multiple API paths may be passed to bundle them into a single library. To
-add a preview client of an existing library, prefix every API path with
-"preview/"; preview and non-preview APIs cannot be mixed in one invocation.
+If the API path should naturally be included in an existing library, and if the
+language supports doing so, that library is modified. Otherwise, a new library
+is created.
+
+To add a preview client of an existing library, prefix the API path with
+"preview/".
 
 Examples:
 
 	librarian add google/cloud/secretmanager/v1
-	librarian add google/cloud/foo/v1 google/cloud/foo/v1beta
 	librarian add preview/google/cloud/secretmanager/v1beta
 
 A typical librarian workflow for adding a new client library is:
@@ -75,20 +75,20 @@ A typical librarian workflow for adding a new client library is:
 	librarian generate <library>   # generate the client library`,
 		Action: func(ctx context.Context, c *cli.Command) error {
 			apis := c.Args().Slice()
-			if len(apis) == 0 {
-				return errMissingAPI
+			if len(apis) != 1 {
+				return errWrongAPICount
 			}
 			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 			if err != nil {
 				return err
 			}
-			return runAdd(ctx, cfg, apis...)
+			return runAdd(ctx, cfg, apis[0])
 		},
 	}
 }
 
-func runAdd(ctx context.Context, cfg *config.Config, apis ...string) error {
-	name, cfg, err := addLibrary(cfg, apis...)
+func runAdd(ctx context.Context, cfg *config.Config, api string) error {
+	name, cfg, err := addLibrary(cfg, api)
 	if err != nil {
 		return err
 	}
@@ -146,32 +146,18 @@ func deriveLibraryName(language string, api string) string {
 	}
 }
 
-// addLibrary adds a new library to the config based on the provided APIs.
+// addLibrary adds a new library to the config based on the provided API.
 // It returns the name of the new library, the updated config, and an error
 // if the library already exists.
-func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, error) {
-	isPreview := slices.ContainsFunc(apis, func(a string) bool {
-		return strings.HasPrefix(a, "preview/")
-	})
-	mixed := slices.ContainsFunc(apis, func(a string) bool {
-		return isPreview && !strings.HasPrefix(a, "preview/")
-	})
-	if mixed {
-		return "", nil, errMixedPreviewAndNonPreview
+func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
+	isPreview := strings.HasPrefix(apiPath, "preview/")
+
+	stablePath := apiPath
+	if isPreview {
+		stablePath = strings.TrimPrefix(apiPath, "preview/")
 	}
-	paths := make([]*config.API, 0, len(apis))
-	seen := make(map[string]bool)
-	for _, a := range apis {
-		if isPreview {
-			a = strings.TrimPrefix(a, "preview/")
-		}
-		if seen[a] {
-			return "", nil, fmt.Errorf("%w: %s", errAPIDuplicate, a)
-		}
-		seen[a] = true
-		paths = append(paths, &config.API{Path: a})
-	}
-	name := deriveLibraryName(cfg.Language, paths[0].Path)
+	name := deriveLibraryName(cfg.Language, stablePath)
+	api := &config.API{Path: stablePath}
 	existingLib, err := FindLibrary(cfg, name)
 	var exists bool
 	switch {
@@ -186,19 +172,19 @@ func addLibrary(cfg *config.Config, apis ...string) (string, *config.Config, err
 		if !exists {
 			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
 		}
-		return addPreviewLibrary(cfg, existingLib, paths, name)
+		return addPreviewLibrary(cfg, existingLib, api, name)
 	}
 	if exists {
 		if cfg.Language != config.LanguageGo && cfg.Language != config.LanguagePython {
 			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
 		}
-		return updateExistingLibrary(cfg, existingLib, paths)
+		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, paths, name)
+	return addNewLibrary(cfg, api, name)
 }
 
 // addPreviewLibrary adds a new preview library to the config.
-func addPreviewLibrary(cfg *config.Config, lib *config.Library, apis []*config.API, name string) (string, *config.Config, error) {
+func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API, name string) (string, *config.Config, error) {
 	if lib.Preview != nil {
 		return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
 	}
@@ -213,17 +199,17 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, apis []*config.A
 	}
 	lib.Preview = &config.Library{
 		Version: v,
-		APIs:    apis,
+		APIs:    []*config.API{api},
 	}
 	return name, cfg, nil
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string, *config.Config, error) {
+func addNewLibrary(cfg *config.Config, api *config.API, name string) (string, *config.Config, error) {
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
-		APIs:          apis,
+		APIs:          []*config.API{api},
 	}
 	switch cfg.Language {
 	case config.LanguageGo:
@@ -248,18 +234,16 @@ func addNewLibrary(cfg *config.Config, apis []*config.API, name string) (string,
 	return name, cfg, nil
 }
 
-func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, apis []*config.API) (string, *config.Config, error) {
-	for _, api := range apis {
-		if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
-			return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
-		}
+func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api *config.API) (string, *config.Config, error) {
+	if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
+		return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 	}
 	if cfg.Language == config.LanguagePython {
 		if err := python.ValidateNewAPIs(existingLib); err != nil {
 			return "", nil, err
 		}
 	}
-	existingLib.APIs = append(existingLib.APIs, apis...)
+	existingLib.APIs = append(existingLib.APIs, api)
 	return existingLib.Name, cfg, nil
 }
 

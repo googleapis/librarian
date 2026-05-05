@@ -18,27 +18,31 @@
     - GA
   auto_generated: true
   help_text:
-    brief: List resources
-    description: List resources
+    brief: List operations
+    description: List operations
     examples: |-
-      To list all resources, run:
+      To list all operations, run:
 
           $ {command}
   arguments:
     params:
-      - arg_name: name
-        api_field: name
-        help_text: Value for the `name` field.
+      - help_text: The name of the operation's parent resource.
         is_positional: false
-        required: false
-      - arg_name: return-partial-success
-        api_field: returnPartialSuccess
-        help_text: Value for the `return-partial-success` field.
-        action: store_true
-        is_positional: false
-        required: false
-        type: bool
-        default: null
+        is_primary_resource: true
+        resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+          collection: developerconnect.projects.locations
+          disable_auto_completers: true
+          name: location
+          plural_name: locations
+        required: true
   request:
     api_version: v1
     collection:

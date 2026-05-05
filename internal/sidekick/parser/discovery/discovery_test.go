@@ -54,7 +54,7 @@ func TestInfo(t *testing.T) {
 		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
 		Revision:    "20250810",
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
@@ -76,7 +76,7 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 		Revision:    "20250810",
 		PackageName: "google.cloud.secretmanager.v1",
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {

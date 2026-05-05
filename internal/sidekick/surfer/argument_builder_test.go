@@ -249,6 +249,26 @@ func TestIsIgnored(t *testing.T) {
 			method: api.NewTestMethod("CreateThing").WithVerb("POST"),
 			want:   false,
 		},
+		{
+			name:  "Return Partial Success in ListOperations (Ignored)",
+			field: api.NewTestField("return_partial_success"),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListOperations").WithVerb("GET")
+				m.SourceServiceID = ".google.longrunning.Operations"
+				return m
+			}(),
+			want: true,
+		},
+		{
+			name:  "Return Partial Success in Other List (Not Ignored)",
+			field: api.NewTestField("return_partial_success"),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET")
+				m.SourceServiceID = ".google.cloud.example.v1.Things"
+				return m
+			}(),
+			want: false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -269,6 +289,56 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 		resourceDefs []*api.Resource
 		want         Argument
 	}{
+		{
+			name: "GetOperation fallback HelpText",
+			field: &api.Field{
+				Name:  "name",
+				Typez: api.TypezString,
+			},
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetOperation").WithVerb("GET").WithInput(
+					api.NewTestMessage("GetOperationRequest").WithFields(
+						api.NewTestField("name").WithType(api.TypezString),
+					),
+				)
+				m.SourceServiceID = ".google.longrunning.Operations"
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									*(&api.PathSegment{}).WithLiteral("v1"),
+									*(&api.PathSegment{}).WithLiteral("projects"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+									*(&api.PathSegment{}).WithLiteral("locations"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("location").WithMatch()),
+									*(&api.PathSegment{}).WithLiteral("operations"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("operation").WithMatch()),
+								},
+							},
+						},
+					},
+				}
+				return m
+			}(),
+			want: Argument{
+				HelpText:          "The name of the operation resource.",
+				IsPositional:      true,
+				IsPrimaryResource: true,
+				Required:          true,
+				ResourceSpec: &ResourceSpec{
+					Name:       "operation",
+					PluralName: "operations",
+					Collection: "test.projects.locations.operations",
+					Attributes: []Attribute{
+						{ParameterName: "projectsId", AttributeName: "project", Help: "The project id of the {resource} resource.", Property: "core/project"},
+						{ParameterName: "locationsId", AttributeName: "location", Help: "The location id of the {resource} resource."},
+						{ParameterName: "operationsId", AttributeName: "operation", Help: "The operation id of the {resource} resource."},
+					},
+				},
+			},
+		},
 		{
 			name: "Create Instance (Positional)",
 			field: &api.Field{
@@ -451,6 +521,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			t.Parallel()
 			service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 			service.DefaultHost = "test.googleapis.com"
+			service.Methods = []*api.Method{test.method}
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			model.ResourceDefinitions = test.resourceDefs
 

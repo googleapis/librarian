@@ -35,7 +35,7 @@ func TestAddLibraryCommand(t *testing.T) {
 	copyrightYear := strconv.Itoa(time.Now().Year())
 	for _, test := range []struct {
 		name                   string
-		apis                   []string
+		apiPath                string
 		initialLibraries       []*config.Library
 		wantFinalLibraries     []*config.Library
 		wantGeneratedOutputDir string
@@ -43,7 +43,7 @@ func TestAddLibraryCommand(t *testing.T) {
 	}{
 		{
 			name:                   "create new library",
-			apis:                   []string{"google/cloud/secretmanager/v1"},
+			apiPath:                "google/cloud/secretmanager/v1",
 			initialLibraries:       []*config.Library{},
 			wantGeneratedOutputDir: "newlib-output",
 			wantFinalLibraries: []*config.Library{
@@ -55,8 +55,8 @@ func TestAddLibraryCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "fail create existing library",
-			apis: []string{"google/cloud/secretmanager/v1"},
+			name:    "fail create existing library",
+			apiPath: "google/cloud/secretmanager/v1",
 			initialLibraries: []*config.Library{
 				{
 					Name: "google-cloud-secretmanager-v1",
@@ -66,8 +66,8 @@ func TestAddLibraryCommand(t *testing.T) {
 			wantError:              errLibraryAlreadyExists,
 		},
 		{
-			name: "create new library and tidy existing",
-			apis: []string{"google/cloud/orgpolicy/v1"},
+			name:    "create new library and tidy existing",
+			apiPath: "google/cloud/orgpolicy/v1",
 			initialLibraries: []*config.Library{
 				{
 					Name: "existinglib",
@@ -107,7 +107,7 @@ func TestAddLibraryCommand(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			err = runAdd(t.Context(), cfg, test.apis...)
+			err = runAdd(t.Context(), cfg, test.apiPath)
 			if test.wantError != nil {
 				if !errors.Is(err, test.wantError) {
 					t.Errorf("expected error %v, got %v", test.wantError, err)
@@ -142,33 +142,27 @@ func TestAddCommand(t *testing.T) {
 
 	for _, test := range []struct {
 		name     string
-		apis     []string
+		args     []string
 		wantName string
-		wantAPIs []*config.API
 		wantErr  error
 	}{
 		{
 			name:    "no args",
-			wantErr: errMissingAPI,
+			wantErr: errWrongAPICount,
 		},
 		{
 			name:     "single API",
-			apis:     []string{"google/cloud/secretmanager/v1"},
+			args:     []string{"google/cloud/secretmanager/v1"},
 			wantName: "google-cloud-secretmanager-v1",
 		},
 		{
-			name: "multiple APIs",
-			apis: []string{
+			name: "multiple args",
+			args: []string{
 				"google/cloud/secretmanager/v1",
 				"google/cloud/secretmanager/v1beta2",
 				"google/cloud/secrets/v1beta1",
 			},
-			wantName: "google-cloud-secretmanager-v1",
-			wantAPIs: []*config.API{
-				{Path: "google/cloud/secretmanager/v1"},
-				{Path: "google/cloud/secretmanager/v1beta2"},
-				{Path: "google/cloud/secrets/v1beta1"},
-			},
+			wantErr: errWrongAPICount,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -182,7 +176,7 @@ func TestAddCommand(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			args := append([]string{"librarian", "add"}, test.apis...)
+			args := append([]string{"librarian", "add"}, test.args...)
 			err := Run(t.Context(), args...)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
@@ -198,13 +192,12 @@ func TestAddCommand(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			got, err := FindLibrary(gotCfg, test.wantName)
-			if err != nil {
+			// Check that we've added a library with the expected name.
+			if _, err := FindLibrary(gotCfg, test.wantName); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.wantAPIs, got.APIs); diff != "" {
-				t.Errorf("apis mismatch (-want +got):\n%s", diff)
-			}
+			// We don't test the content of APIs here, as the fake language
+			// removes API paths that can be inferred.
 		})
 	}
 }
@@ -212,37 +205,17 @@ func TestAddCommand(t *testing.T) {
 func TestAddLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		apis     []string
+		apiPath  string
 		wantName string
 		wantAPIs []*config.API
 	}{
 		{
 			name:     "library with single API",
-			apis:     []string{"google/cloud/storage/v1"},
+			apiPath:  "google/cloud/storage/v1",
 			wantName: "google-cloud-storage-v1",
 			wantAPIs: []*config.API{
 				{
 					Path: "google/cloud/storage/v1",
-				},
-			},
-		},
-		{
-			name: "library with multiple APIs",
-			apis: []string{
-				"google/cloud/secretmanager/v1",
-				"google/cloud/secretmanager/v1beta2",
-				"google/cloud/secrets/v1beta1",
-			},
-			wantName: "google-cloud-secretmanager-v1",
-			wantAPIs: []*config.API{
-				{
-					Path: "google/cloud/secretmanager/v1",
-				},
-				{
-					Path: "google/cloud/secretmanager/v1beta2",
-				},
-				{
-					Path: "google/cloud/secrets/v1beta1",
 				},
 			},
 		},
@@ -261,7 +234,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, cfg, err := addLibrary(cfg, test.apis...)
+			gotName, cfg, err := addLibrary(cfg, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -290,14 +263,14 @@ func TestAddLibrary(t *testing.T) {
 func TestAddLibrary_ExistingLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
-		apis     []string
+		apiPath  string
 		cfg      *config.Config
 		wantName string
 		wantCfg  *config.Config
 	}{
 		{
-			name: "update existing library (go)",
-			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			name:    "update existing library (go)",
+			apiPath: "google/cloud/secretmanager/v1beta2",
 			cfg: &config.Config{
 				Language: config.LanguageGo,
 				Libraries: []*config.Library{
@@ -326,8 +299,8 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "update existing library (python)",
-			apis: []string{"google/cloud/kms/v1beta2"},
+			name:    "update existing library (python)",
+			apiPath: "google/cloud/kms/v1beta2",
 			cfg: &config.Config{
 				Language: config.LanguagePython,
 				Libraries: []*config.Library{
@@ -368,7 +341,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, gotCfg, err := addLibrary(test.cfg, test.apis...)
+			gotName, gotCfg, err := addLibrary(test.cfg, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -385,13 +358,13 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
-		apis    []string
+		apiPath string
 		cfg     *config.Config
 		wantErr error
 	}{
 		{
-			name: "fail if api already exists",
-			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			name:    "fail if api already exists",
+			apiPath: "google/cloud/secretmanager/v1beta2",
 			cfg: &config.Config{
 				Language: config.LanguageGo,
 				Libraries: []*config.Library{
@@ -408,16 +381,8 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			wantErr: errAPIAlreadyExists,
 		},
 		{
-			name: "fail if api duplicated",
-			apis: []string{
-				"google/cloud/secretmanager/v1beta2",
-				"google/cloud/secretmanager/v1beta2",
-			},
-			wantErr: errAPIDuplicate,
-		},
-		{
-			name: "java doesn't support updating existing library",
-			apis: []string{"google/cloud/secretmanager/v1beta2"},
+			name:    "java doesn't support updating existing library",
+			apiPath: "google/cloud/secretmanager/v1beta2",
 			cfg: &config.Config{
 				Language: config.LanguageJava,
 				Libraries: []*config.Library{
@@ -440,7 +405,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, _, err := addLibrary(test.cfg, test.apis...)
+			_, _, err := addLibrary(test.cfg, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -451,13 +416,13 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 func TestAddLibrary_Preview(t *testing.T) {
 	for _, test := range []struct {
 		name             string
-		apis             []string
+		apiPath          string
 		initialLibraries []*config.Library
 		wantPreview      *config.Library
 	}{
 		{
-			name: "add preview to existing library",
-			apis: []string{"preview/google/cloud/secretmanager/v1"},
+			name:    "add preview to existing library",
+			apiPath: "preview/google/cloud/secretmanager/v1",
 			initialLibraries: []*config.Library{
 				{
 					Name:    "secretmanager",
@@ -470,34 +435,13 @@ func TestAddLibrary_Preview(t *testing.T) {
 				Version: "1.1.0-preview.1",
 			},
 		},
-		{
-			name: "add preview with multiple APIs",
-			apis: []string{
-				"preview/google/cloud/secretmanager/v1",
-				"preview/google/cloud/secretmanager/v2",
-			},
-			initialLibraries: []*config.Library{
-				{
-					Name:    "secretmanager",
-					Version: "1.0.0",
-					APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				},
-			},
-			wantPreview: &config.Library{
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-					{Path: "google/cloud/secretmanager/v2"},
-				},
-				Version: "1.1.0-preview.1",
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			gotName, gotCfg, err := addLibrary(cfg, test.apis...)
+			gotName, gotCfg, err := addLibrary(cfg, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -516,13 +460,13 @@ func TestAddLibrary_Preview(t *testing.T) {
 func TestAddLibrary_Preview_Error(t *testing.T) {
 	for _, test := range []struct {
 		name             string
-		apis             []string
+		apiPath          string
 		initialLibraries []*config.Library
 		wantErr          error
 	}{
 		{
-			name: "fail if library doesn't exist",
-			apis: []string{"preview/google/cloud/secretmanager/v1"},
+			name:    "fail if library doesn't exist",
+			apiPath: "preview/google/cloud/secretmanager/v1",
 			initialLibraries: []*config.Library{
 				{
 					Name: "otherlib",
@@ -532,18 +476,8 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 			wantErr: errPreviewRequiresLibrary,
 		},
 		{
-			name: "fail if mixing preview and non-preview APIs",
-			apis: []string{
-				"preview/google/cloud/secretmanager/v1",
-				"google/cloud/secretmanager/v1beta2",
-			},
-			wantErr: errMixedPreviewAndNonPreview,
-		},
-		{
-			name: "fail preview already exists",
-			apis: []string{
-				"preview/google/cloud/secretmanager/v1",
-			},
+			name:    "fail preview already exists",
+			apiPath: "preview/google/cloud/secretmanager/v1",
 			initialLibraries: []*config.Library{
 				{
 					Name: "secretmanager",
@@ -561,7 +495,7 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			_, _, err := addLibrary(cfg, test.apis...)
+			_, _, err := addLibrary(cfg, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}

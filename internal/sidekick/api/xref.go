@@ -357,7 +357,7 @@ func enrichMethodSamples(m *Method) {
 
 	m.IsLRO = m.OperationInfo != nil
 
-	if m.OperationInfo != nil && m.Model != nil && m.Model.State != nil {
+	if m.OperationInfo != nil && m.Model != nil && m.Model.state != nil {
 		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}
 

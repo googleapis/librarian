@@ -275,24 +275,6 @@ func TestRenderReadme(t *testing.T) {
 	}
 }
 
-func TestCommandHasFlags(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		cmd  Command
-		want bool
-	}{
-		{"empty", Command{}, false},
-		{"with-flag", Command{Flags: []Flag{{Name: "x"}}}, true},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.cmd.HasFlags()
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestPathFlagsFromSegments(t *testing.T) {
 	for _, test := range []struct {
 		name     string
@@ -339,6 +321,162 @@ func TestPathFlagsFromSegments(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := pathFlagsFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommandHasPath(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want bool
+	}{
+		{"empty", Command{}, false},
+		{"with-path", Command{PathFormat: "projects/%s"}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.HasPath()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommandPathFormatArgs(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want string
+	}{
+		{"empty", Command{}, ""},
+		{"single", Command{Args: []string{"project"}}, `cmd.String("project")`},
+		{
+			"multi",
+			Command{Args: []string{"project", "location", "instance"}},
+			`cmd.String("project"), cmd.String("location"), cmd.String("instance")`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.PathFormatArgs()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPathFormatFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     string
+	}{
+		{"nil", nil, ""},
+		{
+			"no-variable",
+			(&api.PathTemplate{}).WithLiteral("projects").Segments,
+			"",
+		},
+		{
+			"single",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				Segments,
+			"projects/%s",
+		},
+		{
+			"multi",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			"projects/%s/locations/%s/instances/%s",
+		},
+		{
+			"trailing-literal",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("config").
+				Segments,
+			"projects/%s/config",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pathFormatFromSegments(test.segments)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGoClientPackage(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		protoPkg string
+		want     *goClientInfo
+	}{
+		{
+			name:     "parallelstore",
+			protoPkg: "google.cloud.parallelstore.v1",
+			want: &goClientInfo{
+				Alias:      "parallelstore",
+				ClientPath: "cloud.google.com/go/parallelstore/apiv1",
+				PbPath:     "cloud.google.com/go/parallelstore/apiv1/parallelstorepb",
+			},
+		},
+		{
+			name:     "secretmanager",
+			protoPkg: "google.cloud.secretmanager.v1",
+			want: &goClientInfo{
+				Alias:      "secretmanager",
+				ClientPath: "cloud.google.com/go/secretmanager/apiv1",
+				PbPath:     "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb",
+			},
+		},
+		{name: "empty", protoPkg: ""},
+		{name: "three-segments", protoPkg: "google.cloud.parallelstore"},
+		{name: "beta-version", protoPkg: "google.cloud.parallelstore.v1beta1"},
+		{name: "not-google-cloud", protoPkg: "google.api.X.v1"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := goClientPackage(test.protoPkg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestPathArgsFromSegments(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		segments []api.PathSegment
+		want     []string
+	}{
+		{"nil", nil, nil},
+		{
+			"no-variable",
+			(&api.PathTemplate{}).WithLiteral("projects").Segments,
+			nil,
+		},
+		{
+			"multi",
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			[]string{"project", "location", "instance"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := pathArgsFromSegments(test.segments)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"log/slog"
 	"path"
 	"strings"
 
@@ -105,6 +106,11 @@ func IsPrimaryResourceField(field *api.Field, method *api.Method) bool {
 		return true
 	}
 
+	// Fallback for operations methods where the primary resource field is named "name".
+	if IsOperationsServiceMethod(method) && field.Name == "name" {
+		return true
+	}
+
 	return false
 }
 
@@ -149,7 +155,12 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		return nil
 	}
 
-	// Strategy 1: For Create (AIP-133) and Update (AIP-134), the request message
+	// Strategy 1: Fast-path for long-running operations methods.
+	if IsOperationsServiceMethod(method) {
+		return resourceFromType(model, operationResourceType)
+	}
+
+	// Strategy 2: For Create (AIP-133) and Update (AIP-134), the request message
 	// usually contains a field that *is* the resource message.
 	for _, f := range method.InputType.Fields {
 		if f.MessageType != nil && f.MessageType.Resource != nil {
@@ -157,7 +168,7 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		}
 	}
 
-	// Strategy 2: For Get (AIP-131), Delete (AIP-135), and List (AIP-132), the
+	// Strategy 3: For Get (AIP-131), Delete (AIP-135), and List (AIP-132), the
 	// request message has a `name` or `parent` field with a `(google.api.resource_reference)`.
 	var resourceType string
 	for _, field := range method.InputType.Fields {
@@ -173,27 +184,21 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		}
 	}
 
-	if resourceType == "" {
-		return nil
-	}
-
 	// TODO(https://github.com/googleapis/librarian/issues/3363): Avoid this lookup by linking the ResourceReference
 	// to the Resource definition during model creation or post-processing.
 
-	// Use the API model's indexed maps for an efficient lookup.
-	for _, r := range model.ResourceDefinitions {
+	return resourceFromType(model, resourceType)
+}
+
+func resourceFromType(model *api.API, resourceType string) *api.Resource {
+	if resourceType == "" {
+		return nil
+	}
+	for _, r := range getAllResources(model) {
 		if r.Type == resourceType {
 			return r
 		}
 	}
-
-	// Also check resources defined on messages directly.
-	for _, m := range model.Messages {
-		if m.Resource != nil && m.Resource.Type == resourceType {
-			return m.Resource
-		}
-	}
-
 	return nil
 }
 
@@ -336,10 +341,36 @@ func GetLiteralSegments(raw []api.PathSegment) []string {
 	return filtered
 }
 
+// getAllResources returns all resource definitions in the model, including
+// file-level definitions, message-level definitions, and synthetic resources
+// inferred from operations methods.
+func getAllResources(model *api.API) []*api.Resource {
+	var resources []*api.Resource
+	resources = append(resources, model.ResourceDefinitions...)
+
+	// Infer operations resources from GetOperation methods
+	for _, s := range model.Services {
+		for _, m := range s.Methods {
+			if IsOperationsServiceMethod(m) && m.Name == GetOperation {
+				res, err := inferOperationResource(m)
+				if err != nil {
+					slog.Warn("failed to infer operations resource", "method", m.ID, "error", err)
+					continue
+				}
+				if res != nil {
+					resources = append(resources, res)
+				}
+			}
+		}
+	}
+
+	return resources
+}
+
 // GetResourceForPath looks up the resource definition for a given list of URL path literals.
 func GetResourceForPath(model *api.API, path []string) *api.Resource {
 	target := strings.Join(path, ".")
-	for _, res := range model.ResourceDefinitions {
+	for _, res := range getAllResources(model) {
 		for _, pattern := range res.Patterns {
 			segments := GetLiteralSegments(pattern)
 			if strings.Join(segments, ".") == target {
@@ -372,4 +403,23 @@ func GetPluralResourceTypeName(model *api.API, methodPath []string) string {
 		return ""
 	}
 	return res.Plural
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/3414): Use a dedicated inflection library
+// or make this configuration-driven in the long term.
+// singular converts a plural collection segment name (e.g., "projects", "locations", "operations")
+// into its singular variable form (e.g., "project", "location", "operation").
+func singular(s string) string {
+	if strings.HasSuffix(s, "ies") {
+		return s[:len(s)-3] + "y"
+	}
+	if strings.HasSuffix(s, "sses") || strings.HasSuffix(s, "xes") || strings.HasSuffix(s, "ches") || strings.HasSuffix(s, "shes") {
+		return s[:len(s)-2]
+	}
+
+	// Basic fallback: strip trailing 's' if present.
+	if strings.HasSuffix(s, "s") {
+		return s[:len(s)-1]
+	}
+	return s
 }
