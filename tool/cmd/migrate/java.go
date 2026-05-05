@@ -299,9 +299,14 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			}
 			javaAPIs = append(javaAPIs, javaAPI)
 		}
+		var roots []string
+		if name == "showcase" {
+			roots = []string{"showcase", "googleapis"}
+		}
 		lib := &config.Library{
 			Name:    name,
 			Version: version,
+			Roots:   roots,
 			APIs:    apis,
 			Java: &config.JavaModule{
 				APIIDOverride:                l.APIID,
