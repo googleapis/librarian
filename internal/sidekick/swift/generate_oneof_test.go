@@ -46,6 +46,7 @@ func TestGenerateOneOf(t *testing.T) {
 		Fields: []*api.Field{
 			{
 				Name:          "string_field",
+				JSONName:      "stringField",
 				ID:            ".google.cloud.test.v1.Outer.string_field",
 				Documentation: "A string field that is part of the oneof.",
 				Typez:         api.TypezString,
@@ -54,6 +55,7 @@ func TestGenerateOneOf(t *testing.T) {
 			},
 			{
 				Name:          "message_field",
+				JSONName:      "messageField",
 				ID:            ".google.cloud.test.v1.Outer.message_field",
 				Documentation: "A message field that is part of the oneof.",
 				Typez:         api.TypezMessage,
@@ -63,12 +65,14 @@ func TestGenerateOneOf(t *testing.T) {
 			},
 			{
 				Name:          "regular_int32",
+				JSONName:      "regularInt32",
 				ID:            ".google.cloud.test.v1.Outer.regular_int32",
 				Documentation: "A regular field.",
 				Typez:         api.TypezInt32,
 			},
 			{
 				Name:          "regular_string",
+				JSONName:      "regularStringSpecial",
 				ID:            ".google.cloud.test.v1.Outer.regular_string",
 				Documentation: "Another regular field.",
 				Typez:         api.TypezString,
@@ -107,7 +111,7 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable {
+	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {
 
   /// A regular field.
   public var regularInt32: Int32
@@ -129,8 +133,52 @@ func TestGenerateOneOf(t *testing.T) {
     self.choice = choice
   }
 
+  private enum CodingKeys: String, CodingKey {
+    case stringField = "stringField"
+    case messageField = "messageField"
+    case regularInt32 = "regularInt32"
+    case regularString = "regularStringSpecial"
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+    self.regularInt32 = try container.decode(Int32.self, forKey: .regularInt32)
+    self.regularString = try container.decode(String.self, forKey: .regularString)
+
+    var choice: OneOf_Choice? = nil
+    let choiceCheckAndSet = { (value: OneOf_Choice) throws in
+      if choice != nil {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
+      }
+      choice = value
+    }
+    if let stringField = try container.decodeIfPresent(String.self, forKey: .stringField) {
+      try choiceCheckAndSet(.stringField(stringField))
+    }
+    if let messageField = try container.decodeIfPresent(Inner.self, forKey: .messageField) {
+      try choiceCheckAndSet(.messageField(messageField))
+    }
+    self.choice = choice
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+    try container.encode(self.regularInt32, forKey: .regularInt32)
+    try container.encode(self.regularString, forKey: .regularString)
+
+    if let choice = self.choice {
+      switch choice {
+      case .stringField(let value):
+        try container.encode(value, forKey: .stringField)
+      case .messageField(let value):
+        try container.encode(value, forKey: .messageField)
+      }
+    }
+  }
+
+
   /// A group of fields where only one is set.
-  public enum OneOf_Choice: Codable, Equatable {
+  public enum OneOf_Choice: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(String)
     /// A message field that is part of the oneof.

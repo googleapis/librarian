@@ -21,13 +21,13 @@ package api
 // protoc output.
 func (model *API) LoadWellKnownTypes() {
 	for _, message := range wellKnownMessages {
-		model.State.MessageByID[message.ID] = message
+		model.AddMessage(message)
 	}
-	model.State.EnumByID[".google.protobuf.NullValue"] = &Enum{
+	model.AddEnum(&Enum{
 		Name:    "NullValue",
 		Package: "google.protobuf",
 		ID:      ".google.protobuf.NullValue",
-	}
+	})
 }
 
 var wellKnownMessages = []*Message{

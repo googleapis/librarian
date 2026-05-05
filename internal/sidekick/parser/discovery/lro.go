@@ -66,7 +66,7 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 			SourceServiceID: svcMixin.SourceServiceID,
 		}
 		svc.Methods = append(svc.Methods, method)
-		model.State.MethodByID[method.ID] = method
+		model.AddMethod(method)
 	}
 	return nil
 }

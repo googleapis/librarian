@@ -263,16 +263,7 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 		mixinFileDesc       []*descriptorpb.FileDescriptorProto
 		enabledMixinMethods mixinMethods = make(map[string]bool)
 	)
-	state := &api.APIState{
-		ServiceByID:    make(map[string]*api.Service),
-		MethodByID:     make(map[string]*api.Method),
-		MessageByID:    make(map[string]*api.Message),
-		EnumByID:       make(map[string]*api.Enum),
-		ResourceByType: make(map[string]*api.Resource),
-	}
-	result := &api.API{
-		State: state,
-	}
+	result := &api.API{}
 	if serviceConfig != nil {
 		result.Title = serviceConfig.Title
 		if serviceConfig.Documentation != nil {
@@ -311,14 +302,20 @@ func makeAPIForProtobuf(serviceConfig *serviceconfig.Service, req *pluginpb.Code
 	}
 
 	// Consolidate resources.
-	// Message-level resources (in state.ResourceByType) take precedence over
+	// Message-level resources (in result.AllResources take precedence over
 	// file-level resources (already in result.ResourceDefinitions).
-	allResources := make(map[string]*api.Resource, len(result.ResourceDefinitions)+len(state.ResourceByType))
-	for _, r := range result.ResourceDefinitions {
-		allResources[r.Type] = r
+	seen := map[string]int{}
+	for i, r := range result.ResourceDefinitions {
+		seen[r.Type] = i
 	}
-	maps.Copy(allResources, state.ResourceByType)
-	result.ResourceDefinitions = slices.Collect(maps.Values(allResources))
+	for r := range result.AllResources() {
+		if i, found := seen[r.Type]; found {
+			result.ResourceDefinitions[i] = r
+		} else {
+			seen[r.Type] = len(result.ResourceDefinitions)
+			result.ResourceDefinitions = append(result.ResourceDefinitions, r)
+		}
+	}
 
 	// Sort to ensure deterministic output.
 	slices.SortFunc(result.ResourceDefinitions, func(a, b *api.Resource) int {
@@ -538,7 +535,7 @@ func processService(model *api.API, s *descriptorpb.ServiceDescriptorProto, sFQN
 		DefaultHost: parseDefaultHost(s.GetOptions()),
 		Deprecated:  s.GetOptions().GetDeprecated(),
 	}
-	model.State.ServiceByID[service.ID] = service
+	model.AddService(service)
 	return service
 }
 
@@ -567,7 +564,7 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 		SourceServiceID:     serviceID,
 		APIVersion:          apiVersion,
 	}
-	model.State.MethodByID[mFQN] = method
+	model.AddMethod(method)
 	return method, nil
 }
 
@@ -579,7 +576,7 @@ func processMessage(model *api.API, m *descriptorpb.DescriptorProto, mFQN, packa
 		Package:    packagez,
 		Deprecated: m.GetOptions().GetDeprecated(),
 	}
-	model.State.MessageByID[mFQN] = message
+	model.AddMessage(message)
 
 	if opts := m.GetOptions(); opts != nil {
 		if opts.GetMapEntry() {
@@ -675,7 +672,7 @@ func processResourceAnnotation(opts *descriptorpb.MessageOptions, message *api.M
 		Self:     message,
 	}
 	message.Resource = resource
-	model.State.ResourceByType[resource.Type] = resource
+	model.AddResource(resource)
 	return nil
 }
 
@@ -750,7 +747,7 @@ func processEnum(model *api.API, e *descriptorpb.EnumDescriptorProto, eFQN, pack
 		Package:    packagez,
 		Deprecated: e.GetOptions().GetDeprecated(),
 	}
-	model.State.EnumByID[eFQN] = enum
+	model.AddEnum(enum)
 	for _, ev := range e.Value {
 		enumValue := &api.EnumValue{
 			Name:       ev.GetName(),

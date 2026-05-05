@@ -52,12 +52,13 @@ func Run(ctx context.Context, args ...string) error {
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
-			installCommand(),
-			tidyCommand(),
+			configCommand(),
 			addCommand(),
-			updateCommand(),
 			generateCommand(),
 			bumpCommand(),
+			installCommand(),
+			tidyCommand(),
+			updateCommand(),
 			publishCommand(),
 			tagCommand(),
 			versionCommand(),

@@ -41,14 +41,15 @@ func TestLibrarianUsage(t *testing.T) {
 		want string
 	}{
 		{"root", nil, "librarian [command]"},
-		{"add", []string{"add"}, "librarian add <apis...>"},
+		{"add", []string{"add"}, "librarian add <api>"},
 		{"generate", []string{"generate"}, "librarian generate <library>"},
 		{"bump", []string{"bump"}, "librarian bump <library>"},
 		{"tidy", []string{"tidy"}, "librarian tidy"},
-		{"update", []string{"update"}, "librarian update <sources...>"},
+		{"update", []string{"update"}, "librarian update <version | source>..."},
 		{"version", []string{"version"}, "librarian version"},
 		{"publish", []string{"publish"}, "librarian publish"},
 		{"tag", []string{"tag"}, "librarian tag"},
+		{"config", []string{"config"}, "librarian config [get|set] [path] [value]"},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
 			got := runUsage(t, bin, test.args)

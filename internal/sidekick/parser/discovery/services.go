@@ -49,6 +49,6 @@ func addService(model *api.API, doc *document, resource *resource) error {
 		return err
 	}
 	model.Services = append(model.Services, service)
-	model.State.ServiceByID[id] = service
+	model.AddService(service)
 	return nil
 }

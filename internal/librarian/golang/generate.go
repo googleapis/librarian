@@ -42,7 +42,7 @@ var (
 )
 
 // Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) (err error) {
+func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources, goCmd string) (err error) {
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
@@ -112,10 +112,10 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
 		// New client, init the module.
-		if err := initModule(ctx, outDir, modulePath(library)); err != nil {
+		if err := initModule(ctx, outDir, modulePath(library), goCmd); err != nil {
 			return err
 		}
-		return updateSnippetsModule(ctx, library, outDir)
+		return updateSnippetsModule(ctx, library, outDir, goCmd)
 	} else if err != nil {
 		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
@@ -124,7 +124,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
 // and a local replacement for the newly generated library.
-func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string) error {
+func updateSnippetsModule(ctx context.Context, library *config.Library, outDir, goCmd string) error {
 	if library.Go == nil {
 		return nil
 	}
@@ -142,9 +142,26 @@ func updateSnippetsModule(ctx context.Context, library *config.Library, outDir s
 		return fmt.Errorf("failed to get relative path of module: %w", err)
 	}
 	modPath := modulePath(library)
-	return command.RunInDir(ctx, snippetsDir, command.Go, "mod", "edit",
+	return command.RunInDir(ctx, snippetsDir, goCmd, "mod", "edit",
 		"-require="+modPath+"@v0.0.0",
 		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
+}
+
+// GoCommand returns the name of the Go executable to use.
+// It checks the tools list for any compiler package like "golang.org/dl/goVERSION".
+// If found, it returns the base name (e.g. "go1.22.3").
+// Otherwise, it falls back to "go".
+func GoCommand(tools *config.Tools) string {
+	if tools == nil {
+		return command.Go
+	}
+	for _, tool := range tools.Go {
+		if strings.HasPrefix(tool.Name, "golang.org/dl/go") {
+			parts := strings.Split(tool.Name, "/")
+			return parts[len(parts)-1]
+		}
+	}
+	return command.Go
 }
 
 func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {

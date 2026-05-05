@@ -54,7 +54,7 @@ func TestInfo(t *testing.T) {
 		Description: "Creates and runs virtual machines on Google Cloud Platform. ",
 		Revision:    "20250810",
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
@@ -76,7 +76,7 @@ func TestServiceConfigOverridesInfo(t *testing.T) {
 		Revision:    "20250810",
 		PackageName: "google.cloud.secretmanager.v1",
 	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "State", "Services", "Messages", "Enums")); diff != "" {
+	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.API{}, "Services", "Messages", "Enums"), cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 	if len(sc.Apis) != 2 {
@@ -124,8 +124,8 @@ func TestMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..WeightedBackendService"
-	got, ok := model.State.MessageByID[id]
-	if !ok {
+	got := model.Message(id)
+	if got == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
 	want := &api.Message{
@@ -172,8 +172,8 @@ func TestDeprecatedField(t *testing.T) {
 		t.Fatal(err)
 	}
 	id := "..BackendService"
-	gotMessage, ok := model.State.MessageByID[id]
-	if !ok {
+	gotMessage := model.Message(id)
+	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
 	}
 	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })

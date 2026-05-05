@@ -48,6 +48,14 @@ func TestPathExpression(t *testing.T) {
 				WithVariableNamed("name").WithLiteral("separator").WithVariableNamed("second"),
 			want: "/v1/\\(pathVariable0)/separator/\\(pathVariable1)",
 		},
+		{
+			name: "with verb",
+			template: (&api.PathTemplate{}).
+				WithLiteral("v1").
+				WithLiteral("operations").
+				WithVerb("cancel"),
+			want: "/v1/operations:cancel",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := pathExpression(test.template)
@@ -204,12 +212,8 @@ func TestNewPathVariable(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{secretMessage, requestMessage}, nil, []*api.Service{})
-	model.State = &api.APIState{
-		MessageByID: map[string]*api.Message{
-			".google.cloud.secretmanager.v1.Secret":              secretMessage,
-			".google.cloud.secretmanager.v1.CreateSecretRequest": requestMessage,
-		},
-	}
+	model.AddMessage(secretMessage)
+	model.AddMessage(requestMessage)
 
 	codec := newTestCodec(t, model, nil)
 	if err := codec.annotateModel(); err != nil {

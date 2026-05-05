@@ -88,7 +88,7 @@ func TestAnnotateMethodNames(t *testing.T) {
 		}
 		got := gotMethod.Codec.(*methodAnnotation)
 		if diff := cmp.Diff(test.Want, got, cmpopts.IgnoreFields(methodAnnotation{}, "PathInfo", "SystemParameters")); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -123,7 +123,7 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -154,7 +154,7 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 		{Name: "$apiVersion", Value: "v1_20260205"},
 	}
 	if diff := cmp.Diff(want, got.SystemParameters); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -356,7 +356,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tests := []struct {
+	for _, test := range []struct {
 		name         string
 		id           string
 		want         *methodAnnotation
@@ -400,30 +400,28 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 				},
 			},
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			m := model.Method(tc.id)
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			m := model.Method(test.id)
 			if m == nil {
-				t.Fatalf("missing method %s", tc.id)
+				t.Fatalf("missing method %s", test.id)
 			}
 			got := m.Codec.(*methodAnnotation)
-			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(methodAnnotation{},
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotation{},
 				"Name", "NameNoMangling", "BuilderName", "Body", "DocLines",
 				"ServiceNameToPascal", "ServiceNameToCamel", "ServiceNameToSnake",
 				"SystemParameters", "ReturnType", "PathInfo", "Attributes",
 				"RoutingRequired", "DetailedTracingAttributes",
 				"ResourceNameTemplateGrpc", "GrpcResourceNameArgs",
 				"InternalBuilders")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			if tc.wantBindings != nil {
-				for i, wantBinding := range tc.wantBindings {
+			if test.wantBindings != nil {
+				for i, wantBinding := range test.wantBindings {
 					gotBinding := m.PathInfo.Bindings[i].Codec.(*pathBindingAnnotation)
 					if diff := cmp.Diff(wantBinding, gotBinding, cmpopts.IgnoreFields(pathBindingAnnotation{}, "DetailedTracingAttributes", "PathFmt", "QueryParams", "Substitutions")); diff != "" {
-						t.Errorf("binding %d mismatch (-want, +got):\n%s", i, diff)
+						t.Errorf("mismatch (-want +got):\n%s", diff)
 					}
 				}
 			}
@@ -432,7 +430,7 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 }
 
 func TestFormatResourceNameTemplateFromPath(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name    string
 		method  *api.Method
 		binding *api.PathBinding
@@ -500,14 +498,73 @@ func TestFormatResourceNameTemplateFromPath(t *testing.T) {
 			wantErr: true,
 		},
 	} {
-		t.Run(tc.name, func(t *testing.T) {
-			got, err := formatResourceNameTemplateFromPath(tc.method, tc.binding)
-			if (err != nil) != tc.wantErr {
-				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, tc.wantErr)
+		t.Run(test.name, func(t *testing.T) {
+			got, err := formatResourceNameTemplateFromPath(test.method, test.binding)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("formatResourceNameTemplateFromPath() error = %v, wantErr %v", err, test.wantErr)
 			}
-			if diff := cmp.Diff(tc.want, got); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAnnotateSampleInfo(t *testing.T) {
+	field := &api.Field{
+		Name:  "name",
+		ID:    ".test.v1.Message.name",
+		Typez: api.TypezString,
+		ResourceNamePattern: &api.ResourceNamePattern{
+			Segments: []api.ResourceNameSegment{
+				{Literal: "projects"},
+				{Variable: "project"},
+			},
+		},
+	}
+	message := &api.Message{
+		Name:    "TestMessage",
+		Package: "test.v1",
+		ID:      ".test.v1.TestMessage",
+		Fields:  []*api.Field{field},
+	}
+	method := &api.Method{
+		Name: "TestMethod",
+		ID:   ".test.v1.Service.TestMethod",
+	}
+	si := &api.SampleInfo{
+		ResourceNameField: field,
+	}
+
+	model := api.NewTestAPI([]*api.Message{message}, []*api.Enum{}, []*api.Service{})
+	api.CrossReference(model)
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "test", map[string]string{})
+	annotateModel(model, codec)
+
+	codec.annotateSampleInfo(si, method)
+
+	got := si.Codec.(*sampleInfoAnnotation)
+	want := &sampleInfoAnnotation{
+		StringParameters:   []string{"project_id"},
+		FormatResourceName: true,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestMethodAnnotationsDetailedTracing(t *testing.T) {
+	model := serviceAnnotationsModel()
+	method := model.Method(".test.v1.ResourceService.GetResource")
+	if method == nil {
+		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
+	}
+	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
+		"detailed-tracing-attributes": "true",
+	})
+	annotateModel(model, codec)
+	got := method.Codec.(*methodAnnotation)
+	if !got.DetailedTracingAttributes {
+		t.Errorf("methodAnnotation.DetailedTracingAttributes = %v, want %v", got.DetailedTracingAttributes, true)
 	}
 }

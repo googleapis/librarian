@@ -356,7 +356,7 @@ func TestDeriveVersionLines(t *testing.T) {
 	}
 	invalidLibrary := &config.Library{
 		Name:    "invalid",
-		Version: "1.0.1-SNAPSHOT",
+		Version: "1.0.0-SNAPSHOT",
 	}
 
 	tests := []struct {

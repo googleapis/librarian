@@ -100,7 +100,12 @@ func fetchSource(ctx context.Context, source *config.Source, repo string) (strin
 		return "", nil
 	}
 	if source.Dir != "" {
-		return source.Dir, nil
+		// use absolute dir to avoid issues with relative paths in protoc.
+		absDir, err := filepath.Abs(source.Dir)
+		if err != nil {
+			return "", fmt.Errorf("failed to resolve absolute path for %s: %w", source.Dir, err)
+		}
+		return absDir, nil
 	}
 	dir, err := fetch.Repo(ctx, repo, source.Commit, source.SHA256)
 	if err != nil {

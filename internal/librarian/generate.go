@@ -28,6 +28,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/librarian/surfer"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -171,6 +172,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = checkAndClean(library.Output, library.Keep)
 		case config.LanguageGcloud:
 			// No-op. gcloud generation does not support cleaning yet.
+		case config.LanguageSurfer:
+			// No-op. surfer generation does not support cleaning yet.
 		default:
 			err = fmt.Errorf("language %q does not support cleaning", language)
 		}
@@ -211,10 +214,17 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return fakePostGenerate()
 	case config.LanguageGcloud:
+		for _, library := range libraries {
+			if err := gcloud.Generate(ctx, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
+		}
+		return nil
+	case config.LanguageSurfer:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := gcloud.Generate(gctx, library, src); err != nil {
+				if err := surfer.Generate(gctx, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
@@ -222,10 +232,11 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageGo:
+		goCmd := golang.GoCommand(cfg.Tools)
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Generate(gctx, library, src); err != nil {
+				if err := golang.Generate(gctx, library, src, goCmd); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil

@@ -99,7 +99,7 @@ func maybeMapOfPrimitiveField(model *api.API, message *api.Message, input *prope
 
 func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) string {
 	id := fmt.Sprintf("$map<string, %s>", valueTypezId)
-	if _, ok := model.State.MessageByID[id]; ok {
+	if model.Message(id) != nil {
 		return id
 	}
 	key := &api.Field{
@@ -122,6 +122,6 @@ func insertMapType(model *api.API, valueTypez api.Typez, valueTypezId string) st
 		IsMap:         true,
 		Fields:        []*api.Field{key, value},
 	}
-	model.State.MessageByID[message.ID] = message
+	model.AddMessage(message)
 	return id
 }

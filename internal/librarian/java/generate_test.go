@@ -179,7 +179,8 @@ func TestProtoProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 	}
-	got := protoProtocArgs(apiProtos, googleapisDir, "proto-out")
+	srcCfg := sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil)
+	got := protoProtocArgs(apiProtos, srcCfg, "proto-out")
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -197,7 +198,8 @@ func TestGRPCProtocArgs(t *testing.T) {
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/resources.proto"),
 		filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto"),
 	}
-	got := gRPCProtocArgs(apiProtos, googleapisDir, "grpc-out")
+	srcCfg := sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil)
+	got := gRPCProtocArgs(apiProtos, srcCfg, "grpc-out")
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -218,7 +220,8 @@ func TestGAPICProtocArgs(t *testing.T) {
 	additionalProtos := []string{
 		filepath.Join(googleapisDir, "google/cloud/common_resources.proto"),
 	}
-	got := gapicProtocArgs(apiProtos, additionalProtos, googleapisDir, "gapic-out", []string{"opt1", "opt2"})
+	srcCfg := sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil)
+	got := gapicProtocArgs(apiProtos, additionalProtos, srcCfg, "gapic-out", []string{"opt1", "opt2"})
 	want := []string{
 		"--experimental_allow_proto3_optional",
 		"-I=" + googleapisDir,
@@ -336,19 +339,18 @@ func TestGenerateAPI(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(
-		t.Context(),
-		cfg,
-		&config.API{Path: "google/cloud/secretmanager/v1"},
-		library,
-		googleapisDir,
-		outdir,
-		&repoMetadata{
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
 			NamePretty:     "Secret Manager",
 			APIDescription: "Secret Manager API",
 		},
-		apiCfg,
-	)
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -385,7 +387,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoOnly: true},
+				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoGRPCOnly: true},
 			},
 		},
 	}
@@ -401,18 +403,17 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(
-		t.Context(),
-		cfg,
-		&config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
-		library,
-		googleapisDir,
-		outdir,
-		&repoMetadata{
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     &config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
 			NamePretty: "GKE Hub API",
 		},
-		apiCfg,
-	)
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -462,10 +463,18 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = generateAPI(t.Context(), cfg, api, library, googleapisDir, outdir, &repoMetadata{
-		NamePretty:     "Secret Manager",
-		APIDescription: "Secret Manager API",
-	}, apiCfg)
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     api,
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		apiCfg: apiCfg,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -956,6 +965,41 @@ func TestDeriveAdditionalProtoPaths(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := deriveAdditionalProtoPaths(test.javaAPI, googleapisDir)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveAPIBase(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		apiPath string
+		want    string
+	}{
+		{
+			name:    "regular library",
+			library: &config.Library{Name: "secretmanager"},
+			apiPath: "google/cloud/secretmanager/v1",
+			want:    "v1",
+		},
+		{
+			name:    "common-protos fallback to v1",
+			library: &config.Library{Name: "common-protos"},
+			apiPath: "google/cloud/audit",
+			want:    "v1",
+		},
+		{
+			name:    "common-protos with versioned path",
+			library: &config.Library{Name: "common-protos"},
+			apiPath: "google/apps/card/v1",
+			want:    "v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deriveAPIBase(test.library, test.apiPath)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -119,7 +119,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	var modules []expectedModule
 	libCoord := DeriveLibraryCoordinates(library)
 	for _, api := range library.APIs {
-		apiBase := filepath.Base(api.Path)
+		apiBase := deriveAPIBase(library, api.Path)
 		javaAPI := ResolveJavaAPI(library, api)
 		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
@@ -138,7 +138,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 			APICoords:  &apiCoord,
 		})
 		// gRPC module
-		if !javaAPI.ProtoOnly && transport != serviceconfig.Rest {
+		if transport != serviceconfig.Rest {
 			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
 			isGRPCMissing, err := isPOMMissing(gRPCDir)
 			if err != nil {

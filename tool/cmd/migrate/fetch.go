@@ -34,9 +34,17 @@ func fetchGoogleapis(ctx context.Context) (*config.Source, error) {
 }
 
 func fetchGoogleapisWithCommit(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+	return fetchRepoWithCommit(ctx, endpoints, "googleapis", "googleapis", googleapisRepo, commitish)
+}
+
+func fetchShowcaseWithCommit(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
+	return fetchRepoWithCommit(ctx, endpoints, "googleapis", "gapic-showcase", "github.com/googleapis/gapic-showcase", commitish)
+}
+
+func fetchRepoWithCommit(ctx context.Context, endpoints *fetch.Endpoints, org, name, repoURL, commitish string) (*config.Source, error) {
 	repo := &fetch.RepoRef{
-		Org:    "googleapis",
-		Name:   "googleapis",
+		Org:    org,
+		Name:   name,
 		Branch: commitish,
 	}
 	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, repo)
@@ -44,7 +52,7 @@ func fetchGoogleapisWithCommit(ctx context.Context, endpoints *fetch.Endpoints, 
 		return nil, err
 	}
 
-	dir, err := fetch.Repo(ctx, googleapisRepo, commit, sha256)
+	dir, err := fetch.Repo(ctx, repoURL, commit, sha256)
 	if err != nil {
 		return nil, err
 	}

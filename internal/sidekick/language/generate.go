@@ -57,6 +57,11 @@ func GenerateService(outDir string, service *api.Service, provider TemplateProvi
 	return generateElement(outDir, service, provider, gen)
 }
 
+// GenerateMethod generates a single file using the api.Method model.
+func GenerateMethod(outDir string, method *api.Method, provider TemplateProvider, gen GeneratedFile) error {
+	return generateElement(outDir, method, provider, gen)
+}
+
 // GenerateMessage generates a single file using the api.Message model.
 func GenerateMessage(outDir string, message *api.Message, provider TemplateProvider, gen GeneratedFile) error {
 	return generateElement(outDir, message, provider, gen)

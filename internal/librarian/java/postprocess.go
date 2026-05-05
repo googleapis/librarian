@@ -50,7 +50,7 @@ type postProcessParams struct {
 	metadata       *repoMetadata
 	outDir         string
 	apiBase        string
-	googleapisDir  string
+	protoSourceDir string
 	apiProtos      []string
 	includeSamples bool
 }
@@ -82,6 +82,9 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	if err != nil {
 		return err
 	}
+	if p.library.Java != nil && p.library.Java.SkipPOMUpdates {
+		return nil
+	}
 	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
 		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}
@@ -107,10 +110,8 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	for _, dir := range []string{gRPCDir, protoDir} {
-		if err := addMissingHeaders(dir); err != nil {
-			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
-		}
+	if err := addHeadersIfRequired(p, []string{gRPCDir, protoDir}); err != nil {
+		return err
 	}
 	if err := copyFiles(p); err != nil {
 		return fmt.Errorf("failed to copy files: %w", err)
@@ -124,7 +125,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// to their final destination yet.
 	coords := p.coords()
 	protoModuleRepoRoot := filepath.Join(p.outDir, coords.Proto.ArtifactID)
-	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot)
+	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, p.javaAPI.Monolithic)
 	if err != nil {
 		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
 	}
@@ -138,6 +139,18 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	// Cleanup intermediate protoc output directory after restructuring
 	if err := os.RemoveAll(filepath.Join(p.outDir, p.apiBase)); err != nil {
 		return fmt.Errorf("failed to cleanup intermediate files: %w", err)
+	}
+	return nil
+}
+
+func addHeadersIfRequired(p postProcessParams, dirs []string) error {
+	if p.javaAPI.Monolithic {
+		return nil
+	}
+	for _, dir := range dirs {
+		if err := addMissingHeaders(dir); err != nil {
+			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
+		}
 	}
 	return nil
 }
@@ -216,10 +229,14 @@ func removeConflictingFiles(protoSrcDir string) error {
 // ensure synthtool preserves the module structure.
 func restructureToStaging(p postProcessParams) error {
 	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
-	if err := os.MkdirAll(stagingDir, 0755); err != nil {
+	destRoot := filepath.Join(stagingDir, p.apiBase)
+	if p.javaAPI.Monolithic {
+		destRoot = filepath.Join(destRoot, "src")
+	}
+	if err := os.MkdirAll(destRoot, 0755); err != nil {
 		return fmt.Errorf("failed to create staging directory: %w", err)
 	}
-	return restructureModules(p, filepath.Join(stagingDir, p.apiBase))
+	return restructureModules(p, destRoot)
 }
 
 type moveAction struct {
@@ -247,33 +264,50 @@ func restructure(actions []moveAction) error {
 func restructureModules(p postProcessParams, destRoot string) error {
 	coords := p.coords()
 	tempProtoSrcDir := p.protoDir()
-	if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
-		return err
+	if p.library.Name != commonProtosLibrary {
+		if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
+			return err
+		}
 	}
+
+	protoDest := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java")
+	grpcDest := filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java")
+	gapicMainDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main")
+	gapicTestDest := filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test")
+	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
+
+	if p.javaAPI.Monolithic {
+		protoDest = filepath.Join(destRoot, "main", "java")
+		grpcDest = filepath.Join(destRoot, "main", "java")
+		gapicMainDest = filepath.Join(destRoot, "main")
+		gapicTestDest = filepath.Join(destRoot, "test")
+		protoFilesDestDir = filepath.Join(destRoot, "main", "proto")
+	}
+
 	actions := []moveAction{
 		{
 			src:         tempProtoSrcDir,
-			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
+			dest:        protoDest,
 			description: "proto source",
 		},
 		{
 			src:         p.gRPCDir(),
-			dest:        filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java"),
+			dest:        grpcDest,
 			description: "grpc source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main"),
+			dest:        gapicMainDest,
 			description: "gapic source",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test"),
+			dest:        gapicTestDest,
 			description: "gapic test",
 		},
 		{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
-			dest:        filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java"),
+			dest:        protoDest,
 			description: "resource name source",
 		},
 	}
@@ -288,8 +322,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	protoFilesDestDir := filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
-	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
+	if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil
@@ -330,10 +363,10 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 }
 
 // deriveLastReleasedVersion derives the last released version from a snapshot version
-// (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
+// (e.g., x.y.z-SNAPSHOT) by decrementing the patch or minor version.
 //
-// It returns an error if the snapshot version has a non-zero patch or a zero
-// minor version, as this repository is assumed to always bump the minor version.
+// It returns an error if both minor and patch versions are zero, as it's
+// ambiguous what the last released version was in that case.
 func deriveLastReleasedVersion(v string) (string, error) {
 	sv, err := semver.Parse(v)
 	if err != nil {
@@ -342,19 +375,22 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	if sv.Prerelease != "SNAPSHOT" {
 		return sv.String(), nil
 	}
-	if sv.Patch > 0 || sv.Minor == 0 {
+	if sv.Patch > 0 {
+		sv.Patch--
+	} else if sv.Minor > 0 {
+		sv.Minor--
+		sv.Patch = 0
+	} else {
 		return "", errInvalidVersion
 	}
-	sv.Minor--
-	sv.Patch = 0
 	sv.Prerelease = ""
 	return sv.String(), nil
 }
 
-func copyProtos(googleapisDir string, protos []string, destDir string) error {
+func copyProtos(protoSourceDir string, protos []string, destDir string) error {
 	for _, proto := range protos {
-		// Calculate relative path from googleapisDir to preserve directory structure
-		rel, err := filepath.Rel(googleapisDir, proto)
+		// Calculate relative path from protoSourceDir to preserve directory structure
+		rel, err := filepath.Rel(protoSourceDir, proto)
 		if err != nil {
 			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
 		}

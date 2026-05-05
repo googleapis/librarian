@@ -107,10 +107,6 @@ type Sources struct {
 
 // Source represents a source repository.
 type Source struct {
-	// Branch is the source's git branch to pull updates from.
-	// Unset should be interpreted as the repository default branch.
-	Branch string `yaml:"branch,omitempty"`
-
 	// Commit is the git commit hash or tag to use.
 	Commit string `yaml:"commit"`
 
@@ -290,11 +286,11 @@ type Library struct {
 
 	// Language-specific fields are below.
 
-	// Dotnet contains .NET-specific library configuration.
-	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
-
 	// Dart contains Dart-specific library configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
+
+	// Dotnet contains .NET-specific library configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
@@ -310,6 +306,9 @@ type Library struct {
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
+
+	// Surfer contains gcloud-specific library configuration.
+	Surfer *Surfer `yaml:"surfer,omitempty"`
 
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`

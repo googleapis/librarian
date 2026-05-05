@@ -19,10 +19,12 @@ limitations under the License.
 {{/Codec.BoilerPlate}}
 
 /// The Google Cloud client for the {{Title}}.
+{{#Codec.HasDocLines}}
 ///
 {{#Codec.DocLines}}
 {{{.}}}
 {{/Codec.DocLines}}
+{{/Codec.HasDocLines}}
 library;
 
 // ignore_for_file: comment_references {{! TODO(#25): improve the generated dartdocs }}

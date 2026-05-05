@@ -85,6 +85,13 @@ type modelAnnotations struct {
 	// A comma-separated list of service fakes, e.g. "FakeCacheService, FakeGenaiService".
 	FakeList    string
 	ProtoPrefix string
+	// UseWorkspace whether to include the resolution: workspace line in the generated pubspec.yaml.
+	UseWorkspace bool
+}
+
+// HasDocLines returns true if the generated package has doc comments.
+func (m *modelAnnotations) HasDocLines() bool {
+	return len(m.DocLines) > 0
 }
 
 // HasServices returns true if the model has services.
@@ -198,10 +205,16 @@ type fieldAnnotation struct {
 }
 
 type enumAnnotation struct {
+	Parent       *api.Enum
 	Name         string
 	DocLines     []string
 	DefaultValue string
 	Model        *api.API
+}
+
+func (e *enumAnnotation) HasCustomEncoding() bool {
+	_, hasCustomEncoding := usesCustomEncoding[e.Parent.ID]
+	return hasCustomEncoding
 }
 
 type enumValueAnnotation struct {
@@ -217,8 +230,6 @@ type packageDependency struct {
 type annotateModel struct {
 	// The API model we're annotating.
 	model *api.API
-	// Mappings from IDs to types.
-	state *api.APIState
 	// The set of required imports (e.g. "package:google_cloud_type/type.dart" or
 	// "package:http/http.dart as http") that have been calculated.
 	//
@@ -242,7 +253,6 @@ type annotateModel struct {
 func newAnnotateModel(model *api.API) *annotateModel {
 	return &annotateModel{
 		model:                 model,
-		state:                 model.State,
 		imports:               map[string]bool{},
 		packageMapping:        map[string]string{},
 		packagePrefixes:       map[string]string{},
@@ -262,6 +272,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		packageVersion             string
 		partFileReference          string
 		doNotPublish               bool
+		useWorkspace               = true
 		dependencies               = []string{}
 		devDependencies            = []string{}
 		repositoryURL              string
@@ -343,6 +354,16 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 				)
 			}
 			annotate.supportsSSE = value
+		case key == "use-workspace":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return fmt.Errorf(
+					"cannot convert `use-workspace` value %q to boolean: %w",
+					definition,
+					err,
+				)
+			}
+			useWorkspace = value
 		case key == "readme-after-title-text":
 			// Markdown that will be inserted into the README.md after the title section.
 			readMeAfterTitleText = definition
@@ -445,7 +466,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	slices.Sort(devDependencies)
-
+	docLines := formatDocComments(model.Description, model)
 	ann := &modelAnnotations{
 		Parent:                    model,
 		PackageName:               pkgName,
@@ -461,7 +482,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 			}
 			return ""
 		}(),
-		DocLines:                   formatDocComments(model.Description, model),
+		DocLines:                   docLines,
 		Imports:                    calculateImports(annotate.imports, pkgName, mainFileNameWithExtension),
 		PartFileReference:          partFileReference,
 		PackageDependencies:        packageDependencies,
@@ -475,6 +496,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 		Exports:                    exports,
 		FakeList:                   strings.Join(fakes, ", "),
 		ProtoPrefix:                protobufPrefix,
+		UseWorkspace:               useWorkspace,
 	}
 
 	model.Codec = ann
@@ -719,8 +741,6 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		bodyMessageName = "request." + strcase.ToLowerCamel(bodyMessageName)
 	}
 
-	state := annotate.state
-
 	// For 'GetOperation' mixins, we augment the method generation with
 	// additional generic type parameters.
 	isGetOperation := method.Name == "GetOperation" &&
@@ -743,8 +763,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		Parent:              method,
 		Name:                strcase.ToLowerCamel(method.Name),
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
-		RequestType:         annotate.resolveMessageName(state.MessageByID[method.InputTypeID], true),
-		ResponseType:        annotate.resolveMessageName(state.MessageByID[method.OutputTypeID], true),
+		RequestType:         annotate.resolveMessageName(method.InputType, true),
+		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
 		DocLines:            formatDocComments(method.Documentation, annotate.model),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
@@ -757,8 +777,8 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 }
 
 func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.OperationInfo) {
-	response := annotate.state.MessageByID[operationInfo.ResponseTypeID]
-	metadata := annotate.state.MessageByID[operationInfo.MetadataTypeID]
+	response := annotate.model.Message(operationInfo.ResponseTypeID)
+	metadata := annotate.model.Message(operationInfo.MetadataTypeID)
 
 	operationInfo.Codec = &operationInfoAnnotation{
 		ResponseType: annotate.resolveMessageName(response, false),
@@ -840,6 +860,12 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 			constDefault = defaultValues[field.Typez].IsConst
 		}
 	}
+	var toJson string
+	if !implicitPresence {
+		toJson = createNullableToJson(field)
+	} else {
+		toJson = createNonNullableToJson(field, annotate.model)
+	}
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
@@ -849,7 +875,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 		FieldBehaviorRequired: fieldRequired,
 		DefaultValue:          defaultValue,
 		FromJson:              annotate.createFromJsonLine(field, implicitPresence),
-		ToJson:                createToJsonLine(field, annotate.model),
+		ToJson:                toJson,
 		ConstDefault:          constDefault,
 	}
 }
@@ -882,7 +908,7 @@ func (annotate *annotateModel) decoder(typez api.Typez, typeid string) string {
 		typeName := annotate.resolveEnumName(annotate.model.Enum(typeid))
 		return fmt.Sprintf("%s.fromJson", typeName)
 	case api.TypezMessage:
-		typeName := annotate.resolveMessageName(annotate.state.MessageByID[typeid], false)
+		typeName := annotate.resolveMessageName(annotate.model.Message(typeid), false)
 		return fmt.Sprintf("%s.fromJson", typeName)
 	default:
 		panic(fmt.Sprintf("unsupported type: %d", typez))
@@ -988,6 +1014,11 @@ func keyEncoder(typez api.Typez, name string) (string, bool) {
 	}
 }
 
+// canBeNull returns whether the given field can have a `null` JSON serialization.
+func canBeNull(field *api.Field) bool {
+	return !field.Repeated && canHaveNullJsonSerialization[field.TypezID]
+}
+
 func (annotate *annotateModel) createFromJsonLine(field *api.Field, required bool) string {
 	data := fmt.Sprintf("json['%s']", field.JSONName)
 
@@ -1007,6 +1038,18 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 		}
 	}
 
+	// Parsers should accept `null` JSON values but consider the field to be
+	// unset. `NullValue` and `Value` are exceptions to this rule, because their
+	// serialization is/can be `null`.
+	//
+	// See https://protobuf.dev/programming-guides/json/#null-value
+	if canBeNull(field) {
+		decoder := annotate.decoder(field.Typez, field.TypezID)
+		return fmt.Sprintf("switch ((json.containsKey('%s'), json['%s'])) "+
+			"{(false,_) => %s, "+
+			"(true, Object? $1) => %s($1)}", field.JSONName, field.JSONName, defaultValue, decoder)
+	}
+
 	switch {
 	// Value.NullValue is encoded as null in JSON so lists and map values must match on nullable objects.
 	case field.Repeated:
@@ -1016,7 +1059,7 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 				"_ => throw const FormatException('\"%s\" is not a list') }",
 			data, defaultValue, decoder, field.JSONName)
 	case field.Map:
-		message := annotate.state.MessageByID[field.TypezID]
+		message := annotate.model.Message(field.TypezID)
 		keyType := message.Fields[0].Typez
 		keyDecoder := annotate.keyDecoder(keyType)
 		valueType := message.Fields[1].Typez
@@ -1033,34 +1076,80 @@ func (annotate *annotateModel) createFromJsonLine(field *api.Field, required boo
 	return fmt.Sprintf("switch (%s) { null => %s, Object $1 => %s($1)}", data, defaultValue, decoder)
 }
 
-func createToJsonLine(field *api.Field, model *api.API) string {
+func createNonNullableToJson(field *api.Field, model *api.API) string {
 	name := fieldName(field)
+	jsonName := field.JSONName
 
+	var rhs string
 	switch {
 	case field.Repeated:
 		if encoder, encodingRequired := encoder(field.Typez, "i"); encodingRequired {
-			return fmt.Sprintf(
+			rhs = fmt.Sprintf(
 				"[for (final i in %s) %s]",
 				name, encoder)
+		} else {
+			rhs = name
 		}
-		return name
 	case field.Map:
-		message := model.State.MessageByID[field.TypezID]
+		message := model.Message(field.TypezID)
 		keyType := message.Fields[0].Typez
 		keyEncoder, keyEncodingRequired := keyEncoder(keyType, "e.key")
 		valueType := message.Fields[1].Typez
 		valueEncoder, valueEncodingRequired := encoder(valueType, "e.value")
 
 		if keyEncodingRequired || valueEncodingRequired {
-			return fmt.Sprintf(
+			rhs = fmt.Sprintf(
 				"{for (final e in %s.entries) %s: %s}",
 				name, keyEncoder, valueEncoder)
+		} else {
+			rhs = name
 		}
+	default:
+		enc, _ := encoder(field.Typez, name)
+		rhs = enc
+	}
+
+	fieldRequired := slices.Contains(field.Behavior, api.FieldBehaviorRequired)
+	if fieldRequired {
+		return fmt.Sprintf("'%s': %s", jsonName, rhs)
+	}
+	return fmt.Sprintf("if (%s.isNotDefault) '%s': %s", name, jsonName, rhs)
+}
+
+// createToJsonNullAwareLine creates a null-aware expression for JSON serialization.
+func createToJsonNullAwareLine(field *api.Field) string {
+	name := fieldName(field)
+
+	// Check if the type requires encoding.
+	_, required := encoder(field.Typez, name)
+	if !required {
 		return name
 	}
 
-	enc, _ := encoder(field.Typez, name)
+	// For types that require encoding (like Messages or 64-bit ints),
+	// encoder appends ".toJson()" or ".toString()".
+	// Passing "name?" results in "name?.toJson()" or "name?.toString()".
+	enc, _ := encoder(field.Typez, name+"?")
 	return enc
+}
+
+// createNullableToJson creates a JSON element expression for map literals for nullable fields.
+func createNullableToJson(field *api.Field) string {
+	name := fieldName(field)
+	jsonName := field.JSONName
+
+	// Float, Double, and Bytes use function-based encoders (e.g., `encodeDouble`, `encodeBytes`),
+	// and certain fields (like `NullValue` or `Value`) can serialize to `null`.
+	// Standalone function calls are not null-aware expressions, so we cannot use Dart's null-aware
+	// map element syntax `?expression` with them. Instead, we use `if (name case final $1?)`
+	// to safely extract the value before encoding.
+	if field.Typez == api.TypezFloat || field.Typez == api.TypezDouble || field.Typez == api.TypezBytes || canBeNull(field) {
+		enc, _ := encoder(field.Typez, "$1")
+		return fmt.Sprintf("if (%s case final $1?) '%s': %s", name, jsonName, enc)
+	}
+
+	nullAware := createToJsonNullAwareLine(field)
+	return fmt.Sprintf("'%s': ?%s", jsonName, nullAware)
 }
 
 // buildQueryLines builds a string or strings representing query parameters for the given field.
@@ -1101,7 +1190,7 @@ func (annotate *annotateModel) buildQueryLines(
 	result []string, refPrefix string, couldRefPrefixBeNull bool,
 	paramPrefix string, field *api.Field,
 ) []string {
-	message := annotate.state.MessageByID[field.TypezID]
+	message := annotate.model.Message(field.TypezID)
 	isMap := message != nil && message.IsMap
 
 	if field.Codec == nil {
@@ -1168,8 +1257,14 @@ func (annotate *annotateModel) buildQueryLines(
 		return result
 
 	case field.Typez == api.TypezString:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1", preamble))
 	case field.Typez == api.TypezEnum:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("'%s': ?%s?.value", param, ref))
+		}
 		return append(result, fmt.Sprintf("%s: $1.value", preamble))
 	case field.Typez == api.TypezBool ||
 		field.Typez == api.TypezInt32 ||
@@ -1179,6 +1274,9 @@ func (annotate *annotateModel) buildQueryLines(
 		field.Typez == api.TypezUint64 || field.Typez == api.TypezSint64 ||
 		field.Typez == api.TypezFixed64 || field.Typez == api.TypezSfixed64 ||
 		field.Typez == api.TypezFloat || field.Typez == api.TypezDouble:
+		if codec.Nullable {
+			return append(result, fmt.Sprintf("if (%s case final $1?) '%s': '${$1}'", ref, param))
+		}
 		return append(result, fmt.Sprintf("%s: '${$1}'", preamble))
 	case field.Typez == api.TypezBytes:
 		return append(result, fmt.Sprintf("%s: encodeBytes($1)!", preamble))
@@ -1229,6 +1327,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	}
 
 	enum.Codec = &enumAnnotation{
+		Parent:       enum,
 		Name:         enumName(enum),
 		DocLines:     formatDocComments(enum.Documentation, annotate.model),
 		DefaultValue: defaultValue,
@@ -1263,8 +1362,8 @@ func (annotate *annotateModel) fieldType(f *api.Field) string {
 	case api.TypezBytes:
 		out = "Uint8List"
 	case api.TypezMessage:
-		message, ok := annotate.state.MessageByID[f.TypezID]
-		if !ok {
+		message := annotate.model.Message(f.TypezID)
+		if message == nil {
 			slog.Error("unable to lookup type", "id", f.TypezID)
 			return ""
 		}
@@ -1350,13 +1449,13 @@ func registerMissingWkt(model *api.API) {
 		{".google.protobuf.Any", "Any", "google.protobuf"},
 		{".google.protobuf.Empty", "Empty", "google.protobuf"},
 	} {
-		_, ok := model.State.MessageByID[message.ID]
-		if !ok {
-			model.State.MessageByID[message.ID] = &api.Message{
+		msg := model.Message(message.ID)
+		if msg == nil {
+			model.AddMessage(&api.Message{
 				ID:      message.ID,
 				Name:    message.Name,
 				Package: message.Package,
-			}
+			})
 		}
 	}
 }

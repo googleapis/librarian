@@ -12,41 +12,27 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package gcloud provides gcloud-specific functionality for librarian.
-//
-// Unlike the surfer tool, which reads its command surface configuration from a
-// gcloud.yaml file, this package drives generation directly from the APIs
-// declared in librarian.yaml and the protos and service configs that live
-// beside them in googleapis.
+// Package gcloud provides gcloud command binary generation for librarian.
 package gcloud
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	sidekickgcloud "github.com/googleapis/librarian/internal/sidekick/gcloud"
-	"github.com/googleapis/librarian/internal/sidekick/gcloud/provider"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-// baseModule is the default Python base module path for generated gcloud
-// command groups.
-const baseModule = "googlecloudsdk"
-
-// ErrNoProtosFound is returned when no .proto files are found in the API directory.
-var ErrNoProtosFound = errors.New("no .proto files found")
-
-// Generate generates gcloud command YAML files for a library.
+// Generate generates a gcloud command binary for a library.
 //
-// It parses the protos and service config for each API in the library, builds
-// a gcloud command tree, and writes the resulting YAML to the library's
-// output directory.
+// For each API in the library, it parses the protos and service config via
+// the sidekick parser and invokes the sidekick gcloud generator, writing the
+// results to the library's output directory.
 func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir, err := filepath.Abs(srcs.Googleapis)
 	if err != nil {
@@ -60,71 +46,39 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	resolvedSrcs := &sources.Sources{Googleapis: googleapisDir}
 	for _, api := range library.APIs {
-		if err := generateAPI(api, googleapisDir, outDir); err != nil {
+		if err := generateAPI(api, resolvedSrcs, googleapisDir, outDir); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 	return nil
 }
 
-func generateAPI(api *config.API, googleapisDir, outDir string) error {
-	protos, err := collectProtos(googleapisDir, api.Path)
+func generateAPI(api *config.API, srcs *sources.Sources, googleapisDir, outDir string) error {
+	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGcloud)
 	if err != nil {
 		return err
-	}
-	serviceConfigPath, err := findServiceConfig(googleapisDir, api.Path)
-	if err != nil {
-		return err
-	}
-
-	model, err := provider.CreateAPIModel(
-		googleapisDir,
-		strings.Join(protos, ","),
-		serviceConfigPath,
-		"", // descriptorFiles
-		"", // descriptorFilesToGenerate
-	)
-	if err != nil {
-		return err
-	}
-	return sidekickgcloud.Generate(model, nil, outDir, baseModule)
-}
-
-// collectProtos returns proto file paths under apiPath, relative to
-// googleapisDir, using forward slashes so they can be matched against the
-// parser include list regardless of platform.
-func collectProtos(googleapisDir, apiPath string) ([]string, error) {
-	apiDir := filepath.Join(googleapisDir, apiPath)
-	entries, err := os.ReadDir(apiDir)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read API directory %q: %w", apiDir, err)
-	}
-	var protos []string
-	for _, entry := range entries {
-		if entry.IsDir() {
-			continue
-		}
-		if filepath.Ext(entry.Name()) != ".proto" {
-			continue
-		}
-		protos = append(protos, filepath.ToSlash(filepath.Join(apiPath, entry.Name())))
-	}
-	if len(protos) == 0 {
-		return nil, fmt.Errorf("%w: %q", ErrNoProtosFound, apiDir)
-	}
-	return protos, nil
-}
-
-// findServiceConfig returns the absolute path to the service config YAML for
-// apiPath.
-func findServiceConfig(googleapisDir, apiPath string) (string, error) {
-	sc, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageGcloud)
-	if err != nil {
-		return "", err
 	}
 	if sc.ServiceConfig == "" {
-		return "", fmt.Errorf("no service config found for api %q", apiPath)
+		return fmt.Errorf("no service config found for api %q", api.Path)
 	}
-	return filepath.Join(googleapisDir, sc.ServiceConfig), nil
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecProtobuf,
+		SpecificationSource: api.Path,
+		ServiceConfig:       sc.ServiceConfig,
+		Source: &sources.SourceConfig{
+			Sources:     srcs,
+			ActiveRoots: []string{"googleapis"},
+		},
+		Codec: map[string]string{
+			"copyright-year": "2026",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		return err
+	}
+	return sidekickgcloud.Generate(model, outDir)
 }

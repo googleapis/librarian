@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -37,15 +38,16 @@ type updateTestSetup struct {
 const (
 	googleapisTestCommit   = "123456"
 	discoveryTestCommit    = "abcdef"
-	conformanceTestCommit  = "conformance1234"
+	conformanceTestCommit  = "protobuf1234"
 	protobufTestCommit     = "protobuf1234"
 	showcaseTestCommit     = "showcase1234"
+	librarianTestCommit    = "librarian123"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
-	conformanceTestTarball = "conformance-tarball-content"
+	conformanceTestTarball = "protobuf-tarball-content"
 	protobufTestTarball    = "protobuf-tarball-content"
 	showcaseTestTarball    = "showcase-tarball-content"
-	testBranch             = "other"
+	librarianTestTarball   = "librarian-tarball-content"
 	unchangedPlaceholder   = "this-should-not-change"
 )
 
@@ -58,15 +60,12 @@ var (
 )
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
-	// Source.Branch can be empty in the config file. Update should default to
-	// using the branch configured in [sourceRepos], so we only set up the
-	// test server handlers with Source.Branch when it is explicitly set as it
-	// would be in the file on disk.
-	googleapisBranch := determineBranch("googleapis", conf.Sources.Googleapis)
-	discoveryBranch := determineBranch("discovery", conf.Sources.Discovery)
-	conformanceBranch := determineBranch("conformance", conf.Sources.Conformance)
-	protobufBranch := determineBranch("protobuf", conf.Sources.ProtobufSrc)
-	showcaseBranch := determineBranch("showcase", conf.Sources.Showcase)
+	// Update defaults to using the branch configured in [sourceRepos].
+	// We set up the test server handlers accordingly.
+	googleapisBranch := sourceRepos["googleapis"].Branch
+	discoveryBranch := sourceRepos["discovery"].Branch
+	protobufBranch := sourceRepos["protobuf"].Branch
+	showcaseBranch := sourceRepos["showcase"].Branch
 
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
@@ -74,22 +73,22 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(googleapisTestCommit))
 		case "/repos/googleapis/discovery-artifact-manager/commits/" + discoveryBranch:
 			w.Write([]byte(discoveryTestCommit))
-		case "/repos/protocolbuffers/protobuf/commits/" + conformanceBranch:
-			w.Write([]byte(conformanceTestCommit))
 		case "/repos/protocolbuffers/protobuf/commits/" + protobufBranch:
 			w.Write([]byte(protobufTestCommit))
 		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
 			w.Write([]byte(showcaseTestCommit))
+		case "/repos/googleapis/librarian/commits/" + config.BranchMain:
+			w.Write([]byte(librarianTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
 			w.Write([]byte(discoveryTestTarball))
-		case "/protocolbuffers/protobuf/archive/" + conformanceTestCommit + ".tar.gz":
-			w.Write([]byte(conformanceTestTarball))
 		case "/protocolbuffers/protobuf/archive/" + protobufTestCommit + ".tar.gz":
 			w.Write([]byte(protobufTestTarball))
 		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
 			w.Write([]byte(showcaseTestTarball))
+		case "/googleapis/librarian/archive/" + librarianTestCommit + ".tar.gz":
+			w.Write([]byte(librarianTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -104,13 +103,6 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 		server:     ts,
 		configPath: cp,
 	}
-}
-
-func determineBranch(repoName string, source *config.Source) string {
-	if source != nil && source.Branch != "" {
-		return source.Branch
-	}
-	return sourceRepos[repoName].Branch
 }
 
 func setupTestConfig(t *testing.T, conf *config.Config) string {
@@ -132,6 +124,7 @@ func TestUpdateCommand(t *testing.T) {
 		args       []string
 		setup      func(*config.Config)
 		wantConfig func(*config.Config)
+		before     func(*testing.T)
 	}{
 		{
 			name: "googleapis",
@@ -210,18 +203,15 @@ func TestUpdateCommand(t *testing.T) {
 			},
 		},
 		{
-			name: "googleapis branch",
-			args: []string{"librarian", "update", "googleapis"},
+			name: "version",
+			args: []string{"librarian", "update", "version"},
 			setup: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Branch = testBranch
-				cfg.Sources.Googleapis.Commit = "this-should-be-changed"
-				cfg.Sources.Googleapis.SHA256 = "this-should-be-changed"
+				cfg.Version = "this-should-change"
 			},
 			wantConfig: func(cfg *config.Config) {
-				cfg.Sources.Googleapis.Branch = testBranch
-				cfg.Sources.Googleapis.Commit = googleapisTestCommit
-				cfg.Sources.Googleapis.SHA256 = googleapisTestSHA
+				cfg.Version = "v1.2.3"
 			},
+			before: fakeGoList("latest", "v1.2.3"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -234,6 +224,10 @@ func TestUpdateCommand(t *testing.T) {
 
 			setup := setupUpdateTest(t, initialConfig)
 			defer setup.server.Close()
+
+			if test.before != nil {
+				test.before(t)
+			}
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
@@ -309,7 +303,6 @@ func updateTestConfig() *config.Config {
 			SHA256: unchangedPlaceholder,
 		},
 		ProtobufSrc: &config.Source{
-			Branch: testBranch,
 			Commit: unchangedPlaceholder,
 			SHA256: unchangedPlaceholder,
 		},
@@ -319,4 +312,21 @@ func updateTestConfig() *config.Config {
 		},
 	}
 	return cfg
+}
+
+// fakeGoList returns a function that mocks `go list` execution by creating a
+// fake go binary in a temporary directory and adding it to the front of PATH.
+// It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
+// and returns the specified <want> version.
+func fakeGoList(target, want string) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		goDir := t.TempDir()
+		goPath := filepath.Join(goDir, "go")
+		script := fmt.Sprintf("#!/bin/bash\nif [[ \"$*\" == *\"list -m -f {{.Version}} github.com/googleapis/librarian@%s\"* ]]; then\n  echo %q\n  exit 0\nfi\nexit 1\n", target, want)
+		if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 }

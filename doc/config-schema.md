@@ -44,7 +44,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `branch` | string | Is the source's git branch to pull updates from. Unset should be interpreted as the repository default branch. |
 | `commit` | string | Is the git commit hash or tag to use. |
 | `dir` | string | Is a local directory path to use instead of fetching. If set, Commit and SHA256 are ignored. |
 | `sha256` | string | Is the expected hash of the tarball for this commit. |
@@ -123,13 +122,14 @@ This document describes the schema for the librarian.yaml.
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
-| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
+| `surfer` | [Surfer](#surfer-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
 ## API Configuration
@@ -223,6 +223,22 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
+## GcloudHelpTextRule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
+| `brief` | string | Is a concise, single-line summary of the help text. |
+| `description` | string | Provides a detailed, multi-line description. |
+| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
+
+## GcloudHelpTextRules Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
+| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
+
 ## GoAPI Configuration
 
 | Field | Type | Description |
@@ -252,6 +268,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Is the source path. |
+| `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
@@ -259,7 +276,7 @@ This document describes the schema for the librarian.yaml.
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
-| `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
+| `proto_grpc_only` | bool | Determines whether to skip GAPIC client generation. It is usually used for proto-only clients that do not define a service in the proto files, with the exception of google/cloud/location. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
@@ -298,6 +315,8 @@ This document describes the schema for the librarian.yaml.
 | `rest_documentation` | string | Is the URL for the REST documentation. |
 | `rpc_documentation` | string | Is the URL for the RPC documentation. |
 | `transport_override` | string | Allows the "transport" field in .repo-metadata.json to be overridden. TODO(https://github.com/googleapis/librarian/issues/5561): investigate and determine if can remove |
+| `skip_pom_updates` | bool | Indicates whether to skip updating pom.xml files. TODO(https://github.com/googleapis/librarian/issues/5277): re-evaluate together with ExcludedPOMs |
+| `skip_api_id` | bool | Indicates whether to skip adding api_id to .repo-metadata.json. |
 
 ## NodejsAPI Configuration
 
@@ -335,15 +354,10 @@ This document describes the schema for the librarian.yaml.
 | (embedded) | [PythonDefault](#pythondefault-configuration) |  |
 | `opt_args_by_api` | map[string][]string | Contains additional options passed to the generator. In each entry, the key is the API path and the value is the list of options to pass when generating that API. Example: {"google/cloud/secrets/v1beta": ["python-gapic-name=secretmanager"]} |
 | `proto_only_apis` | list of string | Contains the list of API paths which are proto-only, so should use regular protoc Python generation instead of GAPIC. |
-| `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
-| `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
-| `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
-| `api_id_override` | string | Allows the "api_id" field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. TODO(https://github.com/googleapis/librarian/issues/4175): reduce uses of this field to only cases where it's really needed. |
 | `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden, to reduce diffs while migrating. TODO(https://github.com/googleapis/librarian/issues/4175): remove this field. |
 | `metadata_name_override` | string | Allows the name in .repo-metadata.json (which is also used as part of the client documentation URI) to be overridden. By default, it's the package name, but older packages use the API short name instead. |
 | `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
-| `skip_readme_copy` | bool | Prevents generation from copying README.rst from the root directory to the docs directory. TODO(https://github.com/googleapis/librarian/issues/4738): revisit whether or not this field should exist after migration. |
 
 ## RustCrate Configuration
 
@@ -454,6 +468,12 @@ This document describes the schema for the librarian.yaml.
 | `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
 | `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
 
+## Surfer Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
+
 ## SwiftDefault Configuration
 
 | Field | Type | Description |
@@ -471,9 +491,17 @@ This document describes the schema for the librarian.yaml.
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
 
+## SwiftModule Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
+| `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
+
 ## SwiftPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
+| `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |

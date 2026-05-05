@@ -1,0 +1,56 @@
+# Copyright 2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Librarian
+on: [push, pull_request, merge_group]
+permissions:
+  contents: read
+  issues: write
+jobs:
+  legacylibrarian:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-librarian
+      - name: Run tests and check coverage
+        run: go run ./tool/cmd/coverage ./internal/legacylibrarian/...
+  test:
+    runs-on: ubuntu-24.04
+    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-librarian
+      - name: Setup librarian.yaml for test tool dependency installation
+        run: |
+          cp internal/librarian/golang/testdata/librarian.yaml .
+      - name: Install tools
+        run: |
+          go run ./cmd/librarian install go
+      - name: Run tests and check coverage
+        # TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
+        run: |
+          go run ./tool/cmd/coverage -target=79 \
+            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
+  create-issue-on-failure:
+    runs-on: ubuntu-24.04
+    needs: [legacylibrarian, test]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/create-issue-on-failure
+        with:
+          title: "all: tests failed at HEAD"
+          body: "Tests failed at HEAD of the `main` branch. Please review Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }} for detail."

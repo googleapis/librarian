@@ -40,7 +40,7 @@ import {{.}}
 /// {{{.}}}
 {{/Codec.DocLines}}
 ///
-/// @Snippet(id: "{{Name}}Quickstart")
+/// @Snippet(path: "{{Name}}Quickstart")
 public class {{Codec.Name}} {
   let inner: GoogleCloudGax.HTTPClient
 
@@ -58,6 +58,8 @@ public class {{Codec.Name}} {
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
     {{^ReturnsEmpty}}
     -> {{OutputType.Codec.Name}}
@@ -72,11 +74,11 @@ public class {{Codec.Name}} {
       return "{{Codec.PathExpression}}"
     }()
     {{#Codec.HasQueryParams}}
-    var query = [URLQueryItem(name: "$alt", value: "json")]
+    var query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
     let encoder = GoogleCloudGax.QueryParameterEncoder()
     {{/Codec.HasQueryParams}}
     {{^Codec.HasQueryParams}}
-    let query = [URLQueryItem(name: "$alt", value: "json")]
+    let query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
     {{/Codec.HasQueryParams}}
     {{#Codec.QueryParams}}
     {{!
@@ -108,7 +110,7 @@ public class {{Codec.Name}} {
       ))
     }
     {{^ReturnsEmpty}}
-    return try JSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
+    return try ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
     {{/ReturnsEmpty}}
   }
   {{/Codec.RestMethods}}

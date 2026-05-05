@@ -120,9 +120,6 @@ func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.
 			Version:    lc.GAPIC.Version,
 		},
 	}
-	if javaAPI.ProtoOnly {
-		return res
-	}
 	grpcArtifactID := javaAPI.GRPCArtifactIDOverride
 	if grpcArtifactID == "" {
 		grpcArtifactID = fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version)

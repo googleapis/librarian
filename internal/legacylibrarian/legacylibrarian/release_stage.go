@@ -287,14 +287,7 @@ func (r *stageRunner) updateLibrary(ctx context.Context, library *legacyconfig.L
 
 	// Update the previous version, we need this value when creating release note.
 	library.PreviousVersion = library.Version
-	// Only create a detailed change log for repos still generated with legacylibrarian; when releasing from
-	// legacylibrarian in a repo generated with librarian, we don't expect to have details in commit messages,
-	// so leave the change log empty.
-	// legacylibrarian does not use change logs to determine whether to release a library, the ReleaseTriggered does.
-	// See https://github.com/googleapis/librarian/blob/d01bdbe54b46f22f2588a2077b2c278864f02e8b/internal/legacylibrarian/legacylibrarian/release_stage.go#L194
-	if r.librarianConfig == nil || !r.librarianConfig.ReleaseOnlyMode {
-		library.Changes = toCommit(commits, library.ID)
-	}
+	library.Changes = toCommit(commits, library.ID)
 	library.Version = nextVersion
 	library.ReleaseTriggered = true
 	return nil
