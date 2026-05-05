@@ -291,7 +291,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			Value: m.APIVersion,
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Service.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Scopes())
 	if err != nil {
 		return nil, err
 	}

@@ -53,7 +53,7 @@ func (x *Service) Scopes() []string {
 func (x *Message) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
-		return []string{localScope, x.Package}
+		return []string{localScope, x.Package} // simplify some test set-up
 	}
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
@@ -62,7 +62,7 @@ func (x *Message) Scopes() []string {
 func (x *Enum) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
-		return []string{localScope, x.Package}
+		return []string{localScope, x.Package} // simplify some test set-up
 	}
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
@@ -70,7 +70,35 @@ func (x *Enum) Scopes() []string {
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
 	if x.Parent == nil {
-		return []string{}
+		return []string{} // simplify some test set-up
 	}
 	return x.Parent.Scopes()
+}
+
+// Scopes returns the scopes for a field.
+func (x *Field) Scopes() []string {
+	if x.Parent == nil {
+		return []string{} // simplify some test set-up
+	}
+	return x.Parent.Scopes()
+}
+
+// Scopes returns the scopes for a method.
+func (x *Method) Scopes() []string {
+	if x.SourceService == nil {
+		return []string{} // simplify some test set-up
+	}
+	return x.SourceService.Scopes()
+}
+
+// Scopes returns the scopes for a oneof.
+func (x *OneOf) Scopes() []string {
+	if len(x.Fields) > 0 {
+		return x.Fields[0].Scopes()
+	}
+	idx := strings.LastIndex(x.ID, ".")
+	if idx == -1 {
+		return []string{strings.TrimPrefix(x.ID, ".")}
+	}
+	return []string{strings.TrimPrefix(x.ID[:idx], ".")}
 }
