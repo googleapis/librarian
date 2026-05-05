@@ -164,32 +164,55 @@ func main() {
 							{
 								Name:  "list",
 								Usage: "list operations",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing list...")
+									parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
+									fmt.Printf("Executing list on %s\n", parent)
 									return nil
 								},
 							},
 							{
 								Name:  "describe",
 								Usage: "describe operations",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing describe...")
+									name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
+									fmt.Printf("Executing describe on %s\n", name)
 									return nil
 								},
 							},
 							{
 								Name:  "delete",
 								Usage: "delete operations",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing delete...")
+									name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
+									fmt.Printf("Executing delete on %s\n", name)
 									return nil
 								},
 							},
 							{
 								Name:  "cancel",
 								Usage: "cancel operations",
+								Flags: []cli.Flag{
+									&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+									&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+									&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
+								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing cancel...")
+									name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
+									fmt.Printf("Executing cancel on %s\n", name)
 									return nil
 								},
 							},

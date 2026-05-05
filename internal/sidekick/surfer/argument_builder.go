@@ -96,6 +96,10 @@ func (b *argumentBuilder) isIgnored() bool {
 		switch b.field.Name {
 		case "page_size", "page_token", "filter", "order_by":
 			return true
+		case "return_partial_success":
+			// Field is available in all APIs due to operations mixin but not all APIs actually
+			// support it. Omitting for now.
+			return b.method.Name == provider.ListOperations
 		}
 	}
 	if slices.Contains(b.field.Behavior, api.FieldBehaviorOutputOnly) {
@@ -161,6 +165,11 @@ func (b *argumentBuilder) buildPrimaryResource(idField *api.Field) Argument {
 	fieldHelpText := b.field.Documentation
 	if nameField := provider.FindNameField(resource); idField != nil && nameField != nil {
 		fieldHelpText = nameField.Documentation
+	}
+
+	// documentation for LRO service is stripped. Provide fallback.
+	if provider.IsOperationsServiceMethod(b.method) && fieldHelpText == "" {
+		fieldHelpText = provider.OperationMethodDocumentation(b.method.Name)
 	}
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)

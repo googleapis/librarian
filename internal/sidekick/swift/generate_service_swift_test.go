@@ -82,7 +82,7 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	contentStr := string(content)
 
 	gotBlock := extractBlock(t, contentStr, "/// @Snippet", "public class Protocol_ {")
-	wantBlock := `/// @Snippet(id: "ProtocolQuickstart")
+	wantBlock := `/// @Snippet(path: "ProtocolQuickstart")
 public class Protocol_ {`
 
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
@@ -93,10 +93,33 @@ public class Protocol_ {`
 func TestGenerateService_SnippetFiles(t *testing.T) {
 	outDir := t.TempDir()
 
-	iam := &api.Service{Name: "IAM"}
-	secretManager := &api.Service{Name: "SecretManagerService"}
+	dummyMessage := &api.Message{Name: "DummyMessage"}
+	iam := &api.Service{
+		Name: "IAM",
+		Methods: []*api.Method{
+			{
+				Name:      "CreateRole",
+				InputType: dummyMessage,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+		},
+	}
+	secretManager := &api.Service{
+		Name: "SecretManagerService",
+		Methods: []*api.Method{
+			{
+				Name:      "GetSecret",
+				InputType: dummyMessage,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+		},
+	}
 
-	model := api.NewTestAPI(nil, nil, []*api.Service{iam, secretManager})
+	model := api.NewTestAPI([]*api.Message{dummyMessage}, nil, []*api.Service{iam, secretManager})
 	model.PackageName = "google.cloud.test.v1"
 
 	cfg := &parser.ModelConfig{
@@ -110,7 +133,13 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 	}
 
 	expectedDir := filepath.Join(outDir, "Snippets")
-	for _, expected := range []string{"IAMQuickstart.swift", "SecretManagerServiceQuickstart.swift"} {
+	expectedFiles := []string{
+		"IAMQuickstart.swift",
+		"SecretManagerServiceQuickstart.swift",
+		"IAM_CreateRole.swift",
+		"SecretManagerService_GetSecret.swift",
+	}
+	for _, expected := range expectedFiles {
 		filename := filepath.Join(expectedDir, expected)
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)

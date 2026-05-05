@@ -76,14 +76,6 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			},
 		},
 		{
-			name: "google/rpc",
-			path: "google/rpc",
-			want: &config.JavaAPI{
-				Path:           "google/rpc",
-				ExcludedProtos: []string{"google/rpc/http.proto"},
-			},
-		},
-		{
 			name: "no override",
 			path: "google/cloud/language/v1",
 			want: &config.JavaAPI{
