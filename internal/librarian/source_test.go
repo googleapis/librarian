@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -75,6 +76,18 @@ func TestLoadSources(t *testing.T) {
 			want: &sources.Sources{
 				Googleapis: "/tmp/googleapis",
 				Discovery:  "/tmp/discovery",
+			},
+		},
+		{
+			name: "relative paths are resolved to absolute",
+			src: &config.Sources{
+				Googleapis: &config.Source{Dir: "relative/path/to/googleapis"},
+			},
+			want: &sources.Sources{
+				Googleapis: func() string {
+					p, _ := filepath.Abs("relative/path/to/googleapis")
+					return p
+				}(),
 			},
 		},
 	} {

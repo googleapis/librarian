@@ -342,6 +342,41 @@ func TestBuildConfig(t *testing.T) {
 			},
 		},
 		{
+			name: "showcase library gets roots",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						LibraryName:  "showcase",
+						APIShortName: "showcase",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "schema/google/showcase/v1beta1"},
+						},
+					},
+				},
+			},
+			src: &config.Source{},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{},
+				},
+				Libraries: []*config.Library{
+					{
+						Name:  "showcase",
+						Roots: []string{"showcase", "googleapis"},
+						APIs: []*config.API{
+							{Path: "schema/google/showcase/v1beta1"},
+						},
+						Java: &config.JavaModule{SkipAPIID: true},
+					},
+				},
+			},
+		},
+		{
 			name: "fallback to api_shortname",
 			gen: &GenerationConfig{
 				Libraries: []LibraryConfig{

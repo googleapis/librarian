@@ -50,7 +50,7 @@ type postProcessParams struct {
 	metadata       *repoMetadata
 	outDir         string
 	apiBase        string
-	googleapisDir  string
+	protoSourceDir string
 	apiProtos      []string
 	includeSamples bool
 }
@@ -322,7 +322,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
+	if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil
@@ -384,10 +384,10 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	return sv.String(), nil
 }
 
-func copyProtos(googleapisDir string, protos []string, destDir string) error {
+func copyProtos(protoSourceDir string, protos []string, destDir string) error {
 	for _, proto := range protos {
-		// Calculate relative path from googleapisDir to preserve directory structure
-		rel, err := filepath.Rel(googleapisDir, proto)
+		// Calculate relative path from protoSourceDir to preserve directory structure
+		rel, err := filepath.Rel(protoSourceDir, proto)
 		if err != nil {
 			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
 		}
