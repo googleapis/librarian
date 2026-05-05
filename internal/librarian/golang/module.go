@@ -195,11 +195,15 @@ func modulePath(library *config.Library) string {
 }
 
 // initModule initializes and tidies a Go module in the given directory.
-func initModule(ctx context.Context, dir, modPath, goCmd string) error {
-	if err := command.RunInDir(ctx, dir, goCmd, "mod", "init", modPath); err != nil {
+func initModule(ctx context.Context, dir, modPath, toolchain string) error {
+	var env map[string]string
+	if toolchain != "" {
+		env = map[string]string{"GOTOOLCHAIN": toolchain}
+	}
+	if err := command.RunInDirWithEnv(ctx, dir, env, command.Go, "mod", "init", modPath); err != nil {
 		return err
 	}
-	return command.RunInDir(ctx, dir, goCmd, "mod", "tidy")
+	return command.RunInDirWithEnv(ctx, dir, env, command.Go, "mod", "tidy")
 }
 
 // defaultImportPathAndClientPkg returns the default Go import path and client package name

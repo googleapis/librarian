@@ -232,11 +232,14 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageGo:
-		goCmd := golang.GoCommand(cfg.Tools)
+		var toolchain string
+		if cfg.Default != nil && cfg.Default.Go != nil {
+			toolchain = cfg.Default.Go.Toolchain
+		}
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Generate(gctx, library, src, goCmd); err != nil {
+				if err := golang.Generate(gctx, library, src, toolchain); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
