@@ -326,7 +326,7 @@ func updateTestConfig() *config.Config {
 // fakeGoList returns a function that mocks `go list` execution by creating a
 // fake go binary in a temporary directory and adding it to the front of PATH.
 // It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
-// and returns the specified <want> versi
+// and returns the specified <want> version.
 func fakeGoList(target, want string) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()

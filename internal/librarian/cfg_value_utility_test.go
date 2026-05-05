@@ -53,7 +53,7 @@ func setupCfgUtilityTestServer(t *testing.T) {
 }
 
 func TestGetConfigValue(t *testing.T) {
-	cfg := &config.Config{
+	currentConfig := &config.Config{
 		Version: "v1.0.0",
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
@@ -63,6 +63,7 @@ func TestGetConfigValue(t *testing.T) {
 			},
 		},
 	}
+
 	for _, test := range []struct {
 		path string
 		want string
@@ -89,7 +90,7 @@ func TestGetConfigValue(t *testing.T) {
 		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
-			got, err := getConfigValue(cfg, test.path)
+			got, err := getConfigValue(currentConfig, test.path)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -101,7 +102,7 @@ func TestGetConfigValue(t *testing.T) {
 }
 
 func TestGetConfigValue_Error(t *testing.T) {
-	cfg := &config.Config{
+	currentConfig := &config.Config{
 		Version: "v1.0.0",
 	}
 	for _, test := range []struct {
@@ -116,7 +117,7 @@ func TestGetConfigValue_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := getConfigValue(cfg, test.path)
+			_, err := getConfigValue(currentConfig, test.path)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("getConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
 			}
@@ -199,6 +200,7 @@ func TestSetConfigValue(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
