@@ -43,30 +43,28 @@ func setConfigValue(cfg *config.Config, path string, value string) (*config.Conf
 	if len(parts) == 3 && parts[0] == "sources" {
 		sourceName := parts[1]
 		fieldName := parts[2]
-		switch sourceName {
-		case "conformance", "discovery", "googleapis", "protobuf", "showcase":
-			switch fieldName {
-			case "commit":
-				commit, sha256, err := fetchSourceCommitAndChecksum("sources."+sourceName, value)
-				if err != nil {
-					return nil, err
-				}
-				src := getOrCreateSource(cfg, sourceName)
-				src.Commit = commit
-				src.SHA256 = sha256
-				return cfg, nil
-			case "sha256":
-				getOrCreateSource(cfg, sourceName).SHA256 = value
-				return cfg, nil
-			case "dir":
-				getOrCreateSource(cfg, sourceName).Dir = value
-				return cfg, nil
-			case "subpath":
-				getOrCreateSource(cfg, sourceName).Subpath = value
-				return cfg, nil
-			default:
-				return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
+		if _, ok := sourceRepos["sources."+sourceName]; !ok {
+			return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
+		}
+		switch fieldName {
+		case "commit":
+			commit, sha256, err := fetchSourceCommitAndChecksum("sources."+sourceName, value)
+			if err != nil {
+				return nil, err
 			}
+			src := getOrCreateSource(cfg, sourceName)
+			src.Commit = commit
+			src.SHA256 = sha256
+			return cfg, nil
+		case "sha256":
+			getOrCreateSource(cfg, sourceName).SHA256 = value
+			return cfg, nil
+		case "dir":
+			getOrCreateSource(cfg, sourceName).Dir = value
+			return cfg, nil
+		case "subpath":
+			getOrCreateSource(cfg, sourceName).Subpath = value
+			return cfg, nil
 		default:
 			return nil, fmt.Errorf("%w: %s", errUnsupportedPath, path)
 		}
@@ -88,24 +86,22 @@ func getConfigValue(cfg *config.Config, path string) (string, error) {
 	if len(parts) == 3 && parts[0] == "sources" {
 		sourceName := parts[1]
 		fieldName := parts[2]
-		switch sourceName {
-		case "conformance", "discovery", "googleapis", "protobuf", "showcase":
-			src := getSource(cfg, sourceName)
-			if src == nil {
-				return "", nil
-			}
-			switch fieldName {
-			case "commit":
-				return src.Commit, nil
-			case "sha256":
-				return src.SHA256, nil
-			case "dir":
-				return src.Dir, nil
-			case "subpath":
-				return src.Subpath, nil
-			default:
-				return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
-			}
+		if _, ok := sourceRepos["sources."+sourceName]; !ok {
+			return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
+		}
+		src := getSource(cfg, sourceName)
+		if src == nil {
+			return "", nil
+		}
+		switch fieldName {
+		case "commit":
+			return src.Commit, nil
+		case "sha256":
+			return src.SHA256, nil
+		case "dir":
+			return src.Dir, nil
+		case "subpath":
+			return src.Subpath, nil
 		default:
 			return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 		}

@@ -61,10 +61,14 @@ var (
 
 func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	t.Helper()
+	// Update defaults to using the branch configured in [sourceRepos].
+	// We set up the test server handlers accordingly.
 	googleapisBranch := sourceRepos["sources.googleapis"].Branch
+
 	discoveryBranch := sourceRepos["sources.discovery"].Branch
 	protobufBranch := sourceRepos["sources.protobuf"].Branch
 	showcaseBranch := sourceRepos["sources.showcase"].Branch
+
 	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case "/repos/googleapis/googleapis/commits/" + googleapisBranch:
@@ -91,6 +95,7 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			http.NotFound(w, r)
 		}
 	}))
+
 	originalAPI := githubAPI
 	originalDownload := githubDownload
 	t.Cleanup(func() {
@@ -99,7 +104,9 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 	})
 	githubAPI = ts.URL
 	githubDownload = ts.URL
+
 	cp := setupTestConfig(t, conf)
+
 	return &updateTestSetup{
 		server:     ts,
 		configPath: cp,
@@ -219,22 +226,28 @@ func TestUpdateCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			initialConfig := updateTestConfig()
 			test.setup(initialConfig)
+
 			wantConfig := updateTestConfig()
 			test.setup(wantConfig)
 			test.wantConfig(wantConfig)
+
 			setup := setupUpdateTest(t, initialConfig)
 			defer setup.server.Close()
+
 			if test.before != nil {
 				test.before(t)
 			}
+
 			err := Run(t.Context(), test.args...)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			gotConfig, err := yaml.Read[config.Config](setup.configPath)
 			if err != nil {
 				t.Fatal(err)
 			}
+
 			if diff := cmp.Diff(wantConfig, gotConfig); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -310,6 +323,10 @@ func updateTestConfig() *config.Config {
 	return cfg
 }
 
+// fakeGoList returns a function that mocks `go list` execution by creating a
+// fake go binary in a temporary directory and adding it to the front of PATH.
+// It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
+// and returns the specified <want> versi
 func fakeGoList(target, want string) func(*testing.T) {
 	return func(t *testing.T) {
 		t.Helper()
