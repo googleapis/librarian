@@ -348,3 +348,61 @@ func TestAppendVersions_Error(t *testing.T) {
 		t.Error("appendVersions() expected error for non-existent file, got nil")
 	}
 }
+
+func TestDeriveVersionLines(t *testing.T) {
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+	}
+	invalidLibrary := &config.Library{
+		Name:    "invalid",
+		Version: "1.0.1-SNAPSHOT",
+	}
+
+	tests := []struct {
+		name             string
+		missingArtifacts []MissingArtifact
+		want             []string
+		wantErr          bool
+	}{
+		{
+			name:             "empty input",
+			missingArtifacts: nil,
+			want:             nil,
+			wantErr:          false,
+		},
+		{
+			name: "valid artifact IDs",
+			missingArtifacts: []MissingArtifact{
+				{ID: "proto-google-cloud-secretmanager-v1", Library: library},
+				{ID: "google-cloud-secretmanager", Library: library},
+			},
+			want: []string{
+				"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
+				"google-cloud-secretmanager:1.2.3:1.2.3",
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid library version",
+			missingArtifacts: []MissingArtifact{
+				{ID: "proto-google-cloud-invalid-v1", Library: invalidLibrary},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := deriveVersionLines(test.missingArtifacts)
+			if (err != nil) != test.wantErr {
+				t.Errorf("deriveVersionLines() error = %v, wantErr %v", err, test.wantErr)
+				return
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("deriveVersionLines() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

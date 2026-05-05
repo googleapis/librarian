@@ -245,13 +245,15 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
-		var allNewVersions []string
+		var allMissingArtifacts []java.MissingArtifact
 		for _, library := range libraries {
-			newVersions, err := java.IdentifyMissingModules(library, library.Output, src.Googleapis)
+			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src.Googleapis)
 			if err != nil {
 				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
 			}
-			allNewVersions = append(allNewVersions, newVersions...)
+			for _, id := range missingArtifactIDs {
+				allMissingArtifacts = append(allMissingArtifacts, java.MissingArtifact{ID: id, Library: library})
+			}
 
 			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
@@ -260,7 +262,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
-		return java.PostGenerate(ctx, ".", cfg, allNewVersions)
+		return java.PostGenerate(ctx, ".", cfg, allMissingArtifacts)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {

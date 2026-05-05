@@ -62,9 +62,14 @@ var (
 	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
 )
 
+// MissingArtifact pairs an artifact ID with the library it was generated from.
+type MissingArtifact struct {
+	ID      string
+	Library *config.Library
+}
+
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newVersions []string) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, missingArtifacts []MissingArtifact) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -73,7 +78,12 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newV
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
 
-	if err := appendVersions(repoPath, newVersions); err != nil {
+	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
+	versions, err := deriveVersionLines(missingArtifacts)
+	if err != nil {
+		return err
+	}
+	if err := appendVersions(repoPath, versions); err != nil {
 		return err
 	}
 
@@ -92,6 +102,18 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, newV
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
+}
+
+func deriveVersionLines(missingArtifacts []MissingArtifact) ([]string, error) {
+	var lines []string
+	for _, ma := range missingArtifacts {
+		releasedVersion, err := deriveLastReleasedVersion(ma.Library.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive released version for %s (%s): %w", ma.ID, ma.Library.Version, err)
+		}
+		lines = append(lines, fmt.Sprintf("%s:%s:%s", ma.ID, releasedVersion, ma.Library.Version))
+	}
+	return lines, nil
 }
 
 func appendVersions(repoPath string, versions []string) error {

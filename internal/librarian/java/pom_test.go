@@ -71,11 +71,11 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		t.Fatal(err)
 	}
 	wantVersions := []string{
-		"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
-		"grpc-google-cloud-secretmanager-v1:1.2.3:1.2.3",
-		"google-cloud-secretmanager:1.2.3:1.2.3",
-		"google-cloud-secretmanager-bom:1.2.3:1.2.3",
-		"google-cloud-secretmanager-parent:1.2.3:1.2.3",
+		"proto-google-cloud-secretmanager-v1",
+		"grpc-google-cloud-secretmanager-v1",
+		"google-cloud-secretmanager",
+		"google-cloud-secretmanager-bom",
+		"google-cloud-secretmanager-parent",
 	}
 	sort.Strings(gotVersions)
 	sort.Strings(wantVersions)

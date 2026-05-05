@@ -245,9 +245,8 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 }
 
 // IdentifyMissingModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
-// for the given library based on its configuration and checks a pom.xml presence
-// on the filesystem. It returns a list of newly created artifact version entries
-// to be added to versions.txt.
+// for the given library based on its configuration and checks for pom.xml presence
+// on the filesystem. It returns a list of artifact IDs for the missing modules.
 func IdentifyMissingModules(library *config.Library, libraryDir, googleapisDir string) ([]string, error) {
 	transports, err := loadTransports(library, googleapisDir)
 	if err != nil {
@@ -257,14 +256,10 @@ func IdentifyMissingModules(library *config.Library, libraryDir, googleapisDir s
 	if err != nil {
 		return nil, err
 	}
-	releasedVersion, err := deriveLastReleasedVersion(library.Version)
-	if err != nil {
-		return nil, err
-	}
 	var missingModules []string
 	for _, m := range expectedModules {
 		if m.IsMissing {
-			missingModules = append(missingModules, fmt.Sprintf("%s:%s:%s", m.ArtifactID, releasedVersion, library.Version))
+			missingModules = append(missingModules, m.ArtifactID)
 		}
 	}
 	return missingModules, nil
