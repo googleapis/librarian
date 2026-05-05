@@ -67,6 +67,7 @@ func TestModuleToModelConfig(t *testing.T) {
 		lib             *config.Library
 		module          *config.SwiftModule
 		wantIncludeList []string
+		wantCodec       map[string]string
 	}{
 		{
 			name: "no include list",
@@ -75,6 +76,10 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 			module:          &config.SwiftModule{APIPath: "foo"},
 			wantIncludeList: nil,
+			wantCodec: map[string]string{
+				"copyright-year": "",
+				"module":         "true",
+			},
 		},
 		{
 			name: "with include list",
@@ -85,17 +90,41 @@ func TestModuleToModelConfig(t *testing.T) {
 			},
 			module:          &config.SwiftModule{APIPath: "foo"},
 			wantIncludeList: []string{"a.proto", "b.proto"},
+			wantCodec: map[string]string{
+				"copyright-year": "",
+				"module":         "true",
+			},
 		},
 		{
 			name:            "nil swift",
 			lib:             &config.Library{},
 			module:          &config.SwiftModule{APIPath: "foo"},
 			wantIncludeList: nil,
+			wantCodec: map[string]string{
+				"copyright-year": "",
+				"module":         "true",
+			},
+		},
+		{
+			name: "with copyright year",
+			lib: &config.Library{
+				CopyrightYear: "2038",
+				Swift:         &config.SwiftPackage{},
+			},
+			module:          &config.SwiftModule{APIPath: "foo"},
+			wantIncludeList: nil,
+			wantCodec: map[string]string{
+				"copyright-year": "2038",
+				"module":         "true",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := moduleToModelConfig(test.lib, test.module, src)
 			if diff := cmp.Diff(test.wantIncludeList, got.Source.IncludeList); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantCodec, got.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

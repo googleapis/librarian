@@ -95,3 +95,4 @@
   async:
     collection:
       - resourcemultitype.projects.deeps.operations
+    extract_resource_result: false

@@ -652,9 +652,6 @@ func mergePython(dst, src *config.PythonPackage) *config.PythonPackage {
 	if src.DefaultVersion != "" {
 		res.DefaultVersion = src.DefaultVersion
 	}
-	if src.SkipReadmeCopy {
-		res.SkipReadmeCopy = src.SkipReadmeCopy
-	}
 	return &res
 }
 

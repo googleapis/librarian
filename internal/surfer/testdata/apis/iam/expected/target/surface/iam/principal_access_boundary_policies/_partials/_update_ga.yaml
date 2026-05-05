@@ -131,5 +131,6 @@
   async:
     collection:
       - iam.organizations.locations.operations
+    extract_resource_result: true
   update:
     read_modify_update: true

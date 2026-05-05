@@ -24,12 +24,13 @@
     examples: |-
       To delete the operation, run:
 
-      $ {command}
+          $ {command}
   arguments:
     params:
       - help_text: |-
           The name of the operation resource to be deleted.
         is_positional: true
+        is_primary_resource: true
         resource_spec:
           name: operation
           plural_name: operations

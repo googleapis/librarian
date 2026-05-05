@@ -639,7 +639,7 @@ func TestInitModule(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(outDir, "main.go"), content, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := initModule(t.Context(), outDir, "example.com/testmod"); err != nil {
+	if err := initModule(t.Context(), outDir, "example.com/testmod", command.Go); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); err != nil {

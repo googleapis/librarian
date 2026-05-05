@@ -18,8 +18,12 @@
     - GA
   auto_generated: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Undelete resources
+    description: Undelete a resource
+    examples: |-
+      To undelete the resource, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: |-

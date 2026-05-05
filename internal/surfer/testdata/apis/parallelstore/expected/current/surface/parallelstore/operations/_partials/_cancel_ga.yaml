@@ -19,8 +19,12 @@
   auto_generated: true
   hidden: true
   help_text:
-    brief: ""
-    description: ""
+    brief: Cancel resources
+    description: Cancel a resource
+    examples: |-
+      To cancel the resource, run:
+
+          $ {command}
   arguments:
     params:
       - help_text: ""

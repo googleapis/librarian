@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -40,11 +41,13 @@ const (
 	conformanceTestCommit  = "protobuf1234"
 	protobufTestCommit     = "protobuf1234"
 	showcaseTestCommit     = "showcase1234"
+	librarianTestCommit    = "librarian123"
 	googleapisTestTarball  = "googleapis-tarball-content"
 	discoveryTestTarball   = "discovery-tarball-content"
 	conformanceTestTarball = "protobuf-tarball-content"
 	protobufTestTarball    = "protobuf-tarball-content"
 	showcaseTestTarball    = "showcase-tarball-content"
+	librarianTestTarball   = "librarian-tarball-content"
 	unchangedPlaceholder   = "this-should-not-change"
 )
 
@@ -74,6 +77,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(protobufTestCommit))
 		case "/repos/googleapis/gapic-showcase/commits/" + showcaseBranch:
 			w.Write([]byte(showcaseTestCommit))
+		case "/repos/googleapis/librarian/commits/" + config.BranchMain:
+			w.Write([]byte(librarianTestCommit))
 		case "/googleapis/googleapis/archive/" + googleapisTestCommit + ".tar.gz":
 			w.Write([]byte(googleapisTestTarball))
 		case "/googleapis/discovery-artifact-manager/archive/" + discoveryTestCommit + ".tar.gz":
@@ -82,6 +87,8 @@ func setupUpdateTest(t *testing.T, conf *config.Config) *updateTestSetup {
 			w.Write([]byte(protobufTestTarball))
 		case "/googleapis/gapic-showcase/archive/" + showcaseTestCommit + ".tar.gz":
 			w.Write([]byte(showcaseTestTarball))
+		case "/googleapis/librarian/archive/" + librarianTestCommit + ".tar.gz":
+			w.Write([]byte(librarianTestTarball))
 		default:
 			http.NotFound(w, r)
 		}
@@ -117,6 +124,7 @@ func TestUpdateCommand(t *testing.T) {
 		args       []string
 		setup      func(*config.Config)
 		wantConfig func(*config.Config)
+		before     func(*testing.T)
 	}{
 		{
 			name: "googleapis",
@@ -194,6 +202,17 @@ func TestUpdateCommand(t *testing.T) {
 				cfg.Sources.Discovery.SHA256 = discoveryTestSHA
 			},
 		},
+		{
+			name: "version",
+			args: []string{"librarian", "update", "version"},
+			setup: func(cfg *config.Config) {
+				cfg.Version = "this-should-change"
+			},
+			wantConfig: func(cfg *config.Config) {
+				cfg.Version = "v1.2.3"
+			},
+			before: fakeGoList("latest", "v1.2.3"),
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			initialConfig := updateTestConfig()
@@ -205,6 +224,10 @@ func TestUpdateCommand(t *testing.T) {
 
 			setup := setupUpdateTest(t, initialConfig)
 			defer setup.server.Close()
+
+			if test.before != nil {
+				test.before(t)
+			}
 
 			err := Run(t.Context(), test.args...)
 			if err != nil {
@@ -289,4 +312,21 @@ func updateTestConfig() *config.Config {
 		},
 	}
 	return cfg
+}
+
+// fakeGoList returns a function that mocks `go list` execution by creating a
+// fake go binary in a temporary directory and adding it to the front of PATH.
+// It matches arguments containing "list -m -f {{.Version}} github.com/googleapis/librarian@<target>"
+// and returns the specified <want> version.
+func fakeGoList(target, want string) func(*testing.T) {
+	return func(t *testing.T) {
+		t.Helper()
+		goDir := t.TempDir()
+		goPath := filepath.Join(goDir, "go")
+		script := fmt.Sprintf("#!/bin/bash\nif [[ \"$*\" == *\"list -m -f {{.Version}} github.com/googleapis/librarian@%s\"* ]]; then\n  echo %q\n  exit 0\nfi\nexit 1\n", target, want)
+		if err := os.WriteFile(goPath, []byte(script), 0755); err != nil {
+			t.Fatal(err)
+		}
+		t.Setenv("PATH", goDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	}
 }

@@ -51,7 +51,7 @@ func TestUsedByServicesWithServices(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -78,7 +78,7 @@ func TestUsedByServicesNoServices(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -115,7 +115,7 @@ func TestUsedByLROsWithLRO(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -151,7 +151,7 @@ func TestUsedByLROsWithoutLRO(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -192,7 +192,7 @@ func TestUsedByUuidWithAutoPopulation(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -229,7 +229,7 @@ func TestUsedByUuidWithoutAutoPopulation(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -253,7 +253,7 @@ func TestRequiredPackages(t *testing.T) {
 	}
 	less := func(a, b string) bool { return a < b }
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched required packages (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -273,7 +273,7 @@ func TestRequiredPackagesLocal(t *testing.T) {
 	}
 	less := func(a, b string) bool { return a < b }
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched required packages (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -333,7 +333,7 @@ func TestFindUsedPackages(t *testing.T) {
 	}
 	less := func(a, b *packagez) bool { return a.name < b.name }
 	if diff := cmp.Diff(want, c.extraPackages, cmp.AllowUnexported(packagez{}), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched packagez (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

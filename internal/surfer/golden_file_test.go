@@ -46,13 +46,40 @@ func TestGolden(t *testing.T) {
 	coreGoogleapisPath := requireGoogleapisPath(t)
 
 	for _, test := range []struct {
-		name string
-		skip string // Reason for skipping.
+		name   string
+		skip   string   // Reason for skipping.
+		protos []string // Specific protos for this test.
 	}{
-		{name: "apis/developerconnect"},
-		{name: "apis/iam"},
-		{name: "apis/parallelstore"},
-		{name: "apis/seclm"},
+		{
+			name: "apis/developerconnect",
+			protos: []string{
+				"google/cloud/developerconnect/v1/developer_connect.proto",
+				"google/cloud/developerconnect/v1/insights_config.proto",
+			},
+		},
+		{
+			name: "apis/iam",
+			protos: []string{
+				"google/iam/v3/operation_metadata.proto",
+				"google/iam/v3/policy_binding_resources.proto",
+				"google/iam/v3/policy_bindings_service.proto",
+				"google/iam/v3/principal_access_boundary_policies_service.proto",
+				"google/iam/v3/principal_access_boundary_policy_resources.proto",
+			},
+		},
+		{
+			name:   "apis/parallelstore",
+			protos: []string{"google/cloud/parallelstore/v1/parallelstore.proto"},
+		},
+		{
+			name: "apis/seclm",
+			protos: []string{
+				"google/cloud/seclm/v1/citation_metadata.proto",
+				"google/cloud/seclm/v1/generation.proto",
+				"google/cloud/seclm/v1/safety.proto",
+				"google/cloud/seclm/v1/seclm.proto",
+			},
+		},
 		{name: "confirmation_prompt"},
 		{name: "cyclic_messages", skip: "known infinite recursion/hang in surfer parser"},
 		{name: "field_attributes"},
@@ -71,9 +98,9 @@ func TestGolden(t *testing.T) {
 		{name: "method_output_format"},
 		{name: "multi_service"},
 		{name: "multi_version_multi_track"},
-		{name: "regional_endpoints/global_only"},
-		{name: "regional_endpoints/regional_required"},
-		{name: "regional_endpoints/regional_supported"},
+		{name: "regional_endpoints/global_only", protos: []string{"regional_endpoints.proto"}},
+		{name: "regional_endpoints/regional_required", protos: []string{"regional_endpoints.proto"}},
+		{name: "regional_endpoints/regional_supported", protos: []string{"regional_endpoints.proto"}},
 		{name: "resource_multitype"},
 		{name: "resource_non_standard"},
 		{name: "resource_reference"},
@@ -92,6 +119,11 @@ func TestGolden(t *testing.T) {
 			inputDir := filepath.Join(scenarioPath, "input")
 			configFile := filepath.Join(inputDir, "gcloud.yaml")
 			serviceFile := filepath.Join(inputDir, "service.yaml")
+			if len(test.protos) > 0 {
+				if _, err := os.Stat(serviceFile); os.IsNotExist(err) {
+					serviceFile = filepath.Join(coreGoogleapisPath, filepath.Dir(test.protos[0]), "service.yaml")
+				}
+			}
 			if _, err := os.Stat(configFile); errors.Is(err, fs.ErrNotExist) {
 				t.Fatalf("gcloud.yaml not found in scenario input directory: %s", configFile)
 			}
@@ -104,7 +136,7 @@ func TestGolden(t *testing.T) {
 			protoRoot, outDir := setupVirtualEnvironment(t, scenarioPath, coreGoogleapisPath, tmpDir)
 
 			// 2. Act: Execute the CLI compiler
-			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, serviceFile, protoRoot, outDir)
+			gotServiceDir, gotServiceName := runSurferGenerator(ctx, t, configFile, serviceFile, protoRoot, inputDir, outDir, test.protos)
 
 			// 3. Assert: Validate the outputs against the goldens
 			t.Run("current", func(t *testing.T) {
@@ -135,14 +167,16 @@ func setupVirtualEnvironment(t *testing.T, scenarioPath, coreGoogleapisPath, tmp
 		t.Fatal(err)
 	}
 
-	// Symlink core googleapis
-	if err := os.Symlink(filepath.Join(coreGoogleapisPath, "google"), filepath.Join(protoRoot, "google")); err != nil {
+	// Copy core googleapis directory
+	if err := copyDir(filepath.Join(coreGoogleapisPath, "google"), filepath.Join(protoRoot, "google")); err != nil {
 		t.Fatal(err)
 	}
 
 	// Symlink scenario protos
 	inputDir := filepath.Join(scenarioPath, "input")
-	copyProtos(t, inputDir, protoRoot)
+	if _, err := os.Stat(inputDir); err == nil {
+		copyProtos(t, inputDir, protoRoot)
+	}
 
 	// Symlink parent protos if necessary (e.g., for regional_endpoints nested scenarios)
 	if parent := filepath.Dir(scenarioPath); parent != "testdata" {
@@ -155,9 +189,15 @@ func setupVirtualEnvironment(t *testing.T, scenarioPath, coreGoogleapisPath, tmp
 	return protoRoot, outDir
 }
 
-func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFile, protoRoot, outDir string) (string, string) {
+func runSurferGenerator(ctx context.Context, t *testing.T, configFile, serviceFile, protoRoot, inputDir, outDir string, protos []string) (string, string) {
 	t.Helper()
-	protoFiles := findProtos(protoRoot)
+	protoFiles := protos
+	if len(protoFiles) == 0 {
+		protoFiles = findProtos(inputDir)
+	}
+	for i, p := range protoFiles {
+		protoFiles[i] = filepath.ToSlash(p)
+	}
 	if len(protoFiles) == 0 {
 		t.Fatal("no proto files found for scenario")
 	}
@@ -229,10 +269,6 @@ func updateGoldenDir(dest string, src string) error {
 
 func copyProtos(t *testing.T, src, dst string) {
 	t.Helper()
-	absSrc, err := filepath.Abs(src)
-	if err != nil {
-		t.Fatalf("failed to get absolute path for %q: %v", src, err)
-	}
 	entries, err := os.ReadDir(src)
 	if err != nil {
 		t.Fatalf("failed to read directory %q: %v", src, err)
@@ -241,8 +277,12 @@ func copyProtos(t *testing.T, src, dst string) {
 		if filepath.Ext(entry.Name()) == ".proto" {
 			target := filepath.Join(dst, entry.Name())
 			if _, err := os.Stat(target); errors.Is(err, fs.ErrNotExist) {
-				if err := os.Symlink(filepath.Join(absSrc, entry.Name()), target); err != nil {
-					t.Fatalf("failed to create symlink for %q: %v", target, err)
+				data, err := os.ReadFile(filepath.Join(src, entry.Name()))
+				if err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(target, data, 0644); err != nil {
+					t.Fatal(err)
 				}
 			}
 		}
@@ -404,4 +444,22 @@ func requireGoogleapisPath(t *testing.T) string {
 
 	t.Fatal("core googleapis not found via repo layout or SURFER_GOOGLEAPIS env var")
 	return ""
+}
+
+func copyDir(src, dst string) error {
+	return filepath.WalkDir(src, func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, _ := filepath.Rel(src, path)
+		target := filepath.Join(dst, rel)
+		if d.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			return err
+		}
+		return os.WriteFile(target, data, 0644)
+	})
 }

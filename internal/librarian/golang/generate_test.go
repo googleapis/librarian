@@ -113,7 +113,7 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, library.Output, library.Name)
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}, "go"); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -173,7 +173,7 @@ func TestGenerate_Error(t *testing.T) {
 			outdir := t.TempDir()
 			test.library.Output = outdir
 
-			gotErr := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir})
+			gotErr := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}, "go")
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -207,7 +207,7 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 		},
 	}
 
-	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir})
+	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}, "go")
 	if !errors.Is(gotErr, syscall.ENOTDIR) {
 		t.Errorf("Generate error = %v, want %v", gotErr, syscall.ENOTDIR)
 	}
@@ -451,7 +451,7 @@ func TestGenerateLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
+			if err := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}, "go"); err != nil {
 				t.Fatal(err)
 			}
 			for _, path := range test.want {
@@ -1032,7 +1032,7 @@ func TestUpdateSnippetsModule(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+	if err := updateSnippetsModule(t.Context(), library, outDir, "go"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1077,7 +1077,7 @@ func TestUpdateSnippetsModule_NoSnippets(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	if err := updateSnippetsModule(t.Context(), library, outDir); err != nil {
+	if err := updateSnippetsModule(t.Context(), library, outDir, "go"); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1100,5 +1100,49 @@ func setupSnippets(t *testing.T, repoRoot string) {
 	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
 	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestGoCommand(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+		want  string
+	}{
+		{
+			name:  "nil tools",
+			tools: nil,
+			want:  "go",
+		},
+		{
+			name:  "empty tools",
+			tools: &config.Tools{},
+			want:  "go",
+		},
+		{
+			name: "go tools but no compiler",
+			tools: &config.Tools{
+				Go: []*config.GoTool{
+					{Name: "golang.org/x/tools/cmd/goimports", Version: "v0.1.0"},
+				},
+			},
+			want: "go",
+		},
+		{
+			name: "custom Go compiler wrapper version",
+			tools: &config.Tools{
+				Go: []*config.GoTool{
+					{Name: "golang.org/dl/go1.22.3", Version: "v0.1.0"},
+				},
+			},
+			want: "go1.22.3",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := GoCommand(test.tools)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -259,10 +259,9 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 	return library, nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/4751): Do not
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
 // generate or delete v1small. This package is not meant to be used and
-// will be deprecated in the future, but for now (during the migration
-// period) it will be set to not be maintained.
+// will be deprecated and removed in a future major release. Remove this workaround once resolved.
 //
 // We explicitly add these files to the keep list to prevent the clean
 // phase from deleting them, as the generation phase skips v1small.

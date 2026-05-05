@@ -826,6 +826,67 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 	}
 }
 
+func TestTidy_UnusedSections(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		cfg         *config.Config
+		wantRelease bool
+		wantTools   bool
+		wantDefault bool
+	}{
+		{
+			name: "empty sections removed",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Release: &config.Release{},
+				Tools:   &config.Tools{},
+				Default: &config.Default{},
+			},
+			wantRelease: false,
+			wantTools:   false,
+			wantDefault: false,
+		},
+		{
+			name: "non-empty sections preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Release: &config.Release{IgnoredChanges: []string{"foo"}},
+				Tools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
+				Default: &config.Default{Output: "output"},
+			},
+			wantRelease: true,
+			wantTools:   true,
+			wantDefault: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if err := RunTidyOnConfig(t.Context(), tempDir, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if (got.Release != nil) != test.wantRelease {
+				t.Errorf("Release present = %v, want %v", got.Release != nil, test.wantRelease)
+			}
+			if (got.Tools != nil) != test.wantTools {
+				t.Errorf("Tools present = %v, want %v", got.Tools != nil, test.wantTools)
+			}
+			if (got.Default != nil) != test.wantDefault {
+				t.Errorf("Default present = %v, want %v", got.Default != nil, test.wantDefault)
+			}
+		})
+	}
+}
+
 func TestTidy_MissingGoogleApisSource(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := &config.Config{

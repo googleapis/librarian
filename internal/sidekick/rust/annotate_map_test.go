@@ -39,59 +39,61 @@ func TestMapKeyAnnotations(t *testing.T) {
 		{"wkt::internal::U64", api.TypezFixed64},
 		{"serde_with::DisplayFromStr", api.TypezBool},
 	} {
-		mapMessage := &api.Message{
-			Name:    "$map<unused, unused>",
-			ID:      "$map<unused, unused>",
-			Package: "$",
-			IsMap:   true,
-			Fields: []*api.Field{
-				{
-					Name:    "key",
-					ID:      "$map<unused, unused>.key",
-					Typez:   test.typez,
-					TypezID: "unused",
+		t.Run(test.wantSerdeAs, func(t *testing.T) {
+			mapMessage := &api.Message{
+				Name:    "$map<unused, unused>",
+				ID:      "$map<unused, unused>",
+				Package: "$",
+				IsMap:   true,
+				Fields: []*api.Field{
+					{
+						Name:    "key",
+						ID:      "$map<unused, unused>.key",
+						Typez:   test.typez,
+						TypezID: "unused",
+					},
+					{
+						Name:    "value",
+						ID:      "$map<unused, unused>.value",
+						Typez:   api.TypezString,
+						TypezID: "unused",
+					},
 				},
-				{
-					Name:    "value",
-					ID:      "$map<unused, unused>.value",
-					Typez:   api.TypezString,
-					TypezID: "unused",
-				},
-			},
-		}
-		field := &api.Field{
-			Name:     "field",
-			JSONName: "field",
-			ID:       ".test.Message.field",
-			Typez:    api.TypezMessage,
-			TypezID:  "$map<unused, unused>",
-		}
-		message := &api.Message{
-			Name:          "TestMessage",
-			Package:       "test",
-			ID:            ".test.TestMessage",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{field},
-		}
-		model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
-		codec.packageMapping = map[string]*packagez{
-			"test":            {name: "google-cloud-test"},
-			"google.protobuf": {name: "wkt"},
-			"$":               {name: "internal-detail"},
-		}
-		if err != nil {
-			t.Fatal(err)
-		}
-		annotateModel(model, codec)
+			}
+			field := &api.Field{
+				Name:     "field",
+				JSONName: "field",
+				ID:       ".test.Message.field",
+				Typez:    api.TypezMessage,
+				TypezID:  "$map<unused, unused>",
+			}
+			message := &api.Message{
+				Name:          "TestMessage",
+				Package:       "test",
+				ID:            ".test.TestMessage",
+				Documentation: "A test message.",
+				Fields:        []*api.Field{field},
+			}
+			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			api.LabelRecursiveFields(model)
+			codec, err := newCodec(libconfig.SpecProtobuf, map[string]string{})
+			codec.packageMapping = map[string]*packagez{
+				"test":            {name: "google-cloud-test"},
+				"google.protobuf": {name: "wkt"},
+				"$":               {name: "internal-detail"},
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			annotateModel(model, codec)
 
-		got := field.Codec.(*fieldAnnotations).SerdeAs
-		want := fmt.Sprintf("std::collections::HashMap<%s, serde_with::Same>", test.wantSerdeAs)
-		if got != want {
-			t.Errorf("mismatch for %s, want=%q, got=%q", test.wantSerdeAs, want, got)
-		}
+			got := field.Codec.(*fieldAnnotations).SerdeAs
+			want := fmt.Sprintf("std::collections::HashMap<%s, serde_with::Same>", test.wantSerdeAs)
+			if got != want {
+				t.Errorf("mismatch for %s, want=%q, got=%q", test.wantSerdeAs, want, got)
+			}
+		})
 	}
 }
 
@@ -124,51 +126,53 @@ func TestMapValueAnnotations(t *testing.T) {
 		{libconfig.SpecProtobuf, api.TypezMessage, ".google.protobuf.UInt64Value", "wkt::internal::U64"},
 		{libconfig.SpecProtobuf, api.TypezMessage, ".test.Message", "serde_with::Same"},
 	} {
-		mapMessage := &api.Message{
-			Name:    "$map<unused, unused>",
-			ID:      "$map<unused, unused>",
-			Package: "$",
-			IsMap:   true,
-			Fields: []*api.Field{
-				{
-					Name:    "key",
-					ID:      "$map<unused, unused>.key",
-					Typez:   api.TypezInt32,
-					TypezID: "unused",
+		t.Run(fmt.Sprintf("%s_%v_%s", test.spec, test.typez, test.typezID), func(t *testing.T) {
+			mapMessage := &api.Message{
+				Name:    "$map<unused, unused>",
+				ID:      "$map<unused, unused>",
+				Package: "$",
+				IsMap:   true,
+				Fields: []*api.Field{
+					{
+						Name:    "key",
+						ID:      "$map<unused, unused>.key",
+						Typez:   api.TypezInt32,
+						TypezID: "unused",
+					},
+					{
+						Name:    "value",
+						ID:      "$map<unused, unused>.value",
+						Typez:   test.typez,
+						TypezID: test.typezID,
+					},
 				},
-				{
-					Name:    "value",
-					ID:      "$map<unused, unused>.value",
-					Typez:   test.typez,
-					TypezID: test.typezID,
-				},
-			},
-		}
-		field := &api.Field{
-			Name:     "field",
-			JSONName: "field",
-			ID:       ".test.Message.field",
-			Typez:    api.TypezMessage,
-			TypezID:  "$map<unused, unused>",
-		}
-		message := &api.Message{
-			Name:          "Message",
-			Package:       "test",
-			ID:            ".test.Message",
-			Documentation: "A test message.",
-			Fields:        []*api.Field{field},
-		}
-		model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
-		api.CrossReference(model)
-		api.LabelRecursiveFields(model)
-		codec := newTestCodec(t, test.spec, "test", map[string]string{})
-		annotateModel(model, codec)
+			}
+			field := &api.Field{
+				Name:     "field",
+				JSONName: "field",
+				ID:       ".test.Message.field",
+				Typez:    api.TypezMessage,
+				TypezID:  "$map<unused, unused>",
+			}
+			message := &api.Message{
+				Name:          "Message",
+				Package:       "test",
+				ID:            ".test.Message",
+				Documentation: "A test message.",
+				Fields:        []*api.Field{field},
+			}
+			model := api.NewTestAPI([]*api.Message{message, mapMessage}, []*api.Enum{}, []*api.Service{})
+			api.CrossReference(model)
+			api.LabelRecursiveFields(model)
+			codec := newTestCodec(t, test.spec, "test", map[string]string{})
+			annotateModel(model, codec)
 
-		got := field.Codec.(*fieldAnnotations).SerdeAs
-		want := fmt.Sprintf("std::collections::HashMap<wkt::internal::I32, %s>", test.wantSerdeAs)
-		if got != want {
-			t.Errorf("mismatch for %v, want=%q, got=%q", test, want, got)
-		}
+			got := field.Codec.(*fieldAnnotations).SerdeAs
+			want := fmt.Sprintf("std::collections::HashMap<wkt::internal::I32, %s>", test.wantSerdeAs)
+			if got != want {
+				t.Errorf("mismatch for %v, want=%q, got=%q", test, want, got)
+			}
+		})
 	}
 }
 

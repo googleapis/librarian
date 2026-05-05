@@ -32,7 +32,10 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-const commonResourcesProto = "google/cloud/common_resources.proto"
+const (
+	commonResourcesProto = "google/cloud/common_resources.proto"
+	commonProtosLibrary  = "common-protos"
+)
 
 // nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 var nonRecursivePaths = map[string]bool{
@@ -98,7 +101,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func deriveAPIBase(library *config.Library, apiPath string) string {
 	// TODO(https://github.com/googleapis/librarian/issues/5728):
 	// remove this after updated owlbot.py
-	if library.Name == "common-protos" {
+	if library.Name == commonProtosLibrary {
 		return "v1"
 	}
 	return path.Base(apiPath)
@@ -149,7 +152,7 @@ func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, libra
 		}
 	}
 	// 3. Generate GAPIC library.
-	if !javaAPI.ProtoOnly {
+	if !javaAPI.ProtoGRPCOnly {
 		gapicOpts, err := resolveGAPICOptions(cfg, library, api, googleapisDir, apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)

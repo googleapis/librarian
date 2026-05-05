@@ -19,7 +19,7 @@
   auto_generated: true
   help_text:
     brief: Describe apis
-    description: Describe a api
+    description: Describe an api
     examples: |-
       To describe the api, run:
 

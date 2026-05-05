@@ -278,7 +278,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		protoModules = append(protoModules, data.Proto)
 
 		// gRPC module
-		if !javaAPI.ProtoOnly && transport != serviceconfig.Rest {
+		if transport != serviceconfig.Rest {
 			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
 			isGRPCMissing, err := isPOMMissing(gRPCDir)
 			if err != nil {
