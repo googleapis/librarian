@@ -37,9 +37,9 @@ publish                = false
 [lints]
 workspace = true
 {{/Codec.DetailedTracingAttributes}}
-{{#Codec.HasServices}}
-
 [features]
+run_all_samples = []
+{{#Codec.HasServices}}
 default = [
     "default-rustls-provider",
     {{#Codec.DefaultFeatures}}
@@ -57,7 +57,6 @@ default-rustls-provider = ["gaxi/_default-rustls-provider"]
 {{Codec.FeatureName}} = []
 {{/Codec.Services}}
 {{/Codec.PerServiceFeatures}}
-
 {{! We want docs for all features, not just the default features. }}
 [package.metadata.docs.rs]
 all-features = true

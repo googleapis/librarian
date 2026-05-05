@@ -17,7 +17,9 @@ limitations under the License.
 {{#ModelCodec.GenerateSetterSamples}}
 ///
 /// # Example
-/// ```ignore,no_run
+/// ```
+/// # #[cfg(feature = "run_all_samples")]
+/// # fn sample() {
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some("example"));
@@ -72,6 +74,7 @@ limitations under the License.
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some({{Codec.MessageNameInExamples}}::default()/* use setters */));
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<{{Codec.MessageNameInExamples}}>);
 {{/IsObject}}
+/// # }
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}
 {{#Deprecated}}

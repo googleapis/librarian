@@ -20,7 +20,9 @@ limitations under the License.
 {{#ModelCodec.GenerateSetterSamples}}
 ///
 /// # Example
-/// ```ignore,no_run
+/// ```
+/// # #[cfg(feature = "run_all_samples")]
+/// # fn sample() {
 {{#ExampleField}}
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
@@ -77,5 +79,6 @@ limitations under the License.
 ///     {{{Group.Codec.NameInExamples}}}::{{Codec.BranchName}}({{Codec.MessageNameInExamples}}::default().into())));
 {{/IsObject}}
 {{/ExampleField}}
+/// # }
 /// ```
 {{/ModelCodec.GenerateSetterSamples}}

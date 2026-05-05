@@ -23,7 +23,8 @@ limitations under the License.
 {{> /templates/common/client_method_samples/use_statements}}
 {{/QuickstartMethod}}
 {{/Model.Codec.GenerateRpcSamples}}
-/// async fn sample(
+/// # #[cfg(feature = "run_all_samples")]
+/// # async fn sample(
 {{#Model.Codec.GenerateRpcSamples}}
 {{#QuickstartMethod}}
 {{#SampleInfo}}
@@ -46,7 +47,7 @@ limitations under the License.
 {{^Model.Codec.GenerateRpcSamples}}
 ///     // use `client` to make requests to the {{Codec.APITitle}}.
 {{/Model.Codec.GenerateRpcSamples}}
-///     Ok(())
-/// }
+/// #     Ok(())
+/// # }
 /// ```
 {{/Model.Codec.InternalBuilders}}

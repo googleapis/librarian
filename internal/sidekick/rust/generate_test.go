@@ -223,6 +223,46 @@ func TestRustFromProtobuf(t *testing.T) {
 	importsModelModules(t, path.Join(outDir, "src", "model.rs"))
 }
 
+func TestRustSamplesUseRunAllSamplesFeature(t *testing.T) {
+	requireProtoc(t)
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: libconfig.SpecProtobuf,
+		ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+		SpecificationSource: "google/cloud/secretmanager/v1",
+		Source: &sources.SourceConfig{
+			Sources: &sources.Sources{
+				Googleapis: path.Join(testdataDir, "googleapis"),
+			},
+			ActiveRoots: []string{"googleapis"},
+		},
+		Codec: map[string]string{
+			"package:wkt":                 "source=google.protobuf,package=google-cloud-wkt",
+			"package:google-cloud-api":    "source=google.api,package=google-cloud-api",
+			"generate-setter-samples":     "true",
+			"generate-rpc-samples":        "true",
+			"quickstart-service-override": "SecretManagerService",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := Generate(t.Context(), model, outDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	if !generatedTreeContains(t, outDir, `run_all_samples = []`) {
+		t.Fatalf("generated files in %s do not declare run_all_samples feature", outDir)
+	}
+	if !generatedTreeContains(t, outDir, `#[cfg(feature = "run_all_samples")]`) {
+		t.Fatalf("generated files in %s do not feature-gate samples with run_all_samples", outDir)
+	}
+	if generatedTreeContains(t, outDir, "```ignore,no_run") {
+		t.Fatalf("generated files in %s still contain ignore,no_run samples", outDir)
+	}
+}
+
 func TestRustClient(t *testing.T) {
 	requireProtoc(t)
 	for _, override := range []string{"http-client", "grpc-client"} {
@@ -472,4 +512,30 @@ func requireProtoc(t *testing.T) {
 	if _, err := exec.LookPath("protoc"); err != nil {
 		t.Skip("skipping test because protoc is not installed")
 	}
+}
+
+func generatedTreeContains(t *testing.T, root, needle string) bool {
+	t.Helper()
+	found := false
+	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		contents, err := os.ReadFile(p)
+		if err != nil {
+			return err
+		}
+		if strings.Contains(string(contents), needle) {
+			found = true
+			return fs.SkipAll
+		}
+		return nil
+	})
+	if err != nil && err != fs.SkipAll {
+		t.Fatal(err)
+	}
+	return found
 }
