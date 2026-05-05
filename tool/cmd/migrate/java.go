@@ -502,8 +502,6 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 			"google/cloud/aiplatform/v1beta1/schema/dataset_metadata.proto",
 			"google/cloud/aiplatform/v1beta1/schema/geometry.proto",
 		)
-	case api.Path == "google/rpc":
-		api.ExcludedProtos = append(api.ExcludedProtos, "google/rpc/http.proto")
 	}
 }
 
