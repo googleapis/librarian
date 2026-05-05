@@ -38,7 +38,24 @@ var templates embed.FS
 
 // CLIModel represents the data structure for the template.
 type CLIModel struct {
+	// Imports holds the Go imports rendered into the generated main.go.
+	Imports []Import
+
+	// Groups holds the top-level gcloud command groups rendered into main.go.
 	Groups []Group
+}
+
+// Import represents a Go import line in the generated main.go.
+type Import struct {
+	// Alias is the optional package alias; empty when the import has no
+	// alias. For example, "parallelstore" in:
+	//
+	//	parallelstore "cloud.google.com/go/parallelstore/apiv1"
+	Alias string
+
+	// Path is the import path of the package, for example
+	// "cloud.google.com/go/parallelstore/apiv1".
+	Path string
 }
 
 // Group represents a gcloud command group.
@@ -118,7 +135,12 @@ func constructCLIModel(model *api.API) CLIModel {
 		Usage: fmt.Sprintf("manage %s resources", model.Title),
 	}
 
-	subgroups := make(map[string]*Subgroup)
+	var (
+		cliModel      CLIModel
+		goClient      = goClientPackage(model.PackageName)
+		hasClientCall = false
+		subgroups     = make(map[string]*Subgroup)
+	)
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
 			binding := provider.PrimaryBinding(method)
@@ -142,7 +164,19 @@ func constructCLIModel(model *api.API) CLIModel {
 			commandName, _ := provider.GetCommandName(method)
 			commandName = strcase.ToKebab(commandName)
 			cmd := buildCommand(method, model, commandName, subgroupName)
+
+			if call := buildClientCall(method, goClient, cmd.HasPath()); call != nil {
+				cmd.ClientCall = call
+				hasClientCall = true
+			}
 			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, cmd)
+		}
+	}
+
+	if hasClientCall {
+		cliModel.Imports = []Import{
+			{Alias: goClient.Alias, Path: goClient.ClientPath},
+			{Path: goClient.PbPath},
 		}
 	}
 
@@ -155,9 +189,98 @@ func constructCLIModel(model *api.API) CLIModel {
 	for _, k := range keys {
 		rootGroup.Subgroups = append(rootGroup.Subgroups, *subgroups[k])
 	}
-	return CLIModel{
-		Groups: []Group{rootGroup},
+	cliModel.Groups = []Group{rootGroup}
+	return cliModel
+}
+
+// buildClientCall returns a ClientCall for an AIP-131 Get method when the
+// model maps to a standard GAPIC Go package and the command composes a
+// resource path. It returns nil otherwise so the command keeps its
+// print-only action.
+func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *ClientCall {
+	if goClient == nil || !hasPath {
+		return nil
 	}
+	if !provider.IsGet(method) {
+		return nil
+	}
+	if method.InputType == nil {
+		return nil
+	}
+	return &ClientCall{
+		Method:      method.Name,
+		NameField:   "Name",
+		Package:     goClient.Alias,
+		RequestType: goClient.Alias + "pb." + method.InputType.Name,
+	}
+}
+
+// goClientInfo describes the Go client and proto-Go packages for a proto
+// package like "google.cloud.parallelstore.v1".
+type goClientInfo struct {
+	// Alias is the short name used as the import alias for the client
+	// package, for example "parallelstore". The proto-Go package is
+	// imported as Alias+"pb" (e.g. "parallelstorepb").
+	Alias string
+
+	// ClientPath is the import path of the GAPIC Go client package, for
+	// example "cloud.google.com/go/parallelstore/apiv1".
+	ClientPath string
+
+	// PbPath is the import path of the proto-Go package, for example
+	// "cloud.google.com/go/parallelstore/apiv1/parallelstorepb".
+	PbPath string
+}
+
+// goClientPackage maps a proto package name like "google.cloud.parallelstore.v1"
+// to its Go client (apiv1) and proto-Go (apiv1/parallelstorepb) packages.
+// It returns nil when the proto package does not have the shape
+// google.cloud.<short>.v<N>. Beta and alpha suffixes (e.g. v1beta1) are
+// intentionally excluded for now.
+func goClientPackage(protoPkg string) *goClientInfo {
+	rest, ok := strings.CutPrefix(protoPkg, "google.cloud.")
+	if !ok {
+		return nil
+	}
+	short, version, ok := strings.Cut(rest, ".")
+	if !ok || !isLowerAlphanum(short) || !isStableVersion(version) {
+		return nil
+	}
+	return &goClientInfo{
+		Alias:      short,
+		ClientPath: fmt.Sprintf("cloud.google.com/go/%s/api%s", short, version),
+		PbPath:     fmt.Sprintf("cloud.google.com/go/%s/api%s/%spb", short, version, short),
+	}
+}
+
+// isLowerAlphanum reports whether s starts with a lowercase letter and
+// contains only lowercase letters and digits.
+func isLowerAlphanum(s string) bool {
+	if s == "" || s[0] < 'a' || s[0] > 'z' {
+		return false
+	}
+	for i := 1; i < len(s); i++ {
+		c := s[i]
+		if (c < 'a' || c > 'z') && (c < '0' || c > '9') {
+			return false
+		}
+	}
+	return true
+}
+
+// isStableVersion reports whether s is a stable proto version like "v1" or
+// "v2": a "v" followed by one or more digits, with no alpha/beta suffix.
+func isStableVersion(s string) bool {
+	digits, ok := strings.CutPrefix(s, "v")
+	if !ok || digits == "" {
+		return false
+	}
+	for i := 0; i < len(digits); i++ {
+		if digits[i] < '0' || digits[i] > '9' {
+			return false
+		}
+	}
+	return true
 }
 
 // buildCommand constructs a Command for a method. The command's flags name

@@ -20,7 +20,9 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli/v3"
+{{range .Imports}}	{{if .Alias}}{{.Alias}} {{end}}"{{.Path}}"
+{{end}}	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func main() {
@@ -71,13 +73,31 @@ func main() {
 	},
 	{{- end}}
 	Action: func(ctx context.Context, cmd *cli.Command) error {
-		{{- if .HasPath}}
+		{{- if .ClientCall}}
+		{{.PathLabel}} := fmt.Sprintf("{{.PathFormat}}", {{.PathFormatArgs}})
+		client, err := {{.ClientCall.Package}}.NewClient(ctx)
+		if err != nil {
+			return err
+		}
+		defer client.Close()
+		resp, err := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })
+		if err != nil {
+			return err
+		}
+		out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
+		return nil
+		{{- else if .HasPath}}
 		{{.PathLabel}} := fmt.Sprintf("{{.PathFormat}}", {{.PathFormatArgs}})
 		fmt.Printf("Executing {{.Name}} on %s\n", {{.PathLabel}})
+		return nil
 		{{- else}}
 		fmt.Println("Executing {{.Name}}...")
-		{{- end}}
 		return nil
+		{{- end}}
 	},
 }
 {{- end}}

@@ -415,6 +415,44 @@ func TestPathFormatFromSegments(t *testing.T) {
 	}
 }
 
+func TestGoClientPackage(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		protoPkg string
+		want     *goClientInfo
+	}{
+		{
+			name:     "parallelstore",
+			protoPkg: "google.cloud.parallelstore.v1",
+			want: &goClientInfo{
+				Alias:      "parallelstore",
+				ClientPath: "cloud.google.com/go/parallelstore/apiv1",
+				PbPath:     "cloud.google.com/go/parallelstore/apiv1/parallelstorepb",
+			},
+		},
+		{
+			name:     "secretmanager",
+			protoPkg: "google.cloud.secretmanager.v1",
+			want: &goClientInfo{
+				Alias:      "secretmanager",
+				ClientPath: "cloud.google.com/go/secretmanager/apiv1",
+				PbPath:     "cloud.google.com/go/secretmanager/apiv1/secretmanagerpb",
+			},
+		},
+		{name: "empty", protoPkg: ""},
+		{name: "three-segments", protoPkg: "google.cloud.parallelstore"},
+		{name: "beta-version", protoPkg: "google.cloud.parallelstore.v1beta1"},
+		{name: "not-google-cloud", protoPkg: "google.api.X.v1"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := goClientPackage(test.protoPkg)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestPathArgsFromSegments(t *testing.T) {
 	for _, test := range []struct {
 		name     string
