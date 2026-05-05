@@ -39,11 +39,11 @@ import (
 )
 
 var (
-	errLibraryAlreadyExists   = errors.New("library already exists in config")
 	errAPIAlreadyExists       = errors.New("api already exists in library")
-	errWrongAPICount          = errors.New("must provide exactly one API path")
-	errPreviewRequiresLibrary = errors.New("only APIs with an existing Library can have a Preview")
+	errLibraryAlreadyExists   = errors.New("library already exists in config")
 	errPreviewAlreadyExists   = errors.New("preview library config already exists")
+	errPreviewRequiresLibrary = errors.New("only APIs with an existing Library can have a Preview")
+	errWrongAPICount          = errors.New("must provide exactly one API path")
 )
 
 func addCommand() *cli.Command {
@@ -60,6 +60,9 @@ derived from the first API path using language-specific rules.
 If the API path should naturally be included in an existing library, and if the
 language supports doing so, that library is modified. Otherwise, a new library
 is created.
+
+To add a preview client of an existing library, prefix the API path with
+"preview/".
 
 Examples:
 

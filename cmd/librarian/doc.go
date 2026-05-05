@@ -66,6 +66,9 @@ If the API path should naturally be included in an existing library, and if the
 language supports doing so, that library is modified. Otherwise, a new library
 is created.
 
+To add a preview client of an existing library, prefix the API path with
+"preview/".
+
 Examples:
 
 	librarian add google/cloud/secretmanager/v1
