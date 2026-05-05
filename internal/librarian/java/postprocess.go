@@ -33,7 +33,10 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
+const (
+	owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
+	owlbotStagingDir       = "owl-bot-staging"
+)
 
 var (
 	errOwlBotMissing    = errors.New("owlbot.py not found")
@@ -73,6 +76,9 @@ func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	bomVersion, err := findBOMVersion(p.cfg)
 	if err != nil {
 		return err
+	}
+	if err := removeKeptFilesFromStaging(p.library, p.outDir); err != nil {
+		return fmt.Errorf("failed to remove kept files from staging: %w", err)
 	}
 	if err := runOwlBot(ctx, p.library, p.outDir, bomVersion); err != nil {
 		return fmt.Errorf("%w: %w", errRunOwlBot, err)
@@ -130,7 +136,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
 	}
 	if shouldGenerate {
-		protoModuleStagingRoot := filepath.Join(p.outDir, "owl-bot-staging", p.apiBase, coords.Proto.ArtifactID)
+		protoModuleStagingRoot := filepath.Join(p.outDir, owlbotStagingDir, p.apiBase, coords.Proto.ArtifactID)
 		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
 			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
 		}
@@ -228,7 +234,7 @@ func removeConflictingFiles(protoSrcDir string) error {
 // {apiBase} directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
 // ensure synthtool preserves the module structure.
 func restructureToStaging(p postProcessParams) error {
-	stagingDir := filepath.Join(p.outDir, "owl-bot-staging")
+	stagingDir := filepath.Join(p.outDir, owlbotStagingDir)
 	destRoot := filepath.Join(stagingDir, p.apiBase)
 	if p.javaAPI.Monolithic {
 		destRoot = filepath.Join(destRoot, "src")
@@ -403,4 +409,48 @@ func copyProtos(protoSourceDir string, protos []string, destDir string) error {
 		}
 	}
 	return nil
+}
+
+func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
+	stagingDir := filepath.Join(outDir, owlbotStagingDir)
+	if _, err := os.Stat(stagingDir); os.IsNotExist(err) {
+		return nil
+	}
+	keepSet := make(map[string]bool)
+	for _, k := range library.Keep {
+		normalized := strings.TrimSuffix(filepath.ToSlash(k), "/")
+		keepSet[normalized] = true
+	}
+	return filepath.WalkDir(stagingDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		relToStaging, err := filepath.Rel(stagingDir, path)
+		if err != nil {
+			return err
+		}
+		parts := strings.SplitN(filepath.ToSlash(relToStaging), "/", 2)
+		if len(parts) < 2 {
+			return nil
+		}
+		keepPath := strings.TrimSuffix(parts[1], "/")
+		relSlash := keepPath
+
+		if d.IsDir() {
+			if keepSet[keepPath] {
+				if err := os.RemoveAll(path); err != nil {
+					return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
+				}
+				return filepath.SkipDir
+			}
+			return nil
+		}
+
+		if keepSet[keepPath] || itTestRegexp.MatchString(relSlash) || versionRegexp.MatchString(relSlash) {
+			if err := os.Remove(path); err != nil {
+				return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
+			}
+		}
+		return nil
+	})
 }

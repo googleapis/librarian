@@ -890,3 +890,54 @@ func TestCopyFiles_Error(t *testing.T) {
 		t.Error("copyFiles() error = nil, want error for non-existent source")
 	}
 }
+
+func TestRemoveKeptFilesFromStaging(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	stagingDir := filepath.Join(outDir, "owl-bot-staging")
+	// Set up dummy files in staging
+	// 1. Explicitly kept file
+	keptFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "File.java")
+	// 2. File matching versionRegexp (not explicitly in Keep)
+	versionFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Version.java")
+	// 3. Regular file (should be preserved in staging)
+	regularFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Regular.java")
+	// 4. File inside an explicitly kept directory
+	keptDirFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
+
+	for _, f := range []string{keptFile, versionFile, regularFile, keptDirFile} {
+		if err := os.MkdirAll(filepath.Dir(f), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(f, []byte("public class Dummy {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	library := &config.Library{
+		Name: "lib",
+		APIs: []*config.API{
+			{Path: "google/cloud/lib/v1"},
+		},
+		Keep: []string{
+			"google-cloud-lib/src/main/java/com/google/kept/File.java",
+			"google-cloud-lib/src/main/java/com/google/keptdir/", // Test with trailing slash
+		},
+	}
+	if err := removeKeptFilesFromStaging(library, outDir); err != nil {
+		t.Fatalf("removeKeptFilesFromStaging failed: %v", err)
+	}
+
+	if _, err := os.Stat(keptFile); !os.IsNotExist(err) {
+		t.Errorf("expected kept file %s to be removed from staging, but it exists", keptFile)
+	}
+	if _, err := os.Stat(versionFile); !os.IsNotExist(err) {
+		t.Errorf("expected version file %s to be removed from staging due to regex match, but it exists", versionFile)
+	}
+	if _, err := os.Stat(regularFile); err != nil {
+		t.Errorf("expected regular file %s to remain in staging, but got error: %v", regularFile, err)
+	}
+	if _, err := os.Stat(keptDirFile); !os.IsNotExist(err) {
+		t.Errorf("expected file inside kept dir %s to be removed from staging, but it exists", keptDirFile)
+	}
+}
