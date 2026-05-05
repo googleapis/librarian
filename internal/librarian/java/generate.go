@@ -81,14 +81,13 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}
 
-	err = postProcessLibrary(ctx, libraryPostProcessParams{
+	if err := postProcessLibrary(ctx, libraryPostProcessParams{
 		cfg:        cfg,
 		library:    library,
 		outDir:     outdir,
 		metadata:   metadata,
 		transports: transports,
-	})
-	if err != nil {
+	}); err != nil {
 		return err
 	}
 
