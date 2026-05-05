@@ -22,11 +22,36 @@ import (
 // Command represents a leaf command.
 type Command struct {
 	Args       []string
+	ClientCall *ClientCall
 	Flags      []Flag
 	Name       string
 	PathFormat string
 	PathLabel  string
 	Usage      string
+}
+
+// ClientCall describes a Go client method invocation that should replace the
+// default print-only action for a generated command.
+type ClientCall struct {
+	// Method is the unqualified client method to call on the constructed
+	// client, for example "GetInstance". The template invokes it as
+	// `client.<Method>(ctx, &<RequestType>{...})`.
+	Method string
+
+	// NameField is the field on the request message that takes the
+	// composed resource path, for example "Name" for AIP-131 Get requests.
+	// The template assigns it from the local path variable.
+	NameField string
+
+	// Package is the import alias of the Go client package, for example
+	// "parallelstore". The template invokes the constructor as
+	// `client, err := <Package>.NewClient(ctx)`.
+	Package string
+
+	// RequestType is the qualified request message type, for example
+	// "parallelstorepb.GetInstanceRequest". The template composites a
+	// literal of this type and passes its address to the method.
+	RequestType string
 }
 
 // HasPath reports whether the command composes a resource path.

@@ -5,7 +5,10 @@ import (
 	"fmt"
 	"os"
 
+	parallelstore "cloud.google.com/go/parallelstore/apiv1"
+	"cloud.google.com/go/parallelstore/apiv1/parallelstorepb"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func main() {
@@ -44,7 +47,20 @@ func main() {
 								},
 								Action: func(ctx context.Context, cmd *cli.Command) error {
 									name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
-									fmt.Printf("Executing describe on %s\n", name)
+									client, err := parallelstore.NewClient(ctx)
+									if err != nil {
+										return err
+									}
+									defer client.Close()
+									resp, err := client.GetInstance(ctx, &parallelstorepb.GetInstanceRequest{Name: name})
+									if err != nil {
+										return err
+									}
+									out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+									if err != nil {
+										return err
+									}
+									fmt.Println(string(out))
 									return nil
 								},
 							},
