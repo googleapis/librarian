@@ -16,6 +16,7 @@ package gcloud
 
 import (
 	"fmt"
+	"slices"
 	"sort"
 
 	"github.com/iancoleman/strcase"
@@ -61,66 +62,86 @@ type Subgroup struct {
 	Commands []Command
 }
 
-func constructCLIModel(model *api.API) CLIModel {
-	rootGroup := Group{
-		Name:  model.Name,
-		Usage: fmt.Sprintf("manage %s resources", model.Title),
-	}
+type commandWithSubgroup struct {
+	Command  Command
+	Subgroup string
+}
 
-	var (
-		cliModel      CLIModel
-		goClient      = goClientPackage(model.PackageName)
-		hasClientCall = false
-		subgroups     = make(map[string]*Subgroup)
-	)
+func constructCLIModel(model *api.API) CLIModel {
+	commands := buildCommands(model)
+	return CLIModel{
+		Imports: clientImports(model.PackageName, commands),
+		Groups:  []Group{rootGroup(model, groupBySubgroup(commands))},
+	}
+}
+
+func buildCommands(model *api.API) []commandWithSubgroup {
+	goClient := goClientPackage(model.PackageName)
+	var commands []commandWithSubgroup
 	for _, service := range model.Services {
 		for _, method := range service.Methods {
-			binding := provider.PrimaryBinding(method)
-			if binding == nil {
+			subgroup, ok := subgroupName(method)
+			if !ok {
 				continue
 			}
-
-			segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
-			if len(segments) == 0 {
-				continue
-			}
-
-			subgroupName := strcase.ToKebab(segments[len(segments)-1])
-			if subgroups[subgroupName] == nil {
-				subgroups[subgroupName] = &Subgroup{
-					Name:  subgroupName,
-					Usage: fmt.Sprintf("Manage %s resources", subgroupName),
-				}
-			}
-
 			commandName, _ := provider.GetCommandName(method)
 			commandName = strcase.ToKebab(commandName)
-			cmd := buildCommand(method, model, commandName, subgroupName)
-
+			cmd := buildCommand(method, model, commandName, subgroup)
 			if call := buildClientCall(method, goClient, cmd.HasPath()); call != nil {
 				cmd.ClientCall = call
-				hasClientCall = true
 			}
-			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, cmd)
+			commands = append(commands, commandWithSubgroup{Command: cmd, Subgroup: subgroup})
 		}
 	}
+	return commands
+}
 
-	if hasClientCall {
-		cliModel.Imports = []Import{
-			{Alias: goClient.Alias, Path: goClient.ClientPath},
-			{Path: goClient.PbPath},
+func groupBySubgroup(cmds []commandWithSubgroup) []Subgroup {
+	bySubgroup := make(map[string]*Subgroup)
+	for _, c := range cmds {
+		sg, ok := bySubgroup[c.Subgroup]
+		if !ok {
+			sg = &Subgroup{
+				Name:  c.Subgroup,
+				Usage: fmt.Sprintf("Manage %s resources", c.Subgroup),
+			}
+			bySubgroup[c.Subgroup] = sg
 		}
+		sg.Commands = append(sg.Commands, c.Command)
 	}
-
-	var keys []string
-	for k := range subgroups {
+	keys := make([]string, 0, len(bySubgroup))
+	for k := range bySubgroup {
 		keys = append(keys, k)
 	}
-
 	sort.Strings(keys)
+	subgroups := make([]Subgroup, 0, len(keys))
 	for _, k := range keys {
-		rootGroup.Subgroups = append(rootGroup.Subgroups, *subgroups[k])
+		subgroups = append(subgroups, *bySubgroup[k])
 	}
-	cliModel.Groups = []Group{rootGroup}
-	return cliModel
+	return subgroups
+}
+
+func clientImports(pkg string, cmds []commandWithSubgroup) []Import {
+	hasCall := slices.ContainsFunc(cmds, func(c commandWithSubgroup) bool {
+		return c.Command.ClientCall != nil
+	})
+	if !hasCall {
+		return nil
+	}
+	goClient := goClientPackage(pkg)
+	if goClient == nil {
+		return nil
+	}
+	return []Import{
+		{Alias: goClient.Alias, Path: goClient.ClientPath},
+		{Path: goClient.PbPath},
+	}
+}
+
+func rootGroup(model *api.API, subgroups []Subgroup) Group {
+	return Group{
+		Name:      model.Name,
+		Usage:     fmt.Sprintf("manage %s resources", model.Title),
+		Subgroups: subgroups,
+	}
 }
