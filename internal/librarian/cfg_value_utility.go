@@ -109,39 +109,37 @@ func getConfigValue(cfg *config.Config, path string) (string, error) {
 	return "", fmt.Errorf("%w: %s", errUnsupportedPath, path)
 }
 
+// getSourcePointer returns a pointer to the Source field within config.Sources.
+func getSourcePointer(sources *config.Sources, sourceName string) **config.Source {
+	switch sourceName {
+	case "conformance":
+		return &sources.Conformance
+	case "discovery":
+		return &sources.Discovery
+	case "googleapis":
+		return &sources.Googleapis
+	case "protobuf":
+		return &sources.ProtobufSrc
+	case "showcase":
+		return &sources.Showcase
+	default:
+		return nil
+	}
+}
+
 // getOrCreateSource returns a Source pointer from the Config, initializing if needed.
 func getOrCreateSource(cfg *config.Config, sourceName string) *config.Source {
 	if cfg.Sources == nil {
 		cfg.Sources = &config.Sources{}
 	}
-	switch sourceName {
-	case "conformance":
-		if cfg.Sources.Conformance == nil {
-			cfg.Sources.Conformance = &config.Source{}
-		}
-		return cfg.Sources.Conformance
-	case "discovery":
-		if cfg.Sources.Discovery == nil {
-			cfg.Sources.Discovery = &config.Source{}
-		}
-		return cfg.Sources.Discovery
-	case "googleapis":
-		if cfg.Sources.Googleapis == nil {
-			cfg.Sources.Googleapis = &config.Source{}
-		}
-		return cfg.Sources.Googleapis
-	case "protobuf":
-		if cfg.Sources.ProtobufSrc == nil {
-			cfg.Sources.ProtobufSrc = &config.Source{}
-		}
-		return cfg.Sources.ProtobufSrc
-	case "showcase":
-		if cfg.Sources.Showcase == nil {
-			cfg.Sources.Showcase = &config.Source{}
-		}
-		return cfg.Sources.Showcase
+	sourcePointer := getSourcePointer(cfg.Sources, sourceName)
+	if sourcePointer == nil {
+		return nil
 	}
-	return nil
+	if *sourcePointer == nil {
+		*sourcePointer = &config.Source{}
+	}
+	return *sourcePointer
 }
 
 // getSource returns a Source pointer from the Config if it exists.
@@ -149,19 +147,11 @@ func getSource(cfg *config.Config, sourceName string) *config.Source {
 	if cfg.Sources == nil {
 		return nil
 	}
-	switch sourceName {
-	case "conformance":
-		return cfg.Sources.Conformance
-	case "discovery":
-		return cfg.Sources.Discovery
-	case "googleapis":
-		return cfg.Sources.Googleapis
-	case "protobuf":
-		return cfg.Sources.ProtobufSrc
-	case "showcase":
-		return cfg.Sources.Showcase
+	sourcePointer := getSourcePointer(cfg.Sources, sourceName)
+	if sourcePointer == nil {
+		return nil
 	}
-	return nil
+	return *sourcePointer
 }
 
 // fetchSourceCommitAndChecksum gets the commit and checksum for a source.

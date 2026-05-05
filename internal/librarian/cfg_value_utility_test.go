@@ -211,19 +211,22 @@ func TestSetConfigValue(t *testing.T) {
 func TestSetConfigValue_Error(t *testing.T) {
 	setupCfgUtilityTestServer(t)
 	for _, test := range []struct {
-		name  string
-		path  string
-		value string
+		name    string
+		path    string
+		value   string
+		wantErr error
 	}{
 		{
-			name:  "unsupported path",
-			path:  "unknown.field",
-			value: "val",
+			name:    "unsupported path",
+			path:    "unknown.field",
+			value:   "some-value-not-used",
+			wantErr: errUnsupportedPath,
 		},
 		{
-			name:  "failed fetch commit",
-			path:  "sources.googleapis.commit",
-			value: "non-existent-branch",
+			name:    "failed fetch commit",
+			path:    "sources.googleapis.commit",
+			value:   "non-existent-branch",
+			wantErr: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -233,6 +236,9 @@ func TestSetConfigValue_Error(t *testing.T) {
 			_, err := setConfigValue(cfg, test.path, test.value)
 			if err == nil {
 				t.Errorf("setConfigValue(%q, %q) got nil err, want error", test.path, test.value)
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("setConfigValue(%q, %q) error = %v, wantErr %v", test.path, test.value, err, test.wantErr)
 			}
 		})
 	}
