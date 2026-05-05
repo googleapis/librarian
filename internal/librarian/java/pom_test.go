@@ -62,7 +62,11 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	gotVersions, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
+	gotVersions, err := IdentifyMissingModules(library, tmpDir, googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -189,7 +193,7 @@ func TestSyncPOMs_Update(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if _, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -248,7 +252,7 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if _, err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 

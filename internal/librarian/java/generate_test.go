@@ -572,7 +572,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 				},
 				Libraries: []*config.Library{test.library},
 			}
-			_, err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
+			err := Generate(t.Context(), cfg, test.library, &sources.Sources{Googleapis: googleapisDir})
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("generate() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -625,7 +625,7 @@ func TestGenerate_Logic(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -690,7 +690,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 			{Name: rootLibrary, Version: "1.2.3"},
 		},
 	}
-	_, err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
+	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})
 	if err != nil {
 		t.Fatal(err)
 	}

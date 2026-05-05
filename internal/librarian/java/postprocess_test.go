@@ -405,7 +405,15 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				outDir:   outDir,
 				metadata: &repoMetadata{NamePretty: "Secret Manager"},
 			}
-			got, err := postProcessLibrary(t.Context(), params)
+			var got []string
+			if test.name == "success" {
+				var err error
+				got, err = IdentifyMissingModules(library, outDir, googleapisDir)
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			err := postProcessLibrary(t.Context(), params)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("error = %v, wantErr %v", err, test.wantErr)
 			}

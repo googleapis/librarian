@@ -66,31 +66,30 @@ type libraryPostProcessParams struct {
 // postProcessLibrary runs owlbot.py and updates POM.xml files for the library.
 // It returns a list of newly created artifact version entries to be added to
 // versions.txt.
-func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) ([]string, error) {
+func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
 	// Check if owlbot.py exists in the library output directory.
 	// It is required for restructuring the output and generating README files.
 	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err != nil {
-		return nil, fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
+		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
 	}
 	bomVersion, err := findBOMVersion(p.cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	if err := runOwlBot(ctx, p.library, p.outDir, bomVersion); err != nil {
-		return nil, fmt.Errorf("%w: %w", errRunOwlBot, err)
+		return fmt.Errorf("%w: %w", errRunOwlBot, err)
 	}
 
 	monorepoVersion, err := findMonorepoVersion(p.cfg)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	newVersions, err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports)
-	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errSyncPOMs, err)
+	if err := syncPOMs(p.library, p.outDir, monorepoVersion, p.metadata, p.transports); err != nil {
+		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}
 
-	return newVersions, nil
+	return nil
 }
 
 func (p postProcessParams) gapicDir() string { return filepath.Join(p.outDir, p.apiBase, "gapic") }

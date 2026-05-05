@@ -247,11 +247,15 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageJava:
 		var allNewVersions []string
 		for _, library := range libraries {
-			newVersions, err := java.Generate(ctx, cfg, library, src)
+			newVersions, err := java.IdentifyMissingModules(library, library.Output, src.Googleapis)
 			if err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
 			}
 			allNewVersions = append(allNewVersions, newVersions...)
+
+			if err := java.Generate(ctx, cfg, library, src); err != nil {
+				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+			}
 			if err := java.Format(ctx, library); err != nil {
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}

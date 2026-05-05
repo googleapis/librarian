@@ -46,43 +46,42 @@ var (
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
-// Generate generates a Java client library and returns a list of newly created
-// artifact version entries to be added to versions.txt.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) ([]string, error) {
+// Generate generates a Java client library.
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve output directory path: %w", err)
+		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 	// Ensure googleapisDir is absolute to avoid issues with relative paths in protoc.
 	var googleapisDir string
 	googleapisDir, err = filepath.Abs(srcs.Googleapis)
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve googleapis directory path: %w", err)
+		return fmt.Errorf("failed to resolve googleapis directory path: %w", err)
 	}
 	if err := os.MkdirAll(outdir, 0755); err != nil {
-		return nil, fmt.Errorf("failed to create output directory %q: %w", outdir, err)
+		return fmt.Errorf("failed to create output directory %q: %w", outdir, err)
 	}
 	// generate repo metadata prior to client because info is needed for
 	// owlbot.py to generate README.md
 	metadata, err := generateRepoMetadata(cfg, library, outdir, googleapisDir)
 	if err != nil {
-		return nil, fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
+		return fmt.Errorf("failed to generate .repo-metadata.json: %w", err)
 	}
 
 	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
 		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+			return fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
 		}
 		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
 		// metadata is needed for pom.xml generation in post process
 		if err := generateAPI(ctx, cfg, api, library, googleapisDir, outdir, metadata, apiCfg); err != nil {
-			return nil, fmt.Errorf("failed to generate api %q: %w", api.Path, err)
+			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
 
-	newVersions, err := postProcessLibrary(ctx, libraryPostProcessParams{
+	err = postProcessLibrary(ctx, libraryPostProcessParams{
 		cfg:        cfg,
 		library:    library,
 		outDir:     outdir,
@@ -90,10 +89,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		transports: transports,
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	return newVersions, nil
+	return nil
 }
 
 func generateAPI(ctx context.Context, cfg *config.Config, api *config.API, library *config.Library, googleapisDir, outdir string, metadata *repoMetadata, apiCfg *serviceconfig.API) error {
