@@ -198,6 +198,7 @@ func main() {
 										return err
 									}
 									fmt.Println(string(out))
+
 									return nil
 								},
 							},
