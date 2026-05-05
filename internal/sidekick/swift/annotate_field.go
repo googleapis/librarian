@@ -53,11 +53,15 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
+	docLines, err := c.formatDocumentation(field.Documentation, field.Scopes())
+	if err != nil {
+		return err
+	}
 	annotations := &fieldAnnotations{
 		Name:          camelCase(field.Name),
 		FieldType:     fieldType,
 		BaseFieldType: baseFieldType,
-		DocLines:      c.formatDocumentation(field.Documentation),
+		DocLines:      docLines,
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {

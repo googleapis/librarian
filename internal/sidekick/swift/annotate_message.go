@@ -39,7 +39,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if message.Codec != nil {
 		return nil
 	}
-	docLines := c.formatDocumentation(message.Documentation)
+	docLines, err := c.formatDocumentation(message.Documentation, message.Scopes())
+	if err != nil {
+		return err
+	}
 	annotations := &messageAnnotations{
 		Name:                pascalCase(message.Name),
 		DocLines:            docLines,
@@ -50,7 +53,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 
 	message.Codec = annotations
 	for _, oneof := range message.OneOfs {
-		c.annotateOneOf(oneof)
+		if err := c.annotateOneOf(oneof); err != nil {
+			return err
+		}
 	}
 	for _, field := range message.Fields {
 		if err := c.annotateField(field); err != nil {

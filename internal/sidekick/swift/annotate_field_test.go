@@ -66,6 +66,7 @@ func TestAnnotateField(t *testing.T) {
 				Package: "test",
 				Fields:  []*api.Field{field},
 			}
+			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, model, map[string]string{})
 			if err := codec.annotateModel(); err != nil {
@@ -108,6 +109,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				Package: "test",
 				Fields:  []*api.Field{field},
 			}
+			field.Parent = msg
 			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, model, map[string]string{})
 			if err := codec.annotateModel(); err != nil {

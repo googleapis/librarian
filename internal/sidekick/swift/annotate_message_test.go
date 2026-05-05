@@ -93,6 +93,9 @@ func TestAnnotateMessage(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			for _, f := range test.message.Fields {
+				f.Parent = test.message
+			}
 			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
 			codec := newTestCodec(t, model, map[string]string{})
 			if err := codec.annotateModel(); err != nil {

@@ -28,6 +28,7 @@ func TestAnnotateMethod(t *testing.T) {
 		ID:     ".test.Request",
 		Fields: []*api.Field{keyField},
 	}
+	keyField.Parent = inputType
 	outputType := &api.Message{
 		Name: "Response",
 		ID:   ".test.Response",
@@ -35,6 +36,7 @@ func TestAnnotateMethod(t *testing.T) {
 			{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
 		},
 	}
+	outputType.Fields[0].Parent = outputType
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -143,7 +145,10 @@ func TestAnnotateMethod(t *testing.T) {
 				Package: "test",
 				Methods: []*api.Method{test.method},
 			}
-			model := api.NewTestAPI(nil, nil, []*api.Service{service})
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
 			codec := newTestCodec(t, model, nil)
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
@@ -196,7 +201,10 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				Name:    "TestService",
 				Methods: []*api.Method{method},
 			}
-			model := api.NewTestAPI(nil, nil, []*api.Service{service})
+			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
+			if err := api.CrossReference(model); err != nil {
+				t.Fatal(err)
+			}
 			codec := newTestCodec(t, model, nil)
 
 			if err := codec.annotateModel(); err != nil {
@@ -229,9 +237,11 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		ID:      ".google.cloud.external.v1.OutputMessage",
 	}
 	method := &api.Method{
-		Name:       "TestMethod",
-		InputType:  inputMessage,
-		OutputType: outputMessage,
+		Name:         "TestMethod",
+		InputType:    inputMessage,
+		InputTypeID:  inputMessage.ID,
+		OutputType:   outputMessage,
+		OutputTypeID: outputMessage.ID,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
 		},
@@ -244,6 +254,9 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 	model.PackageName = "google.cloud.test.v1"
 	model.AddMessage(inputMessage)
 	model.AddMessage(outputMessage)
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
 	codec := newTestCodec(t, model, nil)
 
 	if err := codec.annotateModel(); err != nil {

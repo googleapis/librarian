@@ -18,10 +18,11 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestFormatDocumentation(t *testing.T) {
-	codec := &codec{}
+	codec := newTestCodec(t, api.NewTestAPI(nil, nil, nil), nil)
 
 	for _, test := range []struct {
 		name string
@@ -50,10 +51,38 @@ func TestFormatDocumentation(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := codec.formatDocumentation(test.doc)
+			got, err := codec.formatDocumentation(test.doc, []string{})
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("formatDocumentation() mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFormatDocumentationWithLinks(t *testing.T) {
+	someMessage := &api.Message{
+		Name:    "SomeMessage",
+		ID:      ".test.v1.SomeMessage",
+		Package: "test.v1",
+	}
+	model := api.NewTestAPI([]*api.Message{someMessage}, []*api.Enum{}, []*api.Service{})
+	c := newTestCodec(t, model, nil)
+
+	input := `Refer to [SomeMessage][] for details.`
+	want := []string{
+		"Refer to [SomeMessage][] for details.",
+		"",
+		"[SomeMessage]: <doc:SomeMessage>",
+	}
+
+	got, err := c.formatDocumentation(input, []string{"test.v1"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("formatDocumentation() mismatch (-want +got):\n%s", diff)
 	}
 }
