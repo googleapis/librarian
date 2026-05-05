@@ -20,6 +20,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
@@ -31,11 +32,12 @@ import (
 )
 
 var (
-	errRepoNotFound               = errors.New("repo argument is required")
-	errLibNotFoundInLibrarianYAML = errors.New("library not found in librarian.yaml")
-	errLibNotFoundInStateYAML     = errors.New("library not found in state.yaml")
-	errLibraryVersionNotSame      = errors.New("library version not same")
-	errLibraryAPINotSame          = errors.New("library API not same")
+	errRepoNotFound                 = errors.New("repo argument is required")
+	errLibNotFoundInLibrarianYAML   = errors.New("library not found in librarian.yaml")
+	errLibNotFoundInStateYAML       = errors.New("library not found in state.yaml")
+	errLibraryVersionNotSame        = errors.New("library version not same")
+	errLibraryAPINotSame            = errors.New("library API not same")
+	errLibraryReleaseBlockedNotSame = errors.New("library release blocked not same")
 )
 
 type library struct {
@@ -72,12 +74,21 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
-	return configCheck(state, cfg)
+	var lcfg *legacyconfig.LibrarianConfig
+	configFile := filepath.Join(abs, legacyconfig.LibrarianDir, legacyconfig.LibrarianConfigFile)
+	lcfg, err = yaml.Read[legacyconfig.LibrarianConfig](configFile)
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return err
+		}
+		lcfg = nil
+	}
+	return configCheck(state, cfg, lcfg)
 }
 
 // configCheck verifies that the libraries and their versions defined in the
 // state.yaml match those in librarian.yaml.
-func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
+func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config, lcfg *legacyconfig.LibrarianConfig) error {
 	legacyLibs := convertLegacyLibs(state.Libraries)
 	libs := convertLibs(cfg.Libraries)
 	for id, legacyLib := range legacyLibs {
@@ -95,6 +106,17 @@ func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config) error {
 	for name := range libs {
 		if _, ok := legacyLibs[name]; !ok {
 			return fmt.Errorf("library %s: %w", name, errLibNotFoundInStateYAML)
+		}
+	}
+	for _, lib := range cfg.Libraries {
+		var releaseBlocked bool
+		if lcfg != nil {
+			if libCfg := lcfg.LibraryConfigFor(lib.Name); libCfg != nil {
+				releaseBlocked = libCfg.ReleaseBlocked
+			}
+		}
+		if lib.SkipRelease != releaseBlocked {
+			return fmt.Errorf("library %s: %w", lib.Name, errLibraryReleaseBlockedNotSame)
 		}
 	}
 	return nil
