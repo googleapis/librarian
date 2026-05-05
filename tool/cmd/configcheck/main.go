@@ -108,15 +108,15 @@ func configCheck(state *legacyconfig.LibrarianState, cfg *config.Config, lcfg *l
 			return fmt.Errorf("library %s: %w", name, errLibNotFoundInStateYAML)
 		}
 	}
-	for _, lib := range cfg.Libraries {
-		var releaseBlocked bool
-		if lcfg != nil {
-			if libCfg := lcfg.LibraryConfigFor(lib.Name); libCfg != nil {
-				releaseBlocked = libCfg.ReleaseBlocked
-			}
+	releaseBlocked := make(map[string]bool)
+	if lcfg != nil {
+		for _, l := range lcfg.Libraries {
+			releaseBlocked[l.LibraryID] = l.ReleaseBlocked
 		}
-		if lib.SkipRelease != releaseBlocked {
-			return fmt.Errorf("library %s: %w", lib.Name, errLibraryReleaseBlockedNotSame)
+	}
+	for _, lib := range cfg.Libraries {
+		if lib.SkipRelease != releaseBlocked[lib.Name] {
+			return fmt.Errorf("%w: library %s: 'skip_release' does not match 'release_blocked'", errLibraryReleaseBlockedNotSame, lib.Name)
 		}
 	}
 	return nil
