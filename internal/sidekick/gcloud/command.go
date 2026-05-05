@@ -19,15 +19,38 @@ import (
 	"strings"
 )
 
-// Command represents a leaf command.
+// Command represents a leaf command, the executable node at the bottom of a
+// gcloud command tree (e.g. "gcloud parallelstore instances describe").
 type Command struct {
-	Args       []string
+	// Args holds the variable names, in segment order, that fill the
+	// "%s" positions in PathFormat. Empty when the command does not
+	// compose a resource path.
+	Args []string
+
+	// ClientCall replaces the default print-only action with an
+	// invocation of a Go client method. It is set only for methods that
+	// map to a standard GAPIC Go package.
 	ClientCall *ClientCall
-	Flags      []Flag
-	Name       string
+
+	// Flags holds the CLI flags exposed by the command, one per
+	// resource-path component.
+	Flags []Flag
+
+	// Name is the command's leaf name, for example "describe".
+	Name string
+
+	// PathFormat is a [fmt.Sprintf] format string that composes the
+	// resource path at runtime, for example "projects/%s/locations/%s".
+	// Empty when the command takes no resource path.
 	PathFormat string
-	PathLabel  string
-	Usage      string
+
+	// PathLabel is the local variable name used in the generated action
+	// to hold the composed path: "parent" for collection methods, "name"
+	// for resource methods.
+	PathLabel string
+
+	// Usage is the one-line help text shown for the command.
+	Usage string
 }
 
 // ClientCall describes a Go client method invocation that should replace the
