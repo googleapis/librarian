@@ -299,16 +299,20 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			},
 		},
 		{
-			name:    "update existing library (python)",
-			apiPath: "google/cloud/kms/v1beta2",
+			name: "update existing library (python)",
+			// The API path here deliberately doesn't match the library name,
+			// to demonstrate that we're finding the right library based on
+			// existing API paths.
+			apiPath: "google/firestore/queries/v1beta2",
 			cfg: &config.Config{
 				Language: config.LanguagePython,
 				Libraries: []*config.Library{
 					{
-						Name:    "google-cloud-kms",
+						Name:    "google-cloud-firestore",
 						Version: "1.2.3",
 						APIs: []*config.API{
-							{Path: "google/cloud/kms/v1"},
+							{Path: "google/firestore/admin/v2"},
+							{Path: "google/firestore/v1"},
 						},
 						Python: &config.PythonPackage{
 							DefaultVersion: "v1",
@@ -316,16 +320,17 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 					},
 				},
 			},
-			wantName: "google-cloud-kms",
+			wantName: "google-cloud-firestore",
 			wantCfg: &config.Config{
 				Language: config.LanguagePython,
 				Libraries: []*config.Library{
 					{
-						Name:    "google-cloud-kms",
+						Name:    "google-cloud-firestore",
 						Version: "1.2.3",
 						APIs: []*config.API{
-							{Path: "google/cloud/kms/v1"},
-							{Path: "google/cloud/kms/v1beta2"},
+							{Path: "google/firestore/admin/v2"},
+							{Path: "google/firestore/v1"},
+							{Path: "google/firestore/queries/v1beta2"},
 						},
 						Python: &config.PythonPackage{
 							DefaultVersion: "v1",
@@ -391,7 +396,6 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 						Version: "1.2.3",
 						APIs: []*config.API{
 							{Path: "google/cloud/secretmanager/v1"},
-							{Path: "google/cloud/secretmanager/v1beta2"},
 						},
 					},
 				},

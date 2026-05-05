@@ -147,46 +147,55 @@ func deriveLibraryName(language string, api string) string {
 }
 
 // addLibrary adds a new library to the config based on the provided API.
-// It returns the name of the new library, the updated config, and an error
-// if the library already exists.
+// It returns the name of the new or updated library, the updated config, and an
+// error if the API cannot be added (e.g. because it already exists, or the new
+// API is a preview and there is no corresponding stable library).
 func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
 	isPreview := strings.HasPrefix(apiPath, "preview/")
-
 	stablePath := apiPath
 	if isPreview {
 		stablePath = strings.TrimPrefix(apiPath, "preview/")
 	}
-	name := deriveLibraryName(cfg.Language, stablePath)
 	api := &config.API{Path: stablePath}
-	existingLib, err := FindLibrary(cfg, name)
-	var exists bool
-	switch {
-	case err == nil:
-		exists = true
-	case errors.Is(err, ErrLibraryNotFound):
-		exists = false
-	default:
-		return "", nil, err
-	}
+	existingLib := findExistingLibraryForNewAPI(cfg, stablePath)
 	if isPreview {
-		if !exists {
-			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
+		if existingLib == nil {
+			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
 		}
-		return addPreviewLibrary(cfg, existingLib, api, name)
+		return addPreviewLibrary(cfg, existingLib, api)
 	}
-	if exists {
-		if cfg.Language != config.LanguageGo && cfg.Language != config.LanguagePython {
-			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
-		}
+	if existingLib != nil {
 		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, api, name)
+	return addNewLibrary(cfg, api)
+}
+
+// findExistingLibraryForNewAPI determines if an existing library in cfg is
+// the natural library to contain apiPath, and returns it if so. If no existing
+// library is found, nil is returned. In most languages this check is performed
+// by deriving the library name from the API path and seeing if that library
+// already exists. In Python the mapping from API path to library name isn't
+// always as simple for historical reasons.
+func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
+	switch cfg.Language {
+	case config.LanguagePython:
+		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+	default:
+		name := deriveLibraryName(cfg.Language, apiPath)
+		// Not using FindLibrary as the error handling becomes awkward.
+		for _, library := range cfg.Libraries {
+			if library.Name == name {
+				return library
+			}
+		}
+		return nil
+	}
 }
 
 // addPreviewLibrary adds a new preview library to the config.
-func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API, name string) (string, *config.Config, error) {
+func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API) (string, *config.Config, error) {
 	if lib.Preview != nil {
-		return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
+		return "", nil, fmt.Errorf("%w: %s", errPreviewAlreadyExists, lib.Name)
 	}
 	// Derive an initial version for the preview client, starting from the
 	// containing stable client's version as if it were a preview, then
@@ -201,11 +210,12 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API,
 		Version: v,
 		APIs:    []*config.API{api},
 	}
-	return name, cfg, nil
+	return lib.Name, cfg, nil
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API, name string) (string, *config.Config, error) {
+func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config, error) {
+	name := deriveLibraryName(cfg.Language, api.Path)
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
@@ -238,12 +248,17 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
 		return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 	}
-	if cfg.Language == config.LanguagePython {
+	switch cfg.Language {
+	case config.LanguagePython:
 		if err := python.ValidateNewAPIs(existingLib); err != nil {
 			return "", nil, err
 		}
+		existingLib.APIs = append(existingLib.APIs, api)
+	case config.LanguageGo:
+		existingLib.APIs = append(existingLib.APIs, api)
+	default:
+		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}
-	existingLib.APIs = append(existingLib.APIs, api)
 	return existingLib.Name, cfg, nil
 }
 
