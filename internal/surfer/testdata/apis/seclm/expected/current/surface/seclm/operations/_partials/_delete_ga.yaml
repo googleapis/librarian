@@ -19,20 +19,33 @@
   auto_generated: true
   hidden: true
   help_text:
-    brief: Delete resources
-    description: Delete a resource
+    brief: Delete operations
+    description: Delete an operation
     examples: |-
-      To delete the resource, run:
+      To delete the operation, run:
 
           $ {command}
   arguments:
     params:
-      - help_text: ""
+      - help_text: The name of the operation resource to be deleted.
         is_positional: true
         is_primary_resource: true
         resource_spec:
-          collection: seclm.
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: operation
+              help: The operation id of the {resource} resource.
+              parameter_name: operationsId
+          collection: seclm.projects.locations.operations
           disable_auto_completers: false
+          name: operation
+          plural_name: operations
         required: true
   request:
     api_version: v1
