@@ -223,10 +223,9 @@ func TestSetConfigValue_Error(t *testing.T) {
 			wantErr: errUnsupportedPath,
 		},
 		{
-			name:    "failed fetch commit",
-			path:    "sources.googleapis.commit",
-			value:   "non-existent-branch",
-			wantErr: nil,
+			name:  "failed fetch commit",
+			path:  "sources.googleapis.commit",
+			value: "non-existent-branch",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
