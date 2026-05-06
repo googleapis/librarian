@@ -287,7 +287,7 @@ func ShouldGenerateOperations(c *Config) bool {
 
 // FromLibrarianConfig builds a provider.Config for a specific API from Librarian's Library config.
 func FromLibrarianConfig(library *libconfig.Library, api *libconfig.API, modelName string) *Config {
-	surferAPI := findSurferAPI(library, api)
+	surferAPI := surferAPIFor(library, api)
 	if surferAPI == nil {
 		return &Config{}
 	}
@@ -305,7 +305,7 @@ func FromLibrarianConfig(library *libconfig.Library, api *libconfig.API, modelNa
 	}
 }
 
-func findSurferAPI(library *libconfig.Library, api *libconfig.API) *libconfig.SurferAPI {
+func surferAPIFor(library *libconfig.Library, api *libconfig.API) *libconfig.SurferAPI {
 	if library.Surfer == nil {
 		return nil
 	}
