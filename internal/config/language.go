@@ -606,10 +606,17 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// ProtoGRPCOnly determines whether to skip GAPIC client generation.
-	// It is usually used for proto-only clients that do not define a service
-	// in the proto files, with the exception of google/cloud/location.
-	ProtoGRPCOnly bool `yaml:"proto_grpc_only,omitempty"`
+	// GenerateGAPIC indicates whether to generate the GAPIC client surface.
+	// Defaults to true.
+	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
+
+	// GenerateProtoGRPC indicates whether to generate proto and grpc modules.
+	// Defaults to true. If set to false, should also set generate_resource_names to false.
+	GenerateProtoGRPC *bool `yaml:"generate_proto_grpc,omitempty"`
+
+	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.
+	// Defaults to true.
+	GenerateResourceNames *bool `yaml:"generate_resource_names,omitempty"`
 
 	// CopyFiles is a list of file copies to perform after generation.
 	// It applies to files in the GAPIC module.

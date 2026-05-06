@@ -273,13 +273,15 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				OmitCommonResources: info.OmitCommonResources,
 			}
 			if info.ProtoGRPCOnly {
-				javaAPI.ProtoGRPCOnly = true
+				javaAPI.GenerateGAPIC = new(false)
+				javaAPI.GenerateResourceNames = new(false)
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
 			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
+			applyJavaAPISpecialOverrides(name, javaAPI)
 
 			if name == "storage" && g.ProtoPath == "google/storage/v2" {
 				javaAPI.CopyFiles = []*config.JavaFileCopy{
@@ -802,4 +804,27 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 		return "", fmt.Errorf("failed to find gapic-showcase.version in %s", pomPath)
 	}
 	return string(match[1]), nil
+}
+
+func applyJavaAPISpecialOverrides(libraryName string, api *config.JavaAPI) {
+	explicitPaths := []string{
+		"google/iam/v2",
+		"google/iam/v2beta",
+		"google/iam/v3",
+		"google/iam/v3beta",
+	}
+	if !slices.Contains(explicitPaths, api.Path) {
+		return
+	}
+
+	if libraryName == "iam" {
+		api.GenerateGAPIC = new(false)
+		api.GenerateProtoGRPC = new(true)
+		api.GenerateResourceNames = new(true)
+	}
+	if libraryName == "iam-policy" {
+		api.GenerateGAPIC = new(true)
+		api.GenerateProtoGRPC = new(false)
+		api.GenerateResourceNames = new(false)
+	}
 }

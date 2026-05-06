@@ -157,19 +157,21 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	postParams.apiProtos = apiProtos
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-	if err := runProtoc(ctx, protoProtocArgs(protoProtos, params.srcCfg, protoDir)); err != nil {
-		return fmt.Errorf("failed to generate proto: %w", err)
+	if shouldGenerateProtoGRPC(javaAPI) {
+		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
+		if err := runProtoc(ctx, protoProtocArgs(protoProtos, params.srcCfg, protoDir)); err != nil {
+			return fmt.Errorf("failed to generate proto: %w", err)
+		}
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
-	if transport != "rest" {
+	if shouldGenerateProtoGRPC(javaAPI) && transport != "rest" {
 		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 	// 3. Generate GAPIC library.
-	if !javaAPI.ProtoGRPCOnly {
+	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
@@ -408,4 +410,25 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 		filtered = append(filtered, p)
 	}
 	return filtered
+}
+
+func shouldGenerateGAPIC(ja *config.JavaAPI) bool {
+	if ja.GenerateGAPIC != nil {
+		return *ja.GenerateGAPIC
+	}
+	return true
+}
+
+func shouldGenerateProtoGRPC(ja *config.JavaAPI) bool {
+	if ja.GenerateProtoGRPC != nil {
+		return *ja.GenerateProtoGRPC
+	}
+	return true
+}
+
+func shouldGenerateResourceNames(ja *config.JavaAPI) bool {
+	if ja.GenerateResourceNames != nil {
+		return *ja.GenerateResourceNames
+	}
+	return shouldGenerateGAPIC(ja)
 }

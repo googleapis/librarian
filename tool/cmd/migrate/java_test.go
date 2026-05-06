@@ -641,10 +641,11 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							JavaAPIs: []*config.JavaAPI{
 								{
-									Path:                "google/cloud/gkehub/policycontroller/v1beta",
-									Samples:             new(false),
-									ProtoGRPCOnly:       true,
-									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
+									Path:                  "google/cloud/gkehub/policycontroller/v1beta",
+									Samples:               new(false),
+									GenerateGAPIC:         new(bool),
+									GenerateResourceNames: new(bool),
+									OmitCommonResources:   true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
@@ -685,7 +686,8 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoGRPCOnly:           true,
+									GenerateGAPIC:           new(bool),
+									GenerateResourceNames:   new(bool),
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
