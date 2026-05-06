@@ -95,7 +95,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 			return err
 		}
 		relSlash := filepath.ToSlash(rel)
-		if keepSet[rel] || itTestRegexp.MatchString(relSlash) || versionRegexp.MatchString(relSlash) {
+		if shouldPreserve(relSlash, keepSet) {
 			return nil
 		}
 		// Bypass clirr-ignored-differences.xml and pom.xml files as they are generated once and manually maintained.
@@ -126,4 +126,10 @@ func cleanPath(targetPath, root string, keepSet map[string]bool) error {
 // isDirNotEmpty returns true if err indicates the directory is not empty.
 func isDirNotEmpty(err error) bool {
 	return errors.Is(err, syscall.ENOTEMPTY) || errors.Is(err, syscall.EEXIST)
+}
+
+// shouldPreserve returns true if the given slash-separated path should be preserved
+// based on the keepSet or standard preservation patterns.
+func shouldPreserve(path string, keepSet map[string]bool) bool {
+	return keepSet[path] || itTestRegexp.MatchString(path) || versionRegexp.MatchString(path)
 }
