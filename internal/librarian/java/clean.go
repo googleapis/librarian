@@ -54,7 +54,7 @@ func Clean(library *config.Library) error {
 	patterns := cleanPatterns(library)
 	keepSet := make(map[string]bool)
 	for _, k := range library.Keep {
-		keepSet[k] = true
+		keepSet[filepath.ToSlash(k)] = true
 	}
 	for pattern, useMarker := range patterns {
 		matches, err := filepath.Glob(filepath.Join(library.Output, pattern))
@@ -104,7 +104,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool)
 			if err != nil {
 				return err
 			}
-			if keepSet[rel] {
+			if keepSet[filepath.ToSlash(rel)] {
 				return filepath.SkipDir
 			}
 			dirs = append(dirs, path)
@@ -142,7 +142,7 @@ func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool)
 		if err != nil {
 			return err
 		}
-		if !keepSet[rel] {
+		if !keepSet[filepath.ToSlash(rel)] {
 			if err := os.Remove(d); err != nil && !errors.Is(err, fs.ErrNotExist) && !isDirNotEmpty(err) {
 				return err
 			}
