@@ -72,6 +72,7 @@ func TestConfigCheck(t *testing.T) {
 		name  string
 		state *legacyconfig.LibrarianState
 		cfg   *config.Config
+		lcfg  *legacyconfig.LibrarianConfig
 	}{
 		{
 			name: "library match in state.yaml and librarian.yaml",
@@ -121,9 +122,66 @@ func TestConfigCheck(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "skip_release and release_blocked are both true",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "lib-1",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name:        "lib-1",
+						Version:     "1.0.0",
+						SkipRelease: true,
+					},
+				},
+			},
+			lcfg: &legacyconfig.LibrarianConfig{
+				Libraries: []*legacyconfig.LibraryConfig{
+					{
+						LibraryID:      "lib-1",
+						ReleaseBlocked: true,
+					},
+				},
+			},
+		},
+		{
+			name: "skip_release and release_blocked are both false (lcfg exists but empty)",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "lib-1",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name:        "lib-1",
+						Version:     "1.0.0",
+						SkipRelease: false,
+					},
+				},
+			},
+			lcfg: &legacyconfig.LibrarianConfig{
+				Libraries: []*legacyconfig.LibraryConfig{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := configCheck(test.state, test.cfg); err != nil {
+			if err := configCheck(test.state, test.cfg, test.lcfg); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -135,6 +193,7 @@ func TestConfigCheck_Error(t *testing.T) {
 		name    string
 		state   *legacyconfig.LibrarianState
 		cfg     *config.Config
+		lcfg    *legacyconfig.LibrarianConfig
 		wantErr error
 	}{
 		{
@@ -242,9 +301,57 @@ func TestConfigCheck_Error(t *testing.T) {
 			},
 			wantErr: errLibraryAPINotSame,
 		},
+		{
+			name: "skip_release is true but release_blocked is false (missing in lcfg)",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "lib-1",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "lib-1", Version: "1.0.0", SkipRelease: true},
+				},
+			},
+			wantErr: errLibraryReleaseBlockedNotSame,
+		},
+		{
+			name: "skip_release is false but release_blocked is true",
+			state: &legacyconfig.LibrarianState{
+				Image: "test-image",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:          "lib-1",
+						Version:     "1.0.0",
+						SourceRoots: []string{"existing"},
+						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+			cfg: &config.Config{
+				Libraries: []*config.Library{
+					{Name: "lib-1", Version: "1.0.0", SkipRelease: false},
+				},
+			},
+			lcfg: &legacyconfig.LibrarianConfig{
+				Libraries: []*legacyconfig.LibraryConfig{
+					{
+						LibraryID:      "lib-1",
+						ReleaseBlocked: true,
+					},
+				},
+			},
+			wantErr: errLibraryReleaseBlockedNotSame,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := configCheck(test.state, test.cfg)
+			err := configCheck(test.state, test.cfg, test.lcfg)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("configCheck() error = %v, want %v", err, test.wantErr)
 			}
