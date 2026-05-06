@@ -322,12 +322,12 @@ func mapHelpText(ht *libconfig.GcloudHelpTextRules) *HelpTextRules {
 		return nil
 	}
 	return &HelpTextRules{
-		MethodRules: mapRules(ht.MethodRules),
-		FieldRules:  mapRules(ht.FieldRules),
+		MethodRules: mapHelpTextRules(ht.MethodRules),
+		FieldRules:  mapHelpTextRules(ht.FieldRules),
 	}
 }
 
-func mapRules(src []*libconfig.GcloudHelpTextRule) []*HelpTextRule {
+func mapHelpTextRules(src []*libconfig.GcloudHelpTextRule) []*HelpTextRule {
 	var dst []*HelpTextRule
 	for _, r := range src {
 		dst = append(dst, &HelpTextRule{
