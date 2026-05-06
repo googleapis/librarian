@@ -17,6 +17,7 @@ package gcloud
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -50,6 +51,30 @@ func TestGenerate(t *testing.T) {
 		if _, err := os.Stat(filepath.Join(out, name)); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+func TestGenerate_GcloudClientImportPath(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+
+	const clientImportPath = "cloud.google.com/go/parallelstore/apiv1"
+	out := t.TempDir()
+	library := &config.Library{
+		Name:   "parallelstore",
+		Output: out,
+		APIs:   []*config.API{{Path: "google/cloud/parallelstore/v1"}},
+		Gcloud: &config.GcloudCommand{ClientImportPath: clientImportPath},
+	}
+	if err := Generate(t.Context(), library,
+		&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(out, "internal", "generated", "parallelstore", "commands.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), clientImportPath) {
+		t.Errorf("commands.go missing override path %q\n%s", clientImportPath, got)
 	}
 }
 

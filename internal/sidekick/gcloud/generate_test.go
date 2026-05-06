@@ -62,7 +62,7 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate([]*api.API{model}, outDir); err != nil {
+	if err := Generate([]*api.API{model}, outDir, ""); err != nil {
 		t.Fatal(err)
 	}
 	mainFile := filepath.Join(outDir, "cmd", "gcloud", "main.go")
@@ -101,11 +101,10 @@ func TestGenerate(t *testing.T) {
 		}
 		return m
 	}
-
 	parallelstoreModel := makeModel("google/cloud/parallelstore/v1/service.yaml", "google/cloud/parallelstore/v1")
 	publiccaModel := makeModel("google/cloud/security/publicca/v1/publicca_v1.yaml", "google/cloud/security/publicca/v1")
 
-	if err := Generate([]*api.API{parallelstoreModel, publiccaModel}, outDir); err != nil {
+	if err := Generate([]*api.API{parallelstoreModel, publiccaModel}, outDir, ""); err != nil {
 		t.Fatal(err)
 	}
 
@@ -430,6 +429,7 @@ func TestGoClientPackage(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		protoPkg string
+		override string
 		want     *goClientInfo
 	}{
 		{
@@ -454,9 +454,53 @@ func TestGoClientPackage(t *testing.T) {
 		{name: "three-segments", protoPkg: "google.cloud.parallelstore"},
 		{name: "beta-version", protoPkg: "google.cloud.parallelstore.v1beta1"},
 		{name: "not-google-cloud", protoPkg: "google.api.X.v1"},
+		{
+			name:     "override-major-version",
+			protoPkg: "google.cloud.recaptchaenterprise.v1",
+			override: "cloud.google.com/go/recaptchaenterprise/v2/apiv1",
+			want: &goClientInfo{
+				Alias:      "recaptchaenterprise",
+				ClientPath: "cloud.google.com/go/recaptchaenterprise/v2/apiv1",
+				PbPath:     "cloud.google.com/go/recaptchaenterprise/v2/apiv1/recaptchaenterprisepb",
+			},
+		},
+		{
+			name:     "override-renamed-module",
+			protoPkg: "google.cloud.tasks.v2",
+			override: "cloud.google.com/go/cloudtasks/apiv2",
+			want: &goClientInfo{
+				Alias:      "cloudtasks",
+				ClientPath: "cloud.google.com/go/cloudtasks/apiv2",
+				PbPath:     "cloud.google.com/go/cloudtasks/apiv2/cloudtaskspb",
+			},
+		},
+		{
+			name:     "override-translate-apiv3",
+			protoPkg: "google.cloud.translation.v3",
+			override: "cloud.google.com/go/translate/apiv3",
+			want: &goClientInfo{
+				Alias:      "translate",
+				ClientPath: "cloud.google.com/go/translate/apiv3",
+				PbPath:     "cloud.google.com/go/translate/apiv3/translatepb",
+			},
+		},
+		{
+			name:     "override-ignores-proto-pkg",
+			protoPkg: "ignored.totally",
+			override: "cloud.google.com/go/translate/apiv3",
+			want: &goClientInfo{
+				Alias:      "translate",
+				ClientPath: "cloud.google.com/go/translate/apiv3",
+				PbPath:     "cloud.google.com/go/translate/apiv3/translatepb",
+			},
+		},
+		{
+			name:     "override-malformed-no-api",
+			override: "cloud.google.com/go/parallelstore",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := goClientPackage(test.protoPkg)
+			got := goClientPackage(test.protoPkg, test.override)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

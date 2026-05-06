@@ -49,6 +49,11 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
 
+	var clientImportPath string
+	if library.Gcloud != nil {
+		clientImportPath = library.Gcloud.ClientImportPath
+	}
+
 	resolvedSrcs := &sources.Sources{Googleapis: googleapisDir}
 	models := make([]*api.API, 0, len(library.APIs))
 	for _, a := range library.APIs {
@@ -58,7 +63,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 		}
 		models = append(models, model)
 	}
-	return sidekickgcloud.Generate(models, outDir)
+	return sidekickgcloud.Generate(models, outDir, clientImportPath)
 }
 
 func buildModel(a *config.API, srcs *sources.Sources, googleapisDir string) (*api.API, error) {

@@ -40,13 +40,13 @@ const modulePath = "cloud.google.com/go/gcloud"
 // each model it emits internal/generated/<name>/commands.go exposing a
 // Command() function, then writes cmd/gcloud/main.go that registers each
 // surface under the gcloud root.
-func Generate(models []*api.API, outdir string) error {
+func Generate(models []*api.API, outdir string, clientImportPath string) error {
 	if len(models) == 0 {
 		return errors.New("gcloud: Generate requires at least one model")
 	}
 	main := CLIModel{ModulePath: modulePath}
 	for _, model := range models {
-		surface := constructSurfaceModel(model)
+		surface := constructSurfaceModel(model, clientImportPath)
 		if err := writeSurface(outdir, surface); err != nil {
 			return err
 		}
