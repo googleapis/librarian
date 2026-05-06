@@ -37,8 +37,11 @@ var (
 
 	// Tests that are enabled by default because they are expected to pass against the target.
 	enabledTargetTests = map[string]bool{
-		"resource_standard": true,
-		"multi_service":     true,
+		"method_async":        true,
+		"method_minimal_list": true,
+		"method_operations":   true,
+		"multi_service":       true,
+		"resource_standard":   true,
 	}
 )
 
@@ -93,6 +96,7 @@ func TestGolden(t *testing.T) {
 		{name: "hidden_feature"},
 		{name: "method_async"},
 		{name: "method_custom"},
+		{name: "method_locations"},
 		{name: "method_minimal_list"},
 		{name: "method_operations"},
 		{name: "method_output_format"},

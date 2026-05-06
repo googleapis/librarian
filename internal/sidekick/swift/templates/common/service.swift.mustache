@@ -40,7 +40,7 @@ import {{.}}
 /// {{{.}}}
 {{/Codec.DocLines}}
 ///
-/// @Snippet(id: "{{Name}}Quickstart")
+/// @Snippet(path: "{{Name}}Quickstart")
 public class {{Codec.Name}} {
   let inner: GoogleCloudGax.HTTPClient
 
@@ -58,6 +58,8 @@ public class {{Codec.Name}} {
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   public func {{Codec.Name}}(request: {{InputType.Codec.Name}}) async throws
     {{^ReturnsEmpty}}
     -> {{OutputType.Codec.Name}}

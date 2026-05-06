@@ -16,144 +16,105 @@
 package gcloud
 
 import (
+	"bytes"
 	"embed"
+	"errors"
 	"fmt"
+	"go/format"
 	"os"
 	"path/filepath"
-	"sort"
+	"text/template"
 
-	"github.com/iancoleman/strcase"
-
-	"github.com/cbroglie/mustache"
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
-	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
-// CLIModel represents the data structure for the template.
-type CLIModel struct {
-	Groups []Group
+// modulePath is the Go module path used to construct surface package
+// import paths in the generated cmd/gcloud/main.go. The generator does
+// not emit a go.mod today; downstream tooling supplies one.
+const modulePath = "cloud.google.com/go/gcloud"
+
+// Generate writes the gcloud binary tree for the given API models. For
+// each model it emits internal/generated/<name>/commands.go exposing a
+// Command() function, then writes cmd/gcloud/main.go that registers each
+// surface under the gcloud root.
+func Generate(models []*api.API, outdir string, clientImportPath string) error {
+	if len(models) == 0 {
+		return errors.New("gcloud: Generate requires at least one model")
+	}
+	main := CLIModel{ModulePath: modulePath}
+	for _, model := range models {
+		surface := constructSurfaceModel(model, clientImportPath)
+		if err := writeSurface(outdir, surface); err != nil {
+			return err
+		}
+		main.Surfaces = append(main.Surfaces, SurfaceRef{PackageName: surface.PackageName})
+	}
+	return writeMain(outdir, main)
 }
 
-// Group represents a gcloud command group.
-type Group struct {
-	Name      string
-	Usage     string
-	Subgroups []Subgroup
-	Commands  []Command
-}
-
-// Subgroup represents a nested command group.
-type Subgroup struct {
-	Name     string
-	Usage    string
-	Commands []Command
-}
-
-// Command represents a leaf command.
-type Command struct {
-	Name  string
-	Usage string
-}
-
-// Generate is the package entry point. It builds the model, renders main.go,
-// writes it, then renders any other generated files via
-// language.GenerateFromModel.
-func Generate(model *api.API, outdir string) error {
-	cliModel := constructCLIModel(model)
-	contents, err := renderMain(cliModel)
+// writeSurface writes internal/generated/<PackageName>/commands.go for a
+// single surface.
+func writeSurface(outdir string, model SurfaceModel) error {
+	contents, err := renderSurface(model)
 	if err != nil {
 		return err
 	}
-	if err := writeMain(outdir, contents); err != nil {
+	dir := filepath.Join(outdir, "internal", "generated", model.PackageName)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return renderReadme(outdir, model)
+	return os.WriteFile(filepath.Join(dir, "commands.go"), []byte(contents), 0o666)
 }
 
-// renderMain renders the main.go contents from the CLI model.
-func renderMain(model CLIModel) (string, error) {
-	templateContents, err := templates.ReadFile("templates/package/cli.go.mustache")
+// renderSurface renders a surface's commands.go from its template. The
+// template output is run through go/format so the golden file is
+// gofmt-stable.
+func renderSurface(model SurfaceModel) (string, error) {
+	t, err := template.ParseFS(templates, "templates/package/surface_commands.go.tmpl")
 	if err != nil {
 		return "", err
 	}
-	return mustache.Render(string(templateContents), model)
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, model); err != nil {
+		return "", err
+	}
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("formatting generated %s/commands.go: %w", model.PackageName, err)
+	}
+	return string(formatted), nil
 }
 
-func writeMain(outdir, contents string) error {
-	destination := filepath.Join(outdir, "main.go")
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+// writeMain writes cmd/gcloud/main.go registering every surface.
+func writeMain(outdir string, model CLIModel) error {
+	contents, err := renderMain(model)
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(destination, []byte(contents), 0666)
+	dir := filepath.Join(outdir, "cmd", "gcloud")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "main.go"), []byte(contents), 0o666)
 }
 
-// renderReadme renders README.md via language.GenerateFromModel.
-func renderReadme(outdir string, model *api.API) error {
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
+// renderMain renders the cmd/gcloud/main.go contents. The template output
+// is run through go/format so the golden file is gofmt-stable.
+func renderMain(model CLIModel) (string, error) {
+	t, err := template.ParseFS(templates, "templates/package/cmd_gcloud_main.go.tmpl")
+	if err != nil {
+		return "", err
 	}
-	generatedFiles := []language.GeneratedFile{
-		{TemplatePath: "templates/package/README.md.mustache", OutputPath: "README.md"},
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, model); err != nil {
+		return "", err
 	}
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
-}
-
-func constructCLIModel(model *api.API) CLIModel {
-	rootGroup := Group{
-		Name:  model.Name,
-		Usage: fmt.Sprintf("manage %s resources", model.Title),
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("formatting generated cmd/gcloud/main.go: %w", err)
 	}
-
-	subgroups := make(map[string]*Subgroup)
-
-	for _, service := range model.Services {
-		for _, method := range service.Methods {
-			binding := provider.PrimaryBinding(method)
-			if binding == nil {
-				continue
-			}
-			segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
-			if len(segments) == 0 {
-				continue
-			}
-
-			subgroupName := strcase.ToKebab(segments[len(segments)-1])
-
-			commandName, _ := provider.GetCommandName(method)
-			commandName = strcase.ToKebab(commandName)
-
-			if subgroups[subgroupName] == nil {
-				subgroups[subgroupName] = &Subgroup{
-					Name:  subgroupName,
-					Usage: fmt.Sprintf("Manage %s resources", subgroupName),
-				}
-			}
-
-			subgroups[subgroupName].Commands = append(subgroups[subgroupName].Commands, Command{
-				Name:  commandName,
-				Usage: fmt.Sprintf("%s %s", commandName, subgroupName),
-			})
-		}
-	}
-
-	var keys []string
-	for k := range subgroups {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		rootGroup.Subgroups = append(rootGroup.Subgroups, *subgroups[k])
-	}
-
-	return CLIModel{
-		Groups: []Group{rootGroup},
-	}
+	return string(formatted), nil
 }

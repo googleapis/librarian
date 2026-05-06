@@ -41,7 +41,7 @@ func TestLibrarianUsage(t *testing.T) {
 		want string
 	}{
 		{"root", nil, "librarian [command]"},
-		{"add", []string{"add"}, "librarian add <apis...>"},
+		{"add", []string{"add"}, "librarian add <api>"},
 		{"generate", []string{"generate"}, "librarian generate <library>"},
 		{"bump", []string{"bump"}, "librarian bump <library>"},
 		{"tidy", []string{"tidy"}, "librarian tidy"},

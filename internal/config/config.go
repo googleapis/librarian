@@ -198,11 +198,14 @@ type Default struct {
 
 	// Language-specific fields are below.
 
+	// Dart contains Dart-specific default configuration.
+	Dart *DartPackage `yaml:"dart,omitempty"`
+
 	// Dotnet contains .NET-specific default configuration.
 	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
-	// Dart contains Dart-specific default configuration.
-	Dart *DartPackage `yaml:"dart,omitempty"`
+	// Go contains Go-specific default configuration.
+	Go *GoDefault `yaml:"go,omitempty"`
 
 	// Java contains Java-specific default configuration.
 	Java *JavaModule `yaml:"java,omitempty"`
@@ -292,6 +295,9 @@ type Library struct {
 	// Dotnet contains .NET-specific library configuration.
 	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
+	// Gcloud contains gcloud-specific library configuration.
+	Gcloud *GcloudCommand `yaml:"gcloud,omitempty"`
+
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
 
@@ -319,4 +325,10 @@ type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
+}
+
+// GoDefault defines Go-specific default configuration.
+type GoDefault struct {
+	// Toolchain is the desired Go toolchain version (e.g., "go1.25.0").
+	Toolchain string `yaml:"toolchain,omitempty"`
 }

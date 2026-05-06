@@ -107,14 +107,14 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", "._AnyPackable {")
-	wantBlock1 := "public struct Nested1: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
+	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", ", Sendable {")
+	wantBlock1 := "public struct Nested1: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {"
 	if diff := cmp.Diff(wantBlock1, gotBlock1); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", "._AnyPackable {")
-	wantBlock2 := "public struct Nested2: Codable, Equatable, GoogleCloudWkt._AnyPackable {"
+	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", ", Sendable {")
+	wantBlock2 := "public struct Nested2: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {"
 	if diff := cmp.Diff(wantBlock2, gotBlock2); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -160,8 +160,8 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock := extractBlock(t, contentStr, "public enum NestedEnum", "Equatable {")
-	wantBlock := "public enum NestedEnum: Int, Codable, Equatable {"
+	gotBlock := extractBlock(t, contentStr, "public enum NestedEnum", ", Sendable {")
+	wantBlock := "public enum NestedEnum: Int, Codable, Equatable, Sendable {"
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -24,7 +24,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func buildCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+func newCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
 	args, err := newArguments(method, overrides, model, service)
 	if err != nil {
 		return nil, err
@@ -50,6 +50,43 @@ func buildCommand(method *api.Method, overrides *provider.Config, model *api.API
 		StarUpdateMask:       useUpdateMask,
 		DisableAutoFieldMask: useUpdateMask,
 		Async:                async(method, model, service),
+	}, nil
+}
+
+// newWaitCommand synthesizes a 'wait' command for operations based on GetOperation method.
+func newWaitCommand(getMethod *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+	arg, err := positionalResourceArg(getMethod, overrides, model, service)
+	if err != nil {
+		return nil, err
+	}
+
+	if arg == nil {
+		return nil, fmt.Errorf("missing positional resource argument for wait command")
+	}
+
+	apiVersion, err := provider.APIVersionFromMethod(getMethod)
+	if err != nil {
+		return nil, err
+	}
+
+	arg.HelpText = "The name of the operation resource to wait on."
+	waitArgs := []Argument{*arg}
+
+	return &Command{
+		Name:   "wait",
+		Hidden: hidden(overrides),
+		HelpText: HelpText{
+			Brief:       "Wait operations",
+			Description: "Wait an operation",
+			Examples:    "To wait the operation, run:\n\n    $ {command}",
+		},
+		APIVersion: apiVersion,
+		Collection: collectionPath(getMethod, service, false),
+		Arguments:  waitArgs,
+		Async: &Async{
+			Collection:            collectionPath(getMethod, service, true),
+			ExtractResourceResult: false,
+		},
 	}, nil
 }
 
@@ -171,12 +208,26 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 		if cf.resourceIdField != nil {
 			idField = cf.resourceIdField.field
 		}
-		arg := newArgumentBuilder(method, overrides, model, service, cf.primaryField.field, cf.primaryField.prefix).buildPrimaryResource(idField)
+		arg := newPrimaryResourceArgument(&argumentParams{
+			method:    method,
+			overrides: overrides,
+			model:     model,
+			service:   service,
+			field:     cf.primaryField.field,
+			apiField:  cf.primaryField.prefix,
+		}, idField)
 		args = append(args, arg)
 	}
 
 	for _, fwp := range cf.other {
-		arg, err := newArgumentBuilder(method, overrides, model, service, fwp.field, fwp.prefix).build()
+		arg, err := newArgument(&argumentParams{
+			method:    method,
+			overrides: overrides,
+			model:     model,
+			service:   service,
+			field:     fwp.field,
+			apiField:  fwp.prefix,
+		})
 		if err != nil {
 			return nil, err
 		}
@@ -187,6 +238,32 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 	}
 
 	return args, nil
+}
+
+func positionalResourceArg(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Argument, error) {
+	cf, err := categorizeFields(method, model)
+	if err != nil {
+		return nil, err
+	}
+
+	if cf.primaryField == nil {
+		return nil, nil
+	}
+
+	var idField *api.Field
+	if cf.resourceIdField != nil {
+		idField = cf.resourceIdField.field
+	}
+
+	arg := newPrimaryResourceArgument(&argumentParams{
+		method:    method,
+		overrides: overrides,
+		model:     model,
+		service:   service,
+		field:     cf.primaryField.field,
+		apiField:  cf.primaryField.prefix,
+	}, idField)
+	return &arg, nil
 }
 
 // categorizeFields gathers fields from the method input type, expanding the body field

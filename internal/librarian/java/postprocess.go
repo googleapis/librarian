@@ -50,7 +50,7 @@ type postProcessParams struct {
 	metadata       *repoMetadata
 	outDir         string
 	apiBase        string
-	googleapisDir  string
+	protoSourceDir string
 	apiProtos      []string
 	includeSamples bool
 }
@@ -322,7 +322,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	if err := copyProtos(p.googleapisDir, p.apiProtos, protoFilesDestDir); err != nil {
+	if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
 		return fmt.Errorf("failed to copy proto files: %w", err)
 	}
 	return nil
@@ -363,10 +363,10 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 }
 
 // deriveLastReleasedVersion derives the last released version from a snapshot version
-// (e.g., x.y.0-SNAPSHOT) by decrementing the minor version.
+// (e.g., x.y.z-SNAPSHOT) by decrementing the patch or minor version.
 //
-// It returns an error if the snapshot version has a non-zero patch or a zero
-// minor version, as this repository is assumed to always bump the minor version.
+// It returns an error if both minor and patch versions are zero, as it's
+// ambiguous what the last released version was in that case.
 func deriveLastReleasedVersion(v string) (string, error) {
 	sv, err := semver.Parse(v)
 	if err != nil {
@@ -375,19 +375,22 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	if sv.Prerelease != "SNAPSHOT" {
 		return sv.String(), nil
 	}
-	if sv.Patch > 0 || sv.Minor == 0 {
+	if sv.Patch > 0 {
+		sv.Patch--
+	} else if sv.Minor > 0 {
+		sv.Minor--
+		sv.Patch = 0
+	} else {
 		return "", errInvalidVersion
 	}
-	sv.Minor--
-	sv.Patch = 0
 	sv.Prerelease = ""
 	return sv.String(), nil
 }
 
-func copyProtos(googleapisDir string, protos []string, destDir string) error {
+func copyProtos(protoSourceDir string, protos []string, destDir string) error {
 	for _, proto := range protos {
-		// Calculate relative path from googleapisDir to preserve directory structure
-		rel, err := filepath.Rel(googleapisDir, proto)
+		// Calculate relative path from protoSourceDir to preserve directory structure
+		rel, err := filepath.Rel(protoSourceDir, proto)
 		if err != nil {
 			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
 		}

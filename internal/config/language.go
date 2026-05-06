@@ -756,6 +756,17 @@ type NodejsAPI struct {
 	Path string `yaml:"path,omitempty"`
 }
 
+// GcloudCommand contains gcloud-specific library configuration.
+type GcloudCommand struct {
+	// ClientImportPath overrides the GAPIC Go client import path that
+	// would otherwise be derived from the proto package. Set this when
+	// the proto package and the published Go GAPIC location diverge.
+	// For example, the proto package google.cloud.recaptchaenterprise.v1
+	// publishes its Go client at
+	// "cloud.google.com/go/recaptchaenterprise/v2/apiv1".
+	ClientImportPath string `yaml:"client_import_path,omitempty"`
+}
+
 // Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
 type Surfer struct {
 	// HelpText contains help text overrides for the surface.

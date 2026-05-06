@@ -1,4 +1,4 @@
-{{!
+{{/*
 Copyright 2026 Google LLC
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@ distributed under the License is distributed on an "AS IS" BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
-}}
+*/ -}}
 package main
 
 import (
@@ -20,7 +20,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/urfave/cli/v3"
+{{range .Surfaces}}	"{{$.ModulePath}}/internal/generated/{{.PackageName}}"
+{{end}}	"github.com/urfave/cli/v3"
 )
 
 func main() {
@@ -28,42 +29,9 @@ func main() {
 		Name:  "gcloud",
 		Usage: "Google Cloud CLI",
 		Commands: []*cli.Command{
-			{{#Groups}}
-			{
-				Name:  "{{Name}}",
-				Usage: "{{Usage}}",
-				Commands: []*cli.Command{
-					{{#Subgroups}}
-					{
-						Name:  "{{Name}}",
-						Usage: "{{Usage}}",
-						Commands: []*cli.Command{
-							{{#Commands}}
-							{
-								Name:  "{{Name}}",
-								Usage: "{{Usage}}",
-								Action: func(ctx context.Context, cmd *cli.Command) error {
-									fmt.Println("Executing {{Name}}...")
-									return nil
-								},
-							},
-							{{/Commands}}
-						},
-					},
-					{{/Subgroups}}
-					{{#Commands}}
-					{
-						Name:  "{{Name}}",
-						Usage: "{{Usage}}",
-						Action: func(ctx context.Context, cmd *cli.Command) error {
-							fmt.Println("Executing {{Name}}...")
-							return nil
-						},
-					},
-					{{/Commands}}
-				},
-			},
-			{{/Groups}}
+			{{- range .Surfaces}}
+			{{.PackageName}}.Command(),
+			{{- end}}
 		},
 	}
 

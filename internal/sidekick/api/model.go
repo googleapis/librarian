@@ -191,9 +191,6 @@ type API struct {
 	Messages []*Message
 	// Enums
 	Enums []*Enum
-	// State contains helpful information that can be used when generating
-	// clients.
-	State *APIState
 	// ResourceDefinitions contains the data from the `google.api.resource_definition` annotation.
 	ResourceDefinitions []*Resource
 	// QuickstartService is the service that will be used to generate the quickstart sample
@@ -201,6 +198,17 @@ type API struct {
 	QuickstartService *Service
 	// Language specific annotations.
 	Codec any
+
+	// serviceByID returns a service that is associated with the API.
+	serviceByID map[string]*Service
+	// methodByID returns a method that is associated with the API.
+	methodByID map[string]*Method
+	// messageByID returns a message that is associated with the API.
+	messageByID map[string]*Message
+	// enumByID returns a message that is associated with the API.
+	enumByID map[string]*Enum
+	// resourceByType returns a resource that is associated with the API.
+	resourceByType map[string]*Resource
 }
 
 // ModelOverride holds configuration overrides for an API model.
@@ -231,122 +239,92 @@ func (a *API) ModelCodec() any {
 
 // Service returns a service that is associated with the API.
 func (a *API) Service(id string) *Service {
-	return a.State.ServiceByID[id]
+	return a.serviceByID[id]
 }
 
 // AllServices returns an iterator over the services in the API.
 func (a *API) AllServices() iter.Seq[*Service] {
-	return maps.Values(a.State.ServiceByID)
+	return maps.Values(a.serviceByID)
 }
 
 // AddService adds a service to the API.
 func (a *API) AddService(s *Service) {
-	if a.State == nil {
-		a.State = &APIState{}
+	if a.serviceByID == nil {
+		a.serviceByID = make(map[string]*Service)
 	}
-	if a.State.ServiceByID == nil {
-		a.State.ServiceByID = make(map[string]*Service)
-	}
-	a.State.ServiceByID[s.ID] = s
+	a.serviceByID[s.ID] = s
 }
 
 // Method returns a method that is associated with the API.
 func (a *API) Method(id string) *Method {
-	return a.State.MethodByID[id]
+	return a.methodByID[id]
 }
 
 // AllMethods returns an iterator over the methods in the API.
 func (a *API) AllMethods() iter.Seq[*Method] {
-	return maps.Values(a.State.MethodByID)
+	return maps.Values(a.methodByID)
 }
 
 // AddMethod adds a method to the API.
 func (a *API) AddMethod(m *Method) {
-	if a.State == nil {
-		a.State = &APIState{}
+	if a.methodByID == nil {
+		a.methodByID = make(map[string]*Method)
 	}
-	if a.State.MethodByID == nil {
-		a.State.MethodByID = make(map[string]*Method)
-	}
-	a.State.MethodByID[m.ID] = m
+	a.methodByID[m.ID] = m
 }
 
 // Message returns a message that is associated with the API.
 func (a *API) Message(id string) *Message {
-	return a.State.MessageByID[id]
+	return a.messageByID[id]
 }
 
 // AllMessages returns an iterator over the messages in the API.
 func (a *API) AllMessages() iter.Seq[*Message] {
-	return maps.Values(a.State.MessageByID)
+	return maps.Values(a.messageByID)
 }
 
 // AddMessage adds a message to the API.
 func (a *API) AddMessage(m *Message) {
-	if a.State == nil {
-		a.State = &APIState{}
+	if a.messageByID == nil {
+		a.messageByID = make(map[string]*Message)
 	}
-	if a.State.MessageByID == nil {
-		a.State.MessageByID = make(map[string]*Message)
-	}
-	a.State.MessageByID[m.ID] = m
+	a.messageByID[m.ID] = m
 }
 
 // Enum returns a message that is associated with the API.
 func (a *API) Enum(id string) *Enum {
-	return a.State.EnumByID[id]
+	return a.enumByID[id]
 }
 
 // AllEnums returns an iterator over the enums in the API.
 func (a *API) AllEnums() iter.Seq[*Enum] {
-	return maps.Values(a.State.EnumByID)
+	return maps.Values(a.enumByID)
 }
 
 // AddEnum adds an enum to the API.
 func (a *API) AddEnum(e *Enum) {
-	if a.State == nil {
-		a.State = &APIState{}
+	if a.enumByID == nil {
+		a.enumByID = make(map[string]*Enum)
 	}
-	if a.State.EnumByID == nil {
-		a.State.EnumByID = make(map[string]*Enum)
-	}
-	a.State.EnumByID[e.ID] = e
+	a.enumByID[e.ID] = e
 }
 
 // Resource returns a resource that is associated with the API.
 func (a *API) Resource(typ string) *Resource {
-	return a.State.ResourceByType[typ]
+	return a.resourceByType[typ]
 }
 
 // AllResources returns an iterator over the resources in the API.
 func (a *API) AllResources() iter.Seq[*Resource] {
-	return maps.Values(a.State.ResourceByType)
+	return maps.Values(a.resourceByType)
 }
 
 // AddResource adds a resource to the API.
 func (a *API) AddResource(r *Resource) {
-	if a.State == nil {
-		a.State = &APIState{}
+	if a.resourceByType == nil {
+		a.resourceByType = make(map[string]*Resource)
 	}
-	if a.State.ResourceByType == nil {
-		a.State.ResourceByType = make(map[string]*Resource)
-	}
-	a.State.ResourceByType[r.Type] = r
-}
-
-// APIState contains helpful information that can be used when generating
-// clients.
-type APIState struct {
-	// ServiceByID returns a service that is associated with the API.
-	ServiceByID map[string]*Service
-	// MethodByID returns a method that is associated with the API.
-	MethodByID map[string]*Method
-	// MessageByID returns a message that is associated with the API.
-	MessageByID map[string]*Message
-	// EnumByID returns a message that is associated with the API.
-	EnumByID map[string]*Enum
-	// ResourceByType returns a resource that is associated with the API.
-	ResourceByType map[string]*Resource
+	a.resourceByType[r.Type] = r
 }
 
 // Service represents a service in an API.

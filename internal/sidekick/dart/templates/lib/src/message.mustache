@@ -76,12 +76,7 @@ final class {{Codec.Name}} extends {{Codec.Model.Codec.ProtoPrefix}}ProtoMessage
   {{^Codec.HasCustomEncoding}}
   Object toJson() => {
       {{#Fields}}
-      {{#Codec.Nullable}}
-      if ({{{Codec.Name}}} case final {{{Codec.Name}}}?) '{{{JSONName}}}': {{{Codec.ToJson}}},
-      {{/Codec.Nullable}}
-      {{^Codec.Nullable}}
-          {{^Codec.FieldBehaviorRequired}}if ({{{Codec.Name}}}.isNotDefault){{/Codec.FieldBehaviorRequired}} '{{{JSONName}}}': {{{Codec.ToJson}}},
-      {{/Codec.Nullable}}
+          {{{Codec.ToJson}}},
       {{/Fields}}
     };
   {{/Codec.HasCustomEncoding}}

@@ -908,13 +908,13 @@ func TestStageRun(t *testing.T) {
 						GetCommitsForPathsSinceTagValueByTag: map[string][]*legacygitrepo.Commit{
 							"another-example-id-1.0.0": {
 								{
-									Message: "chore: releasable",
+									Message: "fix: releasable",
 									Hash:    plumbing.NewHash("123456"),
 								},
 							},
 							"example-id-2.0.0": {
 								{
-									Message: "chore: any message",
+									Message: "fix: any message",
 									Hash:    plumbing.NewHash("654321"),
 								},
 							},

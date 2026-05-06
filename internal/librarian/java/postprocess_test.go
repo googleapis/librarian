@@ -114,7 +114,7 @@ func TestPostProcessAPI(t *testing.T) {
 			APIs: []*config.API{api},
 		},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      apiProtos,
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
@@ -194,7 +194,7 @@ func TestRestructureModules(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      []string{protoPath},
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
@@ -230,7 +230,7 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: commonProtosLibrary},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
@@ -256,7 +256,7 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: "secretmanager"},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
@@ -309,7 +309,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID},
 		apiBase:        apiBase,
-		googleapisDir:  googleapisDir,
+		protoSourceDir: googleapisDir,
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
@@ -359,7 +359,7 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		outDir:         tmpDir,
 		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
 		apiBase:        apiBase,
-		googleapisDir:  t.TempDir(), // dummy
+		protoSourceDir: t.TempDir(), // dummy
 		apiProtos:      nil,
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
@@ -657,6 +657,8 @@ func TestDeriveLastReleasedVersion(t *testing.T) {
 		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
 		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
 		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
+		{input: "0.0.1-SNAPSHOT", want: "0.0.0"},
+		{input: "1.10.1-SNAPSHOT", want: "1.10.0"},
 		{input: "1.2.3", want: "1.2.3"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
@@ -685,11 +687,6 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 		{
 			name:    "v1.0.0 snapshot",
 			input:   "1.0.0-SNAPSHOT",
-			wantErr: errInvalidVersion,
-		},
-		{
-			name:    "patch version snapshot",
-			input:   "1.10.1-SNAPSHOT",
 			wantErr: errInvalidVersion,
 		},
 	} {

@@ -42,7 +42,7 @@ var (
 )
 
 // Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) (err error) {
+func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources, toolchain string) (err error) {
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
@@ -112,19 +112,26 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
 		// New client, init the module.
-		if err := initModule(ctx, outDir, modulePath(library)); err != nil {
+		if err := initModule(ctx, outDir, modulePath(library), toolchain); err != nil {
 			return err
 		}
-		return updateSnippetsModule(ctx, library, outDir)
+		return updateSnippetsModule(ctx, library, outDir, toolchain)
 	} else if err != nil {
 		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
-	return nil
+
+	// If go.mod exists, still run go mod tidy with the specified toolchain
+	// to ensure it stays in sync with the configured Go version.
+	var env map[string]string
+	if toolchain != "" {
+		env = map[string]string{"GOTOOLCHAIN": toolchain}
+	}
+	return command.RunInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
 // and a local replacement for the newly generated library.
-func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string) error {
+func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string, toolchain string) error {
 	if library.Go == nil {
 		return nil
 	}
@@ -142,7 +149,11 @@ func updateSnippetsModule(ctx context.Context, library *config.Library, outDir s
 		return fmt.Errorf("failed to get relative path of module: %w", err)
 	}
 	modPath := modulePath(library)
-	return command.RunInDir(ctx, snippetsDir, command.Go, "mod", "edit",
+	var env map[string]string
+	if toolchain != "" {
+		env = map[string]string{"GOTOOLCHAIN": toolchain}
+	}
+	return command.RunInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
 		"-require="+modPath+"@v0.0.0",
 		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }

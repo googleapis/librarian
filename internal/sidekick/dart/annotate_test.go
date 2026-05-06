@@ -865,7 +865,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 			[]string{"if (result.doubleOpt case final $1?) 'double': '${$1}'"},
 		}, {
 			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.TypezString, Optional: true},
-			[]string{"if (result.stringOpt case final $1?) 'string': $1"},
+			[]string{"'string': ?result.stringOpt"},
 		},
 
 		// one ofs
@@ -964,7 +964,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 				Typez:    api.TypezEnum,
 				TypezID:  enum.ID,
 				Optional: true},
-			[]string{"if (result.optionalEnum case final $1?) 'optionalJsonEnum': $1.value"},
+			[]string{"'optionalJsonEnum': ?result.optionalEnum?.value"},
 		},
 		{
 			&api.Field{
@@ -1355,7 +1355,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 	}
 }
 
-func TestCreateToJsonLine(t *testing.T) {
+func TestToJson(t *testing.T) {
 	secret := sample.Secret()
 	enum := sample.EnumState()
 
@@ -1503,175 +1503,199 @@ func TestCreateToJsonLine(t *testing.T) {
 		// primitives
 		{
 			&api.Field{Name: "bool", JSONName: "bool", Typez: api.TypezBool},
-			"bool$",
+			"if (bool$.isNotDefault) 'bool': bool$",
 		}, {
 			&api.Field{Name: "bytes", JSONName: "bytes", Typez: api.TypezBytes},
-			"encodeBytes(bytes)",
+			"if (bytes.isNotDefault) 'bytes': encodeBytes(bytes)",
 		}, {
 			&api.Field{Name: "double", JSONName: "double", Typez: api.TypezDouble},
-			"encodeDouble(double$)",
+			"if (double$.isNotDefault) 'double': encodeDouble(double$)",
 		}, {
 			&api.Field{Name: "fixed32", JSONName: "fixed32", Typez: api.TypezFixed32},
-			"fixed32",
+			"if (fixed32.isNotDefault) 'fixed32': fixed32",
 		}, {
 			&api.Field{Name: "fixed64", JSONName: "fixed64", Typez: api.TypezFixed64},
-			"fixed64.toString()",
+			"if (fixed64.isNotDefault) 'fixed64': fixed64.toString()",
 		}, {
 			&api.Field{Name: "float", JSONName: "float", Typez: api.TypezFloat},
-			"encodeDouble(float)",
+			"if (float.isNotDefault) 'float': encodeDouble(float)",
 		}, {
 			&api.Field{Name: "int32", JSONName: "int32", Typez: api.TypezInt32},
-			"int32",
+			"if (int32.isNotDefault) 'int32': int32",
 		}, {
 			&api.Field{Name: "int64", JSONName: "int64", Typez: api.TypezInt64},
-			"int64.toString()",
+			"if (int64.isNotDefault) 'int64': int64.toString()",
 		}, {
 			&api.Field{Name: "sfixed32", JSONName: "sfixed32", Typez: api.TypezSfixed32},
-			"sfixed32",
+			"if (sfixed32.isNotDefault) 'sfixed32': sfixed32",
 		}, {
 			&api.Field{Name: "sfixed64", JSONName: "sfixed64", Typez: api.TypezSfixed64},
-			"sfixed64.toString()",
+			"if (sfixed64.isNotDefault) 'sfixed64': sfixed64.toString()",
 		}, {
 			&api.Field{Name: "sint32", JSONName: "sint32", Typez: api.TypezSint32},
-			"sint32",
+			"if (sint32.isNotDefault) 'sint32': sint32",
 		}, {
 			&api.Field{Name: "sint64", JSONName: "sint64", Typez: api.TypezSint64},
-			"sint64.toString()",
+			"if (sint64.isNotDefault) 'sint64': sint64.toString()",
 		}, {
 			&api.Field{Name: "string", JSONName: "string", Typez: api.TypezString},
-			"string",
+			"if (string.isNotDefault) 'string': string",
 		}, {
 			&api.Field{Name: "uint32", JSONName: "uint32", Typez: api.TypezUint32},
-			"uint32",
+			"if (uint32.isNotDefault) 'uint32': uint32",
 		}, {
 			&api.Field{Name: "uint64", JSONName: "uint64", Typez: api.TypezUint64},
-			"uint64.toString()",
+			"if (uint64.isNotDefault) 'uint64': uint64.toString()",
 		},
 
-		// enums
+		// optional / nullable primitives (which use createNullableToJson)
+		{
+			&api.Field{Name: "bool_opt", JSONName: "bool", Typez: api.TypezBool, Optional: true},
+			"'bool': ?boolOpt",
+		}, {
+			&api.Field{Name: "string_opt", JSONName: "string", Typez: api.TypezString, Optional: true},
+			"'string': ?stringOpt",
+		}, {
+			&api.Field{Name: "double_opt", JSONName: "double", Typez: api.TypezDouble, Optional: true},
+			"if (doubleOpt case final $1?) 'double': encodeDouble($1)",
+		}, {
+			&api.Field{Name: "bytes_opt", JSONName: "bytes", Typez: api.TypezBytes, Optional: true},
+			"if (bytesOpt case final $1?) 'bytes': encodeBytes($1)",
+		},
+
+		// enums (implicitly non-nullable unless optional)
 		{
 			&api.Field{Name: "enum1", JSONName: "enum1", Typez: api.TypezEnum, TypezID: enum.ID},
-			"enum1.toJson()",
+			"if (enum1.isNotDefault) 'enum1': enum1.toJson()",
+		},
+		{
+			&api.Field{Name: "enum_opt", JSONName: "enumOpt", Typez: api.TypezEnum, TypezID: enum.ID, Optional: true},
+			"'enumOpt': ?enumOpt?.toJson()",
 		},
 
-		// messages
+		// messages (always nullable in proto3 singular message fields)
 		{
 			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: secret.ID},
-			"message.toJson()",
+			"'message': ?message?.toJson()",
+		},
+		{
+			// Required message (but still nullable since it's a message!)
+			&api.Field{Name: "message", JSONName: "message", Typez: api.TypezMessage, TypezID: secret.ID, Behavior: []api.FieldBehavior{api.FieldBehaviorRequired}},
+			"'message': ?message?.toJson()",
 		},
 
 		// repeated primitives
 		{
 			&api.Field{Name: "boolList", JSONName: "boolList", Typez: api.TypezBool, Repeated: true},
-			"boolList",
+			"if (boolList.isNotDefault) 'boolList': boolList",
 		}, {
 			&api.Field{Name: "bytesList", JSONName: "bytesList", Typez: api.TypezBytes, Repeated: true},
-			"[for (final i in bytesList) encodeBytes(i)]",
+			"if (bytesList.isNotDefault) 'bytesList': [for (final i in bytesList) encodeBytes(i)]",
 		}, {
 			&api.Field{Name: "doubleList", JSONName: "doubleList", Typez: api.TypezDouble, Repeated: true},
-			"[for (final i in doubleList) encodeDouble(i)]",
+			"if (doubleList.isNotDefault) 'doubleList': [for (final i in doubleList) encodeDouble(i)]",
 		}, {
 			&api.Field{Name: "fixed32List", JSONName: "fixed32List", Typez: api.TypezFixed32, Repeated: true},
-			"fixed32List",
+			"if (fixed32List.isNotDefault) 'fixed32List': fixed32List",
 		}, {
 			&api.Field{Name: "fixed64List", JSONName: "fixed64List", Typez: api.TypezFixed64, Repeated: true},
-			"[for (final i in fixed64List) i.toString()]",
+			"if (fixed64List.isNotDefault) 'fixed64List': [for (final i in fixed64List) i.toString()]",
 		}, {
 			&api.Field{Name: "floatList", JSONName: "floatList", Typez: api.TypezFloat, Repeated: true},
-			"[for (final i in floatList) encodeDouble(i)]",
+			"if (floatList.isNotDefault) 'floatList': [for (final i in floatList) encodeDouble(i)]",
 		}, {
 			&api.Field{Name: "int32List", JSONName: "int32List", Typez: api.TypezInt32, Repeated: true},
-			"int32List",
+			"if (int32List.isNotDefault) 'int32List': int32List",
 		}, {
 			&api.Field{Name: "int64List", JSONName: "int64List", Typez: api.TypezInt64, Repeated: true},
-			"[for (final i in int64List) i.toString()]",
+			"if (int64List.isNotDefault) 'int64List': [for (final i in int64List) i.toString()]",
 		}, {
 			&api.Field{Name: "sfixed32List", JSONName: "sfixed32List", Typez: api.TypezSfixed32, Repeated: true},
-			"sfixed32List",
+			"if (sfixed32List.isNotDefault) 'sfixed32List': sfixed32List",
 		}, {
 			&api.Field{Name: "sfixed64List", JSONName: "sfixed64List", Typez: api.TypezSfixed64, Repeated: true},
-			"[for (final i in sfixed64List) i.toString()]",
+			"if (sfixed64List.isNotDefault) 'sfixed64List': [for (final i in sfixed64List) i.toString()]",
 		}, {
 			&api.Field{Name: "sint32List", JSONName: "sint32List", Typez: api.TypezSint32, Repeated: true},
-			"sint32List",
+			"if (sint32List.isNotDefault) 'sint32List': sint32List",
 		}, {
 			&api.Field{Name: "sint64List", JSONName: "sint64List", Typez: api.TypezSint64, Repeated: true},
-			"[for (final i in sint64List) i.toString()]",
+			"if (sint64List.isNotDefault) 'sint64List': [for (final i in sint64List) i.toString()]",
 		}, {
 			&api.Field{Name: "stringList", JSONName: "stringList", Typez: api.TypezString, Repeated: true},
-			"stringList",
+			"if (stringList.isNotDefault) 'stringList': stringList",
 		}, {
 			&api.Field{Name: "uint32List", JSONName: "uint32List", Typez: api.TypezUint32, Repeated: true},
-			"uint32List",
+			"if (uint32List.isNotDefault) 'uint32List': uint32List",
 		}, {
 			&api.Field{Name: "uint64List", JSONName: "uint64List", Typez: api.TypezUint64, Repeated: true},
-			"[for (final i in uint64List) i.toString()]",
+			"if (uint64List.isNotDefault) 'uint64List': [for (final i in uint64List) i.toString()]",
 		},
 
 		// repeated enums
 		{
 			&api.Field{Name: "enumList", JSONName: "enumList", Typez: api.TypezEnum, TypezID: enum.ID, Repeated: true},
-			"[for (final i in enumList) i.toJson()]",
+			"if (enumList.isNotDefault) 'enumList': [for (final i in enumList) i.toJson()]",
 		},
 
 		// repeated messages
 		{
 			&api.Field{Name: "messageList", JSONName: "messageList", Typez: api.TypezMessage, TypezID: secret.ID, Repeated: true},
-			"[for (final i in messageList) i.toJson()]",
+			"if (messageList.isNotDefault) 'messageList': [for (final i in messageList) i.toJson()]",
 		},
 
 		// maps
 		{
 			&api.Field{Name: "map_string_to_string", JSONName: "mapStringToString", Map: true, Typez: api.TypezMessage, TypezID: mapStringToString.ID},
-			"mapStringToString",
+			"if (mapStringToString.isNotDefault) 'mapStringToString': mapStringToString",
 		},
 		{
 			&api.Field{Name: "map_int32_to_string", JSONName: "mapInt32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapInt32ToString.ID},
-			"{for (final e in mapInt32ToString.entries) e.key.toString(): e.value}",
+			"if (mapInt32ToString.isNotDefault) 'mapInt32ToString': {for (final e in mapInt32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_bool_to_string", JSONName: "mapBoolToString", Map: true, Typez: api.TypezMessage, TypezID: mapBoolToString.ID},
-			"{for (final e in mapBoolToString.entries) e.key.toString(): e.value}",
+			"if (mapBoolToString.isNotDefault) 'mapBoolToString': {for (final e in mapBoolToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_string_to_int64", JSONName: "mapStringToInt64", Map: true, Typez: api.TypezMessage, TypezID: mapStringToInt64.ID},
-			"{for (final e in mapStringToInt64.entries) e.key: e.value.toString()}",
+			"if (mapStringToInt64.isNotDefault) 'mapStringToInt64': {for (final e in mapStringToInt64.entries) e.key: e.value.toString()}",
 		},
 		{
 			&api.Field{Name: "map_int64_to_string", JSONName: "mapInt64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapInt64ToString.ID},
-			"{for (final e in mapInt64ToString.entries) e.key.toString(): e.value}",
+			"if (mapInt64ToString.isNotDefault) 'mapInt64ToString': {for (final e in mapInt64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_uint32_to_string", JSONName: "mapUint32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapUint32ToString.ID},
-			"{for (final e in mapUint32ToString.entries) e.key.toString(): e.value}",
+			"if (mapUint32ToString.isNotDefault) 'mapUint32ToString': {for (final e in mapUint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_uint64_to_string", JSONName: "mapUint64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapUint64ToString.ID},
-			"{for (final e in mapUint64ToString.entries) e.key.toString(): e.value}",
+			"if (mapUint64ToString.isNotDefault) 'mapUint64ToString': {for (final e in mapUint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_sint32_to_string", JSONName: "mapSint32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSint32ToString.ID},
-			"{for (final e in mapSint32ToString.entries) e.key.toString(): e.value}",
+			"if (mapSint32ToString.isNotDefault) 'mapSint32ToString': {for (final e in mapSint32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_sint64_to_string", JSONName: "mapSint64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSint64ToString.ID},
-			"{for (final e in mapSint64ToString.entries) e.key.toString(): e.value}",
+			"if (mapSint64ToString.isNotDefault) 'mapSint64ToString': {for (final e in mapSint64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_fixed32_to_string", JSONName: "mapFixed32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapFixed32ToString.ID},
-			"{for (final e in mapFixed32ToString.entries) e.key.toString(): e.value}",
+			"if (mapFixed32ToString.isNotDefault) 'mapFixed32ToString': {for (final e in mapFixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_fixed64_to_string", JSONName: "mapFixed64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapFixed64ToString.ID},
-			"{for (final e in mapFixed64ToString.entries) e.key.toString(): e.value}",
+			"if (mapFixed64ToString.isNotDefault) 'mapFixed64ToString': {for (final e in mapFixed64ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_sfixed32_to_string", JSONName: "mapSfixed32ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSfixed32ToString.ID},
-			"{for (final e in mapSfixed32ToString.entries) e.key.toString(): e.value}",
+			"if (mapSfixed32ToString.isNotDefault) 'mapSfixed32ToString': {for (final e in mapSfixed32ToString.entries) e.key.toString(): e.value}",
 		},
 		{
 			&api.Field{Name: "map_sfixed64_to_string", JSONName: "mapSfixed64ToString", Map: true, Typez: api.TypezMessage, TypezID: mapSfixed64ToString.ID},
-			"{for (final e in mapSfixed64ToString.entries) e.key.toString(): e.value}",
+			"if (mapSfixed64ToString.isNotDefault) 'mapSfixed64ToString': {for (final e in mapSfixed64ToString.entries) e.key.toString(): e.value}",
 		},
 	} {
 		t.Run(test.field.Name, func(t *testing.T) {
@@ -1694,9 +1718,10 @@ func TestCreateToJsonLine(t *testing.T) {
 				"prefix:google.cloud.foo": "foo",
 			})
 
-			got := createToJsonLine(test.field, model)
+			annotate.annotateField(test.field)
+			got := test.field.Codec.(*fieldAnnotation).ToJson
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestCreateToJsonLine (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch in TestToJson (-want, +got)\n:%s", diff)
 			}
 		})
 	}
@@ -2002,6 +2027,25 @@ func TestAnnotateField(t *testing.T) {
 			want: &fieldAnnotation{
 				Name:                  "emptyField",
 				Type:                  "Empty",
+				DocLines:              []string{},
+				Required:              false,
+				Nullable:              true,
+				FieldBehaviorRequired: false,
+				DefaultValue:          "",
+				ConstDefault:          true,
+			},
+		},
+		{
+			name: "float",
+			field: &api.Field{
+				Name:     "float_field",
+				JSONName: "floatField",
+				Typez:    api.TypezFloat,
+				Optional: true,
+			},
+			want: &fieldAnnotation{
+				Name:                  "floatField",
+				Type:                  "double",
 				DocLines:              []string{},
 				Required:              false,
 				Nullable:              true,

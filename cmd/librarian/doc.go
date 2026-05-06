@@ -54,22 +54,24 @@ Usage:
 
 Usage:
 
-	librarian add <apis...>
+	librarian add <api>
 
-add registers one or more APIs as a new client library in librarian.yaml.
+add registers a single API in librarian.yaml.
 
-Each <api> is a path within the configured googleapis source, such as
+The <api> is a path within the configured googleapis source, such as
 "google/cloud/secretmanager/v1". The library name and other defaults are
 derived from the first API path using language-specific rules.
 
-Multiple API paths may be passed to bundle them into a single library. To
-add a preview client of an existing library, prefix every API path with
-"preview/"; preview and non-preview APIs cannot be mixed in one invocation.
+If the API path should naturally be included in an existing library, and if the
+language supports doing so, that library is modified. Otherwise, a new library
+is created.
+
+To add a preview client of an existing library, prefix the API path with
+"preview/".
 
 Examples:
 
 	librarian add google/cloud/secretmanager/v1
-	librarian add google/cloud/foo/v1 google/cloud/foo/v1beta
 	librarian add preview/google/cloud/secretmanager/v1beta
 
 A typical librarian workflow for adding a new client library is:

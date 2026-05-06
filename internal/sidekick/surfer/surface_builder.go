@@ -15,11 +15,13 @@
 package surfer
 
 import (
+	"log/slog"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
-func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
+func newSurface(model *api.API, config *provider.Config) (*Surface, error) {
 	var root *CommandGroup
 	providerTracks := provider.Tracks(provider.APIVersionFromModel(model))
 	var tracks []ReleaseTrack
@@ -28,14 +30,18 @@ func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
 	}
 
 	for _, service := range model.Services {
-		gb := newGroupBuilder(model, service, config)
+		params := &groupParams{
+			model:   model,
+			service: service,
+			config:  config,
+		}
 
 		if root == nil {
-			root = gb.buildRoot()
+			root = newRootGroup(params)
 		}
 
 		for _, method := range service.Methods {
-			if err := insert(root, gb, method); err != nil {
+			if err := insert(root, params, method); err != nil {
 				return nil, err
 			}
 		}
@@ -47,8 +53,8 @@ func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
 // insert traverses the tree and attaches a command leaf node. It resolves the
 // literal path segments of the method and walks the tree, creating missing
 // groups if they do not yet exist.
-func insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
-	if provider.IsSingletonResourceMethod(method, gb.model) {
+func insert(root *CommandGroup, params *groupParams, method *api.Method) error {
+	if provider.IsSingletonResourceMethod(method, params.model) {
 		return nil
 	}
 
@@ -64,7 +70,7 @@ func insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
 
 	curr := root
 	for i, seg := range segments {
-		if isTerminatedSegment(seg, gb.config) {
+		if isTerminatedSegment(seg, params.config) {
 			return nil
 		}
 		isLeaf := i == len(segments)-1
@@ -73,17 +79,28 @@ func insert(root *CommandGroup, gb *groupBuilder, method *api.Method) error {
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = gb.build(segments[:i+1])
+			curr.Groups[seg] = newGroup(params, segments[:i+1])
 		}
 		curr = curr.Groups[seg]
 	}
 
-	cmd, err := buildCommand(method, gb.config, gb.model, gb.service)
+	cmd, err := newCommand(method, params.config, params.model, params.service)
 	if err != nil {
 		return err
 	}
 
 	curr.Commands[cmd.Name] = cmd
+
+	// Synthesize a 'wait' command for operations.
+	if provider.IsOperationsServiceMethod(method) && method.Name == provider.GetOperation {
+		waitCmd, err := newWaitCommand(method, params.config, params.model, params.service)
+		if err != nil {
+			slog.Warn("failed to build wait command for operations", "method", method.ID, "error", err)
+		} else {
+			curr.Commands[waitCmd.Name] = waitCmd
+		}
+	}
+
 	return nil
 }
 

@@ -157,7 +157,14 @@ func TestNewArgument(t *testing.T) {
 			if overrides == nil {
 				overrides = &provider.Config{}
 			}
-			got, err := newArgumentBuilder(test.method, overrides, model, service, test.field, test.apiField).build()
+			got, err := newArgument(&argumentParams{
+				method:    test.method,
+				overrides: overrides,
+				model:     model,
+				service:   service,
+				field:     test.field,
+				apiField:  test.apiField,
+			})
 			if err != nil {
 				t.Errorf("newArgument(%s) unexpected error: %v", test.name, err)
 				return
@@ -249,11 +256,30 @@ func TestIsIgnored(t *testing.T) {
 			method: api.NewTestMethod("CreateThing").WithVerb("POST"),
 			want:   false,
 		},
+		{
+			name:  "Return Partial Success in ListOperations (Ignored)",
+			field: api.NewTestField("return_partial_success"),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListOperations").WithVerb("GET")
+				m.SourceServiceID = ".google.longrunning.Operations"
+				return m
+			}(),
+			want: true,
+		},
+		{
+			name:  "Return Partial Success in Other List (Not Ignored)",
+			field: api.NewTestField("return_partial_success"),
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET")
+				m.SourceServiceID = ".google.cloud.example.v1.Things"
+				return m
+			}(),
+			want: false,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			builder := newArgumentBuilder(test.method, nil, nil, nil, test.field, nil)
-			got := builder.isIgnored()
+			got := isArgIgnored(test.field, test.method)
 			if got != test.want {
 				t.Errorf("isIgnored() = %v, want %v", got, test.want)
 			}
@@ -269,6 +295,56 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 		resourceDefs []*api.Resource
 		want         Argument
 	}{
+		{
+			name: "GetOperation fallback HelpText",
+			field: &api.Field{
+				Name:  "name",
+				Typez: api.TypezString,
+			},
+			method: func() *api.Method {
+				m := api.NewTestMethod("GetOperation").WithVerb("GET").WithInput(
+					api.NewTestMessage("GetOperationRequest").WithFields(
+						api.NewTestField("name").WithType(api.TypezString),
+					),
+				)
+				m.SourceServiceID = ".google.longrunning.Operations"
+				m.PathInfo = &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									*(&api.PathSegment{}).WithLiteral("v1"),
+									*(&api.PathSegment{}).WithLiteral("projects"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+									*(&api.PathSegment{}).WithLiteral("locations"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("location").WithMatch()),
+									*(&api.PathSegment{}).WithLiteral("operations"),
+									*(&api.PathSegment{}).WithVariable(api.NewPathVariable("operation").WithMatch()),
+								},
+							},
+						},
+					},
+				}
+				return m
+			}(),
+			want: Argument{
+				HelpText:          "The name of the operation resource.",
+				IsPositional:      true,
+				IsPrimaryResource: true,
+				Required:          true,
+				ResourceSpec: &ResourceSpec{
+					Name:       "operation",
+					PluralName: "operations",
+					Collection: "test.projects.locations.operations",
+					Attributes: []Attribute{
+						{ParameterName: "projectsId", AttributeName: "project", Help: "The project id of the {resource} resource.", Property: "core/project"},
+						{ParameterName: "locationsId", AttributeName: "location", Help: "The location id of the {resource} resource."},
+						{ParameterName: "operationsId", AttributeName: "operation", Help: "The operation id of the {resource} resource."},
+					},
+				},
+			},
+		},
 		{
 			name: "Create Instance (Positional)",
 			field: &api.Field{
@@ -451,6 +527,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			t.Parallel()
 			service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 			service.DefaultHost = "test.googleapis.com"
+			service.Methods = []*api.Method{test.method}
 			model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 			model.ResourceDefinitions = test.resourceDefs
 
@@ -461,7 +538,12 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			if provider.IsCreate(test.method) {
 				idField = test.field
 			}
-			got := newArgumentBuilder(test.method, nil, model, service, test.field, nil).buildPrimaryResource(idField)
+			got := newPrimaryResourceArgument(&argumentParams{
+				method:  test.method,
+				model:   model,
+				service: service,
+				field:   test.field,
+			}, idField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("newPrimaryResourceArgument() mismatch (-want +got):\n%s", diff)
 			}
@@ -510,8 +592,14 @@ func TestArgumentBuilder_Build(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			builder := newArgumentBuilder(createMethod, &provider.Config{}, model, service, test.field, test.prefix)
-			got, err := builder.build()
+			got, err := newArgument(&argumentParams{
+				method:    createMethod,
+				overrides: &provider.Config{},
+				model:     model,
+				service:   service,
+				field:     test.field,
+				apiField:  test.prefix,
+			})
 			if (err != nil) != test.wantErr {
 				t.Fatalf("build() error = %v, wantErr %v", err, test.wantErr)
 			}
@@ -564,7 +652,11 @@ func TestNewResourceReferenceSpec(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := newArgumentBuilder(nil, nil, model, service, test.field, nil).resourceReferenceSpec()
+			got, err := resourceReferenceSpec(&argumentParams{
+				model:   model,
+				service: service,
+				field:   test.field,
+			})
 			if err != nil {
 				t.Fatalf("newResourceReferenceSpec() unexpected error = %v", err)
 			}
@@ -589,7 +681,11 @@ func TestNewResourceReferenceSpec_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			_, err := newArgumentBuilder(nil, nil, &api.API{}, service, test.field, nil).resourceReferenceSpec()
+			_, err := resourceReferenceSpec(&argumentParams{
+				model:   &api.API{},
+				service: service,
+				field:   test.field,
+			})
 			if err == nil {
 				t.Fatalf("newResourceReferenceSpec() expected error, got nil")
 			}

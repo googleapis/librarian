@@ -22,31 +22,66 @@ import (
 )
 
 func TestAnnotateField(t *testing.T) {
-	field := &api.Field{
-		Name:          "secret_payload",
-		Documentation: "The secret version payload.",
-		ID:            ".test.SecretVersion.secret_payload",
-		Typez:         api.TypezString,
-	}
-	msg := &api.Message{
-		Name:    "Secret",
-		ID:      ".test.SecretVersion",
-		Package: "test",
-		Fields:  []*api.Field{field},
-	}
-	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
-	codec := newTestCodec(t, model, map[string]string{})
-	if err := codec.annotateModel(); err != nil {
-		t.Fatal(err)
-	}
-	want := &fieldAnnotations{
-		Name:      "secretPayload",
-		DocLines:  []string{"The secret version payload."},
-		FieldType: "String",
-	}
+	for _, test := range []struct {
+		name         string
+		optional     bool
+		repeated     bool
+		wantType     string
+		wantBaseType string
+	}{
+		{
+			name:         "regular",
+			optional:     false,
+			repeated:     false,
+			wantType:     "String",
+			wantBaseType: "String",
+		},
+		{
+			name:         "optional",
+			optional:     true,
+			repeated:     false,
+			wantType:     "String?",
+			wantBaseType: "String",
+		},
+		{
+			name:         "repeated",
+			optional:     false,
+			repeated:     true,
+			wantType:     "[String]",
+			wantBaseType: "String",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field := &api.Field{
+				Name:          "secret_payload",
+				Documentation: "The secret version payload.",
+				ID:            ".test.SecretVersion.secret_payload",
+				Typez:         api.TypezString,
+				Optional:      test.optional,
+				Repeated:      test.repeated,
+			}
+			msg := &api.Message{
+				Name:    "Secret",
+				ID:      ".test.SecretVersion",
+				Package: "test",
+				Fields:  []*api.Field{field},
+			}
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			want := &fieldAnnotations{
+				Name:          "secretPayload",
+				DocLines:      []string{"The secret version payload."},
+				FieldType:     test.wantType,
+				BaseFieldType: test.wantBaseType,
+			}
 
-	if diff := cmp.Diff(want, field.Codec); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(want, field.Codec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -79,9 +114,10 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:      "testField",
-				FieldType: test.wantType,
-				DocLines:  []string{"Test documentation."},
+				Name:          "testField",
+				FieldType:     test.wantType,
+				BaseFieldType: test.wantType,
+				DocLines:      []string{"Test documentation."},
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

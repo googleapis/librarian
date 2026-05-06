@@ -16,7 +16,7 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable {
+public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable, Sendable {
   {{#Fields}}
   {{^IsOneOf}}
 
@@ -81,7 +81,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
+    {{#Optional}}
+    self.{{Codec.Name}} = try container.decodeIfPresent({{Codec.BaseFieldType}}.self, forKey: .{{Codec.Name}})
+    {{/Optional}}
+    {{^Optional}}
     self.{{Codec.Name}} = try container.decode({{Codec.FieldType}}.self, forKey: .{{Codec.Name}})
+    {{/Optional}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}

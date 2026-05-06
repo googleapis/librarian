@@ -18,6 +18,7 @@ package swift
 import (
 	"context"
 	"embed"
+	"fmt"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -114,11 +115,23 @@ func (c *codec) generateServices(outdir string, model *api.API, provider languag
 func (c *codec) generateSnippets(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, s := range model.Services {
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/snippet.swift.mustache",
+			TemplatePath: "templates/common/client_snippet.swift.mustache",
 			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
 		}
 		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 			return err
+		}
+		for _, m := range s.Methods {
+			if !isGeneratedMethod(m) {
+				continue
+			}
+			mGenerated := language.GeneratedFile{
+				TemplatePath: "templates/common/method_snippet.swift.mustache",
+				OutputPath:   filepath.Join("Snippets", fmt.Sprintf("%s_%s.swift", s.Name, m.Name)),
+			}
+			if err := language.GenerateMethod(outdir, m, provider, mGenerated); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
