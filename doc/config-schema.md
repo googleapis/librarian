@@ -57,6 +57,7 @@ This document describes the schema for the librarian.yaml.
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `pandoc` | string | Is the version of pandoc to install (e.g. "3.8.2"). Empty means pandoc is not installed. |
 
 ## CargoTool Configuration
 

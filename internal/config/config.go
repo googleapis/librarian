@@ -135,6 +135,10 @@ type Tools struct {
 
 	// Go defines tools to install via go.
 	Go []*GoTool `yaml:"go,omitempty"`
+
+	// Pandoc is the version of pandoc to install (e.g. "3.8.2"). Empty means
+	// pandoc is not installed.
+	Pandoc string `yaml:"pandoc,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.

@@ -17,6 +17,7 @@
 # librarian.
 language: python
 tools:
+  pandoc: "3.8.2"
   pip:
     - name: gapic-generator
       version: "1.30.13"

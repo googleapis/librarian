@@ -26,15 +26,9 @@ jobs:
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
-      - name: Install pandoc
-        run: |
-          set -e
-          curl -fsSL --retry 5 --retry-delay 15 -o /tmp/pandoc.tar.gz https://github.com/jgm/pandoc/releases/download/$VERSION/pandoc-$VERSION-linux-amd64.tar.gz
-          sudo tar -xvf /tmp/pandoc.tar.gz -C /usr/local --strip-components=1
-          pandoc --version
-        env:
-          VERSION: 3.8.2
       - name: Install Python dependencies
         run: librarian install python
+      - name: Add librarian cache bin to PATH
+        run: echo "$HOME/.cache/librarian/bin" >> $GITHUB_PATH
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/python
