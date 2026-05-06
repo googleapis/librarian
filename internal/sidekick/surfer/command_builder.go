@@ -179,15 +179,10 @@ func requestMethod(method *api.Method) string {
 	return ""
 }
 
-type fieldWithPrefix struct {
-	field  *api.Field
-	prefix []string
-}
-
 type classifiedFields struct {
-	primaryField    *fieldWithPrefix
-	resourceIdField *fieldWithPrefix
-	other           []fieldWithPrefix
+	primaryField    []*api.Field
+	resourceIdField []*api.Field
+	other           [][]*api.Field
 }
 
 // newArguments generates the set of arguments for a command by parsing the
@@ -206,27 +201,28 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 	if cf.primaryField != nil {
 		var idField *api.Field
 		if cf.resourceIdField != nil {
-			idField = cf.resourceIdField.field
+			idField = cf.resourceIdField[len(cf.resourceIdField)-1]
 		}
 		arg := newPrimaryResourceArgument(&argumentParams{
 			method:    method,
 			overrides: overrides,
 			model:     model,
 			service:   service,
-			field:     cf.primaryField.field,
-			apiField:  cf.primaryField.prefix,
+			field:     cf.primaryField[len(cf.primaryField)-1],
+			fieldPath: cf.primaryField,
 		}, idField)
 		args = append(args, arg)
 	}
 
-	for _, fwp := range cf.other {
+	for _, path := range cf.other {
+		field := path[len(path)-1]
 		arg, err := newArgument(&argumentParams{
 			method:    method,
 			overrides: overrides,
 			model:     model,
 			service:   service,
-			field:     fwp.field,
-			apiField:  fwp.prefix,
+			field:     field,
+			fieldPath: path,
 		})
 		if err != nil {
 			return nil, err
@@ -252,7 +248,7 @@ func positionalResourceArg(method *api.Method, overrides *provider.Config, model
 
 	var idField *api.Field
 	if cf.resourceIdField != nil {
-		idField = cf.resourceIdField.field
+		idField = cf.resourceIdField[len(cf.resourceIdField)-1]
 	}
 
 	arg := newPrimaryResourceArgument(&argumentParams{
@@ -260,8 +256,8 @@ func positionalResourceArg(method *api.Method, overrides *provider.Config, model
 		overrides: overrides,
 		model:     model,
 		service:   service,
-		field:     cf.primaryField.field,
-		apiField:  cf.primaryField.prefix,
+		field:     cf.primaryField[len(cf.primaryField)-1],
+		fieldPath: cf.primaryField,
 	}, idField)
 	return &arg, nil
 }
@@ -276,50 +272,42 @@ func categorizeFields(method *api.Method, model *api.API) (classifiedFields, err
 		bodyFieldPath = method.PathInfo.BodyFieldPath
 	}
 
-	var collected []fieldWithPrefix
+	var collected [][]*api.Field
 	for _, field := range method.InputType.Fields {
 		isExpandableMessage := field.MessageType != nil && !field.Map
 		isBodyWildcard := bodyFieldPath == "*"
 		isBodyField := bodyFieldPath == field.Name || isBodyWildcard
 
-		var prefix []string
-		if isBodyWildcard {
-			prefix = append(prefix, method.InputType.Name)
-		}
+		var path []*api.Field
 
 		if isExpandableMessage && isBodyField {
-			prefix = append(prefix, field.JSONName)
+			path = append(path, field)
 			for _, f := range field.MessageType.Fields {
-				collected = append(collected, fieldWithPrefix{
-					field:  f,
-					prefix: append(append([]string{}, prefix...), f.JSONName),
-				})
+				collected = append(collected, append(slices.Clone(path), f))
 			}
 			continue
 		}
 
-		collected = append(collected, fieldWithPrefix{
-			field:  field,
-			prefix: append(prefix, field.JSONName),
-		})
+		collected = append(collected, append(path, field))
 	}
 
-	for _, fwp := range collected {
+	for _, path := range collected {
+		field := path[len(path)-1]
 		switch {
-		case provider.IsPrimaryResourceField(fwp.field, method):
+		case provider.IsPrimaryResourceField(field, method):
 			if cf.primaryField != nil {
-				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", method.Name, cf.primaryField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", method.Name, cf.primaryField[len(cf.primaryField)-1].Name, field.Name)
 			}
-			cf.primaryField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsResourceIdField(fwp.field, method, model):
+			cf.primaryField = path
+		case provider.IsResourceIdField(field, method, model):
 			if cf.resourceIdField != nil {
-				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", method.Name, cf.resourceIdField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", method.Name, cf.resourceIdField[len(cf.resourceIdField)-1].Name, field.Name)
 			}
-			cf.resourceIdField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsCreate(method) && fwp.field.Name == "name":
+			cf.resourceIdField = path
+		case provider.IsCreate(method) && field.Name == "name":
 			// Ignore name field in Create methods as it's redundant with resource_id
 		default:
-			cf.other = append(cf.other, fwp)
+			cf.other = append(cf.other, path)
 		}
 	}
 

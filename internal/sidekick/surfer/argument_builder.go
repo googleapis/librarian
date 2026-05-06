@@ -31,7 +31,7 @@ type argumentParams struct {
 	model     *api.API
 	service   *api.Service
 	field     *api.Field
-	apiField  []string
+	fieldPath []*api.Field
 }
 
 // newArgument creates a single command-line argument (an `Argument` struct) from the parameters.
@@ -40,11 +40,13 @@ func newArgument(ap *argumentParams) (*Argument, error) {
 	if isArgIgnored(ap.field, ap.method) {
 		return nil, nil
 	}
+	if len(ap.fieldPath) == 0 {
+		return nil, fmt.Errorf("field %q has empty field path", ap.field.Name)
+	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	arg := &Argument{
-		ArgName:   ap.field.Name,
-		APIField:  ap.apiField,
+		ArgName:   argName(ap),
+		APIField:  apiField(ap),
 		Required:  ap.field.DocumentAsRequired(),
 		Repeated:  repeated(ap.field),
 		Clearable: clearable(ap.field, ap.method),
@@ -258,4 +260,38 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 		attributes = append(attributes, attr)
 	}
 	return attributes
+}
+
+func argName(ap *argumentParams) string {
+	parts := ap.fieldPath
+	// Strip explicit body field name (e.g., "instance" when body: "instance").
+	// The explicit body message represents the main resource being acted upon,
+	// so its fields should appear as top-level flags without redundant prefixes.
+	if ap.method.PathInfo != nil && !isBodyWildcard(ap) {
+		if len(parts) > 0 && parts[0].Name == ap.method.PathInfo.BodyFieldPath {
+			parts = parts[1:]
+		}
+	}
+
+	var names []string
+	for _, f := range parts {
+		names = append(names, f.Name)
+	}
+	return strings.Join(names, "_")
+}
+
+// apiField constructs the path segments to the field in the API request message.
+func apiField(ap *argumentParams) []string {
+	var apiFields []string
+	if isBodyWildcard(ap) && ap.method.InputType != nil {
+		apiFields = append(apiFields, ap.method.InputType.Name)
+	}
+	for _, f := range ap.fieldPath {
+		apiFields = append(apiFields, f.JSONName)
+	}
+	return apiFields
+}
+
+func isBodyWildcard(ap *argumentParams) bool {
+	return ap.method.PathInfo != nil && ap.method.PathInfo.BodyFieldPath == "*"
 }
