@@ -131,22 +131,47 @@ func TestConstructSurfaceModel(t *testing.T) {
 				Services: []*api.Service{{
 					Name: "InstanceService",
 					Methods: []*api.Method{{
-						Name:      "ListInstances",
-						InputType: &api.Message{Name: "ListInstancesRequest"},
+						Name:              "ListInstances",
+						IsAIPStandardList: true,
+						InputType: &api.Message{
+							Name: "ListInstancesRequest",
+							Fields: []*api.Field{
+								{
+									Name:              "parent",
+									ResourceReference: &api.ResourceReference{ChildType: "parallelstore.googleapis.com/Instance"},
+								},
+							},
+						},
 						PathInfo: &api.PathInfo{
 							Bindings: []*api.PathBinding{{
 								Verb: "GET",
 								PathTemplate: (&api.PathTemplate{}).
 									WithLiteral("v1").
+									WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+									WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
 									WithLiteral("instances"),
 							}},
 						},
 					}},
 				}},
+				ResourceDefinitions: []*api.Resource{{
+					Type: "parallelstore.googleapis.com/Instance",
+					Patterns: []api.ResourcePattern{
+						(&api.PathTemplate{}).
+							WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+							WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+							WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+							Segments,
+					},
+				}},
 			},
 			want: SurfaceModel{
 				PackageName: "parallelstore",
-				Imports:     nil,
+				Imports: []Import{
+					{Alias: "parallelstore", Path: "cloud.google.com/go/parallelstore/apiv1"},
+					{Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb"},
+					{Path: "google.golang.org/api/iterator"},
+				},
 				Group: Group{
 					Name:  "parallelstore",
 					Usage: "manage Parallelstore resources",
@@ -154,8 +179,22 @@ func TestConstructSurfaceModel(t *testing.T) {
 						Name:  "instances",
 						Usage: "manage instances resources",
 						Commands: []Command{{
-							Name:  "list",
-							Usage: "list instances",
+							Name:       "list",
+							Usage:      "list instances",
+							PathFormat: "projects/%s/locations/%s",
+							Args:       []string{"project", "location"},
+							PathLabel:  "parent",
+							Flags: []Flag{
+								{Name: "project", Kind: "String", Required: true, Usage: "The project."},
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+							},
+							ClientCall: &ClientCall{
+								Method:      "ListInstances",
+								NameField:   "Parent",
+								Package:     "parallelstore",
+								RequestType: "parallelstorepb.ListInstancesRequest",
+								IsList:      true,
+							},
 						}},
 					}},
 				},
