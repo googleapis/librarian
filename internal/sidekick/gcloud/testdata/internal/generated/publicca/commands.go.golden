@@ -1,0 +1,37 @@
+package publicca
+
+import (
+	"context"
+	"fmt"
+
+	"github.com/urfave/cli/v3"
+)
+
+// Command returns the publicca command tree for inclusion under the gcloud root.
+func Command() *cli.Command {
+	return &cli.Command{
+		Name:  "publicca",
+		Usage: "manage Public Certificate Authority API resources",
+		Commands: []*cli.Command{
+			{
+				Name:  "external-account-keys",
+				Usage: "manage external-account-keys resources",
+				Commands: []*cli.Command{
+					{
+						Name:  "create",
+						Usage: "create external-account-keys",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+						},
+						Action: func(ctx context.Context, cmd *cli.Command) error {
+							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
+							fmt.Printf("Executing create on %s\n", parent)
+							return nil
+						},
+					},
+				},
+			},
+		},
+	}
+}

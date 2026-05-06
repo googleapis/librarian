@@ -175,25 +175,25 @@ SHAs in librarian.yaml accordingly. It also supports updating the librarian vers
 
 Supported targets:
 
-  - conformance: protocolbuffers/protobuf conformance tests
-  - discovery: googleapis/discovery-artifact-manager
-  - googleapis: googleapis/googleapis (the API definitions)
-  - protobuf: protocolbuffers/protobuf
-  - showcase: googleapis/gapic-showcase
+  - sources.conformance: protocolbuffers/protobuf conformance tests
+  - sources.discovery: googleapis/discovery-artifact-manager
+  - sources.googleapis: googleapis/googleapis (the API definitions)
+  - sources.protobuf: protocolbuffers/protobuf
+  - sources.showcase: googleapis/gapic-showcase
   - version: the librarian tool version
 
 At least one target must be specified.
 
 Examples:
 
-	librarian update googleapis
-	librarian update googleapis protobuf
+	librarian update sources.googleapis
+	librarian update sources.googleapis sources.protobuf
 	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
 
-	librarian update googleapis
+	librarian update sources.googleapis
 	librarian generate --all
 
 # Publish client libraries

@@ -18,9 +18,26 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
+
+// subgroupName returns the kebab-cased last literal segment of the method's
+// primary binding path. It returns ("", false) when the method has no
+// primary binding or the binding has no literal segments.
+func subgroupName(method *api.Method) (string, bool) {
+	binding := provider.PrimaryBinding(method)
+	if binding == nil {
+		return "", false
+	}
+	segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
+	if len(segments) == 0 {
+		return "", false
+	}
+	return strcase.ToKebab(segments[len(segments)-1]), true
+}
 
 // buildCommand constructs a Command for a method. The command's flags name
 // each component of the resource the method operates on, and (when the

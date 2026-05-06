@@ -30,7 +30,7 @@ type groupParams struct {
 	config  *provider.Config
 }
 
-func buildRootGroup(params *groupParams) *CommandGroup {
+func newRootGroup(params *groupParams) *CommandGroup {
 	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
 	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(params.model)
@@ -43,7 +43,7 @@ func buildRootGroup(params *groupParams) *CommandGroup {
 	}
 }
 
-func buildGroup(params *groupParams, methodPath []string) *CommandGroup {
+func newGroup(params *groupParams, methodPath []string) *CommandGroup {
 	collectionName := methodPath[len(methodPath)-1]
 	resourceTypeName := provider.GetResourceTypeName(params.model, methodPath)
 
