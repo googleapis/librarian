@@ -73,10 +73,12 @@ func clientInfoFromPath(clientImportPath string) *goClientInfo {
 	if !strings.HasPrefix(last, "api") || len(last) == len("api") {
 		return nil
 	}
+
 	var alias string
 	for i := len(segments) - 2; i >= 0; i-- {
 		s := segments[i]
-		if isStableVersion(s) {
+		// Skip any segment that looks like a version (e.g., v1, v2, v1beta1).
+		if strings.HasPrefix(s, "v") && len(s) > 1 && s[1] >= '0' && s[1] <= '9' {
 			continue
 		}
 		alias = s
