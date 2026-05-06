@@ -769,7 +769,16 @@ type GcloudCommand struct {
 
 // Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
 type Surfer struct {
-	// HelpText contains help text overrides for the surface.
+	// SurferAPIs is a list of gcloud-specific API configurations.
+	SurferAPIs []*SurferAPI `yaml:"surfer_apis,omitempty"`
+}
+
+// SurferAPI represents configuration for a single API within a gcloud surface.
+type SurferAPI struct {
+	// Path is the source path (e.g., "google/cloud/security/publicca/v1").
+	Path string `yaml:"path,omitempty"`
+
+	// HelpText contains help text overrides for this API.
 	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
 }
 

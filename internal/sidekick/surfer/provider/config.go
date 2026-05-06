@@ -4,7 +4,7 @@
 // you may not use this file except in compliance with the License.
 // You may obtain a copy of the License at
 //
-//     https://www.apache.org/licenses/LICENSE-2.0
+//	https://www.apache.org/licenses/LICENSE-2.0
 //
 // Unless required by applicable law or agreed to in writing, software
 // distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,6 +14,10 @@
 
 // Package provider contains configuration types and helpers for surfer tools.
 package provider
+
+import (
+	libconfig "github.com/googleapis/librarian/internal/config"
+)
 
 //go:generate go run -tags configdocgen ../../../../cmd/config_doc_generate.go -input . -output ../../../../doc/gcloud/gcloud-yaml-schema.md -title "gcloud.yaml"
 
@@ -279,4 +283,61 @@ func ShouldGenerateOperations(c *Config) bool {
 		return true
 	}
 	return *c.GenerateOperations
+}
+
+// FromLibrarianConfig builds a provider.Config for a specific API from Librarian's Library config.
+func FromLibrarianConfig(library *libconfig.Library, api *libconfig.API, modelName string) *Config {
+	surferAPI := findSurferAPI(library, api)
+	if surferAPI == nil {
+		return &Config{}
+	}
+
+	var helpText *HelpTextRules
+	if surferAPI.HelpText != nil {
+		helpText = mapHelpText(surferAPI.HelpText)
+	}
+
+	return &Config{
+		APIs: []API{{
+			Name:     modelName,
+			HelpText: helpText,
+		}},
+	}
+}
+
+func findSurferAPI(library *libconfig.Library, api *libconfig.API) *libconfig.SurferAPI {
+	if library.Surfer == nil {
+		return nil
+	}
+	for _, s := range library.Surfer.SurferAPIs {
+		if s.Path == api.Path {
+			return s
+		}
+	}
+	return nil
+}
+
+func mapHelpText(ht *libconfig.GcloudHelpTextRules) *HelpTextRules {
+	if ht == nil {
+		return nil
+	}
+	return &HelpTextRules{
+		MethodRules: mapRules(ht.MethodRules),
+		FieldRules:  mapRules(ht.FieldRules),
+	}
+}
+
+func mapRules(src []*libconfig.GcloudHelpTextRule) []*HelpTextRule {
+	var dst []*HelpTextRule
+	for _, r := range src {
+		dst = append(dst, &HelpTextRule{
+			Selector: r.Selector,
+			HelpText: &HelpTextElement{
+				Brief:       r.Brief,
+				Description: r.Description,
+				Examples:    r.Examples,
+			},
+		})
+	}
+	return dst
 }

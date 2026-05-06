@@ -486,7 +486,14 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
+| `surfer_apis` | list of [SurferAPI](#surferapi-configuration) (optional) | Is a list of gcloud-specific API configurations. |
+
+## SurferAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Is the source path (e.g., "google/cloud/security/publicca/v1"). |
+| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for this API. |
 
 ## SwiftDefault Configuration
 
