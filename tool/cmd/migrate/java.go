@@ -276,6 +276,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				}
 			}
 			if info == nil {
+				log.Printf("Warning: skipping API %s for library %s because no Java build info was found", g.ProtoPath, name)
 				continue
 			}
 			javaAPI := &config.JavaAPI{
