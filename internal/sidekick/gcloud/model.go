@@ -104,6 +104,7 @@ func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel
 		imports       []Import
 		goClient      = goClientPackage(model.PackageName, clientImportPath)
 		hasClientCall = false
+		hasListCall   = false
 		subgroups     = make(map[string]*Subgroup)
 	)
 
@@ -119,6 +120,9 @@ func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel
 			if call := buildClientCall(method, goClient, cmd.HasPath()); call != nil {
 				cmd.ClientCall = call
 				hasClientCall = true
+				if call.IsList {
+					hasListCall = true
+				}
 			}
 
 			sg, ok := subgroups[subName]
@@ -137,6 +141,9 @@ func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel
 		imports = []Import{
 			{Alias: goClient.Alias, Path: goClient.ClientPath},
 			{Path: goClient.PbPath},
+		}
+		if hasListCall {
+			imports = append(imports, Import{Path: "google.golang.org/api/iterator"})
 		}
 	}
 

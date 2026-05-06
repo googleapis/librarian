@@ -33,6 +33,9 @@ type Command struct {
 // ClientCall describes a Go client method invocation that should replace the
 // default print-only action for a generated command.
 type ClientCall struct {
+	// IsList reports whether the method is a standard List method.
+	IsList bool
+
 	// Method is the unqualified client method to call on the constructed
 	// client, for example "GetInstance". The template invokes it as
 	// `client.<Method>(ctx, &<RequestType>{...})`.

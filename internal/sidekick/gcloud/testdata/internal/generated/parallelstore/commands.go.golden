@@ -7,6 +7,7 @@ import (
 	parallelstore "cloud.google.com/go/parallelstore/apiv1"
 	"cloud.google.com/go/parallelstore/apiv1/parallelstorepb"
 	"github.com/urfave/cli/v3"
+	"google.golang.org/api/iterator"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -29,7 +30,26 @@ func Command() *cli.Command {
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
-							fmt.Printf("Executing list on %s\n", parent)
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							it := client.ListInstances(ctx, &parallelstorepb.ListInstancesRequest{Parent: parent})
+							for {
+								resp, err := it.Next()
+								if err == iterator.Done {
+									break
+								}
+								if err != nil {
+									return err
+								}
+								out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+								if err != nil {
+									return err
+								}
+								fmt.Println(string(out))
+							}
 							return nil
 						},
 					},
@@ -166,7 +186,26 @@ func Command() *cli.Command {
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
-							fmt.Printf("Executing list on %s\n", parent)
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							it := client.ListOperations(ctx, &parallelstorepb.ListOperationsRequest{Parent: parent})
+							for {
+								resp, err := it.Next()
+								if err == iterator.Done {
+									break
+								}
+								if err != nil {
+									return err
+								}
+								out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+								if err != nil {
+									return err
+								}
+								fmt.Println(string(out))
+							}
 							return nil
 						},
 					},

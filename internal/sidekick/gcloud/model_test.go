@@ -122,6 +122,45 @@ func TestConstructSurfaceModel(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "list method adds iterator import",
+			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
+				Services: []*api.Service{{
+					Name: "InstanceService",
+					Methods: []*api.Method{{
+						Name:      "ListInstances",
+						InputType: &api.Message{Name: "ListInstancesRequest"},
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{{
+								Verb: "GET",
+								PathTemplate: (&api.PathTemplate{}).
+									WithLiteral("v1").
+									WithLiteral("instances"),
+							}},
+						},
+					}},
+				}},
+			},
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports:     nil,
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:  "list",
+							Usage: "list instances",
+						}},
+					}},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := constructSurfaceModel(test.model, "")
