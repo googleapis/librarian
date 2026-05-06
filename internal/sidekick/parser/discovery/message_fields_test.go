@@ -198,37 +198,41 @@ func TestMakeScalarFieldError(t *testing.T) {
 
 func TestScalarTypes(t *testing.T) {
 	for _, test := range []struct {
-		Type       string
-		Format     string
-		WantTypez  api.Typez
-		WantTypeID string
+		Type                 string
+		Format               string
+		WantTypez            api.Typez
+		WantTypeID           string
+		AdditionalProperties *schema
 	}{
-		{"boolean", "", api.TypezBool, "bool"},
-		{"integer", "int32", api.TypezInt32, "int32"},
-		{"integer", "uint32", api.TypezUint32, "uint32"},
-		{"integer", "int64", api.TypezInt64, "int64"},
-		{"integer", "uint64", api.TypezUint64, "uint64"},
-		{"number", "float", api.TypezFloat, "float"},
-		{"number", "double", api.TypezDouble, "double"},
-		{"string", "", api.TypezString, "string"},
-		{"string", "byte", api.TypezBytes, "bytes"},
-		{"string", "date", api.TypezString, "string"},
-		{"string", "google-duration", api.TypezMessage, ".google.protobuf.Duration"},
-		{"string", "google-datetime", api.TypezMessage, ".google.protobuf.Timestamp"},
-		{"string", "date-time", api.TypezMessage, ".google.protobuf.Timestamp"},
-		{"string", "google-fieldmask", api.TypezMessage, ".google.protobuf.FieldMask"},
-		{"string", "int64", api.TypezInt64, "int64"},
-		{"string", "uint64", api.TypezUint64, "uint64"},
-		{"any", "google.protobuf.Value", api.TypezMessage, ".google.protobuf.Value"},
-		{"object", "google.protobuf.Struct", api.TypezMessage, ".google.protobuf.Struct"},
-		{"object", "google.protobuf.Any", api.TypezMessage, ".google.protobuf.Any"},
+		{"boolean", "", api.TypezBool, "bool", nil},
+		{"integer", "int32", api.TypezInt32, "int32", nil},
+		{"integer", "uint32", api.TypezUint32, "uint32", nil},
+		{"integer", "int64", api.TypezInt64, "int64", nil},
+		{"integer", "uint64", api.TypezUint64, "uint64", nil},
+		{"number", "float", api.TypezFloat, "float", nil},
+		{"number", "double", api.TypezDouble, "double", nil},
+		{"string", "", api.TypezString, "string", nil},
+		{"string", "byte", api.TypezBytes, "bytes", nil},
+		{"string", "date", api.TypezString, "string", nil},
+		{"string", "google-duration", api.TypezMessage, ".google.protobuf.Duration", nil},
+		{"string", "google-datetime", api.TypezMessage, ".google.protobuf.Timestamp", nil},
+		{"string", "date-time", api.TypezMessage, ".google.protobuf.Timestamp", nil},
+		{"string", "google-fieldmask", api.TypezMessage, ".google.protobuf.FieldMask", nil},
+		{"string", "int64", api.TypezInt64, "int64", nil},
+		{"string", "uint64", api.TypezUint64, "uint64", nil},
+		{"any", "google.protobuf.Value", api.TypezMessage, ".google.protobuf.Value", nil},
+		{"any", "", api.TypezMessage, ".google.protobuf.Any", nil},
+		{"object", "google.protobuf.Struct", api.TypezMessage, ".google.protobuf.Struct", nil},
+		{"object", "google.protobuf.Any", api.TypezMessage, ".google.protobuf.Any", nil},
+		{"object", "", api.TypezMessage, ".google.protobuf.Any", &schema{Type: "any"}},
 	} {
 		model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 		input := &schema{
-			ID:          ".package.Message.field",
-			Description: "The field description.",
-			Type:        test.Type,
-			Format:      test.Format,
+			ID:                   ".package.Message.field",
+			Description:          "The field description.",
+			Type:                 test.Type,
+			Format:               test.Format,
+			AdditionalProperties: test.AdditionalProperties,
 		}
 		gotTypez, gotTypeID, err := scalarType(model, ".package.Message", "field", input)
 		if err != nil {

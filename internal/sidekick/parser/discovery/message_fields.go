@@ -160,6 +160,8 @@ func scalarTypeForAny(messageID, name string, input *schema) (api.Typez, string,
 	switch input.Format {
 	case "google.protobuf.Value":
 		return api.TypezMessage, ".google.protobuf.Value", nil
+	case "":
+		return api.TypezMessage, ".google.protobuf.Any", nil
 	}
 	return unknownFormat("any", messageID, name, input)
 }
@@ -170,6 +172,10 @@ func scalarTypeForObject(messageID, name string, input *schema) (api.Typez, stri
 		return api.TypezMessage, ".google.protobuf.Struct", nil
 	case "google.protobuf.Any":
 		return api.TypezMessage, ".google.protobuf.Any", nil
+	case "":
+		if input.AdditionalProperties != nil && input.AdditionalProperties.Type == "any" {
+			return api.TypezMessage, ".google.protobuf.Any", nil
+		}
 	}
 	return unknownFormat("object", messageID, name, input)
 }
