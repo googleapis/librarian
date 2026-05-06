@@ -34,10 +34,16 @@ func newRootGroup(params *groupParams) *CommandGroup {
 	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
 	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(params.model)
+	hidden := false
+	apiCfg := provider.FindAPIConfigByService(params.config, params.service)
+	if apiCfg != nil {
+		hidden = apiCfg.RootIsHidden
+	}
 	return &CommandGroup{
 		ClassName: rootName,
 		FileName:  rootName,
 		HelpText:  fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
+		Hidden:    hidden,
 		Groups:    make(map[string]*CommandGroup),
 		Commands:  make(map[string]*Command),
 	}
@@ -52,10 +58,18 @@ func newGroup(params *groupParams, methodPath []string) *CommandGroup {
 		helpText = fmt.Sprintf("Manage %s.", toTitleCase(collectionName))
 	}
 
+	hidden := false
+	apiCfg := provider.FindAPIConfigByService(params.config, params.service)
+	if apiCfg != nil {
+		hidden = apiCfg.RootIsHidden
+	}
+
 	return &CommandGroup{
+
 		ClassName: collectionName,
 		FileName:  collectionName,
 		HelpText:  helpText,
+		Hidden:    hidden,
 		Groups:    make(map[string]*CommandGroup),
 		Commands:  make(map[string]*Command),
 	}

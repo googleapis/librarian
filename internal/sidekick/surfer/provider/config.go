@@ -15,6 +15,10 @@
 // Package provider contains configuration types and helpers for surfer tools.
 package provider
 
+import (
+	"github.com/googleapis/librarian/internal/sidekick/api"
+)
+
 //go:generate go run -tags configdocgen ../../../../cmd/config_doc_generate.go -input . -output ../../../../doc/gcloud/gcloud-yaml-schema.md -title "gcloud.yaml"
 
 // Config represents the top-level schema of a gcloud config YAML file.
@@ -294,4 +298,22 @@ func SupportsStarUpdateMasks(c *Config, serviceName, version string) bool {
 		return true
 	}
 	return *apiConfig.SupportsStarUpdateMasks
+}
+
+// FindAPIConfigByService finds the API config that applies to the given service.
+func FindAPIConfigByService(c *Config, service *api.Service) *API {
+	if service == nil {
+		return nil
+	}
+	return c.API(service.Name, apiVersionFromPackage(service.Package))
+}
+
+// FindAPIConfig finds the API config that applies to the given method.
+func FindAPIConfig(c *Config, method *api.Method) *API {
+	if method == nil {
+		return nil
+	}
+	return FindAPIConfigByService(c, method.Service)
+}
+
 }

@@ -38,7 +38,7 @@ func newCommand(method *api.Method, overrides *provider.Config, model *api.API, 
 	useUpdateMask := updateMask(method)
 	return &Command{
 		Name:                 name(method),
-		Hidden:               hidden(overrides),
+		Hidden:               hidden(overrides, method),
 		HelpText:             helpText(overrides, method, model),
 		APIVersion:           apiVersion,
 		Collection:           collectionPath(method, service, false),
@@ -74,8 +74,9 @@ func newWaitCommand(getMethod *api.Method, overrides *provider.Config, model *ap
 
 	return &Command{
 		Name:   "wait",
-		Hidden: hidden(overrides),
+		Hidden: hidden(overrides, getMethod),
 		HelpText: HelpText{
+
 			Brief:       "Wait operations",
 			Description: "Wait an operation",
 			Examples:    "To wait the operation, run:\n\n    $ {command}",
@@ -147,12 +148,12 @@ func async(method *api.Method, model *api.API, service *api.Service) *Async {
 	return async
 }
 
-func hidden(overrides *provider.Config) bool {
-	if overrides != nil && len(overrides.APIs) > 0 {
-		return overrides.APIs[0].RootIsHidden
+func hidden(overrides *provider.Config, method *api.Method) bool {
+	apiCfg := provider.FindAPIConfig(overrides, method)
+	if apiCfg != nil {
+		return apiCfg.RootIsHidden
 	}
-	// Default to hidden if no API overrides are provided.
-	return true
+	return false
 }
 
 func helpText(overrides *provider.Config, method *api.Method, model *api.API) HelpText {

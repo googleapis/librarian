@@ -22,34 +22,78 @@ import (
 )
 
 func TestGroupBuilder_BuildRoot(t *testing.T) {
-	model := &api.API{
-		Name:  "parallelstore",
-		Title: "Parallelstore API",
-		Services: []*api.Service{
-			{
-				Name:        "ParallelstoreService",
-				DefaultHost: "parallelstore.googleapis.com",
+	tests := []struct {
+		name    string
+		config  *provider.Config
+		wantHid bool
+	}{
+		{
+			name:    "default not hidden",
+			config:  &provider.Config{},
+			wantHid: false,
+		},
+		{
+			name: "explicitly hidden",
+			config: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:         "ParallelstoreService",
+						RootIsHidden: true,
+					},
+				},
 			},
+			wantHid: true,
+		},
+		{
+			name: "explicitly not hidden",
+			config: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:         "ParallelstoreService",
+						RootIsHidden: false,
+					},
+				},
+			},
+			wantHid: false,
 		},
 	}
 
-	group := newRootGroup(&groupParams{
-		model:   model,
-		service: model.Services[0],
-		config:  &provider.Config{},
-	})
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			model := &api.API{
+				Name:  "parallelstore",
+				Title: "Parallelstore API",
+				Services: []*api.Service{
+					{
+						Name:        "ParallelstoreService",
+						DefaultHost: "parallelstore.googleapis.com",
+					},
+				},
+			}
 
-	if group.ClassName != "parallelstore" {
-		t.Errorf("group.ClassName = %q, want %q", group.ClassName, "parallelstore")
-	}
+			group := newRootGroup(&groupParams{
+				model:   model,
+				service: model.Services[0],
+				config:  test.config,
+			})
 
-	if group.FileName != "parallelstore" {
-		t.Errorf("group.FileName = %q, want %q", group.FileName, "parallelstore")
-	}
+			if group.ClassName != "parallelstore" {
+				t.Errorf("group.ClassName = %q, want %q", group.ClassName, "parallelstore")
+			}
 
-	wantHelp := "Manage Parallelstore resources."
-	if group.HelpText != wantHelp {
-		t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
+			if group.FileName != "parallelstore" {
+				t.Errorf("group.FileName = %q, want %q", group.FileName, "parallelstore")
+			}
+
+			wantHelp := "Manage Parallelstore resources."
+			if group.HelpText != wantHelp {
+				t.Errorf("group.HelpText = %q, want %q", group.HelpText, wantHelp)
+			}
+
+			if group.Hidden != test.wantHid {
+				t.Errorf("group.Hidden = %v, want %v", group.Hidden, test.wantHid)
+			}
+		})
 	}
 }
 

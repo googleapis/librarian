@@ -17,7 +17,6 @@
 - release_tracks:
     - GA
   auto_generated: true
-  hidden: true
   help_text:
     brief: List PolicyBinding instances.
     description: |
