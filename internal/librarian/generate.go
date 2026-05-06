@@ -332,6 +332,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
+	case config.LanguageGcloud:
+		return gcloud.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
 		return golang.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
@@ -351,6 +353,8 @@ func deriveAPIPath(language string, name string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DeriveAPIPath(name)
+	case config.LanguageGcloud:
+		return gcloud.DeriveAPIPath(name)
 	case config.LanguageRust:
 		return rust.DeriveAPIPath(name)
 	default:
