@@ -18,6 +18,7 @@ package gcloud
 import (
 	"bytes"
 	"embed"
+	"errors"
 	"fmt"
 	"go/format"
 	"os"
@@ -25,31 +26,54 @@ import (
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/googleapis/librarian/internal/sidekick/language"
 )
 
 //go:embed all:templates
 var templates embed.FS
 
-// Generate is the package entry point. It builds the model, renders main.go,
-// writes it, then renders any other generated files via
-// language.GenerateFromModel.
-func Generate(model *api.API, outdir string) error {
-	cliModel := constructCLIModel(model)
-	contents, err := renderMain(cliModel)
+// modulePath is the Go module path used to construct surface package
+// import paths in the generated cmd/gcloud/main.go. The generator does
+// not emit a go.mod today; downstream tooling supplies one.
+const modulePath = "cloud.google.com/go/gcloud"
+
+// Generate writes the gcloud binary tree for the given API models. For
+// each model it emits internal/generated/<name>/commands.go exposing a
+// Command() function, then writes cmd/gcloud/main.go that registers each
+// surface under the gcloud root.
+func Generate(models []*api.API, outdir string) error {
+	if len(models) == 0 {
+		return errors.New("gcloud: Generate requires at least one model")
+	}
+	main := CLIModel{ModulePath: modulePath}
+	for _, model := range models {
+		surface := constructSurfaceModel(model)
+		if err := writeSurface(outdir, surface); err != nil {
+			return err
+		}
+		main.Surfaces = append(main.Surfaces, SurfaceRef{PackageName: surface.PackageName})
+	}
+	return writeMain(outdir, main)
+}
+
+// writeSurface writes internal/generated/<PackageName>/commands.go for a
+// single surface.
+func writeSurface(outdir string, model SurfaceModel) error {
+	contents, err := renderSurface(model)
 	if err != nil {
 		return err
 	}
-	if err := writeMain(outdir, contents); err != nil {
+	dir := filepath.Join(outdir, "internal", "generated", model.PackageName)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return err
 	}
-	return renderReadme(outdir, model)
+	return os.WriteFile(filepath.Join(dir, "commands.go"), []byte(contents), 0o666)
 }
 
-// renderMain renders the main.go contents from the CLI model. The template
-// output is run through go/format so the golden file is gofmt-stable.
-func renderMain(model CLIModel) (string, error) {
-	t, err := template.ParseFS(templates, "templates/package/cli.go.tmpl")
+// renderSurface renders a surface's commands.go from its template. The
+// template output is run through go/format so the golden file is
+// gofmt-stable.
+func renderSurface(model SurfaceModel) (string, error) {
+	t, err := template.ParseFS(templates, "templates/package/surface_commands.go.tmpl")
 	if err != nil {
 		return "", err
 	}
@@ -59,30 +83,38 @@ func renderMain(model CLIModel) (string, error) {
 	}
 	formatted, err := format.Source(buf.Bytes())
 	if err != nil {
-		return "", fmt.Errorf("formatting generated main.go: %w", err)
+		return "", fmt.Errorf("formatting generated %s/commands.go: %w", model.PackageName, err)
 	}
 	return string(formatted), nil
 }
 
-func writeMain(outdir, contents string) error {
-	destination := filepath.Join(outdir, "main.go")
-	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
+// writeMain writes cmd/gcloud/main.go registering every surface.
+func writeMain(outdir string, model CLIModel) error {
+	contents, err := renderMain(model)
+	if err != nil {
 		return err
 	}
-	return os.WriteFile(destination, []byte(contents), 0666)
+	dir := filepath.Join(outdir, "cmd", "gcloud")
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	return os.WriteFile(filepath.Join(dir, "main.go"), []byte(contents), 0o666)
 }
 
-// renderReadme renders README.md via language.GenerateFromModel.
-func renderReadme(outdir string, model *api.API) error {
-	provider := func(name string) (string, error) {
-		contents, err := templates.ReadFile(name)
-		if err != nil {
-			return "", err
-		}
-		return string(contents), nil
+// renderMain renders the cmd/gcloud/main.go contents. The template output
+// is run through go/format so the golden file is gofmt-stable.
+func renderMain(model CLIModel) (string, error) {
+	t, err := template.ParseFS(templates, "templates/package/cmd_gcloud_main.go.tmpl")
+	if err != nil {
+		return "", err
 	}
-	generatedFiles := []language.GeneratedFile{
-		{TemplatePath: "templates/package/README.md.mustache", OutputPath: "README.md"},
+	var buf bytes.Buffer
+	if err := t.Execute(&buf, model); err != nil {
+		return "", err
 	}
-	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+	formatted, err := format.Source(buf.Bytes())
+	if err != nil {
+		return "", fmt.Errorf("formatting generated cmd/gcloud/main.go: %w", err)
+	}
+	return string(formatted), nil
 }

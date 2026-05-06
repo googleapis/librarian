@@ -23,6 +23,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	sidekickgcloud "github.com/googleapis/librarian/internal/sidekick/gcloud"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
@@ -30,9 +31,11 @@ import (
 
 // Generate generates a gcloud command binary for a library.
 //
-// For each API in the library, it parses the protos and service config via
-// the sidekick parser and invokes the sidekick gcloud generator, writing the
-// results to the library's output directory.
+// It parses every API in the library via the sidekick parser into a
+// model, then invokes the sidekick gcloud generator once with the full
+// set so the resulting cmd/gcloud/main.go and internal/generated/<name>
+// surface packages live in a single tree under the library's output
+// directory.
 func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir, err := filepath.Abs(srcs.Googleapis)
 	if err != nil {
@@ -47,26 +50,29 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 	}
 
 	resolvedSrcs := &sources.Sources{Googleapis: googleapisDir}
-	for _, api := range library.APIs {
-		if err := generateAPI(api, resolvedSrcs, googleapisDir, outDir); err != nil {
-			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
+	models := make([]*api.API, 0, len(library.APIs))
+	for _, a := range library.APIs {
+		model, err := buildModel(a, resolvedSrcs, googleapisDir)
+		if err != nil {
+			return fmt.Errorf("failed to build api model %q: %w", a.Path, err)
 		}
+		models = append(models, model)
 	}
-	return nil
+	return sidekickgcloud.Generate(models, outDir)
 }
 
-func generateAPI(api *config.API, srcs *sources.Sources, googleapisDir, outDir string) error {
-	sc, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageGcloud)
+func buildModel(a *config.API, srcs *sources.Sources, googleapisDir string) (*api.API, error) {
+	sc, err := serviceconfig.Find(googleapisDir, a.Path, config.LanguageGcloud)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if sc.ServiceConfig == "" {
-		return fmt.Errorf("no service config found for api %q", api.Path)
+		return nil, fmt.Errorf("no service config found for api %q", a.Path)
 	}
 
 	cfg := &parser.ModelConfig{
 		SpecificationFormat: config.SpecProtobuf,
-		SpecificationSource: api.Path,
+		SpecificationSource: a.Path,
 		ServiceConfig:       sc.ServiceConfig,
 		Source: &sources.SourceConfig{
 			Sources:     srcs,
@@ -76,9 +82,5 @@ func generateAPI(api *config.API, srcs *sources.Sources, googleapisDir, outDir s
 			"copyright-year": "2026",
 		},
 	}
-	model, err := parser.CreateModel(cfg)
-	if err != nil {
-		return err
-	}
-	return sidekickgcloud.Generate(model, outDir)
+	return parser.CreateModel(cfg)
 }
