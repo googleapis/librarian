@@ -278,7 +278,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
-			applyJavaArtifactOverrides(javaAPI)
+			applyJavaArtifactOverrides(javaAPI, name)
 			applyJavaProtoOverrides(javaAPI)
 
 			if name == "storage" && g.ProtoPath == "google/storage/v2" {
@@ -445,8 +445,12 @@ func parseArtifactID(distributionName, name string) string {
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
 // they don't follow the standard pattern.
-func applyJavaArtifactOverrides(api *config.JavaAPI) {
-	if override, ok := javaArtifactIDOverrides[api.Path]; ok {
+func applyJavaArtifactOverrides(api *config.JavaAPI, libraryName string) {
+	override, ok := javaArtifactIDOverrides[overrideKey{libraryName: libraryName, apiPath: api.Path}]
+	if !ok {
+		override, ok = javaArtifactIDOverrides[overrideKey{apiPath: api.Path}]
+	}
+	if ok {
 		if override.protoArtifactID != "" {
 			api.ProtoArtifactIDOverride = override.protoArtifactID
 		}

@@ -14,6 +14,11 @@
 
 package main
 
+type overrideKey struct {
+	libraryName string
+	apiPath     string
+}
+
 var (
 	excludedSamplesLibraries = map[string]bool{
 		"bigquerystorage":   true,
@@ -64,94 +69,114 @@ var (
 		},
 	}
 
-	javaArtifactIDOverrides = map[string]javaArtifactOverrides{
-		"google/datastore/admin/v1": {
+	javaArtifactIDOverrides = map[overrideKey]javaArtifactOverrides{
+		{apiPath: "google/datastore/admin/v1"}: {
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
 		},
-		"google/api": {
+		{apiPath: "google/api"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/apps/card/v1": {
+		{apiPath: "google/apps/card/v1"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/apps/script/type": {
+		{apiPath: "google/apps/script/type"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/apps/script/type/docs": {
+		{apiPath: "google/apps/script/type/docs"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/apps/script/type/drive": {
+		{apiPath: "google/apps/script/type/drive"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/apps/script/type/gmail": {
+		{apiPath: "google/apps/script/type/gmail"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/apps/script/type/sheets": {
+		{apiPath: "google/apps/script/type/sheets"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/apps/script/type/slides": {
+		{apiPath: "google/apps/script/type/slides"}: {
 			protoArtifactID: "proto-google-apps-script-type-protos",
 		},
-		"google/cloud": {
+		{libraryName: "iam", apiPath: "google/iam/v1"}: {
+			protoArtifactID: "proto-google-iam-v1",
+			grpcArtifactID:  "grpc-google-iam-v1",
+		},
+		{libraryName: "iam", apiPath: "google/iam/v2"}: {
+			protoArtifactID: "proto-google-iam-v2",
+			grpcArtifactID:  "grpc-google-iam-v2",
+		},
+		{libraryName: "iam", apiPath: "google/iam/v3"}: {
+			protoArtifactID: "proto-google-iam-v3",
+			grpcArtifactID:  "grpc-google-iam-v3",
+		},
+		{libraryName: "iam", apiPath: "google/iam/v2beta"}: {
+			protoArtifactID: "proto-google-iam-v2beta",
+			grpcArtifactID:  "grpc-google-iam-v2beta",
+		},
+		{libraryName: "iam", apiPath: "google/iam/v3beta"}: {
+			protoArtifactID: "proto-google-iam-v3beta",
+			grpcArtifactID:  "grpc-google-iam-v3beta",
+		},
+		{apiPath: "google/cloud"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/cloud/audit": {
+		{apiPath: "google/cloud/audit"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/cloud/location": {
+		{apiPath: "google/cloud/location"}: {
 			protoArtifactID: "proto-google-common-protos",
 			grpcArtifactID:  "grpc-google-common-protos",
 		},
-		"google/geo/type": {
+		{apiPath: "google/geo/type"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/logging/type": {
+		{apiPath: "google/logging/type"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/longrunning": {
+		{apiPath: "google/longrunning"}: {
 			protoArtifactID: "proto-google-common-protos",
 			grpcArtifactID:  "grpc-google-common-protos",
 		},
-		"google/rpc": {
+		{apiPath: "google/rpc"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/rpc/context": {
+		{apiPath: "google/rpc/context"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/shopping/type": {
+		{apiPath: "google/shopping/type"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/type": {
+		{apiPath: "google/type"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
-		"google/spanner/admin/database/v1": {
+		{apiPath: "google/spanner/admin/database/v1"}: {
 			protoArtifactID: "proto-google-cloud-spanner-admin-database-v1",
 			grpcArtifactID:  "grpc-google-cloud-spanner-admin-database-v1",
 		},
-		"google/spanner/admin/instance/v1": {
+		{apiPath: "google/spanner/admin/instance/v1"}: {
 			protoArtifactID: "proto-google-cloud-spanner-admin-instance-v1",
 			grpcArtifactID:  "grpc-google-cloud-spanner-admin-instance-v1",
 		},
-		"google/spanner/executor/v1": {
+		{apiPath: "google/spanner/executor/v1"}: {
 			protoArtifactID: "proto-google-cloud-spanner-executor-v1",
 			grpcArtifactID:  "grpc-google-cloud-spanner-executor-v1",
 		},
-		"google/devtools/clouderrorreporting/v1beta1": {
+		{apiPath: "google/devtools/clouderrorreporting/v1beta1"}: {
 			protoArtifactID: "proto-google-cloud-error-reporting-v1beta1",
 			grpcArtifactID:  "grpc-google-cloud-error-reporting-v1beta1",
 		},
-		"google/storage/v2": {
+		{apiPath: "google/storage/v2"}: {
 			protoArtifactID: "proto-google-cloud-storage-v2",
 			grpcArtifactID:  "grpc-google-cloud-storage-v2",
 			gapicArtifactID: "gapic-google-cloud-storage-v2",
 		},
-		"google/storage/control/v2": {
+		{apiPath: "google/storage/control/v2"}: {
 			protoArtifactID: "proto-google-cloud-storage-control-v2",
 			grpcArtifactID:  "grpc-google-cloud-storage-control-v2",
 			gapicArtifactID: "google-cloud-storage-control",
 		},
-		"schema/google/showcase/v1beta1": {
+		{apiPath: "schema/google/showcase/v1beta1"}: {
 			protoArtifactID: "proto-gapic-showcase-v1beta1",
 			grpcArtifactID:  "grpc-gapic-showcase-v1beta1",
 		},

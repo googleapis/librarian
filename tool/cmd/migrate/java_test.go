@@ -104,6 +104,69 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 	}
 }
 
+func TestApplyJavaArtifactOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		path        string
+		want        *config.JavaAPI
+	}{
+		{
+			name:        "iam v1 overrides",
+			libraryName: "iam",
+			path:        "google/iam/v1",
+			want: &config.JavaAPI{
+				Path:                    "google/iam/v1",
+				ProtoArtifactIDOverride: "proto-google-iam-v1",
+				GRPCArtifactIDOverride:  "grpc-google-iam-v1",
+			},
+		},
+		{
+			name:        "iam v2 overrides",
+			libraryName: "iam",
+			path:        "google/iam/v2",
+			want: &config.JavaAPI{
+				Path:                    "google/iam/v2",
+				ProtoArtifactIDOverride: "proto-google-iam-v2",
+				GRPCArtifactIDOverride:  "grpc-google-iam-v2",
+			},
+		},
+		{
+			name:        "iam-policy v1 no overrides",
+			libraryName: "iam-policy",
+			path:        "google/iam/v1",
+			want: &config.JavaAPI{
+				Path: "google/iam/v1",
+			},
+		},
+		{
+			name:        "iam-policy v2 no overrides",
+			libraryName: "iam-policy",
+			path:        "google/iam/v2",
+			want: &config.JavaAPI{
+				Path: "google/iam/v2",
+			},
+		},
+		{
+			name:        "global override applies to any library",
+			libraryName: "any-library",
+			path:        "google/api",
+			want: &config.JavaAPI{
+				Path:                    "google/api",
+				ProtoArtifactIDOverride: "proto-google-common-protos",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := &config.JavaAPI{Path: test.path}
+			applyJavaArtifactOverrides(got, test.libraryName)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestApplyJavaLibraryOverrides(t *testing.T) {
 	for _, test := range []struct {
 		name string
