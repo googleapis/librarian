@@ -928,16 +928,16 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 		t.Fatalf("removeKeptFilesFromStaging failed: %v", err)
 	}
 
-	if _, err := os.Stat(keptFile); !os.IsNotExist(err) {
+	if _, err := os.Stat(keptFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected kept file %s to be removed from staging, but it exists", keptFile)
 	}
-	if _, err := os.Stat(versionFile); !os.IsNotExist(err) {
+	if _, err := os.Stat(keptFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected version file %s to be removed from staging due to regex match, but it exists", versionFile)
 	}
 	if _, err := os.Stat(regularFile); err != nil {
 		t.Errorf("expected regular file %s to remain in staging, but got error: %v", regularFile, err)
 	}
-	if _, err := os.Stat(keptDirFile); !os.IsNotExist(err) {
+	if _, err := os.Stat(keptDirFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected file inside kept dir %s to be removed from staging, but it exists", keptDirFile)
 	}
 }
