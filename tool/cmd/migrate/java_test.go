@@ -1530,3 +1530,63 @@ func TestInsertMarkers_Full(t *testing.T) {
 		t.Error("bom pom missing dependency markers")
 	}
 }
+
+func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		apiPath     string
+		wantGAPIC   *bool
+		wantProto   *bool
+		wantResName *bool
+	}{
+		{
+			name:        "iam v2 special override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(false),
+			wantProto:   new(true),
+			wantResName: new(true),
+		},
+		{
+			name:        "iam-policy v2 special override",
+			libraryName: "iam-policy",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(true),
+			wantProto:   new(false),
+			wantResName: new(false),
+		},
+		{
+			name:        "iam non-special path no override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v1",
+			wantGAPIC:   nil,
+			wantProto:   nil,
+			wantResName: nil,
+		},
+		{
+			name:        "other library no override",
+			libraryName: "secretmanager",
+			apiPath:     "google/iam/v3",
+			wantGAPIC:   nil,
+			wantProto:   nil,
+			wantResName: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			api := &config.JavaAPI{
+				Path: test.apiPath,
+			}
+			applyJavaIAMSpecialOverrides(test.libraryName, api)
+			if diff := cmp.Diff(test.wantGAPIC, api.GenerateGAPIC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantProto, api.GenerateProtoGRPC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantResName, api.GenerateResourceNames); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

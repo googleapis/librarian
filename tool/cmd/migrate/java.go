@@ -281,7 +281,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			}
 			applyJavaArtifactOverrides(javaAPI)
 			applyJavaProtoOverrides(javaAPI)
-			applyJavaAPISpecialOverrides(name, javaAPI)
+			applyJavaIAMSpecialOverrides(name, javaAPI)
 
 			if name == "storage" && g.ProtoPath == "google/storage/v2" {
 				javaAPI.CopyFiles = []*config.JavaFileCopy{
@@ -806,7 +806,7 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 	return string(match[1]), nil
 }
 
-func applyJavaAPISpecialOverrides(libraryName string, api *config.JavaAPI) {
+func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
 	explicitPaths := []string{
 		"google/iam/v2",
 		"google/iam/v2beta",
@@ -816,7 +816,6 @@ func applyJavaAPISpecialOverrides(libraryName string, api *config.JavaAPI) {
 	if !slices.Contains(explicitPaths, api.Path) {
 		return
 	}
-
 	if libraryName == "iam" {
 		api.GenerateGAPIC = new(false)
 		api.GenerateProtoGRPC = new(true)
