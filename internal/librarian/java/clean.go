@@ -171,7 +171,7 @@ func shouldCleanMarkerPath(path string, d os.DirEntry) (bool, error) {
 // hasMarker checks if the file at path contains the auto-generated marker.
 // It scans the file line by line using [bufio.Reader] and returns true as soon
 // as the marker is found, avoiding reading the entire file.
-func hasMarker(path string) (found bool, err error) {
+func hasMarker(path string) (bool, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return false, err
