@@ -52,9 +52,9 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 		},
 	}
 
-	root, err := buildSurface(model, config)
+	root, err := newSurface(model, config)
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -78,9 +78,9 @@ func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(false)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(false)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -98,9 +98,9 @@ func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -123,9 +123,9 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -169,9 +169,9 @@ func TestSurfaceBuilder_Build_HelpTextOverride(t *testing.T) {
 		},
 	}
 
-	root, err := buildSurface(model, config)
+	root, err := newSurface(model, config)
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	instancesGroup, ok := root.Root.Groups["instances"]
@@ -255,7 +255,7 @@ func TestSurfaceBuilder_Build_SynthesizeWaitCommand(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}
@@ -274,7 +274,7 @@ func TestSurfaceBuilder_Build_SynthesizeWaitCommand(t *testing.T) {
 func TestSurfaceBuilder_Build_SynthesizeWaitCommand_Warning(t *testing.T) {
 	opMethod := mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}")
 	opMethod.SourceServiceID = ".google.longrunning.Operations"
-	// Do not add the "name" field to opMethod.InputType.Fields so buildWaitCommand fails.
+	// Do not add the "name" field to opMethod.InputType.Fields so newWaitCommand fails.
 	service := mockService("parallelstore.googleapis.com", opMethod)
 
 	model := &api.API{
@@ -290,7 +290,7 @@ func TestSurfaceBuilder_Build_SynthesizeWaitCommand_Warning(t *testing.T) {
 	slog.SetDefault(slog.New(h))
 	defer slog.SetDefault(oldLogger)
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
 		t.Fatalf("build() failed: %v", err)
 	}

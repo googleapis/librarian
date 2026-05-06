@@ -467,9 +467,9 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := buildCommand(test.method, test.overrides, model, service)
+			got, err := newCommand(test.method, test.overrides, model, service)
 			if err != nil {
-				t.Fatalf("buildCommand() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 
 			opts := cmpopts.IgnoreFields(Command{}, "Arguments", "Collection", "Method", "HelpText")
@@ -488,9 +488,9 @@ func TestNewCommand_Error(t *testing.T) {
 	service.DefaultHost = "test.googleapis.com"
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
-	_, err := buildCommand(m, &provider.Config{}, model, service)
+	_, err := newCommand(m, &provider.Config{}, model, service)
 	if err == nil {
-		t.Errorf("build() expected error for nil Service, got nil")
+		t.Errorf("newCommand() expected error for nil Service, got nil")
 	}
 }
 
@@ -823,7 +823,7 @@ func TestCommandBuilderNewArgumentsResourceError(t *testing.T) {
 	}
 }
 
-func TestBuildWaitCommand(t *testing.T) {
+func TestNewWaitCommand(t *testing.T) {
 	service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 	service.DefaultHost = "test.googleapis.com"
 
@@ -857,9 +857,9 @@ func TestBuildWaitCommand(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 	m.Model = model
 
-	got, err := buildWaitCommand(m, &provider.Config{}, model, service)
+	got, err := newWaitCommand(m, &provider.Config{}, model, service)
 	if err != nil {
-		t.Fatalf("buildWaitCommand() unexpected error: %v", err)
+		t.Fatalf("newWaitCommand() unexpected error: %v", err)
 	}
 
 	want := &Command{
@@ -883,22 +883,22 @@ func TestBuildWaitCommand(t *testing.T) {
 	}
 
 	if got.Name != want.Name {
-		t.Errorf("buildWaitCommand().Name = %q, want %q", got.Name, want.Name)
+		t.Errorf("newWaitCommand().Name = %q, want %q", got.Name, want.Name)
 	}
 	if got.APIVersion != want.APIVersion {
-		t.Errorf("buildWaitCommand().APIVersion = %q, want %q", got.APIVersion, want.APIVersion)
+		t.Errorf("newWaitCommand().APIVersion = %q, want %q", got.APIVersion, want.APIVersion)
 	}
 	if diff := cmp.Diff(want.HelpText, got.HelpText); diff != "" {
-		t.Errorf("buildWaitCommand().HelpText mismatch (-want +got):\n%s", diff)
+		t.Errorf("newWaitCommand().HelpText mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(want.Collection, got.Collection); diff != "" {
-		t.Errorf("buildWaitCommand().Collection mismatch (-want +got):\n%s", diff)
+		t.Errorf("newWaitCommand().Collection mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(want.Async, got.Async); diff != "" {
-		t.Errorf("buildWaitCommand().Async mismatch (-want +got):\n%s", diff)
+		t.Errorf("newWaitCommand().Async mismatch (-want +got):\n%s", diff)
 	}
 	if len(got.Arguments) == 0 || got.Arguments[0].HelpText != want.Arguments[0].HelpText {
-		t.Errorf("buildWaitCommand().Arguments[0].HelpText = %q, want %q",
+		t.Errorf("newWaitCommand().Arguments[0].HelpText = %q, want %q",
 			func() string {
 				if len(got.Arguments) > 0 {
 					return got.Arguments[0].HelpText
@@ -909,7 +909,7 @@ func TestBuildWaitCommand(t *testing.T) {
 	}
 }
 
-func TestBuildWaitCommand_Error(t *testing.T) {
+func TestNewWaitCommand_Error(t *testing.T) {
 	service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
 	service.DefaultHost = "test.googleapis.com"
 
@@ -941,11 +941,11 @@ func TestBuildWaitCommand_Error(t *testing.T) {
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 	m.Model = model
 
-	_, err := buildWaitCommand(m, &provider.Config{}, model, service)
+	_, err := newWaitCommand(m, &provider.Config{}, model, service)
 	if err == nil {
-		t.Fatal("buildWaitCommand() expected error, got nil")
+		t.Fatal("newWaitCommand() expected error, got nil")
 	}
 	if !strings.Contains(err.Error(), "missing positional resource argument for wait command") {
-		t.Errorf("buildWaitCommand() error = %q, want error containing %q", err, "missing positional resource argument for wait command")
+		t.Errorf("newWaitCommand() error = %q, want error containing %q", err, "missing positional resource argument for wait command")
 	}
 }

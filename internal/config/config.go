@@ -295,6 +295,9 @@ type Library struct {
 	// Dotnet contains .NET-specific library configuration.
 	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
 
+	// Gcloud contains gcloud-specific library configuration.
+	Gcloud *GcloudCommand `yaml:"gcloud,omitempty"`
+
 	// Go contains Go-specific library configuration.
 	Go *GoModule `yaml:"go,omitempty"`
 

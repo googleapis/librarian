@@ -124,7 +124,7 @@ func TestConstructSurfaceModel(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := constructSurfaceModel(test.model)
+			got := constructSurfaceModel(test.model, "")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

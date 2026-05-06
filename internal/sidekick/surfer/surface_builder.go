@@ -21,7 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
 
-func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
+func newSurface(model *api.API, config *provider.Config) (*Surface, error) {
 	var root *CommandGroup
 	providerTracks := provider.Tracks(provider.APIVersionFromModel(model))
 	var tracks []ReleaseTrack
@@ -37,7 +37,7 @@ func buildSurface(model *api.API, config *provider.Config) (*Surface, error) {
 		}
 
 		if root == nil {
-			root = buildRootGroup(params)
+			root = newRootGroup(params)
 		}
 
 		for _, method := range service.Methods {
@@ -79,12 +79,12 @@ func insert(root *CommandGroup, params *groupParams, method *api.Method) error {
 		}
 
 		if curr.Groups[seg] == nil {
-			curr.Groups[seg] = buildGroup(params, segments[:i+1])
+			curr.Groups[seg] = newGroup(params, segments[:i+1])
 		}
 		curr = curr.Groups[seg]
 	}
 
-	cmd, err := buildCommand(method, params.config, params.model, params.service)
+	cmd, err := newCommand(method, params.config, params.model, params.service)
 	if err != nil {
 		return err
 	}
@@ -93,7 +93,7 @@ func insert(root *CommandGroup, params *groupParams, method *api.Method) error {
 
 	// Synthesize a 'wait' command for operations.
 	if provider.IsOperationsServiceMethod(method) && method.Name == provider.GetOperation {
-		waitCmd, err := buildWaitCommand(method, params.config, params.model, params.service)
+		waitCmd, err := newWaitCommand(method, params.config, params.model, params.service)
 		if err != nil {
 			slog.Warn("failed to build wait command for operations", "method", method.ID, "error", err)
 		} else {

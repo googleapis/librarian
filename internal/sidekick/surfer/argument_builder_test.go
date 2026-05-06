@@ -157,7 +157,7 @@ func TestNewArgument(t *testing.T) {
 			if overrides == nil {
 				overrides = &provider.Config{}
 			}
-			got, err := buildArgument(&argumentParams{
+			got, err := newArgument(&argumentParams{
 				method:    test.method,
 				overrides: overrides,
 				model:     model,
@@ -538,7 +538,7 @@ func TestNewPrimaryResourceArgument(t *testing.T) {
 			if provider.IsCreate(test.method) {
 				idField = test.field
 			}
-			got := buildPrimaryResourceArgument(&argumentParams{
+			got := newPrimaryResourceArgument(&argumentParams{
 				method:  test.method,
 				model:   model,
 				service: service,
@@ -592,7 +592,7 @@ func TestArgumentBuilder_Build(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			got, err := buildArgument(&argumentParams{
+			got, err := newArgument(&argumentParams{
 				method:    createMethod,
 				overrides: &provider.Config{},
 				model:     model,

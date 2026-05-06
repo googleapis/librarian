@@ -94,7 +94,7 @@ type Subgroup struct {
 // from the given API model. The returned model's PackageName matches the
 // API's short name (e.g. "parallelstore"), which is also used as the
 // directory name under internal/generated/.
-func constructSurfaceModel(model *api.API) SurfaceModel {
+func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel {
 	rootGroup := Group{
 		Name:  model.Name,
 		Usage: fmt.Sprintf("manage %s resources", model.Title),
@@ -102,7 +102,7 @@ func constructSurfaceModel(model *api.API) SurfaceModel {
 
 	var (
 		imports       []Import
-		goClient      = goClientPackage(model.PackageName)
+		goClient      = goClientPackage(model.PackageName, clientImportPath)
 		hasClientCall = false
 		subgroups     = make(map[string]*Subgroup)
 	)

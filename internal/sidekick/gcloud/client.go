@@ -43,8 +43,12 @@ type goClientInfo struct {
 // to its Go client (apiv1) and proto-Go (apiv1/parallelstorepb) packages.
 // It returns nil when the proto package does not have the shape
 // google.cloud.<short>.v<N>. Beta and alpha suffixes (e.g. v1beta1) are
-// intentionally excluded for now.
-func goClientPackage(protoPkg string) *goClientInfo {
+// intentionally excluded for now. If clientImportPath is non-empty it
+// overrides the proto-derived path.
+func goClientPackage(protoPkg, clientImportPath string) *goClientInfo {
+	if clientImportPath != "" {
+		return clientInfoFromPath(clientImportPath)
+	}
 	rest, ok := strings.CutPrefix(protoPkg, "google.cloud.")
 	if !ok {
 		return nil
@@ -57,6 +61,36 @@ func goClientPackage(protoPkg string) *goClientInfo {
 		Alias:      short,
 		ClientPath: fmt.Sprintf("cloud.google.com/go/%s/api%s", short, version),
 		PbPath:     fmt.Sprintf("cloud.google.com/go/%s/api%s/%spb", short, version, short),
+	}
+}
+
+// clientInfoFromPath derives a goClientInfo from an explicit GAPIC Go client
+// import path. It returns nil when the path's final segment is not an
+// "api<version>" segment or when no usable alias can be found.
+func clientInfoFromPath(clientImportPath string) *goClientInfo {
+	segments := strings.Split(clientImportPath, "/")
+	last := segments[len(segments)-1]
+	if !strings.HasPrefix(last, "api") || len(last) == len("api") {
+		return nil
+	}
+
+	var alias string
+	for i := len(segments) - 2; i >= 0; i-- {
+		s := segments[i]
+		// Skip any segment that looks like a version (e.g., v1, v2, v1beta1).
+		if strings.HasPrefix(s, "v") && len(s) > 1 && s[1] >= '0' && s[1] <= '9' {
+			continue
+		}
+		alias = s
+		break
+	}
+	if !isLowerAlphanum(alias) {
+		return nil
+	}
+	return &goClientInfo{
+		Alias:      alias,
+		ClientPath: clientImportPath,
+		PbPath:     clientImportPath + "/" + alias + "pb",
 	}
 }
 

@@ -34,9 +34,9 @@ type argumentParams struct {
 	apiField  []string
 }
 
-// buildArgument creates a single command-line argument (an `Argument` struct) from the parameters.
+// newArgument creates a single command-line argument (an `Argument` struct) from the parameters.
 // It returns nil if the field should be ignored.
-func buildArgument(ap *argumentParams) (*Argument, error) {
+func newArgument(ap *argumentParams) (*Argument, error) {
 	if isArgIgnored(ap.field, ap.method) {
 		return nil, nil
 	}
@@ -129,9 +129,9 @@ func mapSpec() []ArgSpec {
 	return []ArgSpec{{APIField: "key"}, {APIField: "value"}}
 }
 
-// buildPrimaryResourceArgument creates the main positional resource argument for a command.
+// newPrimaryResourceArgument creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func buildPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argument {
+func newPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argument {
 	resource := provider.GetResourceForMethod(ap.method, ap.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
