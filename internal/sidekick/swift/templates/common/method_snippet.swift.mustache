@@ -22,14 +22,25 @@ limitations under the License.
 {{/Codec.Model.BoilerPlate}}
 
 // snippet.show
+{{#Service.Codec.Model.MessageImports}}
+import {{.}}
+{{/Service.Codec.Model.MessageImports}}
 import {{Service.Codec.PackageName}}
 import Foundation
 
 func sample(client: {{Service.Codec.Name}}) async throws {
+    {{^ReturnsEmpty}}
     let response = try await client.{{Codec.Name}}(
         request: {{InputType.Codec.Name}}(/* set fields */)
     )
     print("Success: \(response)")
+    {{/ReturnsEmpty}}
+    {{#ReturnsEmpty}}
+    try await client.{{Codec.Name}}(
+        request: {{InputType.Codec.Name}}(/* set fields */)
+    )
+    print("Success (no response expected)")
+    {{/ReturnsEmpty}}
 }
 // snippet.hide
 
@@ -38,7 +49,7 @@ struct SnippetRunner {
     static func main() async throws {
         do {
             let client = try {{Service.Codec.Name}}()
-            try await sample(client)
+            try await sample(client: client)
         } catch {
             print("Error: \(error)")
         }

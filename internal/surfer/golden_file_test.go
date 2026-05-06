@@ -93,6 +93,7 @@ func TestGolden(t *testing.T) {
 		{name: "hidden_feature"},
 		{name: "method_async"},
 		{name: "method_custom"},
+		{name: "method_locations"},
 		{name: "method_minimal_list"},
 		{name: "method_operations"},
 		{name: "method_output_format"},

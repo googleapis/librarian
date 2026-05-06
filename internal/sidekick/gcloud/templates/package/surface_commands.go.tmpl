@@ -13,51 +13,38 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 */ -}}
-package main
+package {{.PackageName}}
 
 import (
 	"context"
 	"fmt"
-	"os"
 
-{{range .Imports}}	{{if .Alias}}{{.Alias}} {{end}}"{{.Path}}"
+{{if .Imports}}{{range .Imports}}	{{if .Alias}}{{.Alias}} {{end}}"{{.Path}}"
+{{end}}	"google.golang.org/protobuf/encoding/protojson"
 {{end}}	"github.com/urfave/cli/v3"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func main() {
-	app := &cli.Command{
-		Name:  "gcloud",
-		Usage: "Google Cloud CLI",
+// Command returns the {{.PackageName}} command tree for inclusion under the gcloud root.
+func Command() *cli.Command {
+	return &cli.Command{
+		Name:  "{{.Group.Name}}",
+		Usage: "{{.Group.Usage}}",
 		Commands: []*cli.Command{
-			{{- range .Groups}}
+			{{- range .Group.Subgroups}}
 			{
 				Name:  "{{.Name}}",
 				Usage: "{{.Usage}}",
 				Commands: []*cli.Command{
-					{{- range .Subgroups}}
-					{
-						Name:  "{{.Name}}",
-						Usage: "{{.Usage}}",
-						Commands: []*cli.Command{
-							{{- range .Commands}}
-							{{template "command" .}},
-							{{- end}}
-						},
-					},
-					{{- end}}
 					{{- range .Commands}}
 					{{template "command" .}},
 					{{- end}}
 				},
 			},
 			{{- end}}
+			{{- range .Group.Commands}}
+			{{template "command" .}},
+			{{- end}}
 		},
-	}
-
-	if err := app.Run(context.Background(), os.Args); err != nil {
-		fmt.Fprintf(os.Stderr, "error: %v\n", err)
-		os.Exit(1)
 	}
 }
 

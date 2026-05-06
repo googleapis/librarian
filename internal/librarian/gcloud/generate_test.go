@@ -29,31 +29,27 @@ const testGoogleapisDir = "../../testdata/googleapis"
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-	}{
-		{
-			name: "parallelstore",
-			library: &config.Library{
-				Name: "parallelstore",
-				APIs: []*config.API{{Path: "google/cloud/parallelstore/v1"}},
-			},
+	out := t.TempDir()
+	library := &config.Library{
+		Name:   "gcloud",
+		Output: out,
+		APIs: []*config.API{
+			{Path: "google/cloud/parallelstore/v1"},
+			{Path: "google/cloud/security/publicca/v1"},
 		},
+	}
+	if err := Generate(t.Context(), library,
+		&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		filepath.Join("cmd", "gcloud", "main.go"),
+		filepath.Join("internal", "generated", "parallelstore", "commands.go"),
+		filepath.Join("internal", "generated", "publicca", "commands.go"),
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			out := t.TempDir()
-			test.library.Output = out
-			if err := Generate(t.Context(), test.library,
-				&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
-				t.Fatal(err)
-			}
-			for _, name := range []string{"main.go", "README.md"} {
-				if _, err := os.Stat(filepath.Join(out, name)); err != nil {
-					t.Fatal(err)
-				}
-			}
-		})
+		if _, err := os.Stat(filepath.Join(out, name)); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 

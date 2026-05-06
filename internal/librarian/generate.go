@@ -232,11 +232,14 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageGo:
-		goCmd := golang.GoCommand(cfg.Tools)
+		var toolchain string
+		if cfg.Default != nil && cfg.Default.Go != nil {
+			toolchain = cfg.Default.Go.Toolchain
+		}
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Generate(gctx, library, src, goCmd); err != nil {
+				if err := golang.Generate(gctx, library, src, toolchain); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
@@ -329,6 +332,8 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
+	case config.LanguageGcloud:
+		return gcloud.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
 		return golang.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
@@ -348,6 +353,8 @@ func deriveAPIPath(language string, name string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DeriveAPIPath(name)
+	case config.LanguageGcloud:
+		return gcloud.DeriveAPIPath(name)
 	case config.LanguageRust:
 		return rust.DeriveAPIPath(name)
 	default:

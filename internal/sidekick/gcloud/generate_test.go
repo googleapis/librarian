@@ -15,6 +15,7 @@
 package gcloud
 
 import (
+	stdflag "flag"
 	"os"
 	"path/filepath"
 	"strings"
@@ -27,6 +28,13 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
+
+// update refreshes testdata goldens in place when set. Run as
+// `go test ./internal/sidekick/gcloud -update -run TestGenerate`.
+//
+// The "flag" package is aliased because the surrounding gcloud package
+// already exports an unrelated helper named flag().
+var update = stdflag.Bool("update", false, "update golden files")
 
 func TestFromProtobuf(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
@@ -54,19 +62,16 @@ func TestFromProtobuf(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := Generate(model, outDir); err != nil {
+	if err := Generate([]*api.API{model}, outDir); err != nil {
 		t.Fatal(err)
 	}
-	filename := filepath.Join(outDir, "README.md")
-	if _, err := os.Stat(filename); err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("missing %s: %s", filename, err)
-		}
-		t.Fatal(err)
+	mainFile := filepath.Join(outDir, "cmd", "gcloud", "main.go")
+	if _, err := os.Stat(mainFile); err != nil {
+		t.Fatalf("missing %s: %s", mainFile, err)
 	}
 }
 
-func TestParallelstore(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testdataDir, err := filepath.Abs("../../testdata")
 	if err != nil {
@@ -74,52 +79,124 @@ func TestParallelstore(t *testing.T) {
 	}
 	outDir := t.TempDir()
 
-	cfg := &parser.ModelConfig{
-		SpecificationFormat: config.SpecProtobuf,
-		ServiceConfig:       "google/cloud/parallelstore/v1/service.yaml",
-		SpecificationSource: "google/cloud/parallelstore/v1",
-		Source: &sources.SourceConfig{
-			Sources: &sources.Sources{
-				Googleapis: filepath.Join(testdataDir, "googleapis"),
+	makeModel := func(serviceConfig, source string) *api.API {
+		t.Helper()
+		cfg := &parser.ModelConfig{
+			SpecificationFormat: config.SpecProtobuf,
+			ServiceConfig:       serviceConfig,
+			SpecificationSource: source,
+			Source: &sources.SourceConfig{
+				Sources: &sources.Sources{
+					Googleapis: filepath.Join(testdataDir, "googleapis"),
+				},
+				ActiveRoots: []string{"googleapis"},
 			},
-			ActiveRoots: []string{"googleapis"},
-		},
-		Codec: map[string]string{
-			"copyright-year": "2026",
-		},
+			Codec: map[string]string{
+				"copyright-year": "2026",
+			},
+		}
+		m, err := parser.CreateModel(cfg)
+		if err != nil {
+			t.Fatal(err)
+		}
+		return m
 	}
-	model, err := parser.CreateModel(cfg)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := Generate(model, outDir); err != nil {
+
+	parallelstoreModel := makeModel("google/cloud/parallelstore/v1/service.yaml", "google/cloud/parallelstore/v1")
+	publiccaModel := makeModel("google/cloud/security/publicca/v1/publicca_v1.yaml", "google/cloud/security/publicca/v1")
+
+	if err := Generate([]*api.API{parallelstoreModel, publiccaModel}, outDir); err != nil {
 		t.Fatal(err)
 	}
 
-	mainFile := filepath.Join(outDir, "main.go")
-	gotMain, err := os.ReadFile(mainFile)
-	if err != nil {
-		t.Fatal(err)
+	for _, rel := range []string{
+		filepath.Join("cmd", "gcloud", "main.go"),
+		filepath.Join("internal", "generated", "parallelstore", "commands.go"),
+		filepath.Join("internal", "generated", "publicca", "commands.go"),
+	} {
+		t.Run(rel, func(t *testing.T) {
+			got, err := os.ReadFile(filepath.Join(outDir, rel))
+			if err != nil {
+				t.Fatal(err)
+			}
+			goldenPath := filepath.Join("testdata", rel+".golden")
+			if *update {
+				if err := os.MkdirAll(filepath.Dir(goldenPath), 0o755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(goldenPath, got, 0o666); err != nil {
+					t.Fatal(err)
+				}
+				return
+			}
+			want, err := os.ReadFile(goldenPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(string(want), string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s\n\nHint: run 'go test ./internal/sidekick/gcloud -update -run TestGenerate' to refresh goldens.", diff)
+			}
+		})
 	}
-	wantMain, err := os.ReadFile(filepath.Join("testdata", "parallelstore", "main.go.golden"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(string(wantMain), string(gotMain)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+}
 
-	readmeFile := filepath.Join(outDir, "README.md")
-	gotReadme, err := os.ReadFile(readmeFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantReadme, err := os.ReadFile(filepath.Join("testdata", "parallelstore", "README.md.golden"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(string(wantReadme), string(gotReadme)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+func TestRenderSurface(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		model SurfaceModel
+		wants []string
+	}{
+		{
+			name: "empty",
+			model: SurfaceModel{
+				PackageName: "parallelstore",
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore API resources",
+				},
+			},
+			wants: []string{
+				"package parallelstore",
+				`"parallelstore"`,
+				`"manage Parallelstore API resources"`,
+				"func Command() *cli.Command",
+			},
+		},
+		{
+			name: "subgroup with command",
+			model: SurfaceModel{
+				PackageName: "parallelstore",
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore API resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "Manage instances resources",
+						Commands: []Command{{
+							Name:  "list",
+							Usage: "list instances",
+						}},
+					}},
+				},
+			},
+			wants: []string{
+				`Name:  "instances"`,
+				`Name:  "list"`,
+				`fmt.Println("Executing list...")`,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := renderSurface(test.model)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, want := range test.wants {
+				if !strings.Contains(got, want) {
+					t.Errorf("rendered output missing %q\n%s", want, got)
+				}
+			}
+		})
 	}
 }
 
@@ -130,55 +207,30 @@ func TestRenderMain(t *testing.T) {
 		wants []string
 	}{
 		{
-			name: "empty",
+			name: "no surfaces",
 			model: CLIModel{
-				Groups: []Group{{
-					Name:  "gcloud",
-					Usage: "Google Cloud CLI",
-				}},
+				ModulePath: "cloud.google.com/go/gcloud",
 			},
 			wants: []string{
-				`Name:  "gcloud"`,
-				`Usage: "Google Cloud CLI"`,
+				"package main",
+				`"gcloud"`,
+				`"Google Cloud CLI"`,
 			},
 		},
 		{
-			name: "subgroup with command",
+			name: "two surfaces",
 			model: CLIModel{
-				Groups: []Group{{
-					Name:  "gcloud",
-					Usage: "Google Cloud CLI",
-					Subgroups: []Subgroup{{
-						Name:  "compute",
-						Usage: "Manage compute resources",
-						Commands: []Command{{
-							Name:  "list",
-							Usage: "list compute",
-						}},
-					}},
-				}},
+				ModulePath: "cloud.google.com/go/gcloud",
+				Surfaces: []SurfaceRef{
+					{PackageName: "parallelstore"},
+					{PackageName: "publicca"},
+				},
 			},
 			wants: []string{
-				`Name:  "compute"`,
-				`Name:  "list"`,
-				`fmt.Println("Executing list...")`,
-			},
-		},
-		{
-			name: "top-level command",
-			model: CLIModel{
-				Groups: []Group{{
-					Name:  "gcloud",
-					Usage: "Google Cloud CLI",
-					Commands: []Command{{
-						Name:  "version",
-						Usage: "show version",
-					}},
-				}},
-			},
-			wants: []string{
-				`Name:  "version"`,
-				`fmt.Println("Executing version...")`,
+				`"cloud.google.com/go/gcloud/internal/generated/parallelstore"`,
+				`"cloud.google.com/go/gcloud/internal/generated/publicca"`,
+				"parallelstore.Command()",
+				"publicca.Command()",
 			},
 		},
 	} {
@@ -199,79 +251,38 @@ func TestRenderMain(t *testing.T) {
 	}
 }
 
-func TestWriteMain(t *testing.T) {
-	const contents = "package main\n"
-	for _, test := range []struct {
-		name   string
-		outdir func(t *testing.T) string
-	}{
-		{
-			name: "existing dir",
-			outdir: func(t *testing.T) string {
-				return t.TempDir()
-			},
+func TestWriteSurface(t *testing.T) {
+	outdir := t.TempDir()
+	model := SurfaceModel{
+		PackageName: "parallelstore",
+		Group: Group{
+			Name:  "parallelstore",
+			Usage: "manage Parallelstore API resources",
 		},
-		{
-			name: "nested dir creation",
-			outdir: func(t *testing.T) string {
-				return filepath.Join(t.TempDir(), "nested", "deep")
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outdir := test.outdir(t)
-			if err := writeMain(outdir, contents); err != nil {
-				t.Fatal(err)
-			}
-			got, err := os.ReadFile(filepath.Join(outdir, "main.go"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(contents, string(got)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
+	}
+	if err := writeSurface(outdir, model); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(outdir, "internal", "generated", "parallelstore", "commands.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "package parallelstore") {
+		t.Errorf("missing package declaration in:\n%s", got)
 	}
 }
 
-func TestRenderReadme(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		model *api.API
-		wants []string
-	}{
-		{
-			name:  "title only",
-			model: &api.API{Title: "Parallelstore API"},
-			wants: []string{
-				"# Google Cloud CLI (gcloud)",
-				"Parallelstore API",
-			},
-		},
-		{
-			name:  "title and description",
-			model: &api.API{Title: "Parallelstore API", Description: "Manages parallelstore instances."},
-			wants: []string{
-				"Parallelstore API",
-				"Manages parallelstore instances.",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outdir := t.TempDir()
-			if err := renderReadme(outdir, test.model); err != nil {
-				t.Fatal(err)
-			}
-			got, err := os.ReadFile(filepath.Join(outdir, "README.md"))
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, want := range test.wants {
-				if !strings.Contains(string(got), want) {
-					t.Errorf("README missing %q\n%s", want, got)
-				}
-			}
-		})
+func TestWriteMain(t *testing.T) {
+	outdir := t.TempDir()
+	if err := writeMain(outdir, CLIModel{ModulePath: "cloud.google.com/go/gcloud"}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(outdir, "cmd", "gcloud", "main.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), "package main") {
+		t.Errorf("missing package main in:\n%s", got)
 	}
 }
 

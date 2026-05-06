@@ -171,12 +171,26 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 		if cf.resourceIdField != nil {
 			idField = cf.resourceIdField.field
 		}
-		arg := newArgumentBuilder(method, overrides, model, service, cf.primaryField.field, cf.primaryField.prefix).buildPrimaryResource(idField)
+		arg := buildPrimaryResourceArgument(&argumentParams{
+			method:    method,
+			overrides: overrides,
+			model:     model,
+			service:   service,
+			field:     cf.primaryField.field,
+			apiField:  cf.primaryField.prefix,
+		}, idField)
 		args = append(args, arg)
 	}
 
 	for _, fwp := range cf.other {
-		arg, err := newArgumentBuilder(method, overrides, model, service, fwp.field, fwp.prefix).build()
+		arg, err := buildArgument(&argumentParams{
+			method:    method,
+			overrides: overrides,
+			model:     model,
+			service:   service,
+			field:     fwp.field,
+			apiField:  fwp.prefix,
+		})
 		if err != nil {
 			return nil, err
 		}

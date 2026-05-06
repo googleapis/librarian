@@ -97,8 +97,9 @@ This document describes the schema for the librarian.yaml.
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
-| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
+| `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
@@ -137,6 +138,12 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+
+## GoDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `toolchain` | string | Is the desired Go toolchain version (e.g., "go1.25.0"). |
 
 ## DartPackage Configuration
 

@@ -702,11 +702,9 @@ func TestLongRunningHelpers(t *testing.T) {
 	emptyMsg := &Message{ID: ".google.protobuf.Empty"}
 	responseMsg := &Message{ID: "some.response.Message"}
 	model := &API{
-		state: &state{
-			MessageByID: map[string]*Message{
-				emptyMsg.ID:    emptyMsg,
-				responseMsg.ID: responseMsg,
-			},
+		messageByID: map[string]*Message{
+			emptyMsg.ID:    emptyMsg,
+			responseMsg.ID: responseMsg,
 		},
 	}
 
@@ -887,11 +885,9 @@ func newAIPTestFixture() *aipTestFixture {
 
 	model := &API{
 		ResourceDefinitions: []*Resource{resource, resourceWithoutSingular},
-		state: &state{
-			ResourceByType: map[string]*Resource{
-				resource.Type:                resource,
-				resourceWithoutSingular.Type: resourceWithoutSingular,
-			},
+		resourceByType: map[string]*Resource{
+			resource.Type:                resource,
+			resourceWithoutSingular.Type: resourceWithoutSingular,
 		},
 	}
 
