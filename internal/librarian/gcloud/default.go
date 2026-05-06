@@ -22,6 +22,10 @@ import (
 // DeriveAPIPath returns the canonical API path for a gcloud library name. For
 // example: accessapproval -> google/cloud/accessapproval/v1.
 func DeriveAPIPath(name string) string {
+	// TODO(https://github.com/googleapis/librarian/issues/5862): use the
+	// actual API version from the service configuration or the library's
+	// metadata rather than hardcoding "v1". At the moment we override this
+	// with apis.path in librarian.yaml.
 	return "google/cloud/" + name + "/v1"
 }
 
