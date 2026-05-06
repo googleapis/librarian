@@ -427,8 +427,8 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 		return nil
 	}
 	keepSet := make(map[string]bool)
-	for _, k := range library.Keep {
-		normalized := strings.TrimSuffix(filepath.ToSlash(k), "/")
+	for _, keep := range library.Keep {
+		normalized := strings.TrimSuffix(filepath.ToSlash(keep), "/")
 		keepSet[normalized] = true
 	}
 	return filepath.WalkDir(stagingDir, func(path string, d os.DirEntry, err error) error {

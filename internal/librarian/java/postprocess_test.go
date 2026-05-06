@@ -905,11 +905,11 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	// 4. File inside an explicitly kept directory
 	keptDirFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
 
-	for _, f := range []string{keptFile, versionFile, regularFile, keptDirFile} {
-		if err := os.MkdirAll(filepath.Dir(f), 0755); err != nil {
+	for _, file := range []string{keptFile, versionFile, regularFile, keptDirFile} {
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
 			t.Fatal(err)
 		}
-		if err := os.WriteFile(f, []byte("public class Dummy {}"), 0644); err != nil {
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
 			t.Fatal(err)
 		}
 	}
