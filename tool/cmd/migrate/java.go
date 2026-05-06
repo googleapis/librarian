@@ -46,6 +46,8 @@ const (
 
 	managedModulesStartMarker = "<!-- {x-generated-modules-start} -->"
 	managedModulesEndMarker   = "<!-- {x-generated-modules-end} -->"
+
+	showcaseLibraryName = "showcase"
 )
 
 var (
@@ -254,8 +256,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
 		var roots []string
-		if name == "showcase" {
-			roots = []string{"showcase", "googleapis"}
+		if name == showcaseLibraryName {
+			roots = []string{showcaseLibraryName, "googleapis"}
 		}
 		for _, g := range l.GAPICs {
 			if g.ProtoPath == "" {
@@ -264,7 +266,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			apis = append(apis, &config.API{Path: g.ProtoPath})
 
 			var info *javaGAPICInfo
-			if name == "showcase" {
+			if name == showcaseLibraryName {
 				// Skip parsing BUILD.bazel for showcase as it doesn't contain standard java rules.
 				info = &javaGAPICInfo{Samples: true, OmitCommonResources: true}
 			} else {
