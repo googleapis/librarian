@@ -214,6 +214,7 @@ func TestRenderMain(t *testing.T) {
 				"package main",
 				`"gcloud"`,
 				`"Google Cloud CLI"`,
+				`&cli.StringFlag{Name: "project", Usage: "The Google Cloud project ID."}`,
 			},
 		},
 		{
@@ -230,6 +231,7 @@ func TestRenderMain(t *testing.T) {
 				`"cloud.google.com/go/gcloud/internal/generated/publicca"`,
 				"parallelstore.Command()",
 				"publicca.Command()",
+				`&cli.StringFlag{Name: "project", Usage: "The Google Cloud project ID."}`,
 			},
 		},
 	} {
@@ -293,11 +295,11 @@ func TestPathFlagsFromSegments(t *testing.T) {
 	}{
 		{"nil", nil, nil},
 		{
-			"single",
+			"project-only",
 			(&api.PathTemplate{}).
 				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
 				Segments,
-			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+			nil,
 		},
 		{
 			"multi",
@@ -307,7 +309,17 @@ func TestPathFlagsFromSegments(t *testing.T) {
 				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
 				Segments,
 			[]Flag{
-				{Name: "project", Kind: "String", Required: true, Usage: "The project."},
+				{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+				{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+			},
+		},
+		{
+			"no-project",
+			(&api.PathTemplate{}).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			[]Flag{
 				{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 				{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
 			},
@@ -326,7 +338,7 @@ func TestPathFlagsFromSegments(t *testing.T) {
 				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
 				WithLiteral("config").
 				Segments,
-			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+			nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

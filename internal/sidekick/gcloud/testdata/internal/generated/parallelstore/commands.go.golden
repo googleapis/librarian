@@ -25,7 +25,6 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -57,7 +56,6 @@ func Command() *cli.Command {
 						Name:  "describe",
 						Usage: "describe instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
@@ -84,7 +82,6 @@ func Command() *cli.Command {
 						Name:  "create",
 						Usage: "create instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -97,7 +94,6 @@ func Command() *cli.Command {
 						Name:  "update",
 						Usage: "update instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
@@ -111,7 +107,6 @@ func Command() *cli.Command {
 						Name:  "delete",
 						Usage: "delete instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
@@ -125,7 +120,6 @@ func Command() *cli.Command {
 						Name:  "import-data",
 						Usage: "import-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
@@ -139,7 +133,6 @@ func Command() *cli.Command {
 						Name:  "export-data",
 						Usage: "export-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
@@ -181,7 +174,6 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -213,7 +205,6 @@ func Command() *cli.Command {
 						Name:  "describe",
 						Usage: "describe operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
@@ -240,7 +231,6 @@ func Command() *cli.Command {
 						Name:  "delete",
 						Usage: "delete operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
@@ -254,7 +244,6 @@ func Command() *cli.Command {
 						Name:  "cancel",
 						Usage: "cancel operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
