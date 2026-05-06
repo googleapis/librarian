@@ -36,6 +36,9 @@ import (
 func ExtractCrossReferenceLinks(doc ast.Node, source []byte) []string {
 	protobufLinks := map[string]bool{}
 	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
 		switch node.Kind() {
 		case ast.KindParagraph:
 			text := node.Lines().Value(source)
