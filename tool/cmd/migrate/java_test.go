@@ -363,7 +363,22 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "schema/google/showcase/v1beta1"},
 						},
-						Java: &config.JavaModule{SkipAPIID: true},
+						Keep: []string{
+							"gapic-showcase/src/test",
+							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
+						},
+						Java: &config.JavaModule{
+							SkipAPIID: true,
+							JavaAPIs: []*config.JavaAPI{
+								{
+									Path:                    "schema/google/showcase/v1beta1",
+									AdditionalProtos:        []string{"google/cloud/location/locations.proto", "google/iam/v1/iam_policy.proto"},
+									GRPCArtifactIDOverride:  "grpc-gapic-showcase-v1beta1",
+									ProtoArtifactIDOverride: "proto-gapic-showcase-v1beta1",
+									OmitCommonResources:     true,
+								},
+							},
+						},
 					},
 				},
 			},

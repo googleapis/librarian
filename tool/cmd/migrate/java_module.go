@@ -62,6 +62,10 @@ var (
 			"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicy.java",
 			"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicyImpl.java",
 		},
+		"showcase": {
+			"gapic-showcase/src/test",
+			"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
+		},
 	}
 
 	javaArtifactIDOverrides = map[string]javaArtifactOverrides{

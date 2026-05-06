@@ -253,16 +253,27 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 		version := versions[artifactID]
 		var apis []*config.API
 		var javaAPIs []*config.JavaAPI
+		var roots []string
+		if name == "showcase" {
+			roots = []string{"showcase", "googleapis"}
+		}
 		for _, g := range l.GAPICs {
 			if g.ProtoPath == "" {
 				continue
 			}
 			apis = append(apis, &config.API{Path: g.ProtoPath})
 
-			info, err := parseJavaBazel(src.Dir, g.ProtoPath)
-			if err != nil {
-				log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", g.ProtoPath, err)
-				continue
+			var info *javaGAPICInfo
+			if name == "showcase" {
+				// Skip parsing BUILD.bazel for showcase as it doesn't contain standard java rules.
+				info = &javaGAPICInfo{Samples: true, OmitCommonResources: true}
+			} else {
+				var err error
+				info, err = parseJavaBazel(src.Dir, g.ProtoPath)
+				if err != nil {
+					log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", g.ProtoPath, err)
+					continue
+				}
 			}
 			if info == nil {
 				continue
@@ -298,10 +309,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				}
 			}
 			javaAPIs = append(javaAPIs, javaAPI)
-		}
-		var roots []string
-		if name == "showcase" {
-			roots = []string{"showcase", "googleapis"}
 		}
 		lib := &config.Library{
 			Name:    name,
