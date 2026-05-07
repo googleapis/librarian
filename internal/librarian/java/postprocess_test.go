@@ -573,11 +573,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "owlbot.py missing",
-			cfg:     defaultCfg,
-			wantErr: errOwlBotMissing,
-		},
-		{
 			name: "findBOMVersion failure",
 			cfg:  &config.Config{},
 			setup: func(t *testing.T, outDir string) {
@@ -939,5 +934,17 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	}
 	if _, err := os.Stat(keptDirFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected file inside kept dir %s to be removed from staging, but it exists", keptDirFile)
+	}
+}
+
+func TestEnsureOwlBotScript(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := ensureOwlBotScript(outDir); err != nil {
+		t.Fatal(err)
+	}
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		t.Errorf("expected owlbot.py to be generated: %v", err)
 	}
 }
