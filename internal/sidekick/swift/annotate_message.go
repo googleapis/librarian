@@ -70,14 +70,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 
-	isRequest := false
-	for m := range c.Model.AllMethods() {
-		if m.InputTypeID == message.ID && m.Pagination != nil {
-			isRequest = true
-			break
-		}
-	}
-	annotations.IsPaginatedRequest = isRequest
+	annotations.IsPaginatedRequest = model.PaginatedRequestIDs[message.ID]
 	annotations.IsPaginatedResponse = message.Pagination != nil
 	if message.Pagination != nil {
 		itemField := message.Pagination.PageableItem

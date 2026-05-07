@@ -38,7 +38,7 @@ func TestModelAnnotations(t *testing.T) {
 		MonorepoRoot:  ".",
 		WktPackage:    "GoogleCloudWkt",
 	}
-	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate", "DependsOn", "PaginatedRequestIDs")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -24,14 +24,15 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear  string
-	BoilerPlate    []string
-	PackageName    string
-	MonorepoRoot   string
-	DependsOn      map[string]*Dependency
-	WktPackage     string
-	ServiceImports []string
-	MessageImports []string
+	CopyrightYear       string
+	BoilerPlate         []string
+	PackageName         string
+	MonorepoRoot        string
+	DependsOn           map[string]*Dependency
+	WktPackage          string
+	ServiceImports      []string
+	MessageImports      []string
+	PaginatedRequestIDs map[string]bool
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -57,13 +58,20 @@ func (ann *modelAnnotations) HasMessageImports() bool {
 }
 
 func (c *codec) annotateModel() error {
+	paginatedRequestIDs := map[string]bool{}
+	for m := range c.Model.AllMethods() {
+		if m.Pagination != nil {
+			paginatedRequestIDs[m.InputTypeID] = true
+		}
+	}
 	annotations := &modelAnnotations{
-		CopyrightYear: c.GenerationYear,
-		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   c.PackageName,
-		MonorepoRoot:  c.MonorepoRoot,
-		DependsOn:     map[string]*Dependency{},
-		WktPackage:    wellKnownSwiftPackage,
+		CopyrightYear:       c.GenerationYear,
+		BoilerPlate:         license.HeaderBulk(),
+		PackageName:         c.PackageName,
+		MonorepoRoot:        c.MonorepoRoot,
+		DependsOn:           map[string]*Dependency{},
+		WktPackage:          wellKnownSwiftPackage,
+		PaginatedRequestIDs: paginatedRequestIDs,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
