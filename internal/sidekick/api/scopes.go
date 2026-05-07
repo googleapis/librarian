@@ -69,26 +69,30 @@ func (x *Enum) Scopes() []string {
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	if x.Parent == nil {
-		return []string{} // simplify some test set-up
+	if x.Parent != nil {
+		return x.Parent.Scopes()
 	}
-	return x.Parent.Scopes()
+	return fallbackScopes(x.ID)
 }
 
 // Scopes returns the scopes for a field.
 func (x *Field) Scopes() []string {
-	if x.Parent == nil {
-		return []string{} // simplify some test set-up
+	if x.Parent != nil {
+		return x.Parent.Scopes()
 	}
-	return x.Parent.Scopes()
+	return fallbackScopes(x.ID)
 }
 
 // Scopes returns the scopes for a method.
 func (x *Method) Scopes() []string {
-	if x.SourceService == nil {
-		return []string{} // simplify some test set-up
+	if x.SourceService != nil {
+		// For mixing methods, the local names probably refer to symbols in the source service.
+		return x.SourceService.Scopes()
 	}
-	return x.SourceService.Scopes()
+	if x.Service != nil {
+		return x.Service.Scopes()
+	}
+	return fallbackScopes(x.ID)
 }
 
 // Scopes returns the scopes for a oneof.
@@ -96,7 +100,12 @@ func (x *OneOf) Scopes() []string {
 	if len(x.Fields) > 0 {
 		return x.Fields[0].Scopes()
 	}
-	parts := strings.Split(strings.TrimPrefix(x.ID, "."), ".")
+	return fallbackScopes(x.ID)
+}
+
+// A fallback so we can be lazy in test set-up.
+func fallbackScopes(id string) []string {
+	parts := strings.Split(strings.TrimPrefix(id, "."), ".")
 	if len(parts) <= 1 {
 		return []string{}
 	}

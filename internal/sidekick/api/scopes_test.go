@@ -168,7 +168,7 @@ func TestScopesField(t *testing.T) {
 				Name: "field",
 				ID:   ".test.Parent.field",
 			},
-			want: []string{},
+			want: []string{"test.Parent", "test"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -194,19 +194,29 @@ func TestScopesMethod(t *testing.T) {
 		{
 			name: "standard",
 			method: &Method{
-				Name:          "Method",
-				ID:            ".test.Service.Method",
-				SourceService: service,
+				Name:    "Method",
+				ID:      ".test.Service.Method",
+				Service: service,
 			},
 			want: []string{"test.Service", "test"},
 		},
 		{
-			name: "nil source service",
+			name: "both set",
+			method: &Method{
+				Name:          "Method",
+				ID:            ".test.Service.Method",
+				Service:       service,
+				SourceService: &Service{Name: "Other", Package: "other", ID: ".other.Other"},
+			},
+			want: []string{"other.Other", "other"},
+		},
+		{
+			name: "nil both",
 			method: &Method{
 				Name: "Method",
 				ID:   ".test.Service.Method",
 			},
-			want: []string{},
+			want: []string{"test.Service", "test"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -255,6 +265,52 @@ func TestScopesOneOf(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.oneof.Scopes()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFallbackScopes(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		id   string
+		want []string
+	}{
+		{
+			name: "empty",
+			id:   "",
+			want: []string{},
+		},
+		{
+			name: "no dot",
+			id:   "foo",
+			want: []string{},
+		},
+		{
+			name: "single dot",
+			id:   ".foo",
+			want: []string{},
+		},
+		{
+			name: "two parts with dot",
+			id:   ".foo.bar",
+			want: []string{"foo"},
+		},
+		{
+			name: "three parts with dot",
+			id:   ".foo.bar.baz",
+			want: []string{"foo.bar", "foo"},
+		},
+		{
+			name: "two parts no dot",
+			id:   "foo.bar",
+			want: []string{"foo"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fallbackScopes(test.id)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
