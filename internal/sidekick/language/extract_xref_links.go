@@ -60,30 +60,54 @@ func ExtractCrossReferenceLinks(doc ast.Node, source []byte) []string {
 	return sortedLinks
 }
 
-var commentCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\]` + // The closing bracket for the `[Thing]`
-		`\[` + // The opening bracket for the code element.
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.` + // Followed by (maybe a dot)
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`)*` + // zero or more times
-		`\]`) // The closing bracket
+var (
+	explicitLink = regexp.MustCompile(`\]\[([^.][^]]*)\]`)
+	impliedLink  = regexp.MustCompile(`\[([^.][^]]*)\]\[\]`)
+)
 
-var commentImpliedCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\[` +
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.[A-Za-z][A-Za-z0-9_]*)*` + // Followed by more identifiers
-		`\]\[\]`) // The closing bracket followed by an empty link label
+func extractProtoLinks(p []byte, links map[string]bool) {
+	for _, m := range explicitLink.FindAllSubmatch(p, -1) {
+		if validProtoName(m[1]) {
+			links[string(m[1])] = true
+		}
+	}
+	for _, m := range impliedLink.FindAllSubmatch(p, -1) {
+		if validProtoName(m[1]) {
+			links[string(m[1])] = true
+		}
+	}
+}
 
-func extractProtoLinks(paragraph []byte, links map[string]bool) {
-	for _, match := range commentCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("][")), []byte("]"))
-		links[string(match)] = true
+func validProtoName(b []byte) bool {
+	parts := bytes.Split(b, []byte("."))
+	for _, p := range parts {
+		if !isIdent(p) {
+			return false
+		}
 	}
-	for _, match := range commentImpliedCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("[")), []byte("][]"))
-		links[string(match)] = true
+	return len(parts) != 0
+}
+
+// isProtoIdent returns true if the id looks like a valid protobuf identifier
+func isIdent(id []byte) bool {
+	if len(id) == 0 {
+		return false
 	}
+	if !isIdStartingChar(id[0]) {
+		return false
+	}
+	for _, b := range id[1:] {
+		if !isIdChar(b) {
+			return false
+		}
+	}
+	return true
+}
+
+func isIdStartingChar(b byte) bool {
+	return (b >= 'a' && b <= 'z') || (b >= 'A' && b <= 'Z')
+}
+
+func isIdChar(b byte) bool {
+	return isIdStartingChar(b) || (b >= '0' && b <= '9') || b == '_'
 }
