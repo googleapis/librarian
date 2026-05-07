@@ -21,7 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func (c *codec) docLink(link string, scopes []string) (string, error) {
+func (c *codec) linkDefinition(link string, scopes []string) (string, error) {
 	for _, s := range scopes {
 		localId := fmt.Sprintf(".%s.%s", s, link)
 		result, err := c.tryDocLinkWithId(localId)
@@ -36,8 +36,8 @@ func (c *codec) docLink(link string, scopes []string) (string, error) {
 	return c.tryDocLinkWithId(localId)
 }
 
-// swiftDocLink returns the documentation link for a symbol.
-func (c *codec) swiftDocLink(packageName, name string) string {
+// docLink returns the documentation link for a symbol.
+func (c *codec) docLink(packageName, name string) string {
 	if packageName != c.Model.PackageName {
 		// TODO(#5072) - we have not implemented cross-reference links to external packages.
 		return fmt.Sprintf("https://www.google.com/search?q=Swift+%s+%s", packageName, name)
@@ -52,36 +52,36 @@ func (c *codec) tryDocLinkWithId(id string) (string, error) {
 		if err != nil {
 			return "", err
 		}
-		return c.swiftDocLink(m.Package, name), nil
+		return c.docLink(m.Package, name), nil
 	}
 	if e := c.Model.Enum(id); e != nil {
 		name, err := c.enumTypeName(e)
 		if err != nil {
 			return "", err
 		}
-		return c.swiftDocLink(e.Package, name), nil
+		return c.docLink(e.Package, name), nil
 	}
 	if me := c.Model.Method(id); me != nil {
-		return c.methodSwiftDocLink(me)
+		return c.methodDocLink(me)
 	}
 	if s := c.Model.Service(id); s != nil {
-		return c.serviceSwiftDocLink(s), nil
+		return c.serviceDocLink(s), nil
 	}
-	rdLink, err := c.tryFieldswiftDocLink(id)
+	rdLink, err := c.tryFieldDocLink(id)
 	if err != nil {
 		return "", err
 	}
 	if rdLink != "" {
 		return rdLink, nil
 	}
-	rdLink, err = c.tryEnumValueSwiftDocLink(id)
+	rdLink, err = c.tryEnumValueDocLink(id)
 	if err != nil {
 		return "", err
 	}
 	return rdLink, nil
 }
 
-func (c *codec) tryFieldswiftDocLink(id string) (string, error) {
+func (c *codec) tryFieldDocLink(id string) (string, error) {
 	idx := strings.LastIndex(id, ".")
 	if idx == -1 {
 		return "", nil
@@ -98,7 +98,7 @@ func (c *codec) tryFieldswiftDocLink(id string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			return c.swiftDocLink(m.Package, fmt.Sprintf("%s/%s", p, camelCase(f.Name))), nil
+			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, camelCase(f.Name))), nil
 		}
 	}
 	for _, o := range m.OneOfs {
@@ -107,13 +107,13 @@ func (c *codec) tryFieldswiftDocLink(id string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			return c.swiftDocLink(m.Package, fmt.Sprintf("%s/%s", p, camelCase(o.Name))), nil
+			return c.docLink(m.Package, fmt.Sprintf("%s/%s", p, camelCase(o.Name))), nil
 		}
 	}
 	return "", nil
 }
 
-func (c *codec) tryEnumValueSwiftDocLink(id string) (string, error) {
+func (c *codec) tryEnumValueDocLink(id string) (string, error) {
 	idx := strings.LastIndex(id, ".")
 	if idx == -1 {
 		return "", nil
@@ -130,13 +130,13 @@ func (c *codec) tryEnumValueSwiftDocLink(id string) (string, error) {
 			if err != nil {
 				return "", err
 			}
-			return c.swiftDocLink(e.Package, fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
+			return c.docLink(e.Package, fmt.Sprintf("%s/%s", p, enumValueCaseName(v))), nil
 		}
 	}
 	return "", nil
 }
 
-func (c *codec) methodSwiftDocLink(m *api.Method) (string, error) {
+func (c *codec) methodDocLink(m *api.Method) (string, error) {
 	idx := strings.LastIndex(m.ID, ".")
 	if idx == -1 {
 		return "", nil
@@ -146,9 +146,9 @@ func (c *codec) methodSwiftDocLink(m *api.Method) (string, error) {
 	if s == nil {
 		return "", nil
 	}
-	return c.swiftDocLink(s.Package, fmt.Sprintf("%s/%s(request:)", pascalCase(s.Name), camelCase(m.Name))), nil
+	return c.docLink(s.Package, fmt.Sprintf("%s/%s(request:)", pascalCase(s.Name), camelCase(m.Name))), nil
 }
 
-func (c *codec) serviceSwiftDocLink(s *api.Service) string {
-	return c.swiftDocLink(s.Package, pascalCase(s.Name))
+func (c *codec) serviceDocLink(s *api.Service) string {
+	return c.docLink(s.Package, pascalCase(s.Name))
 }

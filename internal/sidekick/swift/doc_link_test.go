@@ -148,7 +148,7 @@ func TestDocLink(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.docLink(tt.link, tt.scopes)
+			got, err := c.linkDefinition(tt.link, tt.scopes)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -216,7 +216,7 @@ func TestDocLinkAmbiguity(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.docLink(tt.link, tt.scopes)
+			got, err := c.linkDefinition(tt.link, tt.scopes)
 			if err != nil {
 				t.Fatal(err)
 			}

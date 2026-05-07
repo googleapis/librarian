@@ -48,7 +48,7 @@ func (c *codec) formatDocumentation(doc string, scopes []string) ([]string, erro
 		results = append(results, "") // Add a blank line before link definitions
 	}
 	for _, link := range links {
-		resolved, err := c.docLink(link, scopes)
+		resolved, err := c.linkDefinition(link, scopes)
 		if err != nil {
 			return nil, err
 		}
