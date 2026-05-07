@@ -939,7 +939,7 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 
 // TestCreateOrVerifyOwlbotPy verifies that the createOrVerifyOwlbotPy function
 // successfully creates the owlbot.py post-processing script when it is missing
-// and generates a valid script containing the required synthtool blocks.
+// and generates a valid script that matches the expected golden content.
 func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()
@@ -952,16 +952,29 @@ func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	if _, err := os.Stat(owlbotPath); err != nil {
 		t.Errorf("expected owlbot.py to be generated: %v", err)
 	}
-	// 3. Verify that the generated script's contents contain critical blocks.
-	content, err := os.ReadFile(owlbotPath)
+	// 3. Read the generated script's contents.
+	gotContent, err := os.ReadFile(owlbotPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	contentStr := string(content)
-	if !strings.Contains(contentStr, "import synthtool as s") {
-		t.Errorf("expected owlbot.py to contain 'import synthtool as s', got: %s", contentStr)
+
+	goldenPath := filepath.Join("testdata", "postprocess", "owlbot.py.golden")
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenPath, gotContent, 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
-	if !strings.Contains(contentStr, "java.common_templates") {
-		t.Errorf("expected owlbot.py to contain 'java.common_templates', got: %s", contentStr)
+
+	// 4. Verify that the generated script's contents exactly match the expected golden content.
+	wantContent, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if diff := cmp.Diff(string(wantContent), string(gotContent)); diff != "" {
+		t.Errorf("generated owlbot.py content mismatch (-want +got):\n%s\n\nHint: run 'go test ./internal/librarian/java -v -update' to update golden files.", diff)
 	}
 }

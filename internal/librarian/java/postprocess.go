@@ -484,8 +484,29 @@ func createOrVerifyOwlbotPy(outDir string) error {
 			return fmt.Errorf("failed to create owlbot.py: %w", err)
 		}
 		defer file.Close()
+
+		data := struct {
+			ShouldIncludeTemplates bool
+			TemplateExcludes       []string
+		}{
+			ShouldIncludeTemplates: true,
+			TemplateExcludes: []string{
+				".github/*",
+				".kokoro/*",
+				"samples/*",
+				"CODE_OF_CONDUCT.md",
+				"CONTRIBUTING.md",
+				"LICENSE",
+				"SECURITY.md",
+				"java.header",
+				"license-checks.xml",
+				"renovate.json",
+				".gitignore",
+			},
+		}
+
 		// Execute the template to write the default owlbot.py script content.
-		if err := templates.ExecuteTemplate(file, "owlbot_py.tmpl", nil); err != nil {
+		if err := templates.ExecuteTemplate(file, "owlbot_py.tmpl", data); err != nil {
 			return fmt.Errorf("failed to write owlbot.py template: %w", err)
 		}
 	}
