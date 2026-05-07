@@ -113,5 +113,14 @@ public class {{Codec.Name}} {
     return try ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
     {{/ReturnsEmpty}}
   }
+  {{#Codec.Pagination}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  public func {{Codec.Name}}(byItem: {{InputType.Codec.Name}}) throws -> some AsyncSequence<{{ItemType}}, Error> {
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.{{Codec.Name}}, request: byItem)
+  }
+  {{/Codec.Pagination}}
   {{/Codec.RestMethods}}
 }

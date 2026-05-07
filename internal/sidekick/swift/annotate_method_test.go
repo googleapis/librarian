@@ -270,3 +270,99 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		t.Error("expected output message to be annotated")
 	}
 }
+
+func TestAnnotateMethod_Pagination(t *testing.T) {
+	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
+	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "ListRequest",
+		Package: "test",
+		ID:      ".test.ListRequest",
+		Fields:  []*api.Field{pageSizeField, pageTokenField},
+	}
+	pageSizeField.Parent = inputType
+	pageTokenField.Parent = inputType
+
+	itemField := &api.Field{Name: "items", JSONName: "items", Typez: api.TypezMessage, TypezID: ".test.Item", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	outputType := &api.Message{
+		Name:    "ListResponse",
+		Package: "test",
+		ID:      ".test.ListResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = outputType
+	nextPageTokenField.Parent = outputType
+
+	itemType := &api.Message{
+		Name:    "Item",
+		Package: "test",
+		ID:      ".test.Item",
+	}
+
+	method := &api.Method{
+		Name:        "ListItems",
+		InputTypeID: inputType.ID,
+		InputType:   inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+		},
+		Pagination: pageTokenField,
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify method annotations
+	gotMethod := method.Codec.(*methodAnnotations)
+	if gotMethod.Pagination == nil {
+		t.Fatal("expected method to have pagination annotations")
+	}
+	if gotMethod.Pagination.ItemType != "Item" {
+		t.Errorf("expected Pagination.ItemType to be 'Item', got %q", gotMethod.Pagination.ItemType)
+	}
+
+	// Verify message annotations
+	gotRequest := inputType.Codec.(*messageAnnotations)
+	if !gotRequest.IsPaginatedRequest {
+		t.Error("expected request message to be marked as paginated request")
+	}
+	if gotRequest.IsPaginatedResponse {
+		t.Error("expected request message NOT to be marked as paginated response")
+	}
+
+	gotResponse := outputType.Codec.(*messageAnnotations)
+	if gotResponse.IsPaginatedRequest {
+		t.Error("expected response message NOT to be marked as paginated request")
+	}
+	if !gotResponse.IsPaginatedResponse {
+		t.Fatal("expected response message to be marked as paginated response")
+	}
+	if gotResponse.PageableItemField != "items" {
+		t.Errorf("expected PageableItemField to be 'items', got %q", gotResponse.PageableItemField)
+	}
+	if gotResponse.PageableItemType != "Item" {
+		t.Errorf("expected PageableItemType to be 'Item', got %q", gotResponse.PageableItemType)
+	}
+}

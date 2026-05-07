@@ -364,3 +364,134 @@ func TestGenerateService_PathParameters(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateService_Pagination(t *testing.T) {
+	outDir := t.TempDir()
+
+	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
+	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "ListSecretsRequest",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
+		Fields:  []*api.Field{pageSizeField, pageTokenField},
+	}
+	pageSizeField.Parent = inputType
+	pageTokenField.Parent = inputType
+
+	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	outputType := &api.Message{
+		Name:    "ListSecretsResponse",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = outputType
+	nextPageTokenField.Parent = outputType
+
+	secretType := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+	}
+
+	iam := &api.Service{
+		Name: "SecretManagerService",
+		Methods: []*api.Method{
+			{
+				Name:          "ListSecrets",
+				Documentation: "Lists secrets.",
+				InputTypeID:   inputType.ID,
+				InputType:     inputType,
+				OutputTypeID:  outputType.ID,
+				OutputType:    outputType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "GET",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
+					}},
+				},
+				Pagination: pageTokenField,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
+		},
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+	})
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify generated Service source code
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	expectedOverload := `  /// Lists secrets.
+  public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error> {
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.listSecrets, request: byItem)
+  }`
+
+	if !strings.Contains(contentStr, expectedOverload) {
+		t.Errorf("expected pagination overload not found in service. Got:\n%s", contentStr)
+	}
+
+	// Verify generated Request and Response Messages source code
+	msgFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsRequest.swift")
+	msgContent, err := os.ReadFile(msgFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	msgContentStr := string(msgContent)
+
+	// Request implements _PaginatedRequest, Response implements _PaginatedResponse
+	expectedRequestDecl := "public struct ListSecretsRequest: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable, GoogleCloudGax._PaginatedRequest {"
+	if !strings.Contains(msgContentStr, expectedRequestDecl) {
+		t.Errorf("expected _PaginatedRequest conformance not found in request message. Got:\n%s", msgContentStr)
+	}
+
+	respFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsResponse.swift")
+	respContent, err := os.ReadFile(respFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	respContentStr := string(respContent)
+
+	expectedResponseDecl := "public struct ListSecretsResponse: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable, GoogleCloudGax._PaginatedResponse {"
+	if !strings.Contains(respContentStr, expectedResponseDecl) {
+		t.Errorf("expected _PaginatedResponse conformance not found in response message. Got:\n%s", respContentStr)
+	}
+
+	expectedGetItems := `  public func _getPaginatedItems() -> [Secret] {
+    return self.secrets
+  }`
+	if !strings.Contains(respContentStr, expectedGetItems) {
+		t.Errorf("expected _getPaginatedItems implementation not found in response message. Got:\n%s", respContentStr)
+	}
+}

@@ -29,6 +29,11 @@ type methodAnnotations struct {
 	IsBodyWildcard bool
 	BodyField      string
 	QueryParams    []*api.Field
+	Pagination     *paginationAnnotations
+}
+
+type paginationAnnotations struct {
+	ItemType string
 }
 
 // pathVariable describes a variable used to build a request URL path.
@@ -87,6 +92,13 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	if err != nil {
 		return err
 	}
+	var pagination *paginationAnnotations
+	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
+		itemField := method.OutputType.Pagination.PageableItem
+		pagination = &paginationAnnotations{
+			ItemType: itemField.Codec.(*fieldAnnotations).BaseFieldType,
+		}
+	}
 	method.Codec = &methodAnnotations{
 		Name:           camelCase(method.Name),
 		DocLines:       docLines,
@@ -97,6 +109,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		IsBodyWildcard: isBodyWildcard,
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
+		Pagination:     pagination,
 	}
 	return nil
 }
