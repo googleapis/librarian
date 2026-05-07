@@ -47,15 +47,16 @@ var (
 )
 
 type postProcessParams struct {
-	cfg            *config.Config
-	library        *config.Library
-	javaAPI        *config.JavaAPI
-	metadata       *repoMetadata
-	outDir         string
-	apiBase        string
-	protoSourceDir string
-	apiProtos      []string
-	includeSamples bool
+	cfg                               *config.Config
+	library                           *config.Library
+	javaAPI                           *config.JavaAPI
+	metadata                          *repoMetadata
+	outDir                            string
+	apiBase                           string
+	protoSourceDir                    string
+	apiProtos                         []string
+	additionalProtosToGenerateAndCopy []string
+	includeSamples                    bool
 }
 
 type libraryPostProcessParams struct {
@@ -340,7 +341,9 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	}
 	// Copy proto files to proto-*/src/main/proto
 	if shouldGenerateProtoGRPC(p.javaAPI) {
-		if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
+		allProtos := append([]string{}, p.apiProtos...)
+		allProtos = append(allProtos, p.additionalProtosToGenerateAndCopy...)
+		if err := copyProtos(p.protoSourceDir, allProtos, protoFilesDestDir); err != nil {
 			return fmt.Errorf("failed to copy proto files: %w", err)
 		}
 	}

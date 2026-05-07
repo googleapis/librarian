@@ -125,16 +125,19 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	javaAPI := ResolveJavaAPI(params.library, params.api)
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")
+	additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
+	additionalProtosToGenerateAndCopy := deriveAbsoluteProtoPaths(javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
 
 	postParams := postProcessParams{
-		cfg:            params.cfg,
-		library:        params.library,
-		javaAPI:        javaAPI,
-		metadata:       params.metadata,
-		outDir:         params.outdir,
-		apiBase:        deriveAPIBase(params.library, params.api.Path),
-		protoSourceDir: primaryDir,
-		includeSamples: *javaAPI.Samples,
+		cfg:                               params.cfg,
+		library:                           params.library,
+		javaAPI:                           javaAPI,
+		metadata:                          params.metadata,
+		outDir:                            params.outdir,
+		apiBase:                           deriveAPIBase(params.library, params.api.Path),
+		protoSourceDir:                    primaryDir,
+		additionalProtosToGenerateAndCopy: additionalProtosToGenerateAndCopy,
+		includeSamples:                    *javaAPI.Samples,
 	}
 	gapicDir := postParams.gapicDir()
 	gRPCDir := postParams.gRPCDir()
@@ -159,7 +162,9 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProtoGRPC(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-		if err := runProtoc(ctx, protoProtocArgs(protoProtos, params.srcCfg, protoDir)); err != nil {
+		protoProtos = append(protoProtos, additionalProtosToGenerateAndCopy...)
+		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
+		if err := runProtoc(ctx, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
 	}
@@ -176,8 +181,8 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
-		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, params.srcCfg, gapicDir, gapicOpts)); err != nil {
+		args := gapicProtocArgs(apiProtos, append(additionalProtos, additionalProtosToGenerateAndCopy...), params.srcCfg, gapicDir, gapicOpts)
+		if err := runProtoc(ctx, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
@@ -203,6 +208,14 @@ func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) [
 		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
 	return additionalProtos
+}
+
+func deriveAbsoluteProtoPaths(paths []string, baseDir string) []string {
+	var absPaths []string
+	for _, p := range paths {
+		absPaths = append(absPaths, filepath.Join(baseDir, filepath.FromSlash(p)))
+	}
+	return absPaths
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {

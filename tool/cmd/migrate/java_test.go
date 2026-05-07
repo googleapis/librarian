@@ -71,8 +71,8 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "oslogin",
 			path: "google/cloud/oslogin/v1",
 			want: &config.JavaAPI{
-				Path:             "google/cloud/oslogin/v1",
-				AdditionalProtos: []string{"google/cloud/oslogin/common/common.proto"},
+				Path:                              "google/cloud/oslogin/v1",
+				AdditionalProtosToGenerateAndCopy: []string{"google/cloud/oslogin/common/common.proto"},
 			},
 		},
 		{

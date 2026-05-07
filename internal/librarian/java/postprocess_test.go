@@ -190,14 +190,16 @@ func TestRestructureModules(t *testing.T) {
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
+	additionalProtoPath := filepath.Join(googleapisDir, "google", "cloud", "oslogin", "common", "common.proto")
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      []string{protoPath},
-		includeSamples: true,
-		javaAPI:        &config.JavaAPI{},
+		outDir:                            tmpDir,
+		library:                           &config.Library{Name: libraryID},
+		apiBase:                           apiBase,
+		protoSourceDir:                    googleapisDir,
+		apiProtos:                         []string{protoPath},
+		additionalProtosToGenerateAndCopy: []string{additionalProtoPath},
+		includeSamples:                    true,
+		javaAPI:                           &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -218,6 +220,11 @@ func TestRestructureModules(t *testing.T) {
 	wantProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, apiBase), "src", "main", "proto", "google", "cloud", "secretmanager", "v1", "service.proto")
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
+	}
+	// Verify additional proto file location
+	wantAdditionalProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, apiBase), "src", "main", "proto", "google", "cloud", "oslogin", "common", "common.proto")
+	if _, err := os.Stat(wantAdditionalProtoPath); err != nil {
+		t.Errorf("expected additional proto file at %s, but it was not found: %v", wantAdditionalProtoPath, err)
 	}
 }
 
