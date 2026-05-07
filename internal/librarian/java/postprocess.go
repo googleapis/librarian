@@ -36,7 +36,6 @@ import (
 const owlbotTemplatesRelPath = "sdk-platform-java/hermetic_build/library_generation/owlbot/templates"
 
 var (
-	errOwlBotMissing    = errors.New("owlbot.py not found")
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
 	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
@@ -64,11 +63,8 @@ type libraryPostProcessParams struct {
 }
 
 func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
-	// Check if owlbot.py exists in the library output directory.
-	// It is required for restructuring the output and generating README files.
-	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
+	if err := ensureOwlBotScript(p.outDir); err != nil {
+		return err
 	}
 	bomVersion, err := findBOMVersion(p.cfg)
 	if err != nil {
@@ -400,6 +396,21 @@ func copyProtos(protoSourceDir string, protos []string, destDir string) error {
 		}
 		if err := filesystem.CopyFile(proto, target); err != nil {
 			return fmt.Errorf("failed to copy file %s to %s: %w", proto, target, err)
+		}
+	}
+	return nil
+}
+
+func ensureOwlBotScript(outDir string) error {
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); os.IsNotExist(err) {
+		f, err := os.Create(owlbotPath)
+		if err != nil {
+			return fmt.Errorf("failed to create owlbot.py: %w", err)
+		}
+		defer f.Close()
+		if err := templates.ExecuteTemplate(f, "owlbot_py.tmpl", nil); err != nil {
+			return fmt.Errorf("failed to write owlbot.py template: %w", err)
 		}
 	}
 	return nil
