@@ -28,21 +28,6 @@
       $ {command} my-instance --location=us-central-a --source-gcs-bucket-uri=gs://my_bucket --destination-parallelstore-path='/'
   arguments:
     params:
-      - arg_name: source-gcs-bucket-uri
-        is_positional: false
-        api_field: importDataRequest.sourceGcsBucket.uri
-        required: true
-        help_text: |-
-          URI to a Cloud Storage bucket in the format:
-          `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
-          optional.
-      - arg_name: destination-parallelstore-path
-        is_positional: false
-        api_field: importDataRequest.destinationParallelstore.path
-        required: false
-        help_text: |-
-          Root directory path to the Paralellstore filesystem, starting
-          with `/`. Defaults to `/` if unset.
       - help_text: Name of the resource.
         is_positional: true
         is_primary_resource: true
@@ -63,6 +48,21 @@
               help: The instance id of the {resource} resource.
           disable_auto_completers: false
         required: true
+      - arg_name: source-gcs-bucket-uri
+        is_positional: false
+        api_field: importDataRequest.sourceGcsBucket.uri
+        required: true
+        help_text: |-
+          URI to a Cloud Storage bucket in the format:
+          `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
+          optional.
+      - arg_name: destination-parallelstore-path
+        is_positional: false
+        api_field: importDataRequest.destinationParallelstore.path
+        required: false
+        help_text: |-
+          Root directory path to the Paralellstore filesystem, starting
+          with `/`. Defaults to `/` if unset.
       - arg_name: request-id
         is_positional: false
         api_field: importDataRequest.requestId
