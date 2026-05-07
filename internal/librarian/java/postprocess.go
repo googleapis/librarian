@@ -66,7 +66,7 @@ type libraryPostProcessParams struct {
 }
 
 func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
-	if err := ensureOwlBotScript(p.outDir); err != nil {
+	if err := createOrVerifyOwlbotPy(p.outDir); err != nil {
 		return err
 	}
 	bomVersion, err := findBOMVersion(p.cfg)
@@ -471,7 +471,7 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 	})
 }
 
-func ensureOwlBotScript(outDir string) error {
+func createOrVerifyOwlbotPy(outDir string) error {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); os.IsNotExist(err) {
 		f, err := os.Create(owlbotPath)

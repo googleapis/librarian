@@ -937,14 +937,25 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	}
 }
 
-func TestEnsureOwlBotScript(t *testing.T) {
+func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()
-	if err := ensureOwlBotScript(outDir); err != nil {
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
 		t.Fatal(err)
 	}
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err != nil {
 		t.Errorf("expected owlbot.py to be generated: %v", err)
+	}
+	content, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+	if !strings.Contains(contentStr, "import synthtool as s") {
+		t.Errorf("expected owlbot.py to contain 'import synthtool as s', got: %s", contentStr)
+	}
+	if !strings.Contains(contentStr, "java.common_templates") {
+		t.Errorf("expected owlbot.py to contain 'java.common_templates', got: %s", contentStr)
 	}
 }
