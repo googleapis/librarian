@@ -185,7 +185,6 @@ func TestConstructSurfaceModel(t *testing.T) {
 							Args:       []string{"project", "location"},
 							PathLabel:  "parent",
 							Flags: []Flag{
-								{Name: "project", Kind: "String", Required: true, Usage: "The project."},
 								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 							},
 							ClientCall: &ClientCall{

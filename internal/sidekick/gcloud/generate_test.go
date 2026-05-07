@@ -184,6 +184,28 @@ func TestRenderSurface(t *testing.T) {
 				`fmt.Println("Executing list...")`,
 			},
 		},
+		{
+			name: "command with project in path emits guard",
+			model: SurfaceModel{
+				PackageName: "parallelstore",
+				Group: Group{
+					Name: "parallelstore",
+					Subgroups: []Subgroup{{
+						Name: "instances",
+						Commands: []Command{{
+							Name:       "list",
+							Args:       []string{"project", "location"},
+							PathFormat: "projects/%s/locations/%s",
+							PathLabel:  "parent",
+						}},
+					}},
+				},
+			},
+			wants: []string{
+				`if cmd.String("project") == ""`,
+				`return fmt.Errorf("--project is required")`,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := renderSurface(test.model)
@@ -214,6 +236,7 @@ func TestRenderMain(t *testing.T) {
 				"package main",
 				`"gcloud"`,
 				`"Google Cloud CLI"`,
+				`&cli.StringFlag{Name: "project", Usage: "The Google Cloud project ID."}`,
 			},
 		},
 		{
@@ -230,6 +253,7 @@ func TestRenderMain(t *testing.T) {
 				`"cloud.google.com/go/gcloud/internal/generated/publicca"`,
 				"parallelstore.Command()",
 				"publicca.Command()",
+				`&cli.StringFlag{Name: "project", Usage: "The Google Cloud project ID."}`,
 			},
 		},
 	} {
@@ -293,11 +317,11 @@ func TestPathFlagsFromSegments(t *testing.T) {
 	}{
 		{"nil", nil, nil},
 		{
-			"single",
+			"project-only",
 			(&api.PathTemplate{}).
 				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
 				Segments,
-			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+			nil,
 		},
 		{
 			"multi",
@@ -307,7 +331,17 @@ func TestPathFlagsFromSegments(t *testing.T) {
 				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
 				Segments,
 			[]Flag{
-				{Name: "project", Kind: "String", Required: true, Usage: "The project."},
+				{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+				{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+			},
+		},
+		{
+			"no-project",
+			(&api.PathTemplate{}).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+			[]Flag{
 				{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 				{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
 			},
@@ -326,7 +360,7 @@ func TestPathFlagsFromSegments(t *testing.T) {
 				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
 				WithLiteral("config").
 				Segments,
-			[]Flag{{Name: "project", Kind: "String", Required: true, Usage: "The project."}},
+			nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -349,6 +383,26 @@ func TestCommandHasPath(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.cmd.HasPath()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCommandRequiresProject(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cmd  Command
+		want bool
+	}{
+		{"empty", Command{}, false},
+		{"no-project", Command{Args: []string{"location", "instance"}}, false},
+		{"project-only", Command{Args: []string{"project"}}, true},
+		{"project-and-others", Command{Args: []string{"project", "location"}}, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.cmd.RequiresProject()
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -14,6 +14,9 @@ func main() {
 	app := &cli.Command{
 		Name:  "gcloud",
 		Usage: "Google Cloud CLI",
+		Flags: []cli.Flag{
+			&cli.StringFlag{Name: "project", Usage: "The Google Cloud project ID."},
+		},
 		Commands: []*cli.Command{
 			parallelstore.Command(),
 			publicca.Command(),

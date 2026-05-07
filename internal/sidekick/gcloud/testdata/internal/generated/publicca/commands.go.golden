@@ -21,10 +21,12 @@ func Command() *cli.Command {
 						Name:  "create",
 						Usage: "create external-account-keys",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
 							fmt.Printf("Executing create on %s\n", parent)
 							return nil

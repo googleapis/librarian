@@ -25,10 +25,12 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
 							client, err := parallelstore.NewClient(ctx)
 							if err != nil {
@@ -57,11 +59,13 @@ func Command() *cli.Command {
 						Name:  "describe",
 						Usage: "describe instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
 							client, err := parallelstore.NewClient(ctx)
 							if err != nil {
@@ -84,10 +88,12 @@ func Command() *cli.Command {
 						Name:  "create",
 						Usage: "create instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
 							fmt.Printf("Executing create on %s\n", parent)
 							return nil
@@ -97,11 +103,13 @@ func Command() *cli.Command {
 						Name:  "update",
 						Usage: "update instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
 							fmt.Printf("Executing update on %s\n", name)
 							return nil
@@ -111,11 +119,13 @@ func Command() *cli.Command {
 						Name:  "delete",
 						Usage: "delete instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
 							fmt.Printf("Executing delete on %s\n", name)
 							return nil
@@ -125,11 +135,13 @@ func Command() *cli.Command {
 						Name:  "import-data",
 						Usage: "import-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
 							fmt.Printf("Executing import-data on %s\n", name)
 							return nil
@@ -139,11 +151,13 @@ func Command() *cli.Command {
 						Name:  "export-data",
 						Usage: "export-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
 							fmt.Printf("Executing export-data on %s\n", name)
 							return nil
@@ -181,10 +195,12 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
 							client, err := parallelstore.NewClient(ctx)
 							if err != nil {
@@ -213,11 +229,13 @@ func Command() *cli.Command {
 						Name:  "describe",
 						Usage: "describe operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
 							client, err := parallelstore.NewClient(ctx)
 							if err != nil {
@@ -240,11 +258,13 @@ func Command() *cli.Command {
 						Name:  "delete",
 						Usage: "delete operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
 							fmt.Printf("Executing delete on %s\n", name)
 							return nil
@@ -254,11 +274,13 @@ func Command() *cli.Command {
 						Name:  "cancel",
 						Usage: "cancel operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "project", Usage: "The project.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "operation", Usage: "The operation.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
 							name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
 							fmt.Printf("Executing cancel on %s\n", name)
 							return nil
