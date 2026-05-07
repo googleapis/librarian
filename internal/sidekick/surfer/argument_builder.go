@@ -117,10 +117,14 @@ func choices(field *api.Field) []Choice {
 	for _, v := range field.EnumType.Values {
 		// Skip the default "UNSPECIFIED" value.
 		if !strings.HasSuffix(v.Name, "_UNSPECIFIED") {
+			helpText := provider.CleanDocumentation(strings.TrimSpace(v.Documentation))
+			if helpText == "" {
+				helpText = fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(v.Name))
+			}
 			choices = append(choices, Choice{
 				ArgValue:  strcase.ToKebab(v.Name),
 				EnumValue: v.Name,
-				HelpText:  fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(v.Name)),
+				HelpText:  helpText,
 			})
 		}
 	}

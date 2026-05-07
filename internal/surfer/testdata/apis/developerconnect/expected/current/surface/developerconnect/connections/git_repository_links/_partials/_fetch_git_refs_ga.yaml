@@ -61,10 +61,10 @@
         choices:
           - arg_value: tag
             enum_value: TAG
-            help_text: Value for the `tag` field.
+            help_text: To fetch tags.
           - arg_value: branch
             enum_value: BRANCH
-            help_text: Value for the `branch` field.
+            help_text: To fetch branches.
       - arg_name: page-size
         api_field: pageSize
         help_text: Number of results to return in the list. Default to 20.

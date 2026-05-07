@@ -79,16 +79,16 @@
         choices:
           - arg_value: harm-category-hate-speech
             enum_value: HARM_CATEGORY_HATE_SPEECH
-            help_text: Value for the `harm-category-hate-speech` field.
+            help_text: The harm category is hate speech.
           - arg_value: harm-category-dangerous-content
             enum_value: HARM_CATEGORY_DANGEROUS_CONTENT
-            help_text: Value for the `harm-category-dangerous-content` field.
+            help_text: The harm category is dangerous content.
           - arg_value: harm-category-harassment
             enum_value: HARM_CATEGORY_HARASSMENT
-            help_text: Value for the `harm-category-harassment` field.
+            help_text: The harm category is harassment.
           - arg_value: harm-category-sexually-explicit
             enum_value: HARM_CATEGORY_SEXUALLY_EXPLICIT
-            help_text: Value for the `harm-category-sexually-explicit` field.
+            help_text: The harm category is sexually explicit content.
       - arg_name: safety-settings-threshold
         api_field: workbenchQueryRequest.safetySettings.threshold
         help_text: Controls the probability threshold at which harm is blocked.
@@ -97,16 +97,16 @@
         choices:
           - arg_value: block-low-and-above
             enum_value: BLOCK_LOW_AND_ABOVE
-            help_text: Value for the `block-low-and-above` field.
+            help_text: Content with NEGLIGIBLE will be allowed.
           - arg_value: block-medium-and-above
             enum_value: BLOCK_MEDIUM_AND_ABOVE
-            help_text: Value for the `block-medium-and-above` field.
+            help_text: Content with NEGLIGIBLE and LOW will be allowed.
           - arg_value: block-only-high
             enum_value: BLOCK_ONLY_HIGH
-            help_text: Value for the `block-only-high` field.
+            help_text: Content with NEGLIGIBLE, LOW, and MEDIUM will be allowed.
           - arg_value: block-none
             enum_value: BLOCK_NONE
-            help_text: Value for the `block-none` field.
+            help_text: All content will be allowed.
   request:
     api_version: v1
     collection:

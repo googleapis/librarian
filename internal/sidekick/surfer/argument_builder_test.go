@@ -143,6 +143,56 @@ func TestNewArgument(t *testing.T) {
 				HelpText: "Override Foo",
 			},
 		},
+		{
+			name: "Enum Field with Documentation",
+			field: func() *api.Field {
+				f := api.NewTestField("state").WithType(api.TypezEnum)
+				f.EnumType = &api.Enum{
+					Name: "State",
+					Values: []*api.EnumValue{
+						{Name: "STATE_UNSPECIFIED"},
+						{Name: "ACTIVE", Documentation: "The active state."},
+						{Name: "SUSPENDED", Documentation: "The suspended state."},
+					},
+				}
+				return f
+			}(),
+			method: api.NewTestMethod("CreateInstance"),
+			want: Argument{
+				ArgName:  "state",
+				APIField: []string{"state"},
+				HelpText: "Value for the `state` field.",
+				Choices: []Choice{
+					{ArgValue: "active", EnumValue: "ACTIVE", HelpText: "The active state."},
+					{ArgValue: "suspended", EnumValue: "SUSPENDED", HelpText: "The suspended state."},
+				},
+			},
+		},
+		{
+			name: "Enum Field without Documentation (Fallback)",
+			field: func() *api.Field {
+				f := api.NewTestField("state").WithType(api.TypezEnum)
+				f.EnumType = &api.Enum{
+					Name: "State",
+					Values: []*api.EnumValue{
+						{Name: "STATE_UNSPECIFIED"},
+						{Name: "ACTIVE"},
+						{Name: "SUSPENDED"},
+					},
+				}
+				return f
+			}(),
+			method: api.NewTestMethod("CreateInstance"),
+			want: Argument{
+				ArgName:  "state",
+				APIField: []string{"state"},
+				HelpText: "Value for the `state` field.",
+				Choices: []Choice{
+					{ArgValue: "active", EnumValue: "ACTIVE", HelpText: "Value for the `active` field."},
+					{ArgValue: "suspended", EnumValue: "SUSPENDED", HelpText: "Value for the `suspended` field."},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

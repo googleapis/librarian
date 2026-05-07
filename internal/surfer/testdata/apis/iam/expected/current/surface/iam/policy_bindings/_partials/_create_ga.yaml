@@ -109,7 +109,7 @@
         choices:
           - arg_value: principal-access-boundary
             enum_value: PRINCIPAL_ACCESS_BOUNDARY
-            help_text: Value for the `principal-access-boundary` field.
+            help_text: Principal access boundary policy kind
       - arg_name: policy
         api_field: policyBinding.policy
         help_text: |-

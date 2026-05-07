@@ -141,13 +141,13 @@
         choices:
           - arg_value: file-stripe-level-min
             enum_value: FILE_STRIPE_LEVEL_MIN
-            help_text: Value for the `file-stripe-level-min` field.
+            help_text: Minimum file striping
           - arg_value: file-stripe-level-balanced
             enum_value: FILE_STRIPE_LEVEL_BALANCED
-            help_text: Value for the `file-stripe-level-balanced` field.
+            help_text: Medium file striping
           - arg_value: file-stripe-level-max
             enum_value: FILE_STRIPE_LEVEL_MAX
-            help_text: Value for the `file-stripe-level-max` field.
+            help_text: Maximum file striping
       - arg_name: directory-stripe-level
         api_field: instance.directoryStripeLevel
         help_text: |-
@@ -164,13 +164,13 @@
         choices:
           - arg_value: directory-stripe-level-min
             enum_value: DIRECTORY_STRIPE_LEVEL_MIN
-            help_text: Value for the `directory-stripe-level-min` field.
+            help_text: Minimum directory striping
           - arg_value: directory-stripe-level-balanced
             enum_value: DIRECTORY_STRIPE_LEVEL_BALANCED
-            help_text: Value for the `directory-stripe-level-balanced` field.
+            help_text: Medium directory striping
           - arg_value: directory-stripe-level-max
             enum_value: DIRECTORY_STRIPE_LEVEL_MAX
-            help_text: Value for the `directory-stripe-level-max` field.
+            help_text: Maximum directory striping
       - arg_name: deployment-type
         api_field: instance.deploymentType
         help_text: |-
@@ -184,10 +184,10 @@
         choices:
           - arg_value: scratch
             enum_value: SCRATCH
-            help_text: Value for the `scratch` field.
+            help_text: Scratch
           - arg_value: persistent
             enum_value: PERSISTENT
-            help_text: Value for the `persistent` field.
+            help_text: Persistent
       - arg_name: request-id
         api_field: requestId
         help_text: |-
