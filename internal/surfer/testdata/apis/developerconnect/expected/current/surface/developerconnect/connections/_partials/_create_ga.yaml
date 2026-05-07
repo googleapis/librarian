@@ -186,3 +186,5 @@
     collection:
       - developerconnect.projects.locations.operations
     extract_resource_result: true
+  output:
+    format: csv[no-heading,separator="\\n"](installationState.stage,installationState.message,installationState.actionUri)
