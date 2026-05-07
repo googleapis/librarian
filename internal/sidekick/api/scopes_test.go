@@ -250,7 +250,7 @@ func TestScopesOneOf(t *testing.T) {
 				Name: "empty_oneof",
 				ID:   ".test.Parent.empty_oneof",
 			},
-			want: []string{"test.Parent"},
+			want: []string{"test.Parent", "test"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

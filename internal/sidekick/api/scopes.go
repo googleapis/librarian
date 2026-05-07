@@ -96,9 +96,14 @@ func (x *OneOf) Scopes() []string {
 	if len(x.Fields) > 0 {
 		return x.Fields[0].Scopes()
 	}
-	idx := strings.LastIndex(x.ID, ".")
-	if idx == -1 {
-		return []string{strings.TrimPrefix(x.ID, ".")}
+	parts := strings.Split(strings.TrimPrefix(x.ID, "."), ".")
+	if len(parts) <= 1 {
+		return []string{}
 	}
-	return []string{strings.TrimPrefix(x.ID[:idx], ".")}
+	parts = parts[:len(parts)-1]
+	res := make([]string, 0, len(parts))
+	for i := len(parts); i > 0; i-- {
+		res = append(res, strings.Join(parts[:i], "."))
+	}
+	return res
 }
