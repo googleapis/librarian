@@ -19,7 +19,7 @@ language: python
 tools:
   pip:
     - name: gapic-generator
-      version: "1.30.13"
+      version: "1.32.0"
     - name: nox
       version: "2025.11.12"
     - name: ruff
