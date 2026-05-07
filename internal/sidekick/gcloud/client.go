@@ -94,10 +94,10 @@ func clientInfoFromPath(clientImportPath string) *goClientInfo {
 	}
 }
 
-// buildClientCall returns a ClientCall for an AIP-131 Get or AIP-132 List
-// method when the model maps to a standard GAPIC Go package and the command
-// composes a resource path. It returns nil otherwise so the command keeps
-// its print-only action.
+// buildClientCall returns a ClientCall for an AIP-131 Get, AIP-132 List, or
+// AIP-135 Delete method when the model maps to a standard GAPIC Go package
+// and the command composes a resource path. It returns nil otherwise so the
+// command keeps its print-only action.
 func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *ClientCall {
 	if goClient == nil || !hasPath {
 		return nil
@@ -121,6 +121,15 @@ func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *
 			Package:     goClient.Alias,
 			RequestType: goClient.Alias + "pb." + method.InputType.Name,
 			IsList:      true,
+		}
+	case provider.IsDelete(method):
+		return &ClientCall{
+			Method:      method.Name,
+			NameField:   "Name",
+			Package:     goClient.Alias,
+			RequestType: goClient.Alias + "pb." + method.InputType.Name,
+			IsDelete:    true,
+			IsLRO:       method.IsLRO,
 		}
 	default:
 		return nil

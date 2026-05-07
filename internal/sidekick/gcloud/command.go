@@ -33,8 +33,14 @@ type Command struct {
 // ClientCall describes a Go client method invocation that should replace the
 // default print-only action for a generated command.
 type ClientCall struct {
+	// IsDelete reports whether the method is a standard Delete method.
+	IsDelete bool
+
 	// IsList reports whether the method is a standard List method.
 	IsList bool
+
+	// IsLRO reports whether the call returns a long-running operation.
+	IsLRO bool
 
 	// Method is the unqualified client method to call on the constructed
 	// client, for example "GetInstance". The template invokes it as

@@ -199,6 +199,85 @@ func TestConstructSurfaceModel(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "delete method",
+			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
+				Services: []*api.Service{{
+					Name: "InstanceService",
+					Methods: []*api.Method{{
+						Name:                "DeleteInstance",
+						IsAIPStandardDelete: true,
+						IsLRO:               true,
+						InputType: &api.Message{
+							Name: "DeleteInstanceRequest",
+							Fields: []*api.Field{
+								{
+									Name:              "name",
+									ResourceReference: &api.ResourceReference{Type: "parallelstore.googleapis.com/Instance"},
+								},
+							},
+						},
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{{
+								Verb: "DELETE",
+								PathTemplate: (&api.PathTemplate{}).
+									WithLiteral("v1").
+									WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+									WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+									WithLiteral("instances").WithVariable(api.NewPathVariable("instance")),
+							}},
+						},
+					}},
+				}},
+				ResourceDefinitions: []*api.Resource{{
+					Type: "parallelstore.googleapis.com/Instance",
+					Patterns: []api.ResourcePattern{
+						(&api.PathTemplate{}).
+							WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+							WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+							WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+							Segments,
+					},
+				}},
+			},
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports: []Import{
+					{Alias: "parallelstore", Path: "cloud.google.com/go/parallelstore/apiv1"},
+					{Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb"},
+				},
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:       "delete",
+							Usage:      "delete instances",
+							PathFormat: "projects/%s/locations/%s/instances/%s",
+							Args:       []string{"project", "location", "instance"},
+							PathLabel:  "name",
+							Flags: []Flag{
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+								{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+							},
+							ClientCall: &ClientCall{
+								Method:      "DeleteInstance",
+								NameField:   "Name",
+								Package:     "parallelstore",
+								RequestType: "parallelstorepb.DeleteInstanceRequest",
+								IsDelete:    true,
+								IsLRO:       true,
+							},
+						}},
+					}},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := constructSurfaceModel(test.model, "")

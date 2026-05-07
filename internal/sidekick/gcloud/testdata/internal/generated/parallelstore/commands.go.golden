@@ -127,7 +127,19 @@ func Command() *cli.Command {
 								return fmt.Errorf("--project is required")
 							}
 							name := fmt.Sprintf("projects/%s/locations/%s/instances/%s", cmd.String("project"), cmd.String("location"), cmd.String("instance"))
-							fmt.Printf("Executing delete on %s\n", name)
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							op, err := client.DeleteInstance(ctx, &parallelstorepb.DeleteInstanceRequest{Name: name})
+							if err != nil {
+								return err
+							}
+							if err := op.Wait(ctx); err != nil {
+								return err
+							}
+							fmt.Printf("Deleted %s\n", name)
 							return nil
 						},
 					},
@@ -266,7 +278,15 @@ func Command() *cli.Command {
 								return fmt.Errorf("--project is required")
 							}
 							name := fmt.Sprintf("projects/%s/locations/%s/operations/%s", cmd.String("project"), cmd.String("location"), cmd.String("operation"))
-							fmt.Printf("Executing delete on %s\n", name)
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							if err := client.DeleteOperation(ctx, &parallelstorepb.DeleteOperationRequest{Name: name}); err != nil {
+								return err
+							}
+							fmt.Printf("Deleted %s\n", name)
 							return nil
 						},
 					},

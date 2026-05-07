@@ -89,6 +89,22 @@ func Command() *cli.Command {
 			fmt.Println(string(out))
 		}
 		return nil
+		{{- else if .ClientCall.IsDelete}}
+		{{- if .ClientCall.IsLRO}}
+		op, err := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })
+		if err != nil {
+			return err
+		}
+		if err := op.Wait(ctx); err != nil {
+			return err
+		}
+		{{- else}}
+		if err := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} }); err != nil {
+			return err
+		}
+		{{- end}}
+		fmt.Printf("Deleted %s\n", {{.PathLabel}})
+		return nil
 		{{- else}}
 		resp, err := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })
 		if err != nil {

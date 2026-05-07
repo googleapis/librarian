@@ -67,6 +67,40 @@ func TestBuildClientCall(t *testing.T) {
 			},
 		},
 		{
+			name: "Delete LRO method",
+			method: &api.Method{
+				Name:      "DeleteInstance",
+				InputType: &api.Message{Name: "DeleteInstanceRequest"},
+				IsLRO:     true,
+			},
+			goClient: goClient,
+			hasPath:  true,
+			want: &ClientCall{
+				Method:      "DeleteInstance",
+				NameField:   "Name",
+				Package:     "parallelstore",
+				RequestType: "parallelstorepb.DeleteInstanceRequest",
+				IsDelete:    true,
+				IsLRO:       true,
+			},
+		},
+		{
+			name: "Delete non-LRO method",
+			method: &api.Method{
+				Name:      "DeleteOperation",
+				InputType: &api.Message{Name: "DeleteOperationRequest"},
+			},
+			goClient: goClient,
+			hasPath:  true,
+			want: &ClientCall{
+				Method:      "DeleteOperation",
+				NameField:   "Name",
+				Package:     "parallelstore",
+				RequestType: "parallelstorepb.DeleteOperationRequest",
+				IsDelete:    true,
+			},
+		},
+		{
 			name: "nil goClient",
 			method: &api.Method{
 				Name:      "GetInstance",
@@ -96,10 +130,10 @@ func TestBuildClientCall(t *testing.T) {
 			want:     nil,
 		},
 		{
-			name: "not get or list",
+			name: "not get list or delete",
 			method: &api.Method{
-				Name:      "CreateInstance",
-				InputType: &api.Message{Name: "CreateInstanceRequest"},
+				Name:      "ImportData",
+				InputType: &api.Message{Name: "ImportDataRequest"},
 			},
 			goClient: goClient,
 			hasPath:  true,
