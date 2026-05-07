@@ -91,7 +91,7 @@
       - arg_name: target
         api_field: policyBinding.target
         help_text: |-
-          Immutable. Target is the full resource name of the resource to
+          Target is the full resource name of the resource to
           which the policy will be bound. Immutable once set.
         is_positional: false
         required: true
@@ -99,7 +99,7 @@
       - arg_name: policy-kind
         api_field: policyBinding.policyKind
         help_text: |-
-          Immutable. The kind of the policy to attach in this binding. This field
+          The kind of the policy to attach in this binding. This field
           must be one of the following:
 
           - Left empty (will be automatically set to the policy kind)
@@ -113,7 +113,7 @@
       - arg_name: policy
         api_field: policyBinding.policy
         help_text: |-
-          Immutable. The resource name of the policy to be bound. The
+          The resource name of the policy to be bound. The
           binding parent and policy must belong to the same organization.
         is_positional: false
         required: true

@@ -54,7 +54,7 @@
         required: true
       - arg_name: immutable-field
         api_field: resource.immutableField
-        help_text: Immutable. Immutable field.
+        help_text: Immutable field.
         is_positional: false
         required: false
       - arg_name: labels

@@ -72,7 +72,7 @@
       - arg_name: capacity-gib
         api_field: instance.capacityGib
         help_text: |-
-          Immutable. The instance's storage capacity in Gibibytes (GiB).
+          The instance's storage capacity in Gibibytes (GiB).
           Allowed values are between 12000 and 100000, in multiples of 4000; e.g.,
           12000, 16000, 20000, ...
         is_positional: false
@@ -80,7 +80,7 @@
         type: long
       - arg_name: network
         help_text: |-
-          Immutable. The name of the Compute Engine
+          The name of the Compute Engine
           [VPC network](https://cloud.google.com/vpc/docs/vpc) to which the
           instance is connected.
         is_positional: false
@@ -102,7 +102,7 @@
           instance.network: '{__relative_name__}'
       - arg_name: reserved-ip-range
         help_text: |-
-          Immutable. The ID of the IP address range being used by the
+          The ID of the IP address range being used by the
           instance's VPC network. See [Configure a VPC
           network](https://cloud.google.com/parallelstore/docs/vpc#create_and_configure_the_vpc).
           If no ID is provided, all ranges are considered.
@@ -129,7 +129,7 @@
       - arg_name: file-stripe-level
         api_field: instance.fileStripeLevel
         help_text: |-
-          Immutable. Stripe level for files. Allowed values are:
+          Stripe level for files. Allowed values are:
 
           * `FILE_STRIPE_LEVEL_MIN`: offers the best performance for small size
             files.
@@ -151,7 +151,7 @@
       - arg_name: directory-stripe-level
         api_field: instance.directoryStripeLevel
         help_text: |-
-          Immutable. Stripe level for directories. Allowed values are:
+          Stripe level for directories. Allowed values are:
 
           * `DIRECTORY_STRIPE_LEVEL_MIN`: recommended when directories contain a
             small number of files.
@@ -174,7 +174,7 @@
       - arg_name: deployment-type
         api_field: instance.deploymentType
         help_text: |-
-          Immutable. The deployment type of the instance. Allowed values
+          The deployment type of the instance. Allowed values
           are:
 
           * `SCRATCH`: the instance is a scratch instance.
