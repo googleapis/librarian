@@ -39,7 +39,7 @@ func Command() *cli.Command {
 							}
 							defer client.Close()
 							limit := cmd.Int("limit")
-							count := 0
+							count := int64(0)
 							it := client.ListInstances(ctx, &parallelstorepb.ListInstancesRequest{Parent: parent})
 							for {
 								resp, err := it.Next()
@@ -228,7 +228,7 @@ func Command() *cli.Command {
 							}
 							defer client.Close()
 							limit := cmd.Int("limit")
-							count := 0
+							count := int64(0)
 							it := client.ListOperations(ctx, &parallelstorepb.ListOperationsRequest{Parent: parent})
 							for {
 								resp, err := it.Next()

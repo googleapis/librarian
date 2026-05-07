@@ -74,7 +74,7 @@ func Command() *cli.Command {
 		defer client.Close()
 		{{- if .ClientCall.Paged}}
 		limit := cmd.Int("limit")
-		count := 0
+		count := int64(0)
 		it := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })
 		for {
 			resp, err := it.Next()
