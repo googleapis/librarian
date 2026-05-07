@@ -12,13 +12,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 config_version: v2.0
-service_name: multiservice.googleapis.com
+service_name: hiddensurface.googleapis.com
 apis:
-  - name: FirstService
-    api_version: v1
-    release_tracks:
-      - GA
-  - name: SecondService
+  - name: HiddenSurface
     api_version: v1
     release_tracks:
       - GA

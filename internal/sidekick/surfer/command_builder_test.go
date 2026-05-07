@@ -372,9 +372,14 @@ func TestNewCommand(t *testing.T) {
 			}(),
 			overrides: &provider.Config{
 				APIs: []provider.API{
-					{RootIsHidden: false},
+					{
+						Name:         "TestService",
+						APIVersion:   "v1",
+						RootIsHidden: false,
+					},
 				},
 			},
+
 			want: &Command{
 				Name:            "list",
 				Hidden:          false,
@@ -449,6 +454,7 @@ func TestNewCommand(t *testing.T) {
 				Name:       "create",
 				Hidden:     false,
 				APIVersion: "v1",
+
 				Async: &Async{
 					Collection:            []string{"test.projects.operations"},
 					ExtractResourceResult: false,

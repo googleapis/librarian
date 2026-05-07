@@ -315,5 +315,3 @@ func FindAPIConfig(c *Config, method *api.Method) *API {
 	}
 	return FindAPIConfigByService(c, method.Service)
 }
-
-}

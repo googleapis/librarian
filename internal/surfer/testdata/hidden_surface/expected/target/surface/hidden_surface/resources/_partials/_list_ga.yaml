@@ -19,16 +19,16 @@
   auto_generated: true
   hidden: true
   help_text:
-    brief: Describe resources
-    description: Describe a resource
+    brief: List resources
+    description: List resources
     examples: |-
-      To describe the resource, run:
+      To list all resources, run:
 
           $ {command}
   arguments:
     params:
-      - help_text: The name of the resource.
-        is_positional: true
+      - help_text: The parent of the resource.
+        is_positional: false
         is_primary_resource: true
         resource_spec:
           attributes:
@@ -39,15 +39,14 @@
             - attribute_name: location
               help: The location id of the {resource} resource.
               parameter_name: locationsId
-            - attribute_name: resource
-              help: The resource id of the {resource} resource.
-              parameter_name: resourcesId
-          collection: multiservice.projects.locations.resources
-          disable_auto_completers: false
-          name: resource
-          plural_name: resources
+          collection: hiddensurface.projects.locations
+          disable_auto_completers: true
+          name: location
+          plural_name: locations
         required: true
   request:
     api_version: v1
     collection:
-      - multiservice.projects.locations.resources
+      - hiddensurface.projects.locations.resources
+  response:
+    id_field: name

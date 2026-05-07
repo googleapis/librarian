@@ -27,7 +27,7 @@
           $ {command}
   arguments:
     params:
-      - help_text: The name of the resource.
+      - help_text: The resource name of the resource within a service.
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -42,7 +42,7 @@
             - attribute_name: resource
               help: The resource id of the {resource} resource.
               parameter_name: resourcesId
-          collection: multiservice.projects.locations.resources
+          collection: hiddensurface.projects.locations.resources
           disable_auto_completers: false
           name: resource
           plural_name: resources
@@ -50,4 +50,4 @@
   request:
     api_version: v1
     collection:
-      - multiservice.projects.locations.resources
+      - hiddensurface.projects.locations.resources

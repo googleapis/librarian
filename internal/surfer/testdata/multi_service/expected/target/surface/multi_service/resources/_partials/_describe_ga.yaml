@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*- #
-# Copyright 2025 Google LLC. All Rights Reserved.
+# Copyright 2026 Google LLC. All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@
 - release_tracks:
     - GA
   auto_generated: true
+  hidden: true
   help_text:
     brief: Describe resources
     description: Describe a resource
@@ -26,26 +27,25 @@
           $ {command}
   arguments:
     params:
-      - help_text: |-
-          The name of the resource.
+      - help_text: The name of the resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+            - attribute_name: resource
+              help: The resource id of the {resource} resource.
+              parameter_name: resourcesId
+          collection: multiservice.projects.locations.resources
+          disable_auto_completers: false
           name: resource
           plural_name: resources
-          collection: multiservice.projects.locations.resources
-          attributes:
-            - parameter_name: projectsId
-              attribute_name: project
-              help: The project id of the {resource} resource.
-              property: core/project
-            - parameter_name: locationsId
-              attribute_name: location
-              help: The location id of the {resource} resource.
-            - parameter_name: resourcesId
-              attribute_name: resource
-              help: The resource id of the {resource} resource.
-          disable_auto_completers: false
         required: true
   request:
     api_version: v1
