@@ -63,7 +63,7 @@ func TestBuildClientCall(t *testing.T) {
 				NameField:   "Parent",
 				Package:     "parallelstore",
 				RequestType: "parallelstorepb.ListInstancesRequest",
-				IsList:      true,
+				Paged:       true,
 			},
 		},
 		{

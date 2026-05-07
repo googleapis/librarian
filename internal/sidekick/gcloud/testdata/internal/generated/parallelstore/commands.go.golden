@@ -26,6 +26,7 @@ func Command() *cli.Command {
 						Usage: "list instances",
 						Flags: []cli.Flag{
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+							&cli.IntFlag{Name: "limit", Usage: "The limit.", Required: false},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -37,6 +38,8 @@ func Command() *cli.Command {
 								return err
 							}
 							defer client.Close()
+							limit := cmd.Int("limit")
+							count := 0
 							it := client.ListInstances(ctx, &parallelstorepb.ListInstancesRequest{Parent: parent})
 							for {
 								resp, err := it.Next()
@@ -51,6 +54,10 @@ func Command() *cli.Command {
 									return err
 								}
 								fmt.Println(string(out))
+								count++
+								if limit > 0 && count >= limit {
+									break
+								}
 							}
 							return nil
 						},
@@ -208,6 +215,7 @@ func Command() *cli.Command {
 						Usage: "list operations",
 						Flags: []cli.Flag{
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+							&cli.IntFlag{Name: "limit", Usage: "The limit.", Required: false},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -219,6 +227,8 @@ func Command() *cli.Command {
 								return err
 							}
 							defer client.Close()
+							limit := cmd.Int("limit")
+							count := 0
 							it := client.ListOperations(ctx, &parallelstorepb.ListOperationsRequest{Parent: parent})
 							for {
 								resp, err := it.Next()
@@ -233,6 +243,10 @@ func Command() *cli.Command {
 									return err
 								}
 								fmt.Println(string(out))
+								count++
+								if limit > 0 && count >= limit {
+									break
+								}
 							}
 							return nil
 						},

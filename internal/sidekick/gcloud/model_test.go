@@ -186,13 +186,14 @@ func TestConstructSurfaceModel(t *testing.T) {
 							PathLabel:  "parent",
 							Flags: []Flag{
 								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+								{Name: "limit", Kind: "Int", Required: false, Usage: "The limit."},
 							},
 							ClientCall: &ClientCall{
 								Method:      "ListInstances",
 								NameField:   "Parent",
 								Package:     "parallelstore",
 								RequestType: "parallelstorepb.ListInstancesRequest",
-								IsList:      true,
+								Paged:       true,
 							},
 						}},
 					}},

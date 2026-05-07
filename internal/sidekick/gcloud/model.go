@@ -120,8 +120,9 @@ func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel
 			if call := buildClientCall(method, goClient, cmd.HasPath()); call != nil {
 				cmd.ClientCall = call
 				hasClientCall = true
-				if call.IsList {
+				if call.Paged {
 					hasListCall = true
+					cmd.Flags = append(cmd.Flags, flag("limit", "Int", false))
 				}
 			}
 

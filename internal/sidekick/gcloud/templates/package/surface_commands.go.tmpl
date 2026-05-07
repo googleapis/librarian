@@ -72,7 +72,9 @@ func Command() *cli.Command {
 			return err
 		}
 		defer client.Close()
-		{{- if .ClientCall.IsList}}
+		{{- if .ClientCall.Paged}}
+		limit := cmd.Int("limit")
+		count := 0
 		it := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })
 		for {
 			resp, err := it.Next()
@@ -87,6 +89,10 @@ func Command() *cli.Command {
 				return err
 			}
 			fmt.Println(string(out))
+			count++
+			if limit > 0 && count >= limit {
+				break
+			}
 		}
 		return nil
 		{{- else if .ClientCall.IsDelete}}

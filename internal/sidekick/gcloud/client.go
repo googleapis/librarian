@@ -120,7 +120,7 @@ func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *
 			NameField:   "Parent",
 			Package:     goClient.Alias,
 			RequestType: goClient.Alias + "pb." + method.InputType.Name,
-			IsList:      true,
+			Paged:       true,
 		}
 	case provider.IsDelete(method):
 		return &ClientCall{

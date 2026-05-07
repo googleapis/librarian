@@ -36,9 +36,6 @@ type ClientCall struct {
 	// IsDelete reports whether the method is a standard Delete method.
 	IsDelete bool
 
-	// IsList reports whether the method is a standard List method.
-	IsList bool
-
 	// IsLRO reports whether the call returns a long-running operation.
 	IsLRO bool
 
@@ -56,6 +53,10 @@ type ClientCall struct {
 	// "parallelstore". The template invokes the constructor as
 	// `client, err := <Package>.NewClient(ctx)`.
 	Package string
+
+	// Paged reports whether the method returns a paginated iterator (e.g.,
+	// AIP-132 List).
+	Paged bool
 
 	// RequestType is the qualified request message type, for example
 	// "parallelstorepb.GetInstanceRequest". The template composites a
