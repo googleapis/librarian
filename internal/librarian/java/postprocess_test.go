@@ -113,9 +113,13 @@ func TestPostProcessAPI(t *testing.T) {
 			Name: libraryName,
 			APIs: []*config.API{api},
 		},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      apiProtos,
+		apiBase: apiBase,
+		protosToCopy: []protoFileToCopy{
+			{
+				absolutePath: apiProtos[0],
+				relativePath: "google/cloud/secretmanager/v1/service.proto",
+			},
+		},
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -192,14 +196,21 @@ func TestRestructureModules(t *testing.T) {
 
 	additionalProtoPath := filepath.Join(googleapisDir, "google", "cloud", "oslogin", "common", "common.proto")
 	p := postProcessParams{
-		outDir:                            tmpDir,
-		library:                           &config.Library{Name: libraryID},
-		apiBase:                           apiBase,
-		protoSourceDir:                    googleapisDir,
-		apiProtos:                         []string{protoPath},
-		additionalProtosToGenerateAndCopy: []string{additionalProtoPath},
-		includeSamples:                    true,
-		javaAPI:                           &config.JavaAPI{},
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID},
+		apiBase: apiBase,
+		protosToCopy: []protoFileToCopy{
+			{
+				absolutePath: protoPath,
+				relativePath: "google/cloud/secretmanager/v1/service.proto",
+			},
+			{
+				absolutePath: additionalProtoPath,
+				relativePath: "google/cloud/oslogin/common/common.proto",
+			},
+		},
+		includeSamples: true,
+		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
 	if err := restructureModules(p, destRoot); err != nil {
@@ -234,11 +245,10 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: commonProtosLibrary},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: commonProtosLibrary},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
 			ProtoArtifactIDOverride: "proto-google-common-protos",
@@ -260,11 +270,10 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: "secretmanager"},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: "secretmanager"},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -313,11 +322,10 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	}
 
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -363,11 +371,10 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
-		apiBase:        apiBase,
-		protoSourceDir: t.TempDir(), // dummy
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID, Java: &config.JavaModule{}},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
 			Monolithic: true,
@@ -440,8 +447,13 @@ func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
-	protos := []string{proto1}
-	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
+	protos := []protoFileToCopy{
+		{
+			absolutePath: proto1,
+			relativePath: "google/cloud/secretmanager/v1/service.proto",
+		},
+	}
+	if err := copyProtos(protos, destDir); err != nil {
 		t.Fatal(err)
 	}
 	// Verify proto1 was copied
@@ -453,7 +465,7 @@ func TestCopyProtos_Success(t *testing.T) {
 func TestCopyProtos_ErrorCase(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
-	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
+	if err := copyProtos([]protoFileToCopy{{absolutePath: "/other/path/proto.proto", relativePath: "other/path/proto.proto"}}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
 	}
 }

@@ -46,17 +46,20 @@ var (
 	errInvalidVersion   = errors.New("invalid java library version")
 )
 
+type protoFileToCopy struct {
+	absolutePath string
+	relativePath string
+}
+
 type postProcessParams struct {
-	cfg                               *config.Config
-	library                           *config.Library
-	javaAPI                           *config.JavaAPI
-	metadata                          *repoMetadata
-	outDir                            string
-	apiBase                           string
-	protoSourceDir                    string
-	apiProtos                         []string
-	additionalProtosToGenerateAndCopy []string
-	includeSamples                    bool
+	cfg            *config.Config
+	library        *config.Library
+	javaAPI        *config.JavaAPI
+	metadata       *repoMetadata
+	outDir         string
+	apiBase        string
+	protosToCopy   []protoFileToCopy
+	includeSamples bool
 }
 
 type libraryPostProcessParams struct {
@@ -341,9 +344,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	}
 	// Copy proto files to proto-*/src/main/proto
 	if shouldGenerateProtoGRPC(p.javaAPI) {
-		allProtos := append([]string{}, p.apiProtos...)
-		allProtos = append(allProtos, p.additionalProtosToGenerateAndCopy...)
-		if err := copyProtos(p.protoSourceDir, allProtos, protoFilesDestDir); err != nil {
+		if err := copyProtos(p.protosToCopy, protoFilesDestDir); err != nil {
 			return fmt.Errorf("failed to copy proto files: %w", err)
 		}
 	}
@@ -409,19 +410,14 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	return sv.String(), nil
 }
 
-func copyProtos(protoSourceDir string, protos []string, destDir string) error {
-	for _, proto := range protos {
-		// Calculate relative path from protoSourceDir to preserve directory structure
-		rel, err := filepath.Rel(protoSourceDir, proto)
-		if err != nil {
-			return fmt.Errorf("failed to calculate relative path for %s: %w", proto, err)
-		}
-		target := filepath.Join(destDir, rel)
+func copyProtos(protos []protoFileToCopy, destDir string) error {
+	for _, p := range protos {
+		target := filepath.Join(destDir, p.relativePath)
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
 		}
-		if err := filesystem.CopyFile(proto, target); err != nil {
-			return fmt.Errorf("failed to copy file %s to %s: %w", proto, target, err)
+		if err := filesystem.CopyFile(p.absolutePath, target); err != nil {
+			return fmt.Errorf("failed to copy file %s to %s: %w", p.absolutePath, target, err)
 		}
 	}
 	return nil
