@@ -109,9 +109,6 @@ func responseIDField(method *api.Method) string {
 
 // TODO(https://github.com/googleapis/librarian/issues/5231): add default table output if not specified in the config.
 func outputFormat(overrides *provider.Config, method *api.Method) string {
-	if !provider.IsList(method) {
-		return ""
-	}
 	return provider.OutputFormat(overrides, method.ID)
 }
 

@@ -78,6 +78,35 @@ func TestOutputFormat(t *testing.T) {
 			},
 			want: "json",
 		},
+		{
+			name: "non-list method with override format in gcloud config",
+			method: func() *api.Method {
+				m := api.NewTestMethod("DescribeInstance").WithVerb("GET").WithOutput(
+					api.NewTestMessage("Instance").WithFields(
+						api.NewTestField("name").WithType(api.TypezString),
+					),
+				)
+				m.ID = "google.cloud.test.v1.Service.DescribeInstance"
+				m.Service = api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+				m.Service.DefaultHost = "test.googleapis.com"
+				return m
+			}(),
+			overrides: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:       "TestService",
+						APIVersion: "v1",
+						OutputFormatting: []*provider.OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.DescribeInstance",
+								Format:   "json",
+							},
+						},
+					},
+				},
+			},
+			want: "json",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
