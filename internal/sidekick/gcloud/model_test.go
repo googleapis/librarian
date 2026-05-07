@@ -185,8 +185,8 @@ func TestConstructSurfaceModel(t *testing.T) {
 							Args:       []string{"project", "location"},
 							PathLabel:  "parent",
 							Flags: []Flag{
-								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 								{Name: "limit", Kind: "Int", Required: false, Usage: "The limit."},
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 							},
 							ClientCall: &ClientCall{
 								Method:      "ListInstances",
@@ -263,8 +263,8 @@ func TestConstructSurfaceModel(t *testing.T) {
 							Args:       []string{"project", "location", "instance"},
 							PathLabel:  "name",
 							Flags: []Flag{
-								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 								{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
 							},
 							ClientCall: &ClientCall{
 								Method:      "DeleteInstance",
@@ -279,6 +279,54 @@ func TestConstructSurfaceModel(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:  "create method",
+			model: createModel(),
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports: []Import{
+					{Alias: "parallelstore", Path: "cloud.google.com/go/parallelstore/apiv1"},
+					{Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb"},
+				},
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:       "create",
+							Usage:      "create instances",
+							PathFormat: "projects/%s/locations/%s",
+							Args:       []string{"project", "location"},
+							PathLabel:  "parent",
+							Flags: []Flag{
+								{Name: "capacity-gib", Kind: "Int64", Required: true, Usage: "The capacity gib."},
+								{Name: "description", Kind: "String", Usage: "The description."},
+								{Name: "instance-id", Kind: "String", Required: true, Usage: "The instance id."},
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+							},
+							ClientCall: &ClientCall{
+								IsCreate:    true,
+								IsLRO:       true,
+								Method:      "CreateInstance",
+								NameField:   "Parent",
+								Package:     "parallelstore",
+								RequestType: "parallelstorepb.CreateInstanceRequest",
+								IDField:     "InstanceId",
+								IDFlag:      "instance-id",
+								BodyField:   "Instance",
+								BodyType:    "parallelstorepb.Instance",
+								BodyAssignments: []BodyAssignment{
+									{Name: "Description", Flag: "description", Kind: "String"},
+									{Name: "CapacityGib", Flag: "capacity-gib", Kind: "Int64"},
+								},
+							},
+						}},
+					}},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := constructSurfaceModel(test.model, "")
@@ -286,5 +334,70 @@ func TestConstructSurfaceModel(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+// createModel returns a minimal API model that exercises the AIP-133
+// Create code path: an Instance resource with a couple of scalar body
+// fields plus an identifier field that should be skipped, and a
+// CreateInstance method that takes the Instance as its body.
+func createModel() *api.API {
+	instance := &api.Message{
+		Name: "Instance",
+		ID:   ".google.cloud.parallelstore.v1.Instance",
+		Fields: []*api.Field{
+			{Name: "name", Typez: api.TypezString, Behavior: []api.FieldBehavior{api.FieldBehaviorIdentifier}},
+			{Name: "description", Typez: api.TypezString},
+			{Name: "capacity_gib", Typez: api.TypezInt64, Behavior: []api.FieldBehavior{api.FieldBehaviorRequired}},
+		},
+	}
+	instance.Resource = &api.Resource{
+		Type:     "parallelstore.googleapis.com/Instance",
+		Singular: "instance",
+		Self:     instance,
+		Patterns: []api.ResourcePattern{
+			(&api.PathTemplate{}).
+				WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+				WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+				WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+				Segments,
+		},
+	}
+	return &api.API{
+		Name:        "parallelstore",
+		Title:       "Parallelstore",
+		PackageName: "google.cloud.parallelstore.v1",
+		Messages:    []*api.Message{instance},
+		Services: []*api.Service{{
+			Name: "InstanceService",
+			Methods: []*api.Method{{
+				Name:                "CreateInstance",
+				IsAIPStandardCreate: true,
+				IsLRO:               true,
+				InputType: &api.Message{
+					Name: "CreateInstanceRequest",
+					Fields: []*api.Field{
+						{
+							Name:              "parent",
+							Typez:             api.TypezString,
+							ResourceReference: &api.ResourceReference{ChildType: "parallelstore.googleapis.com/Instance"},
+						},
+						{Name: "instance_id", Typez: api.TypezString, Behavior: []api.FieldBehavior{api.FieldBehaviorRequired}},
+						{Name: "instance", Typez: api.TypezMessage, TypezID: instance.ID, MessageType: instance, Behavior: []api.FieldBehavior{api.FieldBehaviorRequired}},
+					},
+				},
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb: "POST",
+						PathTemplate: (&api.PathTemplate{}).
+							WithLiteral("v1").
+							WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+							WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+							WithLiteral("instances"),
+					}},
+				},
+			}},
+		}},
+		ResourceDefinitions: []*api.Resource{instance.Resource},
 	}
 }

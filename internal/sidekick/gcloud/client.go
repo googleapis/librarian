@@ -18,6 +18,8 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
@@ -94,16 +96,19 @@ func clientInfoFromPath(clientImportPath string) *goClientInfo {
 	}
 }
 
-// buildClientCall returns a ClientCall for an AIP-131 Get, AIP-132 List, or
-// AIP-135 Delete method when the model maps to a standard GAPIC Go package
-// and the command composes a resource path. It returns nil otherwise so the
-// command keeps its print-only action.
-func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *ClientCall {
+// buildClientCall returns a ClientCall for an AIP-131 Get, AIP-132 List,
+// AIP-133 Create, or AIP-135 Delete method when the model maps to a
+// standard GAPIC Go package and the command composes a resource path.
+// Create may produce additional CLI flags for the resource id and the
+// body's scalar fields; those are returned as the second result. It
+// returns (nil, nil) otherwise so the command keeps its print-only
+// action.
+func buildClientCall(method *api.Method, model *api.API, goClient *goClientInfo, hasPath bool) (*ClientCall, []Flag) {
 	if goClient == nil || !hasPath {
-		return nil
+		return nil, nil
 	}
 	if method.InputType == nil {
-		return nil
+		return nil, nil
 	}
 
 	switch {
@@ -113,7 +118,7 @@ func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *
 			NameField:   "Name",
 			Package:     goClient.Alias,
 			RequestType: goClient.Alias + "pb." + method.InputType.Name,
-		}
+		}, nil
 	case provider.IsList(method):
 		return &ClientCall{
 			Method:      method.Name,
@@ -121,7 +126,9 @@ func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *
 			Package:     goClient.Alias,
 			RequestType: goClient.Alias + "pb." + method.InputType.Name,
 			Paged:       true,
-		}
+		}, nil
+	case provider.IsCreate(method):
+		return buildCreateClientCall(method, model, goClient)
 	case provider.IsDelete(method):
 		return &ClientCall{
 			Method:      method.Name,
@@ -130,9 +137,129 @@ func buildClientCall(method *api.Method, goClient *goClientInfo, hasPath bool) *
 			RequestType: goClient.Alias + "pb." + method.InputType.Name,
 			IsDelete:    true,
 			IsLRO:       method.IsLRO,
-		}
+		}, nil
 	default:
-		return nil
+		return nil, nil
+	}
+}
+
+// buildCreateClientCall returns the ClientCall and extra flags for an
+// AIP-133 Create method. Body-field walking descends into the request's
+// resource body field; scalar fields become CLI flags; everything else
+// is recorded as a TODO so the generated code documents what's missing.
+func buildCreateClientCall(method *api.Method, model *api.API, goClient *goClientInfo) (*ClientCall, []Flag) {
+	resource := provider.GetResourceForMethod(method, model)
+	if resource == nil || resource.Self == nil {
+		return nil, nil
+	}
+
+	var bodyField *api.Field
+	for _, f := range method.InputType.Fields {
+		if f.TypezID == resource.Self.ID {
+			bodyField = f
+			break
+		}
+	}
+	if bodyField == nil || bodyField.MessageType == nil {
+		return nil, nil
+	}
+
+	idFieldName := resource.Singular + "_id"
+	var idField *api.Field
+	for _, f := range method.InputType.Fields {
+		if f.Name == idFieldName && f.Typez == api.TypezString {
+			idField = f
+			break
+		}
+	}
+
+	call := &ClientCall{
+		IsCreate:    true,
+		IsLRO:       method.IsLRO,
+		Method:      method.Name,
+		NameField:   "Parent",
+		Package:     goClient.Alias,
+		RequestType: goClient.Alias + "pb." + method.InputType.Name,
+		BodyField:   strcase.ToCamel(bodyField.Name),
+		BodyType:    goClient.Alias + "pb." + bodyField.MessageType.Name,
+	}
+	if idField != nil {
+		call.IDField = strcase.ToCamel(idField.Name)
+		call.IDFlag = strcase.ToKebab(idField.Name)
+	}
+
+	var extraFlags []Flag
+	if idField != nil {
+		extraFlags = append(extraFlags, pathFlag(call.IDFlag))
+	}
+
+	for _, f := range bodyField.MessageType.Fields {
+		if hasBehavior(f, api.FieldBehaviorOutputOnly) {
+			continue
+		}
+		if hasBehavior(f, api.FieldBehaviorIdentifier) {
+			continue
+		}
+		if f.Map {
+			call.BodySkippedFields = append(call.BodySkippedFields,
+				fmt.Sprintf("map field %q", f.Name))
+			continue
+		}
+		if f.Repeated {
+			call.BodySkippedFields = append(call.BodySkippedFields,
+				fmt.Sprintf("repeated field %q", f.Name))
+			continue
+		}
+		switch f.Typez {
+		case api.TypezEnum:
+			call.BodySkippedFields = append(call.BodySkippedFields,
+				fmt.Sprintf("enum field %q", f.Name))
+			continue
+		case api.TypezMessage:
+			call.BodySkippedFields = append(call.BodySkippedFields,
+				fmt.Sprintf("message field %q", f.Name))
+			continue
+		}
+		kind, ok := scalarKind(f.Typez)
+		if !ok {
+			call.BodySkippedFields = append(call.BodySkippedFields,
+				fmt.Sprintf("unsupported scalar field %q", f.Name))
+			continue
+		}
+		call.BodyAssignments = append(call.BodyAssignments, BodyAssignment{
+			Name: strcase.ToCamel(f.Name),
+			Flag: strcase.ToKebab(f.Name),
+			Kind: kind,
+		})
+		extraFlags = append(extraFlags, flag(strcase.ToKebab(f.Name), kind, hasBehavior(f, api.FieldBehaviorRequired)))
+	}
+	return call, extraFlags
+}
+
+// hasBehavior reports whether f's Behavior list contains b.
+func hasBehavior(f *api.Field, b api.FieldBehavior) bool {
+	for _, x := range f.Behavior {
+		if x == b {
+			return true
+		}
+	}
+	return false
+}
+
+// scalarKind maps a scalar Typez to the urfave/cli flag accessor name.
+// It returns ("", false) for non-scalar or unsupported types.
+func scalarKind(t api.Typez) (string, bool) {
+	switch t {
+	case api.TypezString:
+		return "String", true
+	case api.TypezInt32:
+		return "Int32", true
+	case api.TypezInt64:
+		return "Int64", true
+	case api.TypezBool:
+		return "Bool", true
+	default:
+		return "", false
 	}
 }
 
