@@ -494,4 +494,22 @@ func TestGenerateService_Pagination(t *testing.T) {
 	if !strings.Contains(respContentStr, expectedGetItems) {
 		t.Errorf("expected _getPaginatedItems implementation not found in response message. Got:\n%s", respContentStr)
 	}
+
+	// Verify selective imports in message files
+	if !strings.Contains(msgContentStr, "import GoogleCloudGax") {
+		t.Errorf("expected ListSecretsRequest.swift to import GoogleCloudGax, got:\n%s", msgContentStr)
+	}
+	if !strings.Contains(respContentStr, "import GoogleCloudGax") {
+		t.Errorf("expected ListSecretsResponse.swift to import GoogleCloudGax, got:\n%s", respContentStr)
+	}
+
+	secretFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "Secret.swift")
+	secretContent, err := os.ReadFile(secretFilename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	secretContentStr := string(secretContent)
+	if strings.Contains(secretContentStr, "import GoogleCloudGax") {
+		t.Errorf("expected Secret.swift to NOT import GoogleCloudGax, got:\n%s", secretContentStr)
+	}
 }

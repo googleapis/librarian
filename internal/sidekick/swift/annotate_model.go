@@ -96,22 +96,6 @@ func (c *codec) annotateModel() error {
 			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
 	}
-	// If there are any paginated methods, the messages will implement GoogleCloudGax._PaginatedRequest/Response,
-	// so we require GoogleCloudGax for messages as well.
-	hasPagination := false
-	for m := range c.Model.AllMethods() {
-		if m.Pagination != nil {
-			hasPagination = true
-			break
-		}
-	}
-	if hasPagination {
-		for _, dep := range c.Dependencies {
-			if dep.Name == "GoogleCloudGax" {
-				dep.Required = true
-			}
-		}
-	}
 	for _, service := range c.Model.Services {
 		if err := c.annotateService(service, annotations); err != nil {
 			return err

@@ -268,11 +268,11 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	// Since pagination is present, GoogleCloudGax should be marked as required for messages.
-	if dep, ok := ann.DependsOn["GoogleCloudGax"]; !ok || !dep.Required {
-		t.Errorf("expected GoogleCloudGax dependency to be required, got %+v", dep)
+	// Since global pagination dependency setting is removed, GoogleCloudGax should NOT be required for messages.
+	if dep, ok := ann.DependsOn["GoogleCloudGax"]; !ok || dep.Required {
+		t.Errorf("expected GoogleCloudGax dependency to not be required, got %+v", dep)
 	}
-	if !slices.Contains(ann.MessageImports, "GoogleCloudGax") {
-		t.Errorf("expected GoogleCloudGax in MessageImports, got %v", ann.MessageImports)
+	if slices.Contains(ann.MessageImports, "GoogleCloudGax") {
+		t.Errorf("expected GoogleCloudGax to not be in MessageImports, got %v", ann.MessageImports)
 	}
 }

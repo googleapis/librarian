@@ -34,6 +34,7 @@ type messageAnnotations struct {
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
+	ImportsGax          bool
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
@@ -72,6 +73,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 
 	annotations.IsPaginatedRequest = model.PaginatedRequestIDs[message.ID]
 	annotations.IsPaginatedResponse = message.Pagination != nil
+	annotations.ImportsGax = annotations.IsPaginatedRequest || annotations.IsPaginatedResponse
 	if message.Pagination != nil {
 		itemField := message.Pagination.PageableItem
 		if itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations); ok {

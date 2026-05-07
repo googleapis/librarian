@@ -177,6 +177,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		Name:               "ListSecretsRequest",
 		TypeURL:            "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
 		IsPaginatedRequest: true,
+		ImportsGax:         true,
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("request message annotations mismatch (-want, +got):\n%s", diff)
@@ -190,6 +191,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
+		ImportsGax:          true,
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("response message annotations mismatch (-want, +got):\n%s", diff)
