@@ -98,5 +98,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
 	}
+	if method.SampleInfo != nil {
+		c.annotateSampleInfo(method)
+	}
 	return nil
 }
