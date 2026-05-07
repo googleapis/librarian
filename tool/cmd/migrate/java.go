@@ -810,23 +810,12 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 // These API paths are used by both iam and iam-policy libraries, iam contains all grpc and
 // proto modules plus resource name classes, iam-policy contains generated gapic modules.
 func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
-	explicitPaths := []string{
-		"google/iam/v2",
-		"google/iam/v2beta",
-		"google/iam/v3",
-		"google/iam/v3beta",
-	}
-	if !slices.Contains(explicitPaths, api.Path) {
+	if !slices.Contains(javaIAMSpecialPaths, api.Path) {
 		return
 	}
-	if libraryName == "iam" {
-		api.GenerateGAPIC = new(false)
-		api.GenerateProtoGRPC = new(true)
-		api.GenerateResourceNames = new(true)
-	}
-	if libraryName == "iam-policy" {
-		api.GenerateGAPIC = new(true)
-		api.GenerateProtoGRPC = new(false)
-		api.GenerateResourceNames = new(false)
+	if override, ok := javaIAMLibraryOverrides[libraryName]; ok {
+		api.GenerateGAPIC = override.GenerateGAPIC
+		api.GenerateProtoGRPC = override.GenerateProtoGRPC
+		api.GenerateResourceNames = override.GenerateResourceNames
 	}
 }
