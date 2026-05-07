@@ -53,3 +53,9 @@
       - seclm.projects.locations.workbenches
   response:
     id_field: name
+  output:
+    format: |-
+      table(name,
+            createTime,
+            updateTime,
+            labels.join(","))

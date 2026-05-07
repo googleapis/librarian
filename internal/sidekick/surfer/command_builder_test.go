@@ -26,12 +26,13 @@ import (
 
 func TestOutputFormat(t *testing.T) {
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   string
+		name      string
+		method    *api.Method
+		overrides *provider.Config
+		want      string
 	}{
 		{
-			name: "standard list method",
+			name: "standard list method fallback to auto-table format",
 			method: api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
 				api.NewTestMessage("ListResponse").WithFields(
 					api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
@@ -44,6 +45,39 @@ func TestOutputFormat(t *testing.T) {
 			),
 			want: "",
 		},
+		{
+			name: "override format in gcloud config",
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
+					api.NewTestMessage("ListResponse").WithFields(
+						api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
+							api.NewTestMessage("Thing").WithFields(
+								api.NewTestField("name").WithType(api.TypezString),
+							),
+						),
+					),
+				)
+				m.ID = "google.cloud.test.v1.Service.ListThings"
+				m.Service = api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+				m.Service.DefaultHost = "test.googleapis.com"
+				return m
+			}(),
+			overrides: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:       "TestService",
+						APIVersion: "v1",
+						OutputFormatting: []*provider.OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.ListThings",
+								Format:   "json",
+							},
+						},
+					},
+				},
+			},
+			want: "json",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -51,7 +85,7 @@ func TestOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := outputFormat()
+			got := outputFormat(test.overrides, test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("outputFormat() mismatch (-want +got):\n%s", diff)
 			}
@@ -80,7 +114,7 @@ func TestOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := outputFormat(); got != "" {
+			if got := outputFormat(&provider.Config{}, test.method); got != "" {
 				t.Errorf("outputFormat() = %v, want empty string", got)
 			}
 		})

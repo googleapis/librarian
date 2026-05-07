@@ -16,6 +16,8 @@
 package provider
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -276,6 +278,22 @@ func FindFieldHelpTextRule(c *Config, fieldID string) *HelpTextRule {
 		}
 	}
 	return nil
+}
+
+// OutputFormat returns the output format configuration for the given method from overrides.
+func OutputFormat(c *Config, methodID string) string {
+	if c == nil || c.APIs == nil {
+		return ""
+	}
+	methodID = strings.TrimPrefix(methodID, ".")
+	for _, api := range c.APIs {
+		for _, fmtRule := range api.OutputFormatting {
+			if fmtRule.Selector == methodID {
+				return fmtRule.Format
+			}
+		}
+	}
+	return ""
 }
 
 // ShouldGenerateOperations returns true if operations commands should be generated.

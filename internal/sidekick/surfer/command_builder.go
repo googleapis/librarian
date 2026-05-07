@@ -45,7 +45,7 @@ func newCommand(method *api.Method, overrides *provider.Config, model *api.API, 
 		Method:               requestMethod(method),
 		Arguments:            args,
 		ResponseIDField:      responseIDField(method),
-		OutputFormat:         outputFormat(),
+		OutputFormat:         outputFormat(overrides, method),
 		ReadModifyUpdate:     provider.IsUpdate(method),
 		StarUpdateMask:       useUpdateMask,
 		DisableAutoFieldMask: useUpdateMask,
@@ -107,11 +107,12 @@ func responseIDField(method *api.Method) string {
 	return ""
 }
 
-// outputFormat generates the string output format for List commands.
-// TODO(https://github.com/googleapis/librarian/issues/5231): Make this default configurable by gcloud.yaml.
-// Use tableFormat if specified.
-func outputFormat() string {
-	return ""
+// TODO(https://github.com/googleapis/librarian/issues/5231): add default table output if not specified in the config.
+func outputFormat(overrides *provider.Config, method *api.Method) string {
+	if !provider.IsList(method) {
+		return ""
+	}
+	return provider.OutputFormat(overrides, method.ID)
 }
 
 // async creates the `Async` part of the command definition for long-running operations.

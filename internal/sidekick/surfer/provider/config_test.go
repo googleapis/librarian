@@ -252,3 +252,84 @@ func TestSupportsStarUpdateMasks(t *testing.T) {
 		})
 	}
 }
+
+func TestOutputFormat(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		overrides *Config
+		methodID  string
+		want      string
+	}{
+		{
+			name:      "Nil Config",
+			overrides: nil,
+			methodID:  "google.cloud.test.v1.Service.ListInstances",
+			want:      "",
+		},
+		{
+			name:      "No APIs in Config",
+			overrides: &Config{},
+			methodID:  "google.cloud.test.v1.Service.ListInstances",
+			want:      "",
+		},
+		{
+			name: "Matching selector found (exact selector)",
+			overrides: &Config{
+				APIs: []API{
+					{
+						OutputFormatting: []*OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.ListInstances",
+								Format:   "table(name, createTime)",
+							},
+						},
+					},
+				},
+			},
+			methodID: "google.cloud.test.v1.Service.ListInstances",
+			want:     "table(name, createTime)",
+		},
+		{
+			name: "Matching selector with leading dot in methodID",
+			overrides: &Config{
+				APIs: []API{
+					{
+						OutputFormatting: []*OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.ListInstances",
+								Format:   "table(name, createTime)",
+							},
+						},
+					},
+				},
+			},
+			methodID: ".google.cloud.test.v1.Service.ListInstances",
+			want:     "table(name, createTime)",
+		},
+		{
+			name: "No matching selector",
+			overrides: &Config{
+				APIs: []API{
+					{
+						OutputFormatting: []*OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.OtherMethod",
+								Format:   "table(name)",
+							},
+						},
+					},
+				},
+			},
+			methodID: "google.cloud.test.v1.Service.ListInstances",
+			want:     "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			got := OutputFormat(test.overrides, test.methodID)
+			if got != test.want {
+				t.Errorf("OutputFormat() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}

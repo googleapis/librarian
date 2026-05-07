@@ -56,3 +56,14 @@
       - parallelstore.projects.locations.instances
   response:
     id_field: name
+  output:
+    format: |-
+      table(name,
+            capacityGib:label=Capacity,
+            description,
+            createTime,
+            updateTime,
+            state,
+            network,
+            reserved_ip_range,
+            accessPoints.join(","))

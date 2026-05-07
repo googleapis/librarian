@@ -54,3 +54,14 @@
       - iam.organizations.locations.principalAccessBoundaryPolicies
   response:
     id_field: name
+  output:
+    format: |-
+      table(name,
+            uid,
+            etag,
+            displayName,
+            annotations,
+            createTime,
+            updateTime,
+            state,
+            details.rules:label=rules)

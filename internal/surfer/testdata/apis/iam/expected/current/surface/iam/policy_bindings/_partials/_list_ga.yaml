@@ -60,3 +60,17 @@
       - iam.projects.locations.policyBindings
   response:
     id_field: name
+  output:
+    format: |-
+      table(name,
+            uid,
+            etag,
+            displayName,
+            annotations,
+            target.principalSet:label=principalSet,
+            policyKind,
+            policy,
+            policy_uid,
+            condition,
+            createTime,
+            updateTime)
