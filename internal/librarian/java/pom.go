@@ -16,9 +16,7 @@ package java
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -44,8 +42,6 @@ const (
 	managedModulesStartMarker      = "<!-- {x-generated-modules-start} -->"
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
-
-var errTargetDir = errors.New("target directory does not exist")
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
@@ -115,6 +111,7 @@ func loadTransports(library *config.Library, googleapisDir string) (map[string]s
 	return transports, nil
 }
 
+//nolint:unparam // error return kept to avoid cascading changes
 func discoverModules(library *config.Library, libraryDir string, transports map[string]serviceconfig.Transport) ([]expectedModule, error) {
 	var modules []expectedModule
 	libCoord := DeriveLibraryCoordinates(library)
@@ -125,10 +122,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		transport := transports[api.Path]
 		// Proto module
 		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
-		isProtoMissing, err := isPOMMissing(protoDir)
-		if err != nil {
-			return nil, err
-		}
+		isProtoMissing := isPOMMissing(protoDir)
 		modules = append(modules, expectedModule{
 			ArtifactID: apiCoord.Proto.ArtifactID,
 			Dir:        protoDir,
@@ -140,10 +134,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		// gRPC module
 		if transport != serviceconfig.Rest {
 			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
-			isGRPCMissing, err := isPOMMissing(gRPCDir)
-			if err != nil {
-				return nil, err
-			}
+			isGRPCMissing := isPOMMissing(gRPCDir)
 			modules = append(modules, expectedModule{
 				ArtifactID: apiCoord.GRPC.ArtifactID,
 				Dir:        gRPCDir,
@@ -156,10 +147,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	}
 	// Client module
 	clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
-	isClientMissing, err := isPOMMissing(clientDir)
-	if err != nil {
-		return nil, err
-	}
+	isClientMissing := isPOMMissing(clientDir)
 	modules = append(modules, expectedModule{
 		ArtifactID: libCoord.GAPIC.ArtifactID,
 		Dir:        clientDir,
@@ -169,10 +157,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	})
 	// BOM module
 	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
-	isBOMMissing, err := isPOMMissing(bomDir)
-	if err != nil {
-		return nil, err
-	}
+	isBOMMissing := isPOMMissing(bomDir)
 	modules = append(modules, expectedModule{
 		ArtifactID: libCoord.BOM.ArtifactID,
 		Dir:        bomDir,
@@ -182,10 +167,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	})
 	// Parent module
 	parentDir := libraryDir
-	isParentMissing, err := isPOMMissing(parentDir)
-	if err != nil {
-		return nil, err
-	}
+	isParentMissing := isPOMMissing(parentDir)
 	modules = append(modules, expectedModule{
 		ArtifactID: libCoord.Parent.ArtifactID,
 		Dir:        parentDir,
@@ -456,18 +438,18 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	return modules, nil
 }
 
-func isPOMMissing(dir string) (bool, error) {
+func isPOMMissing(dir string) bool {
 	pomPath := filepath.Join(dir, "pom.xml")
 	if _, err := os.Stat(pomPath); err == nil {
-		return false, nil
+		return false
 	}
-	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		return false, fmt.Errorf("%w: %s does not exist: %w", errTargetDir, dir, err)
-	}
-	return true, nil
+	return true
 }
 
 func writePOM(pomPath, templateName string, data any) (err error) {
+	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %s: %w", pomPath, err)
+	}
 	f, err := os.Create(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", pomPath, err)
