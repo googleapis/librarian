@@ -44,17 +44,19 @@ func (c *codec) formatDocumentation(doc string, scopes []string) ([]string, erro
 	node := md.Parser().Parse(text.NewReader(docBytes))
 	links := language.ExtractCrossReferenceLinks(node, docBytes)
 
-	if len(links) > 0 {
-		results = append(results, "") // Add a blank line before link definitions
-	}
+	var definitions []string
 	for _, link := range links {
 		resolved, err := c.linkDefinition(link, scopes)
 		if err != nil {
 			return nil, err
 		}
 		if resolved != "" {
-			results = append(results, fmt.Sprintf("[%s]: %s", link, resolved))
+			definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
 		}
+	}
+	if len(definitions) != 0 {
+		results = append(results, "") // Add a blank line before link definitions, if any
+		results = append(results, definitions...)
 	}
 
 	return results, nil
