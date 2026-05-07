@@ -29,6 +29,7 @@ func CleanDocumentation(s string) string {
 		s = strings.TrimPrefix(s, "Required. ")
 		s = strings.TrimPrefix(s, "Identifier. ")
 		s = strings.TrimPrefix(s, "Optional. ")
+		s = strings.TrimPrefix(s, "Immutable. ")
 		if s == original {
 			break
 		}

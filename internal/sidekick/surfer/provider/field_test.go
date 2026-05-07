@@ -86,6 +86,9 @@ func TestCleanDocumentation(t *testing.T) {
 		{"Both_IdentifierFirst", "Identifier. Required. This is help text.", "This is help text."},
 		{"OptionalAndRequired", "Optional. Required. This is help text.", "This is help text."},
 		{"Repeated", "Required. Required. This is help text.", "This is help text."},
+		{"Immutable", "Immutable. This is help text.", "This is help text."},
+		{"RequiredAndImmutable", "Required. Immutable. This is help text.", "This is help text."},
+		{"ImmutableAndRequired", "Immutable. Required. This is help text.", "This is help text."},
 		{"Empty", "", ""},
 	} {
 		t.Run(test.name, func(t *testing.T) {
