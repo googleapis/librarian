@@ -806,6 +806,9 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 	return string(match[1]), nil
 }
 
+// applyJavaIAMSpecialOverrides applies special generation overrides for IAM v2 and v3 APIs.
+// These API paths are used by both iam and iam-policy libraries, iam contains all grpc and
+// proto modules plus resource name classes, iam-policy contains generated gapic modules.
 func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
 	explicitPaths := []string{
 		"google/iam/v2",

@@ -1560,17 +1560,11 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 			name:        "iam non-special path no override",
 			libraryName: "iam",
 			apiPath:     "google/iam/v1",
-			wantGAPIC:   nil,
-			wantProto:   nil,
-			wantResName: nil,
 		},
 		{
 			name:        "other library no override",
 			libraryName: "secretmanager",
 			apiPath:     "google/iam/v3",
-			wantGAPIC:   nil,
-			wantProto:   nil,
-			wantResName: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

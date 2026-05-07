@@ -412,23 +412,23 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 	return filtered
 }
 
-func shouldGenerateGAPIC(ja *config.JavaAPI) bool {
-	if ja.GenerateGAPIC != nil {
-		return *ja.GenerateGAPIC
+func shouldGenerateGAPIC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateGAPIC != nil {
+		return *javaAPI.GenerateGAPIC
 	}
 	return true
 }
 
-func shouldGenerateProtoGRPC(ja *config.JavaAPI) bool {
-	if ja.GenerateProtoGRPC != nil {
-		return *ja.GenerateProtoGRPC
+func shouldGenerateProtoGRPC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateProtoGRPC != nil {
+		return *javaAPI.GenerateProtoGRPC
 	}
 	return true
 }
 
-func shouldGenerateResourceNames(ja *config.JavaAPI) bool {
-	if ja.GenerateResourceNames != nil {
-		return *ja.GenerateResourceNames
+func shouldGenerateResourceNames(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateResourceNames != nil {
+		return *javaAPI.GenerateResourceNames
 	}
-	return shouldGenerateGAPIC(ja)
+	return shouldGenerateGAPIC(javaAPI)
 }
