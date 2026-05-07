@@ -61,6 +61,11 @@ func Command() *cli.Command {
 	{{- end}}
 	Action: func(ctx context.Context, cmd *cli.Command) error {
 		{{- if .ClientCall}}
+		{{- if .RequiresProject}}
+		if cmd.String("project") == "" {
+			return fmt.Errorf("--project is required")
+		}
+		{{- end}}
 		{{.PathLabel}} := fmt.Sprintf("{{.PathFormat}}", {{.PathFormatArgs}})
 		client, err := {{.ClientCall.Package}}.NewClient(ctx)
 		if err != nil {
@@ -97,6 +102,11 @@ func Command() *cli.Command {
 		return nil
 		{{- end}}
 		{{- else if .HasPath}}
+		{{- if .RequiresProject}}
+		if cmd.String("project") == "" {
+			return fmt.Errorf("--project is required")
+		}
+		{{- end}}
 		{{.PathLabel}} := fmt.Sprintf("{{.PathFormat}}", {{.PathFormatArgs}})
 		fmt.Printf("Executing {{.Name}} on %s\n", {{.PathLabel}})
 		return nil

@@ -60,6 +60,18 @@ type ClientCall struct {
 // HasPath reports whether the command composes a resource path.
 func (c Command) HasPath() bool { return c.PathFormat != "" }
 
+// RequiresProject reports whether the command's path references the
+// "project" variable, in which case the generated Action must validate
+// that the global --project flag is set.
+func (c Command) RequiresProject() bool {
+	for _, a := range c.Args {
+		if a == "project" {
+			return true
+		}
+	}
+	return false
+}
+
 // PathFormatArgs returns the comma-separated cmd.String("X") arguments
 // passed to the generated [fmt.Sprintf] call.
 func (c Command) PathFormatArgs() string {
