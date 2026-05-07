@@ -79,13 +79,13 @@
         choices:
           - arg_value: pending
             enum_value: PENDING
-            help_text: Value for the `pending` field.
+            help_text: The InsightsConfig is pending application discovery/runtime discovery.
           - arg_value: complete
             enum_value: COMPLETE
-            help_text: Value for the `complete` field.
+            help_text: The initial discovery process is complete.
           - arg_value: error
             enum_value: ERROR
-            help_text: Value for the `error` field.
+            help_text: The InsightsConfig is in an error state.
       - arg_name: annotations
         api_field: insightsConfig.annotations
         help_text: |-

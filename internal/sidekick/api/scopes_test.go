@@ -141,3 +141,179 @@ func TestScopesEnumValueInMessage(t *testing.T) {
 		t.Errorf("mismatched child.Scopes() (-want, +got):\n%s", diff)
 	}
 }
+
+func TestScopesField(t *testing.T) {
+	parent := &Message{
+		Name:    "Parent",
+		Package: "test",
+		ID:      ".test.Parent",
+	}
+	for _, test := range []struct {
+		name  string
+		field *Field
+		want  []string
+	}{
+		{
+			name: "standard",
+			field: &Field{
+				Name:   "field",
+				ID:     ".test.Parent.field",
+				Parent: parent,
+			},
+			want: []string{"test.Parent", "test"},
+		},
+		{
+			name: "nil parent",
+			field: &Field{
+				Name: "field",
+				ID:   ".test.Parent.field",
+			},
+			want: []string{"test.Parent", "test"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.field.Scopes()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestScopesMethod(t *testing.T) {
+	service := &Service{
+		Name:    "Service",
+		Package: "test",
+		ID:      ".test.Service",
+	}
+	for _, test := range []struct {
+		name   string
+		method *Method
+		want   []string
+	}{
+		{
+			name: "standard",
+			method: &Method{
+				Name:    "Method",
+				ID:      ".test.Service.Method",
+				Service: service,
+			},
+			want: []string{"test.Service", "test"},
+		},
+		{
+			name: "both set",
+			method: &Method{
+				Name:          "Method",
+				ID:            ".test.Service.Method",
+				Service:       service,
+				SourceService: &Service{Name: "Other", Package: "other", ID: ".other.Other"},
+			},
+			want: []string{"other.Other", "other"},
+		},
+		{
+			name: "nil both",
+			method: &Method{
+				Name: "Method",
+				ID:   ".test.Service.Method",
+			},
+			want: []string{"test.Service", "test"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.method.Scopes()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestScopesOneOf(t *testing.T) {
+	parent := &Message{
+		Name:    "Parent",
+		Package: "test",
+		ID:      ".test.Parent",
+	}
+	field := &Field{
+		Name:   "field",
+		ID:     ".test.Parent.field",
+		Parent: parent,
+	}
+
+	for _, test := range []struct {
+		name  string
+		oneof *OneOf
+		want  []string
+	}{
+		{
+			name: "with fields",
+			oneof: &OneOf{
+				Name:   "oneof",
+				ID:     ".test.Parent.oneof",
+				Fields: []*Field{field},
+			},
+			want: []string{"test.Parent", "test"},
+		},
+		{
+			name: "empty",
+			oneof: &OneOf{
+				Name: "empty_oneof",
+				ID:   ".test.Parent.empty_oneof",
+			},
+			want: []string{"test.Parent", "test"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := test.oneof.Scopes()
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFallbackScopes(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		id   string
+		want []string
+	}{
+		{
+			name: "empty",
+			id:   "",
+			want: []string{},
+		},
+		{
+			name: "no dot",
+			id:   "foo",
+			want: []string{},
+		},
+		{
+			name: "single dot",
+			id:   ".foo",
+			want: []string{},
+		},
+		{
+			name: "two parts with dot",
+			id:   ".foo.bar",
+			want: []string{"foo"},
+		},
+		{
+			name: "three parts with dot",
+			id:   ".foo.bar.baz",
+			want: []string{"foo.bar", "foo"},
+		},
+		{
+			name: "two parts no dot",
+			id:   "foo.bar",
+			want: []string{"foo"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fallbackScopes(test.id)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -125,6 +125,7 @@ This document describes the schema for the librarian.yaml.
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
+| `gcloud` | [GcloudCommand](#gcloudcommand-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
@@ -229,6 +230,12 @@ This document describes the schema for the librarian.yaml.
 | `from` | string |  |
 | `to` | string |  |
 | `wire_name` | string |  |
+
+## GcloudCommand Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `client_import_path` | string | Overrides the GAPIC Go client import path that would otherwise be derived from the proto package. Set this when the proto package and the published Go GAPIC location diverge. For example, the proto package google.cloud.recaptchaenterprise.v1 publishes its Go client at "cloud.google.com/go/recaptchaenterprise/v2/apiv1". |
 
 ## GcloudHelpTextRule Configuration
 

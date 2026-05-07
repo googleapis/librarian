@@ -72,7 +72,10 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			return err
 		}
 	}
-	docLines := c.formatDocumentation(method.Documentation)
+	docLines, err := c.formatDocumentation(method.Documentation, method.Scopes())
+	if err != nil {
+		return err
+	}
 	binding := method.PathInfo.Bindings[0]
 	hasBody := method.PathInfo.BodyFieldPath != ""
 	isBodyWildcard := method.PathInfo.BodyFieldPath == "*"

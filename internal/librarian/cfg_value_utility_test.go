@@ -15,16 +15,53 @@
 package librarian
 
 import (
+	"crypto/sha256"
 	"errors"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func setupCfgUtilityTestServer(t *testing.T) {
+	t.Helper()
+	originalAPI := githubAPI
+	originalDownload := githubDownload
+	t.Cleanup(func() {
+		githubAPI = originalAPI
+		githubDownload = originalDownload
+	})
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/repos/googleapis/googleapis/commits/main-branch":
+			w.Write([]byte("googleapis123"))
+		case "/googleapis/googleapis/archive/googleapis123.tar.gz":
+			w.Write([]byte("googleapis-archive"))
+		case "/repos/protocolbuffers/protobuf/commits/proto-branch":
+			w.Write([]byte("protobuf123"))
+		case "/protocolbuffers/protobuf/archive/protobuf123.tar.gz":
+			w.Write([]byte("protobuf-archive"))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	githubAPI = ts.URL
+	githubDownload = ts.URL
+}
+
 func TestGetConfigValue(t *testing.T) {
 	currentConfig := &config.Config{
 		Version: "v1.0.0",
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "googleapis123",
+				SHA256: "googleapis-sha",
+				Dir:    "googleapis-dir",
+			},
+		},
 	}
 
 	for _, test := range []struct {
@@ -34,6 +71,22 @@ func TestGetConfigValue(t *testing.T) {
 		{
 			path: "version",
 			want: "v1.0.0",
+		},
+		{
+			path: "sources.googleapis.commit",
+			want: "googleapis123",
+		},
+		{
+			path: "sources.googleapis.sha256",
+			want: "googleapis-sha",
+		},
+		{
+			path: "sources.googleapis.dir",
+			want: "googleapis-dir",
+		},
+		{
+			path: "sources.googleapis.subpath",
+			want: "",
 		},
 	} {
 		t.Run(test.path, func(t *testing.T) {
@@ -58,7 +111,7 @@ func TestGetConfigValue_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "invalid path",
+			name:    "unsupported path",
 			path:    "invalid.path",
 			wantErr: errUnsupportedPath,
 		},
@@ -73,6 +126,9 @@ func TestGetConfigValue_Error(t *testing.T) {
 }
 
 func TestSetConfigValue(t *testing.T) {
+	setupCfgUtilityTestServer(t)
+	expectedGoogleapisSHA := fmt.Sprintf("%x", sha256.Sum256([]byte("googleapis-archive")))
+	expectedProtobufSHA := fmt.Sprintf("%x", sha256.Sum256([]byte("protobuf-archive")))
 	for _, test := range []struct {
 		path  string
 		value string
@@ -83,6 +139,56 @@ func TestSetConfigValue(t *testing.T) {
 			value: "v1.0.1",
 			want: &config.Config{
 				Version: "v1.0.1",
+			},
+		},
+		{
+			path:  "sources.googleapis.commit",
+			value: "main-branch",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Commit: "googleapis123",
+						SHA256: expectedGoogleapisSHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.protobuf.commit",
+			value: "proto-branch",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					ProtobufSrc: &config.Source{
+						Commit: "protobuf123",
+						SHA256: expectedProtobufSHA,
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.googleapis.dir",
+			value: "some-dir",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Googleapis: &config.Source{
+						Dir: "some-dir",
+					},
+				},
+			},
+		},
+		{
+			path:  "sources.conformance.subpath",
+			value: "some-subpath",
+			want: &config.Config{
+				Version: "v1.0.0",
+				Sources: &config.Sources{
+					Conformance: &config.Source{
+						Subpath: "some-subpath",
+					},
+				},
 			},
 		},
 	} {
@@ -103,24 +209,35 @@ func TestSetConfigValue(t *testing.T) {
 }
 
 func TestSetConfigValue_Error(t *testing.T) {
+	setupCfgUtilityTestServer(t)
 	for _, test := range []struct {
 		name    string
 		path    string
+		value   string
 		wantErr error
 	}{
 		{
 			name:    "unsupported path",
 			path:    "unknown.field",
+			value:   "some-value-not-used",
 			wantErr: errUnsupportedPath,
+		},
+		{
+			name:  "failed fetch commit",
+			path:  "sources.googleapis.commit",
+			value: "non-existent-branch",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{
 				Version: "v1.0.0",
 			}
-			_, err := setConfigValue(cfg, test.path, "some-value")
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("setConfigValue(%q) error = %v, wantErr %v", test.path, err, test.wantErr)
+			_, err := setConfigValue(cfg, test.path, test.value)
+			if err == nil {
+				t.Errorf("setConfigValue(%q, %q) got nil err, want error", test.path, test.value)
+			}
+			if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("setConfigValue(%q, %q) error = %v, wantErr %v", test.path, test.value, err, test.wantErr)
 			}
 		})
 	}

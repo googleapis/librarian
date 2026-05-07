@@ -28,7 +28,10 @@ type serviceAnnotations struct {
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
-	docLines := c.formatDocumentation(service.Documentation)
+	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
+	if err != nil {
+		return err
+	}
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {

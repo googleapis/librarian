@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -61,8 +62,25 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	gotVersions, err := IdentifyMissingModules(library, tmpDir, googleapisDir)
+	if err != nil {
 		t.Fatal(err)
+	}
+	err = syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantVersions := []string{
+		"proto-google-cloud-secretmanager-v1",
+		"grpc-google-cloud-secretmanager-v1",
+		"google-cloud-secretmanager",
+		"google-cloud-secretmanager-bom",
+		"google-cloud-secretmanager-parent",
+	}
+	sort.Strings(gotVersions)
+	sort.Strings(wantVersions)
+	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
+		t.Errorf("mismatch in new versions (-want +got):\n%s", diff)
 	}
 	artifacts := []string{protoArtifactID, gRPCArtifactID, gapicArtifactID, "google-cloud-secretmanager-bom", "google-cloud-secretmanager-parent"}
 	for _, artifact := range artifacts {
@@ -474,5 +492,111 @@ func TestIsPOMMissing_DirMissingError(t *testing.T) {
 	_, err := isPOMMissing(dir)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("isPOMMissing(%q) error = %v, want %v", dir, err, fs.ErrNotExist)
+	}
+}
+
+func TestIdentifyMissingModules(t *testing.T) {
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+	}
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T, libraryDir string)
+		want  []string
+	}{
+		{
+			name: "all modules missing",
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []string{
+				"proto-google-cloud-secretmanager-v1",
+				"grpc-google-cloud-secretmanager-v1",
+				"google-cloud-secretmanager",
+				"google-cloud-secretmanager-bom",
+				"google-cloud-secretmanager-parent",
+			},
+		},
+		{
+			name: "no modules missing",
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					dir := filepath.Join(libraryDir, d)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: nil,
+		},
+		{
+			name: "some modules missing",
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					dir := filepath.Join(libraryDir, d)
+					if err := os.MkdirAll(dir, 0755); err != nil {
+						t.Fatal(err)
+					}
+					// Only write pom.xml for client and BOM and parent
+					if d == "google-cloud-secretmanager" || d == "google-cloud-secretmanager-bom" || d == "" {
+						if err := os.WriteFile(filepath.Join(dir, "pom.xml"), []byte("<project/>"), 0644); err != nil {
+							t.Fatal(err)
+						}
+					}
+				}
+			},
+			want: []string{
+				"proto-google-cloud-secretmanager-v1",
+				"grpc-google-cloud-secretmanager-v1",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, tmpDir)
+			}
+			got, err := IdentifyMissingModules(library, tmpDir, googleapisDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			sort.Strings(got)
+			sort.Strings(test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("IdentifyMissingModules() mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"bytes"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -942,7 +941,7 @@ func (c *codec) formatDocComments(
 		return ast.WalkContinue, nil
 	})
 
-	for _, link := range protobufLinkMapping(doc, documentationBytes) {
+	for _, link := range language.ExtractCrossReferenceLinks(doc, documentationBytes) {
 		rusty, err := c.docLink(link, model, scopes)
 		if err != nil {
 			return nil, err
@@ -960,79 +959,6 @@ func (c *codec) formatDocComments(
 		results[i] = strings.TrimRightFunc(fmt.Sprintf("/// %s", line), unicode.IsSpace)
 	}
 	return results, nil
-}
-
-// protobufLinkMapping returns additional comment lines to map protobuf links
-// to Rustdoc links.
-//
-// Protobuf comments include links in the form `[Title][Definition]` where
-// `Title` is the text that should appear in the documentation and `Definition`
-// is the name of a Protobuf entity, e.g., `google.longrunning.Operation`.
-//
-// We need to map these references from Protobuf names to the corresponding
-// entity in the generated code. We do this by appending a number of link
-// definitions to the comments, e.g.
-//
-//	//// [google.longrunning.Operation]: google_cloud_longrunning::model::Operation
-func protobufLinkMapping(doc ast.Node, source []byte) []string {
-	protobufLinks := map[string]bool{}
-	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
-		switch node.Kind() {
-		case ast.KindParagraph:
-			text := node.Lines().Value(source)
-			extractProtoLinks(text, protobufLinks)
-			return ast.WalkContinue, nil
-		case ast.KindTextBlock:
-			text := node.Lines().Value(source)
-			extractProtoLinks(text, protobufLinks)
-			return ast.WalkContinue, nil
-		default:
-			return ast.WalkContinue, nil
-		}
-	})
-	var sortedLinks []string
-	for link := range protobufLinks {
-		sortedLinks = append(sortedLinks, link)
-	}
-	sort.Strings(sortedLinks)
-	return sortedLinks
-}
-
-// commentCrossReferenceLink  is a regular expression to find cross links in
-// comments.
-//
-// The Google API documentation (typically in protos) include links to code
-// elements in the form `[Thing][google.package.blah.v1.Thing.SubThing]`.
-// This regular expression captures the `][...]` part. There is a lot of scaping
-// because the brackets are metacharacters in regex.
-var commentCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\]` + // The closing bracket for the `[Thing]`
-		`\[` + // The opening bracket for the code element.
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.` + // Followed by (maybe a dot)
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`)*` + // zero or more times
-		`\]`) // The closing bracket
-
-// commentImpliedCrossReferenceLink is a regular expression to find implied
-// cross reference links.
-var commentImpliedCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\[` +
-		`[A-Z-a-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.[A-Za-z][A-Za-z0-9_]*)*` + // Followed by more identifiers
-		`\]\[\]`) // The closing bracket followed by an empty link label
-
-func extractProtoLinks(paragraph []byte, links map[string]bool) {
-	for _, match := range commentCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("][")), []byte("]"))
-		links[string(match)] = true
-	}
-	for _, match := range commentImpliedCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("[")), []byte("][]"))
-		links[string(match)] = true
-	}
 }
 
 func processCommentLine(node ast.Node, line text.Segment, documentationBytes []byte) string {

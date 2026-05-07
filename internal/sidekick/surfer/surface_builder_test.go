@@ -15,9 +15,12 @@
 package surfer
 
 import (
+	"bytes"
 	"fmt"
+	"log/slog"
 	"path"
 	"slices"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -49,9 +52,9 @@ func TestSurfaceBuilder_Build_Structure(t *testing.T) {
 		},
 	}
 
-	root, err := buildSurface(model, config)
+	root, err := newSurface(model, config)
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -75,9 +78,9 @@ func TestSurfaceBuilder_Build_Operations_Disabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(false)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(false)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -95,9 +98,9 @@ func TestSurfaceBuilder_Build_Operations_Enabled(t *testing.T) {
 		Services: []*api.Service{service},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -120,9 +123,9 @@ func TestSurfaceBuilder_Build_MultipleServices(t *testing.T) {
 		Services: []*api.Service{serviceOne, serviceTwo},
 	}
 
-	root, err := buildSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	got := flattenTree(root.Root)
@@ -166,9 +169,9 @@ func TestSurfaceBuilder_Build_HelpTextOverride(t *testing.T) {
 		},
 	}
 
-	root, err := buildSurface(model, config)
+	root, err := newSurface(model, config)
 	if err != nil {
-		t.Fatalf("build() failed: %v", err)
+		t.Fatal(err)
 	}
 
 	instancesGroup, ok := root.Root.Groups["instances"]
@@ -236,4 +239,74 @@ func mockService(name string, methods ...*api.Method) *api.Service {
 
 func boolPtr(b bool) *bool {
 	return &b
+}
+
+func TestSurfaceBuilder_Build_SynthesizeWaitCommand(t *testing.T) {
+	opMethod := mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}")
+	opMethod.SourceServiceID = ".google.longrunning.Operations"
+	opMethod.InputType.Fields = append(opMethod.InputType.Fields, &api.Field{
+		Name: "name",
+	})
+	service := mockService("parallelstore.googleapis.com", opMethod)
+
+	model := &api.API{
+		Name:     "parallelstore",
+		Title:    "Parallelstore API",
+		Services: []*api.Service{service},
+	}
+
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	got := flattenTree(root.Root)
+	want := []string{
+		"parallelstore/operations/describe",
+		"parallelstore/operations/wait",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got) expecting both describe and wait:\n%s", diff)
+	}
+}
+
+func TestSurfaceBuilder_Build_SynthesizeWaitCommand_Warning(t *testing.T) {
+	opMethod := mockMethod("GetOperation", "v1/{name=projects/*/locations/*/operations/*}")
+	opMethod.SourceServiceID = ".google.longrunning.Operations"
+	// Do not add the "name" field to opMethod.InputType.Fields so newWaitCommand fails.
+	service := mockService("parallelstore.googleapis.com", opMethod)
+
+	model := &api.API{
+		Name:     "parallelstore",
+		Title:    "Parallelstore API",
+		Services: []*api.Service{service},
+	}
+
+	// Set up custom slog logger to capture warnings.
+	var buf bytes.Buffer
+	h := slog.NewTextHandler(&buf, nil)
+	oldLogger := slog.Default()
+	slog.SetDefault(slog.New(h))
+	defer slog.SetDefault(oldLogger)
+
+	root, err := newSurface(model, &provider.Config{GenerateOperations: boolPtr(true)})
+	if err != nil {
+		t.Fatalf("build() failed: %v", err)
+	}
+
+	got := flattenTree(root.Root)
+	want := []string{
+		"parallelstore/operations/describe",
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("flattenTree() mismatch (-want +got) expecting wait to be skipped:\n%s", diff)
+	}
+
+	logMsg := buf.String()
+	wantWarning := "failed to build wait command for operations"
+	if !strings.Contains(logMsg, wantWarning) {
+		t.Errorf("expected log to contain warning %q, got log:\n%s", wantWarning, logMsg)
+	}
 }

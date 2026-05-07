@@ -78,7 +78,9 @@ func resourceSegments(method *api.Method, model *api.API) []api.PathSegment {
 
 // pathFlagsFromSegments returns one required string flag for each variable
 // segment in the pattern, named after the variable's last FieldPath
-// component. Duplicates (same FieldPath) are skipped.
+// component. Duplicates (same FieldPath) are skipped. The "project"
+// variable is also skipped because it is provided globally on the root
+// gcloud command and inherited by subcommands.
 func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
 	var flags []Flag
 	seen := map[string]bool{}
@@ -87,6 +89,9 @@ func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
 			continue
 		}
 		name := seg.Variable.FieldPath[len(seg.Variable.FieldPath)-1]
+		if name == "project" {
+			continue
+		}
 		if seen[name] {
 			continue
 		}

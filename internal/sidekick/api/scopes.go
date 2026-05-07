@@ -53,7 +53,7 @@ func (x *Service) Scopes() []string {
 func (x *Message) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
-		return []string{localScope, x.Package}
+		return []string{localScope, x.Package} // simplify some test set-up
 	}
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
@@ -62,15 +62,57 @@ func (x *Message) Scopes() []string {
 func (x *Enum) Scopes() []string {
 	localScope := strings.TrimPrefix(x.ID, ".")
 	if x.Parent == nil {
-		return []string{localScope, x.Package}
+		return []string{localScope, x.Package} // simplify some test set-up
 	}
 	return append([]string{localScope}, x.Parent.Scopes()...)
 }
 
 // Scopes returns the scopes for an enum value.
 func (x *EnumValue) Scopes() []string {
-	if x.Parent == nil {
+	if x.Parent != nil {
+		return x.Parent.Scopes()
+	}
+	return fallbackScopes(x.ID)
+}
+
+// Scopes returns the scopes for a field.
+func (x *Field) Scopes() []string {
+	if x.Parent != nil {
+		return x.Parent.Scopes()
+	}
+	return fallbackScopes(x.ID)
+}
+
+// Scopes returns the scopes for a method.
+func (x *Method) Scopes() []string {
+	if x.SourceService != nil {
+		// For mixing methods, the local names probably refer to symbols in the source service.
+		return x.SourceService.Scopes()
+	}
+	if x.Service != nil {
+		return x.Service.Scopes()
+	}
+	return fallbackScopes(x.ID)
+}
+
+// Scopes returns the scopes for a oneof.
+func (x *OneOf) Scopes() []string {
+	if len(x.Fields) > 0 {
+		return x.Fields[0].Scopes()
+	}
+	return fallbackScopes(x.ID)
+}
+
+// A fallback so we can be lazy in test set-up.
+func fallbackScopes(id string) []string {
+	parts := strings.Split(strings.TrimPrefix(id, "."), ".")
+	if len(parts) <= 1 {
 		return []string{}
 	}
-	return x.Parent.Scopes()
+	parts = parts[:len(parts)-1]
+	res := make([]string, 0, len(parts))
+	for i := len(parts); i > 0; i-- {
+		res = append(res, strings.Join(parts[:i], "."))
+	}
+	return res
 }

@@ -183,7 +183,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, message.Scopes())
+	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, field.Scopes())
 	if err != nil {
 		return nil, err
 	}

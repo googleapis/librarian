@@ -17,6 +17,7 @@ package gcloud
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -29,31 +30,51 @@ const testGoogleapisDir = "../../testdata/googleapis"
 func TestGenerate(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-	}{
-		{
-			name: "parallelstore",
-			library: &config.Library{
-				Name: "parallelstore",
-				APIs: []*config.API{{Path: "google/cloud/parallelstore/v1"}},
-			},
+	out := t.TempDir()
+	library := &config.Library{
+		Name:   "gcloud",
+		Output: out,
+		APIs: []*config.API{
+			{Path: "google/cloud/parallelstore/v1"},
+			{Path: "google/cloud/security/publicca/v1"},
 		},
+	}
+	if err := Generate(t.Context(), library,
+		&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	for _, name := range []string{
+		filepath.Join("cmd", "gcloud", "main.go"),
+		filepath.Join("internal", "generated", "parallelstore", "commands.go"),
+		filepath.Join("internal", "generated", "publicca", "commands.go"),
 	} {
-		t.Run(test.name, func(t *testing.T) {
-			out := t.TempDir()
-			test.library.Output = out
-			if err := Generate(t.Context(), test.library,
-				&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
-				t.Fatal(err)
-			}
-			for _, name := range []string{"main.go", "README.md"} {
-				if _, err := os.Stat(filepath.Join(out, name)); err != nil {
-					t.Fatal(err)
-				}
-			}
-		})
+		if _, err := os.Stat(filepath.Join(out, name)); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func TestGenerate_GcloudClientImportPath(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+
+	const clientImportPath = "cloud.google.com/go/parallelstore/apiv1"
+	out := t.TempDir()
+	library := &config.Library{
+		Name:   "parallelstore",
+		Output: out,
+		APIs:   []*config.API{{Path: "google/cloud/parallelstore/v1"}},
+		Gcloud: &config.GcloudCommand{ClientImportPath: clientImportPath},
+	}
+	if err := Generate(t.Context(), library,
+		&sources.Sources{Googleapis: testGoogleapisDir}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(out, "internal", "generated", "parallelstore", "commands.go"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(got), clientImportPath) {
+		t.Errorf("commands.go missing override path %q\n%s", clientImportPath, got)
 	}
 }
 

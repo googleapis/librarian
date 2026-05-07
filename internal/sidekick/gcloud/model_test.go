@@ -22,19 +22,23 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-func TestBuildCommands(t *testing.T) {
+func TestConstructSurfaceModel(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		model *api.API
-		want  []commandWithSubgroup
+		want  SurfaceModel
 	}{
 		{
 			name: "single service with one command",
 			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
 				Services: []*api.Service{{
 					Name: "InstanceService",
 					Methods: []*api.Method{{
-						Name: "GetInstance",
+						Name:      "GetInstance",
+						InputType: &api.Message{Name: "GetInstanceRequest"},
 						PathInfo: &api.PathInfo{
 							Bindings: []*api.PathBinding{{
 								Verb: "GET",
@@ -47,71 +51,44 @@ func TestBuildCommands(t *testing.T) {
 					}},
 				}},
 			},
-			want: []commandWithSubgroup{{
-				Command: Command{
-					Name:  "describe",
-					Usage: "describe instances",
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports:     nil,
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:       "describe",
+							Usage:      "describe instances",
+							ClientCall: nil,
+						}},
+					}},
 				},
-				Subgroup: "instances",
-			}},
-		},
-		{
-			name: "method skipped: no primary binding",
-			model: &api.API{
-				Services: []*api.Service{{
-					Name: "Skip",
-					Methods: []*api.Method{{
-						Name: "GetThing",
-					}},
-				}},
 			},
-			want: nil,
 		},
 		{
-			name: "method skipped: binding has no literal segments",
+			name: "subgroups sorted alphabetically",
 			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
 				Services: []*api.Service{{
-					Name: "Skip",
-					Methods: []*api.Method{{
-						Name: "GetThing",
-						PathInfo: &api.PathInfo{
-							Bindings: []*api.PathBinding{{
-								Verb: "GET",
-								PathTemplate: (&api.PathTemplate{}).
-									WithVariable(api.NewPathVariable("name")),
-							}},
-						},
-					}},
-				}},
-			},
-			want: nil,
-		},
-		{
-			name: "two services, mixed methods",
-			model: &api.API{
-				Services: []*api.Service{
-					{
-						Name: "InstanceService",
-						Methods: []*api.Method{
-							{
-								Name: "GetInstance",
-								PathInfo: &api.PathInfo{
-									Bindings: []*api.PathBinding{{
-										Verb: "GET",
-										PathTemplate: (&api.PathTemplate{}).
-											WithLiteral("instances").
-											WithVariable(api.NewPathVariable("instance")),
-									}},
-								},
-							},
-							{
-								Name: "SkipNoBinding",
+					Name: "InstanceService",
+					Methods: []*api.Method{
+						{
+							Name: "ListInstances",
+							PathInfo: &api.PathInfo{
+								Bindings: []*api.PathBinding{{
+									Verb: "GET",
+									PathTemplate: (&api.PathTemplate{}).
+										WithLiteral("instances"),
+								}},
 							},
 						},
-					},
-					{
-						Name: "BackupService",
-						Methods: []*api.Method{{
+						{
 							Name: "ListBackups",
 							PathInfo: &api.PathInfo{
 								Bindings: []*api.PathBinding{{
@@ -120,164 +97,191 @@ func TestBuildCommands(t *testing.T) {
 										WithLiteral("backups"),
 								}},
 							},
+						},
+					},
+				}},
+			},
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports:     nil,
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{
+						{
+							Name:     "backups",
+							Usage:    "manage backups resources",
+							Commands: []Command{{Name: "list", Usage: "list backups"}},
+						},
+						{
+							Name:     "instances",
+							Usage:    "manage instances resources",
+							Commands: []Command{{Name: "list", Usage: "list instances"}},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "list method adds iterator import",
+			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
+				Services: []*api.Service{{
+					Name: "InstanceService",
+					Methods: []*api.Method{{
+						Name:              "ListInstances",
+						IsAIPStandardList: true,
+						InputType: &api.Message{
+							Name: "ListInstancesRequest",
+							Fields: []*api.Field{
+								{
+									Name:              "parent",
+									ResourceReference: &api.ResourceReference{ChildType: "parallelstore.googleapis.com/Instance"},
+								},
+							},
+						},
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{{
+								Verb: "GET",
+								PathTemplate: (&api.PathTemplate{}).
+									WithLiteral("v1").
+									WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+									WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+									WithLiteral("instances"),
+							}},
+						},
+					}},
+				}},
+				ResourceDefinitions: []*api.Resource{{
+					Type: "parallelstore.googleapis.com/Instance",
+					Patterns: []api.ResourcePattern{
+						(&api.PathTemplate{}).
+							WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+							WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+							WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+							Segments,
+					},
+				}},
+			},
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports: []Import{
+					{Alias: "parallelstore", Path: "cloud.google.com/go/parallelstore/apiv1"},
+					{Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb"},
+					{Path: "google.golang.org/api/iterator"},
+				},
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:       "list",
+							Usage:      "list instances",
+							PathFormat: "projects/%s/locations/%s",
+							Args:       []string{"project", "location"},
+							PathLabel:  "parent",
+							Flags: []Flag{
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+								{Name: "limit", Kind: "Int", Required: false, Usage: "The limit."},
+							},
+							ClientCall: &ClientCall{
+								Method:      "ListInstances",
+								NameField:   "Parent",
+								Package:     "parallelstore",
+								RequestType: "parallelstorepb.ListInstancesRequest",
+								Paged:       true,
+							},
 						}},
-					},
+					}},
 				},
 			},
-			want: []commandWithSubgroup{
-				{
-					Command: Command{
-						Name:  "describe",
-						Usage: "describe instances",
+		},
+		{
+			name: "delete method",
+			model: &api.API{
+				Name:        "parallelstore",
+				Title:       "Parallelstore",
+				PackageName: "google.cloud.parallelstore.v1",
+				Services: []*api.Service{{
+					Name: "InstanceService",
+					Methods: []*api.Method{{
+						Name:                "DeleteInstance",
+						IsAIPStandardDelete: true,
+						IsLRO:               true,
+						InputType: &api.Message{
+							Name: "DeleteInstanceRequest",
+							Fields: []*api.Field{
+								{
+									Name:              "name",
+									ResourceReference: &api.ResourceReference{Type: "parallelstore.googleapis.com/Instance"},
+								},
+							},
+						},
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{{
+								Verb: "DELETE",
+								PathTemplate: (&api.PathTemplate{}).
+									WithLiteral("v1").
+									WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+									WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+									WithLiteral("instances").WithVariable(api.NewPathVariable("instance")),
+							}},
+						},
+					}},
+				}},
+				ResourceDefinitions: []*api.Resource{{
+					Type: "parallelstore.googleapis.com/Instance",
+					Patterns: []api.ResourcePattern{
+						(&api.PathTemplate{}).
+							WithLiteral("projects").WithVariable(api.NewPathVariable("project")).
+							WithLiteral("locations").WithVariable(api.NewPathVariable("location")).
+							WithLiteral("instances").WithVariable(api.NewPathVariable("instance")).
+							Segments,
 					},
-					Subgroup: "instances",
+				}},
+			},
+			want: SurfaceModel{
+				PackageName: "parallelstore",
+				Imports: []Import{
+					{Alias: "parallelstore", Path: "cloud.google.com/go/parallelstore/apiv1"},
+					{Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb"},
 				},
-				{
-					Command: Command{
-						Name:  "list",
-						Usage: "list backups",
-					},
-					Subgroup: "backups",
+				Group: Group{
+					Name:  "parallelstore",
+					Usage: "manage Parallelstore resources",
+					Subgroups: []Subgroup{{
+						Name:  "instances",
+						Usage: "manage instances resources",
+						Commands: []Command{{
+							Name:       "delete",
+							Usage:      "delete instances",
+							PathFormat: "projects/%s/locations/%s/instances/%s",
+							Args:       []string{"project", "location", "instance"},
+							PathLabel:  "name",
+							Flags: []Flag{
+								{Name: "location", Kind: "String", Required: true, Usage: "The location."},
+								{Name: "instance", Kind: "String", Required: true, Usage: "The instance."},
+							},
+							ClientCall: &ClientCall{
+								Method:      "DeleteInstance",
+								NameField:   "Name",
+								Package:     "parallelstore",
+								RequestType: "parallelstorepb.DeleteInstanceRequest",
+								IsDelete:    true,
+								IsLRO:       true,
+							},
+						}},
+					}},
 				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildCommands(test.model)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestGroupBySubgroup(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		cmds []commandWithSubgroup
-		want []Subgroup
-	}{
-		{
-			name: "single subgroup with one command",
-			cmds: []commandWithSubgroup{{
-				Command:  Command{Name: "describe"},
-				Subgroup: "instances",
-			}},
-			want: []Subgroup{{
-				Name:     "instances",
-				Usage:    "Manage instances resources",
-				Commands: []Command{{Name: "describe"}},
-			}},
-		},
-		{
-			name: "single subgroup with multiple commands",
-			cmds: []commandWithSubgroup{
-				{Command: Command{Name: "describe"}, Subgroup: "instances"},
-				{Command: Command{Name: "list"}, Subgroup: "instances"},
-			},
-			want: []Subgroup{{
-				Name:  "instances",
-				Usage: "Manage instances resources",
-				Commands: []Command{
-					{Name: "describe"},
-					{Name: "list"},
-				},
-			}},
-		},
-		{
-			name: "subgroups sorted alphabetically",
-			cmds: []commandWithSubgroup{
-				{Command: Command{Name: "list"}, Subgroup: "instances"},
-				{Command: Command{Name: "describe"}, Subgroup: "backups"},
-				{Command: Command{Name: "list"}, Subgroup: "addresses"},
-			},
-			want: []Subgroup{
-				{
-					Name:     "addresses",
-					Usage:    "Manage addresses resources",
-					Commands: []Command{{Name: "list"}},
-				},
-				{
-					Name:     "backups",
-					Usage:    "Manage backups resources",
-					Commands: []Command{{Name: "describe"}},
-				},
-				{
-					Name:     "instances",
-					Usage:    "Manage instances resources",
-					Commands: []Command{{Name: "list"}},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := groupBySubgroup(test.cmds)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestClientImports(t *testing.T) {
-	withCall := commandWithSubgroup{
-		Command: Command{
-			Name:       "describe",
-			ClientCall: &ClientCall{Method: "GetInstance"},
-		},
-		Subgroup: "instances",
-	}
-	withoutCall := commandWithSubgroup{
-		Command:  Command{Name: "list"},
-		Subgroup: "instances",
-	}
-	for _, test := range []struct {
-		name string
-		pkg  string
-		cmds []commandWithSubgroup
-		want []Import
-	}{
-		{
-			name: "no commands",
-			pkg:  "google.cloud.parallelstore.v1",
-			cmds: nil,
-			want: nil,
-		},
-		{
-			name: "no client calls",
-			pkg:  "google.cloud.parallelstore.v1",
-			cmds: []commandWithSubgroup{withoutCall},
-			want: nil,
-		},
-		{
-			name: "client call with valid package",
-			pkg:  "google.cloud.parallelstore.v1",
-			cmds: []commandWithSubgroup{withoutCall, withCall},
-			want: []Import{
-				{
-					Alias: "parallelstore",
-					Path:  "cloud.google.com/go/parallelstore/apiv1",
-				},
-				{
-					Path: "cloud.google.com/go/parallelstore/apiv1/parallelstorepb",
-				},
-			},
-		},
-		{
-			name: "client call with unsupported package",
-			pkg:  "google.cloud.parallelstore.v1beta1",
-			cmds: []commandWithSubgroup{withCall},
-			want: nil,
-		},
-		{
-			name: "client call with non-google-cloud package",
-			pkg:  "google.api.X.v1",
-			cmds: []commandWithSubgroup{withCall},
-			want: nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := clientImports(test.pkg, test.cmds)
+			got := constructSurfaceModel(test.model, "")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
