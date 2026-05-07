@@ -155,7 +155,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
 	}
-	postParams.protosToCopy, err = deriveProtosToCopy(apiProtos, primaryDir, additionalProtosToGenerateAndCopyAbs, javaAPI.AdditionalProtosToGenerateAndCopy)
+	postParams.protosToCopy, err = deriveProtosToCopy(apiProtos, primaryDir, javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -219,7 +219,7 @@ func deriveAbsoluteProtoPaths(paths []string, baseDir string) []string {
 	return absPaths
 }
 
-func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalAbs []string, additionalRel []string) ([]protoFileToCopy, error) {
+func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalRel []string, googleapisDir string) ([]protoFileToCopy, error) {
 	var res []protoFileToCopy
 	for _, p := range apiProtos {
 		rel, err := filepath.Rel(primaryDir, p)
@@ -231,10 +231,10 @@ func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalAbs []s
 			relativePath: rel,
 		})
 	}
-	for i, absPath := range additionalAbs {
+	for _, relPath := range additionalRel {
 		res = append(res, protoFileToCopy{
-			absolutePath: absPath,
-			relativePath: additionalRel[i],
+			absolutePath: filepath.Join(googleapisDir, filepath.FromSlash(relPath)),
+			relativePath: relPath,
 		})
 	}
 	return res, nil
