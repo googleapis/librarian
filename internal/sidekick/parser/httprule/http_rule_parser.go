@@ -124,7 +124,6 @@ const (
 func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	var pos int
 	var segments []api.PathSegment
-	var verb *string
 	if len(pathTemplate) < 2 {
 		return nil, fmt.Errorf("invalid path template, expected at least two characters: %s", pathTemplate)
 	} else if pathTemplate[0] != slash {
@@ -136,7 +135,7 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 		return nil, err
 	}
 	pos += width
-	verb, width, err = parseVerb(pathTemplate[pos:])
+	verb, width, err := parseVerb(pathTemplate[pos:])
 	if err != nil {
 		return nil, err
 	}
@@ -144,32 +143,28 @@ func parsePathTemplate(pathTemplate string) (*api.PathTemplate, error) {
 	if pos != len(pathTemplate) {
 		return nil, fmt.Errorf("invalid path template, expected it to end at position %d: %s", pos, pathTemplate)
 	}
-	var v string
-	if verb != nil {
-		v = *verb
-	}
 	return &api.PathTemplate{
 		Segments: segments,
-		Verb:     v,
+		Verb:     verb,
 	}, nil
 
 }
 
-func parseVerb(verbString string) (*string, int, error) {
+func parseVerb(verbString string) (string, int, error) {
 	if len(verbString) == 0 {
-		return nil, 0, nil
+		return "", 0, nil
 	}
 	var pos int
 	if verbString[pos] != verbSep {
-		return nil, 0, fmt.Errorf("invalid verb, must start with '%q': %s", verbSep, verbString)
+		return "", 0, fmt.Errorf("invalid verb, must start with '%q': %s", verbSep, verbString)
 	}
 	pos++ // Skip verbSep
 	verb, width, err := parseLiteral(verbString[pos:])
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
 	pos += width
-	return (*string)(verb), pos, nil
+	return string(verb), pos, nil
 }
 
 // parseSegments parses a sequence of variable and/or plain segments starting at the beginning of the provided string.
@@ -208,7 +203,7 @@ func parseLiteralSegment(literalSegment string) (*api.PathSegment, int, error) {
 		return nil, 0, err
 	}
 	return &api.PathSegment{
-		Literal: string(*literal),
+		Literal: string(literal),
 	}, width, nil
 }
 
@@ -261,7 +256,7 @@ func parseVarSubsegments(segmentsString string) ([]string, int, error) {
 		if err != nil {
 			return nil, pos, err
 		}
-		segments = append(segments, *segment)
+		segments = append(segments, segment)
 		pos += width
 		if pos == len(segmentsString) || segmentsString[pos] != slash {
 			break
@@ -290,26 +285,24 @@ func parseFieldPath(fieldPathString string) ([]string, int, error) {
 	return identifiers, pos, nil
 }
 
-func parseVarSubsegment(plainSegment string) (*string, int, error) {
+func parseVarSubsegment(plainSegment string) (string, int, error) {
 	if len(plainSegment) < 1 {
-		return nil, 0, fmt.Errorf("invalid plain segment, expected at least one character: %s", plainSegment)
+		return "", 0, fmt.Errorf("invalid plain segment, expected at least one character: %s", plainSegment)
 	}
 	if plainSegment[0] == slash {
-		return nil, 0, fmt.Errorf("invalid plain segment, cannot start with : %q", slash)
+		return "", 0, fmt.Errorf("invalid plain segment, cannot start with : %q", slash)
 	}
 	if len(plainSegment) >= 2 && plainSegment[0:2] == string(star)+string(star) {
-		wc := api.MultiSegmentWildcard
-		return &wc, 2, nil
+		return api.MultiSegmentWildcard, 2, nil
 	}
 	if plainSegment[0] == star {
-		wc := api.SingleSegmentWildcard
-		return &wc, 1, nil
+		return api.SingleSegmentWildcard, 1, nil
 	}
 	literal, pos, err := parseLiteral(plainSegment)
 	if err != nil {
-		return nil, 0, err
+		return "", 0, err
 	}
-	return (*string)(literal), pos, nil
+	return string(literal), pos, nil
 }
 
 const (
@@ -322,17 +315,17 @@ const (
 
 // parseLiteral validates that the provided string conforms to the LITERAL
 // definition, and returns a Literal type if it does.
-func parseLiteral(literal string) (*Literal, int, error) {
+func parseLiteral(literal string) (Literal, int, error) {
 	var pos int
 	for pos < len(literal) {
 		if strings.ContainsRune(unreserved, rune(literal[pos])) {
 			pos++
 		} else if literal[pos] == hexStart {
 			if pos+2 >= len(literal) {
-				return nil, pos, fmt.Errorf("invalid literal, expected at least 2 characters after the '%%': %s", literal)
+				return "", pos, fmt.Errorf("invalid literal, expected at least 2 characters after the '%%': %s", literal)
 			}
 			if !strings.ContainsRune(hexdig, rune(literal[pos+1])) || !strings.ContainsRune(hexdig, rune(literal[pos+2])) {
-				return nil, pos, fmt.Errorf("invalid literal: %s", literal)
+				return "", pos, fmt.Errorf("invalid literal: %s", literal)
 			}
 			pos += 3
 		} else {
@@ -340,10 +333,10 @@ func parseLiteral(literal string) (*Literal, int, error) {
 		}
 	}
 	if pos < 1 {
-		return nil, 0, fmt.Errorf("invalid literal, expected at least one character: %s", literal)
+		return "", 0, fmt.Errorf("invalid literal, expected at least one character: %s", literal)
 	}
 	literal = literal[:pos]
-	return (*Literal)(&literal), pos, nil
+	return Literal(literal), pos, nil
 }
 
 func parseIdentifier(identifier string) (*Identifier, int, error) {
