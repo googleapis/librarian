@@ -48,14 +48,14 @@
           name: instance
           plural_name: instances
         required: true
-      - arg_name: path
+      - arg_name: source-parallelstore-path
         api_field: exportDataRequest.sourceParallelstore.path
         help_text: |-
           Root directory path to the Paralellstore filesystem, starting
           with `/`. Defaults to `/` if unset.
         is_positional: false
         required: false
-      - arg_name: uri
+      - arg_name: destination-gcs-bucket-uri
         api_field: exportDataRequest.destinationGcsBucket.uri
         help_text: |-
           URI to a Cloud Storage bucket in the format:
@@ -110,7 +110,7 @@
         required: false
         resource_method_params:
           exportDataRequest.serviceAccount: '{__relative_name__}'
-      - arg_name: uid
+      - arg_name: metadata-options-uid
         api_field: exportDataRequest.metadataOptions.uid
         help_text: The UID preservation behavior.
         is_positional: false
@@ -122,7 +122,7 @@
           - arg_value: uid-number-preserve
             enum_value: UID_NUMBER_PRESERVE
             help_text: Value for the `uid-number-preserve` field.
-      - arg_name: gid
+      - arg_name: metadata-options-gid
         api_field: exportDataRequest.metadataOptions.gid
         help_text: The GID preservation behavior.
         is_positional: false
@@ -134,7 +134,7 @@
           - arg_value: gid-number-preserve
             enum_value: GID_NUMBER_PRESERVE
             help_text: Value for the `gid-number-preserve` field.
-      - arg_name: mode
+      - arg_name: metadata-options-mode
         api_field: exportDataRequest.metadataOptions.mode
         help_text: The mode preservation behavior.
         is_positional: false

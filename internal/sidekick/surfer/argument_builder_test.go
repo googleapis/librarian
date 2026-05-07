@@ -39,16 +39,14 @@ func TestNewArgument(t *testing.T) {
 	for _, test := range []struct {
 		name      string
 		field     *api.Field
-		apiField  []string
 		method    *api.Method
 		overrides *provider.Config
 		want      Argument
 	}{
 		{
-			name:     "String Field",
-			field:    api.NewTestField("description").WithType(api.TypezString).WithBehavior(api.FieldBehaviorOptional),
-			apiField: []string{"description"},
-			method:   api.NewTestMethod("CreateInstance"),
+			name:   "String Field",
+			field:  api.NewTestField("description").WithType(api.TypezString).WithBehavior(api.FieldBehaviorOptional),
+			method: api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "description",
 				APIField: []string{"description"},
@@ -65,8 +63,7 @@ func TestNewArgument(t *testing.T) {
 				f.Documentation = "My proto comment"
 				return f
 			}(),
-			apiField: []string{"description"},
-			method:   api.NewTestMethod("CreateInstance"),
+			method: api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "description",
 				APIField: []string{"description"},
@@ -77,10 +74,9 @@ func TestNewArgument(t *testing.T) {
 			},
 		},
 		{
-			name:     "Resource Reference Field",
-			field:    api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
-			apiField: []string{"network"},
-			method:   api.NewTestMethod("CreateInstance"),
+			name:   "Resource Reference Field",
+			field:  api.NewTestField("network").WithResourceReference("test.googleapis.com/Network"),
+			method: api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "network",
 				APIField: []string{"network"},
@@ -98,10 +94,9 @@ func TestNewArgument(t *testing.T) {
 			},
 		},
 		{
-			name:     "Boolean Field in Create Command",
-			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
-			apiField: []string{"validateOnly"},
-			method:   api.NewTestMethod("CreateInstance").WithVerb("POST"),
+			name:   "Boolean Field in Create Command",
+			field:  api.NewTestField("validateOnly").WithType(api.TypezBool),
+			method: api.NewTestMethod("CreateInstance").WithVerb("POST"),
 			want: Argument{
 				ArgName:  "validateOnly",
 				APIField: []string{"validateOnly"},
@@ -111,10 +106,9 @@ func TestNewArgument(t *testing.T) {
 			},
 		},
 		{
-			name:     "Boolean Field in Update Command",
-			field:    api.NewTestField("validateOnly").WithType(api.TypezBool),
-			apiField: []string{"validateOnly"},
-			method:   api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
+			name:   "Boolean Field in Update Command",
+			field:  api.NewTestField("validateOnly").WithType(api.TypezBool),
+			method: api.NewTestMethod("UpdateInstance").WithVerb("PATCH"),
 			want: Argument{
 				ArgName:  "validateOnly",
 				APIField: []string{"validateOnly"},
@@ -141,8 +135,7 @@ func TestNewArgument(t *testing.T) {
 					},
 				},
 			},
-			apiField: []string{"foo"},
-			method:   api.NewTestMethod("CreateInstance"),
+			method: api.NewTestMethod("CreateInstance"),
 			want: Argument{
 				ArgName:  "foo",
 				APIField: []string{"foo"},
@@ -157,13 +150,14 @@ func TestNewArgument(t *testing.T) {
 			if overrides == nil {
 				overrides = &provider.Config{}
 			}
+			path := []*api.Field{test.field}
 			got, err := newArgument(&argumentParams{
 				method:    test.method,
 				overrides: overrides,
 				model:     model,
 				service:   service,
 				field:     test.field,
-				apiField:  test.apiField,
+				fieldPath: path,
 			})
 			if err != nil {
 				t.Errorf("newArgument(%s) unexpected error: %v", test.name, err)
@@ -563,26 +557,70 @@ func TestArgumentBuilder_Build(t *testing.T) {
 	createMethod.Service = service
 	createMethod.Model = model
 
+	// Method with body: "*" to test wildcard prepending
+	wildcardMethod := api.NewTestMethod("CreateThingWildcard").WithVerb("POST").WithInput(
+		api.NewTestMessage("CreateRequest").WithFields(
+			api.NewTestField("thing_id").WithType(api.TypezString),
+		),
+	)
+	wildcardMethod.Service = service
+	wildcardMethod.Model = model
+	wildcardMethod.PathInfo = &api.PathInfo{BodyFieldPath: "*"}
+
+	displayNameField := api.NewTestField("display_name").WithType(api.TypezString)
+	instanceField := api.NewTestField("instance").WithType(api.TypezMessage)
+
 	for _, test := range []struct {
 		name    string
+		method  *api.Method
 		field   *api.Field
-		prefix  []string
+		path    []*api.Field
 		want    *Argument
 		wantErr bool
 	}{
 		{
 			name:   "Skips skipped fields",
+			method: createMethod,
 			field:  api.NewTestField("update_mask").WithType(api.TypezMessage),
-			prefix: []string{"update_mask"},
+			path:   []*api.Field{api.NewTestField("update_mask")},
 			want:   nil,
 		},
 		{
 			name:   "Handles Simple String Field",
-			field:  api.NewTestField("display_name").WithType(api.TypezString),
-			prefix: []string{"displayName"},
+			method: createMethod,
+			field:  displayNameField,
+			path:   []*api.Field{displayNameField},
 			want: &Argument{
 				ArgName:  "display_name",
 				APIField: []string{"displayName"},
+				HelpText: "Value for the `display-name` field.",
+				Required: false,
+				Repeated: false,
+				Type:     "str",
+			},
+		},
+		{
+			name:   "Handles Nested String Field",
+			method: createMethod,
+			field:  displayNameField,
+			path:   []*api.Field{instanceField, displayNameField},
+			want: &Argument{
+				ArgName:  "instance_display_name",
+				APIField: []string{"instance", "displayName"},
+				HelpText: "Value for the `display-name` field.",
+				Required: false,
+				Repeated: false,
+				Type:     "str",
+			},
+		},
+		{
+			name:   "Handles Nested String Field with InputType prefix (body *)",
+			method: wildcardMethod,
+			field:  displayNameField,
+			path:   []*api.Field{instanceField, displayNameField},
+			want: &Argument{
+				ArgName:  "instance_display_name",
+				APIField: []string{"CreateRequest", "instance", "displayName"},
 				HelpText: "Value for the `display-name` field.",
 				Required: false,
 				Repeated: false,
@@ -593,12 +631,12 @@ func TestArgumentBuilder_Build(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			got, err := newArgument(&argumentParams{
-				method:    createMethod,
+				method:    test.method,
 				overrides: &provider.Config{},
 				model:     model,
 				service:   service,
 				field:     test.field,
-				apiField:  test.prefix,
+				fieldPath: test.path,
 			})
 			if (err != nil) != test.wantErr {
 				t.Fatalf("build() error = %v, wantErr %v", err, test.wantErr)
