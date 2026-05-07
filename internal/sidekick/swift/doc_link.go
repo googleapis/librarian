@@ -67,18 +67,13 @@ func (c *codec) tryDocLinkWithId(id string) (string, error) {
 	if s := c.Model.Service(id); s != nil {
 		return c.serviceDocLink(s), nil
 	}
-	rdLink, err := c.tryFieldDocLink(id)
-	if err != nil {
-		return "", err
+	if rdLink, err := c.tryFieldDocLink(id); err != nil || rdLink != "" {
+		return rdLink, err
 	}
-	if rdLink != "" {
-		return rdLink, nil
+	if rdLink, err := c.tryEnumValueDocLink(id); err != nil || rdLink != "" {
+		return rdLink, err
 	}
-	rdLink, err = c.tryEnumValueDocLink(id)
-	if err != nil {
-		return "", err
-	}
-	return rdLink, nil
+	return "", nil
 }
 
 func (c *codec) tryFieldDocLink(id string) (string, error) {
