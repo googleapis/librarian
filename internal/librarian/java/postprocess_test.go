@@ -937,16 +937,22 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	}
 }
 
+// TestCreateOrVerifyOwlbotPy verifies that the createOrVerifyOwlbotPy function
+// successfully creates the owlbot.py post-processing script when it is missing
+// and generates a valid script containing the required synthtool blocks.
 func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()
+	// 1. Call createOrVerifyOwlbotPy to trigger default template generation.
 	if err := createOrVerifyOwlbotPy(outDir); err != nil {
 		t.Fatal(err)
 	}
+	// 2. Verify that the owlbot.py file was successfully created.
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err != nil {
 		t.Errorf("expected owlbot.py to be generated: %v", err)
 	}
+	// 3. Verify that the generated script's contents contain critical blocks.
 	content, err := os.ReadFile(owlbotPath)
 	if err != nil {
 		t.Fatal(err)

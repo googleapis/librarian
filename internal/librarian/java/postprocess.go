@@ -471,15 +471,21 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 	})
 }
 
+// createOrVerifyOwlbotPy ensures that the post-processing script (owlbot.py) exists
+// in the library's output directory. If it is missing (which is typical for newly added
+// client libraries), it automatically creates it from an embedded template to allow
+// OwlBot post-processing and README generation to complete successfully.
 func createOrVerifyOwlbotPy(outDir string) error {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); os.IsNotExist(err) {
-		f, err := os.Create(owlbotPath)
+	// If owlbot.py does not exist, generate it from the embedded template.
+	if _, err := os.Stat(owlbotPath); errors.Is(err, fs.ErrNotExist) {
+		file, err := os.Create(owlbotPath)
 		if err != nil {
 			return fmt.Errorf("failed to create owlbot.py: %w", err)
 		}
-		defer f.Close()
-		if err := templates.ExecuteTemplate(f, "owlbot_py.tmpl", nil); err != nil {
+		defer file.Close()
+		// Execute the template to write the default owlbot.py script content.
+		if err := templates.ExecuteTemplate(file, "owlbot_py.tmpl", nil); err != nil {
 			return fmt.Errorf("failed to write owlbot.py template: %w", err)
 		}
 	}
