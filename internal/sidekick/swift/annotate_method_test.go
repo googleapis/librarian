@@ -305,9 +305,9 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	}
 
 	method := &api.Method{
-		Name:        "ListItems",
-		InputTypeID: inputType.ID,
-		InputType:   inputType,
+		Name:         "ListItems",
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
 		OutputTypeID: outputType.ID,
 		OutputType:   outputType,
 		PathInfo: &api.PathInfo{
