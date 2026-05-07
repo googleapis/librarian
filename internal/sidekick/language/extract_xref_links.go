@@ -88,7 +88,7 @@ func validProtoName(b []byte) bool {
 	return len(parts) != 0
 }
 
-// isProtoIdent returns true if the id looks like a valid protobuf identifier
+// isProtoIdent returns true if the id looks like a valid identifier.
 func isIdent(id []byte) bool {
 	if len(id) == 0 {
 		return false
