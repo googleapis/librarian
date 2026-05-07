@@ -18,20 +18,30 @@
     - GA
   auto_generated: true
   help_text:
-    brief: Describe resources
-    description: Describe a resource
+    brief: Describe locations
+    description: Describe a location
     examples: |-
-      To describe the resource, run:
+      To describe the location, run:
 
           $ {command}
   arguments:
     params:
-      - help_text: ""
+      - help_text: The name of the location resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:
-          collection: developerconnect.
+          attributes:
+            - attribute_name: project
+              help: The project id of the {resource} resource.
+              parameter_name: projectsId
+              property: core/project
+            - attribute_name: location
+              help: The location id of the {resource} resource.
+              parameter_name: locationsId
+          collection: developerconnect.projects.locations
           disable_auto_completers: false
+          name: location
+          plural_name: locations
         required: true
   request:
     api_version: v1

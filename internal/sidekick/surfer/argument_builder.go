@@ -164,6 +164,9 @@ func newPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argument
 	if provider.IsOperationsServiceMethod(ap.method) && fieldHelpText == "" {
 		fieldHelpText = provider.OperationMethodDocumentation(ap.method.Name)
 	}
+	if provider.IsLocationsServiceMethod(ap.method) && fieldHelpText == "" {
+		fieldHelpText = provider.LocationMethodDocumentation(ap.method.Name)
+	}
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
 	hostParts := strings.Split(ap.service.DefaultHost, ".")

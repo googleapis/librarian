@@ -39,6 +39,7 @@ var (
 	enabledTargetTests = map[string]bool{
 		"hidden_surface":      true,
 		"method_async":        true,
+		"method_locations":    true,
 		"method_minimal_list": true,
 		"method_operations":   true,
 		"multi_service":       true,

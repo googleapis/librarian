@@ -58,6 +58,43 @@ func TestIsOperationsServiceMethod(t *testing.T) {
 	}
 }
 
+func TestIsLocationsServiceMethod(t *testing.T) {
+	tests := []struct {
+		name   string
+		method *api.Method
+		want   bool
+	}{
+		{
+			name: "Is Locations Method",
+			method: &api.Method{
+				SourceServiceID: ".google.cloud.location.Locations",
+			},
+			want: true,
+		},
+		{
+			name: "Is Regular Method",
+			method: &api.Method{
+				SourceServiceID: "google.cloud.test.v1.TestService",
+			},
+			want: false,
+		},
+		{
+			name:   "Nil Service ID",
+			method: &api.Method{},
+			want:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := IsLocationsServiceMethod(tt.method); got != tt.want {
+				t.Errorf("IsLocationsServiceMethod() = %v, want %v", got, tt.want)
+			}
+		})
+	}
+}
+
 func TestOperationMethodDocumentation(t *testing.T) {
 	tests := []struct {
 		name string
@@ -96,6 +133,39 @@ func TestOperationMethodDocumentation(t *testing.T) {
 			t.Parallel()
 			if got := OperationMethodDocumentation(tt.op); got != tt.want {
 				t.Errorf("OperationMethodDocumentation(%q) = %q, want %q", tt.op, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestLocationMethodDocumentation(t *testing.T) {
+	tests := []struct {
+		name string
+		op   string
+		want string
+	}{
+		{
+			name: "GetLocation",
+			op:   GetLocation,
+			want: "The name of the location resource.",
+		},
+		{
+			name: "ListLocations",
+			op:   ListLocations,
+			want: "The name of the location's parent resource.",
+		},
+		{
+			name: "Unknown",
+			op:   "UnknownOp",
+			want: "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := LocationMethodDocumentation(tt.op); got != tt.want {
+				t.Errorf("LocationMethodDocumentation(%q) = %q, want %q", tt.op, got, tt.want)
 			}
 		})
 	}
@@ -170,7 +240,8 @@ func TestInferOperationResource(t *testing.T) {
 					Bindings: []*api.PathBinding{},
 				},
 			},
-			want: nil,
+			want:    nil,
+			wantErr: true,
 		},
 		{
 			name: "Multiple Bindings (Multitype operations)",
@@ -217,14 +288,6 @@ func TestInferOperationResource(t *testing.T) {
 				},
 			},
 		},
-
-		{
-			name: "Path Info Nil",
-			method: &api.Method{
-				PathInfo: nil,
-			},
-			want: nil,
-		},
 	}
 
 	for _, tt := range tests {
@@ -237,6 +300,82 @@ func TestInferOperationResource(t *testing.T) {
 			}
 			if diff := cmp.Diff(tt.want, got); diff != "" {
 				t.Errorf("inferOperationResource() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInferLocationResource(t *testing.T) {
+	mockModel := &api.API{
+		ResourceDefinitions: []*api.Resource{
+			{
+				Type: "example.googleapis.com/Instance",
+				Patterns: []api.ResourcePattern{
+					parseResourcePattern("projects/{project}/locations/{location}/instances/{instance}"),
+				},
+			},
+		},
+	}
+
+	tests := []struct {
+		name    string
+		method  *api.Method
+		want    *api.Resource
+		wantErr bool
+	}{
+		{
+			name: "Standard Path",
+			method: &api.Method{
+				Model: mockModel,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							PathTemplate: &api.PathTemplate{
+								Segments: []api.PathSegment{
+									*(&api.PathSegment{}).WithLiteral("v1"),
+									*(&api.PathSegment{}).WithVariable(
+										api.NewPathVariable("name").
+											WithLiteral("projects").WithMatch().
+											WithLiteral("locations").WithMatch(),
+									),
+								},
+							},
+						},
+					},
+				},
+			},
+			want: &api.Resource{
+				Type:     "locations.googleapis.com/Location",
+				Singular: "location",
+				Plural:   "locations",
+				Patterns: []api.ResourcePattern{
+					parseResourcePattern("projects/{project}/locations/{location}"),
+				},
+			},
+		},
+		{
+			name: "No Bindings",
+			method: &api.Method{
+				Model: mockModel,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{},
+				},
+			},
+			want:    nil,
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			got, err := inferLocationResource(tt.method)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("inferLocationResource() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("inferLocationResource() mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

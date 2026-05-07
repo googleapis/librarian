@@ -191,16 +191,68 @@ func Command() *cli.Command {
 					{
 						Name:  "list",
 						Usage: "list locations",
+						Flags: []cli.Flag{
+							&cli.IntFlag{Name: "limit", Usage: "The limit.", Required: false},
+						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
-							fmt.Println("Executing list...")
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
+							parent := fmt.Sprintf("projects/%s", cmd.String("project"))
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							limit := cmd.Int("limit")
+							count := int64(0)
+							it := client.ListLocations(ctx, &parallelstorepb.ListLocationsRequest{Parent: parent})
+							for {
+								resp, err := it.Next()
+								if err == iterator.Done {
+									break
+								}
+								if err != nil {
+									return err
+								}
+								out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+								if err != nil {
+									return err
+								}
+								fmt.Println(string(out))
+								count++
+								if limit > 0 && count >= limit {
+									break
+								}
+							}
 							return nil
 						},
 					},
 					{
 						Name:  "describe",
 						Usage: "describe locations",
+						Flags: []cli.Flag{
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
-							fmt.Println("Executing describe...")
+							if cmd.String("project") == "" {
+								return fmt.Errorf("--project is required")
+							}
+							name := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							resp, err := client.GetLocation(ctx, &parallelstorepb.GetLocationRequest{Name: name})
+							if err != nil {
+								return err
+							}
+							out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+							if err != nil {
+								return err
+							}
+							fmt.Println(string(out))
 							return nil
 						},
 					},

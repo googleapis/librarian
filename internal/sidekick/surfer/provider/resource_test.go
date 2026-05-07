@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"log"
 	"os"
+	"slices"
 	"strings"
 	"testing"
 
@@ -307,6 +308,16 @@ func TestIsPrimaryResourceField(t *testing.T) {
 			want: true,
 		},
 		{
+			name:  "List Locations Method - Primary Resource Name",
+			field: &api.Field{Name: "name"},
+			method: &api.Method{
+				Name:            "ListLocations",
+				SourceServiceID: ".google.cloud.location.Locations",
+				InputType:       &api.Message{},
+			},
+			want: true,
+		},
+		{
 			name:  "Non-Primary Field",
 			field: &api.Field{Name: "display_name"},
 			method: &api.Method{
@@ -492,6 +503,26 @@ func TestGetResourceForMethod(t *testing.T) {
 				Type:     operationResourceType,
 				Singular: "operation",
 				Plural:   "operations",
+			},
+		},
+		{
+			name: "GetLocation Method - Pre-defined Resource",
+			method: &api.Method{
+				Name:            GetLocation,
+				SourceServiceID: ".google.cloud.location.Locations",
+				InputType:       &api.Message{},
+			},
+			resourceDefs: []*api.Resource{
+				{
+					Type:     locationResourceType,
+					Singular: "location",
+					Plural:   "locations",
+				},
+			},
+			want: &api.Resource{
+				Type:     locationResourceType,
+				Singular: "location",
+				Plural:   "locations",
 			},
 		},
 	} {
@@ -901,7 +932,7 @@ func TestGetPluralResourceTypeName(t *testing.T) {
 	}
 }
 
-func Test_getAllResources(t *testing.T) {
+func Test_allResources(t *testing.T) {
 	fileResource := &api.Resource{Type: "example.googleapis.com/File"}
 	messageResource := &api.Resource{Type: "example.googleapis.com/Message"}
 
@@ -927,21 +958,39 @@ func Test_getAllResources(t *testing.T) {
 							},
 						},
 					},
+					{
+						Name:            GetLocation,
+						SourceServiceID: ".google.cloud.location.Locations",
+						PathInfo: &api.PathInfo{
+							Bindings: []*api.PathBinding{
+								{
+									PathTemplate: &api.PathTemplate{
+										Segments: []api.PathSegment{
+											*(&api.PathSegment{}).WithLiteral("v1"),
+											*(&api.PathSegment{}).WithLiteral("locations"),
+											*(&api.PathSegment{}).WithVariable(api.NewPathVariable("location")),
+										},
+									},
+								},
+							},
+						},
+					},
 				},
 			},
 		},
 	}
 
-	got := getAllResources(model)
+	got := slices.Collect(allResources(model))
 
-	if len(got) != 3 {
-		t.Errorf("getAllResources() returned %d resources, want 3", len(got))
+	if len(got) != 4 {
+		t.Errorf("allResources() yielded %d resources, want 4", len(got))
 	}
 
 	expectedTypes := map[string]bool{
 		"example.googleapis.com/File":          true,
 		"example.googleapis.com/Message":       true,
 		"longrunning.googleapis.com/Operation": true,
+		"locations.googleapis.com/Location":    true,
 	}
 
 	for _, r := range got {
@@ -951,7 +1000,7 @@ func Test_getAllResources(t *testing.T) {
 	}
 }
 
-func Test_getAllResources_Warning(t *testing.T) {
+func Test_allResources_Warning(t *testing.T) {
 	// Capture log output.
 	var buf bytes.Buffer
 	log.SetOutput(&buf)
@@ -990,11 +1039,11 @@ func Test_getAllResources_Warning(t *testing.T) {
 		},
 	}
 
-	got := getAllResources(model)
+	got := slices.Collect(allResources(model))
 
 	// 1. Verify it gracefully skipped the operations resource (length should be 1, just the fileResource).
 	if len(got) != 1 {
-		t.Errorf("getAllResources() returned %d resources, want 1 (graceful skip)", len(got))
+		t.Errorf("allResources() yielded %d resources, want 1 (graceful skip)", len(got))
 	}
 
 	// 2. Verify the warning message was logged to stderr.

@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"iter"
 	"log/slog"
 	"path"
 	"strings"
@@ -106,8 +107,9 @@ func IsPrimaryResourceField(field *api.Field, method *api.Method) bool {
 		return true
 	}
 
-	// Fallback for operations methods where the primary resource field is named "name".
-	if IsOperationsServiceMethod(method) && field.Name == "name" {
+	// Fallback for operations and locations methods where the primary resource field is named "name"
+	// for list commands.
+	if (IsOperationsServiceMethod(method) || IsLocationsServiceMethod(method)) && field.Name == "name" {
 		return true
 	}
 
@@ -155,9 +157,14 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		return nil
 	}
 
-	// Strategy 1: Fast-path for long-running operations methods.
+	// Strategy 1: Fast-path for mixin service methods (Operations and Locations).
+	// These mixin methods do not have resource_reference annotations in their requests,
+	// so we look up their synthetic resources from the single source of truth.
 	if IsOperationsServiceMethod(method) {
 		return resourceFromType(model, operationResourceType)
+	}
+	if IsLocationsServiceMethod(method) {
+		return resourceFromType(model, locationResourceType)
 	}
 
 	// Strategy 2: For Create (AIP-133) and Update (AIP-134), the request message
@@ -194,7 +201,7 @@ func resourceFromType(model *api.API, resourceType string) *api.Resource {
 	if resourceType == "" {
 		return nil
 	}
-	for _, r := range getAllResources(model) {
+	for r := range allResources(model) {
 		if r.Type == resourceType {
 			return r
 		}
@@ -341,36 +348,56 @@ func GetLiteralSegments(raw []api.PathSegment) []string {
 	return filtered
 }
 
-// getAllResources returns all resource definitions in the model, including
-// file-level definitions, message-level definitions, and synthetic resources
-// inferred from operations methods.
-func getAllResources(model *api.API) []*api.Resource {
-	var resources []*api.Resource
-	resources = append(resources, model.ResourceDefinitions...)
+// allResources yields all resource definitions in the model.
+// This acts as the single source of truth for both path-based and method-based
+// resource lookups, ensuring that synthetic mixin resources (operations, locations)
+// resolve to the exact same definitions across all entry points.
+func allResources(model *api.API) iter.Seq[*api.Resource] {
+	return func(yield func(*api.Resource) bool) {
+		for _, res := range model.ResourceDefinitions {
+			if !yield(res) {
+				return
+			}
+		}
 
-	// Infer operations resources from GetOperation methods
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
-			if IsOperationsServiceMethod(m) && m.Name == GetOperation {
-				res, err := inferOperationResource(m)
-				if err != nil {
-					slog.Warn("failed to infer operations resource", "method", m.ID, "error", err)
-					continue
-				}
-				if res != nil {
-					resources = append(resources, res)
+		// Infer operations resources from GetOperation method and location resource from GetLocation method.
+		for _, s := range model.Services {
+			for _, m := range s.Methods {
+				if res := inferSyntheticResource(m); res != nil {
+					if !yield(res) {
+						return
+					}
 				}
 			}
 		}
 	}
+}
 
-	return resources
+// inferSyntheticResource attempts to infer a synthetic resource definition from a mixin method.
+func inferSyntheticResource(m *api.Method) *api.Resource {
+	if IsOperationsServiceMethod(m) && m.Name == GetOperation {
+		res, err := inferOperationResource(m)
+		if err != nil {
+			slog.Warn("failed to infer operations resource", "method", m.ID, "error", err)
+			return nil
+		}
+		return res
+	}
+	if IsLocationsServiceMethod(m) && m.Name == GetLocation {
+		res, err := inferLocationResource(m)
+		if err != nil {
+			slog.Warn("failed to infer locations resource", "method", m.ID, "error", err)
+			return nil
+		}
+		return res
+	}
+	return nil
 }
 
 // GetResourceForPath looks up the resource definition for a given list of URL path literals.
 func GetResourceForPath(model *api.API, path []string) *api.Resource {
 	target := strings.Join(path, ".")
-	for _, res := range getAllResources(model) {
+	for res := range allResources(model) {
 		for _, pattern := range res.Patterns {
 			segments := GetLiteralSegments(pattern)
 			if strings.Join(segments, ".") == target {
