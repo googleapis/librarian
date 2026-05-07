@@ -37,6 +37,7 @@ var (
 
 	// Tests that are enabled by default because they are expected to pass against the target.
 	enabledTargetTests = map[string]bool{
+		"apis/parallelstore":  true,
 		"hidden_surface":      true,
 		"method_async":        true,
 		"method_locations":    true,
