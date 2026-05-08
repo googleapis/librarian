@@ -456,7 +456,7 @@ func TestIsPOMMissing_DirMissing(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
 	got, err := isPOMMissing(dir)
 	if err != nil {
-		t.Fatal()
+		t.Fatal(err)
 	}
 	if !got {
 		t.Errorf("isPOMMissing(%q) = %v, want true", dir, got)
