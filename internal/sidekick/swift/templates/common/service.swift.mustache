@@ -108,7 +108,7 @@ extension Clients {
       {{/Codec.HasBody}}
       let (data, response) = try await self.inner.data(for: req)
       if !(200..<300).contains(response.statusCode) {
-        throw GoogleCloudGax.RequestError.http(HTTPDetails(
+        throw GoogleCloudGax.RequestError.http(GoogleCloudGax.HTTPDetails(
           http_status_code: response.statusCode,
           headers: [:],
           payload: data,
