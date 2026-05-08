@@ -180,7 +180,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ImportsGax:         true,
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
-		t.Errorf("request message annotations mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 
 	// Verify annotations on response message
@@ -194,6 +194,6 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ImportsGax:          true,
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
-		t.Errorf("response message annotations mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

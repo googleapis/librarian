@@ -464,7 +464,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.listSecrets, request: byItem)
   }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
-		t.Errorf("mismatch in method overload (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -510,7 +510,7 @@ func verifyGeneratedResponse(t *testing.T, outDir string) {
     return self.secrets
   }`
 	if diff := cmp.Diff(wantGetItems, gotGetItems); diff != "" {
-		t.Errorf("mismatch in _getPaginatedItems implementation (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	if !strings.Contains(respContentStr, "import GoogleCloudGax") {
