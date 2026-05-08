@@ -258,6 +258,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 		var roots []string
 		if name == showcaseLibraryName {
 			roots = []string{showcaseLibraryName, "googleapis"}
+			version = "0.0.1-SNAPSHOT"
 		}
 		for _, g := range l.GAPICs {
 			if g.ProtoPath == "" {
