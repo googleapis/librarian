@@ -193,7 +193,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := dart.Generate(gctx, library, src); err != nil {
+				if err := dart.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				if err := dart.Format(gctx, library); err != nil {

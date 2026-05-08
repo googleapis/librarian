@@ -283,7 +283,7 @@ func TestBuildCodec(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildCodec(test.library)
+			got := buildCodec(nil, test.library)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -559,7 +559,7 @@ func TestToModelConfig(t *testing.T) {
 			if test.showcaseDir != "" {
 				sources.Showcase = test.showcaseDir
 			}
-			got, err := toModelConfig(test.library, test.channel, sources)
+			got, err := toModelConfig(nil, test.library, test.channel, sources)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErr)
