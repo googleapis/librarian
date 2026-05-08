@@ -64,7 +64,7 @@ extension Clients {
       session: URLSession? = nil,
     ) throws {
       let endpoint = endpoint ?? "https://{{DefaultHost}}"
-      self.inner = try HTTPClient(endpoint: endpoint, credentials: credentials, session: session)
+      self.inner = try GoogleCloudGax.HTTPClient(endpoint: endpoint, credentials: credentials, session: session)
     }
     {{#Codec.RestMethods}}
 
@@ -108,14 +108,14 @@ extension Clients {
       {{/Codec.HasBody}}
       let (data, response) = try await self.inner.data(for: req)
       if !(200..<300).contains(response.statusCode) {
-        throw RequestError.http(HTTPDetails(
+        throw GoogleCloudGax.RequestError.http(HTTPDetails(
           http_status_code: response.statusCode,
           headers: [:],
           payload: data,
         ))
       }
       {{^ReturnsEmpty}}
-      return try ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
+      return try GoogleCloudGax.ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}
