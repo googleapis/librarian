@@ -60,6 +60,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 		{
@@ -78,6 +79,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 		{
@@ -98,6 +100,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
+				"generate-version-java",
 			},
 		},
 		{
@@ -114,6 +117,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 	} {

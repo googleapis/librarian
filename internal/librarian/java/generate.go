@@ -284,6 +284,10 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	if apiCfg.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
+
+	// generate-version-java ensures that the Version.java file is generated.
+	gapicOpts = append(gapicOpts, "generate-version-java")
+
 	return gapicOpts, nil
 }
 
