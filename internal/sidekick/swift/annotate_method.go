@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/language"
 )
@@ -95,8 +97,12 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	var pagination *paginationAnnotations
 	if method.Pagination != nil && method.OutputType != nil && method.OutputType.Pagination != nil {
 		itemField := method.OutputType.Pagination.PageableItem
+		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
+		if !ok {
+			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
+		}
 		pagination = &paginationAnnotations{
-			ItemType: itemField.Codec.(*fieldAnnotations).BaseFieldType,
+			ItemType: itemFieldCodec.BaseFieldType,
 		}
 	}
 	method.Codec = &methodAnnotations{

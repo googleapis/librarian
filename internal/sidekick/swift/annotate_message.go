@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -76,10 +77,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	annotations.ImportsGax = annotations.IsPaginatedRequest || annotations.IsPaginatedResponse
 	if message.Pagination != nil {
 		itemField := message.Pagination.PageableItem
-		if itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations); ok {
-			annotations.PageableItemField = itemFieldCodec.Name
-			annotations.PageableItemType = itemFieldCodec.BaseFieldType
+		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
+		if !ok {
+			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
 		}
+		annotations.PageableItemField = itemFieldCodec.Name
+		annotations.PageableItemType = itemFieldCodec.BaseFieldType
 	}
 
 	for _, nested := range message.Messages {
