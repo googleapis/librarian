@@ -444,6 +444,13 @@ func TestGenerateService_Pagination(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	verifyGeneratedService(t, outDir)
+	verifyGeneratedRequest(t, outDir)
+	verifyGeneratedResponse(t, outDir)
+	verifyGeneratedMessage(t, outDir)
+}
+
+func verifyGeneratedService(t *testing.T, outDir string) {
 	// Verify generated Service source code
 	filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService.swift")
 	content, err := os.ReadFile(filename)
@@ -459,7 +466,9 @@ func TestGenerateService_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch in method overload (-want +got):\n%s", diff)
 	}
+}
 
+func verifyGeneratedRequest(t *testing.T, outDir string) {
 	// Verify generated Request and Response Messages source code
 	msgFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsRequest.swift")
 	msgContent, err := os.ReadFile(msgFilename)
@@ -475,6 +484,13 @@ func TestGenerateService_Pagination(t *testing.T) {
 		}
 	}
 
+	// Verify selective imports in message files
+	if !strings.Contains(msgContentStr, "import GoogleCloudGax") {
+		t.Errorf("expected ListSecretsRequest.swift to import GoogleCloudGax, got:\n%s", msgContentStr)
+	}
+}
+
+func verifyGeneratedResponse(t *testing.T, outDir string) {
 	respFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsResponse.swift")
 	respContent, err := os.ReadFile(respFilename)
 	if err != nil {
@@ -497,14 +513,12 @@ func TestGenerateService_Pagination(t *testing.T) {
 		t.Errorf("mismatch in _getPaginatedItems implementation (-want +got):\n%s", diff)
 	}
 
-	// Verify selective imports in message files
-	if !strings.Contains(msgContentStr, "import GoogleCloudGax") {
-		t.Errorf("expected ListSecretsRequest.swift to import GoogleCloudGax, got:\n%s", msgContentStr)
-	}
 	if !strings.Contains(respContentStr, "import GoogleCloudGax") {
 		t.Errorf("expected ListSecretsResponse.swift to import GoogleCloudGax, got:\n%s", respContentStr)
 	}
+}
 
+func verifyGeneratedMessage(t *testing.T, outDir string) {
 	secretFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "Secret.swift")
 	secretContent, err := os.ReadFile(secretFilename)
 	if err != nil {
