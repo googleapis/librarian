@@ -45,8 +45,6 @@ const (
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
-var errTargetDir = errors.New("target directory does not exist")
-
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
 	Proto          Coordinate
@@ -456,18 +454,25 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	return modules, nil
 }
 
+// isPOMMissing checks if a pom.xml exists in the given directory.
+// It returns true if the file is confirmed to be missing (fs.ErrNotExist).
+// It returns an error if the check fails for unexpected reasons (e.g., permission issues).
 func isPOMMissing(dir string) (bool, error) {
 	pomPath := filepath.Join(dir, "pom.xml")
-	if _, err := os.Stat(pomPath); err == nil {
+	_, err := os.Stat(pomPath)
+	if err == nil {
 		return false, nil
 	}
-	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		return false, fmt.Errorf("%w: %s does not exist: %w", errTargetDir, dir, err)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true, nil
 	}
-	return true, nil
+	return false, fmt.Errorf("failed to check %s: %w", pomPath, err)
 }
 
 func writePOM(pomPath, templateName string, data any) (err error) {
+	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %s: %w", pomPath, err)
+	}
 	f, err := os.Create(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", pomPath, err)

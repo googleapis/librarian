@@ -617,17 +617,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			},
 			wantErr: errRunOwlBot,
 		},
-		{
-			name: "syncPOMs failure (missing module directories)",
-			cfg:  defaultCfg,
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErr: errTargetDir,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
