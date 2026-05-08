@@ -1156,13 +1156,32 @@ type Resource struct {
 }
 
 // ResourcePattern is a sequence of path segments that defines the structure of a resource's unique identifier.
+//
+// Given a resource name pattern like `projects/{project}/locations/{region}/secret/{secret}` this
+// will be:
+//
+//	[]PathSegment{
+//	  {Literal: "projects"},
+//	  {Variable: "project"},
+//	  {Literal: "locations"},
+//	  {Variable: "region"},
+//	  {Literal: "secrets"},
+//	  {Variable: "secret"},
+//	}
 type ResourcePattern []PathSegment
 
 // ResourceNameSegment is a segment of a resource name pattern.
+//
+// This should be a union type, either `Literal` or `Variable` are set, but not both.
 type ResourceNameSegment struct {
 	// Literal is the literal part of the segment.
+	//
+	// When formatting a resource name this should be used, well, literally.
 	Literal string
-	// Variable is the name of the variable part of the segment, if any.
+
+	// Variable is the name of the variable part of the segment.
+	//
+	// When formatting a resource name, this names a variable used to populate the resource name.
 	Variable string
 }
 
