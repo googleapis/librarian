@@ -262,7 +262,8 @@ func TestCleanPatterns(t *testing.T) {
 				Java: &config.JavaModule{
 					JavaAPIs: []*config.JavaAPI{
 						{Path: "google/identity/accesscontextmanager/type",
-							ProtoGRPCOnly: true},
+							GenerateGAPIC:         new(false),
+							GenerateResourceNames: new(false)},
 						{Path: "google/identity/accesscontextmanager/v1"},
 					},
 				},

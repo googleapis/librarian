@@ -42,6 +42,15 @@ func Fill(library *config.Library) (*config.Library, error) {
 		if javaAPI.Samples == nil {
 			javaAPI.Samples = new(true)
 		}
+		if javaAPI.GenerateGAPIC == nil {
+			javaAPI.GenerateGAPIC = new(true)
+		}
+		if javaAPI.GenerateProtoGRPC == nil {
+			javaAPI.GenerateProtoGRPC = new(true)
+		}
+		if javaAPI.GenerateResourceNames == nil {
+			javaAPI.GenerateResourceNames = new(true)
+		}
 		javaAPIs = append(javaAPIs, javaAPI)
 	}
 	library.Java.JavaAPIs = javaAPIs
@@ -53,6 +62,22 @@ func Fill(library *config.Library) (*config.Library, error) {
 func Tidy(library *config.Library) *config.Library {
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
+	}
+	if library.Java != nil {
+		for _, javaAPI := range library.Java.JavaAPIs {
+			if javaAPI.Samples != nil && *javaAPI.Samples {
+				javaAPI.Samples = nil
+			}
+			if javaAPI.GenerateGAPIC != nil && *javaAPI.GenerateGAPIC {
+				javaAPI.GenerateGAPIC = nil
+			}
+			if javaAPI.GenerateProtoGRPC != nil && *javaAPI.GenerateProtoGRPC {
+				javaAPI.GenerateProtoGRPC = nil
+			}
+			if javaAPI.GenerateResourceNames != nil && *javaAPI.GenerateResourceNames {
+				javaAPI.GenerateResourceNames = nil
+			}
+		}
 	}
 	return library
 }

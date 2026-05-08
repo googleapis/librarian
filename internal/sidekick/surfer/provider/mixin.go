@@ -144,10 +144,9 @@ func resourcePatterns(m *api.Method) ([]api.ResourcePattern, error) {
 func expandBinding(binding *api.PathBinding) ([]api.PathSegment, error) {
 	var expandedSegments []api.PathSegment
 	for _, seg := range binding.PathTemplate.Segments {
-		if seg.Literal != nil {
-			lit := *seg.Literal
+		if seg.Literal != "" {
 			// Skip version prefix segments (e.g. "v1", "v2", "v1beta1")
-			if len(lit) > 1 && lit[0] == 'v' && lit[1] >= '0' && lit[1] <= '9' {
+			if len(seg.Literal) > 1 && seg.Literal[0] == 'v' && seg.Literal[1] >= '0' && seg.Literal[1] <= '9' {
 				continue
 			}
 			// Literal segments represent static collection nouns or resource verbs (e.g., "projects", "locations").
@@ -187,9 +186,8 @@ func expandNestedVariable(v *api.PathVariable) ([]api.PathSegment, error) {
 				},
 			})
 		} else {
-			lit := part
 			expanded = append(expanded, api.PathSegment{
-				Literal: &lit,
+				Literal: part,
 			})
 		}
 	}

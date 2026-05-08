@@ -727,7 +727,7 @@ const (
 // PathTemplate is a template for a path.
 type PathTemplate struct {
 	Segments []PathSegment
-	Verb     *string
+	Verb     string
 }
 
 // FlatPath returns a simplified representation of the path template as a string.
@@ -741,8 +741,8 @@ func (template *PathTemplate) FlatPath() string {
 	sep := ""
 	for _, segment := range template.Segments {
 		buffer.WriteString(sep)
-		if segment.Literal != nil {
-			buffer.WriteString(*segment.Literal)
+		if segment.Literal != "" {
+			buffer.WriteString(segment.Literal)
 		} else if segment.Variable != nil {
 			fmt.Fprintf(&buffer, "{%s}", strings.Join(segment.Variable.FieldPath, "."))
 		}
@@ -753,7 +753,7 @@ func (template *PathTemplate) FlatPath() string {
 
 // PathSegment is a segment of a path.
 type PathSegment struct {
-	Literal  *string
+	Literal  string
 	Variable *PathVariable
 }
 
@@ -773,7 +773,7 @@ func NewPathVariable(fields ...string) *PathVariable {
 
 // WithLiteral adds a literal to the path template.
 func (p *PathTemplate) WithLiteral(l string) *PathTemplate {
-	p.Segments = append(p.Segments, PathSegment{Literal: &l})
+	p.Segments = append(p.Segments, PathSegment{Literal: l})
 	return p
 }
 
@@ -792,7 +792,7 @@ func (p *PathTemplate) WithVariableNamed(fields ...string) *PathTemplate {
 
 // WithVerb adds a verb to the path template.
 func (p *PathTemplate) WithVerb(v string) *PathTemplate {
-	p.Verb = &v
+	p.Verb = v
 	return p
 }
 
@@ -822,7 +822,7 @@ func (v *PathVariable) WithAllowReserved() *PathVariable {
 
 // WithLiteral adds a literal to the path segment.
 func (s *PathSegment) WithLiteral(l string) *PathSegment {
-	s.Literal = &l
+	s.Literal = l
 	return s
 }
 
@@ -1156,13 +1156,32 @@ type Resource struct {
 }
 
 // ResourcePattern is a sequence of path segments that defines the structure of a resource's unique identifier.
+//
+// Given a resource name pattern like `projects/{project}/locations/{region}/secret/{secret}` this
+// will be:
+//
+//	[]PathSegment{
+//	  {Literal: "projects"},
+//	  {Variable: "project"},
+//	  {Literal: "locations"},
+//	  {Variable: "region"},
+//	  {Literal: "secrets"},
+//	  {Variable: "secret"},
+//	}
 type ResourcePattern []PathSegment
 
 // ResourceNameSegment is a segment of a resource name pattern.
+//
+// This should be a union type, either `Literal` or `Variable` are set, but not both.
 type ResourceNameSegment struct {
-	// Literal is the literal part of the segment, including any separators.
+	// Literal is the literal part of the segment.
+	//
+	// When formatting a resource name this should be used, well, literally.
 	Literal string
-	// Variable is the name of the variable part of the segment, if any.
+
+	// Variable is the name of the variable part of the segment.
+	//
+	// When formatting a resource name, this names a variable used to populate the resource name.
 	Variable string
 }
 

@@ -167,8 +167,8 @@ func helpText(overrides *provider.Config, method *api.Method, model *api.API) He
 func requestMethod(method *api.Method) string {
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		return *method.PathInfo.Bindings[0].PathTemplate.Verb
+	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != "" {
+		return method.PathInfo.Bindings[0].PathTemplate.Verb
 	} else if !provider.IsStandardMethod(method) {
 		commandName, _ := provider.GetCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").

@@ -284,15 +284,14 @@ func ParseTemplateForTest(template string) []PathSegment {
 	if strings.HasPrefix(template, "//") {
 		host = "//" + parts[0]
 	}
-	segments = append(segments, PathSegment{Literal: &host})
+	segments = append(segments, PathSegment{Literal: host})
 
 	for _, part := range parts[1:] {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			fieldPath := strings.Split(part[1:len(part)-1], ".")
 			segments = append(segments, PathSegment{Variable: &PathVariable{FieldPath: fieldPath}})
 		} else {
-			l := part
-			segments = append(segments, PathSegment{Literal: &l})
+			segments = append(segments, PathSegment{Literal: part})
 		}
 	}
 	return segments

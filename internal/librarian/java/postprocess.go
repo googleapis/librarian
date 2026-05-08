@@ -292,34 +292,43 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		protoFilesDestDir = filepath.Join(destRoot, "main", "proto")
 	}
 
-	actions := []moveAction{
-		{
-			src:         tempProtoSrcDir,
-			dest:        protoDest,
-			description: "proto source",
-		},
-		{
-			src:         p.gRPCDir(),
-			dest:        grpcDest,
-			description: "grpc source",
-		},
-		{
-			src:         filepath.Join(p.gapicDir(), "src", "main"),
-			dest:        gapicMainDest,
-			description: "gapic source",
-		},
-		{
-			src:         filepath.Join(p.gapicDir(), "src", "test"),
-			dest:        gapicTestDest,
-			description: "gapic test",
-		},
-		{
+	var actions []moveAction
+	if shouldGenerateProtoGRPC(p.javaAPI) {
+		actions = append(actions, []moveAction{
+			{
+				src:         tempProtoSrcDir,
+				dest:        protoDest,
+				description: "proto source",
+			},
+			{
+				src:         p.gRPCDir(),
+				dest:        grpcDest,
+				description: "grpc source",
+			},
+		}...)
+	}
+	if shouldGenerateGAPIC(p.javaAPI) {
+		actions = append(actions, []moveAction{
+			{
+				src:         filepath.Join(p.gapicDir(), "src", "main"),
+				dest:        gapicMainDest,
+				description: "gapic source",
+			},
+			{
+				src:         filepath.Join(p.gapicDir(), "src", "test"),
+				dest:        gapicTestDest,
+				description: "gapic test",
+			},
+		}...)
+	}
+	if shouldGenerateResourceNames(p.javaAPI) {
+		actions = append(actions, moveAction{
 			src:         filepath.Join(p.gapicDir(), "proto", "src", "main", "java"),
 			dest:        protoDest,
 			description: "resource name source",
-		},
+		})
 	}
-	if p.includeSamples {
+	if p.includeSamples && shouldGenerateGAPIC(p.javaAPI) {
 		actions = append(actions, moveAction{
 			src:         filepath.Join(p.gapicDir(), "samples", "snippets", "generated", "src", "main", "java"),
 			dest:        filepath.Join(destRoot, "samples", "snippets", "generated"),
@@ -330,8 +339,10 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
-		return fmt.Errorf("failed to copy proto files: %w", err)
+	if shouldGenerateProtoGRPC(p.javaAPI) {
+		if err := copyProtos(p.protoSourceDir, p.apiProtos, protoFilesDestDir); err != nil {
+			return fmt.Errorf("failed to copy proto files: %w", err)
+		}
 	}
 	return nil
 }
@@ -448,16 +459,22 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 		keepPath := relSlash[i+1:]
 		if d.IsDir() {
 			if keepSet[keepPath] {
-				if err := os.RemoveAll(path); err != nil {
-					return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
+				destPath := filepath.Join(outDir, keepPath)
+				if _, err := os.Stat(destPath); err == nil {
+					if err := os.RemoveAll(path); err != nil {
+						return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
+					}
 				}
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		if shouldPreserve(keepPath, keepSet) {
-			if err := os.Remove(path); err != nil {
-				return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
+			destPath := filepath.Join(outDir, keepPath)
+			if _, err := os.Stat(destPath); err == nil {
+				if err := os.Remove(path); err != nil {
+					return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
+				}
 			}
 		}
 		return nil

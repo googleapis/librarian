@@ -387,7 +387,11 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoGRPCOnly: true},
+				{
+					Path:                  "google/cloud/gkehub/policycontroller/v1beta",
+					GenerateGAPIC:         new(bool),
+					GenerateResourceNames: new(bool),
+				},
 			},
 		},
 	}
@@ -1005,4 +1009,133 @@ func TestDeriveAPIBase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateAPI_Gating(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation integration")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+
+	for _, test := range []struct {
+		name              string
+		generateGAPIC     *bool
+		generateProtoGRPC *bool
+		generateResNames  *bool
+		wantProtoDir      bool
+		wantGRPCDir       bool
+		wantGAPICDir      bool
+		wantResNameFiles  bool
+	}{
+		{
+			name:              "default all true",
+			generateGAPIC:     nil,
+			generateProtoGRPC: nil,
+			generateResNames:  nil,
+			wantProtoDir:      true,
+			wantGRPCDir:       true,
+			wantGAPICDir:      true,
+			wantResNameFiles:  true,
+		},
+		{
+			name:              "proto/grpc only (skip gapic, skip res names)",
+			generateGAPIC:     new(false),
+			generateProtoGRPC: nil,
+			generateResNames:  new(false),
+			wantProtoDir:      true,
+			wantGRPCDir:       true,
+			wantGAPICDir:      false,
+			wantResNameFiles:  false,
+		},
+		{
+			name:              "gapic only (skip proto/grpc, skip res names)",
+			generateGAPIC:     nil,
+			generateProtoGRPC: new(false),
+			generateResNames:  new(false),
+			wantProtoDir:      false,
+			wantGRPCDir:       false,
+			wantGAPICDir:      true,
+			wantResNameFiles:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outdir := t.TempDir()
+			api := &config.API{Path: "google/cloud/secretmanager/v1"}
+			cfg := &config.Config{
+				Repo: "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Libraries: []*config.Library{
+					{Name: "google-cloud-java", Version: "1.2.3"},
+				},
+			}
+			library := &config.Library{
+				Name:   "secretmanager",
+				Output: outdir,
+				APIs: []*config.API{
+					api,
+				},
+				Java: &config.JavaModule{
+					JavaAPIs: []*config.JavaAPI{
+						{
+							Path:                  api.Path,
+							GenerateGAPIC:         test.generateGAPIC,
+							GenerateProtoGRPC:     test.generateProtoGRPC,
+							GenerateResourceNames: test.generateResNames,
+						},
+					},
+				},
+			}
+			if _, err := Fill(library); err != nil {
+				t.Fatal(err)
+			}
+			apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = generateAPI(t.Context(), generateAPIParams{
+				cfg:     cfg,
+				api:     api,
+				library: library,
+				srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+				outdir:  outdir,
+				metadata: &repoMetadata{
+					NamePretty:     "Secret Manager",
+					APIDescription: "Secret Manager API",
+				},
+				apiCfg: apiCfg,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			stagingProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGRPCPath := filepath.Join(outdir, "owl-bot-staging", "v1", "grpc-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGAPICPath := filepath.Join(outdir, "owl-bot-staging", "v1", "google-cloud-secretmanager", "src", "main", "java")
+			gotProtoDir := assertDirExists(t, stagingProtoPath, test.wantProtoDir, "proto dir")
+			assertDirExists(t, stagingGRPCPath, test.wantGRPCDir, "grpc dir")
+			assertDirExists(t, stagingGAPICPath, test.wantGAPICDir, "gapic dir")
+			// verify GAPIC-generated Resource Name helper classes
+			if gotProtoDir {
+				resNameFile := filepath.Join(stagingProtoPath, "com", "google", "cloud", "secretmanager", "v1", "SecretName.java")
+				_, errRes := os.Stat(resNameFile)
+				gotResNameFiles := !os.IsNotExist(errRes)
+				if gotResNameFiles != test.wantResNameFiles {
+					t.Errorf("gotResNameFiles = %v, want %v (file: %s)", gotResNameFiles, test.wantResNameFiles, resNameFile)
+				}
+			}
+		})
+	}
+}
+
+func assertDirExists(t *testing.T, path string, want bool, desc string) bool {
+	t.Helper()
+	_, err := os.Stat(path)
+	got := !os.IsNotExist(err)
+	if got != want {
+		t.Errorf("expected %s existence to be %v, got %v (path: %s)", desc, want, got, path)
+	}
+	return got
 }

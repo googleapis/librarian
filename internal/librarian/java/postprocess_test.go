@@ -904,8 +904,25 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	regularFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Regular.java")
 	// 4. File inside an explicitly kept directory
 	keptDirFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
+	// 5. Kept file that does NOT exist in destination (should remain in staging)
+	nonExistentKeptFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "NonExistent.java")
 
-	for _, file := range []string{keptFile, versionFile, regularFile, keptDirFile} {
+	for _, file := range []string{keptFile, versionFile, regularFile, keptDirFile, nonExistentKeptFile} {
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Create corresponding destination files for keptFile, versionFile, and keptDirFile
+	// so that they are recognized as existing and removed from staging.
+	destKeptFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "File.java")
+	destVersionFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Version.java")
+	destKeptDirFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
+
+	for _, file := range []string{destKeptFile, destVersionFile, destKeptDirFile} {
 		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
 			t.Fatal(err)
 		}
@@ -921,6 +938,7 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 		},
 		Keep: []string{
 			"google-cloud-lib/src/main/java/com/google/kept/File.java",
+			"google-cloud-lib/src/main/java/com/google/kept/NonExistent.java",
 			"google-cloud-lib/src/main/java/com/google/keptdir/", // Test with trailing slash
 		},
 	}
@@ -931,7 +949,7 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	if _, err := os.Stat(keptFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected kept file %s to be removed from staging, but it exists", keptFile)
 	}
-	if _, err := os.Stat(keptFile); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := os.Stat(versionFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected version file %s to be removed from staging due to regex match, but it exists", versionFile)
 	}
 	if _, err := os.Stat(regularFile); err != nil {
@@ -939,5 +957,8 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	}
 	if _, err := os.Stat(keptDirFile); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected file inside kept dir %s to be removed from staging, but it exists", keptDirFile)
+	}
+	if _, err := os.Stat(nonExistentKeptFile); err != nil {
+		t.Errorf("expected non-existent kept file %s to remain in staging, but got error: %v", nonExistentKeptFile, err)
 	}
 }

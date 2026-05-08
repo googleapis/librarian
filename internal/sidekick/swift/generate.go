@@ -55,6 +55,9 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	if err := codec.generateServices(outdir, model, provider); err != nil {
 		return err
 	}
+	if err := codec.generateClients(outdir, model, provider); err != nil {
+		return err
+	}
 	if codec.Module {
 		// Modules only get the top-level messages, enums, and services generated.
 		return nil
@@ -135,4 +138,15 @@ func (c *codec) generateSnippets(outdir string, model *api.API, provider languag
 		}
 	}
 	return nil
+}
+
+func (c *codec) generateClients(outdir string, model *api.API, provider language.TemplateProvider) error {
+	if len(model.Services) == 0 {
+		return nil
+	}
+	generated := language.GeneratedFile{
+		TemplatePath: "templates/common/clients.swift.mustache",
+		OutputPath:   c.outputPath("Clients.swift"),
+	}
+	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }

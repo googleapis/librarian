@@ -421,8 +421,9 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:  "showcase",
-						Roots: []string{"showcase", "googleapis"},
+						Name:    "showcase",
+						Version: "0.0.1-SNAPSHOT",
+						Roots:   []string{"showcase", "googleapis"},
 						APIs: []*config.API{
 							{Path: "schema/google/showcase/v1beta1"},
 						},
@@ -719,10 +720,11 @@ func TestBuildConfig(t *testing.T) {
 						Java: &config.JavaModule{
 							JavaAPIs: []*config.JavaAPI{
 								{
-									Path:                "google/cloud/gkehub/policycontroller/v1beta",
-									Samples:             new(false),
-									ProtoGRPCOnly:       true,
-									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
+									Path:                  "google/cloud/gkehub/policycontroller/v1beta",
+									Samples:               new(false),
+									GenerateGAPIC:         new(bool),
+									GenerateResourceNames: new(bool),
+									OmitCommonResources:   true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
@@ -763,7 +765,8 @@ func TestBuildConfig(t *testing.T) {
 								{
 									Path:                    "google/apps/script/type",
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoGRPCOnly:           true,
+									GenerateGAPIC:           new(bool),
+									GenerateResourceNames:   new(bool),
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
@@ -1604,5 +1607,59 @@ func TestInsertMarkers_Full(t *testing.T) {
 	bomGot, _ := os.ReadFile(filepath.Join(bomDir, "pom.xml"))
 	if !strings.Contains(string(bomGot), managedDepsStartMarker) {
 		t.Error("bom pom missing dependency markers")
+	}
+}
+
+func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		apiPath     string
+		wantGAPIC   *bool
+		wantProto   *bool
+		wantResName *bool
+	}{
+		{
+			name:        "iam v2 special override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(false),
+			wantProto:   new(true),
+			wantResName: new(true),
+		},
+		{
+			name:        "iam-policy v2 special override",
+			libraryName: "iam-policy",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(true),
+			wantProto:   new(false),
+			wantResName: new(false),
+		},
+		{
+			name:        "iam non-special path no override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v1",
+		},
+		{
+			name:        "other library no override",
+			libraryName: "secretmanager",
+			apiPath:     "google/iam/v3",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			api := &config.JavaAPI{
+				Path: test.apiPath,
+			}
+			applyJavaIAMSpecialOverrides(test.libraryName, api)
+			if diff := cmp.Diff(test.wantGAPIC, api.GenerateGAPIC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantProto, api.GenerateProtoGRPC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantResName, api.GenerateResourceNames); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

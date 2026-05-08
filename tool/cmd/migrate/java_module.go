@@ -228,6 +228,30 @@ var (
 			"google/cloud/oslogin/common/common.proto",
 		},
 	}
+
+	javaIAMSpecialPaths = []string{
+		"google/iam/v2",
+		"google/iam/v2beta",
+		"google/iam/v3",
+		"google/iam/v3beta",
+	}
+
+	javaIAMLibraryOverrides = map[string]struct {
+		GenerateGAPIC         *bool
+		GenerateProtoGRPC     *bool
+		GenerateResourceNames *bool
+	}{
+		"iam": {
+			GenerateGAPIC:         new(false),
+			GenerateProtoGRPC:     new(true),
+			GenerateResourceNames: new(true),
+		},
+		"iam-policy": {
+			GenerateGAPIC:         new(true),
+			GenerateProtoGRPC:     new(false),
+			GenerateResourceNames: new(false),
+		},
+	}
 )
 
 type javaArtifactOverrides struct {

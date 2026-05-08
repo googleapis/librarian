@@ -29,8 +29,8 @@
   arguments:
     params:
       - help_text: |-
-          The project and location for which to retrieve instance information,
-          in the format `projects/{project_id}/locations/{location}`.
+          The project and location for which to retrieve instance
+          information, in the format `projects/{project_id}/locations/{location}`.
 
           To retrieve instance information for all locations, use "-" as the value of
           `{location}`.

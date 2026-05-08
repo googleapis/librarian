@@ -758,14 +758,14 @@ func bodyAccessor(m *api.Method) string {
 func httpPathFmt(t *api.PathTemplate) string {
 	fmt := ""
 	for _, segment := range t.Segments {
-		if segment.Literal != nil {
-			fmt = fmt + "/" + *segment.Literal
+		if segment.Literal != "" {
+			fmt = fmt + "/" + segment.Literal
 		} else if segment.Variable != nil {
 			fmt = fmt + "/{}"
 		}
 	}
-	if t.Verb != nil {
-		fmt = fmt + ":" + *t.Verb
+	if t.Verb != "" {
+		fmt = fmt + ":" + t.Verb
 	}
 	return fmt
 }
