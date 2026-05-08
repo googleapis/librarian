@@ -452,13 +452,12 @@ func TestGenerateService_Pagination(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	expectedOverload := `  /// Lists secrets.
-  public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error> {
+	gotMethodOverload := extractBlock(t, contentStr, "public func listSecrets(byItem: ListSecretsRequest)", "}")
+	wantMethodOverload := `public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error> {
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.listSecrets, request: byItem)
   }`
-
-	if !strings.Contains(contentStr, expectedOverload) {
-		t.Errorf("expected pagination overload not found in service. Got:\n%s", contentStr)
+	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
+		t.Errorf("mismatch in method overload (-want +got):\n%s", diff)
 	}
 
 	// Verify generated Request and Response Messages source code
@@ -469,19 +468,10 @@ func TestGenerateService_Pagination(t *testing.T) {
 	}
 	msgContentStr := string(msgContent)
 
-	// Request implements _PaginatedRequest, Response implements _PaginatedResponse
-	startIdx := strings.Index(msgContentStr, "public struct ListSecretsRequest")
-	if startIdx == -1 {
-		t.Fatal("missing public struct ListSecretsRequest")
-	}
-	endIdx := strings.Index(msgContentStr[startIdx:], "{")
-	if endIdx == -1 {
-		t.Fatal("missing { for ListSecretsRequest")
-	}
-	decl := msgContentStr[startIdx : startIdx+endIdx]
+	gotRequestMessage := extractBlock(t, msgContentStr, "public struct ListSecretsRequest: ", "{")
 	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedRequest", "Sendable"} {
-		if !strings.Contains(decl, p) {
-			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, decl)
+		if !strings.Contains(gotRequestMessage, p) {
+			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, gotRequestMessage)
 		}
 	}
 
@@ -492,26 +482,19 @@ func TestGenerateService_Pagination(t *testing.T) {
 	}
 	respContentStr := string(respContent)
 
-	startIdxResp := strings.Index(respContentStr, "public struct ListSecretsResponse")
-	if startIdxResp == -1 {
-		t.Fatal("missing public struct ListSecretsResponse")
-	}
-	endIdxResp := strings.Index(respContentStr[startIdxResp:], "{")
-	if endIdxResp == -1 {
-		t.Fatal("missing { for ListSecretsResponse")
-	}
-	declResp := respContentStr[startIdxResp : startIdxResp+endIdxResp]
+	gotResponseMessage := extractBlock(t, respContentStr, "public struct ListSecretsResponse: ", "{")
 	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
-		if !strings.Contains(declResp, p) {
-			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, declResp)
+		if !strings.Contains(gotResponseMessage, p) {
+			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, gotResponseMessage)
 		}
 	}
 
-	expectedGetItems := `  public func _getPaginatedItems() -> [Secret] {
+	gotGetItems := extractBlock(t, respContentStr, "public func _getPaginatedItems()", "  }")
+	wantGetItems := `public func _getPaginatedItems() -> [Secret] {
     return self.secrets
   }`
-	if !strings.Contains(respContentStr, expectedGetItems) {
-		t.Errorf("expected _getPaginatedItems implementation not found in response message. Got:\n%s", respContentStr)
+	if diff := cmp.Diff(wantGetItems, gotGetItems); diff != "" {
+		t.Errorf("mismatch in _getPaginatedItems implementation (-want +got):\n%s", diff)
 	}
 
 	// Verify selective imports in message files
