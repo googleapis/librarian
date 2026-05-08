@@ -1160,7 +1160,7 @@ type ResourcePattern []PathSegment
 
 // ResourceNameSegment is a segment of a resource name pattern.
 type ResourceNameSegment struct {
-	// Literal is the literal part of the segment, including any separators.
+	// Literal is the literal part of the segment.
 	Literal string
 	// Variable is the name of the variable part of the segment, if any.
 	Variable string
