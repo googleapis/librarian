@@ -486,10 +486,8 @@ func createOrVerifyOwlbotPy(outDir string) error {
 		defer file.Close()
 
 		data := struct {
-			ShouldIncludeTemplates bool
-			TemplateExcludes       []string
+			TemplateExcludes []string
 		}{
-			ShouldIncludeTemplates: true,
 			TemplateExcludes: []string{
 				".github/*",
 				".kokoro/*",

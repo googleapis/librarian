@@ -13,24 +13,23 @@
 # limitations under the License.
 
 import synthtool as s
-{{- if .ShouldIncludeTemplates }}
 from synthtool.languages import java
-{{- end }}
 
 for library in s.get_staging_dirs():
     # put any special-case replacements here
     s.move(library)
 
 s.remove_staging_dirs()
-{{- if .ShouldIncludeTemplates }}
 java.common_templates(
     monorepo=True,
     {{- if .TemplateExcludes }}
     excludes=[
-        {{- range .TemplateExcludes }}
-        "{{ . }}",
+        {{range $i, $exclude := .TemplateExcludes -}}
+        {{- if $i }},
+        {{ end -}}
+        "{{ $exclude }}"
         {{- end }}
-    ],
-    {{- end }}
+])
+    {{- else }}
 )
-{{- end }}
+    {{- end }}
