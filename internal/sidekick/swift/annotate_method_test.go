@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -336,33 +337,41 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 
 	// Verify method annotations
 	gotMethod := method.Codec.(*methodAnnotations)
-	if gotMethod.Pagination == nil {
-		t.Fatal("expected method to have pagination annotations")
+	wantMethod := &methodAnnotations{
+		Name:           "listItems",
+		PathExpression: "/",
+		HTTPMethod:     "GET",
+		Pagination: &paginationAnnotations{
+			ItemType: "Item",
+		},
 	}
-	if gotMethod.Pagination.ItemType != "Item" {
-		t.Errorf("expected Pagination.ItemType to be 'Item', got %q", gotMethod.Pagination.ItemType)
+	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+		t.Errorf("method annotations mismatch (-want, +got):\n%s", diff)
 	}
 
-	// Verify message annotations
+	// Verify request message annotations
 	gotRequest := inputType.Codec.(*messageAnnotations)
-	if !gotRequest.IsPaginatedRequest {
-		t.Error("expected request message to be marked as paginated request")
+	wantRequest := &messageAnnotations{
+		Name:               "ListRequest",
+		TypeURL:            "type.googleapis.com/test.ListRequest",
+		IsPaginatedRequest: true,
+		ImportsGax:         true,
 	}
-	if gotRequest.IsPaginatedResponse {
-		t.Error("expected request message NOT to be marked as paginated response")
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("request message annotations mismatch (-want, +got):\n%s", diff)
 	}
 
+	// Verify response message annotations
 	gotResponse := outputType.Codec.(*messageAnnotations)
-	if gotResponse.IsPaginatedRequest {
-		t.Error("expected response message NOT to be marked as paginated request")
+	wantResponse := &messageAnnotations{
+		Name:                "ListResponse",
+		TypeURL:             "type.googleapis.com/test.ListResponse",
+		IsPaginatedResponse: true,
+		PageableItemField:   "items",
+		PageableItemType:    "Item",
+		ImportsGax:          true,
 	}
-	if !gotResponse.IsPaginatedResponse {
-		t.Fatal("expected response message to be marked as paginated response")
-	}
-	if gotResponse.PageableItemField != "items" {
-		t.Errorf("expected PageableItemField to be 'items', got %q", gotResponse.PageableItemField)
-	}
-	if gotResponse.PageableItemType != "Item" {
-		t.Errorf("expected PageableItemType to be 'Item', got %q", gotResponse.PageableItemType)
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("response message annotations mismatch (-want, +got):\n%s", diff)
 	}
 }

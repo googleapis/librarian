@@ -470,9 +470,19 @@ func TestGenerateService_Pagination(t *testing.T) {
 	msgContentStr := string(msgContent)
 
 	// Request implements _PaginatedRequest, Response implements _PaginatedResponse
-	expectedRequestDecl := "public struct ListSecretsRequest: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable, GoogleCloudGax._PaginatedRequest {"
-	if !strings.Contains(msgContentStr, expectedRequestDecl) {
-		t.Errorf("expected _PaginatedRequest conformance not found in request message. Got:\n%s", msgContentStr)
+	startIdx := strings.Index(msgContentStr, "public struct ListSecretsRequest")
+	if startIdx == -1 {
+		t.Fatal("missing public struct ListSecretsRequest")
+	}
+	endIdx := strings.Index(msgContentStr[startIdx:], "{")
+	if endIdx == -1 {
+		t.Fatal("missing { for ListSecretsRequest")
+	}
+	decl := msgContentStr[startIdx : startIdx+endIdx]
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedRequest", "Sendable"} {
+		if !strings.Contains(decl, p) {
+			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, decl)
+		}
 	}
 
 	respFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsResponse.swift")
@@ -482,9 +492,19 @@ func TestGenerateService_Pagination(t *testing.T) {
 	}
 	respContentStr := string(respContent)
 
-	expectedResponseDecl := "public struct ListSecretsResponse: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable, GoogleCloudGax._PaginatedResponse {"
-	if !strings.Contains(respContentStr, expectedResponseDecl) {
-		t.Errorf("expected _PaginatedResponse conformance not found in response message. Got:\n%s", respContentStr)
+	startIdxResp := strings.Index(respContentStr, "public struct ListSecretsResponse")
+	if startIdxResp == -1 {
+		t.Fatal("missing public struct ListSecretsResponse")
+	}
+	endIdxResp := strings.Index(respContentStr[startIdxResp:], "{")
+	if endIdxResp == -1 {
+		t.Fatal("missing { for ListSecretsResponse")
+	}
+	declResp := respContentStr[startIdxResp : startIdxResp+endIdxResp]
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedResponse", "Sendable"} {
+		if !strings.Contains(declResp, p) {
+			t.Errorf("expected %q in ListSecretsResponse declaration, got: %s", p, declResp)
+		}
 	}
 
 	expectedGetItems := `  public func _getPaginatedItems() -> [Secret] {
