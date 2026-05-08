@@ -28,7 +28,7 @@ import {{.}}
 import {{Service.Codec.PackageName}}
 import Foundation
 
-func sample(client: {{Service.Codec.Name}}) async throws {
+func sample(client: some {{Service.Codec.Name}}) async throws {
     {{^ReturnsEmpty}}
     let response = try await client.{{Codec.Name}}(
         request: {{InputType.Codec.Name}}(/* set fields */)
@@ -48,7 +48,7 @@ func sample(client: {{Service.Codec.Name}}) async throws {
 struct SnippetRunner {
     static func main() async throws {
         do {
-            let client = try {{Service.Codec.Name}}()
+            let client = try {{Service.Codec.PackageName}}.Clients.{{Service.Codec.ClientName}}()
             try await sample(client: client)
         } catch {
             print("Error: \(error)")
