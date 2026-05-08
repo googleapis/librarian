@@ -464,8 +464,8 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 					if err := os.RemoveAll(path); err != nil {
 						return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
 					}
-					return filepath.SkipDir
 				}
+				return filepath.SkipDir
 			}
 			return nil
 		}
