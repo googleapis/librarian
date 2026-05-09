@@ -411,13 +411,13 @@ func deriveLastReleasedVersion(v string) (string, error) {
 }
 
 func copyProtos(protos []protoFileToCopy, destDir string) error {
-	for _, p := range protos {
-		target := filepath.Join(destDir, p.relativePath)
+	for _, proto := range protos {
+		target := filepath.Join(destDir, proto.relativePath)
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return fmt.Errorf("failed to create directory %s: %w", filepath.Dir(target), err)
 		}
-		if err := filesystem.CopyFile(p.absolutePath, target); err != nil {
-			return fmt.Errorf("failed to copy file %s to %s: %w", p.absolutePath, target, err)
+		if err := filesystem.CopyFile(proto.absolutePath, target); err != nil {
+			return fmt.Errorf("failed to copy file %s to %s: %w", proto.absolutePath, target, err)
 		}
 	}
 	return nil

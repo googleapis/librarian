@@ -219,15 +219,17 @@ func deriveAbsoluteProtoPaths(paths []string, baseDir string) []string {
 	return absPaths
 }
 
+// deriveProtosToCopy resolves absolute and relative paths for API and additional protos.
+// The returned structs are eventually used by copyProtos to copy these files into the generated proto module.
 func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalRel []string, googleapisDir string) ([]protoFileToCopy, error) {
 	var res []protoFileToCopy
-	for _, p := range apiProtos {
-		rel, err := filepath.Rel(primaryDir, p)
+	for _, apiProto := range apiProtos {
+		rel, err := filepath.Rel(primaryDir, apiProto)
 		if err != nil {
-			return nil, fmt.Errorf("failed to calculate relative path for %s: %w", p, err)
+			return nil, fmt.Errorf("failed to calculate relative path for %s: %w", apiProto, err)
 		}
 		res = append(res, protoFileToCopy{
-			absolutePath: p,
+			absolutePath: apiProto,
 			relativePath: rel,
 		})
 	}
