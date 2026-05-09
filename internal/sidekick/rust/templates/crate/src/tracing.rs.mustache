@@ -102,6 +102,16 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     ) -> std::sync::Arc<dyn google_cloud_gax::polling_backoff_policy::PollingBackoffPolicy> {
         self.inner.get_polling_backoff_policy(options)
     }
+
+    fn get_poller_options(
+        &self,
+        options: &crate::RequestOptions,
+    ) -> google_cloud_lro::internal::PollerOptions {
+        let mut opts = self.inner.get_poller_options(options);
+        let details = google_cloud_lro::internal::TracingDetails::default();
+        opts.tracing = Some(details);
+        opts
+    }
     {{/Codec.HasLROs}}
 }
 
