@@ -48,7 +48,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
-    ) -> google_cloud_lro::internal::PollerOptions;
+    ) -> google_cloud_lro::PollerOptions;
     {{/Codec.HasLROs}}
 }
 
@@ -88,7 +88,7 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
-    ) -> google_cloud_lro::internal::PollerOptions {
+    ) -> google_cloud_lro::PollerOptions {
         T::get_poller_options(self, options)
     }
     {{/Codec.HasLROs}}
