@@ -78,6 +78,11 @@ var (
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
 		},
+		{apiPath: "google/firestore/admin/v1"}: {
+			protoArtifactID: "proto-google-cloud-firestore-admin-v1",
+			grpcArtifactID:  "grpc-google-cloud-firestore-admin-v1",
+			gapicArtifactID: "google-cloud-firestore-admin",
+		},
 		{apiPath: "google/api"}: {
 			protoArtifactID: "proto-google-common-protos",
 		},
