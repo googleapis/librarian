@@ -234,8 +234,8 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	if !isVeneer(language, lib) {
 		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
-			// Do not derive API path for Go because the library name
-			// doesn't contain relevant info.
+			// Do not derive API path for some languages because the library
+			// name doesn't contain all the required info.
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
 		for _, api := range lib.APIs {
@@ -261,7 +261,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs:
 		return false
 	default:
 		return true
