@@ -484,16 +484,12 @@ func verifyGeneratedRequest(t *testing.T, outDir string) {
 	msgContentStr := string(msgContent)
 
 	gotRequestMessage := extractBlock(t, msgContentStr, "public struct ListSecretsRequest: ", "{")
-	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "GoogleCloudGax._PaginatedRequest", "Sendable"} {
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
 		if !strings.Contains(gotRequestMessage, p) {
 			t.Errorf("expected %q in ListSecretsRequest declaration, got: %s", p, gotRequestMessage)
 		}
 	}
 
-	// Verify selective imports in message files
-	if !strings.Contains(msgContentStr, "import GoogleCloudGax") {
-		t.Errorf("expected ListSecretsRequest.swift to import GoogleCloudGax, got:\n%s", msgContentStr)
-	}
 }
 
 func verifyGeneratedResponse(t *testing.T, outDir string) {

@@ -352,10 +352,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	// Verify request message annotations
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:               "ListRequest",
-		TypeURL:            "type.googleapis.com/test.ListRequest",
-		IsPaginatedRequest: true,
-		ImportsGax:         true,
+		Name:    "ListRequest",
+		TypeURL: "type.googleapis.com/test.ListRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

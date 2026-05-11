@@ -17,9 +17,6 @@ limitations under the License.
 /// {{{.}}}
 {{/Codec.DocLines}}
 public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
-  {{#Codec.IsPaginatedRequest}}
-  GoogleCloudGax._PaginatedRequest,
-  {{/Codec.IsPaginatedRequest}}
   {{#Codec.IsPaginatedResponse}}
   GoogleCloudGax._PaginatedResponse,
   {{/Codec.IsPaginatedResponse}}
