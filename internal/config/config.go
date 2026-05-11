@@ -293,6 +293,9 @@ type API struct {
 	// libraries).
 	Path string `yaml:"path,omitempty"`
 
+	// Go contains Go-specific API configuration.
+	Go *GoAPI `yaml:"go,omitempty"`
+
 	// Java contains Java-specific API configuration.
 	Java *JavaAPI `yaml:"java,omitempty"`
 }
