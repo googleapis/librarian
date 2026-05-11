@@ -206,12 +206,11 @@ func TestPathTemplateBuilder(t *testing.T) {
 			WithMatchRecursive()).
 		WithVariableNamed("v2", "field").
 		WithVerb("verb")
-	name := "v1"
 	verb := "verb"
 	want := &PathTemplate{
 		Segments: []PathSegment{
 			{
-				Literal: &name,
+				Literal: "v1",
 			},
 			{
 				Variable: &PathVariable{
@@ -227,7 +226,7 @@ func TestPathTemplateBuilder(t *testing.T) {
 				},
 			},
 		},
-		Verb: &verb,
+		Verb: verb,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("bad builder result (-want, +got):\n%s", diff)

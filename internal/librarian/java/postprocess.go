@@ -455,16 +455,22 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 		keepPath := relSlash[i+1:]
 		if d.IsDir() {
 			if keepSet[keepPath] {
-				if err := os.RemoveAll(path); err != nil {
-					return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
+				destPath := filepath.Join(outDir, keepPath)
+				if _, err := os.Stat(destPath); err == nil {
+					if err := os.RemoveAll(path); err != nil {
+						return fmt.Errorf("failed to remove kept dir %s from staging: %w", path, err)
+					}
 				}
 				return filepath.SkipDir
 			}
 			return nil
 		}
 		if shouldPreserve(keepPath, keepSet) {
-			if err := os.Remove(path); err != nil {
-				return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
+			destPath := filepath.Join(outDir, keepPath)
+			if _, err := os.Stat(destPath); err == nil {
+				if err := os.Remove(path); err != nil {
+					return fmt.Errorf("failed to remove kept file %s from staging: %w", path, err)
+				}
 			}
 		}
 		return nil

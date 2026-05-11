@@ -85,10 +85,6 @@ func (x *Field) Scopes() []string {
 
 // Scopes returns the scopes for a method.
 func (x *Method) Scopes() []string {
-	if x.SourceService != nil {
-		// For mixing methods, the local names probably refer to symbols in the source service.
-		return x.SourceService.Scopes()
-	}
 	if x.Service != nil {
 		return x.Service.Scopes()
 	}

@@ -318,8 +318,6 @@ func TestCollectionPath(t *testing.T) {
 		DefaultHost: "test.googleapis.com",
 	}
 
-	stringPtr := func(s string) *string { return &s }
-
 	for _, test := range []struct {
 		name    string
 		method  *api.Method
@@ -334,12 +332,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -358,12 +356,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -382,8 +380,8 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("instances")},
+									{Literal: "v1"},
+									{Literal: "instances"},
 								},
 							},
 						},

@@ -26,7 +26,7 @@ import {{Codec.PackageName}}
 import Foundation
 
 func sample() async throws {
-    let client = try {{Codec.Name}}()
+    let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
     {{#Codec.QuickstartMethod}}
     let response = try await client.{{Codec.Name}}(
         request: {{InputType.Codec.Name}}(/* set fields */)

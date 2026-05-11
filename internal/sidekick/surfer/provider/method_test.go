@@ -129,7 +129,6 @@ func TestIsDelete(t *testing.T) {
 }
 
 func TestGetCommandName(t *testing.T) {
-	v := "exportData"
 	for _, test := range []struct {
 		name   string
 		method *api.Method
@@ -138,7 +137,7 @@ func TestGetCommandName(t *testing.T) {
 		{"Standard Create", &api.Method{Name: "CreateInstance"}, "create"},
 		{"Standard List", &api.Method{Name: "ListInstances"}, "list"},
 		{"Standard Get", &api.Method{Name: "GetInstance"}, "describe"},
-		{"Custom Verb in Path", api.NewTestMethod("ExportData").WithPathTemplate(&api.PathTemplate{Verb: &v}), "export_data"},
+		{"Custom Verb in Path", api.NewTestMethod("ExportData").WithPathTemplate(&api.PathTemplate{Verb: "exportData"}), "export_data"},
 		{"Fallback to Name", &api.Method{Name: "ExportData"}, "export_data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -554,7 +553,6 @@ func TestGetMethodHelpText(t *testing.T) {
 		{
 			name: "Custom Verb Fallback",
 			method: func() *api.Method {
-				v := "exportData"
 				m := api.NewTestMethod("ExportData")
 				m.ID = ".ExportData"
 				m.InputType = &api.Message{
@@ -569,7 +567,7 @@ func TestGetMethodHelpText(t *testing.T) {
 					Bindings: []*api.PathBinding{
 						{
 							PathTemplate: &api.PathTemplate{
-								Verb: &v,
+								Verb: "exportData",
 							},
 						},
 					},

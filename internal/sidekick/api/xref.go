@@ -411,12 +411,11 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 	var segments []ResourceNameSegment
 	for i := 0; i < len(pattern); i++ {
 		s := pattern[i]
-		if s.Literal != nil && strings.HasPrefix(*s.Literal, "//") {
+		if strings.HasPrefix(s.Literal, "//") {
 			continue
 		}
-		seg := ResourceNameSegment{}
-		if s.Literal != nil {
-			seg.Literal = *s.Literal
+		seg := ResourceNameSegment{
+			Literal: s.Literal,
 		}
 		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
 			// The parser used for parsing resource name patterns is the same used for
@@ -429,7 +428,7 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
-		if s.Literal != nil && i+1 < len(pattern) && pattern[i+1].Variable != nil {
+		if s.Literal != "" && i+1 < len(pattern) && pattern[i+1].Variable != nil {
 			if len(pattern[i+1].Variable.FieldPath) > 0 {
 				seg.Variable = pattern[i+1].Variable.FieldPath[0]
 			}

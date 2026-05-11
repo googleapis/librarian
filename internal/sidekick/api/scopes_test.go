@@ -201,22 +201,12 @@ func TestScopesMethod(t *testing.T) {
 			want: []string{"test.Service", "test"},
 		},
 		{
-			name: "both set",
-			method: &Method{
-				Name:          "Method",
-				ID:            ".test.Service.Method",
-				Service:       service,
-				SourceService: &Service{Name: "Other", Package: "other", ID: ".other.Other"},
-			},
-			want: []string{"other.Other", "other"},
-		},
-		{
-			name: "nil both",
+			name: "none set",
 			method: &Method{
 				Name: "Method",
-				ID:   ".test.Service.Method",
+				ID:   ".test2.Service2.Method",
 			},
-			want: []string{"test.Service", "test"},
+			want: []string{"test2.Service2", "test2"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

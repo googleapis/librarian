@@ -421,8 +421,9 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:  "showcase",
-						Roots: []string{"showcase", "googleapis"},
+						Name:    "showcase",
+						Version: "0.0.1-SNAPSHOT",
+						Roots:   []string{"showcase", "googleapis"},
 						APIs: []*config.API{
 							{Path: "schema/google/showcase/v1beta1"},
 						},
