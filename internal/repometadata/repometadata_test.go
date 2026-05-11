@@ -52,27 +52,6 @@ func TestFromLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "description override",
-			library: &config.Library{
-				Name:                "google-cloud-secret-manager",
-				APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
-			},
-			want: &RepoMetadata{
-				Name:                 "secretmanager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguageNodejs,
-				Repo:                 "googleapis/google-cloud-node",
-				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores, manages, and secures access to application secrets.",
-			},
-		},
-		{
 			name: "no service config",
 			library: &config.Library{
 				Name: "google-longrunning",

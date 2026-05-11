@@ -941,8 +941,8 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 		{
 			name: "no releases",
 			setup: func(cfg *config.Config) {
-				// We're modifying the description, but that isn't a release.
-				cfg.Libraries[0].DescriptionOverride = "modified description"
+				// We're modifying the title, but that isn't a release.
+				cfg.Libraries[0].TitleOverride = "modified title"
 				writeConfigAndCommit(t, cfg)
 			},
 			wantReleaseCommitNotFound: true,

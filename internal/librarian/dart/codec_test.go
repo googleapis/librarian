@@ -335,30 +335,7 @@ func TestToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{},
 			},
 		},
-		{
-			name: "with description-override",
-			library: &config.Library{
-				DescriptionOverride: "this is a description override",
-			},
-			channel: &config.API{
-				Path: "google/cloud/functions/v2",
-			},
-			googleapisDir: googleapisDir,
-			want: &parser.ModelConfig{
-				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/cloud/functions/v2",
-				Source: &sources.SourceConfig{
-					Sources: &sources.Sources{
-						Googleapis: googleapisDir,
-					},
-					ActiveRoots: []string{"googleapis"},
-				},
-				Codec: map[string]string{},
-				Override: api.ModelOverride{
-					Description: "this is a description override",
-				},
-			},
-		},
+
 		{
 			name: "with name override",
 			library: &config.Library{

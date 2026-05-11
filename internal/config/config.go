@@ -261,9 +261,6 @@ type Library struct {
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
-	// DescriptionOverride overrides the library description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
