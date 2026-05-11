@@ -943,21 +943,17 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()
-	// 1. Call createOrVerifyOwlbotPy to trigger default template generation.
 	if err := createOrVerifyOwlbotPy(outDir); err != nil {
 		t.Fatal(err)
 	}
-	// 2. Verify that the owlbot.py file was successfully created.
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	if _, err := os.Stat(owlbotPath); err != nil {
 		t.Errorf("expected owlbot.py to be generated: %v", err)
 	}
-	// 3. Read the generated script's contents.
 	gotContent, err := os.ReadFile(owlbotPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	goldenPath := filepath.Join("testdata", "postprocess", "owlbot.py.golden")
 	if *update {
 		if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
@@ -967,14 +963,26 @@ func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
-	// 4. Verify that the generated script's contents exactly match the expected golden content.
 	wantContent, err := os.ReadFile(goldenPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	if diff := cmp.Diff(string(wantContent), string(gotContent)); diff != "" {
-		t.Errorf("generated owlbot.py content mismatch (-want +got):\n%s\n\nHint: run 'go test ./internal/librarian/java -v -update' to update golden files.", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy_Error verifies that createOrVerifyOwlbotPy returns an error
+// when os.Stat fails with an unexpected error such as permission denied.
+func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := os.Chmod(outDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(outDir, 0755)
+	err := createOrVerifyOwlbotPy(outDir)
+	if !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("error = %v, wantErr %v", err, fs.ErrPermission)
 	}
 }

@@ -475,16 +475,21 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 // in the library's output directory. If it is missing (which is typical for newly added
 // client libraries), it automatically creates it from an embedded template to allow
 // OwlBot post-processing and README generation to complete successfully.
-func createOrVerifyOwlbotPy(outDir string) error {
+func createOrVerifyOwlbotPy(outDir string) (err error) {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	// If owlbot.py does not exist, generate it from the embedded template.
-	if _, err := os.Stat(owlbotPath); errors.Is(err, fs.ErrNotExist) {
-		file, err := os.Create(owlbotPath)
-		if err != nil {
-			return fmt.Errorf("failed to create owlbot.py: %w", err)
+	if _, statErr := os.Stat(owlbotPath); statErr != nil {
+		if !errors.Is(statErr, fs.ErrNotExist) {
+			return fmt.Errorf("failed to stat owlbot.py: %w", statErr)
 		}
-		defer file.Close()
-
+		file, createErr := os.Create(owlbotPath)
+		if createErr != nil {
+			return fmt.Errorf("failed to create owlbot.py: %w", createErr)
+		}
+		defer func() {
+			if closeErr := file.Close(); closeErr != nil && err == nil {
+				err = fmt.Errorf("failed to close owlbot.py: %w", closeErr)
+			}
+		}()
 		data := struct {
 			TemplateExcludes []string
 		}{
@@ -503,9 +508,8 @@ func createOrVerifyOwlbotPy(outDir string) error {
 			},
 		}
 
-		// Execute the template to write the default owlbot.py script content.
-		if err := templates.ExecuteTemplate(file, "owlbot_py.tmpl", data); err != nil {
-			return fmt.Errorf("failed to write owlbot.py template: %w", err)
+		if executeErr := templates.ExecuteTemplate(file, "owlbot_py.tmpl", data); executeErr != nil {
+			return fmt.Errorf("failed to write owlbot.py template: %w", executeErr)
 		}
 	}
 	return nil
