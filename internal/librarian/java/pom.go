@@ -246,6 +246,9 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 // for the given library based on its configuration and checks for pom.xml presence
 // on the filesystem. It returns a list of artifact IDs for the missing modules.
 func IdentifyMissingModules(library *config.Library, libraryDir, googleapisDir string) ([]string, error) {
+	if library.Java != nil && library.Java.SkipPOMUpdates {
+		return nil, nil
+	}
 	transports, err := loadTransports(library, googleapisDir)
 	if err != nil {
 		return nil, err

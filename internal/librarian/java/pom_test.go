@@ -579,3 +579,24 @@ func TestIdentifyMissingModules(t *testing.T) {
 		})
 	}
 }
+
+func TestIdentifyMissingModules_SkipPOMUpdates(t *testing.T) {
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{Path: "google/cloud/secretmanager/v1"},
+		},
+		Java: &config.JavaModule{
+			SkipPOMUpdates: true,
+		},
+	}
+	tmpDir := t.TempDir()
+	got, err := IdentifyMissingModules(library, tmpDir, "invalid-dir")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got) > 0 {
+		t.Errorf("IdentifyMissingModules() = %v, want empty", got)
+	}
+}
