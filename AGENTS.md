@@ -25,7 +25,7 @@ Before submitting changes, run the full test suite:
 
 ## Codebase Map
 
-- `**/legacylibrarian/`: **STRICT IGNORE.** Never read or edit this legacy code.
+- `**/legacylibrarian/`: **STRICT IGNORE.** Never read or edit this legacy code, unless explicitly requested to do so.
 - `go.mod`: **NO NEW DEPENDENCIES.** Use only what is already available.
 - `cmd/`: Main entrypoint to CLI commands.
 - `internal/command`: Use `command.Run` for execution. `os/exec` is permitted for other tasks.
