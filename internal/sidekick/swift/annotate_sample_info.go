@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -45,14 +46,16 @@ func (c *codec) annotateSampleInfo(method *api.Method) {
 			ann = c.resourceNameToSampleInfo(field.ResourceNamePattern, fieldAnn)
 		} else if fieldAnn != nil {
 			ann = &sampleInfoAnnotation{
-				Parameters: []string{fieldAnn.Name},
-				Name:       fieldAnn.Name,
+				Parameters:   []string{fieldAnn.Name},
+				Name:         fieldAnn.Name,
+				FormatString: fmt.Sprintf("\\(%s)", fieldAnn.Name),
 			}
 		}
 	} else if method.IsAIPStandardUpdate {
 		ann = &sampleInfoAnnotation{
-			Parameters: []string{"name"},
-			Name:       "name",
+			Parameters:   []string{"name"},
+			Name:         "name",
+			FormatString: "\\(name)",
 		}
 	}
 	si.Codec = ann

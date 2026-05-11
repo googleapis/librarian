@@ -31,14 +31,12 @@ import Foundation
 func sample(client: some {{Service.Codec.Name}}{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: String{{/Codec.Parameters}}{{/SampleInfo}}) async throws {
     {{^ReturnsEmpty}}
     let response = try await client.{{Codec.Name}}(
-        {{> /templates/snippet/method_request_body}}
-    )
+        {{> /templates/snippet/method_request_body}})
     print("Success: \(response)")
     {{/ReturnsEmpty}}
     {{#ReturnsEmpty}}
     try await client.{{Codec.Name}}(
-        {{> /templates/snippet/method_request_body}}
-    )
+        {{> /templates/snippet/method_request_body}})
     print("Success (no response expected)")
     {{/ReturnsEmpty}}
 }

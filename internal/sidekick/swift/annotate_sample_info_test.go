@@ -75,8 +75,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 				},
 			},
 			want: &sampleInfoAnnotation{
-				Parameters: []string{"secretField"},
-				Name:       "secretField",
+				Parameters:   []string{"secretField"},
+				Name:         "secretField",
+				FormatString: "\\(secretField)",
 			},
 		},
 		{
@@ -87,8 +88,9 @@ func TestAnnotateSampleInfo(t *testing.T) {
 				SampleInfo:          &api.SampleInfo{},
 			},
 			want: &sampleInfoAnnotation{
-				Parameters: []string{"name"},
-				Name:       "name",
+				Parameters:   []string{"name"},
+				Name:         "name",
+				FormatString: "\\(name)",
 			},
 		},
 	} {
