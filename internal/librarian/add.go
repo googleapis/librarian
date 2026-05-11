@@ -288,7 +288,7 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 				}
 			}
 		}
-		if cfg.Language == config.LanguagePython && lib.Preview != nil {
+		if lib.Preview != nil {
 			previewID := lib.Name + "-preview"
 			legacyPreview := state.LibraryByID(previewID)
 			if legacyPreview == nil {
@@ -367,6 +367,11 @@ func createLegacyPreviewLibrary(language string, stableName string, previewLib *
 		APIs:    libAPIs,
 	}
 	switch language {
+	case config.LanguageGo:
+		legacyLib.SourceRoots = []string{
+			fmt.Sprintf("preview/internal/%s", stableName),
+		}
+		legacyLib.TagFormat = "{id}/v{version}"
 	case config.LanguagePython:
 		legacyLib.SourceRoots = []string{
 			fmt.Sprintf("preview-packages/%s", stableName),
