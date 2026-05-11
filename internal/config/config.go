@@ -325,6 +325,9 @@ type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
+
+	// Go contains Go-specific API configuration.
+	Go *GoAPI `yaml:"go,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

@@ -55,6 +55,9 @@ const (
 
 // GoModule represents the Go-specific configuration for a library.
 type GoModule struct {
+	// DefaultEnabledGeneratorFeatures provides a mechanism for enabling generator features
+	// across all APIs in the module.
+	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
 	// GoAPIs is a list of Go-specific API configurations.

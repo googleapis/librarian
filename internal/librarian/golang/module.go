@@ -76,7 +76,11 @@ func Fill(library *config.Library) (*config.Library, error) {
 			// we should return an error to signify the configuration is wrong.
 			return nil, fmt.Errorf("%s: %w", api.Path, errClientPackageNotFound)
 		}
+		if len(goAPI.EnabledGeneratorFeatures) == 0 && len(library.Go.DefaultEnabledGeneratorFeatures) > 0 {
+			goAPI.EnabledGeneratorFeatures = slices.Clone(library.Go.DefaultEnabledGeneratorFeatures)
+		}
 		goAPIs = append(goAPIs, goAPI)
+		api.Go = goAPI
 	}
 	library.Go.GoAPIs = goAPIs
 
@@ -113,16 +117,15 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 
 	// This assumes that the list of APIs to generate a Preview for is a subset
 	// of the APIs to generate a stable Go API for, which is typically the case.
-	preview.Go.GoAPIs = make([]*config.GoAPI, 0, len(preview.APIs))
-	for _, g := range stable.Go.GoAPIs {
-		shared := slices.ContainsFunc(preview.APIs, func(pa *config.API) bool {
-			return g.Path == pa.Path
-		})
-		if shared {
-			// Make a copy so that we can mutate it.
-			pga := *g
-			// Force disablement of snippet generation.
+	for _, pa := range preview.APIs {
+		if pa.Go != nil {
+			continue
+		}
+		sg := findGoAPI(stable, pa.Path)
+		if sg != nil {
+			pga := *sg
 			pga.NoSnippets = true
+			pa.Go = &pga
 			preview.Go.GoAPIs = append(preview.Go.GoAPIs, &pga)
 		}
 	}
@@ -157,12 +160,16 @@ func DefaultOutput(name, defaultOutput string) string {
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
+	for _, api := range library.APIs {
+		if api.Path == apiPath && api.Go != nil {
+			return api.Go
+		}
 	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
+	if library.Go != nil {
+		for _, ga := range library.Go.GoAPIs {
+			if ga.Path == apiPath {
+				return ga
+			}
 		}
 	}
 	return nil
