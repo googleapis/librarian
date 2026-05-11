@@ -114,7 +114,6 @@ func TestGenerateOneOf(t *testing.T) {
 	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable,
   Sendable {
 
-
   /// A regular field.
   public var regularInt32: Int32
 

@@ -113,8 +113,8 @@ extension Clients {
       return try GoogleCloudGax.ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
       {{/ReturnsEmpty}}
     }
-
     {{#Codec.Pagination}}
+
     {{#Codec.DocLines}}
     /// {{{.}}}
     {{/Codec.DocLines}}
