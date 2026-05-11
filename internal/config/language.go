@@ -114,6 +114,9 @@ type RustDefault struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
 
+	// LroStubOptions indicates whether to include LRO poller options in generated stub traits.
+	LroStubOptions *bool `yaml:"lro_stub_options,omitempty"`
+
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 }
@@ -128,6 +131,10 @@ type RustModule struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
 	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
+
+	// LroStubOptions indicates whether to include LRO poller options in generated stub traits.
+	// This overrides the crate-level setting.
+	LroStubOptions *bool `yaml:"lro_stub_options,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`

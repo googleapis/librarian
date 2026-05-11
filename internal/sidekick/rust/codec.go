@@ -146,6 +146,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "lro-stub-options":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `lro-stub-options` value %q to boolean: %w", definition, err)
+			}
+			codec.lroStubOptions = value
 		case key == "has-veneer":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -310,6 +316,8 @@ type codec struct {
 	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
 	//   remove this flag once we switch the default.
 	detailedTracingAttributes bool
+	// If true, the generated code includes LRO poller options in generated stub traits.
+	lroStubOptions bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.

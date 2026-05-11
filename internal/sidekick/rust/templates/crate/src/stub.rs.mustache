@@ -85,6 +85,8 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
         std::sync::Arc::new(google_cloud_gax::exponential_backoff::ExponentialBackoff::default())
     }
 
+    {{#Model.Codec.LroStubOptions}}
+    #[cfg(google_cloud_unstable_tracing)]
     /// Returns the poller options.
     ///
     /// When mocking, this method is typically irrelevant. Do not try to verify
@@ -95,6 +97,7 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
     ) -> google_cloud_lro::PollerOptions {
         google_cloud_lro::PollerOptions::default()
     }
+    {{/Model.Codec.LroStubOptions}}
     {{/Codec.HasLROs}}
 }
 

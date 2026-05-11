@@ -416,6 +416,42 @@ func TestAnnotateModelWithDetailedTracing(t *testing.T) {
 	}
 }
 
+func TestAnnotateModelWithLroStubOptions(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		options map[string]string
+		want    bool
+	}{
+		{
+			name:    "LroStubOptionsTrue",
+			options: map[string]string{"lro-stub-options": "true"},
+			want:    true,
+		},
+		{
+			name:    "LroStubOptionsFalse",
+			options: map[string]string{"lro-stub-options": "false"},
+			want:    false,
+		},
+		{
+			name:    "LroStubOptionsMissing",
+			options: map[string]string{},
+			want:    false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, libconfig.SpecProtobuf, "", test.options)
+			got, err := annotateModel(model, codec)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got.LroStubOptions != test.want {
+				t.Errorf("annotateModel() LroStubOptions = %v, want %v", got.LroStubOptions, test.want)
+			}
+		})
+	}
+}
+
 func TestRoutingRequired(t *testing.T) {
 	message := &api.Message{
 		Name:    "Message",

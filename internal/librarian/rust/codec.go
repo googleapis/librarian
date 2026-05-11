@@ -142,6 +142,9 @@ func buildCodec(library *config.Library, releaseLevel string) map[string]string 
 	if rust.DetailedTracingAttributes != nil && *rust.DetailedTracingAttributes {
 		codec["detailed-tracing-attributes"] = "true"
 	}
+	if rust.LroStubOptions != nil && *rust.LroStubOptions {
+		codec["lro-stub-options"] = "true"
+	}
 	if rust.HasVeneer {
 		codec["has-veneer"] = "true"
 	}
@@ -311,6 +314,13 @@ func buildModuleCodec(library *config.Library, module *config.RustModule) map[st
 	}
 	if detailedTracingAttributes {
 		codec["detailed-tracing-attributes"] = "true"
+	}
+	lroStubOptions := library.Rust != nil && library.Rust.LroStubOptions != nil && *library.Rust.LroStubOptions
+	if module.LroStubOptions != nil {
+		lroStubOptions = *module.LroStubOptions
+	}
+	if lroStubOptions {
+		codec["lro-stub-options"] = "true"
 	}
 	if module.ModulePath != "" {
 		codec["module-path"] = module.ModulePath

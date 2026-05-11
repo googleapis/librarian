@@ -72,6 +72,8 @@ type modelAnnotations struct {
 	// If true, the generated code includes detailed tracing attributes on HTTP
 	// requests.
 	DetailedTracingAttributes bool
+	// If true, the generated code includes LRO poller options in generated stub traits.
+	LroStubOptions bool
 	// If true, the generated builders's visibility should be restricted to the crate.
 	InternalBuilders bool
 	// The service to use for the package-level quickstart sample.
@@ -253,6 +255,7 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		GenerateSetterSamples:     codec.generateSetterSamples,
 		GenerateRpcSamples:        codec.generateRpcSamples,
 		DetailedTracingAttributes: codec.detailedTracingAttributes,
+		LroStubOptions:            codec.lroStubOptions,
 		InternalBuilders:          codec.internalBuilders,
 		QuickstartService:         quickstartService,
 	}

@@ -103,6 +103,8 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         self.inner.get_polling_backoff_policy(options)
     }
 
+    {{#Model.Codec.LroStubOptions}}
+    #[cfg(google_cloud_unstable_tracing)]
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
@@ -112,6 +114,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         opts.tracing = Some(details);
         opts
     }
+    {{/Model.Codec.LroStubOptions}}
     {{/Codec.HasLROs}}
 }
 
