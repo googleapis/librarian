@@ -459,12 +459,18 @@ func verifyGeneratedService(t *testing.T, outDir string) {
 	}
 	contentStr := string(content)
 
-	gotMethodOverload := extractBlock(t, contentStr, "public func listSecrets(byItem: ListSecretsRequest)", "}")
-	wantMethodOverload := `public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error> {
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.listSecrets, request: byItem)
-  }`
-	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	// TODO(https://github.com/googleapis/librarian/issues/5961): use extractBlock here
+	wantMethodOverload := `public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error>
+ {
+      let listRpc = { (token: String) async throws -> ListSecretsResponse in
+        var request = byItem
+        request.pageToken = token
+        return try await self.listSecrets(request: request)
+      }
+      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+    }`
+	if !strings.Contains(contentStr, wantMethodOverload) {
+		t.Fatalf("missing wanted method overload: \n%s\nfull content:\n%s", wantMethodOverload, contentStr)
 	}
 }
 

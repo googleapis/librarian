@@ -119,7 +119,12 @@ extension Clients {
     /// {{{.}}}
     {{/Codec.DocLines}}
     public func {{> /templates/common/method_signature_pagination}} {
-      return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.{{Codec.Name}}, request: byItem)
+      let listRpc = { (token: String) async throws -> {{OutputType.Codec.Name}} in
+        var request = byItem
+        request.pageToken = token
+        return try await self.{{Codec.Name}}(request: request)
+      }
+      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
     }
     {{/Codec.Pagination}}
     {{/Codec.RestMethods}}
