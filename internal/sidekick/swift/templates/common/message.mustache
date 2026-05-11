@@ -16,7 +16,11 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable, Sendable {
+public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
+  {{#Codec.IsPaginatedResponse}}
+  GoogleCloudGax._PaginatedResponse,
+  {{/Codec.IsPaginatedResponse}}
+  Sendable {
   {{#Fields}}
   {{^IsOneOf}}
 
@@ -148,4 +152,10 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public func _pack() throws -> {{Codec.Model.WktPackage}}.Struct {
     return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
   }
+  {{#Codec.IsPaginatedResponse}}
+
+  public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
+    return self.{{Codec.PageableItemField}}
+  }
+  {{/Codec.IsPaginatedResponse}}
 }

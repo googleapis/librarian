@@ -52,7 +52,10 @@ func TestPublishCratesSuccess(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -81,7 +84,10 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 		path.Join("src", "pubsub", "src", "lib.rs"),
 	}
 	lastTag := "release-with-new-crate"
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -116,7 +122,10 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
 }
@@ -136,7 +145,10 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
 }
@@ -163,7 +175,10 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 		path.Join("src", "storage", "src", "lib.rs"),
 	}
 	lastTag := "release-2001-02-03"
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
 }
@@ -206,11 +221,18 @@ fi
 	lastTag := "release-2001-02-03"
 
 	// This should fail because semver-checks fails.
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// Skipping the checks should succeed.
-	if err := publishCrates(t.Context(), cfg, true, false, true, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config:           &config.Config{Release: cfg},
+		DryRun:           true,
+		SkipSemverChecks: true,
+	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -235,7 +257,10 @@ func TestPublishSuccess(t *testing.T) {
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 
-	if err := Publish(t.Context(), cfg, true, false, false, false, nil); err != nil {
+	if err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	}); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -262,7 +287,10 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
-	if err := Publish(t.Context(), cfg, true, false, false, false, nil); err == nil {
+	if err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	}); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
@@ -275,7 +303,10 @@ func TestPublishPreflightError(t *testing.T) {
 			},
 		},
 	}
-	if err := Publish(t.Context(), cfg, true, false, false, false, nil); err == nil {
+	if err := Publish(t.Context(), PublishParams{
+		Config: cfg,
+		DryRun: true,
+	}); err == nil {
 		t.Errorf("expected a preflight error with a bad git command")
 	}
 }
@@ -316,7 +347,11 @@ fi
 	}
 	lastTag := "release-2001-02-03"
 
-	if err := publishCrates(t.Context(), cfg, true, true, false, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config:          &config.Config{Release: cfg},
+		DryRun:          true,
+		DryRunKeepGoing: true,
+	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 
@@ -371,11 +406,18 @@ fi
 	lastTag := "release-2001-02-03"
 
 	// This should fail because semver-checks fails.
-	if err := publishCrates(t.Context(), cfg, true, false, false, false, lastTag, files); err == nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config: &config.Config{Release: cfg},
+		DryRun: true,
+	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// With --keep-going, this should succeed.
-	if err := publishCrates(t.Context(), cfg, true, true, false, false, lastTag, files); err != nil {
+	if err := publishCrates(t.Context(), PublishParams{
+		Config:          &config.Config{Release: cfg},
+		DryRun:          true,
+		DryRunKeepGoing: true,
+	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -441,7 +483,11 @@ fi
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := publishCrates(t.Context(), cfg, true, false, true, false, lastTag, test.files)
+			err := publishCrates(t.Context(), PublishParams{
+				Config:           &config.Config{Release: cfg},
+				DryRun:           true,
+				SkipSemverChecks: true,
+			}, lastTag, test.files)
 			var got string
 			if err != nil {
 				got = err.Error()
