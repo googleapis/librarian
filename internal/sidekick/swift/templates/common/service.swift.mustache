@@ -143,7 +143,10 @@ extension {{Codec.Name}} {
   /// {{{.}}}
   {{/Codec.DocLines}}
   public func {{> /templates/common/method_signature_pagination}} {
-    throw GoogleCloudGax.RequestError.unimplemented
+    let listRpc = { (token: String) async throws -> {{OutputType.Codec.Name}} in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
   {{/Codec.RestMethods}}
