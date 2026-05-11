@@ -56,6 +56,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 				Path: api.Path,
 			}
 		}
+		if goAPI.Path == "" {
+			goAPI.Path = api.Path
+		}
 		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
 			goAPI.ImportPath = importPath
