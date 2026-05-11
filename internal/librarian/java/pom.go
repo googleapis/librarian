@@ -195,13 +195,9 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	if library.Java == nil || len(library.Java.ExcludedPOMs) == 0 {
 		return modules, nil
 	}
-	var filtered []expectedModule
-	for _, m := range modules {
-		if !slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID) {
-			filtered = append(filtered, m)
-		}
-	}
-	return filtered, nil
+	return slices.DeleteFunc(modules, func(m expectedModule) bool {
+		return slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID)
+	}), nil
 }
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
