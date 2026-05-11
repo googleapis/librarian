@@ -118,6 +118,15 @@ extension Clients {
       return try GoogleCloudGax.ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
       {{/ReturnsEmpty}}
     }
+
+    {{#Codec.Pagination}}
+    {{#Codec.DocLines}}
+    /// {{{.}}}
+    {{/Codec.DocLines}}
+    public func {{> /templates/common/method_signature_pagination}} {
+      return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.{{Codec.Name}}, request: byItem)
+    }
+    {{/Codec.Pagination}}
     {{/Codec.RestMethods}}
   }
 }
@@ -133,8 +142,8 @@ extension {{Codec.Name}} {
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public func {{Codec.Name}}(byItem: {{InputType.Codec.Name}}) throws -> some AsyncSequence<{{ItemType}}, Error> {
-    return GoogleCloudGax.PaginatedResponseSequence(listRpc: self.{{Codec.Name}}, request: byItem)
+  public func {{> /templates/common/method_signature_pagination}} {
+    throw GoogleCloudGax.RequestError.unimplemented
   }
   {{/Codec.Pagination}}
   {{/Codec.RestMethods}}
