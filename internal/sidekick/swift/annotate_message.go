@@ -72,7 +72,8 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 
-	annotations.IsPaginatedRequest = model.PaginatedRequestIDs[message.ID]
+	_, ok := model.PaginatedRequestIDs[message.ID]
+	annotations.IsPaginatedRequest = ok
 	annotations.IsPaginatedResponse = message.Pagination != nil
 	annotations.ImportsGax = annotations.IsPaginatedRequest || annotations.IsPaginatedResponse
 	if message.Pagination != nil {

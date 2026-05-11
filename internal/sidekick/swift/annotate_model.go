@@ -32,7 +32,7 @@ type modelAnnotations struct {
 	WktPackage          string
 	ServiceImports      []string
 	MessageImports      []string
-	PaginatedRequestIDs map[string]bool
+	PaginatedRequestIDs map[string]struct{}
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -58,10 +58,10 @@ func (ann *modelAnnotations) HasMessageImports() bool {
 }
 
 func (c *codec) annotateModel() error {
-	paginatedRequestIDs := map[string]bool{}
+	paginatedRequestIDs := map[string]struct{}{}
 	for m := range c.Model.AllMethods() {
 		if m.Pagination != nil {
-			paginatedRequestIDs[m.InputTypeID] = true
+			paginatedRequestIDs[m.InputTypeID] = struct{}{}
 		}
 	}
 	annotations := &modelAnnotations{
