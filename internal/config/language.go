@@ -499,7 +499,7 @@ type JavaModule struct {
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
 
 	// ExcludedPOMs is a list of POM files to exclude.
-	ExcludedPOMs string `yaml:"excluded_poms,omitempty"`
+	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
 
 	// ExtraVersionedModules is a list of extra versioned modules.
 	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
