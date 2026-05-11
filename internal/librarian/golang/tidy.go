@@ -16,6 +16,7 @@ package golang
 
 import (
 	"path/filepath"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -30,26 +31,55 @@ func Tidy(library *config.Library, defaultOutput string) *config.Library {
 	if filepath.ToSlash(filepath.Clean(library.Output)) == filepath.ToSlash(filepath.Clean(derivedOutput)) {
 		library.Output = ""
 	}
-	if library.Go == nil {
-		return library
+
+	var defaults []string
+	if library.Go != nil {
+		defaults = library.Go.DefaultEnabledGeneratorFeatures
 	}
-	var goAPIs []*config.GoAPI
-	for _, goAPI := range library.Go.GoAPIs {
-		importPath, clientPkg := defaultImportPathAndClientPkg(goAPI.Path)
-		if goAPI.ImportPath == importPath {
-			goAPI.ImportPath = ""
+
+	for _, api := range library.APIs {
+		if api.Go == nil {
+			continue
 		}
-		if goAPI.ClientPackage == clientPkg {
-			goAPI.ClientPackage = ""
+		api.Go.Path = ""
+		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
+		if api.Go.ImportPath == importPath {
+			api.Go.ImportPath = ""
 		}
-		if !isEmptyAPI(goAPI) {
-			goAPIs = append(goAPIs, goAPI)
+		if api.Go.ClientPackage == clientPkg {
+			api.Go.ClientPackage = ""
+		}
+		if len(defaults) > 0 && slices.Equal(api.Go.EnabledGeneratorFeatures, defaults) {
+			api.Go.EnabledGeneratorFeatures = nil
+		}
+		if isEmptyAPI(api.Go) {
+			api.Go = nil
 		}
 	}
-	library.Go.GoAPIs = goAPIs
-	if isEmptyGoModule(library.Go) {
-		library.Go = nil
+
+	if library.Go != nil {
+		var goAPIs []*config.GoAPI
+		for _, goAPI := range library.Go.GoAPIs {
+			importPath, clientPkg := defaultImportPathAndClientPkg(goAPI.Path)
+			if goAPI.ImportPath == importPath {
+				goAPI.ImportPath = ""
+			}
+			if goAPI.ClientPackage == clientPkg {
+				goAPI.ClientPackage = ""
+			}
+			if len(defaults) > 0 && slices.Equal(goAPI.EnabledGeneratorFeatures, defaults) {
+				goAPI.EnabledGeneratorFeatures = nil
+			}
+			if !isEmptyAPI(goAPI) {
+				goAPIs = append(goAPIs, goAPI)
+			}
+		}
+		library.Go.GoAPIs = goAPIs
+		if isEmptyGoModule(library.Go) {
+			library.Go = nil
+		}
 	}
+
 	return library
 }
 
@@ -66,7 +96,8 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 }
 
 func isEmptyGoModule(goModule *config.GoModule) bool {
-	return len(goModule.DeleteGenerationOutputPaths) == 0 &&
+	return len(goModule.DefaultEnabledGeneratorFeatures) == 0 &&
+		len(goModule.DeleteGenerationOutputPaths) == 0 &&
 		len(goModule.GoAPIs) == 0 &&
 		goModule.ModulePathVersion == "" &&
 		goModule.NestedModule == ""

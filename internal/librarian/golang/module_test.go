@@ -40,7 +40,14 @@ func TestFill(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
+					},
+				}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -70,9 +77,19 @@ func TestFill(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/bigquery/analyticshub/v1",
+						Go: &config.GoAPI{
+							ClientPackage: "analyticshub",
+							ImportPath:    "bigquery/analyticshub/apiv1",
+							Path:          "google/cloud/bigquery/analyticshub/v1",
+						},
 					},
 					{
 						Path: "google/cloud/bigquery/biglake/v1",
+						Go: &config.GoAPI{
+							ClientPackage: "biglake",
+							ImportPath:    "bigquery/biglake/apiv1",
+							Path:          "google/cloud/bigquery/biglake/v1",
+						},
 					},
 				},
 				Go: &config.GoModule{
@@ -107,7 +124,14 @@ func TestFill(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "example",
-				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/example/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "custom",
+						ImportPath:    "example/apiv1",
+						Path:          "google/cloud/example/v1",
+					},
+				}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -136,7 +160,15 @@ func TestFill(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "example",
-				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/example/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "example",
+						ImportPath:    "example/apiv1",
+						NoMetadata:    true,
+						Path:          "google/cloud/example/v1",
+					},
+				}},
 				Go: &config.GoModule{
 					DeleteGenerationOutputPaths: []string{"example"},
 					GoAPIs: []*config.GoAPI{
@@ -167,7 +199,14 @@ func TestFill(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "oslogin",
-				APIs: []*config.API{{Path: "google/cloud/oslogin/common"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/oslogin/common",
+					Go: &config.GoAPI{
+						ImportPath: "oslogin/common",
+						Path:       "google/cloud/oslogin/common",
+						ProtoOnly:  true,
+					},
+				}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -214,7 +253,14 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "secretmanager",
-				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "secretmanager",
+						ImportPath:    "secretmanager/apiv1",
+						Path:          "google/cloud/secretmanager/v1",
+					},
+				}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{
@@ -226,7 +272,15 @@ func TestFill(t *testing.T) {
 				},
 				Preview: &config.Library{
 					Output: filepath.Join("preview", "internal", "secretmanager"),
-					APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+					APIs: []*config.API{{
+						Path: "google/cloud/secretmanager/v1",
+						Go: &config.GoAPI{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+							NoSnippets:    true,
+						},
+					}},
 					Go: &config.GoModule{
 						GoAPIs: []*config.GoAPI{
 							{
@@ -736,7 +790,10 @@ func TestFillGoPreview(t *testing.T) {
 			want: &config.Library{
 				Name:   "foo",
 				Output: "custom/output",
-				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/foo/v1",
+					Go:   &config.GoAPI{NoSnippets: true, Path: "google/cloud/foo/v1"},
+				}},
 				Go: &config.GoModule{GoAPIs: []*config.GoAPI{
 					{Path: "google/cloud/foo/v1", NoSnippets: true},
 				}},
@@ -783,7 +840,15 @@ func TestFillGoPreview(t *testing.T) {
 			want: &config.Library{
 				Name:   "foo",
 				Output: filepath.Join("preview", "internal", "foo"),
-				APIs:   []*config.API{{Path: "google/cloud/foo/v1"}},
+				APIs: []*config.API{{
+					Path: "google/cloud/foo/v1",
+					Go: &config.GoAPI{
+						ClientPackage: "foo",
+						ImportPath:    "foo/apiv1",
+						NoSnippets:    true,
+						Path:          "google/cloud/foo/v1",
+					},
+				}},
 				Go: &config.GoModule{
 					GoAPIs: []*config.GoAPI{
 						{Path: "google/cloud/foo/v1", ClientPackage: "foo", ImportPath: "foo/apiv1", NoSnippets: true},
