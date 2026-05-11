@@ -19,6 +19,7 @@ import (
 	"flag"
 	"fmt"
 	"log"
+	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -37,12 +38,33 @@ func main() {
 		if lib.Go == nil || len(lib.Go.GoAPIs) == 0 {
 			continue
 		}
+
+		commonFeatures := []string{"F_open_telemetry_attributes", "F_proto_cloneof"}
+		hasCommon := false
+		for _, goAPI := range lib.Go.GoAPIs {
+			if slices.Equal(goAPI.EnabledGeneratorFeatures, commonFeatures) {
+				hasCommon = true
+				break
+			}
+		}
+
+		if hasCommon {
+			lib.Go.DefaultEnabledGeneratorFeatures = commonFeatures
+		}
+
 		for _, api := range lib.APIs {
 			for _, goAPI := range lib.Go.GoAPIs {
 				if goAPI.Path == api.Path {
 					goAPICopy := *goAPI
 					goAPICopy.Path = ""
-					api.Go = &goAPICopy
+					if hasCommon && slices.Equal(goAPICopy.EnabledGeneratorFeatures, commonFeatures) {
+						goAPICopy.EnabledGeneratorFeatures = nil
+					}
+					if isEmptyAPI(&goAPICopy) {
+						api.Go = nil
+					} else {
+						api.Go = &goAPICopy
+					}
 					break
 				}
 			}
@@ -61,4 +83,16 @@ func main() {
 	}
 
 	fmt.Printf("Successfully migrated %s\n", *file)
+}
+
+func isEmptyAPI(goAPI *config.GoAPI) bool {
+	return goAPI.ClientPackage == "" &&
+		!goAPI.DIREGAPIC &&
+		len(goAPI.EnabledGeneratorFeatures) == 0 &&
+		goAPI.ImportPath == "" &&
+		len(goAPI.NestedProtos) == 0 &&
+		!goAPI.NoMetadata &&
+		!goAPI.NoSnippets &&
+		!goAPI.ProtoOnly &&
+		goAPI.ProtoPackage == ""
 }
