@@ -59,6 +59,10 @@ ARG GO_PROTOC_GRPC_PLUGIN_VERSION=1.3.0
 ARG GO_GAPIC_VERSION=0.59.0
 ARG GO_GOIMPORTS_VERSION=latest
 
+# NodeJS dependency versions
+ARG NODEJS_PROTOC_VERSION=31.0
+ARG NODEJS_PROTOC_CHECKSUM=45776e351baa6c2a9ba3b05a20d5302c5226db0579a6279a540592244d9de9b5f80c9905e90b6a1cebda12c3f8a2bd15450b46d967ba2e80dfc26fb246a84654
+
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
 FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
@@ -229,3 +233,37 @@ RUN chmod a+rx /root/go/bin/* && \
     chmod a+x /root && \
     chmod a+x /root/go && \
     chmod a+x /root/go/bin
+
+# ============== Node Stage ==============
+FROM base AS nodejs
+ARG NODEJS_PROTOC_VERSION
+ARG NODEJS_PROTOC_CHECKSUM
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3 python3-pip python3-venv nodejs npm \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Node-specific protoc version
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${NODEJS_PROTOC_VERSION}/protoc-${NODEJS_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
+# Make sure Python uses /python-packages for all installations.
+# This makes it easier to predict where things are installed, e.g. for
+# SYNTHTOOL_TEMPLATES later.
+ENV PYTHONPATH=/python-packages
+ENV PATH=${PATH}:${PYTHONPATH}/bin
+# Specify where pip should install, and disable its cache.
+ENV PIP_TARGET=${PYTHONPATH}
+ENV PIP_NO_CACHE_DIR=1
+
+# Install all the tools that Librarian needs for Node generation.
+RUN /app/librarian install nodejs -v
+
+# Ensure we use the local synthtool templates.
+ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
+
+# Allow normal users to read /root (as the generator is installed
+# in /root/.cache, for example)
+RUN chmod a+x /root

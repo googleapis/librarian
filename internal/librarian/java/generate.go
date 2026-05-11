@@ -278,12 +278,13 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
 	transport := apiCfg.Transport(config.LanguageJava)
 	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
-
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
 	if apiCfg.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
+	// generate-version-java ensures that the Version.java file is generated.
+	gapicOpts = append(gapicOpts, "generate-version-java")
 	return gapicOpts, nil
 }
 

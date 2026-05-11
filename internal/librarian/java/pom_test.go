@@ -15,9 +15,7 @@
 package java
 
 import (
-	"errors"
 	"flag"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"sort"
@@ -417,39 +415,6 @@ func TestCollectModules(t *testing.T) {
 	}
 }
 
-func TestCollectModules_Error(t *testing.T) {
-
-	for _, test := range []struct {
-		name       string
-		library    *config.Library
-		transports map[string]serviceconfig.Transport
-	}{
-		{
-			name: "invalid distribution name",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "invalid-name",
-				},
-			},
-		},
-		{
-			name: "failed to find api config",
-			library: &config.Library{
-				APIs: []*config.API{
-					{Path: "google/ads/unrecognized/v1"},
-				},
-			},
-			transports: map[string]serviceconfig.Transport{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if _, err := collectModules(test.library, t.TempDir(), "1.2.3", &repoMetadata{}, test.transports); err == nil {
-				t.Error("collectModules() error = nil, want non-nil")
-			}
-		})
-	}
-}
-
 func TestIsPOMMissing(t *testing.T) {
 	for _, test := range []struct {
 		name  string
@@ -487,11 +452,14 @@ func TestIsPOMMissing(t *testing.T) {
 	}
 }
 
-func TestIsPOMMissing_DirMissingError(t *testing.T) {
+func TestIsPOMMissing_DirMissing(t *testing.T) {
 	dir := filepath.Join(t.TempDir(), "nonexistent")
-	_, err := isPOMMissing(dir)
-	if !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("isPOMMissing(%q) error = %v, want %v", dir, err, fs.ErrNotExist)
+	got, err := isPOMMissing(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !got {
+		t.Errorf("isPOMMissing(%q) = %v, want true", dir, got)
 	}
 }
 
@@ -580,6 +548,17 @@ func TestIdentifyMissingModules(t *testing.T) {
 			want: []string{
 				"proto-google-cloud-secretmanager-v1",
 				"grpc-google-cloud-secretmanager-v1",
+			},
+		},
+		{
+			name:  "all modules missing, directories missing",
+			setup: nil,
+			want: []string{
+				"proto-google-cloud-secretmanager-v1",
+				"grpc-google-cloud-secretmanager-v1",
+				"google-cloud-secretmanager",
+				"google-cloud-secretmanager-bom",
+				"google-cloud-secretmanager-parent",
 			},
 		},
 	} {

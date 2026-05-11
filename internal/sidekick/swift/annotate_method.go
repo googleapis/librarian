@@ -117,5 +117,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		QueryParams:    language.QueryParams(method, binding),
 		Pagination:     pagination,
 	}
+	if method.SampleInfo != nil {
+		c.annotateSampleInfo(method)
+	}
 	return nil
 }
