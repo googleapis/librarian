@@ -17,6 +17,7 @@ package librarian
 import (
 	"fmt"
 	"maps"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -38,6 +39,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
+	if d.Go != nil {
+		return fillGo(lib, d)
+	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}
@@ -49,6 +53,17 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	}
 	if d.Swift != nil {
 		return fillSwift(lib, d)
+	}
+	return lib
+}
+
+// fillGo populates empty Go-specific fields in lib from the provided default.
+func fillGo(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Go == nil {
+		lib.Go = &config.GoModule{}
+	}
+	if len(lib.Go.DefaultEnabledGeneratorFeatures) == 0 && len(d.Go.DefaultEnabledGeneratorFeatures) > 0 {
+		lib.Go.DefaultEnabledGeneratorFeatures = slices.Clone(d.Go.DefaultEnabledGeneratorFeatures)
 	}
 	return lib
 }

@@ -145,6 +145,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `default_enabled_generator_features` | list of string | Provides a mechanism for enabling generator features across all Go APIs in the workspace. |
 | `toolchain` | string | Is the desired Go toolchain version (e.g., "go1.25.0"). |
 
 ## DartPackage Configuration
