@@ -16,7 +16,6 @@ package golang
 
 import (
 	"path/filepath"
-	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -31,55 +30,26 @@ func Tidy(library *config.Library, defaultOutput string) *config.Library {
 	if filepath.ToSlash(filepath.Clean(library.Output)) == filepath.ToSlash(filepath.Clean(derivedOutput)) {
 		library.Output = ""
 	}
-
-	var defaults []string
-	if library.Go != nil {
-		defaults = library.Go.DefaultEnabledGeneratorFeatures
+	if library.Go == nil {
+		return library
 	}
-
-	for _, api := range library.APIs {
-		if api.Go == nil {
-			continue
+	var goAPIs []*config.GoAPI
+	for _, goAPI := range library.Go.GoAPIs {
+		importPath, clientPkg := defaultImportPathAndClientPkg(goAPI.Path)
+		if goAPI.ImportPath == importPath {
+			goAPI.ImportPath = ""
 		}
-		api.Go.Path = ""
-		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
-		if api.Go.ImportPath == importPath {
-			api.Go.ImportPath = ""
+		if goAPI.ClientPackage == clientPkg {
+			goAPI.ClientPackage = ""
 		}
-		if api.Go.ClientPackage == clientPkg {
-			api.Go.ClientPackage = ""
-		}
-		if len(defaults) > 0 && slices.Equal(api.Go.EnabledGeneratorFeatures, defaults) {
-			api.Go.EnabledGeneratorFeatures = nil
-		}
-		if isEmptyAPI(api.Go) {
-			api.Go = nil
+		if !isEmptyAPI(goAPI) {
+			goAPIs = append(goAPIs, goAPI)
 		}
 	}
-
-	if library.Go != nil {
-		var goAPIs []*config.GoAPI
-		for _, goAPI := range library.Go.GoAPIs {
-			importPath, clientPkg := defaultImportPathAndClientPkg(goAPI.Path)
-			if goAPI.ImportPath == importPath {
-				goAPI.ImportPath = ""
-			}
-			if goAPI.ClientPackage == clientPkg {
-				goAPI.ClientPackage = ""
-			}
-			if len(defaults) > 0 && slices.Equal(goAPI.EnabledGeneratorFeatures, defaults) {
-				goAPI.EnabledGeneratorFeatures = nil
-			}
-			if !isEmptyAPI(goAPI) {
-				goAPIs = append(goAPIs, goAPI)
-			}
-		}
-		library.Go.GoAPIs = goAPIs
-		if isEmptyGoModule(library.Go) {
-			library.Go = nil
-		}
+	library.Go.GoAPIs = goAPIs
+	if isEmptyGoModule(library.Go) {
+		library.Go = nil
 	}
-
 	return library
 }
 
