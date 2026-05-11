@@ -1064,7 +1064,7 @@ func TestGenerate(t *testing.T) {
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
 		APIShortname:         "secretmanager",
-		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 		// Fields set by Generate.
 		LibraryType:         "GAPIC_AUTO",
 		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
