@@ -445,8 +445,13 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
-		t.Error("expected owl-bot-staging to be removed after post-processing")
+	// Verify that the package staging directory is successfully cleaned up
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected package staging directory to be removed after post-processing")
+	}
+	// Verify that the top-level owl-bot-staging parent folder itself remains intact to support parallel executions
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
+		t.Error("expected top-level owl-bot-staging directory to remain intact")
 	}
 }
 
@@ -549,8 +554,13 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
-		t.Error("expected owl-bot-staging to be removed after post-processing")
+	// Verify package staging directory is cleaned up
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected package staging directory to be removed after post-processing")
+	}
+	// Verify parent folder remains intact
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
+		t.Error("expected top-level owl-bot-staging directory to remain intact")
 	}
 
 	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {

@@ -451,6 +451,7 @@ func TestGenerateService_Pagination(t *testing.T) {
 }
 
 func verifyGeneratedService(t *testing.T, outDir string) {
+	t.Helper()
 	// Verify generated Service source code
 	filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService.swift")
 	content, err := os.ReadFile(filename)
@@ -459,22 +460,26 @@ func verifyGeneratedService(t *testing.T, outDir string) {
 	}
 	contentStr := string(content)
 
-	// TODO(https://github.com/googleapis/librarian/issues/5961): use extractBlock here
-	wantMethodOverload := `public func listSecrets(byItem: ListSecretsRequest) throws -> some AsyncSequence<Secret, Error>
+	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
+    byItem: ListSecretsRequest, options: `, "\n    }")
+	wantMethodOverload := `  public func listSecrets(
+    byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
+) throws -> some AsyncSequence<Secret, Error>
  {
       let listRpc = { (token: String) async throws -> ListSecretsResponse in
         var request = byItem
         request.pageToken = token
-        return try await self.listSecrets(request: request)
+        return try await self.listSecrets(request: request, options: options)
       }
       return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
     }`
-	if !strings.Contains(contentStr, wantMethodOverload) {
-		t.Fatalf("missing wanted method overload: \n%s\nfull content:\n%s", wantMethodOverload, contentStr)
+	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func verifyGeneratedRequest(t *testing.T, outDir string) {
+	t.Helper()
 	// Verify generated Request and Response Messages source code
 	msgFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsRequest.swift")
 	msgContent, err := os.ReadFile(msgFilename)
@@ -493,6 +498,7 @@ func verifyGeneratedRequest(t *testing.T, outDir string) {
 }
 
 func verifyGeneratedResponse(t *testing.T, outDir string) {
+	t.Helper()
 	respFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "ListSecretsResponse.swift")
 	respContent, err := os.ReadFile(respFilename)
 	if err != nil {
@@ -521,6 +527,7 @@ func verifyGeneratedResponse(t *testing.T, outDir string) {
 }
 
 func verifyGeneratedMessage(t *testing.T, outDir string) {
+	t.Helper()
 	secretFilename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "Secret.swift")
 	secretContent, err := os.ReadFile(secretFilename)
 	if err != nil {
