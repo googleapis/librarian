@@ -254,7 +254,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
 	}
-	return fillLibraryDefaults(language, fillDefaults(lib, defaults), defaults)
+	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
 
 // canDeriveAPIPath reports whether the language's library name contains enough information to
@@ -281,14 +281,10 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 }
 
 // fillLibraryDefaults populates language-specific default values for the library.
-func fillLibraryDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
+func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
 	switch language {
 	case config.LanguageGo:
-		var goDefaults *config.GoDefault
-		if defaults != nil {
-			goDefaults = defaults.Go
-		}
-		return golang.Fill(lib, goDefaults)
+		return golang.Fill(lib)
 	case config.LanguageJava:
 		return java.Fill(lib)
 	case config.LanguagePython:
