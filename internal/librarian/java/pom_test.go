@@ -597,7 +597,8 @@ func TestIdentifyMissingModules_SkipPOMUpdates(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(got) > 0 {
-		t.Errorf("IdentifyMissingModules() = %v, want empty", got)
+	var want []string
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("IdentifyMissingModules() mismatch (-want +got):\n%s", diff)
 	}
 }
