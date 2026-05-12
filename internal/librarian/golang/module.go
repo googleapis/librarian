@@ -118,6 +118,7 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 			break
 		}
 	}
+	// GoAPIs explicitly set already, do not overwrite them.
 	if hasPreviewGo {
 		return preview, nil
 	}
@@ -128,7 +129,9 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 	for _, pa := range preview.APIs {
 		sg := findGoAPI(stable, pa.Path)
 		if sg != nil {
+			// Make a copy so that we can mutate it.
 			pga := *sg
+			// Force disablement of snippet generation.
 			pga.NoSnippets = true
 			pa.Go = &pga
 			generatedAny = true
