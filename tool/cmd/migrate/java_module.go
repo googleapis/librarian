@@ -31,6 +31,7 @@ var (
 		"grafeas":           true,
 		"iam":               true,
 		"iam-policy":        true,
+		"bigtable":          true,
 	}
 
 	keepOverride = map[string][]string{
@@ -169,6 +170,11 @@ var (
 		{apiPath: "google/devtools/clouderrorreporting/v1beta1"}: {
 			protoArtifactID: "proto-google-cloud-error-reporting-v1beta1",
 			grpcArtifactID:  "grpc-google-cloud-error-reporting-v1beta1",
+		},
+		{apiPath: "google/bigtable/admin/v2"}: {
+			protoArtifactID: "proto-google-cloud-bigtable-admin-v2",
+			grpcArtifactID:  "grpc-google-cloud-bigtable-admin-v2",
+			gapicArtifactID: "google-cloud-bigtable",
 		},
 		{apiPath: "google/storage/v2"}: {
 			protoArtifactID: "proto-google-cloud-storage-v2",
