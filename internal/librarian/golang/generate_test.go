@@ -125,7 +125,7 @@ func TestGenerate_Error(t *testing.T) {
 		{
 			name: "non existent api path",
 			library: &config.Library{
-				Name:          "non-existent-api",
+				Name: "non-existent-api",
 				APIs: []*config.API{{
 					Path: "google/cloud/non-existent/v1",
 					Go: &config.GoAPI{
@@ -846,7 +846,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 					Name: "lib",
 					APIs: []*config.API{{
 						Path: "lib/v1",
-						Go: &config.GoAPI{ImportPath: "lib/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "lib/apiv1"},
 					}},
 				}
 				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib
@@ -876,7 +876,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 					Name: "lib/v2",
 					APIs: []*config.API{{
 						Path: "lib/v2",
-						Go: &config.GoAPI{ImportPath: "lib/v2/apiv2"},
+						Go:   &config.GoAPI{ImportPath: "lib/v2/apiv2"},
 					}},
 				}
 				return outDir, filepath.Join(outDir, "apiv2"), filepath.Join(repoRoot, snippetDirSuffix), lib
@@ -906,7 +906,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 					Name: "lib",
 					APIs: []*config.API{{
 						Path: "lib/v1",
-						Go: &config.GoAPI{ImportPath: "lib/v2/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "lib/v2/apiv1"},
 					}},
 					Go: &config.GoModule{
 						ModulePathVersion: "v2",
@@ -939,7 +939,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 					Name: "lib",
 					APIs: []*config.API{{
 						Path: "lib/v1",
-						Go: &config.GoAPI{ImportPath: "lib/apiv1", NoSnippets: true},
+						Go:   &config.GoAPI{ImportPath: "lib/apiv1", NoSnippets: true},
 					}},
 				}
 				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib

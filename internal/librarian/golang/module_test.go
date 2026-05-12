@@ -92,7 +92,7 @@ func TestFill(t *testing.T) {
 			library: &config.Library{
 				Name: "example",
 				APIs: []*config.API{{Path: "google/cloud/example/v1"}},
-				Go: &config.GoModule{},
+				Go:   &config.GoModule{},
 			},
 			want: &config.Library{
 				Name: "example",
