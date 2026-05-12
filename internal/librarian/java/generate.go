@@ -373,18 +373,10 @@ func collectJavaFiles(root string) ([]string, error) {
 // TODO(https://github.com/googleapis/librarian/issues/5050):
 // Exported to use in migrate tool, unexport after migrate is done.
 func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
-	res := &config.JavaAPI{
-		Path: api.Path,
+	if api.Java != nil {
+		return api.Java
 	}
-	if library.Java == nil {
-		return res
-	}
-	for _, javaAPI := range library.Java.JavaAPIs {
-		if javaAPI.Path == api.Path {
-			return javaAPI
-		}
-	}
-	return res
+	return &config.JavaAPI{}
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):

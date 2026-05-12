@@ -251,45 +251,28 @@ func TestResolveJavaAPI(t *testing.T) {
 			name:    "not found, returns defaults",
 			library: &config.Library{},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			want:    &config.JavaAPI{},
 		},
 		{
-			name: "found in config",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"other.proto"},
-							Samples:          new(false),
-						},
-					},
+			name:    "found in config",
+			library: &config.Library{},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
+					AdditionalProtos: []string{"other.proto"},
+					Samples:          new(false),
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{"other.proto"},
 				Samples:          new(false),
 			},
 		},
 		{
-			name: "Java module exists but API not found",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path: "other/api",
-						},
-					},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
+			name:    "Java module exists but API not found",
+			library: &config.Library{},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			want:    &config.JavaAPI{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -323,11 +306,11 @@ func TestGenerateAPI(t *testing.T) {
 		Name:   "secretmanager",
 		Output: outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/secretmanager/v1", AdditionalProtos: []string{"google/cloud/common_resources.proto"}},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
+					AdditionalProtos: []string{"google/cloud/common_resources.proto"},
+				},
 			},
 		},
 	}
@@ -345,7 +328,7 @@ func TestGenerateAPI(t *testing.T) {
 	}
 	err = generateAPI(t.Context(), generateAPIParams{
 		cfg:     cfg,
-		api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+		api:     library.APIs[0],
 		library: library,
 		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 		outdir:  outdir,
@@ -387,12 +370,9 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		Name:   "gkehub",
 		Output: outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/gkehub/policycontroller/v1beta"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{
-					Path:                  "google/cloud/gkehub/policycontroller/v1beta",
+			{
+				Path: "google/cloud/gkehub/policycontroller/v1beta",
+				Java: &config.JavaAPI{
 					GenerateGAPIC:         new(bool),
 					GenerateResourceNames: new(bool),
 				},
@@ -413,7 +393,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	}
 	err = generateAPI(t.Context(), generateAPIParams{
 		cfg:     cfg,
-		api:     &config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		api:     library.APIs[0],
 		library: library,
 		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 		outdir:  outdir,
@@ -514,7 +494,6 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
-	api := &config.API{Path: "google/cloud/secretmanager/v1"}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -530,12 +509,9 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 		Name:   "secretmanager",
 		Output: outdir,
 		APIs: []*config.API{
-			api,
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{
-					Path:                              "google/cloud/secretmanager/v1",
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
 					AdditionalProtosToGenerateAndCopy: []string{additionalProto},
 				},
 			},
@@ -549,13 +525,13 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
 	if err != nil {
 		t.Fatal(err)
 	}
 	err = generateAPI(t.Context(), generateAPIParams{
 		cfg:     cfg,
-		api:     api,
+		api:     library.APIs[0],
 		library: library,
 		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 		outdir:  outdir,
@@ -739,12 +715,9 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 		Version: "0.1.2",
 		Output:  outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{
-					Path: "google/cloud/secretmanager/v1",
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
 					SkipProtoClassGeneration: []string{
 						// resources.proto is required for gRPC/GAPIC steps but excluded from proto step.
 						"google/cloud/secretmanager/v1/resources.proto",
@@ -1155,12 +1128,9 @@ func TestGenerateAPI_Gating(t *testing.T) {
 				Name:   "secretmanager",
 				Output: outdir,
 				APIs: []*config.API{
-					api,
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  api.Path,
+					{
+						Path: api.Path,
+						Java: &config.JavaAPI{
 							GenerateGAPIC:         test.generateGAPIC,
 							GenerateProtoGRPC:     test.generateProtoGRPC,
 							GenerateResourceNames: test.generateResNames,
@@ -1177,7 +1147,7 @@ func TestGenerateAPI_Gating(t *testing.T) {
 			}
 			err = generateAPI(t.Context(), generateAPIParams{
 				cfg:     cfg,
-				api:     api,
+				api:     library.APIs[0],
 				library: library,
 				srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 				outdir:  outdir,

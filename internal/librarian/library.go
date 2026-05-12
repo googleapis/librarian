@@ -567,9 +567,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
 	}
-	if src.JavaAPIs != nil {
-		res.JavaAPIs = src.JavaAPIs
-	}
 	if src.ProductDocumentationOverride != "" {
 		res.ProductDocumentationOverride = src.ProductDocumentationOverride
 	}

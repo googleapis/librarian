@@ -257,14 +257,12 @@ func TestCleanPatterns(t *testing.T) {
 				Name: "accesscontextmanager",
 				APIs: []*config.API{
 					{Path: "google/identity/accesscontextmanager/v1"},
-					{Path: "google/identity/accesscontextmanager/type"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{Path: "google/identity/accesscontextmanager/type",
+					{
+						Path: "google/identity/accesscontextmanager/type",
+						Java: &config.JavaAPI{
 							GenerateGAPIC:         new(false),
-							GenerateResourceNames: new(false)},
-						{Path: "google/identity/accesscontextmanager/v1"},
+							GenerateResourceNames: new(false),
+						},
 					},
 				},
 			},
@@ -321,12 +319,9 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                    "google/cloud/secretmanager/v1",
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							GAPICArtifactIDOverride: "custom-gapic-artifact",
 						},
 					},

@@ -63,12 +63,9 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               new(true),
 							GenerateGAPIC:         new(true),
 							GenerateProtoGRPC:     new(true),
@@ -76,6 +73,7 @@ func TestFill(t *testing.T) {
 						},
 					},
 				},
+				Java: &config.JavaModule{},
 			},
 		},
 		{
@@ -83,12 +81,9 @@ func TestFill(t *testing.T) {
 			lib: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:    "google/cloud/secretmanager/v1",
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples: new(false),
 						},
 					},
@@ -98,12 +93,9 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(true),
 							GenerateProtoGRPC:     new(true),
@@ -111,6 +103,7 @@ func TestFill(t *testing.T) {
 						},
 					},
 				},
+				Java: &config.JavaModule{},
 			},
 		},
 	} {
@@ -157,10 +150,10 @@ func TestTidy(t *testing.T) {
 		{
 			name: "tidy flags default",
 			lib: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               new(true),
 							GenerateGAPIC:         new(true),
 							GenerateProtoGRPC:     new(true),
@@ -170,10 +163,10 @@ func TestTidy(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               nil,
 							GenerateGAPIC:         nil,
 							GenerateProtoGRPC:     nil,
@@ -186,10 +179,10 @@ func TestTidy(t *testing.T) {
 		{
 			name: "do not tidy false flags",
 			lib: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(false),
 							GenerateProtoGRPC:     new(false),
@@ -199,10 +192,10 @@ func TestTidy(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                  "google/cloud/secretmanager/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(false),
 							GenerateProtoGRPC:     new(false),
@@ -308,10 +301,10 @@ func TestValidate_Error(t *testing.T) {
 		{
 			name: "omit common resources conflict",
 			lib: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                "google/cloud/conflict/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/conflict/v1",
+						Java: &config.JavaAPI{
 							OmitCommonResources: true,
 							AdditionalProtos:    []string{"google/cloud/common_resources.proto"},
 						},
