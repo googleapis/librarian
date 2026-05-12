@@ -48,7 +48,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 		library.Go = &config.GoModule{}
 	}
 	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
+		goAPI := api.Go
 		if goAPI == nil {
 			goAPI = &config.GoAPI{
 				Path: api.Path,
