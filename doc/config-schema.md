@@ -274,9 +274,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `default_enabled_generator_features` | list of string | Provides a mechanism for enabling generator features across all APIs in the module. |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
