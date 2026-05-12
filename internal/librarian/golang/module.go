@@ -120,6 +120,7 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 
 	// This assumes that the list of APIs to generate a Preview for is a subset
 	// of the APIs to generate a stable Go API for, which is typically the case.
+	preview.Go.GoAPIs = make([]*config.GoAPI, 0, len(preview.APIs))
 	for _, pa := range preview.APIs {
 		if pa.Go != nil {
 			continue
