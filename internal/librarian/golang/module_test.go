@@ -276,8 +276,7 @@ func TestFindGoAPI(t *testing.T) {
 				}},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
-			want: &config.GoAPI{				ClientPackage: "customDir",
-			},
+			want:    &config.GoAPI{ClientPackage: "customDir"},
 		},
 		{
 			name: "do not have a go module",
@@ -698,7 +697,7 @@ func TestFillGoPreview(t *testing.T) {
 				Output: "custom/output",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v1",
-					Go:   &config.GoAPI{NoSnippets: true, },
+					Go:   &config.GoAPI{NoSnippets: true},
 				}},
 				Go: &config.GoModule{},
 			},
