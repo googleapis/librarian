@@ -166,12 +166,6 @@ func TestTidy(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						Java: &config.JavaAPI{
-							Samples:               nil,
-							GenerateGAPIC:         nil,
-							GenerateProtoGRPC:     nil,
-							GenerateResourceNames: nil,
-						},
 					},
 				},
 			},

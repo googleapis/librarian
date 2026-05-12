@@ -78,9 +78,32 @@ func Tidy(library *config.Library) *config.Library {
 			if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
 				api.Java.GenerateResourceNames = nil
 			}
+			if isEmptyJavaAPI(api.Java) {
+				api.Java = nil
+			}
 		}
 	}
 	return library
+}
+
+func isEmptyJavaAPI(j *config.JavaAPI) bool {
+	if j == nil {
+		return true
+	}
+	return !j.Monolithic &&
+		len(j.AdditionalProtos) == 0 &&
+		len(j.AdditionalProtosToGenerateAndCopy) == 0 &&
+		!j.OmitCommonResources &&
+		len(j.ExcludedProtos) == 0 &&
+		len(j.SkipProtoClassGeneration) == 0 &&
+		j.GAPICArtifactIDOverride == "" &&
+		j.GRPCArtifactIDOverride == "" &&
+		j.ProtoArtifactIDOverride == "" &&
+		j.GenerateGAPIC == nil &&
+		j.GenerateProtoGRPC == nil &&
+		j.GenerateResourceNames == nil &&
+		len(j.CopyFiles) == 0 &&
+		j.Samples == nil
 }
 
 var (
