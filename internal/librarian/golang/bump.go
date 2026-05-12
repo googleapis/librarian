@@ -34,7 +34,7 @@ var (
 // Bump updates the version number in the library with the given output
 // directory.
 func Bump(library *config.Library, output, version string) error {
-	library, err := Fill(library, nil)
+	library, err := Fill(library)
 	if err != nil {
 		return err
 	}

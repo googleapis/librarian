@@ -302,10 +302,6 @@ type API struct {
 
 // GoDefault defines Go-specific default configuration.
 type GoDefault struct {
-	// DefaultEnabledGeneratorFeatures provides a mechanism for enabling generator features
-	// across all Go APIs in the workspace.
-	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`
-
 	// Toolchain is the desired Go toolchain version (e.g., "go1.25.0").
 	Toolchain string `yaml:"toolchain,omitempty"`
 }
