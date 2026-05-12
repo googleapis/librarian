@@ -276,7 +276,10 @@
 - path: google/bigtable/v2
   languages:
     - go
+    - java
     - python
+  transports:
+    java: grpc
 - path: google/chat/v1
   languages:
     - go
