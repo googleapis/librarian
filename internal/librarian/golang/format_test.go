@@ -185,6 +185,7 @@ func TestBuildFormatArgs(t *testing.T) {
 					},
 				},
 				Go: &config.GoModule{
+					// DeleteGenerationOutputPaths should relative to library output directory.
 					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
 				},
 			},
