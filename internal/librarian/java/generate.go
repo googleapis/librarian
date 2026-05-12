@@ -122,9 +122,6 @@ type generateAPIParams struct {
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
-	if params.api.Java == nil {
-		params.api.Java = &config.JavaAPI{}
-	}
 	javaAPI := params.api.Java
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")

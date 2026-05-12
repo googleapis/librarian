@@ -76,7 +76,10 @@ func TestClean(t *testing.T) {
 		Output: tmpDir,
 		Keep:   []string{"kept-file.txt", "kept-dir"},
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 	}
 	if err := Clean(lib); err != nil {
@@ -240,7 +243,10 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{},
+					},
 				},
 			},
 			want: map[string]bool{
@@ -256,7 +262,10 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "accesscontextmanager",
 				APIs: []*config.API{
-					{Path: "google/identity/accesscontextmanager/v1"},
+					{
+						Path: "google/identity/accesscontextmanager/v1",
+						Java: &config.JavaAPI{},
+					},
 					{
 						Path: "google/identity/accesscontextmanager/type",
 						Java: &config.JavaAPI{
@@ -284,7 +293,10 @@ func TestCleanPatterns(t *testing.T) {
 					DistributionNameOverride: "com.google.cloud:secretmanager-special",
 				},
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{},
+					},
 				},
 			},
 			want: map[string]bool{
@@ -300,8 +312,14 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-					{Path: "google/cloud/secretmanager/v1beta1"},
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{},
+					},
+					{
+						Path: "google/cloud/secretmanager/v1beta1",
+						Java: &config.JavaAPI{},
+					},
 				},
 			},
 			want: map[string]bool{
