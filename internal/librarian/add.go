@@ -371,7 +371,7 @@ func createLegacyPreviewLibrary(language string, stableName string, previewLib *
 		legacyLib.SourceRoots = []string{
 			fmt.Sprintf("preview/internal/%s", stableName),
 		}
-		legacyLib.TagFormat = "{id}/v{version}"
+		legacyLib.TagFormat = fmt.Sprintf("%s/v{version}", stableName)
 	case config.LanguagePython:
 		legacyLib.SourceRoots = []string{
 			fmt.Sprintf("preview-packages/%s", stableName),
@@ -383,7 +383,7 @@ func createLegacyPreviewLibrary(language string, stableName string, previewLib *
 			fmt.Sprintf("preview-packages/%s/README.rst", stableName),
 			fmt.Sprintf("preview-packages/%s/docs/", stableName),
 		}
-		legacyLib.TagFormat = "{id}-v{version}"
+		legacyLib.TagFormat = fmt.Sprintf("%s-v{version}", stableName)
 	}
 	return legacyLib
 }
