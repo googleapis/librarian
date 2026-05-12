@@ -835,12 +835,12 @@ func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
 	}
 }
 
-func parseStringList(s string) []string {
-	if s == "" {
+func parseStringList(inputString string) []string {
+	if inputString == "" {
 		return nil
 	}
 	var list []string
-	for _, part := range strings.Split(s, ",") {
+	for _, part := range strings.Split(inputString, ",") {
 		part = strings.TrimSpace(part)
 		if part != "" {
 			list = append(list, part)

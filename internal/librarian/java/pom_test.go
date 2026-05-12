@@ -637,8 +637,8 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 		"google-cloud-secretmanager-bom",
 		"", // parent
 	}
-	for _, d := range dirs {
-		if err := os.MkdirAll(filepath.Join(tmpDir, d), 0755); err != nil {
+	for _, dir := range dirs {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
 			t.Fatal(err)
 		}
 	}
