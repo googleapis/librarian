@@ -679,8 +679,10 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 	}
 	for _, api := range lib.APIs {
 		apiBase := filepath.Base(api.Path)
-		// Find Java-specific API config to handle artifact ID overrides.
-		javaAPI := java.ResolveJavaAPI(lib, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		apiCoord := java.DeriveAPICoordinates(lc, apiBase, javaAPI)
 		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
 		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)

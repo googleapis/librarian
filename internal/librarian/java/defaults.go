@@ -37,7 +37,10 @@ func Fill(library *config.Library) (*config.Library, error) {
 		library.Java = &config.JavaModule{}
 	}
 	for _, api := range library.APIs {
-		javaAPI := ResolveJavaAPI(library, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		if javaAPI.Samples == nil {
 			javaAPI.Samples = new(true)
 		}

@@ -77,7 +77,10 @@ func cleanPatterns(library *config.Library) map[string]bool {
 		".repo-metadata.json":                             false,
 	}
 	for _, api := range library.APIs {
-		javaAPI := ResolveJavaAPI(library, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		version := filepath.Base(api.Path)
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
 		if apiCoordinates.Proto.ArtifactID != "" {

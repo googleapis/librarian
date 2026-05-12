@@ -118,7 +118,10 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	libCoord := DeriveLibraryCoordinates(library)
 	for _, api := range library.APIs {
 		apiBase := deriveAPIBase(library, api.Path)
-		javaAPI := ResolveJavaAPI(library, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
 		// Proto module

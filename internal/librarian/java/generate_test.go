@@ -240,50 +240,6 @@ func TestGAPICProtocArgs(t *testing.T) {
 	}
 }
 
-func TestResolveJavaAPI(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		api     *config.API
-		want    *config.JavaAPI
-	}{
-		{
-			name:    "not found, returns defaults",
-			library: &config.Library{},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			want:    &config.JavaAPI{},
-		},
-		{
-			name:    "found in config",
-			library: &config.Library{},
-			api: &config.API{
-				Path: "google/cloud/secretmanager/v1",
-				Java: &config.JavaAPI{
-					AdditionalProtos: []string{"other.proto"},
-					Samples:          new(false),
-				},
-			},
-			want: &config.JavaAPI{
-				AdditionalProtos: []string{"other.proto"},
-				Samples:          new(false),
-			},
-		},
-		{
-			name:    "Java module exists but API not found",
-			library: &config.Library{},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			want:    &config.JavaAPI{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := ResolveJavaAPI(test.library, test.api)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGenerateAPI(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
