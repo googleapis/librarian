@@ -84,13 +84,8 @@ func TestBump(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/test-lib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/test-lib/v1",
 						},
 					},
 				},
@@ -111,13 +106,8 @@ func TestBump(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/test-lib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/test-lib/v1",
 						},
 					},
 				},
@@ -138,15 +128,12 @@ func TestBump(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/dataproc/v1",
+						Go: &config.GoAPI{
+							ImportPath: "dataproc/v2/apiv1",
+						},
 					},
 				},
 				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "dataproc/v2/apiv1",
-							Path:       "google/cloud/dataproc/v1",
-						},
-					},
 					ModulePathVersion: "v2",
 				},
 			},
@@ -281,13 +268,8 @@ func TestBump_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/example/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/example/v1",
 						},
 					},
 				},

@@ -1051,13 +1051,11 @@ func TestMergeGo(t *testing.T) {
 			dst:  &config.GoModule{ModulePathVersion: "v1"},
 			src: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
 			want: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
