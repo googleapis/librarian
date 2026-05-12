@@ -114,18 +114,15 @@ func TestClean(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/example/v1",
+						Go: &config.GoAPI{
+							ClientPackage: libraryName,
+							ImportPath:    "example/apiv1",
+						},
 					},
 				},
 				Output: outputPath,
 				Keep:   test.keep,
 				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ClientPackage: libraryName,
-							ImportPath:    "example/apiv1",
-							Path:          "google/example/v1",
-						},
-					},
 					NestedModule: test.nestedModule,
 				},
 			}
@@ -197,13 +194,8 @@ func TestClean_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/testlib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "testlib/apiv1",
-							Path:       "google/testlib/v1",
 						},
 					},
 				},
@@ -228,13 +220,8 @@ func TestClean_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/testlib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "testlib/apiv1",
-							Path:       "google/testlib/v1",
 						},
 					},
 				},
@@ -260,13 +247,8 @@ func TestClean_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/testlib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "testlib/apiv1",
-							Path:       "google/testlib/v1",
 						},
 					},
 				},

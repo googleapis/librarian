@@ -60,8 +60,6 @@ type GoModule struct {
 	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
-	// GoAPIs is a list of Go-specific API configurations.
-	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
 	// NestedModule is the name of a nested module directory.
