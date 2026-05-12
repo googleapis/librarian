@@ -17,7 +17,6 @@ package librarian
 import (
 	"fmt"
 	"maps"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -39,9 +38,6 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if d.Go != nil {
-		return fillGo(lib, d)
-	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}
@@ -53,17 +49,6 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	}
 	if d.Swift != nil {
 		return fillSwift(lib, d)
-	}
-	return lib
-}
-
-// fillGo populates empty Go-specific fields in lib from the provided default.
-func fillGo(lib *config.Library, d *config.Default) *config.Library {
-	if lib.Go == nil {
-		lib.Go = &config.GoModule{}
-	}
-	if len(lib.Go.DefaultEnabledGeneratorFeatures) == 0 && len(d.Go.DefaultEnabledGeneratorFeatures) > 0 {
-		lib.Go.DefaultEnabledGeneratorFeatures = slices.Clone(d.Go.DefaultEnabledGeneratorFeatures)
 	}
 	return lib
 }
@@ -269,7 +254,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
 	}
-	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
+	return fillLibraryDefaults(language, fillDefaults(lib, defaults), defaults)
 }
 
 // canDeriveAPIPath reports whether the language's library name contains enough information to
@@ -296,10 +281,14 @@ func mergeMaps(dst, src map[string]string) map[string]string {
 }
 
 // fillLibraryDefaults populates language-specific default values for the library.
-func fillLibraryDefaults(language string, lib *config.Library) (*config.Library, error) {
+func fillLibraryDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
 	switch language {
 	case config.LanguageGo:
-		return golang.Fill(lib)
+		var goDefaults *config.GoDefault
+		if defaults != nil {
+			goDefaults = defaults.Go
+		}
+		return golang.Fill(lib, goDefaults)
 	case config.LanguageJava:
 		return java.Fill(lib)
 	case config.LanguagePython:

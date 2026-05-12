@@ -218,7 +218,7 @@ func TestFill(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := Fill(test.library)
+			got, err := Fill(test.library, nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -259,7 +259,7 @@ func TestFill_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, err := Fill(test.library)
+			_, err := Fill(test.library, nil)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Fill() error = %v, wantErr %v", err, test.wantErr)
 			}
