@@ -45,7 +45,6 @@ func TestFill(t *testing.T) {
 					Go: &config.GoAPI{
 						ClientPackage: "secretmanager",
 						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
 					},
 				}},
 				Go: &config.GoModule{},
@@ -72,7 +71,6 @@ func TestFill(t *testing.T) {
 						Go: &config.GoAPI{
 							ClientPackage: "analyticshub",
 							ImportPath:    "bigquery/analyticshub/apiv1",
-							Path:          "google/cloud/bigquery/analyticshub/v1",
 						},
 					},
 					{
@@ -80,7 +78,6 @@ func TestFill(t *testing.T) {
 						Go: &config.GoAPI{
 							ClientPackage: "biglake",
 							ImportPath:    "bigquery/biglake/apiv1",
-							Path:          "google/cloud/bigquery/biglake/v1",
 						},
 					},
 				},
@@ -101,7 +98,6 @@ func TestFill(t *testing.T) {
 					Go: &config.GoAPI{
 						ClientPackage: "example",
 						ImportPath:    "example/apiv1",
-						Path:          "google/cloud/example/v1",
 					},
 				}},
 				Go: &config.GoModule{},
@@ -123,7 +119,6 @@ func TestFill(t *testing.T) {
 					Go: &config.GoAPI{
 						ClientPackage: "example",
 						ImportPath:    "example/apiv1",
-						Path:          "google/cloud/example/v1",
 					},
 				}},
 				Go: &config.GoModule{
@@ -139,7 +134,6 @@ func TestFill(t *testing.T) {
 					Path: "google/cloud/oslogin/common",
 					Go: &config.GoAPI{
 						ImportPath: "oslogin/common",
-						Path:       "google/cloud/oslogin/common",
 						ProtoOnly:  true,
 					},
 				}},
@@ -150,7 +144,6 @@ func TestFill(t *testing.T) {
 					Path: "google/cloud/oslogin/common",
 					Go: &config.GoAPI{
 						ImportPath: "oslogin/common",
-						Path:       "google/cloud/oslogin/common",
 						ProtoOnly:  true,
 					},
 				}},
@@ -197,7 +190,6 @@ func TestFill(t *testing.T) {
 					Go: &config.GoAPI{
 						ClientPackage: "secretmanager",
 						ImportPath:    "secretmanager/apiv1",
-						Path:          "google/cloud/secretmanager/v1",
 					},
 				}},
 				Go: &config.GoModule{},
@@ -208,7 +200,6 @@ func TestFill(t *testing.T) {
 						Go: &config.GoAPI{
 							ClientPackage: "secretmanager",
 							ImportPath:    "secretmanager/apiv1",
-							Path:          "google/cloud/secretmanager/v1",
 							NoSnippets:    true,
 						},
 					}},
@@ -251,7 +242,6 @@ func TestFill_Error(t *testing.T) {
 					Path: "google/cloud/oslogin/common",
 					Go: &config.GoAPI{
 						ImportPath: "oslogin/common",
-						Path:       "google/cloud/oslogin/common",
 					},
 				}},
 			},
@@ -282,14 +272,11 @@ func TestFindGoAPI(t *testing.T) {
 					Path: "google/cloud/secretmanager/v1",
 					Go: &config.GoAPI{
 						ClientPackage: "customDir",
-						Path:          "google/cloud/secretmanager/v1",
 					},
 				}},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
-			want: &config.GoAPI{
-				Path:          "google/cloud/secretmanager/v1",
-				ClientPackage: "customDir",
+			want: &config.GoAPI{				ClientPackage: "customDir",
 			},
 		},
 		{
@@ -307,7 +294,6 @@ func TestFindGoAPI(t *testing.T) {
 					Path: "google/cloud/secretmanager/v1",
 					Go: &config.GoAPI{
 						ClientPackage: "customDir",
-						Path:          "google/cloud/secretmanager/v1",
 					},
 				}},
 			},
@@ -698,7 +684,7 @@ func TestFillGoPreview(t *testing.T) {
 				Name: "foo",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v1",
-					Go:   &config.GoAPI{Path: "google/cloud/foo/v1"},
+					Go:   &config.GoAPI{},
 				}},
 				Go: &config.GoModule{},
 			},
@@ -712,7 +698,7 @@ func TestFillGoPreview(t *testing.T) {
 				Output: "custom/output",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v1",
-					Go:   &config.GoAPI{NoSnippets: true, Path: "google/cloud/foo/v1"},
+					Go:   &config.GoAPI{NoSnippets: true, },
 				}},
 				Go: &config.GoModule{},
 			},
@@ -723,7 +709,7 @@ func TestFillGoPreview(t *testing.T) {
 				Name: "foo",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v1",
-					Go:   &config.GoAPI{Path: "google/cloud/foo/v1"},
+					Go:   &config.GoAPI{},
 				}},
 				Go: &config.GoModule{},
 			},
@@ -731,7 +717,7 @@ func TestFillGoPreview(t *testing.T) {
 				Name: "foo",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v2",
-					Go:   &config.GoAPI{Path: "google/cloud/foo/v2"},
+					Go:   &config.GoAPI{},
 				}},
 				Go: &config.GoModule{},
 			},
@@ -740,7 +726,7 @@ func TestFillGoPreview(t *testing.T) {
 				Output: "preview/internal",
 				APIs: []*config.API{{
 					Path: "google/cloud/foo/v2",
-					Go:   &config.GoAPI{Path: "google/cloud/foo/v2"},
+					Go:   &config.GoAPI{},
 				}},
 				Go: &config.GoModule{},
 			},
@@ -756,7 +742,6 @@ func TestFillGoPreview(t *testing.T) {
 						Go: &config.GoAPI{
 							ClientPackage: "foo",
 							ImportPath:    "foo/apiv1",
-							Path:          "google/cloud/foo/v1",
 						},
 					},
 					{
@@ -764,7 +749,6 @@ func TestFillGoPreview(t *testing.T) {
 						Go: &config.GoAPI{
 							ClientPackage: "foo",
 							ImportPath:    "foo/apiv2",
-							Path:          "google/cloud/foo/v2",
 						},
 					},
 				},
@@ -783,7 +767,6 @@ func TestFillGoPreview(t *testing.T) {
 						ClientPackage: "foo",
 						ImportPath:    "foo/apiv1",
 						NoSnippets:    true,
-						Path:          "google/cloud/foo/v1",
 					},
 				}},
 				Go: &config.GoModule{},
@@ -819,7 +802,6 @@ func TestFillGoPreview_Error(t *testing.T) {
 					Go: &config.GoAPI{
 						ClientPackage: "foo",
 						ImportPath:    "foo/apiv1",
-						Path:          "google/cloud/foo/v1",
 					},
 				}},
 				Go: &config.GoModule{},

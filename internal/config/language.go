@@ -83,8 +83,6 @@ type GoAPI struct {
 	// NoSnippets indicates whether to skip generating snippets.
 	// This is typically false.
 	NoSnippets bool `yaml:"no_snippets,omitempty"`
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
 	// ProtoOnly determines whether to generate a Proto-only client.
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
