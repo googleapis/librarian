@@ -540,7 +540,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
-				Path:          "google/cloud/secretmanager/v1",
 			},
 			want: "cloud.google.com/go/secretmanager/apiv1;secretmanager",
 		},
@@ -549,7 +548,6 @@ func TestBuildGAPICImportPath(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "storage",
 				ImportPath:    "storage/internal/apiv2",
-				Path:          "google/storage/v2",
 			},
 			want: "cloud.google.com/go/storage/internal/apiv2;storage",
 		},
@@ -622,7 +620,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "secretmanager",
 				ImportPath:    "secretmanager/apiv1",
-				Path:          "google/cloud/secretmanager/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -641,7 +638,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "bigquery",
 				ImportPath:    "bigquery/v2/apiv2",
-				Path:          "google/cloud/bigquery/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -659,7 +655,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
-				Path:          "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -678,7 +673,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
 				NoMetadata:    true,
-				Path:          "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -696,7 +690,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				ClientPackage: "gkehub",
 				ImportPath:    "gkehub/apiv1",
 				NoSnippets:    true,
-				Path:          "google/cloud/gkehub/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -716,7 +709,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				ClientPackage:            "bigquery",
 				EnabledGeneratorFeatures: []string{"F_wrapper_types_for_page_size"},
 				ImportPath:               "bigquery/v2/apiv2",
-				Path:                     "google/cloud/bigquery/v2",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -735,7 +727,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "apigeeconnect",
 				ImportPath:    "apigeeconnect/apiv1",
-				Path:          "google/cloud/apigeeconnect/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -753,7 +744,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 				ClientPackage: "compute",
 				ImportPath:    "compute/apiv1",
 				DIREGAPIC:     true,
-				Path:          "google/cloud/compute/v1",
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
@@ -792,7 +782,6 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "nonexistent",
 				ImportPath:    "nonexistent/apiv1",
-				Path:          "nonexistent/api/v1",
 			},
 			googleapisDir: googleapisDir,
 		},
@@ -802,7 +791,6 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ClientPackage: "asset",
 				ImportPath:    "asset/apiv1p1beta1",
-				Path:          "google/cloud/asset/v1p1beta1",
 			},
 			googleapisDir: googleapisDir,
 		},

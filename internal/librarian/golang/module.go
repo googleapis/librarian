@@ -50,12 +50,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 	for _, api := range library.APIs {
 		goAPI := api.Go
 		if goAPI == nil {
-			goAPI = &config.GoAPI{
-				Path: api.Path,
-			}
-		}
-		if goAPI.Path == "" {
-			goAPI.Path = api.Path
+			goAPI = &config.GoAPI{}
 		}
 		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
