@@ -1069,6 +1069,7 @@
 - path: google/cloud/databasecenter/v1beta
   languages:
     - java
+    - nodejs
     - python
   release_level:
     java: preview
@@ -2973,6 +2974,7 @@
   languages:
     - go
     - java
+    - nodejs
     - python
   release_level:
     java: stable
