@@ -39,7 +39,7 @@ func TestFormat(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/v1",
-						Go: &config.GoAPI{ImportPath: "example/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
 					},
 				},
 			},
@@ -61,7 +61,7 @@ func TestFormat(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/common",
-						Go: &config.GoAPI{ProtoOnly: true},
+						Go:   &config.GoAPI{ProtoOnly: true},
 					},
 				},
 			},
@@ -135,7 +135,7 @@ func TestBuildFormatArgs(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/v1",
-						Go: &config.GoAPI{ImportPath: "example/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
 					},
 				},
 			},
@@ -149,7 +149,7 @@ func TestBuildFormatArgs(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/v1",
-						Go: &config.GoAPI{ProtoOnly: true},
+						Go:   &config.GoAPI{ProtoOnly: true},
 					},
 				},
 			},
@@ -163,11 +163,11 @@ func TestBuildFormatArgs(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/v1",
-						Go: &config.GoAPI{ImportPath: "example/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
 					},
 					{
 						Path: "example/common",
-						Go: &config.GoAPI{ProtoOnly: true},
+						Go:   &config.GoAPI{ProtoOnly: true},
 					},
 				},
 			},
@@ -181,7 +181,7 @@ func TestBuildFormatArgs(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "example/v1",
-						Go: &config.GoAPI{ImportPath: "example/apiv1"},
+						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
 					},
 				},
 				Go: &config.GoModule{
