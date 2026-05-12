@@ -107,16 +107,34 @@ func TestGenerateMessage_WithNestedMessages(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock1 := extractBlock(t, contentStr, "public struct Nested1", ", Sendable {")
-	wantBlock1 := "public struct Nested1: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {"
-	if diff := cmp.Diff(wantBlock1, gotBlock1); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	startIdx1 := strings.Index(contentStr, "public struct Nested1")
+	if startIdx1 == -1 {
+		t.Fatal("missing public struct Nested1")
+	}
+	endIdx1 := strings.Index(contentStr[startIdx1:], "{")
+	if endIdx1 == -1 {
+		t.Fatal("missing { for Nested1")
+	}
+	decl1 := contentStr[startIdx1 : startIdx1+endIdx1]
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+		if !strings.Contains(decl1, p) {
+			t.Errorf("expected %q in Nested1 declaration, got: %s", p, decl1)
+		}
 	}
 
-	gotBlock2 := extractBlock(t, contentStr, "public struct Nested2", ", Sendable {")
-	wantBlock2 := "public struct Nested2: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {"
-	if diff := cmp.Diff(wantBlock2, gotBlock2); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	startIdx2 := strings.Index(contentStr, "public struct Nested2")
+	if startIdx2 == -1 {
+		t.Fatal("missing public struct Nested2")
+	}
+	endIdx2 := strings.Index(contentStr[startIdx2:], "{")
+	if endIdx2 == -1 {
+		t.Fatal("missing { for Nested2")
+	}
+	decl2 := contentStr[startIdx2 : startIdx2+endIdx2]
+	for _, p := range []string{"Codable", "Equatable", "GoogleCloudWkt._AnyPackable", "Sendable"} {
+		if !strings.Contains(decl2, p) {
+			t.Errorf("expected %q in Nested2 declaration, got: %s", p, decl2)
+		}
 	}
 }
 

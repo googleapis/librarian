@@ -505,6 +505,81 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 }
 
+func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	outdir := t.TempDir()
+	api := &config.API{Path: "google/cloud/secretmanager/v1"}
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	additionalProto := "google/cloud/oslogin/common/common.proto"
+
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: outdir,
+		APIs: []*config.API{
+			api,
+		},
+		Java: &config.JavaModule{
+			JavaAPIs: []*config.JavaAPI{
+				{
+					Path:                              "google/cloud/secretmanager/v1",
+					AdditionalProtosToGenerateAndCopy: []string{additionalProto},
+				},
+			},
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     api,
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		apiCfg: apiCfg,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify that the additional proto was generated.
+	generatedJavaPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "oslogin", "common", "OsLoginProto.java")
+	if _, err := os.Stat(generatedJavaPath); err != nil {
+		t.Errorf("expected generated java file %s to exist: %v", generatedJavaPath, err)
+	}
+	// Verify file copying
+	copiedProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "proto", additionalProto)
+	if _, err := os.Stat(copiedProtoPath); err != nil {
+		t.Errorf("expected copied proto file %s to exist: %v", copiedProtoPath, err)
+	}
+}
+
 func TestGenerateLibrary_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string

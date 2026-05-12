@@ -107,3 +107,91 @@ func TestAnnotateMessage(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateMessage_Pagination(t *testing.T) {
+	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
+	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "ListSecretsRequest",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
+		Fields:  []*api.Field{pageSizeField, pageTokenField},
+	}
+	pageSizeField.Parent = inputType
+	pageTokenField.Parent = inputType
+
+	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	outputType := &api.Message{
+		Name:    "ListSecretsResponse",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = outputType
+	nextPageTokenField.Parent = outputType
+
+	secretType := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+	}
+
+	iam := &api.Service{
+		Name:    "SecretManagerService",
+		ID:      ".google.cloud.secretmanager.v1.SecretManagerService",
+		Package: "google.cloud.secretmanager.v1",
+		Methods: []*api.Method{
+			{
+				Name:         "ListSecrets",
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "GET",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
+					}},
+				},
+				Pagination: pageTokenField,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify annotations on request message
+	gotRequest := inputType.Codec.(*messageAnnotations)
+	wantRequest := &messageAnnotations{
+		Name:    "ListSecretsRequest",
+		TypeURL: "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
+	}
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+
+	// Verify annotations on response message
+	gotResponse := outputType.Codec.(*messageAnnotations)
+	wantResponse := &messageAnnotations{
+		Name:                "ListSecretsResponse",
+		TypeURL:             "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsResponse",
+		IsPaginatedResponse: true,
+		PageableItemField:   "secrets",
+		PageableItemType:    "Secret",
+		ImportsGax:          true,
+	}
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
