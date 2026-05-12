@@ -365,8 +365,8 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		}
 	}
 
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
+	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove package staging: %w", err)
 	}
 	return nil
 }
