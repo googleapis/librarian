@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -44,7 +43,7 @@ var (
 
 // Fill populates empty Go-specific fields from the api path.
 // Library configurations takes precedence.
-func Fill(library *config.Library, defaults *config.GoDefault) (*config.Library, error) {
+func Fill(library *config.Library) (*config.Library, error) {
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
 	}
@@ -77,9 +76,6 @@ func Fill(library *config.Library, defaults *config.GoDefault) (*config.Library,
 			// If it doesn't set in the librarian configuration, and we can't derive it from the API path,
 			// we should return an error to signify the configuration is wrong.
 			return nil, fmt.Errorf("%s: %w", api.Path, errClientPackageNotFound)
-		}
-		if len(goAPI.EnabledGeneratorFeatures) == 0 && defaults != nil && len(defaults.DefaultEnabledGeneratorFeatures) > 0 {
-			goAPI.EnabledGeneratorFeatures = slices.Clone(defaults.DefaultEnabledGeneratorFeatures)
 		}
 		api.Go = goAPI
 	}
