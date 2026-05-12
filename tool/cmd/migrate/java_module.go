@@ -234,6 +234,9 @@ var (
 		"google/cloud/filestore": {
 			"google/cloud/common/operation_metadata.proto",
 		},
+	}
+
+	javaAdditionalProtosToGenerateOverrides = map[string][]string{
 		"google/cloud/oslogin": {
 			"google/cloud/oslogin/common/common.proto",
 		},
