@@ -66,8 +66,7 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 }
 
 func isEmptyGoModule(goModule *config.GoModule) bool {
-	return len(goModule.DefaultEnabledGeneratorFeatures) == 0 &&
-		len(goModule.DeleteGenerationOutputPaths) == 0 &&
+	return len(goModule.DeleteGenerationOutputPaths) == 0 &&
 		goModule.ModulePathVersion == "" &&
 		goModule.NestedModule == ""
 }
