@@ -473,6 +473,9 @@ func applyJavaArtifactOverrides(api *config.JavaAPI, libraryName string) {
 		if override.gapicArtifactID != "" {
 			api.GAPICArtifactIDOverride = override.gapicArtifactID
 		}
+		if override.samples != nil {
+			api.Samples = override.samples
+		}
 	}
 }
 
