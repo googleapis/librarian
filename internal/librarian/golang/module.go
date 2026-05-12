@@ -122,6 +122,8 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 		return preview, nil
 	}
 
+	// This assumes that the list of APIs to generate a Preview for is a subset
+	// of the APIs to generate a stable Go API for, which is typically the case.
 	generatedAny := false
 	for _, pa := range preview.APIs {
 		sg := findGoAPI(stable, pa.Path)
@@ -257,6 +259,8 @@ func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output s
 		return ""
 	}
 	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+	// No need to format the snippet directory if the directory is within one of
+	// paths to delete after generation. The snippet directory does not exist.
 	if library.Go != nil {
 		for _, path := range library.Go.DeleteGenerationOutputPaths {
 			pathToDelete := filepath.Join(output, path)
