@@ -48,7 +48,16 @@ public protocol {{Codec.Name}} {
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
-  func {{> /templates/common/method_signature}}
+  func {{> /templates/common/method_signature/request}}
+  {{/Codec.RestMethods}}
+
+  {{#Codec.RestMethods}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  func {{> /templates/common/method_signature/request_options}}
   {{/Codec.RestMethods}}
 }
 
@@ -64,7 +73,7 @@ extension Clients {
     {{#Codec.RestMethods}}
 
     /// See `{{Service.Codec.Name}}.{{Codec.Name}}`
-    public func {{> /templates/common/method_signature}} {
+    public func {{> /templates/common/method_signature/request_options}} {
       let path = try { () throws -> String in
         {{#Codec.PathVariables}}
         guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
@@ -118,11 +127,11 @@ extension Clients {
     {{#Codec.DocLines}}
     /// {{{.}}}
     {{/Codec.DocLines}}
-    public func {{> /templates/common/method_signature_pagination}} {
+    public func {{> /templates/common/method_signature/pagination_options}} {
       let listRpc = { (token: String) async throws -> {{OutputType.Codec.Name}} in
         var request = byItem
         request.pageToken = token
-        return try await self.{{Codec.Name}}(request: request)
+        return try await self.{{Codec.Name}}(request: request, options: options)
       }
       return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
     }
@@ -134,15 +143,21 @@ extension Clients {
 // Default implementations
 extension {{Codec.Name}} {
   {{#Codec.RestMethods}}
-  public func {{> /templates/common/method_signature}} {
+
+  public func {{> /templates/common/method_signature/request}} {
+    try await self.{{Codec.Name}}(request: request, options: .init())
+  }
+
+  public func {{> /templates/common/method_signature/request_options}} {
     throw GoogleCloudGax.RequestError.unimplemented
   }
   {{#Codec.Pagination}}
 
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  public func {{> /templates/common/method_signature_pagination}} {
+  public func {{> /templates/common/method_signature/pagination}} {
+    try self.{{Codec.Name}}(byItem: byItem, options: .init())
+  }
+
+  public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: String) async throws -> {{OutputType.Codec.Name}} in
       throw GoogleCloudGax.RequestError.unimplemented
     }
