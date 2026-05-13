@@ -217,7 +217,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 		return lib.Output
 	}
 	if isMixedLibrary(language, lib) {
-		// Veneers require explicit output, so return empty if not set.
+		// Mixed or non-generated libraries require explicit output, so return empty if not set.
 		return ""
 	}
 	apiPath := deriveAPIPath(language, lib.Name)
@@ -247,7 +247,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	}
 	if lib.Output == "" {
 		if isMixedLibrary(language, lib) {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+			return nil, fmt.Errorf("library %q requires an explicit output path", lib.Name)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
