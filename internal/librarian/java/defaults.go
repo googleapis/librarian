@@ -53,7 +53,6 @@ func Fill(library *config.Library) (*config.Library, error) {
 		if javaAPI.GenerateResourceNames == nil {
 			javaAPI.GenerateResourceNames = new(true)
 		}
-		api.Java = javaAPI
 	}
 	return library, nil
 }
@@ -65,22 +64,23 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	for _, api := range library.APIs {
-		if api.Java != nil {
-			if api.Java.Samples != nil && *api.Java.Samples {
-				api.Java.Samples = nil
-			}
-			if api.Java.GenerateGAPIC != nil && *api.Java.GenerateGAPIC {
-				api.Java.GenerateGAPIC = nil
-			}
-			if api.Java.GenerateProtoGRPC != nil && *api.Java.GenerateProtoGRPC {
-				api.Java.GenerateProtoGRPC = nil
-			}
-			if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
-				api.Java.GenerateResourceNames = nil
-			}
-			if isEmptyJavaAPI(api.Java) {
-				api.Java = nil
-			}
+		if api.Java == nil {
+			continue
+		}
+		if api.Java.Samples != nil && *api.Java.Samples {
+			api.Java.Samples = nil
+		}
+		if api.Java.GenerateGAPIC != nil && *api.Java.GenerateGAPIC {
+			api.Java.GenerateGAPIC = nil
+		}
+		if api.Java.GenerateProtoGRPC != nil && *api.Java.GenerateProtoGRPC {
+			api.Java.GenerateProtoGRPC = nil
+		}
+		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
+			api.Java.GenerateResourceNames = nil
+		}
+		if isEmptyJavaAPI(api.Java) {
+			api.Java = nil
 		}
 	}
 	return library
@@ -128,16 +128,15 @@ func Validate(library *config.Library) error {
 		}
 	}
 	for _, api := range library.APIs {
-		if api.Java != nil {
-			if !api.Java.OmitCommonResources {
-				continue
-			}
-			for _, p := range api.Java.AdditionalProtos {
-				if p == commonResourcesProto {
-					return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
-				}
+		if api.Java == nil || !api.Java.OmitCommonResources {
+			continue
+		}
+		for _, p := range api.Java.AdditionalProtos {
+			if p == commonResourcesProto {
+				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
 			}
 		}
+
 	}
 	return nil
 }
