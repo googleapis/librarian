@@ -163,58 +163,56 @@ func TestTidy(t *testing.T) {
 			name: "GoAPIs default ImportPath and ClientPackage are cleared",
 			library: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:          "google/cloud/speech/v1",
-							ImportPath:    "speech/apiv1",
-							ClientPackage: "speech",
-							ProtoPackage:  "google.cloud.speech.v1", // Prevents goAPI from being empty
-						},
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+					Go: &config.GoAPI{
+						ImportPath:    "speech/apiv1",
+						ClientPackage: "speech",
+						ProtoPackage:  "google.cloud.speech.v1", // Prevents goAPI from being empty
 					},
-				},
+				}},
 			},
 			want: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:         "google/cloud/speech/v1",
-							ProtoPackage: "google.cloud.speech.v1",
-						},
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+					Go: &config.GoAPI{
+						ProtoPackage: "google.cloud.speech.v1",
 					},
-				},
+				}},
 			},
 		},
 		{
 			name: "empty go module is cleared",
 			library: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:          "google/cloud/speech/v1",
-							ImportPath:    "speech/apiv1",
-							ClientPackage: "speech",
-						},
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+					Go: &config.GoAPI{
+						ImportPath:    "speech/apiv1",
+						ClientPackage: "speech",
 					},
-				},
+				}},
 			},
 			want: &config.Library{
 				Name: "test-lib",
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+				}},
 			},
 		},
 		{
 			name: "GoAPIs empty config is removed",
 			library: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path: "google/cloud/speech/v1",
-						},
-						{
-							Path:         "google/cloud/vision/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/speech/v1",
+						Go:   &config.GoAPI{},
+					},
+					{
+						Path: "google/cloud/vision/v1",
+						Go: &config.GoAPI{
 							ProtoPackage: "google.cloud.vision.v1",
 						},
 					},
@@ -222,10 +220,13 @@ func TestTidy(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:         "google/cloud/vision/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/speech/v1",
+					},
+					{
+						Path: "google/cloud/vision/v1",
+						Go: &config.GoAPI{
 							ProtoPackage: "google.cloud.vision.v1",
 						},
 					},
@@ -236,29 +237,25 @@ func TestTidy(t *testing.T) {
 			name: "Non-default ImportPath and ClientPackage are retained",
 			library: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:          "google/cloud/speech/v1",
-							ImportPath:    "custom/path/apiv1",
-							ClientPackage: "customspeech",
-							ProtoPackage:  "google.cloud.speech.v1",
-						},
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+					Go: &config.GoAPI{
+						ImportPath:    "custom/path/apiv1",
+						ClientPackage: "customspeech",
+						ProtoPackage:  "google.cloud.speech.v1",
 					},
-				},
+				}},
 			},
 			want: &config.Library{
 				Name: "test-lib",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							Path:          "google/cloud/speech/v1",
-							ImportPath:    "custom/path/apiv1",
-							ClientPackage: "customspeech",
-							ProtoPackage:  "google.cloud.speech.v1",
-						},
+				APIs: []*config.API{{
+					Path: "google/cloud/speech/v1",
+					Go: &config.GoAPI{
+						ImportPath:    "custom/path/apiv1",
+						ClientPackage: "customspeech",
+						ProtoPackage:  "google.cloud.speech.v1",
 					},
-				},
+				}},
 			},
 		},
 	} {
@@ -361,12 +358,6 @@ func TestIsEmptyGoModule(t *testing.T) {
 			name: "not empty with DeleteGenerationOutputPaths",
 			goModule: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"path"},
-			},
-		},
-		{
-			name: "not empty with GoAPIs",
-			goModule: &config.GoModule{
-				GoAPIs: []*config.GoAPI{{}},
 			},
 		},
 		{

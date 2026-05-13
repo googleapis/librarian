@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -48,13 +47,10 @@ func Fill(library *config.Library) (*config.Library, error) {
 	if library.Go == nil {
 		library.Go = &config.GoModule{}
 	}
-	var goAPIs []*config.GoAPI
 	for _, api := range library.APIs {
-		goAPI := findGoAPI(library, api.Path)
+		goAPI := api.Go
 		if goAPI == nil {
-			goAPI = &config.GoAPI{
-				Path: api.Path,
-			}
+			goAPI = &config.GoAPI{}
 		}
 		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
 		if goAPI.ImportPath == "" {
@@ -76,9 +72,8 @@ func Fill(library *config.Library) (*config.Library, error) {
 			// we should return an error to signify the configuration is wrong.
 			return nil, fmt.Errorf("%s: %w", api.Path, errClientPackageNotFound)
 		}
-		goAPIs = append(goAPIs, goAPI)
+		api.Go = goAPI
 	}
-	library.Go.GoAPIs = goAPIs
 
 	if library.Preview != nil {
 		_, err := fillGoPreview(library, library.Preview)
@@ -106,27 +101,34 @@ func fillGoPreview(stable, preview *config.Library) (*config.Library, error) {
 	if preview.Go == nil {
 		preview.Go = &config.GoModule{}
 	}
+
+	hasPreviewGo := false
+	for _, pa := range preview.APIs {
+		if pa.Go != nil {
+			hasPreviewGo = true
+			break
+		}
+	}
 	// GoAPIs explicitly set already, do not overwrite them.
-	if len(preview.Go.GoAPIs) > 0 {
+	if hasPreviewGo {
 		return preview, nil
 	}
 
 	// This assumes that the list of APIs to generate a Preview for is a subset
 	// of the APIs to generate a stable Go API for, which is typically the case.
-	preview.Go.GoAPIs = make([]*config.GoAPI, 0, len(preview.APIs))
-	for _, g := range stable.Go.GoAPIs {
-		shared := slices.ContainsFunc(preview.APIs, func(pa *config.API) bool {
-			return g.Path == pa.Path
-		})
-		if shared {
+	generatedAny := false
+	for _, pa := range preview.APIs {
+		sg := findGoAPI(stable, pa.Path)
+		if sg != nil {
 			// Make a copy so that we can mutate it.
-			pga := *g
+			pga := *sg
 			// Force disablement of snippet generation.
 			pga.NoSnippets = true
-			preview.Go.GoAPIs = append(preview.Go.GoAPIs, &pga)
+			pa.Go = &pga
+			generatedAny = true
 		}
 	}
-	if len(preview.Go.GoAPIs) == 0 {
+	if !generatedAny {
 		return nil, fmt.Errorf("%w: %s", errPreviewMissingStableParent, stable.Name)
 	}
 	return preview, nil
@@ -157,12 +159,9 @@ func DefaultOutput(name, defaultOutput string) string {
 }
 
 func findGoAPI(library *config.Library, apiPath string) *config.GoAPI {
-	if library.Go == nil {
-		return nil
-	}
-	for _, ga := range library.Go.GoAPIs {
-		if ga.Path == apiPath {
-			return ga
+	for _, api := range library.APIs {
+		if api.Path == apiPath && api.Go != nil {
+			return api.Go
 		}
 	}
 	return nil
@@ -256,10 +255,12 @@ func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output s
 	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
 	// No need to format the snippet directory if the directory is within one of
 	// paths to delete after generation. The snippet directory does not exist.
-	for _, path := range library.Go.DeleteGenerationOutputPaths {
-		pathToDelete := filepath.Join(output, path)
-		if strings.HasPrefix(snippetDir, pathToDelete) {
-			return ""
+	if library.Go != nil {
+		for _, path := range library.Go.DeleteGenerationOutputPaths {
+			pathToDelete := filepath.Join(output, path)
+			if strings.HasPrefix(snippetDir, pathToDelete) {
+				return ""
+			}
 		}
 	}
 	return snippetDir
