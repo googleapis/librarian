@@ -22,6 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -193,16 +194,16 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
-// isVeneer reports whether the library has handwritten code wrapping generated
-// code.
-func isVeneer(language string, lib *config.Library) bool {
+// isMixedLibrary reports whether the library is composed of both handwritten
+// and librarian-generated code.
+func isMixedLibrary(language string, lib *config.Library) bool {
 	switch language {
 	case config.LanguageRust:
-		return rust.IsVeneer(lib)
+		return rust.IsMixedLibrary(lib)
 	case config.LanguageSwift:
-		return swift.IsModule(lib)
+		return swift.IsMixedLibrary(lib)
 	case config.LanguageNodejs:
-		return lib.Output != "" && len(lib.APIs) == 0
+		return nodejs.IsMixedLibrary(lib)
 	default:
 		return false
 	}
@@ -215,7 +216,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if lib.Output != "" {
 		return lib.Output
 	}
-	if isVeneer(language, lib) {
+	if isMixedLibrary(language, lib) {
 		// Veneers require explicit output, so return empty if not set.
 		return ""
 	}
@@ -232,7 +233,7 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !isVeneer(language, lib) {
+	if !isMixedLibrary(language, lib) {
 		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
 			// Do not derive API path for Go because the library name
 			// doesn't contain relevant info.
@@ -245,7 +246,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 	}
 	if lib.Output == "" {
-		if isVeneer(language, lib) {
+		if isMixedLibrary(language, lib) {
 			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
 		}
 		var apiPath string

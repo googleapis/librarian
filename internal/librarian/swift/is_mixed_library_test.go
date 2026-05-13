@@ -21,18 +21,18 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestIsModule(t *testing.T) {
+func TestIsMixedLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		lib  *config.Library
 		want bool
 	}{
-		{"module", &config.Library{Swift: &config.SwiftPackage{Modules: []*config.SwiftModule{{}}}}, true},
+		{"mixed library", &config.Library{Swift: &config.SwiftPackage{Modules: []*config.SwiftModule{{}}}}, true},
 		{"nil swift", &config.Library{}, false},
-		{"empty modules", &config.Library{Swift: &config.SwiftPackage{}}, false},
+		{"fully generated library", &config.Library{Swift: &config.SwiftPackage{}}, false},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := IsModule(test.lib)
+			got := IsMixedLibrary(test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

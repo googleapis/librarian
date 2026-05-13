@@ -35,6 +35,45 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
+func TestIsMixedLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "mixed library case",
+			lib: &config.Library{
+				Output: "packages/typeless-sample-bot",
+				APIs:   nil,
+			},
+			want: true,
+		},
+		{
+			name: "standard gapic lib",
+			lib: &config.Library{
+				Output: "packages/gapic-lib",
+				APIs:   []*config.API{{Path: "google/example/v1"}},
+			},
+			want: false,
+		},
+		{
+			name: "no output set",
+			lib: &config.Library{
+				Output: "",
+				APIs:   nil,
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsMixedLibrary(test.lib); got != test.want {
+				t.Errorf("IsMixedLibrary() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestDerivePackageName(t *testing.T) {
 	for _, test := range []struct {
 		name string

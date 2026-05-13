@@ -87,7 +87,7 @@ func TestGenerateVeneer(t *testing.T) {
 	}
 }
 
-func TestIsVeneer(t *testing.T) {
+func TestIsMixedLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		lib  *config.Library
@@ -158,8 +158,8 @@ func TestIsVeneer(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := IsVeneer(test.lib); got != test.want {
-				t.Errorf("IsVeneer() = %v, want %v", got, test.want)
+			if got := IsMixedLibrary(test.lib); got != test.want {
+				t.Errorf("IsMixedLibrary() = %v, want %v", got, test.want)
 			}
 		})
 	}
