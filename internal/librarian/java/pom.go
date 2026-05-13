@@ -21,10 +21,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -114,6 +116,9 @@ func loadTransports(library *config.Library, googleapisDir string) (map[string]s
 }
 
 func discoverModules(library *config.Library, libraryDir string, transports map[string]serviceconfig.Transport) ([]expectedModule, error) {
+	if library.Java != nil && library.Java.SkipPOMUpdates {
+		return nil, nil
+	}
 	var modules []expectedModule
 	libCoord := DeriveLibraryCoordinates(library)
 	for _, api := range library.APIs {
@@ -191,7 +196,12 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		IsMissing:  isParentMissing,
 		Coordinate: libCoord.Parent,
 	})
-	return modules, nil
+	if library.Java == nil || len(library.Java.ExcludedPOMs) == 0 {
+		return modules, nil
+	}
+	return slices.DeleteFunc(modules, func(m expectedModule) bool {
+		return slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID)
+	}), nil
 }
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
@@ -245,8 +255,10 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 // IdentifyMissingModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
 // for the given library based on its configuration and checks for pom.xml presence
 // on the filesystem. It returns a list of artifact IDs for the missing modules.
-func IdentifyMissingModules(library *config.Library, libraryDir, googleapisDir string) ([]string, error) {
-	transports, err := loadTransports(library, googleapisDir)
+func IdentifyMissingModules(library *config.Library, libraryDir string, srcs *sources.Sources) ([]string, error) {
+	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
+	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
+	transports, err := loadTransports(library, primaryDir)
 	if err != nil {
 		return nil, err
 	}

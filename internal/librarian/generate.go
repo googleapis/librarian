@@ -261,7 +261,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageJava:
 		var allMissingArtifacts []java.MissingArtifact
 		for _, library := range libraries {
-			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src.Googleapis)
+			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src)
 			if err != nil {
 				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
 			}
