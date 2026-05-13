@@ -84,7 +84,7 @@ func TestPublish(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
-			if err := publish(t.Context(), cfg, test.releaseCommit, test.execute); err != nil {
+			if err := publish(t.Context(), test.releaseCommit, test.execute); err != nil {
 				t.Fatal(err)
 			}
 			got, err := os.ReadFile(fakePublishedFile)
@@ -105,20 +105,6 @@ func TestPublish_Error(t *testing.T) {
 		releaseCommit string
 		wantErr       error
 	}{
-		{
-			name: "custom tool specified for git and doesn't exist",
-			setup: func(cfg *config.Config) {
-				// Add a release commit to distinguish this case from "no releases"
-				cfg.Libraries[0].Version = "1.1.0"
-				cfg.Release = &config.Release{
-					Preinstalled: map[string]string{
-						"git": "/usr/bin/does-not-exist",
-					},
-				}
-				writeConfigAndCommit(t, cfg)
-			},
-			// Can't easily check this error.
-		},
 		{
 			name: "repo is dirty",
 			setup: func(cfg *config.Config) {
@@ -167,7 +153,7 @@ func TestPublish_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(cfg)
-			err := publish(t.Context(), cfg, test.releaseCommit, false)
+			err := publish(t.Context(), test.releaseCommit, false)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}

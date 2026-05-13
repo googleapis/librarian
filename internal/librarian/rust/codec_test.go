@@ -74,7 +74,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -100,7 +101,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 				ResourceNameHeuristic: true,
 			},
@@ -125,7 +127,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -148,7 +151,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -188,7 +192,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 				ResourceNameHeuristic: true,
 			},
@@ -212,7 +217,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -247,7 +253,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -277,7 +284,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 				CommentOverrides: []api.DocumentationOverride{
 					{
@@ -313,7 +321,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 				PaginationOverrides: []api.PaginationOverride{
 					{
@@ -342,7 +351,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis", "discovery"},
 				},
 				Override: api.ModelOverride{
-					Title: "Google Compute Engine API",
+					Title:       "Google Compute Engine API",
+					Description: "Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				},
 			},
 		},
@@ -365,7 +375,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis"},
 				},
 				Override: api.ModelOverride{
-					Title: "Secret Manager API",
+					Title:       "Secret Manager API",
+					Description: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				},
 			},
 		},
@@ -388,7 +399,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis", "discovery", "showcase"},
 				},
 				Override: api.ModelOverride{
-					Title: "Google Compute Engine API",
+					Title:       "Google Compute Engine API",
+					Description: "Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				},
 			},
 		},
@@ -409,27 +421,6 @@ func TestLibraryToModelConfig(t *testing.T) {
 				},
 				Override: api.ModelOverride{
 					Title: "Google Apps Script Types",
-				},
-			},
-		},
-		{
-			name: "with description override",
-			library: &config.Library{
-				Name:                "google-cloud-longrunning",
-				DescriptionOverride: "Defines types and an abstract service to handle long-running operations.",
-			},
-			api: &config.API{
-				Path: "google/longrunning",
-			},
-			want: &parser.ModelConfig{
-				Language:            config.LanguageRust,
-				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/longrunning",
-				Source: &sources.SourceConfig{
-					ActiveRoots: []string{"googleapis"},
-				},
-				Override: api.ModelOverride{
-					Description: "Defines types and an abstract service to handle long-running operations.",
 				},
 			},
 		},
@@ -522,7 +513,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 					ActiveRoots: []string{"googleapis", "discovery"},
 				},
 				Override: api.ModelOverride{
-					Title: "Google Compute Engine API",
+					Title:       "Google Compute Engine API",
+					Description: "Compute Engine is an infrastructure as a service (IaaS) product that offers self-managed virtual machine (VM) instances and bare metal instances.",
 				},
 				Discovery: &api.Discovery{
 					OperationID: ".google.cloud.compute.v1.Operation",

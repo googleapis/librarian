@@ -232,14 +232,10 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageGo:
-		var toolchain string
-		if cfg.Default != nil && cfg.Default.Go != nil {
-			toolchain = cfg.Default.Go.Toolchain
-		}
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
 			g.Go(func() error {
-				if err := golang.Generate(gctx, library, src, toolchain); err != nil {
+				if err := golang.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
@@ -261,7 +257,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageJava:
 		var allMissingArtifacts []java.MissingArtifact
 		for _, library := range libraries {
-			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src.Googleapis)
+			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src)
 			if err != nil {
 				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
 			}

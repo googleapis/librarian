@@ -49,42 +49,12 @@ type Config struct {
 	// Tools defines required tools.
 	Tools *Tools `yaml:"tools,omitempty"`
 
-	// Release holds the configuration parameter for publishing and release subcommands.
-	Release *Release `yaml:"release,omitempty"`
-
 	// Default contains default settings for all libraries. They apply to all libraries unless overridden.
 	Default *Default `yaml:"default,omitempty"`
 
 	// Libraries contains configuration overrides for libraries that need
 	// special handling, and differ from default settings.
 	Libraries []*Library `yaml:"libraries,omitempty"`
-}
-
-// Release holds the configuration parameter for publish command.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4910): delete Release.
-type Release struct {
-	// IgnoredChanges defines globs that are ignored in change analysis.
-	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
-
-	// Preinstalled tools defines the list of tools that must be preinstalled.
-	//
-	// This is indexed by the well-known name of the tool vs. its path, e.g.
-	// [preinstalled]
-	// cargo = /usr/bin/cargo
-	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
-
-	// Tools defines the list of tools to install, indexed by installer.
-	Tools map[string][]Tool `yaml:"tools,omitempty"`
-}
-
-// Tool defines the configuration required to install helper tools.
-type Tool struct {
-	// Name is the name of the tool e.g. nox.
-	Name string `yaml:"name"`
-
-	// Version is the version of the tool e.g. 1.2.4.
-	Version string `yaml:"version,omitempty"`
 }
 
 // Sources references external source repositories.
@@ -261,9 +231,6 @@ type Library struct {
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
-	// DescriptionOverride overrides the library description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
@@ -325,6 +292,9 @@ type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
+
+	// Java contains Java-specific API configuration.
+	Java *JavaAPI `yaml:"java,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

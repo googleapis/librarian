@@ -113,7 +113,7 @@ func TestGenerate(t *testing.T) {
 		library.Output = filepath.Join(repoRoot, library.Output, library.Name)
 	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}, ""); err != nil {
+		if err := Generate(t.Context(), nil, library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -173,7 +173,7 @@ func TestGenerate_Error(t *testing.T) {
 			outdir := t.TempDir()
 			test.library.Output = outdir
 
-			gotErr := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}, "")
+			gotErr := Generate(t.Context(), nil, test.library, &sources.Sources{Googleapis: googleapisDir})
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Generate error = %v, wantErr %v", gotErr, test.wantErr)
 			}
@@ -207,7 +207,7 @@ func TestGenerate_MkdirAllError(t *testing.T) {
 		},
 	}
 
-	gotErr := Generate(t.Context(), library, &sources.Sources{Googleapis: googleapisDir}, "")
+	gotErr := Generate(t.Context(), nil, library, &sources.Sources{Googleapis: googleapisDir})
 	if !errors.Is(gotErr, syscall.ENOTDIR) {
 		t.Errorf("Generate error = %v, want %v", gotErr, syscall.ENOTDIR)
 	}
@@ -451,7 +451,7 @@ func TestGenerateLibrary(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			if err := Generate(t.Context(), test.library, &sources.Sources{Googleapis: googleapisDir}, ""); err != nil {
+			if err := Generate(t.Context(), nil, test.library, &sources.Sources{Googleapis: googleapisDir}); err != nil {
 				t.Fatal(err)
 			}
 			for _, path := range test.want {
