@@ -478,7 +478,10 @@ func TestPostProcessLibrary(t *testing.T) {
 		Name:    "secretmanager",
 		Version: "1.2.3",
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 	}
 	defaultCfg := &config.Config{
@@ -571,7 +574,10 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		Name:    "secretmanager",
 		Version: "1.2.3",
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 	}
 	defaultCfg := &config.Config{

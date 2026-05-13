@@ -543,7 +543,7 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedDependencies != "" {
 		res.ExcludedDependencies = src.ExcludedDependencies
 	}
-	if src.ExcludedPOMs != "" {
+	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
 	if src.ExtraVersionedModules != "" {
@@ -566,9 +566,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
-	}
-	if src.JavaAPIs != nil {
-		res.JavaAPIs = src.JavaAPIs
 	}
 	if src.ProductDocumentationOverride != "" {
 		res.ProductDocumentationOverride = src.ProductDocumentationOverride

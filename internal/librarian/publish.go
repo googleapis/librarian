@@ -29,6 +29,7 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
+		Hidden:    true,
 		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
 		Description: `publish releases the libraries that were updated in a release commit

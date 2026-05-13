@@ -498,8 +498,9 @@ type JavaModule struct {
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
 
-	// ExcludedPOMs is a list of POM files to exclude.
-	ExcludedPOMs string `yaml:"excluded_poms,omitempty"`
+	// ExcludedPOMs is a list of artifact ids, whose module should be excluded
+	// when updating pom.xml and are omitted when counting new modules.
+	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
 
 	// ExtraVersionedModules is a list of extra versioned modules.
 	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
@@ -524,9 +525,6 @@ type JavaModule struct {
 	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
 	// to be overridden.
 	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
-
-	// JavaAPIs is a list of Java-specific API configurations.
-	JavaAPIs []*JavaAPI `yaml:"java_apis,omitempty"`
 
 	// ProductDocumentationOverride allows the "product_documentation" field in
 	// .repo-metadata.json to be overridden.
@@ -562,9 +560,6 @@ type JavaModule struct {
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
-
 	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
 	// into a single directory. This is currently only used for the grafeas library
 	// to maintain its legacy code structure.
