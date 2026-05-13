@@ -121,9 +121,13 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	}
 	var modules []expectedModule
 	libCoord := DeriveLibraryCoordinates(library)
+	var shouldGenerateClient bool
 	for _, api := range library.APIs {
-		apiBase := deriveAPIBase(library, api.Path)
 		javaAPI := api.Java
+		if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
+			shouldGenerateClient = true
+		}
+		apiBase := deriveAPIBase(library, api.Path)
 		if !shouldGenerateProtoGRPC(javaAPI) {
 			continue
 		}
@@ -161,18 +165,20 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		}
 	}
 	// Client module
-	clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
-	isClientMissing, err := isPOMMissing(clientDir)
-	if err != nil {
-		return nil, err
+	if shouldGenerateClient {
+		clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
+		isClientMissing, err := isPOMMissing(clientDir)
+		if err != nil {
+			return nil, err
+		}
+		modules = append(modules, expectedModule{
+			ArtifactID: libCoord.GAPIC.ArtifactID,
+			Dir:        clientDir,
+			Kind:       kindClient,
+			IsMissing:  isClientMissing,
+			Coordinate: libCoord.GAPIC,
+		})
 	}
-	modules = append(modules, expectedModule{
-		ArtifactID: libCoord.GAPIC.ArtifactID,
-		Dir:        clientDir,
-		Kind:       kindClient,
-		IsMissing:  isClientMissing,
-		Coordinate: libCoord.GAPIC,
-	})
 	// BOM module
 	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
 	isBOMMissing, err := isPOMMissing(bomDir)
@@ -399,16 +405,21 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 	libCoord := DeriveLibraryCoordinates(library)
 	protoModules := make([]Coordinate, 0, len(library.APIs))
 	gRPCModules := make([]Coordinate, 0, len(library.APIs))
+	// At most one client module per library; slice used for variadic append.
+	var clientModule []Coordinate
 	for _, m := range expectedModules {
 		switch m.Kind {
 		case kindProto:
 			protoModules = append(protoModules, m.Coordinate)
 		case kindGRPC:
 			gRPCModules = append(gRPCModules, m.Coordinate)
+		case kindClient:
+			clientModule = append(clientModule, m.Coordinate)
 		}
 	}
 
-	allModules := []Coordinate{libCoord.GAPIC}
+	var allModules []Coordinate
+	allModules = append(allModules, clientModule...)
 	allModules = append(allModules, gRPCModules...)
 	allModules = append(allModules, protoModules...)
 
@@ -432,7 +443,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 			}
 		case kindClient:
 			templateData = clientPOMData{
-				Client:       libCoord.GAPIC,
+				Client:       m.Coordinate,
 				Version:      library.Version,
 				Name:         metadata.NamePretty,
 				Description:  metadata.APIDescription,

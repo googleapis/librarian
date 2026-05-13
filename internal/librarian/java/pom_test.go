@@ -494,6 +494,48 @@ func TestCollectModules(t *testing.T) {
 				{artifactID: "google-cloud-secretmanager-parent", isMissing: true, template: parentPOMTemplateName},
 			},
 		},
+		{
+			name: "generate_gapic is false skips client module",
+			library: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateGAPIC: func() *bool { b := false; return &b }(),
+							GenerateResourceNames: func() *bool { b := false; return &b }(),
+						},
+					},
+				},
+			},
+			monorepoVersion: "1.2.3",
+			metadata: &repoMetadata{
+				NamePretty: "Secret Manager",
+			},
+			transports: map[string]serviceconfig.Transport{
+				"google/cloud/secretmanager/v1": serviceconfig.GRPC,
+			},
+			setup: func(t *testing.T, libraryDir string) {
+				dirs := []string{
+					"proto-google-cloud-secretmanager-v1",
+					"grpc-google-cloud-secretmanager-v1",
+					"google-cloud-secretmanager-bom",
+					"", // parent
+				}
+				for _, d := range dirs {
+					if err := os.MkdirAll(filepath.Join(libraryDir, d), 0755); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			want: []javaModule{
+				{artifactID: "proto-google-cloud-secretmanager-v1", isMissing: true, template: protoPOMTemplateName},
+				{artifactID: "grpc-google-cloud-secretmanager-v1", isMissing: true, template: gRPCPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-bom", isMissing: true, template: bomPOMTemplateName},
+				{artifactID: "google-cloud-secretmanager-parent", isMissing: true, template: parentPOMTemplateName},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -778,6 +820,49 @@ func TestIdentifyMissingModules_GenerateProtoGRPCFalse(t *testing.T) {
 	}
 	want := []string{
 		"google-cloud-secretmanager",
+		"google-cloud-secretmanager-bom",
+		"google-cloud-secretmanager-parent",
+	}
+	sort.Strings(got)
+	sort.Strings(want)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("IdentifyMissingModules() mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
+					GenerateGAPIC: func() *bool { b := false; return &b }(),
+					GenerateResourceNames: func() *bool { b := false; return &b }(),
+				},
+			},
+		},
+	}
+	tmpDir := t.TempDir()
+	dirs := []string{
+		"proto-google-cloud-secretmanager-v1",
+		"grpc-google-cloud-secretmanager-v1",
+		"google-cloud-secretmanager-bom",
+		"", // parent
+	}
+	for _, dir := range dirs {
+		if err := os.MkdirAll(filepath.Join(tmpDir, dir), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"proto-google-cloud-secretmanager-v1",
+		"grpc-google-cloud-secretmanager-v1",
 		"google-cloud-secretmanager-bom",
 		"google-cloud-secretmanager-parent",
 	}
