@@ -576,7 +576,8 @@ func TestFindLibrariesToBump_Error(t *testing.T) {
 }
 
 func TestPostBump(t *testing.T) {
-	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
+	tmpDir := t.TempDir()
+	fakeCargo := filepath.Join(tmpDir, "cargo")
 	for _, test := range []struct {
 		name    string
 		setup   func()
@@ -590,14 +591,10 @@ func TestPostBump(t *testing.T) {
 				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
 					t.Fatal(err)
 				}
+				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			cfg: &config.Config{
 				Language: config.LanguageRust,
-				Release: &config.Release{
-					Preinstalled: map[string]string{
-						"cargo": fakeCargo,
-					},
-				},
 			},
 		},
 		{
@@ -607,14 +604,10 @@ func TestPostBump(t *testing.T) {
 				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
 					t.Fatal(err)
 				}
+				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			cfg: &config.Config{
 				Language: config.LanguageRust,
-				Release: &config.Release{
-					Preinstalled: map[string]string{
-						"cargo": fakeCargo,
-					},
-				},
 			},
 			wantErr: true,
 		},
@@ -919,7 +912,7 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 			if test.wantCommitCount != len(commits) {
 				t.Fatalf("expected setup to create %d commits; got %d", test.wantCommitCount, len(commits))
 			}
-			got, err := findLatestReleaseCommitHash(t.Context(), "git")
+			got, err := findLatestReleaseCommitHash(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -990,7 +983,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 			test.setup(cfg)
-			got, err := findLatestReleaseCommitHash(t.Context(), "git")
+			got, err := findLatestReleaseCommitHash(t.Context())
 			if err == nil {
 				t.Errorf("expected error; succeeded with hash %s", got)
 			}

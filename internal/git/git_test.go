@@ -69,8 +69,7 @@ func TestIsNewFileSuccess(t *testing.T) {
 	if err := os.WriteFile(existingName, []byte(newLibRsContents), 0644); err != nil {
 		t.Fatal(err)
 	}
-	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
+	gitExe := command.Git
 
 	newName := path.Join("src", "storage", "src", "new.rs")
 	if err := os.MkdirAll(path.Dir(newName), 0755); err != nil {
@@ -93,8 +92,7 @@ func TestIsNewFileDiffError(t *testing.T) {
 	const wantTag = "new-file-success"
 	t.Chdir(t.TempDir())
 	testhelper.SetupForVersionBump(t, wantTag)
-	cfg := &config.Release{}
-	gitExe := command.GetExecutablePath(cfg.Preinstalled, command.Git)
+	gitExe := command.Git
 	existingName := path.Join("src", "storage", "src", "lib.rs")
 	if IsNewFile(t.Context(), gitExe, "invalid-tag", existingName) {
 		t.Errorf("diff errors should return false for isNewFile(): %s", existingName)
@@ -188,11 +186,6 @@ func TestFilterSomeGlobs(t *testing.T) {
 }
 
 func TestAssertGitStatusClean(t *testing.T) {
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git": "git",
-		},
-	}
 	for _, test := range []struct {
 		name    string
 		setup   func(t *testing.T)
@@ -222,7 +215,7 @@ func TestAssertGitStatusClean(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
 			test.setup(t)
-			err := AssertGitStatusClean(t.Context(), command.GetExecutablePath(cfg.Preinstalled, command.Git))
+			err := AssertGitStatusClean(t.Context(), command.Git)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("AssertGitStatusClean() error = %v, wantErr %v", err, test.wantErr)
 			}

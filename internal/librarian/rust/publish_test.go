@@ -32,17 +32,17 @@ import (
 func TestPublishCratesSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "/bin/echo",
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -53,8 +53,9 @@ func TestPublishCratesSuccess(t *testing.T) {
 	lastTag := "release-2001-02-03"
 
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
@@ -63,17 +64,17 @@ func TestPublishCratesSuccess(t *testing.T) {
 func TestPublishCratesWithNewCrate(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "/bin/echo",
 	}
 	_ = testhelper.SetupRepoWithChange(t, "release-with-new-crate")
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
@@ -85,8 +86,9 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 	lastTag := "release-with-new-crate"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
@@ -95,17 +97,17 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "/bin/echo",
 	}
 	_ = testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
@@ -123,8 +125,9 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
 	}
@@ -132,11 +135,10 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 
 func TestPublishCratesGetPlanError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "git",
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "git",
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -146,8 +148,9 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan generation")
 	}
@@ -156,17 +159,17 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 func TestPublishCratesPlanMismatchError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "echo",
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -176,8 +179,9 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan comparison")
 	}
@@ -206,11 +210,10 @@ fi
 		t.Fatal(err)
 	}
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": cargoScript,
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -222,14 +225,16 @@ fi
 
 	// This should fail because semver-checks fails.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// Skipping the checks should succeed.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:           &config.Config{Release: cfg},
+		Config:           cfg,
+		commandOverrides: overrides,
 		DryRun:           true,
 		SkipSemverChecks: true,
 	}, lastTag, files); err != nil {
@@ -241,25 +246,24 @@ func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git":   "git",
-				"cargo": "/bin/echo",
-			},
-			Tools: map[string][]config.Tool{
-				"cargo": {
-					{Name: "cargo-semver-checks", Version: "1.2.3"},
-					{Name: "cargo-workspaces", Version: "3.4.5"},
-				},
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "/bin/echo",
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 
 	if err := Publish(t.Context(), PublishParams{
-		Config: cfg,
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}); err != nil {
 		t.Fatal(err)
 	}
@@ -269,18 +273,16 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
 	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git":   "git",
-				"cargo": "/bin/echo",
-			},
-			Tools: map[string][]config.Tool{
-				"cargo": {
-					{Name: "cargo-semver-checks", Version: "1.2.3"},
-					{Name: "cargo-workspaces", Version: "3.4.5"},
-				},
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
+	}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": "/bin/echo",
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-with-local-changes-error")
 	testhelper.CloneRepository(t, remoteDir)
@@ -288,24 +290,23 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
 	testhelper.RunGit(t, "commit", "-m", "feat: created pubsub", ".")
 	if err := Publish(t.Context(), PublishParams{
-		Config: cfg,
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}); err == nil {
 		t.Errorf("expected an error publishing with unpushed local commits")
 	}
 }
 
 func TestPublishPreflightError(t *testing.T) {
-	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git": "git-not-found",
-			},
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git": "git-not-found",
 	}
 	if err := Publish(t.Context(), PublishParams{
-		Config: cfg,
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}); err == nil {
 		t.Errorf("expected a preflight error with a bad git command")
 	}
@@ -333,11 +334,10 @@ fi
 		t.Fatal(err)
 	}
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": cargoScript,
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -348,9 +348,10 @@ fi
 	lastTag := "release-2001-02-03"
 
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:          &config.Config{Release: cfg},
-		DryRun:          true,
-		DryRunKeepGoing: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
+		DryRunKeepGoing:  true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
@@ -391,11 +392,10 @@ fi
 		t.Fatal(err)
 	}
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": cargoScript,
 	}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
@@ -407,16 +407,18 @@ fi
 
 	// This should fail because semver-checks fails.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
-		DryRun: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
 	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// With --keep-going, this should succeed.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:          &config.Config{Release: cfg},
-		DryRun:          true,
-		DryRunKeepGoing: true,
+		Config:           cfg,
+		commandOverrides: overrides,
+		DryRun:           true,
+		DryRunKeepGoing:  true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
 	}
@@ -444,11 +446,10 @@ fi
 		t.Fatal(err)
 	}
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
+	cfg := &config.Config{}
+	overrides := map[string]string{
+		"git":   "git",
+		"cargo": cargoScript,
 	}
 	// Setup a dummy repo
 	remoteDir := testhelper.SetupRepoWithChange(t, "test-validation")
@@ -484,7 +485,8 @@ fi
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := publishCrates(t.Context(), PublishParams{
-				Config:           &config.Config{Release: cfg},
+				Config:           cfg,
+				commandOverrides: overrides,
 				DryRun:           true,
 				SkipSemverChecks: true,
 			}, lastTag, test.files)

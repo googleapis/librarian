@@ -23,7 +23,7 @@ import (
 
 func TestCargoPreFlightSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
-	tools := []config.Tool{
+	tools := []*config.CargoTool{
 		{Name: "cargo-semver-checks"},
 	}
 	if err := cargoPreFlight(t.Context(), "cargo", tools); err != nil {
@@ -32,7 +32,7 @@ func TestCargoPreFlightSuccess(t *testing.T) {
 }
 
 func TestCargoPreFlightBadCargo(t *testing.T) {
-	tools := []config.Tool{
+	tools := []*config.CargoTool{
 		{Name: "cargo-semver-checks"},
 	}
 	if err := cargoPreFlight(t.Context(), "not-a-valid-cargo", tools); err == nil {
@@ -42,7 +42,7 @@ func TestCargoPreFlightBadCargo(t *testing.T) {
 
 func TestCargoPreFlightBadTool(t *testing.T) {
 	testhelper.RequireCommand(t, "cargo")
-	tools := []config.Tool{
+	tools := []*config.CargoTool{
 		{Name: "not-a-valid-tool", Version: "0.0.1"},
 	}
 	if err := cargoPreFlight(t.Context(), "cargo", tools); err == nil {
@@ -81,7 +81,7 @@ func TestPreFlightWithTools(t *testing.T) {
 	preinstalled := map[string]string{
 		"cargo": "/bin/echo",
 	}
-	tools := []config.Tool{
+	tools := []*config.CargoTool{
 		{
 			Name:    "cargo-semver-checks",
 			Version: "0.42.0",
@@ -99,7 +99,7 @@ func TestPreFlightToolFailure(t *testing.T) {
 		// Using `git install blah blah` will fail.
 		"cargo": "git",
 	}
-	tools := []config.Tool{
+	tools := []*config.CargoTool{
 		{
 			Name:    "invalid-tool-name---",
 			Version: "a.b.c",

@@ -100,7 +100,7 @@ func TestTag(t *testing.T) {
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(t, cfg)
 
-			if err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag); err != nil {
+			if err := tag(t.Context(), test.releaseCommit, test.createReleaseTag); err != nil {
 				t.Fatal(err)
 			}
 
@@ -133,20 +133,6 @@ func TestTag_Error(t *testing.T) {
 		createReleaseTag bool
 		wantErr          error
 	}{
-		{
-			name: "custom tool specified for git and doesn't exist",
-			setup: func(t *testing.T, cfg *config.Config) {
-				// Add a release commit to distinguish this case from "no releases"
-				cfg.Libraries[0].Version = "1.1.0"
-				cfg.Release = &config.Release{
-					Preinstalled: map[string]string{
-						"git": "/usr/bin/does-not-exist",
-					},
-				}
-				writeConfigAndCommit(t, cfg)
-			},
-			// Can't easily check this error
-		},
 		{
 			name: "repo is dirty",
 			setup: func(t *testing.T, cfg *config.Config) {
@@ -198,7 +184,7 @@ func TestTag_Error(t *testing.T) {
 			cfg.Libraries[1].Version = "1.2.0"
 			testhelper.Setup(t, testhelper.SetupOptions{Config: cfg})
 			test.setup(t, cfg)
-			err := tag(t.Context(), cfg, test.releaseCommit, test.createReleaseTag)
+			err := tag(t.Context(), test.releaseCommit, test.createReleaseTag)
 			if err == nil {
 				t.Fatal("expected error, got nil")
 			}

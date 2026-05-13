@@ -76,16 +76,21 @@ type PublishParams struct {
 	Verbose bool
 	// IgnoredChanges is a list of file paths/patterns to ignore when detecting changed crates.
 	IgnoredChanges []string
+	// commandOverrides maps command names to override paths, primarily used for testing.
+	commandOverrides map[string]string
 }
 
 // Publish finds all the crates that should be published. It can optionally
 // run in dry-run mode, dry-run mode with continue on errors, and/or skip semver checks.
 func Publish(ctx context.Context, params PublishParams) error {
-	release := params.Config.Release
-	if err := preFlight(ctx, release.Preinstalled, cargoTools(params.Config)); err != nil {
+	var tools []*config.CargoTool
+	if params.Config != nil && params.Config.Tools != nil {
+		tools = params.Config.Tools.Cargo
+	}
+	if err := preFlight(ctx, params.commandOverrides, tools); err != nil {
 		return err
 	}
-	gitExe := command.GetExecutablePath(release.Preinstalled, command.Git)
+	gitExe := command.GetExecutablePath(params.commandOverrides, command.Git)
 	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
@@ -100,27 +105,8 @@ func Publish(ctx context.Context, params PublishParams) error {
 	return publishCrates(ctx, params, lastTag, files)
 }
 
-// cargoTools returns cargo tools from Config.Tools if available,
-// falling back to Release.Tools for backwards compatibility.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4910): delete when Release is removed.
-func cargoTools(cfg *config.Config) []config.Tool {
-	if cfg.Tools != nil && len(cfg.Tools.Cargo) > 0 {
-		tools := make([]config.Tool, len(cfg.Tools.Cargo))
-		for i, t := range cfg.Tools.Cargo {
-			tools[i] = config.Tool{Name: t.Name, Version: t.Version}
-		}
-		return tools
-	}
-	if cfg.Release != nil {
-		return cfg.Release.Tools["cargo"]
-	}
-	return nil
-}
-
 // publishCrates publishes the crates that have changed.
 func publishCrates(ctx context.Context, params PublishParams, lastTag string, files []string) error {
-	release := params.Config.Release
 	manifests := map[string]string{}
 	for _, manifest := range findCargoManifests(files) {
 		names, err := publishedCrate(manifest)
@@ -131,7 +117,7 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 			manifests[name] = manifest
 		}
 	}
-	cargoPath := command.GetExecutablePath(release.Preinstalled, command.Cargo)
+	cargoPath := command.GetExecutablePath(params.commandOverrides, command.Cargo)
 	output, err := command.Output(ctx, cargoPath, "workspaces", "plan", "--skip-published")
 	if err != nil {
 		return err
@@ -147,7 +133,7 @@ func publishCrates(ctx context.Context, params PublishParams, lastTag string, fi
 	}
 
 	if !params.SkipSemverChecks {
-		gitPath := command.GetExecutablePath(release.Preinstalled, command.Git)
+		gitPath := command.GetExecutablePath(params.commandOverrides, command.Git)
 		if err := runSemverChecks(ctx, semverData{
 			dryRunKeepGoing: params.DryRunKeepGoing,
 			manifests:       manifests,

@@ -109,11 +109,7 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	var preinstalled map[string]string
-	if cfg.Release != nil {
-		preinstalled = cfg.Release.Preinstalled
-	}
-	gitExe := command.GetExecutablePath(preinstalled, command.Git)
+	gitExe := command.Git
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
@@ -237,11 +233,7 @@ func bumpLibrary(cfg *config.Config, lib *config.Library, versionOverride string
 func postBump(ctx context.Context, cfg *config.Config) error {
 	switch cfg.Language {
 	case config.LanguageRust:
-		cargoExe := command.Cargo
-		if cfg.Release != nil {
-			cargoExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Cargo)
-		}
-		if err := command.Run(ctx, cargoExe, "update", "--workspace"); err != nil {
+		if err := command.Run(ctx, command.Cargo, "update", "--workspace"); err != nil {
 			return err
 		}
 	}
@@ -313,8 +305,8 @@ func findReleasedLibraries(cfgBefore, cfgAfter *config.Config) ([]string, error)
 // this *without* using tags, as it's used in circumstances where the full
 // release process has not yet been completed (e.g. to find which commit
 // *should* be tagged).
-func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, error) {
-	commits, err := git.FindCommitsForPath(ctx, gitExe, config.LibrarianYAML)
+func findLatestReleaseCommitHash(ctx context.Context) (string, error) {
+	commits, err := git.FindCommitsForPath(ctx, command.Git, config.LibrarianYAML)
 	if err != nil {
 		return "", err
 	}
@@ -324,7 +316,7 @@ func findLatestReleaseCommitHash(ctx context.Context, gitExe string) (string, er
 	var candidateConfig *config.Config
 	candidateCommit := ""
 	for _, commit := range commits {
-		commitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, commit, config.LibrarianYAML)
+		commitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, commit, config.LibrarianYAML)
 		if err != nil {
 			return "", err
 		}

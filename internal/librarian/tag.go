@@ -70,29 +70,21 @@ Examples:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-			if err != nil {
-				return err
-			}
-			return tag(ctx, cfg, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
+			return tag(ctx, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
 		},
 	}
 }
 
-// tag implements the tag command. It is provided with the configuration
-// at HEAD, just to find the git executable to use, after which it finds the
-// release commit to publish (unless already specified). The configuration at
-// the release commit is used for all further operations.
-func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createReleaseTag bool) error {
+// tag implements the tag command. It finds the release commit to publish
+// (unless already specified). The configuration at the release commit is used
+// for all further operations.
+func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error {
 	gitExe := command.Git
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Git)
-	}
 	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
 		return err
 	}
 	if releaseCommit == "" {
-		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx, gitExe)
+		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx)
 		if err != nil {
 			return err
 		}

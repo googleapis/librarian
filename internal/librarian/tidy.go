@@ -237,11 +237,6 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	return lib
 }
 
-// isReleaseEmpty returns true if the release configuration is empty.
-func isReleaseEmpty(release *config.Release) bool {
-	return len(release.IgnoredChanges) == 0 && len(release.Preinstalled) == 0 && len(release.Tools) == 0
-}
-
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
 	return len(tools.Cargo) == 0 && len(tools.NPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
@@ -265,9 +260,6 @@ func isDefaultEmpty(defaults *config.Default) bool {
 
 // tidyConfig removes unused sections from the configuration.
 func tidyConfig(cfg *config.Config) *config.Config {
-	if cfg.Release != nil && isReleaseEmpty(cfg.Release) {
-		cfg.Release = nil
-	}
 	if cfg.Tools != nil && isToolsEmpty(cfg.Tools) {
 		cfg.Tools = nil
 	}
