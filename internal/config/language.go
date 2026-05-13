@@ -57,8 +57,6 @@ const (
 type GoModule struct {
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
-	// GoAPIs is a list of Go-specific API configurations.
-	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
 	// NestedModule is the name of a nested module directory.
@@ -85,8 +83,6 @@ type GoAPI struct {
 	// NoSnippets indicates whether to skip generating snippets.
 	// This is typically false.
 	NoSnippets bool `yaml:"no_snippets,omitempty"`
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
 	// ProtoOnly determines whether to generate a Proto-only client.
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`

@@ -76,7 +76,7 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
 
-		if err := generateAPI(ctx, goAPI, googleapisDir, library.Version, tempDir); err != nil {
+		if err := generateAPI(ctx, api.Path, goAPI, googleapisDir, library.Version, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
@@ -132,11 +132,8 @@ func Generate(ctx context.Context, library *config.Library, srcs *sources.Source
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
 // and a local replacement for the newly generated library.
 func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string, toolchain string) error {
-	if library.Go == nil {
-		return nil
-	}
-	hasSnippets := slices.ContainsFunc(library.Go.GoAPIs, func(api *config.GoAPI) bool {
-		return !api.NoSnippets
+	hasSnippets := slices.ContainsFunc(library.APIs, func(api *config.API) bool {
+		return api.Go != nil && !api.Go.NoSnippets
 	})
 	if !hasSnippets {
 		return nil
@@ -158,7 +155,7 @@ func updateSnippetsModule(ctx context.Context, library *config.Library, outDir s
 		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }
 
-func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {
+func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {
 	nestedProtos := goAPI.NestedProtos
 	args := []string{
 		"protoc",
@@ -169,7 +166,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, versio
 		"--go-grpc_opt=require_unimplemented_servers=false",
 	}
 	if !goAPI.ProtoOnly {
-		gapicOpts, err := buildGAPICOpts(goAPI.Path, goAPI, version, googleapisDir)
+		gapicOpts, err := buildGAPICOpts(apiPath, goAPI, version, googleapisDir)
 		if err != nil {
 			return err
 		}
@@ -179,7 +176,7 @@ func generateAPI(ctx context.Context, goAPI *config.GoAPI, googleapisDir, versio
 		}
 	}
 
-	protoFiles, err := collectProtoFiles(googleapisDir, goAPI.Path, nestedProtos)
+	protoFiles, err := collectProtoFiles(googleapisDir, apiPath, nestedProtos)
 	if err != nil {
 		return err
 	}
