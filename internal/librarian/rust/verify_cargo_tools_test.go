@@ -24,10 +24,7 @@ import (
 )
 
 func TestCargoPreFlightSuccess(t *testing.T) {
-	tmpDir := t.TempDir()
-	cargoScript := filepath.Join(tmpDir, "cargo")
-	os.WriteFile(cargoScript, []byte("#!/bin/sh\nexit 0"), 0755)
-	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupFakeCargoScript(t, "#!/bin/bash\nexit 0")
 
 	tools := []*config.CargoTool{
 		{Name: "cargo-semver-checks"},
@@ -38,10 +35,7 @@ func TestCargoPreFlightSuccess(t *testing.T) {
 }
 
 func TestCargoPreFlightBadCargo(t *testing.T) {
-	tmpDir := t.TempDir()
-	cargoScript := filepath.Join(tmpDir, "cargo")
-	os.WriteFile(cargoScript, []byte("#!/bin/sh\nexit 1"), 0755)
-	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupFakeCargoScript(t, "#!/bin/bash\nexit 1")
 
 	tools := []*config.CargoTool{
 		{Name: "cargo-semver-checks"},
@@ -52,14 +46,11 @@ func TestCargoPreFlightBadCargo(t *testing.T) {
 }
 
 func TestCargoPreFlightBadTool(t *testing.T) {
-	tmpDir := t.TempDir()
-	cargoScript := filepath.Join(tmpDir, "cargo")
-	script := `#!/bin/sh
+	script := `#!/bin/bash
 if [ "$1" = "install" ]; then exit 1; fi
 exit 0
 `
-	os.WriteFile(cargoScript, []byte(script), 0755)
-	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupFakeCargoScript(t, script)
 
 	tools := []*config.CargoTool{
 		{Name: "not-a-valid-tool", Version: "0.0.1"},
@@ -98,10 +89,7 @@ func TestPreFlightMissingUpstream(t *testing.T) {
 
 func TestPreFlightWithTools(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	tmpDir := t.TempDir()
-	cargoScript := filepath.Join(tmpDir, "cargo")
-	os.WriteFile(cargoScript, []byte("#!/bin/sh\nexit 0"), 0755)
-	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupFakeCargoScript(t, "#!/bin/bash\nexit 0")
 
 	tools := []*config.CargoTool{
 		{
@@ -117,14 +105,11 @@ func TestPreFlightWithTools(t *testing.T) {
 
 func TestPreFlightToolFailure(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	tmpDir := t.TempDir()
-	cargoScript := filepath.Join(tmpDir, "cargo")
-	script := `#!/bin/sh
+	script := `#!/bin/bash
 if [ "$1" = "install" ]; then exit 1; fi
 exit 0
 `
-	os.WriteFile(cargoScript, []byte(script), 0755)
-	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+	setupFakeCargoScript(t, script)
 
 	tools := []*config.CargoTool{
 		{
