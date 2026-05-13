@@ -11,24 +11,8 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
-| `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
-
-## Release Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
-
-## Tool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the name of the tool e.g. nox. |
-| `version` | string | Is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
 

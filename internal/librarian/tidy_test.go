@@ -830,7 +830,6 @@ func TestTidy_UnusedSections(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		cfg         *config.Config
-		wantRelease bool
 		wantTools   bool
 		wantDefault bool
 	}{
@@ -841,11 +840,9 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Release: &config.Release{},
 				Tools:   &config.Tools{},
 				Default: &config.Default{},
 			},
-			wantRelease: false,
 			wantTools:   false,
 			wantDefault: false,
 		},
@@ -856,11 +853,9 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Release: &config.Release{IgnoredChanges: []string{"foo"}},
 				Tools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
 				Default: &config.Default{Output: "output"},
 			},
-			wantRelease: true,
 			wantTools:   true,
 			wantDefault: true,
 		},
@@ -873,9 +868,6 @@ func TestTidy_UnusedSections(t *testing.T) {
 			got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
 			if err != nil {
 				t.Fatal(err)
-			}
-			if (got.Release != nil) != test.wantRelease {
-				t.Errorf("Release present = %v, want %v", got.Release != nil, test.wantRelease)
 			}
 			if (got.Tools != nil) != test.wantTools {
 				t.Errorf("Tools present = %v, want %v", got.Tools != nil, test.wantTools)

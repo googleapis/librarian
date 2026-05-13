@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -115,43 +114,38 @@ func TestOutput_Error(t *testing.T) {
 }
 
 func TestGetExecutablePath(t *testing.T) {
-	tests := []struct {
-		name           string
-		releaseConfig  *config.Release
-		executableName string
-		want           string
+	for _, test := range []struct {
+		name             string
+		commandOverrides map[string]string
+		executableName   string
+		want             string
 	}{
 		{
 			name: "Preinstalled tool found",
-			releaseConfig: &config.Release{
-				Preinstalled: map[string]string{
-					"cargo": "/usr/bin/cargo",
-					"git":   "/usr/bin/git",
-				},
+			commandOverrides: map[string]string{
+				"cargo": "/usr/bin/cargo",
+				"git":   "/usr/bin/git",
 			},
 			executableName: "cargo",
 			want:           "/usr/bin/cargo",
 		},
 		{
 			name: "Preinstalled tool not found",
-			releaseConfig: &config.Release{
-				Preinstalled: map[string]string{
-					"git": "/usr/bin/git",
-				},
+			commandOverrides: map[string]string{
+				"git": "/usr/bin/git",
 			},
 			executableName: "cargo",
 			want:           "cargo",
 		},
 		{
-			name:           "No preinstalled section",
-			releaseConfig:  &config.Release{},
-			executableName: "cargo",
-			want:           "cargo",
+			name:             "No preinstalled section",
+			commandOverrides: nil,
+			executableName:   "cargo",
+			want:             "cargo",
 		},
-	}
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetExecutablePath(test.releaseConfig.Preinstalled, test.executableName)
+			got := GetExecutablePath(test.commandOverrides, test.executableName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

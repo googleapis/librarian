@@ -24,20 +24,19 @@ import (
 )
 
 // preFlight performs all the necessary checks before a release.
-func preFlight(ctx context.Context, preinstalled map[string]string, cargoTools []config.Tool) error {
-	gitExe := command.GetExecutablePath(preinstalled, command.Git)
-	if err := git.CheckVersion(ctx, gitExe); err != nil {
+func preFlight(ctx context.Context, cargoTools []*config.CargoTool) error {
+	if err := git.CheckVersion(ctx, command.Git); err != nil {
 		return err
 	}
-	if err := git.CheckRemoteURL(ctx, gitExe, config.RemoteUpstream); err != nil {
+	if err := git.CheckRemoteURL(ctx, command.Git, config.RemoteUpstream); err != nil {
 		return err
 	}
-	return cargoPreFlight(ctx, command.GetExecutablePath(preinstalled, command.Cargo), cargoTools)
+	return cargoPreFlight(ctx, cargoTools)
 }
 
 // cargoPreFlight verifies all the necessary cargo tools are installed.
-func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) error {
-	if err := command.Run(ctx, cargoExe, "--version"); err != nil {
+func cargoPreFlight(ctx context.Context, tools []*config.CargoTool) error {
+	if err := command.Run(ctx, command.Cargo, "--version"); err != nil {
 		return err
 	}
 	for _, tool := range tools {
@@ -45,7 +44,7 @@ func cargoPreFlight(ctx context.Context, cargoExe string, tools []config.Tool) e
 			continue
 		}
 		spec := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.Run(ctx, cargoExe, "install", "--locked", spec); err != nil {
+		if err := command.Run(ctx, command.Cargo, "install", "--locked", spec); err != nil {
 			return err
 		}
 	}
