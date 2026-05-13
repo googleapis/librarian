@@ -2991,8 +2991,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: stable
 - path: google/maps/mapmanagement/v2beta
   languages:
     - go
