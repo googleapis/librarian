@@ -124,6 +124,9 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 	for _, api := range library.APIs {
 		apiBase := deriveAPIBase(library, api.Path)
 		javaAPI := api.Java
+		if !shouldGenerateProtoGRPC(javaAPI) {
+			continue
+		}
 		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
 		// Proto module
