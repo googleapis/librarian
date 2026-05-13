@@ -42,7 +42,11 @@ var (
 )
 
 // Generate generates a Go client library.
-func Generate(ctx context.Context, library *config.Library, srcs *sources.Sources, toolchain string) (err error) {
+func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) (err error) {
+	var toolchain string
+	if cfg != nil && cfg.Default != nil && cfg.Default.Go != nil {
+		toolchain = cfg.Default.Go.Toolchain
+	}
 	outDir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to get absolute path of output directory: %w", err)
