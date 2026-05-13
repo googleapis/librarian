@@ -11,24 +11,8 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
-| `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
-
-## Release Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
-
-## Tool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the name of the tool e.g. nox. |
-| `version` | string | Is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
 
@@ -138,7 +122,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
-| `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 
 ## GoDefault Configuration
@@ -265,6 +248,7 @@ This document describes the schema for the librarian.yaml.
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
+| `path` | string | Is the source path. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
@@ -273,6 +257,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
+| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 

@@ -513,7 +513,7 @@ func TestFindLibrariesToBump(t *testing.T) {
 				test.setup(t, cfg)
 			}
 
-			gotLibraries, err := findLibrariesToBump(t.Context(), cfg, "git", test.all, test.libraryName)
+			gotLibraries, err := findLibrariesToBump(t.Context(), cfg, test.all, test.libraryName)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -564,7 +564,7 @@ func TestFindLibrariesToBump_Error(t *testing.T) {
 				test.setup(t, cfg)
 			}
 
-			_, gotErr := findLibrariesToBump(t.Context(), cfg, "git", test.all, test.libraryName)
+			_, gotErr := findLibrariesToBump(t.Context(), cfg, test.all, test.libraryName)
 			if gotErr == nil {
 				t.Fatal("expected error; got nil")
 			}
@@ -576,7 +576,8 @@ func TestFindLibrariesToBump_Error(t *testing.T) {
 }
 
 func TestPostBump(t *testing.T) {
-	fakeCargo := filepath.Join(t.TempDir(), "fake-cargo")
+	tmpDir := t.TempDir()
+	fakeCargo := filepath.Join(tmpDir, "cargo")
 	for _, test := range []struct {
 		name    string
 		setup   func()
@@ -590,14 +591,10 @@ func TestPostBump(t *testing.T) {
 				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
 					t.Fatal(err)
 				}
+				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			cfg: &config.Config{
 				Language: config.LanguageRust,
-				Release: &config.Release{
-					Preinstalled: map[string]string{
-						"cargo": fakeCargo,
-					},
-				},
 			},
 		},
 		{
@@ -607,14 +604,10 @@ func TestPostBump(t *testing.T) {
 				if err := os.WriteFile(fakeCargo, []byte(script), 0755); err != nil {
 					t.Fatal(err)
 				}
+				t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 			cfg: &config.Config{
 				Language: config.LanguageRust,
-				Release: &config.Release{
-					Preinstalled: map[string]string{
-						"cargo": fakeCargo,
-					},
-				},
 			},
 			wantErr: true,
 		},
@@ -919,7 +912,7 @@ func TestFindLatestReleaseCommitHash(t *testing.T) {
 			if test.wantCommitCount != len(commits) {
 				t.Fatalf("expected setup to create %d commits; got %d", test.wantCommitCount, len(commits))
 			}
-			got, err := findLatestReleaseCommitHash(t.Context(), "git")
+			got, err := findLatestReleaseCommitHash(t.Context())
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -990,7 +983,7 @@ func TestFindLatestReleaseCommitHash_Error(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 			test.setup(cfg)
-			got, err := findLatestReleaseCommitHash(t.Context(), "git")
+			got, err := findLatestReleaseCommitHash(t.Context())
 			if err == nil {
 				t.Errorf("expected error; succeeded with hash %s", got)
 			}
@@ -1037,7 +1030,7 @@ func TestLegacyRustBumpLibrary(t *testing.T) {
 
 			targetLibCfg := test.cfg.Libraries[0]
 			// Unused string param: lastTag.
-			err := legacyRustBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, "git", test.versionOverride)
+			err := legacyRustBumpLibrary(t.Context(), test.cfg, targetLibCfg, testUnusedStringParam, test.versionOverride)
 			if err != nil {
 				t.Fatalf("legacyRustBumpLibrary() error = %v", err)
 			}
@@ -1101,7 +1094,7 @@ func TestLegacyRustBump(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			if err := legacyRustBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride, "git"); err != nil {
+			if err := legacyRustBump(t.Context(), cfg, test.all, test.libraryName, test.versionOverride); err != nil {
 				t.Fatal(err)
 			}
 
@@ -1163,7 +1156,7 @@ func TestLegacyRustBumpAll(t *testing.T) {
 			}
 			testhelper.Setup(t, opts)
 
-			err := legacyRustBumpAll(t.Context(), targetCfg, sinceTag, "git")
+			err := legacyRustBumpAll(t.Context(), targetCfg, sinceTag)
 			if err != nil {
 				t.Fatal(err)
 			}

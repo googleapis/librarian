@@ -24,26 +24,27 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestPublishCratesSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+else
+	exit 0
+fi
+`)
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -53,7 +54,7 @@ func TestPublishCratesSuccess(t *testing.T) {
 	lastTag := "release-2001-02-03"
 
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
@@ -62,19 +63,21 @@ func TestPublishCratesSuccess(t *testing.T) {
 
 func TestPublishCratesWithNewCrate(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-pubsub"
+else
+	exit 0
+fi
+`)
 	_ = testhelper.SetupRepoWithChange(t, "release-with-new-crate")
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
 	testhelper.RunGit(t, "add", path.Join("src", "pubsub"))
@@ -85,7 +88,7 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 	}
 	lastTag := "release-with-new-crate"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err != nil {
 		t.Fatal(err)
@@ -94,19 +97,17 @@ func TestPublishCratesWithNewCrate(t *testing.T) {
 
 func TestPublishCratesWithBadManifest(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "/bin/echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+exit 0
+`)
 	_ = testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	name := path.Join("src", "storage", "src", "lib.rs")
 	if err := os.WriteFile(name, []byte(testhelper.NewLibRsContents), 0644); err != nil {
@@ -123,7 +124,7 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err == nil {
 		t.Errorf("expected an error with a bad manifest file")
@@ -132,12 +133,10 @@ func TestPublishCratesWithBadManifest(t *testing.T) {
 
 func TestPublishCratesGetPlanError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "git",
-		},
-	}
+	cfg := &config.Config{}
+	setupFakeCargoScript(t, `#!/bin/bash
+exit 1
+`)
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -146,7 +145,7 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan generation")
@@ -155,19 +154,21 @@ func TestPublishCratesGetPlanError(t *testing.T) {
 
 func TestPublishCratesPlanMismatchError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "echo")
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": "echo",
-		},
-		Tools: map[string][]config.Tool{
-			"cargo": {
+	cfg := &config.Config{
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
 				{Name: "cargo-semver-checks", Version: "1.2.3"},
 				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "unplanned-crate"
+else
+	exit 0
+fi
+`)
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -176,7 +177,7 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 	}
 	lastTag := "release-2001-02-03"
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err == nil {
 		t.Fatalf("expected an error during plan comparison")
@@ -184,34 +185,19 @@ func TestPublishCratesPlanMismatchError(t *testing.T) {
 }
 
 func TestPublishCratesSkipSemverChecks(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows, bash script set up does not work")
-	}
-
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	tmpDir := t.TempDir()
-	// Create a fake cargo that fails on `semver-checks`
-	cargoScript := path.Join(tmpDir, "cargo")
 	script := `#!/bin/bash
 if [ "$1" == "semver-checks" ]; then
 	exit 1
 elif [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
 else
-	/bin/echo $@
+	exit 0
 fi
 `
-	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
-		t.Fatal(err)
-	}
+	setupFakeCargoScript(t, script)
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
-	}
+	cfg := &config.Config{}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -222,14 +208,14 @@ fi
 
 	// This should fail because semver-checks fails.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// Skipping the checks should succeed.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:           &config.Config{Release: cfg},
+		Config:           cfg,
 		DryRun:           true,
 		SkipSemverChecks: true,
 	}, lastTag, files); err != nil {
@@ -239,21 +225,21 @@ fi
 
 func TestPublishSuccess(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git":   "git",
-				"cargo": "/bin/echo",
-			},
-			Tools: map[string][]config.Tool{
-				"cargo": {
-					{Name: "cargo-semver-checks", Version: "1.2.3"},
-					{Name: "cargo-workspaces", Version: "3.4.5"},
-				},
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
+	echo "google-cloud-storage"
+else
+	exit 0
+fi
+`)
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 
@@ -267,21 +253,17 @@ func TestPublishSuccess(t *testing.T) {
 
 func TestPublishWithLocalChangesError(t *testing.T) {
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
 	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git":   "git",
-				"cargo": "/bin/echo",
-			},
-			Tools: map[string][]config.Tool{
-				"cargo": {
-					{Name: "cargo-semver-checks", Version: "1.2.3"},
-					{Name: "cargo-workspaces", Version: "3.4.5"},
-				},
+		Tools: &config.Tools{
+			Cargo: []*config.CargoTool{
+				{Name: "cargo-semver-checks", Version: "1.2.3"},
+				{Name: "cargo-workspaces", Version: "3.4.5"},
 			},
 		},
 	}
+	setupFakeCargoScript(t, `#!/bin/bash
+exit 0
+`)
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-with-local-changes-error")
 	testhelper.CloneRepository(t, remoteDir)
 	testhelper.AddCrate(t, path.Join("src", "pubsub"), "google-cloud-pubsub")
@@ -296,13 +278,9 @@ func TestPublishWithLocalChangesError(t *testing.T) {
 }
 
 func TestPublishPreflightError(t *testing.T) {
-	cfg := &config.Config{
-		Release: &config.Release{
-			Preinstalled: map[string]string{
-				"git": "git-not-found",
-			},
-		},
-	}
+	cfg := &config.Config{}
+	tmpDir := t.TempDir()
+	t.Setenv("PATH", tmpDir) // empty path so git is not found
 	if err := Publish(t.Context(), PublishParams{
 		Config: cfg,
 		DryRun: true,
@@ -312,33 +290,21 @@ func TestPublishPreflightError(t *testing.T) {
 }
 
 func TestPublishCratesDryRunKeepGoing(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows, bash script set up does not work")
-	}
-
 	testhelper.RequireCommand(t, "git")
 	tmpDir := t.TempDir()
 	// Create a fake cargo that captures its arguments.
-	cargoScript := path.Join(tmpDir, "cargo")
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
 elif [ "$1" == "workspaces" ] && [ "$2" == "publish" ]; then
-	echo $@ >> "` + path.Join(tmpDir, "cargo_args.txt") + `"
+	echo $@ >> "` + filepath.Join(tmpDir, "cargo_args.txt") + `"
 else
-	/bin/echo $@
+	exit 0
 fi
 `
-	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
-		t.Fatal(err)
-	}
+	setupFakeCargoScript(t, script)
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
-	}
+	cfg := &config.Config{}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -348,7 +314,7 @@ fi
 	lastTag := "release-2001-02-03"
 
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:          &config.Config{Release: cfg},
+		Config:          cfg,
 		DryRun:          true,
 		DryRunKeepGoing: true,
 	}, lastTag, files); err != nil {
@@ -356,7 +322,7 @@ fi
 	}
 
 	// Verify that arguments were passed to cargo workspaces publish.
-	output, err := os.ReadFile(path.Join(tmpDir, "cargo_args.txt"))
+	output, err := os.ReadFile(filepath.Join(tmpDir, "cargo_args.txt"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -369,34 +335,19 @@ fi
 }
 
 func TestPublishCratesSemverChecksKeepGoing(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows, bash script set up does not work")
-	}
-
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	tmpDir := t.TempDir()
-	// Create a fake cargo that fails on `semver-checks`
-	cargoScript := path.Join(tmpDir, "cargo")
 	script := `#!/bin/bash
 if [ "$1" == "semver-checks" ]; then
 	exit 1
 elif [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
 else
-	/bin/echo $@
+	exit 0
 fi
 `
-	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
-		t.Fatal(err)
-	}
+	setupFakeCargoScript(t, script)
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
-	}
+	cfg := &config.Config{}
 	remoteDir := testhelper.SetupRepoWithChange(t, "release-2001-02-03")
 	testhelper.CloneRepository(t, remoteDir)
 	files := []string{
@@ -407,14 +358,14 @@ fi
 
 	// This should fail because semver-checks fails.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config: &config.Config{Release: cfg},
+		Config: cfg,
 		DryRun: true,
 	}, lastTag, files); err == nil {
 		t.Fatal("expected an error from semver-checks")
 	}
 	// With --keep-going, this should succeed.
 	if err := publishCrates(t.Context(), PublishParams{
-		Config:          &config.Config{Release: cfg},
+		Config:          cfg,
 		DryRun:          true,
 		DryRunKeepGoing: true,
 	}, lastTag, files); err != nil {
@@ -423,33 +374,18 @@ fi
 }
 
 func TestPublishCratesValidation(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping on windows, bash script set up does not work")
-	}
-
 	testhelper.RequireCommand(t, "git")
-	testhelper.RequireCommand(t, "/bin/echo")
-	tmpDir := t.TempDir()
-
 	// Create a fake cargo that ALWAYS plans "google-cloud-storage"
-	cargoScript := path.Join(tmpDir, "cargo")
 	script := `#!/bin/bash
 if [ "$1" == "workspaces" ] && [ "$2" == "plan" ]; then
 	echo "google-cloud-storage"
 else
-	/bin/echo $@
+	exit 0
 fi
 `
-	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
-		t.Fatal(err)
-	}
+	setupFakeCargoScript(t, script)
 
-	cfg := &config.Release{
-		Preinstalled: map[string]string{
-			"git":   "git",
-			"cargo": cargoScript,
-		},
-	}
+	cfg := &config.Config{}
 	// Setup a dummy repo
 	remoteDir := testhelper.SetupRepoWithChange(t, "test-validation")
 	testhelper.CloneRepository(t, remoteDir)
@@ -484,7 +420,7 @@ fi
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := publishCrates(t.Context(), PublishParams{
-				Config:           &config.Config{Release: cfg},
+				Config:           cfg,
 				DryRun:           true,
 				SkipSemverChecks: true,
 			}, lastTag, test.files)
@@ -521,16 +457,15 @@ func TestRunSemverChecks(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			src := `package main
-import ("os"; "strings")
-func main() {
-	if strings.Contains(strings.Join(os.Args, " "), "fail-me") { os.Exit(1) }
-	os.Exit(0)
-}`
-			fakeCargoExe := buildFakeCargo(t, src)
+			script := `#!/bin/bash
+if [[ "$*" == *"fail-me"* ]]; then
+	exit 1
+fi
+exit 0
+`
+			setupFakeCargoScript(t, script)
 			sData := semverData{
 				manifests:       test.manifests,
-				cargoPath:       fakeCargoExe,
 				dryRunKeepGoing: test.dryRunKeepGoing,
 			}
 
@@ -547,11 +482,12 @@ func TestRunSemverChecks_Errors(t *testing.T) {
 	}
 	wantErr := errSemverCheck
 
-	src := `package main; import "os"; func main() { os.Exit(1) }`
-	fakeCargoExe := buildFakeCargo(t, src)
+	script := `#!/bin/bash
+exit 1
+`
+	setupFakeCargoScript(t, script)
 	sData := semverData{
 		manifests: manifests,
-		cargoPath: fakeCargoExe,
 	}
 	err := runSemverChecks(t.Context(), sData)
 	if err == nil {
@@ -562,26 +498,17 @@ func TestRunSemverChecks_Errors(t *testing.T) {
 	}
 }
 
-// buildFakeCargo compiles a small Go program to serve as a mock 'cargo' binary.
-// It returns the path to the resulting executable.
-func buildFakeCargo(t *testing.T, src string) string {
+// setupFakeCargoScript writes a shell script named 'cargo' to a temporary
+// directory and prepends it to PATH.
+func setupFakeCargoScript(t *testing.T, script string) {
 	t.Helper()
-	tmpDir := t.TempDir()
-	mainGo := filepath.Join(tmpDir, "main.go")
-
-	exeName := "fake_cargo"
 	if runtime.GOOS == "windows" {
-		exeName += ".exe"
+		t.Skip("skipping on windows, bash script set up does not work")
 	}
-	fakeCargoExe := filepath.Join(tmpDir, exeName)
-
-	if err := os.WriteFile(mainGo, []byte(src), 0644); err != nil {
-		t.Errorf("failed to write fake cargo source: %v", err)
+	tmpDir := t.TempDir()
+	cargoScript := filepath.Join(tmpDir, "cargo")
+	if err := os.WriteFile(cargoScript, []byte(script), 0755); err != nil {
+		t.Fatal(err)
 	}
-
-	if err := command.Run(t.Context(), command.Go, "build", "-o", fakeCargoExe, mainGo); err != nil {
-		t.Errorf("failed to build fake cargo: %v", err)
-	}
-
-	return fakeCargoExe
+	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
