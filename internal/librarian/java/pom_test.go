@@ -419,7 +419,10 @@ func TestCollectModules(t *testing.T) {
 				Name:    "secretmanager",
 				Version: "1.2.3",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{},
+					},
 				},
 				Java: &config.JavaModule{
 					ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
@@ -668,7 +671,10 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 		Name:    "secretmanager",
 		Version: "1.2.3",
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 		Java: &config.JavaModule{
 			ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
