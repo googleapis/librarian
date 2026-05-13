@@ -328,9 +328,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 	if p.CopyrightYear != "" {
 		res.CopyrightYear = p.CopyrightYear
 	}
-	if p.DescriptionOverride != "" {
-		res.DescriptionOverride = p.DescriptionOverride
-	}
 	if p.Keep != nil {
 		res.Keep = p.Keep
 	}

@@ -1027,9 +1027,8 @@ func TestGenerate(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:                "google-cloud-secret-manager",
-		Output:              outdir,
-		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+		Name:   "google-cloud-secret-manager",
+		Output: outdir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -1065,7 +1064,7 @@ func TestGenerate(t *testing.T) {
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
 		APIShortname:         "secretmanager",
-		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 		// Fields set by Generate.
 		LibraryType:         "GAPIC_AUTO",
 		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
@@ -1241,10 +1240,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "all overrides present",
+			name: "other overrides present",
 			library: &config.Library{
-				Name:                "google-cloud-secret-manager",
-				DescriptionOverride: "overridden description",
+				Name: "google-cloud-secret-manager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secrets/v1beta1"},
@@ -1270,7 +1268,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
-				APIDescription:       "overridden description",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 				LibraryType:          "CORE",
 				ClientDocumentation:  "overridden client_documentation",
 				DefaultVersion:       "v1beta1",
