@@ -330,7 +330,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
-				ExcludedPOMs:                 l.ExcludedPoms,
+				ExcludedPOMs:                 parseStringList(l.ExcludedPoms),
 				ExtraVersionedModules:        l.ExtraVersionedModules,
 				JavaAPIs:                     javaAPIs,
 				GroupID:                      l.GroupID,
@@ -841,4 +841,18 @@ func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
 		api.GenerateProtoGRPC = override.GenerateProtoGRPC
 		api.GenerateResourceNames = override.GenerateResourceNames
 	}
+}
+
+func parseStringList(inputString string) []string {
+	if inputString == "" {
+		return nil
+	}
+	var list []string
+	for _, part := range strings.Split(inputString, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			list = append(list, part)
+		}
+	}
+	return list
 }

@@ -21,6 +21,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -195,7 +196,12 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		IsMissing:  isParentMissing,
 		Coordinate: libCoord.Parent,
 	})
-	return modules, nil
+	if library.Java == nil || len(library.Java.ExcludedPOMs) == 0 {
+		return modules, nil
+	}
+	return slices.DeleteFunc(modules, func(m expectedModule) bool {
+		return slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID)
+	}), nil
 }
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
