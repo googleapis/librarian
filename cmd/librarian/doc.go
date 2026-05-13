@@ -110,28 +110,6 @@ latest API definitions is:
 	librarian update googleapis
 	librarian generate --all
 
-# Bump version numbers and prepare release artifacts
-
-Usage:
-
-	librarian bump <library>
-
-bump updates version numbers and prepares the files needed for a new release.
-
-If a library name is given, only that library is updated. The --all flag updates every
-library in the workspace. When a library is specified explicitly, the --version flag can
-be used to override the new version.
-
-Examples:
-
-	librarian bump <library>           # update version for one library
-	librarian bump --all               # update versions for all libraries
-
-Flags:
-
-	--all             update all libraries in the workspace
-	--version string  specific version to update to; not valid with --all
-
 # Install tool dependencies for a language
 
 Usage:
@@ -195,69 +173,6 @@ latest API definitions is:
 
 	librarian update sources.googleapis
 	librarian generate --all
-
-# Publish client libraries
-
-Usage:
-
-	librarian publish
-
-publish releases the libraries that were updated in a release commit
-prepared by librarian bump.
-
-By default, publish performs a dry run that prints the actions it would
-take. Pass --execute to actually publish. By default, the most recent
-release commit reachable from HEAD is used; --release-commit overrides
-this with a specific commit.
-
-The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
-only honored when the workspace language is Rust; they are retained for
-backwards compatibility with the legacy Rust release jobs and will be
-removed once Rust migrates to the unified flow.
-
-Examples:
-
-	librarian publish                          # dry run
-	librarian publish --execute                # publish for real
-	librarian publish --release-commit=<sha>   # publish a specific commit
-
-Flags:
-
-	--execute                fully publish (default is to only perform a dry run)
-	--release-commit string  the release commit to publish; default finds latest release commit
-	--dry-run                print commands without executing (legacy Rust-only flag)
-	--dry-run-keep-going     print commands without executing, don't stop on error (legacy Rust-only flag)
-	--skip-semver-checks     skip semantic versioning checks (legacy Rust-only flag)
-	--verbose, -v            streams output of publishing commands executed
-
-# Tag a release commit based on the libraries published
-
-Usage:
-
-	librarian tag
-
-tag creates git tags on a release commit, one tag per library that the
-commit released, using the tag_format declared for each library in
-librarian.yaml.
-
-Run tag after librarian publish has succeeded. By default, the most
-recent release commit reachable from HEAD is used; --release-commit
-overrides this with a specific commit.
-
-The --create-release-tag flag additionally creates a tag of the form
-release-<PR number>; this is used by the legacy release jobs and will be
-removed once those jobs are retired.
-
-Examples:
-
-	librarian tag
-	librarian tag --release-commit=<sha>
-	librarian tag --create-release-tag
-
-Flags:
-
-	--release-commit string  the release commit to tag; default finds latest release commit
-	--create-release-tag     whether to create a tag of the form release-{PR number}
 
 # Print the binary version
 

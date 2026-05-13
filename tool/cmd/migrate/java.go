@@ -254,7 +254,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 		artifactID := parseArtifactID(l.DistributionName, name)
 		version := versions[artifactID]
 		var apis []*config.API
-		var javaAPIs []*config.JavaAPI
 		var roots []string
 		if name == showcaseLibraryName {
 			roots = []string{showcaseLibraryName, "googleapis"}
@@ -264,7 +263,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			if g.ProtoPath == "" {
 				continue
 			}
-			apis = append(apis, &config.API{Path: g.ProtoPath})
+			api := &config.API{Path: g.ProtoPath}
+			apis = append(apis, api)
 
 			var info *javaGAPICInfo
 			if name == showcaseLibraryName {
@@ -283,7 +283,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				continue
 			}
 			javaAPI := &config.JavaAPI{
-				Path:                g.ProtoPath,
 				AdditionalProtos:    info.AdditionalProtos,
 				OmitCommonResources: info.OmitCommonResources,
 			}
@@ -294,9 +293,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
 			}
-			applyJavaArtifactOverrides(javaAPI, name)
-			applyJavaProtoOverrides(javaAPI)
-			applyJavaIAMSpecialOverrides(name, javaAPI)
+			applyJavaArtifactOverrides(g.ProtoPath, javaAPI, name)
+			applyJavaProtoOverrides(g.ProtoPath, javaAPI)
+			applyJavaIAMSpecialOverrides(g.ProtoPath, name, javaAPI)
 
 			if name == "storage" && g.ProtoPath == "google/storage/v2" {
 				javaAPI.CopyFiles = []*config.JavaFileCopy{
@@ -314,7 +313,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 					},
 				}
 			}
-			javaAPIs = append(javaAPIs, javaAPI)
+			api.Java = javaAPI
 		}
 		lib := &config.Library{
 			Name:    name,
@@ -330,9 +329,8 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
-				ExcludedPOMs:                 l.ExcludedPoms,
+				ExcludedPOMs:                 parseStringList(l.ExcludedPoms),
 				ExtraVersionedModules:        l.ExtraVersionedModules,
-				JavaAPIs:                     javaAPIs,
 				GroupID:                      l.GroupID,
 				IssueTrackerOverride:         l.IssueTracker,
 				LibraryTypeOverride:          l.LibraryType,
@@ -458,10 +456,10 @@ func parseArtifactID(distributionName, name string) string {
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
 // they don't follow the standard pattern.
-func applyJavaArtifactOverrides(api *config.JavaAPI, libraryName string) {
-	override, ok := javaArtifactIDOverrides[overrideKey{libraryName: libraryName, apiPath: api.Path}]
+func applyJavaArtifactOverrides(apiPath string, api *config.JavaAPI, libraryName string) {
+	override, ok := javaArtifactIDOverrides[overrideKey{libraryName: libraryName, apiPath: apiPath}]
 	if !ok {
-		override, ok = javaArtifactIDOverrides[overrideKey{apiPath: api.Path}]
+		override, ok = javaArtifactIDOverrides[overrideKey{apiPath: apiPath}]
 	}
 	if ok {
 		if override.protoArtifactID != "" {
@@ -490,25 +488,30 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 	if skipAPIID[lib.Name] {
 		lib.Java.SkipAPIID = true
 	}
-	for _, ja := range lib.Java.JavaAPIs {
-		if monolithicJavaAPIs[ja.Path] {
-			ja.Monolithic = true
+	for _, api := range lib.APIs {
+		if api.Java != nil && monolithicJavaAPIs[api.Path] {
+			api.Java.Monolithic = true
 		}
 	}
 }
 
 // applyJavaProtoOverrides sets hardcoded proto inclusions and exclusions
 // for specific APIs, mirroring logic in sdk-platform-java.
-func applyJavaProtoOverrides(api *config.JavaAPI) {
+func applyJavaProtoOverrides(apiPath string, api *config.JavaAPI) {
 	for prefix, protos := range javaAdditionalProtosOverrides {
-		if strings.HasPrefix(api.Path, prefix) {
+		if strings.HasPrefix(apiPath, prefix) {
 			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
 		}
 	}
+	for prefix, protos := range javaAdditionalProtosToGenerateOverrides {
+		if strings.HasPrefix(apiPath, prefix) {
+			api.AdditionalProtosToGenerateAndCopy = append(api.AdditionalProtosToGenerateAndCopy, protos...)
+		}
+	}
 	switch {
-	case api.Path == "google/cloud":
+	case apiPath == "google/cloud":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")
-	case strings.HasPrefix(api.Path, "google/cloud/aiplatform/v1beta1"):
+	case strings.HasPrefix(apiPath, "google/cloud/aiplatform/v1beta1"):
 		api.ExcludedProtos = append(api.ExcludedProtos,
 			"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
 		)
@@ -676,8 +679,10 @@ func getModuleArtifactIDs(lib *config.Library) moduleArtifactIDs {
 	}
 	for _, api := range lib.APIs {
 		apiBase := filepath.Base(api.Path)
-		// Find Java-specific API config to handle artifact ID overrides.
-		javaAPI := java.ResolveJavaAPI(lib, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		apiCoord := java.DeriveAPICoordinates(lc, apiBase, javaAPI)
 		ids.Protos = append(ids.Protos, apiCoord.Proto.ArtifactID)
 		ids.GRPCs = append(ids.GRPCs, apiCoord.GRPC.ArtifactID)
@@ -824,8 +829,8 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 // applyJavaIAMSpecialOverrides applies special generation overrides for IAM v2 and v3 APIs.
 // These API paths are used by both iam and iam-policy libraries, iam contains all grpc and
 // proto modules plus resource name classes, iam-policy contains generated gapic modules.
-func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
-	if !slices.Contains(javaIAMSpecialPaths, api.Path) {
+func applyJavaIAMSpecialOverrides(apiPath string, libraryName string, api *config.JavaAPI) {
+	if !slices.Contains(javaIAMSpecialPaths, apiPath) {
 		return
 	}
 	if override, ok := javaIAMLibraryOverrides[libraryName]; ok {
@@ -833,4 +838,18 @@ func applyJavaIAMSpecialOverrides(libraryName string, api *config.JavaAPI) {
 		api.GenerateProtoGRPC = override.GenerateProtoGRPC
 		api.GenerateResourceNames = override.GenerateResourceNames
 	}
+}
+
+func parseStringList(inputString string) []string {
+	if inputString == "" {
+		return nil
+	}
+	var list []string
+	for _, part := range strings.Split(inputString, ",") {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			list = append(list, part)
+		}
+	}
+	return list
 }

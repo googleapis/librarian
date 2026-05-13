@@ -57,6 +57,7 @@ func (ann *modelAnnotations) HasMessageImports() bool {
 }
 
 func (c *codec) annotateModel() error {
+
 	annotations := &modelAnnotations{
 		CopyrightYear: c.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
@@ -102,7 +103,8 @@ func (c *codec) annotateModel() error {
 		if p.RequiredByServices && len(c.Model.Services) != 0 {
 			serviceImports = append(serviceImports, p.Name)
 			annotations.DependsOn[p.Name] = p
-		} else if p.Required {
+		}
+		if p.Required {
 			messageImports = append(messageImports, p.Name)
 			annotations.DependsOn[p.Name] = p
 		}

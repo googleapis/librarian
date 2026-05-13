@@ -111,7 +111,8 @@ func TestGenerateOneOf(t *testing.T) {
 	// test.
 	//
 	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
-	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable, Sendable {
+	want := `public struct Outer: Codable, Equatable, GoogleCloudWkt._AnyPackable,
+  Sendable {
 
   /// A regular field.
   public var regularInt32: Int32

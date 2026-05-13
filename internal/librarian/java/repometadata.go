@@ -149,7 +149,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
-		metadata.ExcludedPOMs = library.Java.ExcludedPOMs
+		metadata.ExcludedPOMs = strings.Join(library.Java.ExcludedPOMs, ",")
 		metadata.MinJavaVersion = library.Java.MinJavaVersion
 		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation

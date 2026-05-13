@@ -29,6 +29,7 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
+		Hidden:    true,
 		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
 		Description: `publish releases the libraries that were updated in a release commit
@@ -99,7 +100,14 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
 	command.Verbose = verbose
-	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, IgnoredChanges)
+	return rust.Publish(ctx, rust.PublishParams{
+		Config:           cfg,
+		DryRun:           dryRun,
+		DryRunKeepGoing:  dryRunKeepGoing,
+		SkipSemverChecks: skipSemverChecks,
+		Verbose:          verbose,
+		IgnoredChanges:   IgnoredChanges,
+	})
 }
 
 // publish implements the publish command. It is provided with the configuration
