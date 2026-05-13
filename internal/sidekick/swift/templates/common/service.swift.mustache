@@ -49,6 +49,12 @@ public protocol {{Codec.Name}} {
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   func {{> /templates/common/method_signature/request}}
+  {{#Codec.Pagination}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/pagination}}
+  {{/Codec.Pagination}}
   {{/Codec.RestMethods}}
 
   {{#Codec.RestMethods}}
@@ -58,6 +64,12 @@ public protocol {{Codec.Name}} {
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   func {{> /templates/common/method_signature/request_options}}
+  {{#Codec.Pagination}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/pagination_options}}
+  {{/Codec.Pagination}}
   {{/Codec.RestMethods}}
 }
 
