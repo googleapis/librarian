@@ -122,7 +122,7 @@ type generateAPIParams struct {
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
-	javaAPI := ResolveJavaAPI(params.library, params.api)
+	javaAPI := params.api.Java
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")
 	additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
@@ -367,24 +367,6 @@ func collectJavaFiles(root string) ([]string, error) {
 		return nil
 	})
 	return files, err
-}
-
-// ResolveJavaAPI returns the Java-specific configuration for the given API.
-// TODO(https://github.com/googleapis/librarian/issues/5050):
-// Exported to use in migrate tool, unexport after migrate is done.
-func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
-	res := &config.JavaAPI{
-		Path: api.Path,
-	}
-	if library.Java == nil {
-		return res
-	}
-	for _, javaAPI := range library.Java.JavaAPIs {
-		if javaAPI.Path == api.Path {
-			return javaAPI
-		}
-	}
-	return res
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):

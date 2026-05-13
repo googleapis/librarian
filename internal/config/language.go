@@ -526,9 +526,6 @@ type JavaModule struct {
 	// to be overridden.
 	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
 
-	// JavaAPIs is a list of Java-specific API configurations.
-	JavaAPIs []*JavaAPI `yaml:"java_apis,omitempty"`
-
 	// ProductDocumentationOverride allows the "product_documentation" field in
 	// .repo-metadata.json to be overridden.
 	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
@@ -563,9 +560,6 @@ type JavaModule struct {
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
-
 	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
 	// into a single directory. This is currently only used for the grafeas library
 	// to maintain its legacy code structure.
