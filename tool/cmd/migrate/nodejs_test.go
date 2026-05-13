@@ -213,3 +213,44 @@ nodejs_gapic_library(
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestParseOwlBotAPIPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	apiPath1 := "google/cloud/fake/v1"
+	apiPath2 := "google/cloud/fake/v2"
+	for _, p := range []string{apiPath1, apiPath2} {
+		fullPath := filepath.Join(tmpDir, p)
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			t.Fatal(err)
+		}
+		bazelContent := `
+nodejs_gapic_library(
+    name = "fake_nodejs_gapic",
+    package_name = "@google-cloud/fake",
+)
+`
+		if err := os.WriteFile(filepath.Join(fullPath, "BUILD.bazel"), []byte(bazelContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	owlBot := &owlBotYAML{
+		DeepCopyRegex: []owlBotCopyRule{
+			{Source: "/google/cloud/fake/(.*)/.*-nodejs"},
+		},
+	}
+
+	got, err := parseOwlBotAPIPaths(owlBot, tmpDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := []*config.API{
+		{Path: "google/cloud/fake/v1"},
+		{Path: "google/cloud/fake/v2"},
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
