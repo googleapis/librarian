@@ -37,6 +37,7 @@ var (
 func tagCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "tag",
+		Hidden:    true,
 		Usage:     "tag a release commit based on the libraries published",
 		UsageText: "librarian tag",
 		Description: `tag creates git tags on a release commit, one tag per library that the

@@ -61,6 +61,7 @@ var (
 func bumpCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "bump",
+		Hidden:    true,
 		Usage:     "bump version numbers and prepare release artifacts",
 		UsageText: "librarian bump <library>",
 		Description: `bump updates version numbers and prepares the files needed for a new release.
