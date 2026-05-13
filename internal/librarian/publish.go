@@ -117,8 +117,7 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 // publish, in case of overlapping releases being performed. The execute flag
 // says whether to actually publish (true) or just perform a dry run (false).
 func publish(ctx context.Context, releaseCommit string, execute bool) error {
-	gitExe := command.Git
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
 	var err error
@@ -128,7 +127,7 @@ func publish(ctx context.Context, releaseCommit string, execute bool) error {
 			return err
 		}
 	}
-	if err := git.Checkout(ctx, gitExe, releaseCommit); err != nil {
+	if err := git.Checkout(ctx, command.Git, releaseCommit); err != nil {
 		return err
 	}
 	// Reload the config after checking out the release commit.
@@ -141,7 +140,7 @@ func publish(ctx context.Context, releaseCommit string, execute bool) error {
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we want to be able to specify the release commit directly, we
 	// can skip findLatestReleaseCommitHash entirely.)
-	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, gitExe, "HEAD~", config.LibrarianYAML)
+	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, command.Git, "HEAD~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}

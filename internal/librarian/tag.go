@@ -79,8 +79,7 @@ Examples:
 // (unless already specified). The configuration at the release commit is used
 // for all further operations.
 func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error {
-	gitExe := command.Git
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
 	if releaseCommit == "" {
@@ -90,7 +89,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 		}
 		releaseCommit = latestReleaseCommit
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, config.LibrarianYAML)
+	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit, config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -103,7 +102,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we specify the release commit directly, we can skip
 	// findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit+"~", config.LibrarianYAML)
+	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit+"~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -122,7 +121,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 	// If we need to create a release tag, do that first - in case we can't
 	// determine the tag name.
 	if createReleaseTag {
-		commitSubject, err := git.GetCommitSubject(ctx, gitExe, releaseCommit)
+		commitSubject, err := git.GetCommitSubject(ctx, command.Git, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("can't get commit subject for %s: %w, %w", releaseCommit, errCannotDeriveReleaseTag, err)
 		}
@@ -131,7 +130,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 			return fmt.Errorf("commit subject has unexpected format '%s': %w", commitSubject, errCannotDeriveReleaseTag)
 		}
 		tagName := "release-" + matches[1]
-		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
+		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
@@ -144,7 +143,7 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 			return err
 		}
 		tagName := formatTagName(tagFormat, lib)
-		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
+		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}

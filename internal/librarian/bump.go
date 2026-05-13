@@ -109,15 +109,14 @@ Examples:
 // runBump performs the actual work of the bump command, after all the command
 // lines arguments have been validated and the configuration loaded.
 func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
-	gitExe := command.Git
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
 	if cfg.Language == config.LanguageRust {
-		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
+		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride)
 	}
 
-	librariesToBump, err := findLibrariesToBump(ctx, cfg, gitExe, all, libraryName)
+	librariesToBump, err := findLibrariesToBump(ctx, cfg, all, libraryName)
 	if err != nil {
 		return err
 	}
@@ -142,7 +141,7 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 
 // findLibrariesToBump determines which versions should be bumped based on
 // command line options.
-func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string, all bool, libraryName string) ([]*config.Library, error) {
+func findLibrariesToBump(ctx context.Context, cfg *config.Config, all bool, libraryName string) ([]*config.Library, error) {
 	if !all {
 		library, err := FindLibrary(cfg, libraryName)
 		if err != nil {
@@ -157,11 +156,11 @@ func findLibrariesToBump(ctx context.Context, cfg *config.Config, gitExe string,
 			continue
 		}
 		lastReleaseTagName := formatTagName(cfg.Default.TagFormat, lib)
-		lastReleaseTagCommit, err := git.GetCommitHash(ctx, gitExe, lastReleaseTagName)
+		lastReleaseTagCommit, err := git.GetCommitHash(ctx, command.Git, lastReleaseTagName)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving commit for tag %s (from library %s version %s): %w", lastReleaseTagName, lib.Name, lib.Version, err)
 		}
-		filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastReleaseTagCommit, IgnoredChanges)
+		filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastReleaseTagCommit, IgnoredChanges)
 		if err != nil {
 			return nil, err
 		}
@@ -347,14 +346,14 @@ func findLatestReleaseCommitHash(ctx context.Context) (string, error) {
 // releasing. This is separated from the main logic to allow non-Rust languages
 // to work on the newer "tag-per-library" logic without interrupting Rust
 // releases. The "fake" language is still valid here, for testing purposes.
-func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride, gitExe string) error {
-	lastTag, err := git.GetLastTag(ctx, gitExe, config.RemoteUpstream, config.BranchMain)
+func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryName, versionOverride string) error {
+	lastTag, err := git.GetLastTag(ctx, command.Git, config.RemoteUpstream, config.BranchMain)
 	if err != nil {
 		return err
 	}
 
 	if all {
-		if err := legacyRustBumpAll(ctx, cfg, lastTag, gitExe); err != nil {
+		if err := legacyRustBumpAll(ctx, cfg, lastTag); err != nil {
 			return err
 		}
 	} else {
@@ -362,7 +361,7 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 		if err != nil {
 			return err
 		}
-		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, gitExe, versionOverride); err != nil {
+		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, versionOverride); err != nil {
 			return err
 		}
 	}
@@ -377,8 +376,8 @@ func legacyRustBump(ctx context.Context, cfg *config.Config, all bool, libraryNa
 // of assuming a single tag for the latest release, and checking everything
 // since that tag. (Compare this with findLibrariesToBump, which expects each
 // library to have its own tag for its last release.)
-func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe string) error {
-	filesChanged, err := git.FilesChangedSince(ctx, gitExe, lastTag, IgnoredChanges)
+func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag string) error {
+	filesChanged, err := git.FilesChangedSince(ctx, command.Git, lastTag, IgnoredChanges)
 	if err != nil {
 		return err
 	}
@@ -390,7 +389,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 		if !hasChangesIn(output, "", filesChanged) {
 			continue
 		}
-		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, gitExe, ""); err != nil {
+		if err := legacyRustBumpLibrary(ctx, cfg, lib, lastTag, ""); err != nil {
 			return err
 		}
 	}
@@ -401,7 +400,7 @@ func legacyRustBumpAll(ctx context.Context, cfg *config.Config, lastTag, gitExe 
 // assuming a single tag for the latest release, and passing that tag into the
 // rust.Bump code. (Compare this with bumpLibrary, which only uses git to derive
 // the next version.)
-func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, gitExe, versionOverride string) error {
+func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.Library, lastTag, versionOverride string) error {
 	opts := languageVersioningOptions[cfg.Language]
 	version, err := deriveNextVersion(lib, opts, versionOverride)
 	if err != nil {
@@ -410,7 +409,7 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 	output := libraryOutput(cfg.Language, lib, cfg.Default)
 	switch cfg.Language {
 	case config.LanguageRust:
-		return rust.Bump(ctx, lib, output, version, gitExe, lastTag)
+		return rust.Bump(ctx, lib, output, version, command.Git, lastTag)
 	case config.LanguageFake:
 		lib.Version = version
 		return fakeBumpLibrary(output, version)
