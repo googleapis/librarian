@@ -807,6 +807,125 @@ func TestSyncToStateYAML(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "sync preview library (python)",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"packages/google-cloud-secretmanager"},
+					},
+				},
+			},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager",
+						Version: "1.0.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Preview: &config.Library{
+							Version: "1.1.0-preview.1",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1beta"},
+							},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"packages/google-cloud-secretmanager"},
+					},
+					{
+						ID:            "google-cloud-secretmanager-preview",
+						Version:       "1.1.0-preview.1",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1beta"}},
+						SourceRoots:   []string{"preview-packages/google-cloud-secretmanager"},
+						ReleaseExcludePaths: []string{
+							"preview-packages/google-cloud-secretmanager/.repo-metadata.json",
+							"preview-packages/google-cloud-secretmanager/noxfile.py",
+							"preview-packages/google-cloud-secretmanager/tests/",
+							"preview-packages/google-cloud-secretmanager/README.rst",
+							"preview-packages/google-cloud-secretmanager/docs/",
+						},
+						TagFormat: "google-cloud-secretmanager-v{version}",
+					},
+				},
+			},
+		},
+		{
+			name: "sync preview library (go)",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"secretmanager", "internal/generated/snippets/secretmanager"},
+					},
+				},
+			},
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.0.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Preview: &config.Library{
+							Version: "1.1.0-preview.1",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1beta"},
+							},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"secretmanager", "internal/generated/snippets/secretmanager"},
+					},
+					{
+						ID:            "secretmanager-preview",
+						Version:       "1.1.0-preview.1",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1beta"}},
+						SourceRoots:   []string{"preview/internal/secretmanager"},
+						TagFormat:     "secretmanager/v{version}",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()

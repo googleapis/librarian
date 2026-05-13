@@ -261,9 +261,6 @@ type Library struct {
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
-	// DescriptionOverride overrides the library description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
@@ -325,6 +322,9 @@ type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
+
+	// Java contains Java-specific API configuration.
+	Java *JavaAPI `yaml:"java,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.

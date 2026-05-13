@@ -2923,6 +2923,17 @@
     python: grpc
     ruby: grpc
 - path: google/longrunning
+  description: |-
+    Defines types and an abstract service to handle long-running operations.
+
+    [Long-running operations] are a common pattern to handle methods that may take
+    a significant amount of time to execute. Many Google APIs return an `Operation`
+    message (defined in this package) that are roughly analogous to a future. The
+    operation will eventually complete, though it may still return an error on
+    completion. The client libraries provide helpers to simplify polling of these
+    operations.
+
+    [Long-running operations]: https://google.aip.dev/151
   languages:
     - all
   skip_rest_numeric_enums:
@@ -3076,6 +3087,7 @@
   languages:
     - all
 - path: google/protobuf
+  description: Core Protobuf types used by most services.
   languages:
     - all
 - path: google/pubsub/v1

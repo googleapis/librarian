@@ -115,7 +115,6 @@ This document describes the schema for the librarian.yaml.
 | `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
-| `description_override` | string | Overrides the library description. |
 | `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
@@ -139,6 +138,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+| `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -281,7 +281,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string | Is the source path. |
 | `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
 | `additional_protos` | list of string | Is a list of additional proto files to include in GAPIC generation as dependencies. They are NOT included in the standard Proto Java classes generation step and are NOT copied to the destination directory. Use this for common protos that are needed for building the client but should not be packaged with the library. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `additional_protos_to_generate_and_copy` | list of string | Is a list of additional proto files to include in BOTH standard Protocol Buffer Java classes generation and GAPIC generation. They ARE copied to the destination directory (src/main/proto). Use this for protos that belong to this library but are located in a different directory (e.g., common protos specific to this API). |
@@ -317,7 +316,7 @@ This document describes the schema for the librarian.yaml.
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
 | `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
-| `excluded_poms` | string | Is a list of POM files to exclude. |
+| `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
@@ -325,7 +324,6 @@ This document describes the schema for the librarian.yaml.
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
-| `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
 | `recommended_package` | string | Is the recommended package name. |
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |

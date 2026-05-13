@@ -59,7 +59,7 @@ func libraryToModelConfig(library *config.Library, ch *config.API, srcs *sources
 		ServiceConfig:       svcConfig.ServiceConfig,
 		Codec:               buildCodec(library, svcConfig.ReleaseLevel(config.LanguageRust, library.Version)),
 		Override: api.ModelOverride{
-			Description: library.DescriptionOverride,
+			Description: svcConfig.Description,
 			Title:       svcConfig.Title,
 		},
 		ResourceNameHeuristic: library.Rust != nil && library.Rust.ResourceNameHeuristic != nil && *library.Rust.ResourceNameHeuristic,

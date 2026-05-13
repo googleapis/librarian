@@ -36,9 +36,11 @@ func Fill(library *config.Library) (*config.Library, error) {
 	if library.Java == nil {
 		library.Java = &config.JavaModule{}
 	}
-	var javaAPIs []*config.JavaAPI
 	for _, api := range library.APIs {
-		javaAPI := ResolveJavaAPI(library, api)
+		if api.Java == nil {
+			api.Java = &config.JavaAPI{}
+		}
+		javaAPI := api.Java
 		if javaAPI.Samples == nil {
 			javaAPI.Samples = new(true)
 		}
@@ -51,9 +53,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 		if javaAPI.GenerateResourceNames == nil {
 			javaAPI.GenerateResourceNames = new(true)
 		}
-		javaAPIs = append(javaAPIs, javaAPI)
 	}
-	library.Java.JavaAPIs = javaAPIs
 	return library, nil
 }
 
@@ -63,23 +63,47 @@ func Tidy(library *config.Library) *config.Library {
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
-	if library.Java != nil {
-		for _, javaAPI := range library.Java.JavaAPIs {
-			if javaAPI.Samples != nil && *javaAPI.Samples {
-				javaAPI.Samples = nil
-			}
-			if javaAPI.GenerateGAPIC != nil && *javaAPI.GenerateGAPIC {
-				javaAPI.GenerateGAPIC = nil
-			}
-			if javaAPI.GenerateProtoGRPC != nil && *javaAPI.GenerateProtoGRPC {
-				javaAPI.GenerateProtoGRPC = nil
-			}
-			if javaAPI.GenerateResourceNames != nil && *javaAPI.GenerateResourceNames {
-				javaAPI.GenerateResourceNames = nil
-			}
+	for _, api := range library.APIs {
+		if api.Java == nil {
+			continue
+		}
+		if api.Java.Samples != nil && *api.Java.Samples {
+			api.Java.Samples = nil
+		}
+		if api.Java.GenerateGAPIC != nil && *api.Java.GenerateGAPIC {
+			api.Java.GenerateGAPIC = nil
+		}
+		if api.Java.GenerateProtoGRPC != nil && *api.Java.GenerateProtoGRPC {
+			api.Java.GenerateProtoGRPC = nil
+		}
+		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
+			api.Java.GenerateResourceNames = nil
+		}
+		if isEmptyJavaAPI(api.Java) {
+			api.Java = nil
 		}
 	}
 	return library
+}
+
+func isEmptyJavaAPI(j *config.JavaAPI) bool {
+	if j == nil {
+		return true
+	}
+	return !j.Monolithic &&
+		len(j.AdditionalProtos) == 0 &&
+		len(j.AdditionalProtosToGenerateAndCopy) == 0 &&
+		!j.OmitCommonResources &&
+		len(j.ExcludedProtos) == 0 &&
+		len(j.SkipProtoClassGeneration) == 0 &&
+		j.GAPICArtifactIDOverride == "" &&
+		j.GRPCArtifactIDOverride == "" &&
+		j.ProtoArtifactIDOverride == "" &&
+		j.GenerateGAPIC == nil &&
+		j.GenerateProtoGRPC == nil &&
+		j.GenerateResourceNames == nil &&
+		len(j.CopyFiles) == 0 &&
+		j.Samples == nil
 }
 
 var (
@@ -97,24 +121,22 @@ var (
 // contains exactly two parts separated by a colon, and that there are no
 // conflicts in common resources configuration.
 func Validate(library *config.Library) error {
-	if library.Java == nil {
-		return nil
-	}
-	if library.Java.DistributionNameOverride != "" {
+	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		parts := strings.Split(library.Java.DistributionNameOverride, ":")
 		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
 			return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
 		}
 	}
-	for _, javaAPI := range library.Java.JavaAPIs {
-		if !javaAPI.OmitCommonResources {
+	for _, api := range library.APIs {
+		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue
 		}
-		for _, p := range javaAPI.AdditionalProtos {
+		for _, p := range api.Java.AdditionalProtos {
 			if p == commonResourcesProto {
-				return fmt.Errorf("%s: %w", javaAPI.Path, ErrOmitCommonResourcesConflict)
+				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
 			}
 		}
+
 	}
 	return nil
 }

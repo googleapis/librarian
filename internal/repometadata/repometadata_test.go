@@ -52,27 +52,6 @@ func TestFromLibrary(t *testing.T) {
 			},
 		},
 		{
-			name: "description override",
-			library: &config.Library{
-				Name:                "google-cloud-secret-manager",
-				APIs:                []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				DescriptionOverride: "Stores, manages, and secures access to application secrets.",
-			},
-			want: &RepoMetadata{
-				Name:                 "secretmanager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguageNodejs,
-				Repo:                 "googleapis/google-cloud-node",
-				DistributionName:     "google-cloud-secret-manager",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores, manages, and secures access to application secrets.",
-			},
-		},
-		{
 			name: "no service config",
 			library: &config.Library{
 				Name: "google-longrunning",
@@ -83,6 +62,7 @@ func TestFromLibrary(t *testing.T) {
 				Language:         config.LanguagePython,
 				Repo:             "googleapis/google-cloud-python",
 				DistributionName: "google-longrunning",
+				APIDescription:   "Defines types and an abstract service to handle long-running operations.\n\n[Long-running operations] are a common pattern to handle methods that may take\na significant amount of time to execute. Many Google APIs return an `Operation`\nmessage (defined in this package) that are roughly analogous to a future. The\noperation will eventually complete, though it may still return an error on\ncompletion. The client libraries provide helpers to simplify polling of these\noperations.\n\n[Long-running operations]: https://google.aip.dev/151",
 			},
 		},
 	} {
