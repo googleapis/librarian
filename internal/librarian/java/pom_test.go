@@ -503,7 +503,7 @@ func TestCollectModules(t *testing.T) {
 					{
 						Path: "google/cloud/secretmanager/v1",
 						Java: &config.JavaAPI{
-							GenerateGAPIC: func() *bool { b := false; return &b }(),
+							GenerateGAPIC:         func() *bool { b := false; return &b }(),
 							GenerateResourceNames: func() *bool { b := false; return &b }(),
 						},
 					},
@@ -838,7 +838,7 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 				Java: &config.JavaAPI{
-					GenerateGAPIC: func() *bool { b := false; return &b }(),
+					GenerateGAPIC:         func() *bool { b := false; return &b }(),
 					GenerateResourceNames: func() *bool { b := false; return &b }(),
 				},
 			},
