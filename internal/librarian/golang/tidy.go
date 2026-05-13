@@ -30,25 +30,25 @@ func Tidy(library *config.Library, defaultOutput string) *config.Library {
 	if filepath.ToSlash(filepath.Clean(library.Output)) == filepath.ToSlash(filepath.Clean(derivedOutput)) {
 		library.Output = ""
 	}
-	for _, api := range library.APIs {
-		if api.Go == nil {
-			continue
+	if library.Go == nil {
+		return library
+	}
+	var goAPIs []*config.GoAPI
+	for _, goAPI := range library.Go.GoAPIs {
+		importPath, clientPkg := defaultImportPathAndClientPkg(goAPI.Path)
+		if goAPI.ImportPath == importPath {
+			goAPI.ImportPath = ""
 		}
-		importPath, clientPkg := defaultImportPathAndClientPkg(api.Path)
-		if api.Go.ImportPath == importPath {
-			api.Go.ImportPath = ""
+		if goAPI.ClientPackage == clientPkg {
+			goAPI.ClientPackage = ""
 		}
-		if api.Go.ClientPackage == clientPkg {
-			api.Go.ClientPackage = ""
-		}
-		if isEmptyAPI(api.Go) {
-			api.Go = nil
+		if !isEmptyAPI(goAPI) {
+			goAPIs = append(goAPIs, goAPI)
 		}
 	}
-	if library.Go != nil {
-		if isEmptyGoModule(library.Go) {
-			library.Go = nil
-		}
+	library.Go.GoAPIs = goAPIs
+	if isEmptyGoModule(library.Go) {
+		library.Go = nil
 	}
 	return library
 }
@@ -67,6 +67,7 @@ func isEmptyAPI(goAPI *config.GoAPI) bool {
 
 func isEmptyGoModule(goModule *config.GoModule) bool {
 	return len(goModule.DeleteGenerationOutputPaths) == 0 &&
+		len(goModule.GoAPIs) == 0 &&
 		goModule.ModulePathVersion == "" &&
 		goModule.NestedModule == ""
 }
