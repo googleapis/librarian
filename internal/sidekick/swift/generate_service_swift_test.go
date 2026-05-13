@@ -464,7 +464,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     byItem: ListSecretsRequest, options: `, "\n    }")
 	wantMethodOverload := `  public func listSecrets(
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
-) throws -> some AsyncSequence<Secret, Error>
+) throws -> any AsyncSequence<Secret, Error>
  {
       let listRpc = { (token: String) async throws -> ListSecretsResponse in
         var request = byItem
