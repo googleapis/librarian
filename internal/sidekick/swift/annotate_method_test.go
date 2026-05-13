@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -268,5 +269,107 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 	}
 	if outputMessage.Codec == nil {
 		t.Error("expected output message to be annotated")
+	}
+}
+
+func TestAnnotateMethod_Pagination(t *testing.T) {
+	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
+	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "ListRequest",
+		Package: "test",
+		ID:      ".test.ListRequest",
+		Fields:  []*api.Field{pageSizeField, pageTokenField},
+	}
+	pageSizeField.Parent = inputType
+	pageTokenField.Parent = inputType
+
+	itemField := &api.Field{Name: "items", JSONName: "items", Typez: api.TypezMessage, TypezID: ".test.Item", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	outputType := &api.Message{
+		Name:    "ListResponse",
+		Package: "test",
+		ID:      ".test.ListResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = outputType
+	nextPageTokenField.Parent = outputType
+
+	itemType := &api.Message{
+		Name:    "Item",
+		Package: "test",
+		ID:      ".test.Item",
+	}
+
+	method := &api.Method{
+		Name:         "ListItems",
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+		},
+		Pagination: pageTokenField,
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, itemType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify method annotations
+	gotMethod := method.Codec.(*methodAnnotations)
+	wantMethod := &methodAnnotations{
+		Name:           "listItems",
+		PathExpression: "/",
+		HTTPMethod:     "GET",
+		Pagination: &paginationAnnotations{
+			ItemType: "Item",
+		},
+	}
+	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+
+	// Verify request message annotations
+	gotRequest := inputType.Codec.(*messageAnnotations)
+	wantRequest := &messageAnnotations{
+		Name:    "ListRequest",
+		TypeURL: "type.googleapis.com/test.ListRequest",
+	}
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+
+	// Verify response message annotations
+	gotResponse := outputType.Codec.(*messageAnnotations)
+	wantResponse := &messageAnnotations{
+		Name:                "ListResponse",
+		TypeURL:             "type.googleapis.com/test.ListResponse",
+		IsPaginatedResponse: true,
+		PageableItemField:   "items",
+		PageableItemType:    "Item",
+		ImportsGax:          true,
+	}
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

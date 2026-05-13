@@ -505,6 +505,11 @@ func applyJavaProtoOverrides(api *config.JavaAPI) {
 			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
 		}
 	}
+	for prefix, protos := range javaAdditionalProtosToGenerateOverrides {
+		if strings.HasPrefix(api.Path, prefix) {
+			api.AdditionalProtosToGenerateAndCopy = append(api.AdditionalProtosToGenerateAndCopy, protos...)
+		}
+	}
 	switch {
 	case api.Path == "google/cloud":
 		api.ExcludedProtos = append(api.ExcludedProtos, "google/cloud/common_resources.proto")

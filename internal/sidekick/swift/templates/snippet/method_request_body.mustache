@@ -1,0 +1,41 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{!
+  Refactors the initialization of the request in method snippets.
+
+  There the code for functions returning `Void` is different from the code returning a value.
+  This partial refactors the common portion.
+
+  Conceptually there is a `list response = try await client.<<MethodName>>( ... )` around this
+  partial.
+}}
+request: {{InputType.Codec.Name}}(
+  {{#SampleInfo}}
+  {{#IsRequestResourceName}}
+  {{Codec.Name}}: "{{Codec.FormatString}}",
+  {{/IsRequestResourceName}}
+  {{#IsMessageResourceName}}
+  {{MessageField.Codec.Name}}: {{MessageField.Codec.BaseFieldType}}(
+    {{Codec.Name}}: "{{Codec.FormatString}}",
+  ),
+  {{/IsMessageResourceName}}
+  {{#UpdateMaskField}}
+  {{Codec.Name}}: {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"]),
+  {{/UpdateMaskField}}
+  {{/SampleInfo}}
+  {{^SampleInfo}}
+  /* set fields */
+  {{/SampleInfo}})
