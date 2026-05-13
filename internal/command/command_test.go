@@ -114,7 +114,7 @@ func TestOutput_Error(t *testing.T) {
 }
 
 func TestGetExecutablePath(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name             string
 		commandOverrides map[string]string
 		executableName   string
@@ -143,8 +143,7 @@ func TestGetExecutablePath(t *testing.T) {
 			executableName:   "cargo",
 			want:             "cargo",
 		},
-	}
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := GetExecutablePath(test.commandOverrides, test.executableName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
