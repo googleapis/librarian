@@ -32,6 +32,7 @@ var (
 		"iam":               true,
 		"iam-policy":        true,
 		"bigtable":          true,
+		"firestore":         true,
 	}
 
 	keepOverride = map[string][]string{
@@ -83,7 +84,6 @@ var (
 			protoArtifactID: "proto-google-cloud-firestore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-firestore-admin-v1",
 			gapicArtifactID: "google-cloud-firestore-admin",
-			samples:         new(false),
 		},
 		{apiPath: "google/firestore/bundle"}: {
 			protoArtifactID: "proto-google-cloud-firestore-bundle-v1",
@@ -277,5 +277,4 @@ type javaArtifactOverrides struct {
 	protoArtifactID string
 	grpcArtifactID  string
 	gapicArtifactID string
-	samples         *bool
 }
