@@ -15,11 +15,25 @@
 package nodejs
 
 import (
+	"path/filepath"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
+
+// DefaultLibraryName derives a library name from an API path by stripping
+// the version suffix and replacing "/" with "-".
+// For example: "google/cloud/secretmanager/v1" ->
+// "google-cloud-secretmanager".
+func DefaultLibraryName(api string) string {
+	slashPath := api
+	if serviceconfig.ExtractVersion(api) != "" {
+		// Strip version suffix (v1, v1beta2, v2alpha, etc.).
+		slashPath = filepath.Dir(api)
+	}
+	return strings.ReplaceAll(slashPath, "/", "-")
+}
 
 // FindExistingLibraryForNewAPI attempts to find an existing library that should
 // contain the given new API path. The rule is currently for matching against

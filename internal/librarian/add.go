@@ -139,6 +139,8 @@ func deriveLibraryName(language string, api string) string {
 		return golang.DefaultLibraryName(api)
 	case config.LanguageJava:
 		return java.DefaultLibraryName(api)
+	case config.LanguageNodejs:
+		return nodejs.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:
