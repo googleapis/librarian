@@ -37,9 +37,11 @@ func TestFormat(t *testing.T) {
 			library: &config.Library{
 				Name: "example",
 				APIs: []*config.API{
-					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
+					{Path: "example/v1"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/v1", ImportPath: "example/apiv1"},
 					},
 				},
 			},
@@ -59,9 +61,11 @@ func TestFormat(t *testing.T) {
 			library: &config.Library{
 				Name: "example",
 				APIs: []*config.API{
-					{
-						Path: "example/common",
-						Go:   &config.GoAPI{ProtoOnly: true},
+					{Path: "example/common"},
+				},
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{Path: "example/common", ProtoOnly: true},
 					},
 				},
 			},
@@ -123,77 +127,60 @@ func main() {
 
 func TestBuildFormatArgs(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    []string
+		name     string
+		goModule *config.GoModule
+		want     []string
 	}{
 		{
 			name: "library with a GAPIC API",
-			library: &config.Library{
-				Name:   "example",
-				Output: "repo/example",
-				APIs: []*config.API{
-					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
-					},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
 				},
 			},
 			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
 		},
 		{
 			name: "library with a proto only API",
-			library: &config.Library{
-				Name:   "example",
-				Output: "repo/example",
-				APIs: []*config.API{
-					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ProtoOnly: true},
-					},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ProtoOnly: true},
 				},
 			},
 			want: []string{"-w", "repo/example"},
 		},
 		{
 			name: "library with multiple APIs, one is GAPIC and one is proto only",
-			library: &config.Library{
-				Name:   "example",
-				Output: "repo/example",
-				APIs: []*config.API{
-					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
-					},
-					{
-						Path: "example/common",
-						Go:   &config.GoAPI{ProtoOnly: true},
-					},
+			goModule: &config.GoModule{
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
+					{Path: "example/common", ProtoOnly: true},
 				},
 			},
 			want: []string{"-w", "repo/example", "repo/internal/generated/snippets/example/apiv1"},
 		},
 		{
 			name: "snippet directory is one of the deleted path after generation",
-			library: &config.Library{
-				Name:   "example",
-				Output: "repo/example",
-				APIs: []*config.API{
-					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
-					},
-				},
-				Go: &config.GoModule{
-					// DeleteGenerationOutputPaths should relative to library output directory.
-					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
+			goModule: &config.GoModule{
+				// DeleteGenerationOutputPaths should relative to library output directory.
+				DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/example"},
+				GoAPIs: []*config.GoAPI{
+					{Path: "example/v1", ImportPath: "example/apiv1"},
 				},
 			},
 			want: []string{"-w", "repo/example"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := buildFormatArgs(test.library)
+			library := &config.Library{
+				Name:   "example",
+				Output: "repo/example",
+				APIs: []*config.API{
+					{Path: "example/v1"},
+				},
+			}
+			library.Go = test.goModule
+			got, err := buildFormatArgs(library)
 			if err != nil {
 				t.Fatal(err)
 			}
