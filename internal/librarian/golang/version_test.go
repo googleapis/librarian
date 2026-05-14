@@ -113,13 +113,15 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "", // set in test
-				APIs: []*config.API{{
-					Path: "google/cloud/secretmanager/v1",
-					Go: &config.GoAPI{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/apiv1",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
-				}},
+				},
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			wantDir: "secretmanager/apiv1",
@@ -129,13 +131,15 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "", // set in test
-				APIs: []*config.API{{
-					Path: "google/cloud/secretmanager/v1",
-					Go: &config.GoAPI{
-						ClientPackage: "secretmanager",
-						ImportPath:    "secretmanager/customdir/apiv1",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "secretmanager",
+							ImportPath:    "secretmanager/customdir/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
-				}},
+				},
 			},
 			apiPath:     "google/cloud/secretmanager/v1",
 			wantDir:     "secretmanager/customdir/apiv1",
@@ -146,13 +150,15 @@ func TestGenerateClientVersionFile(t *testing.T) {
 			library: &config.Library{
 				Name:   "secretmanager",
 				Output: "", // set in test
-				APIs: []*config.API{{
-					Path: "google/cloud/secretmanager/v1",
-					Go: &config.GoAPI{
-						ClientPackage: "custompkg",
-						ImportPath:    "secretmanager/apiv1",
+				Go: &config.GoModule{
+					GoAPIs: []*config.GoAPI{
+						{
+							ClientPackage: "custompkg",
+							ImportPath:    "secretmanager/apiv1",
+							Path:          "google/cloud/secretmanager/v1",
+						},
 					},
-				}},
+				},
 			},
 			apiPath:     "google/cloud/secretmanager/v1",
 			wantDir:     "secretmanager/apiv1",
@@ -162,7 +168,7 @@ func TestGenerateClientVersionFile(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			test.library.Output = filepath.Join(dir, test.library.Name)
-			if err := generateClientVersionFile(test.library, test.library.APIs[0].Go); err != nil {
+			if err := generateClientVersionFile(test.library, test.library.Go.GoAPIs[0]); err != nil {
 				t.Fatal(err)
 			}
 			versionPath := filepath.Join(dir, test.wantDir, "version.go")
@@ -185,16 +191,18 @@ func TestGenerateClientVersionFile_Skipped(t *testing.T) {
 	library := &config.Library{
 		Name:   "alloydb",
 		Output: filepath.Join(dir, "alloydb"),
-		APIs: []*config.API{{
-			Path: "google/cloud/alloydb/connectors/v1",
-			Go: &config.GoAPI{
-				ClientPackage: "connectors",
-				ImportPath:    "alloydb/connectors/apiv1",
-				ProtoOnly:     true,
+		Go: &config.GoModule{
+			GoAPIs: []*config.GoAPI{
+				{
+					ClientPackage: "connectors",
+					ImportPath:    "alloydb/connectors/apiv1",
+					ProtoOnly:     true,
+					Path:          "google/cloud/alloydb/connectors/v1",
+				},
 			},
-		}},
+		},
 	}
-	if err := generateClientVersionFile(library, library.APIs[0].Go); err != nil {
+	if err := generateClientVersionFile(library, library.Go.GoAPIs[0]); err != nil {
 		t.Fatal(err)
 	}
 
