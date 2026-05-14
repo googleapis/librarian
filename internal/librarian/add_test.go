@@ -339,6 +339,39 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "update existing library (nodejs)",
+			// The API path here deliberately doesn't match the library name,
+			// to demonstrate that we're finding the right library based on
+			// existing API paths.
+			apiPath: "google/firestore/v2",
+			cfg: &config.Config{
+				Language: config.LanguageNodejs,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-firestore",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/firestore/v1"},
+						},
+					},
+				},
+			},
+			wantName: "google-cloud-firestore",
+			wantCfg: &config.Config{
+				Language: config.LanguageNodejs,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-firestore",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/firestore/v1"},
+							{Path: "google/firestore/v2"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
