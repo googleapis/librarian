@@ -2816,6 +2816,7 @@
 - path: google/firestore/bundle
   documentation_uri: https://cloud.google.com/firestore
   languages:
+    - java
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5337669
   skip_rest_numeric_enums:
