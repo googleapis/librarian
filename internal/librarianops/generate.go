@@ -262,10 +262,10 @@ func sourcesToUpdate(cfg *config.Config) []string {
 	}
 	var sources []string
 	if cfg.Sources.Discovery != nil {
-		sources = append(sources, "discovery")
+		sources = append(sources, "sources.discovery")
 	}
 	if cfg.Sources.Googleapis != nil {
-		sources = append(sources, "googleapis")
+		sources = append(sources, "sources.googleapis")
 	}
 	return sources
 }
