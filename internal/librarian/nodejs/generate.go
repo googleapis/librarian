@@ -41,6 +41,12 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+// IsMixedLibrary reports whether the library has handwritten code wrapping
+// generated or librarian-managed code.
+func IsMixedLibrary(lib *config.Library) bool {
+	return lib.Output != "" && len(lib.APIs) == 0
+}
+
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
