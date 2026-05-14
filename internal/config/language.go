@@ -559,8 +559,6 @@ type JavaModule struct {
 }
 
 // AdditionalProto represents an additional proto file to include in generation.
-// If neither GenerateProtoClasses nor CopyToOutput is true, the file is used purely
-// as a compilation dependency for the GAPIC generator.
 type AdditionalProto struct {
 	// Path is the path to the proto file, relative to the googleapis root.
 	Path string `yaml:"path"`
@@ -580,6 +578,7 @@ type JavaAPI struct {
 	Monolithic bool `yaml:"monolithic,omitempty"`
 
 	// AdditionalProtos is a list of additional proto files to include in generation.
+	// By default, these files are used purely as compilation dependencies for the GAPIC generator.
 	// Note: google/cloud/common_resources.proto is included by default unless
 	// OmitCommonResources is set to true.
 	AdditionalProtos []*AdditionalProto `yaml:"additional_protos,omitempty"`
