@@ -982,8 +982,30 @@ func TestCreateOrVerifyOwlbotPy(t *testing.T) {
 	}
 }
 
+// TestCreateOrVerifyOwlbotPy_AlreadyExists verifies that createOrVerifyOwlbotPy
+// returns nil without modifying the file when owlbot.py already exists.
+func TestCreateOrVerifyOwlbotPy_AlreadyExists(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	existingContent := "existing content"
+	if err := os.WriteFile(owlbotPath, []byte(existingContent), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingContent, string(gotBytes)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 // TestCreateOrVerifyOwlbotPy_Error verifies that createOrVerifyOwlbotPy returns an error
-// when os.Stat fails with an unexpected error such as permission denied.
+// when os.OpenFile fails with an unexpected error such as permission denied.
 func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
 	t.Parallel()
 	outDir := t.TempDir()

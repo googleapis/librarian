@@ -483,40 +483,22 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 // OwlBot post-processing and README generation to complete successfully.
 func createOrVerifyOwlbotPy(outDir string) (err error) {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, statErr := os.Stat(owlbotPath); statErr != nil {
-		if !errors.Is(statErr, fs.ErrNotExist) {
-			return fmt.Errorf("failed to stat owlbot.py: %w", statErr)
+	// Open with O_EXCL to atomically ensure we only create the script if it does not exist.
+	// Executable permissions (0755) are set because owlbot.py is executed during post-processing.
+	file, createErr := os.OpenFile(owlbotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
+	if errors.Is(createErr, fs.ErrExist) {
+		return nil
+	}
+	if createErr != nil {
+		return fmt.Errorf("failed to create owlbot.py: %w", createErr)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close owlbot.py: %w", closeErr)
 		}
-		file, createErr := os.Create(owlbotPath)
-		if createErr != nil {
-			return fmt.Errorf("failed to create owlbot.py: %w", createErr)
-		}
-		defer func() {
-			if closeErr := file.Close(); closeErr != nil && err == nil {
-				err = fmt.Errorf("failed to close owlbot.py: %w", closeErr)
-			}
-		}()
-		data := struct {
-			TemplateExcludes []string
-		}{
-			TemplateExcludes: []string{
-				".github/*",
-				".kokoro/*",
-				"samples/*",
-				"CODE_OF_CONDUCT.md",
-				"CONTRIBUTING.md",
-				"LICENSE",
-				"SECURITY.md",
-				"java.header",
-				"license-checks.xml",
-				"renovate.json",
-				".gitignore",
-			},
-		}
-
-		if executeErr := templates.ExecuteTemplate(file, "owlbot_py.tmpl", data); executeErr != nil {
-			return fmt.Errorf("failed to write owlbot.py template: %w", executeErr)
-		}
+	}()
+	if executeErr := templates.ExecuteTemplate(file, "owlbot_py.tmpl", nil); executeErr != nil {
+		return fmt.Errorf("failed to write owlbot.py template: %w", executeErr)
 	}
 	return nil
 }
