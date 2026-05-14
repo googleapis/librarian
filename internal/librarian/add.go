@@ -31,6 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -181,6 +182,8 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 // always as simple for historical reasons.
 func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
 	switch cfg.Language {
+	case config.LanguageNodejs:
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	case config.LanguagePython:
 		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	default:
@@ -257,7 +260,7 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 			return "", nil, err
 		}
 		existingLib.APIs = append(existingLib.APIs, api)
-	case config.LanguageGo:
+	case config.LanguageGo, config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
