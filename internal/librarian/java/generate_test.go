@@ -935,11 +935,11 @@ func TestFilterProtos(t *testing.T) {
 
 func TestProcessAdditionalProtos(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		javaAPI       *config.JavaAPI
-		wantAll       []string
-		wantGenerate  []string
-		wantCopy      []string
+		name         string
+		javaAPI      *config.JavaAPI
+		wantAll      []string
+		wantGenerate []string
+		wantCopy     []string
 	}{
 		{
 			name:    "included by default",
