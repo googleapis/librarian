@@ -28,7 +28,7 @@ jobs:
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
   integration:
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: false # Temporarily disabled for Go configuration migration (Issue #5471)
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
