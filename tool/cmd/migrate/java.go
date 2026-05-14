@@ -504,20 +504,7 @@ func applyJavaLibraryOverrides(lib *config.Library) {
 func applyJavaProtoOverrides(apiPath string, api *config.JavaAPI) {
 	for prefix, protos := range javaAdditionalProtosOverrides {
 		if strings.HasPrefix(apiPath, prefix) {
-			for _, p := range protos {
-				api.AdditionalProtos = append(api.AdditionalProtos, &config.AdditionalProto{Path: p})
-			}
-		}
-	}
-	for prefix, protos := range javaAdditionalProtosToGenerateOverrides {
-		if strings.HasPrefix(apiPath, prefix) {
-			for _, p := range protos {
-				api.AdditionalProtos = append(api.AdditionalProtos, &config.AdditionalProto{
-					Path:                 p,
-					GenerateProtoClasses: true,
-					CopyToOutput:         true,
-				})
-			}
+			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
 		}
 	}
 	switch {

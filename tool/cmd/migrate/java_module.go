@@ -14,6 +14,10 @@
 
 package main
 
+import (
+	"github.com/googleapis/librarian/internal/config"
+)
+
 type overrideKey struct {
 	libraryName string
 	apiPath     string
@@ -222,19 +226,23 @@ var (
 		"grafeas/v1": true,
 	}
 
-	javaAdditionalProtosOverrides = map[string][]string{
+	javaAdditionalProtosOverrides = map[string][]*config.AdditionalProto{
 		"schema/google/showcase/v1beta1": {
-			"google/cloud/location/locations.proto",
-			"google/iam/v1/iam_policy.proto",
+			{Path: "google/cloud/location/locations.proto"},
+			{Path: "google/iam/v1/iam_policy.proto"},
 		},
 		"google/cloud/filestore": {
-			"google/cloud/common/operation_metadata.proto",
+			{
+				Path:                 "google/cloud/common/operation_metadata.proto",
+				GenerateProtoClasses: true,
+			},
 		},
-	}
-
-	javaAdditionalProtosToGenerateOverrides = map[string][]string{
 		"google/cloud/oslogin": {
-			"google/cloud/oslogin/common/common.proto",
+			{
+				Path:                 "google/cloud/oslogin/common/common.proto",
+				GenerateProtoClasses: true,
+				CopyToOutput:         true,
+			},
 		},
 	}
 

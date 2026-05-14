@@ -62,7 +62,10 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			path: "google/cloud/filestore/v1",
 			want: &config.JavaAPI{
 				AdditionalProtos: []*config.AdditionalProto{
-					{Path: "google/cloud/common/operation_metadata.proto"},
+					{
+						Path:                 "google/cloud/common/operation_metadata.proto",
+						GenerateProtoClasses: true,
+					},
 				},
 			},
 		},
