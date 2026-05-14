@@ -702,6 +702,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
 - path: google/cloud/bigquery/dataexchange/v1beta1
   documentation_uri: https://cloud.google.com/bigquery/docs/analytics-hub-introduction
@@ -1960,6 +1961,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
 - path: google/cloud/oslogin/common
   languages:
