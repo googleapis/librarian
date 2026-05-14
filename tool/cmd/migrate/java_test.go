@@ -1018,6 +1018,7 @@ func TestParseOwlBotKeep(t *testing.T) {
 				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
 				"google-cloud-vision/src/test/resources/placeholder.txt",
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/PrefixedName.java",
 			},
 		},
 		{
