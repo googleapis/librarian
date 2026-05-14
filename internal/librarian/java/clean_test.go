@@ -362,3 +362,41 @@ func TestCleanPatterns(t *testing.T) {
 		})
 	}
 }
+
+func TestShouldPreserve(t *testing.T) {
+	keepSet := map[string]bool{
+		"explicitly/kept.txt": true,
+	}
+	for _, test := range []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "explicitly kept",
+			path: "explicitly/kept.txt",
+			want: true,
+		},
+		{
+			name: "cloud version stub",
+			path: "src/main/java/com/google/cloud/secretmanager/v1/stub/Version.java",
+			want: true,
+		},
+		{
+			name: "non-cloud version stub",
+			path: "src/main/java/com/google/devicesandservices/health/v4/stub/Version.java",
+			want: true,
+		},
+		{
+			name: "other java file",
+			path: "src/main/java/com/google/cloud/secretmanager/v1/Other.java",
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := shouldPreserve(test.path, keepSet); got != test.want {
+				t.Errorf("shouldPreserve(%q) = %v, want %v", test.path, got, test.want)
+			}
+		})
+	}
+}
