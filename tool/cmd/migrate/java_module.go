@@ -32,6 +32,7 @@ var (
 		"iam":               true,
 		"iam-policy":        true,
 		"bigtable":          true,
+		"firestore":         true,
 	}
 
 	keepOverride = map[string][]string{
@@ -78,6 +79,14 @@ var (
 		{apiPath: "google/datastore/admin/v1"}: {
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
+		},
+		{apiPath: "google/firestore/admin/v1"}: {
+			protoArtifactID: "proto-google-cloud-firestore-admin-v1",
+			grpcArtifactID:  "grpc-google-cloud-firestore-admin-v1",
+			gapicArtifactID: "google-cloud-firestore-admin",
+		},
+		{apiPath: "google/firestore/bundle"}: {
+			protoArtifactID: "proto-google-cloud-firestore-bundle-v1",
 		},
 		{apiPath: "google/api"}: {
 			protoArtifactID: "proto-google-common-protos",
@@ -216,6 +225,7 @@ var (
 	skipPOMUpdates = map[string]bool{
 		"grafeas":       true,
 		"common-protos": true,
+		"firestore":     true,
 	}
 
 	monolithicJavaAPIs = map[string]bool{
