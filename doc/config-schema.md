@@ -122,6 +122,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+| `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 
 ## GoDefault Configuration
@@ -248,7 +249,6 @@ This document describes the schema for the librarian.yaml.
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
-| `path` | string | Is the source path. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
@@ -257,7 +257,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
