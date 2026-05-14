@@ -39,7 +39,6 @@ const (
 )
 
 var (
-	errOwlBotMissing    = errors.New("owlbot.py not found")
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
 	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
@@ -71,11 +70,8 @@ type libraryPostProcessParams struct {
 }
 
 func postProcessLibrary(ctx context.Context, p libraryPostProcessParams) error {
-	// Check if owlbot.py exists in the library output directory.
-	// It is required for restructuring the output and generating README files.
-	owlbotPath := filepath.Join(p.outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err != nil {
-		return fmt.Errorf("%w in %s: %w", errOwlBotMissing, p.outDir, err)
+	if err := createOrVerifyOwlbotPy(p.outDir); err != nil {
+		return err
 	}
 	bomVersion, err := findBOMVersion(p.cfg)
 	if err != nil {
@@ -475,4 +471,30 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 		}
 		return nil
 	})
+}
+
+// createOrVerifyOwlbotPy ensures that the post-processing script (owlbot.py) exists
+// in the library's output directory. If it is missing (which is typical for newly added
+// client libraries), it automatically creates it from an embedded template to allow
+// OwlBot post-processing and README generation to complete successfully.
+func createOrVerifyOwlbotPy(outDir string) (err error) {
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	// Open with O_EXCL to atomically ensure we only create the script if it does not exist.
+	// Executable permissions (0755) are set because owlbot.py is executed during post-processing.
+	file, createErr := os.OpenFile(owlbotPath, os.O_RDWR|os.O_CREATE|os.O_EXCL, 0755)
+	if errors.Is(createErr, fs.ErrExist) {
+		return nil
+	}
+	if createErr != nil {
+		return fmt.Errorf("failed to create owlbot.py: %w", createErr)
+	}
+	defer func() {
+		if closeErr := file.Close(); closeErr != nil && err == nil {
+			err = fmt.Errorf("failed to close owlbot.py: %w", closeErr)
+		}
+	}()
+	if executeErr := templates.ExecuteTemplate(file, "owlbot_py.tmpl", nil); executeErr != nil {
+		return fmt.Errorf("failed to write owlbot.py template: %w", executeErr)
+	}
+	return nil
 }
