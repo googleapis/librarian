@@ -644,7 +644,7 @@ func TestCanDeriveAPIPath(t *testing.T) {
 	}
 }
 
-func TestIsVeneer(t *testing.T) {
+func TestIsMixedLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		language string
@@ -652,7 +652,7 @@ func TestIsVeneer(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "rust is veneer",
+			name:     "rust is mixed library",
 			language: config.LanguageRust,
 			lib: &config.Library{
 				Rust: &config.RustCrate{
@@ -662,13 +662,13 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "rust is not veneer",
+			name:     "rust is not mixed library",
 			language: config.LanguageRust,
 			lib:      &config.Library{},
 			want:     false,
 		},
 		{
-			name:     "nodejs handwritten tool is veneer",
+			name:     "nodejs handwritten tool is mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/typeless-sample-bot",
@@ -677,7 +677,7 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "nodejs gapic lib is not veneer",
+			name:     "nodejs gapic lib is not mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/gapic-lib",
@@ -687,8 +687,8 @@ func TestIsVeneer(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := isVeneer(test.language, test.lib); got != test.want {
-				t.Errorf("isVeneer(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
+			if got := isMixedLibrary(test.language, test.lib); got != test.want {
+				t.Errorf("isMixedLibrary(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
 			}
 		})
 	}

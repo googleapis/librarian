@@ -33,21 +33,21 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-// IsVeneer reports whether the library has handwritten code wrapping generated
-// code.
+// IsMixedLibrary reports whether the library has handwritten code wrapping
+// generated code.
 //
-// A library is a veneer when it has Rust module configuration. A library with
-// no APIs and an explicit output is a veneer if its derived API path is not
-// listed in sdk.yaml; libraries whose derived path appears in sdk.yaml are
-// generated libraries whose APIs have not been populated yet (e.g.
-// google-cloud-oslogin-common), not veneers.
-func IsVeneer(lib *config.Library) bool {
+// A library is a mixed library when it has Rust module configuration. A library
+// with no APIs and an explicit output is a mixed library if its derived API
+// path is not listed in sdk.yaml; libraries whose derived path appears in
+// sdk.yaml are generated libraries whose APIs have not yet been populated
+// (e.g. google-cloud-oslogin-common), not mixed libraries.
+func IsMixedLibrary(lib *config.Library) bool {
 	if lib.Rust != nil && len(lib.Rust.Modules) > 0 {
 		return true
 	}
 	if len(lib.APIs) == 0 && lib.Output != "" {
 		// If the derived API path is in sdk.yaml, this is a generated
-		// library whose APIs have not been populated yet, not a veneer.
+		// library whose APIs have not yet been populated, not a mixed library.
 		if serviceconfig.HasAPIPath(DeriveAPIPath(lib.Name), config.LanguageRust) {
 			return false
 		}
@@ -58,7 +58,7 @@ func IsVeneer(lib *config.Library) bool {
 
 // Generate generates a Rust client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, sources *sources.Sources) error {
-	if IsVeneer(library) {
+	if IsMixedLibrary(library) {
 		return generateVeneer(ctx, library, sources)
 	}
 	if len(library.APIs) != 1 {
@@ -168,7 +168,7 @@ func generateVeneer(ctx context.Context, library *config.Library, sources *sourc
 
 // Keep returns the list of files to preserve when cleaning the output directory.
 func Keep(library *config.Library) ([]string, error) {
-	if !IsVeneer(library) {
+	if !IsMixedLibrary(library) {
 		return library.Keep, nil
 	}
 	// For veneers, keep all files outside module output directories. We walk
