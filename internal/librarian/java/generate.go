@@ -201,20 +201,20 @@ func processAdditionalProtos(javaAPI *config.JavaAPI, googleapisDir string) (all
 	if !javaAPI.OmitCommonResources {
 		allAbs = append(allAbs, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
 	}
-	for _, p := range javaAPI.AdditionalProtos {
-		if p == nil {
+	for _, proto := range javaAPI.AdditionalProtos {
+		if proto == nil {
 			continue
 		}
-		if p.Path == commonResourcesProto {
+		if proto.Path == commonResourcesProto {
 			continue
 		}
-		absPath := filepath.Join(googleapisDir, filepath.FromSlash(p.Path))
+		absPath := filepath.Join(googleapisDir, filepath.FromSlash(proto.Path))
 		allAbs = append(allAbs, absPath)
-		if p.GenerateProtoClasses {
+		if proto.GenerateProtoClasses {
 			toGenerateAbs = append(toGenerateAbs, absPath)
 		}
-		if p.CopyToOutput {
-			toCopyRel = append(toCopyRel, p.Path)
+		if proto.CopyToOutput {
+			toCopyRel = append(toCopyRel, proto.Path)
 		}
 	}
 	return

@@ -130,8 +130,8 @@ func Validate(library *config.Library) error {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue
 		}
-		for _, p := range api.Java.AdditionalProtos {
-			if p != nil && p.Path == commonResourcesProto {
+		for _, proto := range api.Java.AdditionalProtos {
+			if proto != nil && proto.Path == commonResourcesProto {
 				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
 			}
 		}
