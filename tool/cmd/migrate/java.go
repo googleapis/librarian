@@ -427,8 +427,9 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 			return err
 		}
 		rel = filepath.ToSlash(rel)
+		matchPath := outputDir + "/" + rel
 		for _, re := range compiledRegexes {
-			if re.MatchString(rel) {
+			if re.MatchString(matchPath) || re.MatchString(rel) {
 				keeps = append(keeps, rel)
 				break
 			}
