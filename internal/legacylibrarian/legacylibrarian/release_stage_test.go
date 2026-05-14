@@ -2198,6 +2198,55 @@ func TestSyncVersion(t *testing.T) {
 				{Name: "lib1", Version: "1.0.0"},
 			},
 		},
+		{
+			name: "sync preview version when present",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.1.0"},
+				{ID: "lib1-preview", Version: "1.1.0-preview.2"},
+			},
+			libraries: []*config.Library{
+				{
+					Name:    "lib1",
+					Version: "1.0.0",
+					Preview: &config.Library{
+						Version: "1.1.0-preview.1",
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "lib1",
+					Version: "1.1.0",
+					Preview: &config.Library{
+						Version: "1.1.0-preview.2",
+					},
+				},
+			},
+		},
+		{
+			name: "sync preview version when main library is missing in state",
+			legacyLibraries: []*legacyconfig.LibraryState{
+				{ID: "lib1-preview", Version: "1.1.0-preview.2"},
+			},
+			libraries: []*config.Library{
+				{
+					Name:    "lib1",
+					Version: "1.0.0",
+					Preview: &config.Library{
+						Version: "1.1.0-preview.1",
+					},
+				},
+			},
+			want: []*config.Library{
+				{
+					Name:    "lib1",
+					Version: "1.0.0",
+					Preview: &config.Library{
+						Version: "1.1.0-preview.2",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			state := &legacyconfig.LibrarianState{Libraries: test.legacyLibraries}
@@ -2214,20 +2263,46 @@ func TestSyncVersion(t *testing.T) {
 }
 
 func TestSyncVersion_Error(t *testing.T) {
-	state := &legacyconfig.LibrarianState{
-		Libraries: []*legacyconfig.LibraryState{
-			{ID: "lib1", Version: "1.0.0"},
-		},
-	}
-	cfg := &config.Config{
-		Libraries: []*config.Library{
-			{Name: "lib1", Version: "1.1.0"},
-		},
-	}
-	_, err := syncVersion(state, cfg)
-	if !errors.Is(err, errVersionRegression) {
-		t.Errorf("got error %v, want %v", err, errVersionRegression)
-	}
+	t.Run("main library regression", func(t *testing.T) {
+		state := &legacyconfig.LibrarianState{
+			Libraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.0.0"},
+			},
+		}
+		cfg := &config.Config{
+			Libraries: []*config.Library{
+				{Name: "lib1", Version: "1.1.0"},
+			},
+		}
+		_, err := syncVersion(state, cfg)
+		if !errors.Is(err, errVersionRegression) {
+			t.Errorf("got error %v, want %v", err, errVersionRegression)
+		}
+	})
+
+	t.Run("preview library regression", func(t *testing.T) {
+		state := &legacyconfig.LibrarianState{
+			Libraries: []*legacyconfig.LibraryState{
+				{ID: "lib1", Version: "1.1.0"},
+				{ID: "lib1-preview", Version: "1.1.0-preview.1"},
+			},
+		}
+		cfg := &config.Config{
+			Libraries: []*config.Library{
+				{
+					Name:    "lib1",
+					Version: "1.0.0",
+					Preview: &config.Library{
+						Version: "1.1.0-preview.2",
+					},
+				},
+			},
+		}
+		_, err := syncVersion(state, cfg)
+		if !errors.Is(err, errVersionRegression) {
+			t.Errorf("got error %v, want %v", err, errVersionRegression)
+		}
+	})
 }
 
 func TestUpdateLibrarianYAML(t *testing.T) {

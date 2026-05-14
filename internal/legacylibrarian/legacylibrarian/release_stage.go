@@ -388,17 +388,30 @@ func (r *stageRunner) updateLibrarianYAML(ctx context.Context) error {
 
 func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*config.Config, error) {
 	for _, lib := range cfg.Libraries {
-		legacyLibrary := state.LibraryByID(lib.Name)
-		if legacyLibrary == nil || legacyLibrary.Version == "" {
-			continue
+		var err error
+		lib.Version, err = syncLibraryVersion(lib.Name, state, lib.Version)
+		if err != nil {
+			return nil, err
 		}
-		maxVersion := semver.MaxVersion(lib.Version, legacyLibrary.Version)
-		if maxVersion == lib.Version && legacyLibrary.Version != lib.Version {
-			// lib.Version is greater than legacyLibrary.Version, something is
-			// wrong, fail in this case.
-			return nil, fmt.Errorf("library %s, version in state, %s, is smaller than version in librarian.yaml, %s: %w", lib.Name, legacyLibrary.Version, lib.Version, errVersionRegression)
+
+		if lib.Preview != nil {
+			lib.Preview.Version, err = syncLibraryVersion(lib.Name+"-preview", state, lib.Preview.Version)
+			if err != nil {
+				return nil, err
+			}
 		}
-		lib.Version = legacyLibrary.Version
 	}
 	return cfg, nil
+}
+
+func syncLibraryVersion(name string, state *legacyconfig.LibrarianState, currentVersion string) (string, error) {
+	legacyLibrary := state.LibraryByID(name)
+	if legacyLibrary == nil || legacyLibrary.Version == "" {
+		return currentVersion, nil
+	}
+	maxVersion := semver.MaxVersion(currentVersion, legacyLibrary.Version)
+	if maxVersion == currentVersion && legacyLibrary.Version != currentVersion {
+		return "", fmt.Errorf("library %s, version in state, %s, is smaller than version in librarian.yaml, %s: %w", name, legacyLibrary.Version, currentVersion, errVersionRegression)
+	}
+	return legacyLibrary.Version, nil
 }
