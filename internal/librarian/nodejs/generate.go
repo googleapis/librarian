@@ -379,6 +379,44 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove package staging: %w", err)
 	}
+
+	if err := removeRedundantLinterFiles(library, outDir); err != nil {
+		return fmt.Errorf("failed to remove redundant linter files: %w", err)
+	}
+
+	return nil
+}
+
+// TODO(https://github.com/googleapis/google-cloud-node/issues/XXXX): gapic-generator-typescript
+// unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
+// This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
+// Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
+func removeRedundantLinterFiles(library *config.Library, outDir string) error {
+	keepSet := make(map[string]bool)
+	for _, k := range library.Keep {
+		keepSet[filepath.Clean(k)] = true
+	}
+
+	linterFiles := []string{
+		".eslintignore",
+		".eslintrc.json",
+		".prettierignore",
+		".prettierrc.js",
+		".prettierrc.cjs",
+	}
+
+	for _, lf := range linterFiles {
+		if keepSet[lf] {
+			continue
+		}
+		path := filepath.Join(outDir, lf)
+		if err := os.Remove(path); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("failed to remove redundant linter file %s: %w", path, err)
+		}
+	}
 	return nil
 }
 
