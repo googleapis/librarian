@@ -300,7 +300,9 @@ func TestValidate_Error(t *testing.T) {
 						Path: "google/cloud/conflict/v1",
 						Java: &config.JavaAPI{
 							OmitCommonResources: true,
-							AdditionalProtos:    []string{"google/cloud/common_resources.proto"},
+							AdditionalProtos: []*config.AdditionalProto{
+								{Path: "google/cloud/common_resources.proto"},
+							},
 						},
 					},
 				},

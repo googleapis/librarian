@@ -558,6 +558,20 @@ type JavaModule struct {
 	SkipAPIID bool `yaml:"skip_api_id,omitempty"`
 }
 
+// AdditionalProto represents an additional proto file to include in generation.
+// If neither GenerateProtoClasses nor CopyToOutput is true, the file is used purely
+// as a compilation dependency for the GAPIC generator.
+type AdditionalProto struct {
+	// Path is the path to the proto file, relative to the googleapis root.
+	Path string `yaml:"path"`
+
+	// GenerateProtoClasses indicates whether to include this proto in standard Protocol Buffer Java classes generation.
+	GenerateProtoClasses bool `yaml:"generate_proto_classes,omitempty"`
+
+	// CopyToOutput indicates whether to copy this proto to the output directory.
+	CopyToOutput bool `yaml:"copy_to_output,omitempty"`
+}
+
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
 	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
@@ -565,21 +579,10 @@ type JavaAPI struct {
 	// to maintain its legacy code structure.
 	Monolithic bool `yaml:"monolithic,omitempty"`
 
-	// AdditionalProtos is a list of additional proto files to include in GAPIC generation
-	// as dependencies. They are NOT included in the standard Proto Java classes
-	// generation step and are NOT copied to the destination directory. Use this for
-	// common protos that are needed for building the client but should not be
-	// packaged with the library.
+	// AdditionalProtos is a list of additional proto files to include in generation.
 	// Note: google/cloud/common_resources.proto is included by default unless
 	// OmitCommonResources is set to true.
-	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
-
-	// AdditionalProtosToGenerateAndCopy is a list of additional proto files to include
-	// in BOTH standard Protocol Buffer Java classes generation and GAPIC generation.
-	// They ARE copied to the destination directory (src/main/proto).
-	// Use this for protos that belong to this library but are located in a different
-	// directory (e.g., common protos specific to this API).
-	AdditionalProtosToGenerateAndCopy []string `yaml:"additional_protos_to_generate_and_copy,omitempty"`
+	AdditionalProtos []*AdditionalProto `yaml:"additional_protos,omitempty"`
 
 	// OmitCommonResources indicates whether to omit the default inclusion of
 	// google/cloud/common_resources.proto.

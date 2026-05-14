@@ -92,7 +92,6 @@ func isEmptyJavaAPI(j *config.JavaAPI) bool {
 	}
 	return !j.Monolithic &&
 		len(j.AdditionalProtos) == 0 &&
-		len(j.AdditionalProtosToGenerateAndCopy) == 0 &&
 		!j.OmitCommonResources &&
 		len(j.ExcludedProtos) == 0 &&
 		len(j.SkipProtoClassGeneration) == 0 &&
@@ -132,7 +131,7 @@ func Validate(library *config.Library) error {
 			continue
 		}
 		for _, p := range api.Java.AdditionalProtos {
-			if p == commonResourcesProto {
+			if p != nil && p.Path == commonResourcesProto {
 				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
 			}
 		}
