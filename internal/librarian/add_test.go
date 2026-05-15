@@ -372,6 +372,36 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:    "update existing library (java)",
+			apiPath: "google/cloud/secretmanager/v1beta2",
+			cfg: &config.Config{
+				Language: config.LanguageJava,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+					},
+				},
+			},
+			wantName: "secretmanager",
+			wantCfg: &config.Config{
+				Language: config.LanguageJava,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+							{Path: "google/cloud/secretmanager/v1beta2"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -417,23 +447,6 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 				},
 			},
 			wantErr: errAPIAlreadyExists,
-		},
-		{
-			name:    "java doesn't support updating existing library",
-			apiPath: "google/cloud/secretmanager/v1beta2",
-			cfg: &config.Config{
-				Language: config.LanguageJava,
-				Libraries: []*config.Library{
-					{
-						Name:    "secretmanager",
-						Version: "1.2.3",
-						APIs: []*config.API{
-							{Path: "google/cloud/secretmanager/v1"},
-						},
-					},
-				},
-			},
-			wantErr: errLibraryAlreadyExists,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
