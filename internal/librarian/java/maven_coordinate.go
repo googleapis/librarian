@@ -159,7 +159,7 @@ func DeriveDistributionName(library *config.Library) string {
 	if library.Java != nil && library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
-	groupID := "com.google.cloud"
+	groupID := defaultGroupID
 	if library.Java != nil && library.Java.GroupID != "" {
 		groupID = library.Java.GroupID
 	}
