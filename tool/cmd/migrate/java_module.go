@@ -77,6 +77,10 @@ var (
 			"gapic-showcase/src/test",
 			"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 		},
+		"firestore": {
+			"google-cloud-firestore/src/main/resources/META-INF/native-image/com.google.cloud/google-cloud-firestore/reflect-config.json",
+			"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
+		},
 	}
 
 	javaArtifactIDOverrides = map[overrideKey]javaArtifactOverrides{
