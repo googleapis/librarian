@@ -242,21 +242,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		// Old way: use synthtool
-		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
-			return fmt.Errorf("owlbot.py failed: %w", err)
-		}
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
-	}
-
-	// Template generation and exclusions are handled at the generator level.
-	// Synthtool is only used for post-processing handled by standalone scripts
-	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
-	// Librarian CLI tool).
 
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore

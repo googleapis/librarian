@@ -361,33 +361,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 	}
 }
 
-func TestRunPostProcessor_Owlbot(t *testing.T) {
-	testhelper.RequireCommand(t, "python3")
-
-	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	owlbotScript := filepath.Join(outDir, "owlbot.py")
-	if err := os.WriteFile(owlbotScript, []byte("import pathlib\npathlib.Path('owlbot-ran.txt').write_text('yes')\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &config.Config{
-		Language: config.LanguageNodejs,
-		Repo:     "googleapis/google-cloud-node",
-	}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
-		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
-	}
-}
-
 func TestGenerateAPI(t *testing.T) {
 	if testing.Short() {
 		t.Skip("slow test: Node.js GAPIC code generation")
