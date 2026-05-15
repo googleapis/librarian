@@ -71,7 +71,7 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	if library.Java != nil {
-		if library.Java.GroupID == "com.google.cloud" {
+		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
 		if isEmptyJavaModule(library.Java) {
