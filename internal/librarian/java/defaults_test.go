@@ -63,16 +63,17 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:    "google/cloud/secretmanager/v1",
-							Samples: new(true),
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							Samples:               new(true),
+							GenerateGAPIC:         new(true),
+							GenerateProtoGRPC:     new(true),
+							GenerateResourceNames: new(true),
 						},
 					},
 				},
+				Java: &config.JavaModule{},
 			},
 		},
 		{
@@ -80,12 +81,9 @@ func TestFill(t *testing.T) {
 			lib: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:    "google/cloud/secretmanager/v1",
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
 							Samples: new(false),
 						},
 					},
@@ -95,16 +93,17 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:    "google/cloud/secretmanager/v1",
-							Samples: new(false),
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							Samples:               new(false),
+							GenerateGAPIC:         new(true),
+							GenerateProtoGRPC:     new(true),
+							GenerateResourceNames: new(true),
 						},
 					},
 				},
+				Java: &config.JavaModule{},
 			},
 		},
 	} {
@@ -146,6 +145,58 @@ func TestTidy(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "custom-output",
+			},
+		},
+		{
+			name: "tidy flags default",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							Samples:               new(true),
+							GenerateGAPIC:         new(true),
+							GenerateProtoGRPC:     new(true),
+							GenerateResourceNames: new(true),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "do not tidy false flags",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							Samples:               new(false),
+							GenerateGAPIC:         new(false),
+							GenerateProtoGRPC:     new(false),
+							GenerateResourceNames: new(false),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							Samples:               new(false),
+							GenerateGAPIC:         new(false),
+							GenerateProtoGRPC:     new(false),
+							GenerateResourceNames: new(false),
+						},
+					},
+				},
 			},
 		},
 	} {
@@ -244,10 +295,10 @@ func TestValidate_Error(t *testing.T) {
 		{
 			name: "omit common resources conflict",
 			lib: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:                "google/cloud/conflict/v1",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/conflict/v1",
+						Java: &config.JavaAPI{
 							OmitCommonResources: true,
 							AdditionalProtos:    []string{"google/cloud/common_resources.proto"},
 						},

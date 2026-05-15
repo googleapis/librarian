@@ -28,25 +28,7 @@
       $ {command} my-instance --location=us-central-a --source-gcs-bucket-uri=gs://my_bucket --destination-parallelstore-path='/'
   arguments:
     params:
-      - arg_name: source-gcs-bucket-uri
-        is_positional: false
-        api_field: importDataRequest.sourceGcsBucket.uri
-        required: true
-        repeated: false
-        help_text: |-
-          URI to a Cloud Storage bucket in the format:
-          `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
-          optional.
-      - arg_name: destination-parallelstore-path
-        is_positional: false
-        api_field: importDataRequest.destinationParallelstore.path
-        required: false
-        repeated: false
-        help_text: |-
-          Root directory path to the Paralellstore filesystem, starting with `/`.
-          Defaults to `/` if unset.
-      - help_text: |-
-          Name of the resource.
+      - help_text: Name of the resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:
@@ -66,19 +48,33 @@
               help: The instance id of the {resource} resource.
           disable_auto_completers: false
         required: true
+      - arg_name: source-gcs-bucket-uri
+        is_positional: false
+        api_field: importDataRequest.sourceGcsBucket.uri
+        required: true
+        help_text: |-
+          URI to a Cloud Storage bucket in the format:
+          `gs://<bucket_name>/<path_inside_bucket>`. The path inside the bucket is
+          optional.
+      - arg_name: destination-parallelstore-path
+        is_positional: false
+        api_field: importDataRequest.destinationParallelstore.path
+        required: false
+        help_text: |-
+          Root directory path to the Paralellstore filesystem, starting
+          with `/`. Defaults to `/` if unset.
       - arg_name: request-id
         is_positional: false
         api_field: importDataRequest.requestId
         required: false
-        repeated: false
         help_text: |-
-          An optional request ID to identify requests. Specify a unique request ID
-          so that if you must retry your request, the server will know to ignore
-          the request if it has already been completed. The server will guarantee
-          that for at least 60 minutes since the first request.
+          An optional request ID to identify requests. Specify a unique
+          request ID so that if you must retry your request, the server will know to
+          ignore the request if it has already been completed. The server will
+          guarantee that for at least 60 minutes since the first request.
 
-          For example, consider a situation where you make an initial request and t
-          he request times out. If you make the request again with the same request
+          For example, consider a situation where you make an initial request and
+          the request times out. If you make the request again with the same request
           ID, the server can check if original operation with the same request ID
           was received, and if so, will ignore the second request. This prevents
           clients from accidentally creating duplicate commitments.
@@ -111,7 +107,7 @@
               property: core/project
             - parameter_name: serviceAccountsId
               attribute_name: service_account
-              help: The serviceAccount id of the {resource} resource.
+              help: The service_account id of the {resource} resource.
           disable_auto_completers: true
         resource_method_params:
           importDataRequest.serviceAccount: '{__relative_name__}'
@@ -120,47 +116,38 @@
         is_positional: false
         api_field: importDataRequest.metadataOptions.uid
         required: false
-        help_text: |-
-          The UID preservation behavior.
+        help_text: The UID preservation behavior.
         choices:
           - arg_value: uid-skip
             enum_value: UID_SKIP
-            help_text: |-
-              Do not preserve UID during a transfer job.
+            help_text: Do not preserve UID during a transfer job.
           - arg_value: uid-number-preserve
             enum_value: UID_NUMBER_PRESERVE
-            help_text: |-
-              Preserve UID that is in number format during a transfer job.
+            help_text: Preserve UID that is in number format during a transfer job.
       - arg_name: metadata-options-gid
         is_positional: false
         api_field: importDataRequest.metadataOptions.gid
         required: false
-        help_text: |-
-          The GID preservation behavior.
+        help_text: The GID preservation behavior.
         choices:
           - arg_value: gid-skip
             enum_value: GID_SKIP
-            help_text: |-
-              Do not preserve GID during a transfer job.
+            help_text: Do not preserve GID during a transfer job.
           - arg_value: gid-number-preserve
             enum_value: GID_NUMBER_PRESERVE
-            help_text: |-
-              Preserve GID that is in number format during a transfer job.
+            help_text: Preserve GID that is in number format during a transfer job.
       - arg_name: metadata-options-mode
         is_positional: false
         api_field: importDataRequest.metadataOptions.mode
         required: false
-        help_text: |-
-          The mode preservation behavior.
+        help_text: The mode preservation behavior.
         choices:
           - arg_value: mode-skip
             enum_value: MODE_SKIP
-            help_text: |-
-              Do not preserve mode during a transfer job.
+            help_text: Do not preserve mode during a transfer job.
           - arg_value: mode-preserve
             enum_value: MODE_PRESERVE
-            help_text: |-
-              Preserve mode during a transfer job.
+            help_text: Preserve mode during a transfer job.
   request:
     api_version: v1
     collection:

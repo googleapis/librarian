@@ -43,7 +43,7 @@
               parameter_name: insightsConfigsId
           collection: developerconnect.projects.locations.insightsConfigs
           disable_auto_completers: false
-          name: insights_config
+          name: insightsConfig
           plural_name: insightsConfigs
         required: true
       - arg_name: request-id

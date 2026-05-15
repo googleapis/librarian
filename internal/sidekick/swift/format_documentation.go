@@ -14,16 +14,50 @@
 
 package swift
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/language"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/parser"
+	"github.com/yuin/goldmark/text"
+)
 
 // formatDocumentation converts a documentation string from the source (typically Protobuf
 // comments) into a sequence of lines suitable for Swift documentation comments.
 //
 // Both Swift and the Protobuf comments use markdown, but our markdown includes cross-reference
 // links and sometimes needs cleaning up work correctly on a different markdown engine.
-func (c *codec) formatDocumentation(doc string) []string {
+func (c *codec) formatDocumentation(doc string, scopes []string) ([]string, error) {
 	if doc == "" {
-		return nil
+		return nil, nil
 	}
-	return strings.Split(doc, "\n")
+	results := strings.Split(doc, "\n")
+
+	md := goldmark.New(
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(),
+		),
+	)
+	docBytes := []byte(doc)
+	node := md.Parser().Parse(text.NewReader(docBytes))
+	links := language.ExtractCrossReferenceLinks(node, docBytes)
+
+	var definitions []string
+	for _, link := range links {
+		resolved, err := c.linkDefinition(link, scopes)
+		if err != nil {
+			return nil, err
+		}
+		if resolved != "" {
+			definitions = append(definitions, fmt.Sprintf("[%s]: %s", link, resolved))
+		}
+	}
+	if len(definitions) != 0 {
+		results = append(results, "") // Add a blank line before link definitions, if any
+		results = append(results, definitions...)
+	}
+
+	return results, nil
 }

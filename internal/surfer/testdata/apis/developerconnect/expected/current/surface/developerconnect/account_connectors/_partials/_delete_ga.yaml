@@ -43,7 +43,7 @@
               parameter_name: accountConnectorsId
           collection: developerconnect.projects.locations.accountConnectors
           disable_auto_completers: false
-          name: account_connector
+          name: accountConnector
           plural_name: accountConnectors
         required: true
       - arg_name: request-id

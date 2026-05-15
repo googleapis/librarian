@@ -122,9 +122,11 @@ type generateAPIParams struct {
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
-	javaAPI := ResolveJavaAPI(params.library, params.api)
+	javaAPI := params.api.Java
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")
+	additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
+	additionalProtosToGenerateAndCopyAbs := deriveAbsoluteProtoPaths(javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
 
 	postParams := postProcessParams{
 		cfg:            params.cfg,
@@ -133,7 +135,6 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		metadata:       params.metadata,
 		outDir:         params.outdir,
 		apiBase:        deriveAPIBase(params.library, params.api.Path),
-		protoSourceDir: primaryDir,
 		includeSamples: *javaAPI.Samples,
 	}
 	gapicDir := postParams.gapicDir()
@@ -154,28 +155,35 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
 	}
-	postParams.apiProtos = apiProtos
+	postParams.protosToCopy, err = deriveProtosToCopy(apiProtos, primaryDir, javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
+	if err != nil {
+		return err
+	}
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-	if err := runProtoc(ctx, protoProtocArgs(protoProtos, params.srcCfg, protoDir)); err != nil {
-		return fmt.Errorf("failed to generate proto: %w", err)
+	if shouldGenerateProtoGRPC(javaAPI) {
+		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
+		protoProtos = append(protoProtos, additionalProtosToGenerateAndCopyAbs...)
+		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
+		if err := runProtoc(ctx, args); err != nil {
+			return fmt.Errorf("failed to generate proto: %w", err)
+		}
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
-	if transport != "rest" {
+	if shouldGenerateProtoGRPC(javaAPI) && transport != "rest" {
 		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
 	// 3. Generate GAPIC library.
-	if !javaAPI.ProtoGRPCOnly {
+	if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
 		gapicOpts, err := resolveGAPICOptions(params.cfg, params.library, params.api, primaryDir, params.apiCfg)
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
-		if err := runProtoc(ctx, gapicProtocArgs(apiProtos, additionalProtos, params.srcCfg, gapicDir, gapicOpts)); err != nil {
+		args := gapicProtocArgs(apiProtos, append(additionalProtos, additionalProtosToGenerateAndCopyAbs...), params.srcCfg, gapicDir, gapicOpts)
+		if err := runProtoc(ctx, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
@@ -201,6 +209,37 @@ func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) [
 		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
 	}
 	return additionalProtos
+}
+
+func deriveAbsoluteProtoPaths(paths []string, baseDir string) []string {
+	var absPaths []string
+	for _, p := range paths {
+		absPaths = append(absPaths, filepath.Join(baseDir, filepath.FromSlash(p)))
+	}
+	return absPaths
+}
+
+// deriveProtosToCopy resolves absolute and relative paths for API and additional protos.
+// The returned structs are eventually used by copyProtos to copy these files into the generated proto module.
+func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalRel []string, googleapisDir string) ([]protoFileToCopy, error) {
+	var res []protoFileToCopy
+	for _, apiProto := range apiProtos {
+		rel, err := filepath.Rel(primaryDir, apiProto)
+		if err != nil {
+			return nil, fmt.Errorf("failed to calculate relative path for %s: %w", apiProto, err)
+		}
+		res = append(res, protoFileToCopy{
+			absolutePath: apiProto,
+			relativePath: rel,
+		})
+	}
+	for _, relPath := range additionalRel {
+		res = append(res, protoFileToCopy{
+			absolutePath: filepath.Join(googleapisDir, filepath.FromSlash(relPath)),
+			relativePath: relPath,
+		})
+	}
+	return res, nil
 }
 
 var runProtoc = func(ctx context.Context, args []string) error {
@@ -276,12 +315,13 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	// transport specifies whether to generate gRPC, REST, or both types of clients.
 	transport := apiCfg.Transport(config.LanguageJava)
 	gapicOpts = append(gapicOpts, gapicOpt("transport", string(transport)))
-
 	// rest-numeric-enums ensures that enums in REST requests are encoded as numbers
 	// rather than strings.
 	if apiCfg.HasRESTNumericEnums(config.LanguageJava) {
 		gapicOpts = append(gapicOpts, "rest-numeric-enums")
 	}
+	// generate-version-java ensures that the Version.java file is generated.
+	gapicOpts = append(gapicOpts, "generate-version-java")
 	return gapicOpts, nil
 }
 
@@ -327,24 +367,6 @@ func collectJavaFiles(root string) ([]string, error) {
 		return nil
 	})
 	return files, err
-}
-
-// ResolveJavaAPI returns the Java-specific configuration for the given API.
-// TODO(https://github.com/googleapis/librarian/issues/5050):
-// Exported to use in migrate tool, unexport after migrate is done.
-func ResolveJavaAPI(library *config.Library, api *config.API) *config.JavaAPI {
-	res := &config.JavaAPI{
-		Path: api.Path,
-	}
-	if library.Java == nil {
-		return res
-	}
-	for _, javaAPI := range library.Java.JavaAPIs {
-		if javaAPI.Path == api.Path {
-			return javaAPI
-		}
-	}
-	return res
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):
@@ -408,4 +430,25 @@ func filterProtos(fullPaths []string, relExcludes []string, root string) []strin
 		filtered = append(filtered, p)
 	}
 	return filtered
+}
+
+func shouldGenerateGAPIC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateGAPIC != nil {
+		return *javaAPI.GenerateGAPIC
+	}
+	return true
+}
+
+func shouldGenerateProtoGRPC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateProtoGRPC != nil {
+		return *javaAPI.GenerateProtoGRPC
+	}
+	return true
+}
+
+func shouldGenerateResourceNames(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateResourceNames != nil {
+		return *javaAPI.GenerateResourceNames
+	}
+	return shouldGenerateGAPIC(javaAPI)
 }

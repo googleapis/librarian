@@ -99,8 +99,9 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
-	if isVeneer(cfg.Language, lib) {
-		// Veneers are never generated, so ensure skip_generate is false.
+	if isMixedLibrary(cfg.Language, lib) {
+		// Mixed libraries with handwritten code or those that are fully handwritten
+		// are never generated, so ensure that skip_generate is false.
 		lib.SkipGenerate = false
 	}
 	if len(lib.Roots) == 1 && lib.Roots[0] == "googleapis" {
@@ -237,11 +238,6 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 	return lib
 }
 
-// isReleaseEmpty returns true if the release configuration is empty.
-func isReleaseEmpty(release *config.Release) bool {
-	return len(release.IgnoredChanges) == 0 && len(release.Preinstalled) == 0 && len(release.Tools) == 0
-}
-
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
 	return len(tools.Cargo) == 0 && len(tools.NPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
@@ -265,9 +261,6 @@ func isDefaultEmpty(defaults *config.Default) bool {
 
 // tidyConfig removes unused sections from the configuration.
 func tidyConfig(cfg *config.Config) *config.Config {
-	if cfg.Release != nil && isReleaseEmpty(cfg.Release) {
-		cfg.Release = nil
-	}
 	if cfg.Tools != nil && isToolsEmpty(cfg.Tools) {
 		cfg.Tools = nil
 	}

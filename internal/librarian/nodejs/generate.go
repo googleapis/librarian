@@ -41,6 +41,12 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+// IsMixedLibrary reports whether the library has handwritten code wrapping
+// generated or librarian-managed code.
+func IsMixedLibrary(lib *config.Library) bool {
+	return lib.Output != "" && len(lib.APIs) == 0
+}
+
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
@@ -98,18 +104,23 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if len(protos) == 0 {
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
+	for index := range protos {
+		rel, err := filepath.Rel(googleapisDir, protos[index])
+		if err != nil {
+			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
 
 	// Add additional protos from configuration.
-	for _, p := range nodejsAPI.AdditionalProtos {
-		protos = append(protos, filepath.Join(googleapisDir, p))
-	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
 	cmdArgs := append(args[1:], protos...)
-	return command.Run(ctx, args[0], cmdArgs...)
+	return command.RunInDir(ctx, googleapisDir, args[0], cmdArgs...)
 }
 
 // resolveNodejsAPI returns the Node.js-specific configuration for the given API,
@@ -165,8 +176,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	args := []string{
 		"gapic-generator-typescript",
 		"--protoc=" + protocPath,
-		"--common-proto-path=" + googleapisDir,
-		"-I", googleapisDir,
+		"--common-proto-path=.",
+		"-I", ".",
 		"--output-dir", stagingDir,
 	}
 
@@ -175,7 +186,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if grpcConfigPath != "" {
-		args = append(args, "--grpc-service-config", filepath.Join(googleapisDir, grpcConfigPath))
+		args = append(args, "--grpc-service-config", grpcConfigPath)
 	}
 
 	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageNodejs)
@@ -183,7 +194,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		args = append(args, "--service-yaml", filepath.Join(googleapisDir, apiMetadata.ServiceConfig))
+		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
 	args = append(args, "--package-name", DerivePackageName(library))
@@ -207,7 +218,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
-			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))
+			args = append(args, "--bundle-config", library.Nodejs.BundleConfig)
 		}
 		for _, param := range library.Nodejs.ExtraProtocParameters {
 			if param == "metadata" {
@@ -365,8 +376,8 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		}
 	}
 
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
+	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove package staging: %w", err)
 	}
 	return nil
 }

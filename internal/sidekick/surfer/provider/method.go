@@ -44,8 +44,8 @@ func GetCommandName(method *api.Method) (string, error) {
 		// The custom verb is the part after the colon (e.g., .../instances/*:exportData).
 		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
 			binding := method.PathInfo.Bindings[0]
-			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
-				return strcase.ToSnake(*binding.PathTemplate.Verb), nil
+			if binding.PathTemplate != nil && binding.PathTemplate.Verb != "" {
+				return strcase.ToSnake(binding.PathTemplate.Verb), nil
 			}
 		}
 		// Fallback: use the method name converted to snake_case.
@@ -184,7 +184,7 @@ func IsCollectionMethod(m *api.Method) bool {
 		}
 		lastSegment := template.Segments[len(template.Segments)-1]
 		// If the path ends with a literal, it's a collection method.
-		return lastSegment.Literal != nil
+		return lastSegment.Literal != ""
 	}
 }
 
@@ -279,8 +279,8 @@ func GetMethodHelpText(overrides *Config, method *api.Method, model *api.API) He
 		verb := commandName
 		if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 {
 			binding := method.PathInfo.Bindings[0]
-			if binding.PathTemplate != nil && binding.PathTemplate.Verb != nil {
-				verb = *binding.PathTemplate.Verb
+			if binding.PathTemplate != nil && binding.PathTemplate.Verb != "" {
+				verb = binding.PathTemplate.Verb
 			}
 		}
 		sentenceCaseVerb := ToSentenceCase(verb)

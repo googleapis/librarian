@@ -43,7 +43,7 @@
               parameter_name: hiddenResourcesId
           collection: hiddenfeature.projects.locations.hiddenResources
           disable_auto_completers: false
-          name: hidden_resource
+          name: hiddenResource
           plural_name: hiddenResources
         required: true
   request:

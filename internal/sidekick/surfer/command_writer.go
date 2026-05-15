@@ -162,57 +162,77 @@ func mapCommandToYAML(c *Command, track ReleaseTrack) *declarative.Command {
 	return y
 }
 
-func mapArgumentsToYAML(args []Argument) []declarative.Argument {
-	var ya []declarative.Argument
+func mapArgumentsToYAML(args []Argument) []any {
+	var ya []any
 	for _, a := range args {
-		t := a.Type
-		if t == "str" {
-			t = ""
+		if a.ResourceSpec != nil {
+			ya = append(ya, mapResourceArgToYAML(a))
+		} else {
+			ya = append(ya, mapArgumentToYAML(a))
 		}
-		var def declarative.Default
-		if a.Action == "store_true" {
-			var nilVal any = nil
-			def.Value = &nilVal
-		}
-		var apiField string
-		var rmp map[string]string
-
-		if len(a.APIField) > 0 {
-			parts := make([]string, len(a.APIField))
-			for i, p := range a.APIField {
-				parts[i] = strcase.ToLowerCamel(p)
-			}
-			joinedPath := strings.Join(parts, ".")
-
-			if a.ResourceSpec != nil {
-				rmp = map[string]string{
-					joinedPath: "{__relative_name__}",
-				}
-			} else {
-				apiField = joinedPath
-			}
-		}
-
-		ya = append(ya, declarative.Argument{
-			ArgName:              strcase.ToKebab(a.ArgName),
-			APIField:             apiField,
-			HelpText:             a.HelpText,
-			Action:               a.Action,
-			Default:              def,
-			IsPositional:         a.IsPositional,
-			IsPrimaryResource:    a.IsPrimaryResource,
-			RequestIDField:       a.RequestIDField,
-			ResourceSpec:         mapResourceSpecToYAML(a.ResourceSpec),
-			Required:             a.Required,
-			Repeated:             a.Repeated,
-			Clearable:            a.Clearable,
-			Type:                 t,
-			Choices:              mapChoicesToYAML(a.Choices),
-			Spec:                 mapArgSpecsToYAML(a.Spec),
-			ResourceMethodParams: rmp,
-		})
 	}
 	return ya
+}
+
+func mapResourceArgToYAML(a Argument) declarative.ResourceArg {
+	var rmp map[string]string
+	if path := apiFieldPath(a.APIField); path != "" {
+		rmp = map[string]string{
+			path: "{__relative_name__}",
+		}
+	}
+
+	return declarative.ResourceArg{
+		ArgName:              strcase.ToKebab(a.ArgName),
+		HelpText:             a.HelpText,
+		IsPositional:         a.IsPositional,
+		IsPrimaryResource:    a.IsPrimaryResource,
+		RequestIDField:       a.RequestIDField,
+		ResourceSpec:         mapResourceSpecToYAML(a.ResourceSpec),
+		Required:             a.Required,
+		Repeated:             a.Repeated,
+		Clearable:            a.Clearable,
+		Spec:                 mapArgSpecsToYAML(a.Spec),
+		ResourceMethodParams: rmp,
+	}
+}
+
+func mapArgumentToYAML(a Argument) declarative.Argument {
+	t := a.Type
+	if t == "str" {
+		t = ""
+	}
+	var def declarative.Default
+	if a.Action == "store_true" {
+		var nilVal any = nil
+		def.Value = &nilVal
+	}
+
+	return declarative.Argument{
+		ArgName:      strcase.ToKebab(a.ArgName),
+		APIField:     apiFieldPath(a.APIField),
+		HelpText:     a.HelpText,
+		Action:       a.Action,
+		Default:      def,
+		IsPositional: a.IsPositional,
+		Required:     a.Required,
+		Repeated:     a.Repeated,
+		Clearable:    a.Clearable,
+		Type:         t,
+		Choices:      mapChoicesToYAML(a.Choices),
+		Spec:         mapArgSpecsToYAML(a.Spec),
+	}
+}
+
+func apiFieldPath(apiField []string) string {
+	if len(apiField) == 0 {
+		return ""
+	}
+	parts := make([]string, len(apiField))
+	for i, p := range apiField {
+		parts[i] = strcase.ToLowerCamel(p)
+	}
+	return strings.Join(parts, ".")
 }
 
 func mapResourceSpecToYAML(spec *ResourceSpec) *declarative.ResourceSpec {
@@ -229,8 +249,8 @@ func mapResourceSpecToYAML(spec *ResourceSpec) *declarative.ResourceSpec {
 		})
 	}
 	return &declarative.ResourceSpec{
-		Name:                  spec.Name,
-		PluralName:            spec.PluralName,
+		Name:                  strcase.ToLowerCamel(spec.Name),
+		PluralName:            strcase.ToLowerCamel(spec.PluralName),
 		Collection:            spec.Collection,
 		Attributes:            attrs,
 		DisableAutoCompleters: spec.DisableAutoCompleters,

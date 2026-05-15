@@ -175,8 +175,8 @@ func TestMapCommandToYAML(t *testing.T) {
 					{ArgValue: "av", EnumValue: "ev", HelpText: "ch"},
 				},
 				ResourceSpec: &ResourceSpec{
-					Name:       "n",
-					PluralName: "pn",
+					Name:       "resource_name",
+					PluralName: "resource_plural",
 					Collection: "c",
 					Attributes: []Attribute{
 						{AttributeName: "attributeName"},
@@ -199,7 +199,7 @@ func TestMapCommandToYAML(t *testing.T) {
 				Type:     "str",
 				APIField: []string{"Part1", "Part2"},
 				ResourceSpec: &ResourceSpec{
-					Name: "r",
+					Name: "nested_resource",
 				},
 			},
 		},
@@ -240,18 +240,16 @@ func TestMapCommandToYAML(t *testing.T) {
 			Format: "table",
 		},
 		Arguments: declarative.Arguments{
-			Params: []declarative.Argument{
-				{
+			Params: []any{
+				declarative.ResourceArg{
 					ArgName: "arg",
 					Spec: []declarative.ArgSpec{
 						{APIField: "s"},
 					},
-					Choices: []declarative.Choice{
-						{ArgValue: "av", EnumValue: "ev", HelpText: "ch"},
-					},
+					IsPrimaryResource: false,
 					ResourceSpec: &declarative.ResourceSpec{
-						Name:       "n",
-						PluralName: "pn",
+						Name:       "resourceName",
+						PluralName: "resourcePlural",
 						Collection: "c",
 						Attributes: []declarative.Attribute{
 							{AttributeName: "attribute_name"},
@@ -259,20 +257,21 @@ func TestMapCommandToYAML(t *testing.T) {
 						DisableAutoCompleters: true,
 					},
 				},
-				{
+				declarative.Argument{
 					ArgName: "bool-arg",
 					Type:    "bool",
 					Action:  "store_true",
 					Default: declarative.Default{Value: &nilVal},
 				},
-				{
+				declarative.Argument{
 					ArgName:  "arg-with-apifield",
 					APIField: "part1.part2",
 				},
-				{
-					ArgName: "arg-with-apifield-and-resource",
+				declarative.ResourceArg{
+					ArgName:           "arg-with-apifield-and-resource",
+					IsPrimaryResource: false,
 					ResourceSpec: &declarative.ResourceSpec{
-						Name: "r",
+						Name: "nestedResource",
 					},
 					ResourceMethodParams: map[string]string{
 						"part1.part2": "{__relative_name__}",

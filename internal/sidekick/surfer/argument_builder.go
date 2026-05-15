@@ -31,20 +31,22 @@ type argumentParams struct {
 	model     *api.API
 	service   *api.Service
 	field     *api.Field
-	apiField  []string
+	fieldPath []*api.Field
 }
 
-// buildArgument creates a single command-line argument (an `Argument` struct) from the parameters.
+// newArgument creates a single command-line argument (an `Argument` struct) from the parameters.
 // It returns nil if the field should be ignored.
-func buildArgument(ap *argumentParams) (*Argument, error) {
+func newArgument(ap *argumentParams) (*Argument, error) {
 	if isArgIgnored(ap.field, ap.method) {
 		return nil, nil
 	}
+	if len(ap.fieldPath) == 0 {
+		return nil, fmt.Errorf("field %q has empty field path", ap.field.Name)
+	}
 
-	// TODO(https://github.com/googleapis/librarian/issues/3414): Abstract away casing logic in the model.
 	arg := &Argument{
-		ArgName:   ap.field.Name,
-		APIField:  ap.apiField,
+		ArgName:   argName(ap),
+		APIField:  apiField(ap),
 		Required:  ap.field.DocumentAsRequired(),
 		Repeated:  repeated(ap.field),
 		Clearable: clearable(ap.field, ap.method),
@@ -115,10 +117,14 @@ func choices(field *api.Field) []Choice {
 	for _, v := range field.EnumType.Values {
 		// Skip the default "UNSPECIFIED" value.
 		if !strings.HasSuffix(v.Name, "_UNSPECIFIED") {
+			helpText := provider.CleanDocumentation(strings.TrimSpace(v.Documentation))
+			if helpText == "" {
+				helpText = fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(v.Name))
+			}
 			choices = append(choices, Choice{
 				ArgValue:  strcase.ToKebab(v.Name),
 				EnumValue: v.Name,
-				HelpText:  fmt.Sprintf("Value for the `%s` field.", strcase.ToKebab(v.Name)),
+				HelpText:  helpText,
 			})
 		}
 	}
@@ -129,9 +135,9 @@ func mapSpec() []ArgSpec {
 	return []ArgSpec{{APIField: "key"}, {APIField: "value"}}
 }
 
-// buildPrimaryResourceArgument creates the main positional resource argument for a command.
+// newPrimaryResourceArgument creates the main positional resource argument for a command.
 // This is the argument that represents the resource being acted upon (e.g., the instance name).
-func buildPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argument {
+func newPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argument {
 	resource := provider.GetResourceForMethod(ap.method, ap.model)
 	var segments []api.PathSegment
 	// TODO(https://github.com/googleapis/librarian/issues/3415): Support multiple resource patterns and multitype resources.
@@ -157,6 +163,9 @@ func buildPrimaryResourceArgument(ap *argumentParams, idField *api.Field) Argume
 	// documentation for LRO service is stripped. Provide fallback.
 	if provider.IsOperationsServiceMethod(ap.method) && fieldHelpText == "" {
 		fieldHelpText = provider.OperationMethodDocumentation(ap.method.Name)
+	}
+	if provider.IsLocationsServiceMethod(ap.method) && fieldHelpText == "" {
+		fieldHelpText = provider.LocationMethodDocumentation(ap.method.Name)
 	}
 
 	collectionPath := provider.GetCollectionPathFromSegments(segments)
@@ -238,8 +247,8 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 
 		// The `parameter_name` is derived from the preceding literal segment
 		// (e.g., "projects" -> "projectsId"). This is a gcloud convention.
-		if i > 0 && segments[i-1].Literal != nil {
-			parameterName = *segments[i-1].Literal + "Id"
+		if i > 0 && segments[i-1].Literal != "" {
+			parameterName = segments[i-1].Literal + "Id"
 		} else {
 			parameterName = name + "sId"
 		}
@@ -258,4 +267,38 @@ func newAttributesFromSegments(segments []api.PathSegment) []Attribute {
 		attributes = append(attributes, attr)
 	}
 	return attributes
+}
+
+func argName(ap *argumentParams) string {
+	parts := ap.fieldPath
+	// Strip explicit body field name (e.g., "instance" when body: "instance").
+	// The explicit body message represents the main resource being acted upon,
+	// so its fields should appear as top-level flags without redundant prefixes.
+	if ap.method.PathInfo != nil && !isBodyWildcard(ap) {
+		if len(parts) > 0 && parts[0].Name == ap.method.PathInfo.BodyFieldPath {
+			parts = parts[1:]
+		}
+	}
+
+	var names []string
+	for _, f := range parts {
+		names = append(names, f.Name)
+	}
+	return strings.Join(names, "_")
+}
+
+// apiField constructs the path segments to the field in the API request message.
+func apiField(ap *argumentParams) []string {
+	var apiFields []string
+	if isBodyWildcard(ap) && ap.method.InputType != nil {
+		apiFields = append(apiFields, ap.method.InputType.Name)
+	}
+	for _, f := range ap.fieldPath {
+		apiFields = append(apiFields, f.JSONName)
+	}
+	return apiFields
+}
+
+func isBodyWildcard(ap *argumentParams) bool {
+	return ap.method.PathInfo != nil && ap.method.PathInfo.BodyFieldPath == "*"
 }

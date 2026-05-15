@@ -339,6 +339,39 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "update existing library (nodejs)",
+			// The API path here deliberately doesn't match the library name,
+			// to demonstrate that we're finding the right library based on
+			// existing API paths.
+			apiPath: "google/firestore/v2",
+			cfg: &config.Config{
+				Language: config.LanguageNodejs,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-firestore",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/firestore/v1"},
+						},
+					},
+				},
+			},
+			wantName: "google-cloud-firestore",
+			wantCfg: &config.Config{
+				Language: config.LanguageNodejs,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-firestore",
+						Version: "1.2.3",
+						APIs: []*config.API{
+							{Path: "google/firestore/v1"},
+							{Path: "google/firestore/v2"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
@@ -803,6 +836,125 @@ func TestSyncToStateYAML(t *testing.T) {
 						},
 						SourceRoots: []string{"lib-a"},
 						TagFormat:   "{id}/v{version}",
+					},
+				},
+			},
+		},
+		{
+			name: "sync preview library (python)",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"packages/google-cloud-secretmanager"},
+					},
+				},
+			},
+			cfg: &config.Config{
+				Language: config.LanguagePython,
+				Libraries: []*config.Library{
+					{
+						Name:    "google-cloud-secretmanager",
+						Version: "1.0.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Preview: &config.Library{
+							Version: "1.1.0-preview.1",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1beta"},
+							},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "google-cloud-secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"packages/google-cloud-secretmanager"},
+					},
+					{
+						ID:            "google-cloud-secretmanager-preview",
+						Version:       "1.1.0-preview.1",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1beta"}},
+						SourceRoots:   []string{"preview-packages/google-cloud-secretmanager"},
+						ReleaseExcludePaths: []string{
+							"preview-packages/google-cloud-secretmanager/.repo-metadata.json",
+							"preview-packages/google-cloud-secretmanager/noxfile.py",
+							"preview-packages/google-cloud-secretmanager/tests/",
+							"preview-packages/google-cloud-secretmanager/README.rst",
+							"preview-packages/google-cloud-secretmanager/docs/",
+						},
+						TagFormat: "google-cloud-secretmanager-v{version}",
+					},
+				},
+			},
+		},
+		{
+			name: "sync preview library (go)",
+			initialState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"secretmanager", "internal/generated/snippets/secretmanager"},
+					},
+				},
+			},
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name:    "secretmanager",
+						Version: "1.0.0",
+						APIs: []*config.API{
+							{Path: "google/cloud/secretmanager/v1"},
+						},
+						Preview: &config.Library{
+							Version: "1.1.0-preview.1",
+							APIs: []*config.API{
+								{Path: "google/cloud/secretmanager/v1beta"},
+							},
+						},
+					},
+				},
+			},
+			wantState: &legacyconfig.LibrarianState{
+				Image: "gcr.io/my-image:latest",
+				Libraries: []*legacyconfig.LibraryState{
+					{
+						ID:            "secretmanager",
+						Version:       "1.0.0",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1"}},
+						SourceRoots:   []string{"secretmanager", "internal/generated/snippets/secretmanager"},
+					},
+					{
+						ID:            "secretmanager-preview",
+						Version:       "1.1.0-preview.1",
+						PreserveRegex: []string{},
+						RemoveRegex:   []string{},
+						APIs:          []*legacyconfig.API{{Path: "google/cloud/secretmanager/v1beta"}},
+						SourceRoots:   []string{"preview/internal/secretmanager"},
+						TagFormat:     "secretmanager/v{version}",
 					},
 				},
 			},

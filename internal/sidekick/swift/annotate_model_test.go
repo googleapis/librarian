@@ -195,3 +195,84 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestModelAnnotations_Pagination(t *testing.T) {
+	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
+	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
+	inputType := &api.Message{
+		Name:    "ListSecretsRequest",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsRequest",
+		Fields:  []*api.Field{pageSizeField, pageTokenField},
+	}
+	pageSizeField.Parent = inputType
+	pageTokenField.Parent = inputType
+
+	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	outputType := &api.Message{
+		Name:    "ListSecretsResponse",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.ListSecretsResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = outputType
+	nextPageTokenField.Parent = outputType
+
+	secretType := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+	}
+
+	iam := &api.Service{
+		Name:    "SecretManagerService",
+		ID:      ".google.cloud.secretmanager.v1.SecretManagerService",
+		Package: "google.cloud.secretmanager.v1",
+		Methods: []*api.Method{
+			{
+				Name:         "ListSecrets",
+				InputTypeID:  inputType.ID,
+				InputType:    inputType,
+				OutputTypeID: outputType.ID,
+				OutputType:   outputType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "GET",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("secrets"),
+					}},
+				},
+				Pagination: pageTokenField,
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, secretType}, nil, []*api.Service{iam})
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{Name: "GoogleCloudGax", RequiredByServices: true},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := model.Codec.(*modelAnnotations)
+	if !ok {
+		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+	}
+
+	// Since global pagination dependency setting is removed, GoogleCloudGax should NOT be required for messages.
+	if dep, ok := ann.DependsOn["GoogleCloudGax"]; !ok || dep.Required {
+		t.Errorf("expected GoogleCloudGax dependency to not be required, got %+v", dep)
+	}
+	if slices.Contains(ann.MessageImports, "GoogleCloudGax") {
+		t.Errorf("expected GoogleCloudGax to not be in MessageImports, got %v", ann.MessageImports)
+	}
+}

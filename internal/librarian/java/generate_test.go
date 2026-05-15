@@ -60,6 +60,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 		{
@@ -78,6 +79,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 		{
@@ -98,6 +100,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"gapic-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_gapic.yaml"),
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
+				"generate-version-java",
 			},
 		},
 		{
@@ -114,6 +117,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 				"grpc-service-config=" + filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
 				"transport=grpc+rest",
 				"rest-numeric-enums",
+				"generate-version-java",
 			},
 		},
 	} {
@@ -236,67 +240,6 @@ func TestGAPICProtocArgs(t *testing.T) {
 	}
 }
 
-func TestResolveJavaAPI(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		api     *config.API
-		want    *config.JavaAPI
-	}{
-		{
-			name:    "not found, returns defaults",
-			library: &config.Library{},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
-		},
-		{
-			name: "found in config",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"other.proto"},
-							Samples:          new(false),
-						},
-					},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{"other.proto"},
-				Samples:          new(false),
-			},
-		},
-		{
-			name: "Java module exists but API not found",
-			library: &config.Library{
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{
-							Path: "other/api",
-						},
-					},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.JavaAPI{
-				Path: "google/cloud/secretmanager/v1",
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := ResolveJavaAPI(test.library, test.api)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestGenerateAPI(t *testing.T) {
 	t.Parallel()
 	if testing.Short() {
@@ -319,11 +262,11 @@ func TestGenerateAPI(t *testing.T) {
 		Name:   "secretmanager",
 		Output: outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/secretmanager/v1", AdditionalProtos: []string{"google/cloud/common_resources.proto"}},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
+					AdditionalProtos: []string{"google/cloud/common_resources.proto"},
+				},
 			},
 		},
 	}
@@ -341,7 +284,7 @@ func TestGenerateAPI(t *testing.T) {
 	}
 	err = generateAPI(t.Context(), generateAPIParams{
 		cfg:     cfg,
-		api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+		api:     library.APIs[0],
 		library: library,
 		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 		outdir:  outdir,
@@ -383,11 +326,12 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 		Name:   "gkehub",
 		Output: outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/gkehub/policycontroller/v1beta"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{Path: "google/cloud/gkehub/policycontroller/v1beta", ProtoGRPCOnly: true},
+			{
+				Path: "google/cloud/gkehub/policycontroller/v1beta",
+				Java: &config.JavaAPI{
+					GenerateGAPIC:         new(bool),
+					GenerateResourceNames: new(bool),
+				},
 			},
 		},
 	}
@@ -405,7 +349,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	}
 	err = generateAPI(t.Context(), generateAPIParams{
 		cfg:     cfg,
-		api:     &config.API{Path: "google/cloud/gkehub/policycontroller/v1beta"},
+		api:     library.APIs[0],
 		library: library,
 		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
 		outdir:  outdir,
@@ -494,6 +438,77 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	}
 	if !foundGAPICOut {
 		t.Errorf("expected --java_gapic_out in gapicArgs, but not found: %v", gapicArgs)
+	}
+}
+
+func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
+	t.Parallel()
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+	outdir := t.TempDir()
+	cfg := &config.Config{
+		Repo: "googleapis/google-cloud-java",
+		Default: &config.Default{
+			Java: &config.JavaModule{},
+		},
+		Libraries: []*config.Library{
+			{Name: "google-cloud-java", Version: "1.2.3"},
+		},
+	}
+	additionalProto := "google/cloud/oslogin/common/common.proto"
+
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: outdir,
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
+					AdditionalProtosToGenerateAndCopy: []string{additionalProto},
+				},
+			},
+		},
+	}
+	if _, err := Fill(library); err != nil {
+		t.Fatal(err)
+	}
+	for _, artifact := range []string{"google-cloud-secretmanager", "proto-google-cloud-secretmanager-v1", "grpc-google-cloud-secretmanager-v1", "google-cloud-secretmanager-bom"} {
+		if err := os.MkdirAll(filepath.Join(outdir, artifact), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	apiCfg, err := serviceconfig.Find(googleapisDir, "google/cloud/secretmanager/v1", config.LanguageJava)
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = generateAPI(t.Context(), generateAPIParams{
+		cfg:     cfg,
+		api:     library.APIs[0],
+		library: library,
+		srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+		outdir:  outdir,
+		metadata: &repoMetadata{
+			NamePretty:     "Secret Manager",
+			APIDescription: "Secret Manager API",
+		},
+		apiCfg: apiCfg,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify that the additional proto was generated.
+	generatedJavaPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "oslogin", "common", "OsLoginProto.java")
+	if _, err := os.Stat(generatedJavaPath); err != nil {
+		t.Errorf("expected generated java file %s to exist: %v", generatedJavaPath, err)
+	}
+	// Verify file copying
+	copiedProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "proto", additionalProto)
+	if _, err := os.Stat(copiedProtoPath); err != nil {
+		t.Errorf("expected copied proto file %s to exist: %v", copiedProtoPath, err)
 	}
 }
 
@@ -656,12 +671,9 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 		Version: "0.1.2",
 		Output:  outdir,
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
-		},
-		Java: &config.JavaModule{
-			JavaAPIs: []*config.JavaAPI{
-				{
-					Path: "google/cloud/secretmanager/v1",
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{
 					SkipProtoClassGeneration: []string{
 						// resources.proto is required for gRPC/GAPIC steps but excluded from proto step.
 						"google/cloud/secretmanager/v1/resources.proto",
@@ -1005,4 +1017,130 @@ func TestDeriveAPIBase(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGenerateAPI_Gating(t *testing.T) {
+	if testing.Short() {
+		t.Skip("slow test: Java GAPIC code generation integration")
+	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
+	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
+
+	for _, test := range []struct {
+		name              string
+		generateGAPIC     *bool
+		generateProtoGRPC *bool
+		generateResNames  *bool
+		wantProtoDir      bool
+		wantGRPCDir       bool
+		wantGAPICDir      bool
+		wantResNameFiles  bool
+	}{
+		{
+			name:              "default all true",
+			generateGAPIC:     nil,
+			generateProtoGRPC: nil,
+			generateResNames:  nil,
+			wantProtoDir:      true,
+			wantGRPCDir:       true,
+			wantGAPICDir:      true,
+			wantResNameFiles:  true,
+		},
+		{
+			name:              "proto/grpc only (skip gapic, skip res names)",
+			generateGAPIC:     new(false),
+			generateProtoGRPC: nil,
+			generateResNames:  new(false),
+			wantProtoDir:      true,
+			wantGRPCDir:       true,
+			wantGAPICDir:      false,
+			wantResNameFiles:  false,
+		},
+		{
+			name:              "gapic only (skip proto/grpc, skip res names)",
+			generateGAPIC:     nil,
+			generateProtoGRPC: new(false),
+			generateResNames:  new(false),
+			wantProtoDir:      false,
+			wantGRPCDir:       false,
+			wantGAPICDir:      true,
+			wantResNameFiles:  false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outdir := t.TempDir()
+			api := &config.API{Path: "google/cloud/secretmanager/v1"}
+			cfg := &config.Config{
+				Repo: "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Libraries: []*config.Library{
+					{Name: "google-cloud-java", Version: "1.2.3"},
+				},
+			}
+			library := &config.Library{
+				Name:   "secretmanager",
+				Output: outdir,
+				APIs: []*config.API{
+					{
+						Path: api.Path,
+						Java: &config.JavaAPI{
+							GenerateGAPIC:         test.generateGAPIC,
+							GenerateProtoGRPC:     test.generateProtoGRPC,
+							GenerateResourceNames: test.generateResNames,
+						},
+					},
+				},
+			}
+			if _, err := Fill(library); err != nil {
+				t.Fatal(err)
+			}
+			apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = generateAPI(t.Context(), generateAPIParams{
+				cfg:     cfg,
+				api:     library.APIs[0],
+				library: library,
+				srcCfg:  sources.NewSourceConfig(&sources.Sources{Googleapis: googleapisDir}, nil),
+				outdir:  outdir,
+				metadata: &repoMetadata{
+					NamePretty:     "Secret Manager",
+					APIDescription: "Secret Manager API",
+				},
+				apiCfg: apiCfg,
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
+			stagingProtoPath := filepath.Join(outdir, "owl-bot-staging", "v1", "proto-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGRPCPath := filepath.Join(outdir, "owl-bot-staging", "v1", "grpc-google-cloud-secretmanager-v1", "src", "main", "java")
+			stagingGAPICPath := filepath.Join(outdir, "owl-bot-staging", "v1", "google-cloud-secretmanager", "src", "main", "java")
+			gotProtoDir := assertDirExists(t, stagingProtoPath, test.wantProtoDir, "proto dir")
+			assertDirExists(t, stagingGRPCPath, test.wantGRPCDir, "grpc dir")
+			assertDirExists(t, stagingGAPICPath, test.wantGAPICDir, "gapic dir")
+			// verify GAPIC-generated Resource Name helper classes
+			if gotProtoDir {
+				resNameFile := filepath.Join(stagingProtoPath, "com", "google", "cloud", "secretmanager", "v1", "SecretName.java")
+				_, errRes := os.Stat(resNameFile)
+				gotResNameFiles := !os.IsNotExist(errRes)
+				if gotResNameFiles != test.wantResNameFiles {
+					t.Errorf("gotResNameFiles = %v, want %v (file: %s)", gotResNameFiles, test.wantResNameFiles, resNameFile)
+				}
+			}
+		})
+	}
+}
+
+func assertDirExists(t *testing.T, path string, want bool, desc string) bool {
+	t.Helper()
+	_, err := os.Stat(path)
+	got := !os.IsNotExist(err)
+	if got != want {
+		t.Errorf("expected %s existence to be %v, got %v (path: %s)", desc, want, got, path)
+	}
+	return got
 }

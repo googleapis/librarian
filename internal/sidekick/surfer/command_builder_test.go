@@ -26,12 +26,13 @@ import (
 
 func TestOutputFormat(t *testing.T) {
 	for _, test := range []struct {
-		name   string
-		method *api.Method
-		want   string
+		name      string
+		method    *api.Method
+		overrides *provider.Config
+		want      string
 	}{
 		{
-			name: "standard list method",
+			name: "standard list method fallback to auto-table format",
 			method: api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
 				api.NewTestMessage("ListResponse").WithFields(
 					api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
@@ -44,6 +45,68 @@ func TestOutputFormat(t *testing.T) {
 			),
 			want: "",
 		},
+		{
+			name: "override format in gcloud config",
+			method: func() *api.Method {
+				m := api.NewTestMethod("ListThings").WithVerb("GET").WithOutput(
+					api.NewTestMessage("ListResponse").WithFields(
+						api.NewTestField("things").WithType(api.TypezMessage).WithRepeated().WithMessageType(
+							api.NewTestMessage("Thing").WithFields(
+								api.NewTestField("name").WithType(api.TypezString),
+							),
+						),
+					),
+				)
+				m.ID = "google.cloud.test.v1.Service.ListThings"
+				m.Service = api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+				m.Service.DefaultHost = "test.googleapis.com"
+				return m
+			}(),
+			overrides: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:       "TestService",
+						APIVersion: "v1",
+						OutputFormatting: []*provider.OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.ListThings",
+								Format:   "json",
+							},
+						},
+					},
+				},
+			},
+			want: "json",
+		},
+		{
+			name: "non-list method with override format in gcloud config",
+			method: func() *api.Method {
+				m := api.NewTestMethod("DescribeInstance").WithVerb("GET").WithOutput(
+					api.NewTestMessage("Instance").WithFields(
+						api.NewTestField("name").WithType(api.TypezString),
+					),
+				)
+				m.ID = "google.cloud.test.v1.Service.DescribeInstance"
+				m.Service = api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+				m.Service.DefaultHost = "test.googleapis.com"
+				return m
+			}(),
+			overrides: &provider.Config{
+				APIs: []provider.API{
+					{
+						Name:       "TestService",
+						APIVersion: "v1",
+						OutputFormatting: []*provider.OutputFormatting{
+							{
+								Selector: "google.cloud.test.v1.Service.DescribeInstance",
+								Format:   "json",
+							},
+						},
+					},
+				},
+			},
+			want: "json",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -51,7 +114,7 @@ func TestOutputFormat(t *testing.T) {
 			test.method.OutputType.Pagination = &api.PaginationInfo{
 				PageableItem: test.method.OutputType.Fields[0],
 			}
-			got := outputFormat()
+			got := outputFormat(test.overrides, test.method)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("outputFormat() mismatch (-want +got):\n%s", diff)
 			}
@@ -80,7 +143,7 @@ func TestOutputFormat_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
-			if got := outputFormat(); got != "" {
+			if got := outputFormat(&provider.Config{}, test.method); got != "" {
 				t.Errorf("outputFormat() = %v, want empty string", got)
 			}
 		})
@@ -255,8 +318,6 @@ func TestCollectionPath(t *testing.T) {
 		DefaultHost: "test.googleapis.com",
 	}
 
-	stringPtr := func(s string) *string { return &s }
-
 	for _, test := range []struct {
 		name    string
 		method  *api.Method
@@ -271,12 +332,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -295,12 +356,12 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("projects")},
+									{Literal: "v1"},
+									{Literal: "projects"},
 									{Variable: &api.PathVariable{FieldPath: []string{"project"}}},
-									{Literal: stringPtr("locations")},
+									{Literal: "locations"},
 									{Variable: &api.PathVariable{FieldPath: []string{"location"}}},
-									{Literal: stringPtr("instances")},
+									{Literal: "instances"},
 									{Variable: &api.PathVariable{FieldPath: []string{"instance"}}},
 								},
 							},
@@ -319,8 +380,8 @@ func TestCollectionPath(t *testing.T) {
 						{
 							PathTemplate: &api.PathTemplate{
 								Segments: []api.PathSegment{
-									{Literal: stringPtr("v1")},
-									{Literal: stringPtr("instances")},
+									{Literal: "v1"},
+									{Literal: "instances"},
 								},
 							},
 						},
@@ -372,9 +433,14 @@ func TestNewCommand(t *testing.T) {
 			}(),
 			overrides: &provider.Config{
 				APIs: []provider.API{
-					{RootIsHidden: false},
+					{
+						Name:         "TestService",
+						APIVersion:   "v1",
+						RootIsHidden: false,
+					},
 				},
 			},
+
 			want: &Command{
 				Name:            "list",
 				Hidden:          false,
@@ -404,6 +470,8 @@ func TestNewCommand(t *testing.T) {
 			overrides: &provider.Config{
 				APIs: []provider.API{
 					{
+						Name:         "TestService",
+						APIVersion:   "v1",
 						RootIsHidden: true,
 						HelpText: &provider.HelpTextRules{
 							MethodRules: []*provider.HelpTextRule{
@@ -416,12 +484,53 @@ func TestNewCommand(t *testing.T) {
 					},
 				},
 			},
+
 			want: &Command{
 				Name:                 "update",
 				Hidden:               true,
 				ReadModifyUpdate:     true,
 				StarUpdateMask:       true,
 				DisableAutoFieldMask: true,
+				APIVersion:           "v1",
+			},
+		},
+		{
+			name: "Update Command with star update mask disabled",
+			method: func() *api.Method {
+				m := api.NewTestMethod("UpdateThing").
+					WithVerb("PATCH").
+					WithInput(api.NewTestMessage("UpdateThingRequest").WithFields(
+						api.NewTestField("thing").WithType(api.TypezMessage).WithMessageType(
+							api.NewTestMessage("Thing").WithFields(
+								api.NewTestField("name").WithType(api.TypezString),
+							).WithResource(api.NewTestResource("test.googleapis.com/Thing")),
+						),
+						api.NewTestField("update_mask").WithType(api.TypezMessage),
+					)).
+					WithPathTemplate((&api.PathTemplate{}).
+						WithLiteral("v1").
+						WithVariable(api.NewPathVariable("thing", "name").WithLiteral("projects").WithMatch().WithLiteral("things").WithMatch()))
+				m.ID = "google.cloud.test.v1.Service.UpdateThing"
+				return m
+			}(),
+			overrides: func() *provider.Config {
+				fBool := false
+				return &provider.Config{
+					APIs: []provider.API{
+						{
+							Name:                    "TestService",
+							APIVersion:              "v1",
+							SupportsStarUpdateMasks: &fBool,
+						},
+					},
+				}
+			}(),
+			want: &Command{
+				Name:                 "update",
+				Hidden:               false,
+				ReadModifyUpdate:     true,
+				StarUpdateMask:       false,
+				DisableAutoFieldMask: false,
 				APIVersion:           "v1",
 			},
 		},
@@ -444,8 +553,9 @@ func TestNewCommand(t *testing.T) {
 			overrides: &provider.Config{},
 			want: &Command{
 				Name:       "create",
-				Hidden:     true,
+				Hidden:     false,
 				APIVersion: "v1",
+
 				Async: &Async{
 					Collection:            []string{"test.projects.operations"},
 					ExtractResourceResult: false,
@@ -467,9 +577,9 @@ func TestNewCommand(t *testing.T) {
 			test.method.Service = service
 			test.method.Model = model
 
-			got, err := buildCommand(test.method, test.overrides, model, service)
+			got, err := newCommand(test.method, test.overrides, model, service)
 			if err != nil {
-				t.Fatalf("buildCommand() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 
 			opts := cmpopts.IgnoreFields(Command{}, "Arguments", "Collection", "Method", "HelpText")
@@ -488,9 +598,9 @@ func TestNewCommand_Error(t *testing.T) {
 	service.DefaultHost = "test.googleapis.com"
 	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
 
-	_, err := buildCommand(m, &provider.Config{}, model, service)
+	_, err := newCommand(m, &provider.Config{}, model, service)
 	if err == nil {
-		t.Errorf("build() expected error for nil Service, got nil")
+		t.Errorf("newCommand() expected error for nil Service, got nil")
 	}
 }
 
@@ -820,5 +930,132 @@ func TestCommandBuilderNewArgumentsResourceError(t *testing.T) {
 	}
 	if !strings.Contains(err.Error(), "resource definition not found") {
 		t.Errorf("newArguments() error = %v, want error containing %q", err, "resource definition not found")
+	}
+}
+
+func TestNewWaitCommand(t *testing.T) {
+	service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+	service.DefaultHost = "test.googleapis.com"
+
+	m := api.NewTestMethod("GetOperation").WithVerb("GET").WithInput(
+		api.NewTestMessage("GetOperationRequest").WithFields(
+			api.NewTestField("name").WithType(api.TypezString),
+		),
+	)
+	m.SourceServiceID = ".google.longrunning.Operations"
+	m.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{
+			{
+				Verb: "GET",
+				PathTemplate: &api.PathTemplate{
+					Segments: []api.PathSegment{
+						*(&api.PathSegment{}).WithLiteral("v1"),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("locations"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("location").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("operations"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("operation").WithMatch()),
+					},
+				},
+			},
+		},
+	}
+	m.Service = service
+	service.Methods = []*api.Method{m}
+
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+	m.Model = model
+
+	got, err := newWaitCommand(m, &provider.Config{}, model, service)
+	if err != nil {
+		t.Fatalf("newWaitCommand() unexpected error: %v", err)
+	}
+
+	want := &Command{
+		Name: "wait",
+		HelpText: HelpText{
+			Brief:       "Wait operations",
+			Description: "Wait an operation",
+			Examples:    "To wait the operation, run:\n\n    $ {command}",
+		},
+		APIVersion: "v1",
+		Collection: []string{"test.projects.locations.operations"},
+		Arguments: []Argument{
+			{
+				HelpText: "The name of the operation resource to wait on.",
+			},
+		},
+		Async: &Async{
+			Collection:            []string{"test.projects.locations.operations"},
+			ExtractResourceResult: false,
+		},
+	}
+
+	if got.Name != want.Name {
+		t.Errorf("newWaitCommand().Name = %q, want %q", got.Name, want.Name)
+	}
+	if got.APIVersion != want.APIVersion {
+		t.Errorf("newWaitCommand().APIVersion = %q, want %q", got.APIVersion, want.APIVersion)
+	}
+	if diff := cmp.Diff(want.HelpText, got.HelpText); diff != "" {
+		t.Errorf("newWaitCommand().HelpText mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want.Collection, got.Collection); diff != "" {
+		t.Errorf("newWaitCommand().Collection mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want.Async, got.Async); diff != "" {
+		t.Errorf("newWaitCommand().Async mismatch (-want +got):\n%s", diff)
+	}
+	if len(got.Arguments) == 0 || got.Arguments[0].HelpText != want.Arguments[0].HelpText {
+		t.Errorf("newWaitCommand().Arguments[0].HelpText = %q, want %q",
+			func() string {
+				if len(got.Arguments) > 0 {
+					return got.Arguments[0].HelpText
+				}
+				return ""
+			}(),
+			want.Arguments[0].HelpText)
+	}
+}
+
+func TestNewWaitCommand_Error(t *testing.T) {
+	service := api.NewTestService("TestService").WithPackage("google.cloud.test.v1")
+	service.DefaultHost = "test.googleapis.com"
+
+	m := api.NewTestMethod("GetOperation").WithVerb("GET").WithInput(
+		api.NewTestMessage("GetOperationRequest").WithFields(),
+	)
+	m.SourceServiceID = ".google.longrunning.Operations"
+	m.PathInfo = &api.PathInfo{
+		Bindings: []*api.PathBinding{
+			{
+				Verb: "GET",
+				PathTemplate: &api.PathTemplate{
+					Segments: []api.PathSegment{
+						*(&api.PathSegment{}).WithLiteral("v1"),
+						*(&api.PathSegment{}).WithLiteral("projects"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("project").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("locations"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("location").WithMatch()),
+						*(&api.PathSegment{}).WithLiteral("operations"),
+						*(&api.PathSegment{}).WithVariable(api.NewPathVariable("operation").WithMatch()),
+					},
+				},
+			},
+		},
+	}
+	m.Service = service
+	service.Methods = []*api.Method{m}
+
+	model := api.NewTestAPI([]*api.Message{}, nil, []*api.Service{service})
+	m.Model = model
+
+	_, err := newWaitCommand(m, &provider.Config{}, model, service)
+	if err == nil {
+		t.Fatal("newWaitCommand() expected error, got nil")
+	}
+	if !strings.Contains(err.Error(), "missing positional resource argument for wait command") {
+		t.Errorf("newWaitCommand() error = %q, want error containing %q", err, "missing positional resource argument for wait command")
 	}
 }

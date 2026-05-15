@@ -31,6 +31,7 @@
           The resource name of the gitRepositoryLink in the format
           `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -48,7 +49,7 @@
               parameter_name: gitRepositoryLinksId
           collection: developerconnect.projects.locations.connections.gitRepositoryLinks
           disable_auto_completers: true
-          name: git_repository_link
+          name: gitRepositoryLink
           plural_name: gitRepositoryLinks
         required: true
         resource_method_params:

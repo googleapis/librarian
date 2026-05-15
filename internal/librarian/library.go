@@ -22,6 +22,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -193,16 +194,16 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
-// isVeneer reports whether the library has handwritten code wrapping generated
-// code.
-func isVeneer(language string, lib *config.Library) bool {
+// isMixedLibrary reports whether the library is composed of both handwritten
+// and librarian-generated code.
+func isMixedLibrary(language string, lib *config.Library) bool {
 	switch language {
 	case config.LanguageRust:
-		return rust.IsVeneer(lib)
+		return rust.IsMixedLibrary(lib)
 	case config.LanguageSwift:
-		return swift.IsModule(lib)
+		return swift.IsMixedLibrary(lib)
 	case config.LanguageNodejs:
-		return lib.Output != "" && len(lib.APIs) == 0
+		return nodejs.IsMixedLibrary(lib)
 	default:
 		return false
 	}
@@ -215,8 +216,8 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if lib.Output != "" {
 		return lib.Output
 	}
-	if isVeneer(language, lib) {
-		// Veneers require explicit output, so return empty if not set.
+	if isMixedLibrary(language, lib) {
+		// Mixed or non-generated libraries require explicit output, so return empty if not set.
 		return ""
 	}
 	apiPath := deriveAPIPath(language, lib.Name)
@@ -232,10 +233,10 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !isVeneer(language, lib) {
+	if !isMixedLibrary(language, lib) {
 		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
-			// Do not derive API path for Go because the library name
-			// doesn't contain relevant info.
+			// Do not derive API path for some languages because the library
+			// name doesn't contain all the required info.
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
 		for _, api := range lib.APIs {
@@ -245,8 +246,8 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 	}
 	if lib.Output == "" {
-		if isVeneer(language, lib) {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+		if isMixedLibrary(language, lib) {
+			return nil, fmt.Errorf("library %q requires an explicit output path", lib.Name)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
@@ -261,7 +262,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs:
 		return false
 	default:
 		return true
@@ -327,9 +328,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 	}
 	if p.CopyrightYear != "" {
 		res.CopyrightYear = p.CopyrightYear
-	}
-	if p.DescriptionOverride != "" {
-		res.DescriptionOverride = p.DescriptionOverride
 	}
 	if p.Keep != nil {
 		res.Keep = p.Keep
@@ -499,9 +497,6 @@ func mergeGo(dst, src *config.GoModule) *config.GoModule {
 	if src.DeleteGenerationOutputPaths != nil {
 		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
 	}
-	if src.GoAPIs != nil {
-		res.GoAPIs = src.GoAPIs
-	}
 	if src.ModulePathVersion != "" {
 		res.ModulePathVersion = src.ModulePathVersion
 	}
@@ -543,7 +538,7 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ExcludedDependencies != "" {
 		res.ExcludedDependencies = src.ExcludedDependencies
 	}
-	if src.ExcludedPOMs != "" {
+	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
 	if src.ExtraVersionedModules != "" {
@@ -566,9 +561,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
-	}
-	if src.JavaAPIs != nil {
-		res.JavaAPIs = src.JavaAPIs
 	}
 	if src.ProductDocumentationOverride != "" {
 		res.ProductDocumentationOverride = src.ProductDocumentationOverride

@@ -17,7 +17,7 @@ This document describes the schema for the gcloud.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the name of the API. This should be the API name as it appears in the normalized service config (e.g., "compute.googleapis.com"). |
 | `api_version` | string | Is the API version of the API (e.g., "v1", "v2beta1"). |
-| `supports_star_update_masks` | bool | Indicates that this API supports '*' updateMasks in accordance with https://google.aip.dev/134#request-message. The default is assumed to be true for AIP compliant APIs. |
+| `supports_star_update_masks` | bool (optional) | Indicates that this API supports '*' updateMasks in accordance with https://google.aip.dev/134#request-message. The default is assumed to be true for AIP compliant APIs. |
 | `root_is_hidden` | bool | Applies the gcloud 'hidden' flag to the root command group of the generated surface. When true, the top-level command group for this API will not appear in `--help` output by default. |
 | `release_tracks` | list of ReleaseTrack | Are the gcloud release tracks this surface should appear in. This determines the visibility and stability level of the generated commands and resources. |
 | `help_text` | [HelpTextRules](#helptextrules-configuration) (optional) | Contains all help text configurations for the surfaces including groups, commands, resources, and flags/arguments related to this API. |

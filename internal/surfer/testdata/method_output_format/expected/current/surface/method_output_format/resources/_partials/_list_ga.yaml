@@ -49,3 +49,8 @@
       - methodoutputformat.projects.locations.resources
   response:
     id_field: name
+  output:
+    format: |-
+      table(name,
+            createTime,
+            updateTime)

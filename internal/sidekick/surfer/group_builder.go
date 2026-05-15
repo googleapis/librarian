@@ -30,20 +30,30 @@ type groupParams struct {
 	config  *provider.Config
 }
 
-func buildRootGroup(params *groupParams) *CommandGroup {
+func newRootGroup(params *groupParams) *CommandGroup {
 	// TODO (https://github.com/googleapis/librarian/issues/3033): Use service selector
 	// to look up the help text from the gcloud config.
 	rootName := provider.ResolveRootPackage(params.model)
+	// TODO: Bubble up hidden state from commands in the surface builder.
+	// Inheriting RootIsHidden from the first processed service is a workaround.
+	// Multi-service surfaces lack a single "primary" service, making this choice arbitrary.
+	// Ideally, a group is only hidden if all of its subcommands/subgroups are hidden.
+	hidden := false
+	apiCfg := provider.FindAPIConfigByService(params.config, params.service)
+	if apiCfg != nil {
+		hidden = apiCfg.RootIsHidden
+	}
 	return &CommandGroup{
 		ClassName: rootName,
 		FileName:  rootName,
 		HelpText:  fmt.Sprintf("Manage %s resources.", toTitleCase(rootName)),
+		Hidden:    hidden,
 		Groups:    make(map[string]*CommandGroup),
 		Commands:  make(map[string]*Command),
 	}
 }
 
-func buildGroup(params *groupParams, methodPath []string) *CommandGroup {
+func newGroup(params *groupParams, methodPath []string) *CommandGroup {
 	collectionName := methodPath[len(methodPath)-1]
 	resourceTypeName := provider.GetResourceTypeName(params.model, methodPath)
 
@@ -52,10 +62,18 @@ func buildGroup(params *groupParams, methodPath []string) *CommandGroup {
 		helpText = fmt.Sprintf("Manage %s.", toTitleCase(collectionName))
 	}
 
+	hidden := false
+	apiCfg := provider.FindAPIConfigByService(params.config, params.service)
+	if apiCfg != nil {
+		hidden = apiCfg.RootIsHidden
+	}
+
 	return &CommandGroup{
+
 		ClassName: collectionName,
 		FileName:  collectionName,
 		HelpText:  helpText,
+		Hidden:    hidden,
 		Groups:    make(map[string]*CommandGroup),
 		Commands:  make(map[string]*Command),
 	}

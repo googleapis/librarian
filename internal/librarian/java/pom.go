@@ -21,10 +21,12 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -44,8 +46,6 @@ const (
 	managedModulesStartMarker      = "<!-- {x-generated-modules-start} -->"
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
-
-var errTargetDir = errors.New("target directory does not exist")
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
@@ -84,8 +84,130 @@ type javaModule struct {
 	template     string
 }
 
+type moduleKind int
+
+const (
+	kindProto moduleKind = iota
+	kindGRPC
+	kindClient
+	kindBOM
+	kindParent
+)
+
+type expectedModule struct {
+	ArtifactID string
+	Dir        string
+	Kind       moduleKind
+	IsMissing  bool
+	Coordinate Coordinate
+	APICoords  *APICoordinate
+}
+
+func loadTransports(library *config.Library, googleapisDir string) (map[string]serviceconfig.Transport, error) {
+	transports := make(map[string]serviceconfig.Transport)
+	for _, api := range library.APIs {
+		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		if err != nil {
+			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+		}
+		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
+	}
+	return transports, nil
+}
+
+func discoverModules(library *config.Library, libraryDir string, transports map[string]serviceconfig.Transport) ([]expectedModule, error) {
+	if library.Java != nil && library.Java.SkipPOMUpdates {
+		return nil, nil
+	}
+	var modules []expectedModule
+	libCoord := DeriveLibraryCoordinates(library)
+	for _, api := range library.APIs {
+		apiBase := deriveAPIBase(library, api.Path)
+		javaAPI := api.Java
+		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
+		transport := transports[api.Path]
+		// Proto module
+		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
+		isProtoMissing, err := isPOMMissing(protoDir)
+		if err != nil {
+			return nil, err
+		}
+		modules = append(modules, expectedModule{
+			ArtifactID: apiCoord.Proto.ArtifactID,
+			Dir:        protoDir,
+			Kind:       kindProto,
+			IsMissing:  isProtoMissing,
+			Coordinate: apiCoord.Proto,
+			APICoords:  &apiCoord,
+		})
+		// gRPC module
+		if transport != serviceconfig.Rest {
+			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
+			isGRPCMissing, err := isPOMMissing(gRPCDir)
+			if err != nil {
+				return nil, err
+			}
+			modules = append(modules, expectedModule{
+				ArtifactID: apiCoord.GRPC.ArtifactID,
+				Dir:        gRPCDir,
+				Kind:       kindGRPC,
+				IsMissing:  isGRPCMissing,
+				Coordinate: apiCoord.GRPC,
+				APICoords:  &apiCoord,
+			})
+		}
+	}
+	// Client module
+	clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
+	isClientMissing, err := isPOMMissing(clientDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, expectedModule{
+		ArtifactID: libCoord.GAPIC.ArtifactID,
+		Dir:        clientDir,
+		Kind:       kindClient,
+		IsMissing:  isClientMissing,
+		Coordinate: libCoord.GAPIC,
+	})
+	// BOM module
+	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
+	isBOMMissing, err := isPOMMissing(bomDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, expectedModule{
+		ArtifactID: libCoord.BOM.ArtifactID,
+		Dir:        bomDir,
+		Kind:       kindBOM,
+		IsMissing:  isBOMMissing,
+		Coordinate: libCoord.BOM,
+	})
+	// Parent module
+	parentDir := libraryDir
+	isParentMissing, err := isPOMMissing(parentDir)
+	if err != nil {
+		return nil, err
+	}
+	modules = append(modules, expectedModule{
+		ArtifactID: libCoord.Parent.ArtifactID,
+		Dir:        parentDir,
+		Kind:       kindParent,
+		IsMissing:  isParentMissing,
+		Coordinate: libCoord.Parent,
+	})
+	if library.Java == nil || len(library.Java.ExcludedPOMs) == 0 {
+		return modules, nil
+	}
+	return slices.DeleteFunc(modules, func(m expectedModule) bool {
+		return slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID)
+	}), nil
+}
+
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,
-// and parent POMs when new proto or gRPC modules are added.
+// and parent POMs when new proto or gRPC modules are added. It returns a list
+// of newly created artifact version entries to be added to versions.txt.
+// TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries.
 func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
 	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
 	if err != nil {
@@ -108,6 +230,7 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 			}
 			continue
 		}
+
 		if !anyMissingProtoGRPC {
 			continue
 		}
@@ -127,6 +250,29 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 		}
 	}
 	return nil
+}
+
+// IdentifyMissingModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
+// for the given library based on its configuration and checks for pom.xml presence
+// on the filesystem. It returns a list of artifact IDs for the missing modules.
+func IdentifyMissingModules(library *config.Library, libraryDir string, srcs *sources.Sources) ([]string, error) {
+	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
+	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
+	transports, err := loadTransports(library, primaryDir)
+	if err != nil {
+		return nil, err
+	}
+	expectedModules, err := discoverModules(library, libraryDir, transports)
+	if err != nil {
+		return nil, err
+	}
+	var missingModules []string
+	for _, m := range expectedModules {
+		if m.IsMissing {
+			missingModules = append(missingModules, m.ArtifactID)
+		}
+	}
+	return missingModules, nil
 }
 
 // updateClientPOM surgically updates the client POM using template markers
@@ -243,137 +389,102 @@ func detectIndentation(content string, index int) string {
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
 func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
-	var modules []javaModule
-	libCoord := DeriveLibraryCoordinates(library)
-
-	protoModules := make([]Coordinate, 0, len(library.APIs))
-	gRPCModules := make([]Coordinate, 0, len(library.APIs))
-	for _, api := range library.APIs {
-		apiBase := deriveAPIBase(library, api.Path)
-		javaAPI := ResolveJavaAPI(library, api)
-		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
-
-		transport := transports[api.Path]
-		data := gRPCProtoPOMData{
-			Proto:          apiCoord.Proto,
-			GRPC:           apiCoord.GRPC,
-			Parent:         libCoord.Parent,
-			MainArtifactID: libCoord.GAPIC.ArtifactID,
-			Version:        library.Version,
-		}
-
-		// Proto module
-		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
-		isProtoMissing, err := isPOMMissing(protoDir)
-		if err != nil {
-			return nil, err
-		}
-		modules = append(modules, javaModule{
-			artifactID:   apiCoord.Proto.ArtifactID,
-			dir:          protoDir,
-			isMissing:    isProtoMissing,
-			templateData: data,
-			template:     protoPOMTemplateName,
-		})
-		protoModules = append(protoModules, data.Proto)
-
-		// gRPC module
-		if transport != serviceconfig.Rest {
-			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
-			isGRPCMissing, err := isPOMMissing(gRPCDir)
-			if err != nil {
-				return nil, err
-			}
-			modules = append(modules, javaModule{
-				artifactID:   apiCoord.GRPC.ArtifactID,
-				dir:          gRPCDir,
-				isMissing:    isGRPCMissing,
-				templateData: data,
-				template:     gRPCPOMTemplateName,
-			})
-			gRPCModules = append(gRPCModules, data.GRPC)
-		}
-	}
-
-	// Client module
-	clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
-	isClientMissing, err := isPOMMissing(clientDir)
+	expectedModules, err := discoverModules(library, libraryDir, transports)
 	if err != nil {
 		return nil, err
 	}
-	modules = append(modules, javaModule{
-		artifactID: libCoord.GAPIC.ArtifactID,
-		dir:        clientDir,
-		isMissing:  isClientMissing,
-		templateData: clientPOMData{
-			Client:       libCoord.GAPIC,
-			Version:      library.Version,
-			Name:         metadata.NamePretty,
-			Description:  metadata.APIDescription,
-			Parent:       libCoord.Parent,
-			ProtoModules: protoModules,
-			GRPCModules:  gRPCModules,
-		},
-		template: clientPOMTemplateName,
-	})
+	libCoord := DeriveLibraryCoordinates(library)
+	protoModules := make([]Coordinate, 0, len(library.APIs))
+	gRPCModules := make([]Coordinate, 0, len(library.APIs))
+	for _, m := range expectedModules {
+		switch m.Kind {
+		case kindProto:
+			protoModules = append(protoModules, m.Coordinate)
+		case kindGRPC:
+			gRPCModules = append(gRPCModules, m.Coordinate)
+		}
+	}
 
 	allModules := []Coordinate{libCoord.GAPIC}
 	allModules = append(allModules, gRPCModules...)
 	allModules = append(allModules, protoModules...)
 
-	// BOM module
-	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
-	isBOMMissing, err := isPOMMissing(bomDir)
-	if err != nil {
-		return nil, err
+	var modules []javaModule
+	for _, m := range expectedModules {
+		var templateData any
+		var template string
+		switch m.Kind {
+		case kindProto, kindGRPC:
+			templateData = gRPCProtoPOMData{
+				Proto:          m.APICoords.Proto,
+				GRPC:           m.APICoords.GRPC,
+				Parent:         libCoord.Parent,
+				MainArtifactID: libCoord.GAPIC.ArtifactID,
+				Version:        library.Version,
+			}
+			if m.Kind == kindProto {
+				template = protoPOMTemplateName
+			} else {
+				template = gRPCPOMTemplateName
+			}
+		case kindClient:
+			templateData = clientPOMData{
+				Client:       libCoord.GAPIC,
+				Version:      library.Version,
+				Name:         metadata.NamePretty,
+				Description:  metadata.APIDescription,
+				Parent:       libCoord.Parent,
+				ProtoModules: protoModules,
+				GRPCModules:  gRPCModules,
+			}
+			template = clientPOMTemplateName
+		case kindBOM:
+			templateData = bomParentPOMData{
+				MainModule:      libCoord.GAPIC,
+				Name:            metadata.NamePretty,
+				MonorepoVersion: monorepoVersion,
+				Modules:         allModules,
+			}
+			template = bomPOMTemplateName
+		case kindParent:
+			templateData = bomParentPOMData{
+				MainModule:      libCoord.GAPIC,
+				Name:            metadata.NamePretty,
+				MonorepoVersion: monorepoVersion,
+				Modules:         allModules,
+			}
+			template = parentPOMTemplateName
+		}
+		modules = append(modules, javaModule{
+			artifactID:   m.ArtifactID,
+			dir:          m.Dir,
+			isMissing:    m.IsMissing,
+			templateData: templateData,
+			template:     template,
+		})
 	}
-	modules = append(modules, javaModule{
-		artifactID: libCoord.BOM.ArtifactID,
-		dir:        bomDir,
-		isMissing:  isBOMMissing,
-		templateData: bomParentPOMData{
-			MainModule:      libCoord.GAPIC,
-			Name:            metadata.NamePretty,
-			MonorepoVersion: monorepoVersion,
-			Modules:         allModules,
-		},
-		template: bomPOMTemplateName,
-	})
-
-	// Parent module
-	parentDir := libraryDir
-	isParentMissing, err := isPOMMissing(parentDir)
-	if err != nil {
-		return nil, err
-	}
-	modules = append(modules, javaModule{
-		artifactID: libCoord.Parent.ArtifactID,
-		dir:        parentDir,
-		isMissing:  isParentMissing,
-		templateData: bomParentPOMData{
-			MainModule:      libCoord.GAPIC,
-			Name:            metadata.NamePretty,
-			MonorepoVersion: monorepoVersion,
-			Modules:         allModules,
-		},
-		template: parentPOMTemplateName,
-	})
-
 	return modules, nil
 }
 
+// isPOMMissing checks if a pom.xml exists in the given directory.
+// It returns true if the file is confirmed to be missing (fs.ErrNotExist).
+// It returns an error if the check fails for unexpected reasons (e.g., permission issues).
 func isPOMMissing(dir string) (bool, error) {
 	pomPath := filepath.Join(dir, "pom.xml")
-	if _, err := os.Stat(pomPath); err == nil {
+	_, err := os.Stat(pomPath)
+	if err == nil {
 		return false, nil
 	}
-	if _, err := os.Stat(dir); errors.Is(err, fs.ErrNotExist) {
-		return false, fmt.Errorf("%w: %s does not exist: %w", errTargetDir, dir, err)
+	if errors.Is(err, fs.ErrNotExist) {
+		return true, nil
 	}
-	return true, nil
+	return false, fmt.Errorf("failed to check %s: %w", pomPath, err)
 }
 
 func writePOM(pomPath, templateName string, data any) (err error) {
+	if err := os.MkdirAll(filepath.Dir(pomPath), 0755); err != nil {
+		return fmt.Errorf("failed to create directory for %s: %w", pomPath, err)
+	}
 	f, err := os.Create(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to create %s: %w", pomPath, err)

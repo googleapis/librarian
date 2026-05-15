@@ -351,6 +351,21 @@ apis:
     root_is_hidden: true
     release_tracks:
       - GA
+  - name: Locations
+    api_version: v1alpha
+    root_is_hidden: true
+    release_tracks:
+      - ALPHA
+  - name: Locations
+    api_version: v1beta
+    root_is_hidden: true
+    release_tracks:
+      - BETA
+  - name: Locations
+    api_version: v1
+    root_is_hidden: true
+    release_tracks:
+      - GA
 resource_patterns:
   - type: iam.googleapis.com/ServiceAccount
     patterns:

@@ -33,6 +33,12 @@ type Command struct {
 // ClientCall describes a Go client method invocation that should replace the
 // default print-only action for a generated command.
 type ClientCall struct {
+	// IsDelete reports whether the method is a standard Delete method.
+	IsDelete bool
+
+	// IsLRO reports whether the call returns a long-running operation.
+	IsLRO bool
+
 	// Method is the unqualified client method to call on the constructed
 	// client, for example "GetInstance". The template invokes it as
 	// `client.<Method>(ctx, &<RequestType>{...})`.
@@ -48,6 +54,10 @@ type ClientCall struct {
 	// `client, err := <Package>.NewClient(ctx)`.
 	Package string
 
+	// Paged reports whether the method returns a paginated iterator (e.g.,
+	// AIP-132 List).
+	Paged bool
+
 	// RequestType is the qualified request message type, for example
 	// "parallelstorepb.GetInstanceRequest". The template composites a
 	// literal of this type and passes its address to the method.
@@ -56,6 +66,18 @@ type ClientCall struct {
 
 // HasPath reports whether the command composes a resource path.
 func (c Command) HasPath() bool { return c.PathFormat != "" }
+
+// RequiresProject reports whether the command's path references the
+// "project" variable, in which case the generated Action must validate
+// that the global --project flag is set.
+func (c Command) RequiresProject() bool {
+	for _, a := range c.Args {
+		if a == "project" {
+			return true
+		}
+	}
+	return false
+}
 
 // PathFormatArgs returns the comma-separated cmd.String("X") arguments
 // passed to the generated [fmt.Sprintf] call.

@@ -15,6 +15,7 @@
 package provider
 
 import (
+	"iter"
 	"log/slog"
 	"path"
 	"strings"
@@ -35,11 +36,7 @@ func GetPluralFromSegments(segments []api.PathSegment) string {
 		return ""
 	}
 	// The second to last segment should be the literal plural name
-	secondLastSegment := segments[len(segments)-2]
-	if secondLastSegment.Literal == nil {
-		return ""
-	}
-	return *secondLastSegment.Literal
+	return segments[len(segments)-2].Literal
 }
 
 // GetParentFromSegments extracts the pattern segments for the parent resource.
@@ -52,7 +49,7 @@ func GetParentFromSegments(segments []api.PathSegment) []api.PathSegment {
 	}
 	// We verify that the last segment is a variable and the second to last is a literal,
 	// consistent with standard AIP-122 patterns.
-	if segments[len(segments)-1].Variable != nil && segments[len(segments)-2].Literal != nil {
+	if segments[len(segments)-1].Variable != nil && segments[len(segments)-2].Literal != "" {
 		return segments[:len(segments)-2]
 	}
 	return nil
@@ -82,10 +79,10 @@ func GetCollectionPathFromSegments(segments []api.PathSegment) string {
 	var collectionParts []string
 	for i := 0; i < len(segments)-1; i++ {
 		// A collection identifier is a literal segment followed by a variable segment.
-		if segments[i].Literal == nil || segments[i+1].Variable == nil {
+		if segments[i].Literal == "" || segments[i+1].Variable == nil {
 			continue
 		}
-		collectionParts = append(collectionParts, *segments[i].Literal)
+		collectionParts = append(collectionParts, segments[i].Literal)
 	}
 	return strings.Join(collectionParts, ".")
 }
@@ -106,8 +103,9 @@ func IsPrimaryResourceField(field *api.Field, method *api.Method) bool {
 		return true
 	}
 
-	// Fallback for operations methods where the primary resource field is named "name".
-	if IsOperationsServiceMethod(method) && field.Name == "name" {
+	// Fallback for operations and locations methods where the primary resource field is named "name"
+	// for list commands.
+	if (IsOperationsServiceMethod(method) || IsLocationsServiceMethod(method)) && field.Name == "name" {
 		return true
 	}
 
@@ -155,9 +153,14 @@ func GetResourceForMethod(method *api.Method, model *api.API) *api.Resource {
 		return nil
 	}
 
-	// Strategy 1: Fast-path for long-running operations methods.
+	// Strategy 1: Fast-path for mixin service methods (Operations and Locations).
+	// These mixin methods do not have resource_reference annotations in their requests,
+	// so we look up their synthetic resources from the single source of truth.
 	if IsOperationsServiceMethod(method) {
 		return resourceFromType(model, operationResourceType)
+	}
+	if IsLocationsServiceMethod(method) {
+		return resourceFromType(model, locationResourceType)
 	}
 
 	// Strategy 2: For Create (AIP-133) and Update (AIP-134), the request message
@@ -194,7 +197,7 @@ func resourceFromType(model *api.API, resourceType string) *api.Resource {
 	if resourceType == "" {
 		return nil
 	}
-	for _, r := range getAllResources(model) {
+	for r := range allResources(model) {
 		if r.Type == resourceType {
 			return r
 		}
@@ -216,13 +219,13 @@ func isSingletonResource(resource *api.Resource) bool {
 		}
 
 		// A pattern ending in a literal is a singleton (e.g., projects/{project}/singletonConfig).
-		if pattern[len(pattern)-1].Literal != nil {
+		if pattern[len(pattern)-1].Literal != "" {
 			return true
 		}
 
 		// Adjacent literals anywhere in the pattern signify a singleton (e.g., .../literal1/literal2/...).
 		for i := 0; i < len(pattern)-1; i++ {
-			if pattern[i].Literal != nil && pattern[i+1].Literal != nil {
+			if pattern[i].Literal != "" && pattern[i+1].Literal != "" {
 				return true
 			}
 		}
@@ -275,13 +278,12 @@ func GetSingularResourceNameForMethod(method *api.Method, model *api.API) string
 func ExtractPathFromSegments(segments []api.PathSegment) string {
 	var parts []string
 	for i, seg := range segments {
-		if seg.Literal != nil {
-			val := *seg.Literal
+		if seg.Literal != "" {
 			// Heuristic: Skip API version at the start.
-			if i == 0 && len(val) >= 2 && val[0] == 'v' && val[1] >= '0' && val[1] <= '9' {
+			if i == 0 && len(seg.Literal) >= 2 && seg.Literal[0] == 'v' && seg.Literal[1] >= '0' && seg.Literal[1] <= '9' {
 				continue
 			}
-			parts = append(parts, val)
+			parts = append(parts, seg.Literal)
 		} else if seg.Variable != nil && len(seg.Variable.Segments) > 1 {
 			internal := ExtractCollectionFromStrings(seg.Variable.Segments)
 			if internal != "" {
@@ -320,8 +322,8 @@ func ExtractCollectionFromStrings(parts []string) string {
 func GetLiteralSegments(raw []api.PathSegment) []string {
 	var literals []string
 	for _, seg := range raw {
-		if seg.Literal != nil {
-			literals = append(literals, *seg.Literal)
+		if seg.Literal != "" {
+			literals = append(literals, seg.Literal)
 		} else if seg.Variable != nil {
 			for _, vSeg := range seg.Variable.Segments {
 				if vSeg != "*" && vSeg != "**" {
@@ -341,36 +343,56 @@ func GetLiteralSegments(raw []api.PathSegment) []string {
 	return filtered
 }
 
-// getAllResources returns all resource definitions in the model, including
-// file-level definitions, message-level definitions, and synthetic resources
-// inferred from operations methods.
-func getAllResources(model *api.API) []*api.Resource {
-	var resources []*api.Resource
-	resources = append(resources, model.ResourceDefinitions...)
+// allResources yields all resource definitions in the model.
+// This acts as the single source of truth for both path-based and method-based
+// resource lookups, ensuring that synthetic mixin resources (operations, locations)
+// resolve to the exact same definitions across all entry points.
+func allResources(model *api.API) iter.Seq[*api.Resource] {
+	return func(yield func(*api.Resource) bool) {
+		for _, res := range model.ResourceDefinitions {
+			if !yield(res) {
+				return
+			}
+		}
 
-	// Infer operations resources from GetOperation methods
-	for _, s := range model.Services {
-		for _, m := range s.Methods {
-			if IsOperationsServiceMethod(m) && m.Name == GetOperation {
-				res, err := inferOperationResource(m)
-				if err != nil {
-					slog.Warn("failed to infer operations resource", "method", m.ID, "error", err)
-					continue
-				}
-				if res != nil {
-					resources = append(resources, res)
+		// Infer operations resources from GetOperation method and location resource from GetLocation method.
+		for _, s := range model.Services {
+			for _, m := range s.Methods {
+				if res := inferSyntheticResource(m); res != nil {
+					if !yield(res) {
+						return
+					}
 				}
 			}
 		}
 	}
+}
 
-	return resources
+// inferSyntheticResource attempts to infer a synthetic resource definition from a mixin method.
+func inferSyntheticResource(m *api.Method) *api.Resource {
+	if IsOperationsServiceMethod(m) && m.Name == GetOperation {
+		res, err := inferOperationResource(m)
+		if err != nil {
+			slog.Warn("failed to infer operations resource", "method", m.ID, "error", err)
+			return nil
+		}
+		return res
+	}
+	if IsLocationsServiceMethod(m) && m.Name == GetLocation {
+		res, err := inferLocationResource(m)
+		if err != nil {
+			slog.Warn("failed to infer locations resource", "method", m.ID, "error", err)
+			return nil
+		}
+		return res
+	}
+	return nil
 }
 
 // GetResourceForPath looks up the resource definition for a given list of URL path literals.
 func GetResourceForPath(model *api.API, path []string) *api.Resource {
 	target := strings.Join(path, ".")
-	for _, res := range getAllResources(model) {
+	for res := range allResources(model) {
 		for _, pattern := range res.Patterns {
 			segments := GetLiteralSegments(pattern)
 			if strings.Join(segments, ".") == target {

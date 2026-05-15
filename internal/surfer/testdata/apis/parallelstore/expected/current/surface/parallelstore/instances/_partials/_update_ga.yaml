@@ -91,12 +91,9 @@
     api_version: v1
     collection:
       - parallelstore.projects.locations.instances
-    static_fields:
-      updateMask: '*'
   async:
     collection:
       - parallelstore.projects.locations.operations
     extract_resource_result: true
   update:
-    disable_auto_field_mask: true
     read_modify_update: true

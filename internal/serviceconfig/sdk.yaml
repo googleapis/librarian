@@ -11,6 +11,9 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+- path: backstory
+  languages:
+    - all
 - path: google/ads/admanager/v1
   languages:
     - java
@@ -273,7 +276,10 @@
 - path: google/bigtable/v2
   languages:
     - go
+    - java
     - python
+  transports:
+    java: grpc
 - path: google/chat/v1
   languages:
     - go
@@ -696,6 +702,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
 - path: google/cloud/bigquery/dataexchange/v1beta1
   documentation_uri: https://cloud.google.com/bigquery/docs/analytics-hub-introduction
@@ -1066,6 +1073,7 @@
 - path: google/cloud/databasecenter/v1beta
   languages:
     - java
+    - nodejs
     - python
   release_level:
     java: preview
@@ -1953,6 +1961,7 @@
     - dart
     - go
     - java
+    - nodejs
     - python
 - path: google/cloud/oslogin/common
   languages:
@@ -2807,6 +2816,7 @@
 - path: google/firestore/bundle
   documentation_uri: https://cloud.google.com/firestore
   languages:
+    - java
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5337669
   skip_rest_numeric_enums:
@@ -2916,6 +2926,17 @@
     python: grpc
     ruby: grpc
 - path: google/longrunning
+  description: |-
+    Defines types and an abstract service to handle long-running operations.
+
+    [Long-running operations] are a common pattern to handle methods that may take
+    a significant amount of time to execute. Many Google APIs return an `Operation`
+    message (defined in this package) that are roughly analogous to a future. The
+    operation will eventually complete, though it may still return an error on
+    completion. The client libraries provide helpers to simplify polling of these
+    operations.
+
+    [Long-running operations]: https://google.aip.dev/151
   languages:
     - all
   skip_rest_numeric_enums:
@@ -2970,9 +2991,8 @@
   languages:
     - go
     - java
+    - nodejs
     - python
-  release_level:
-    java: stable
 - path: google/maps/mapmanagement/v2beta
   languages:
     - go
@@ -3068,6 +3088,7 @@
   languages:
     - all
 - path: google/protobuf
+  description: Core Protobuf types used by most services.
   languages:
     - all
 - path: google/pubsub/v1

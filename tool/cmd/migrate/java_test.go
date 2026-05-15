@@ -38,7 +38,6 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "google/cloud",
 			path: "google/cloud",
 			want: &config.JavaAPI{
-				Path:           "google/cloud",
 				ExcludedProtos: []string{"google/cloud/common_resources.proto"},
 			},
 		},
@@ -46,7 +45,6 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "aiplatform/v1beta1",
 			path: "google/cloud/aiplatform/v1beta1",
 			want: &config.JavaAPI{
-				Path: "google/cloud/aiplatform/v1beta1",
 				ExcludedProtos: []string{
 					"google/cloud/aiplatform/v1beta1/schema/io_format.proto",
 				},
@@ -63,7 +61,6 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "filestore",
 			path: "google/cloud/filestore/v1",
 			want: &config.JavaAPI{
-				Path:             "google/cloud/filestore/v1",
 				AdditionalProtos: []string{"google/cloud/common/operation_metadata.proto"},
 			},
 		},
@@ -71,22 +68,18 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "oslogin",
 			path: "google/cloud/oslogin/v1",
 			want: &config.JavaAPI{
-				Path:             "google/cloud/oslogin/v1",
-				AdditionalProtos: []string{"google/cloud/oslogin/common/common.proto"},
+				AdditionalProtosToGenerateAndCopy: []string{"google/cloud/oslogin/common/common.proto"},
 			},
 		},
 		{
 			name: "no override",
 			path: "google/cloud/language/v1",
-			want: &config.JavaAPI{
-				Path: "google/cloud/language/v1",
-			},
+			want: &config.JavaAPI{},
 		},
 		{
 			name: "showcase",
 			path: "schema/google/showcase/v1beta1",
 			want: &config.JavaAPI{
-				Path: "schema/google/showcase/v1beta1",
 				AdditionalProtos: []string{
 					"google/cloud/location/locations.proto",
 					"google/iam/v1/iam_policy.proto",
@@ -95,8 +88,64 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := &config.JavaAPI{Path: test.path}
-			applyJavaProtoOverrides(got)
+			got := &config.JavaAPI{}
+			applyJavaProtoOverrides(test.path, got)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyJavaArtifactOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		path        string
+		want        *config.JavaAPI
+	}{
+		{
+			name:        "iam v1 overrides",
+			libraryName: "iam",
+			path:        "google/iam/v1",
+			want: &config.JavaAPI{
+				ProtoArtifactIDOverride: "proto-google-iam-v1",
+				GRPCArtifactIDOverride:  "grpc-google-iam-v1",
+			},
+		},
+		{
+			name:        "iam v2 overrides",
+			libraryName: "iam",
+			path:        "google/iam/v2",
+			want: &config.JavaAPI{
+				ProtoArtifactIDOverride: "proto-google-iam-v2",
+				GRPCArtifactIDOverride:  "grpc-google-iam-v2",
+			},
+		},
+		{
+			name:        "iam-policy v1 no overrides",
+			libraryName: "iam-policy",
+			path:        "google/iam/v1",
+			want:        &config.JavaAPI{},
+		},
+		{
+			name:        "iam-policy v2 no overrides",
+			libraryName: "iam-policy",
+			path:        "google/iam/v2",
+			want:        &config.JavaAPI{},
+		},
+		{
+			name:        "global override applies to any library",
+			libraryName: "any-library",
+			path:        "google/api",
+			want: &config.JavaAPI{
+				ProtoArtifactIDOverride: "proto-google-common-protos",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := &config.JavaAPI{}
+			applyJavaArtifactOverrides(test.path, got, test.libraryName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -156,21 +205,32 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			name: "monolithic java api",
 			lib: &config.Library{
 				Name: "grafeas",
-				Java: &config.JavaModule{
-					JavaAPIs: []*config.JavaAPI{
-						{Path: "grafeas/v1"},
-						{Path: "grafeas/v1beta1"},
+				APIs: []*config.API{
+					{
+						Path: "grafeas/v1",
+						Java: &config.JavaAPI{},
+					},
+					{
+						Path: "grafeas/v1beta1",
+						Java: &config.JavaAPI{},
 					},
 				},
+				Java: &config.JavaModule{},
 			},
 			want: &config.Library{
 				Name: "grafeas",
+				APIs: []*config.API{
+					{
+						Path: "grafeas/v1",
+						Java: &config.JavaAPI{Monolithic: true},
+					},
+					{
+						Path: "grafeas/v1beta1",
+						Java: &config.JavaAPI{},
+					},
+				},
 				Java: &config.JavaModule{
 					SkipPOMUpdates: true,
-					JavaAPIs: []*config.JavaAPI{
-						{Path: "grafeas/v1", Monolithic: true},
-						{Path: "grafeas/v1beta1"},
-					},
 				},
 			},
 		},
@@ -358,12 +418,27 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name:  "showcase",
-						Roots: []string{"showcase", "googleapis"},
+						Name:    "showcase",
+						Version: "0.0.1-SNAPSHOT",
+						Roots:   []string{"showcase", "googleapis"},
 						APIs: []*config.API{
-							{Path: "schema/google/showcase/v1beta1"},
+							{
+								Path: "schema/google/showcase/v1beta1",
+								Java: &config.JavaAPI{
+									AdditionalProtos:        []string{"google/cloud/location/locations.proto", "google/iam/v1/iam_policy.proto"},
+									GRPCArtifactIDOverride:  "grpc-gapic-showcase-v1beta1",
+									ProtoArtifactIDOverride: "proto-gapic-showcase-v1beta1",
+									OmitCommonResources:     true,
+								},
+							},
 						},
-						Java: &config.JavaModule{SkipAPIID: true},
+						Keep: []string{
+							"gapic-showcase/src/test",
+							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
+						},
+						Java: &config.JavaModule{
+							SkipAPIID: true,
+						},
 					},
 				},
 			},
@@ -510,7 +585,7 @@ func TestBuildConfig(t *testing.T) {
 							CodeownerTeam:                "team-pubsub",
 							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
-							ExcludedPOMs:                 "pom1,pom2",
+							ExcludedPOMs:                 []string{"pom1", "pom2"},
 							ExtraVersionedModules:        "module1",
 							GroupID:                      "com.google.cloud",
 							IssueTrackerOverride:         "https://tracker.com",
@@ -636,18 +711,17 @@ func TestBuildConfig(t *testing.T) {
 					{
 						Name: "gkehub",
 						APIs: []*config.API{
-							{Path: "google/cloud/gkehub/policycontroller/v1beta"},
-						},
-						Java: &config.JavaModule{
-							JavaAPIs: []*config.JavaAPI{
-								{
-									Path:                "google/cloud/gkehub/policycontroller/v1beta",
-									Samples:             new(false),
-									ProtoGRPCOnly:       true,
-									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
+							{
+								Path: "google/cloud/gkehub/policycontroller/v1beta",
+								Java: &config.JavaAPI{
+									Samples:               new(false),
+									GenerateGAPIC:         new(bool),
+									GenerateResourceNames: new(bool),
+									OmitCommonResources:   true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -678,19 +752,18 @@ func TestBuildConfig(t *testing.T) {
 					{
 						Name: "gsuite-addons",
 						APIs: []*config.API{
-							{Path: "google/apps/script/type"},
-						},
-						Java: &config.JavaModule{
-							JavaAPIs: []*config.JavaAPI{
-								{
-									Path:                    "google/apps/script/type",
+							{
+								Path: "google/apps/script/type",
+								Java: &config.JavaAPI{
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
-									ProtoGRPCOnly:           true,
+									GenerateGAPIC:           new(bool),
+									GenerateResourceNames:   new(bool),
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
 								},
 							},
 						},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -721,7 +794,12 @@ func TestBuildConfig(t *testing.T) {
 					{
 						Name: "translate",
 						APIs: []*config.API{
-							{Path: "google/cloud/translate/v3"},
+							{
+								Path: "google/cloud/translate/v3",
+								Java: &config.JavaAPI{
+									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
+								},
+							},
 						},
 						Keep: []string{
 							"google-cloud-translate/src/main/java/com/google/cloud/translate/Detection.java",
@@ -750,14 +828,7 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslationTest.java",
 							"google-cloud-translate/src/test/java/com/google/cloud/translate/it/ITTranslateTest.java",
 						},
-						Java: &config.JavaModule{
-							JavaAPIs: []*config.JavaAPI{
-								{
-									Path:                "google/cloud/translate/v3",
-									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
-								},
-							},
-						},
+						Java: &config.JavaModule{},
 					},
 				},
 			},
@@ -822,7 +893,6 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			libraryName: "datastore",
 			protoPath:   "google/datastore/admin/v1",
 			wantJavaAPI: &config.JavaAPI{
-				Path:                    "google/datastore/admin/v1",
 				Samples:                 new(false),
 				ProtoArtifactIDOverride: "proto-google-cloud-datastore-admin-v1",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-datastore-admin-v1",
@@ -834,7 +904,6 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			libraryName: "storage",
 			protoPath:   "google/storage/control/v2",
 			wantJavaAPI: &config.JavaAPI{
-				Path:                    "google/storage/control/v2",
 				Samples:                 new(false),
 				GAPICArtifactIDOverride: "google-cloud-storage-control",
 				ProtoArtifactIDOverride: "proto-google-cloud-storage-control-v2",
@@ -853,7 +922,6 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			libraryName: "storage",
 			protoPath:   "google/storage/v2",
 			wantJavaAPI: &config.JavaAPI{
-				Path:                    "google/storage/v2",
 				Samples:                 new(false),
 				GAPICArtifactIDOverride: "gapic-google-cloud-storage-v2",
 				GRPCArtifactIDOverride:  "grpc-google-cloud-storage-v2",
@@ -872,7 +940,6 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 			libraryName: "alloydb-connectors",
 			protoPath:   "google/cloud/alloydb/connectors/v1",
 			wantJavaAPI: &config.JavaAPI{
-				Path:                "google/cloud/alloydb/connectors/v1",
 				Samples:             new(false),
 				OmitCommonResources: true, // dummy BUILD.bazel has no deps
 			},
@@ -912,10 +979,12 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 					{
 						Name: test.libraryName,
 						APIs: []*config.API{
-							{Path: test.protoPath},
+							{
+								Path: test.protoPath,
+								Java: test.wantJavaAPI,
+							},
 						},
 						Java: &config.JavaModule{
-							JavaAPIs:          []*config.JavaAPI{test.wantJavaAPI},
 							TransportOverride: test.wantTransport,
 						},
 					},
@@ -1526,5 +1595,57 @@ func TestInsertMarkers_Full(t *testing.T) {
 	bomGot, _ := os.ReadFile(filepath.Join(bomDir, "pom.xml"))
 	if !strings.Contains(string(bomGot), managedDepsStartMarker) {
 		t.Error("bom pom missing dependency markers")
+	}
+}
+
+func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		apiPath     string
+		wantGAPIC   *bool
+		wantProto   *bool
+		wantResName *bool
+	}{
+		{
+			name:        "iam v2 special override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(false),
+			wantProto:   new(true),
+			wantResName: new(true),
+		},
+		{
+			name:        "iam-policy v2 special override",
+			libraryName: "iam-policy",
+			apiPath:     "google/iam/v2",
+			wantGAPIC:   new(true),
+			wantProto:   new(false),
+			wantResName: new(false),
+		},
+		{
+			name:        "iam non-special path no override",
+			libraryName: "iam",
+			apiPath:     "google/iam/v1",
+		},
+		{
+			name:        "other library no override",
+			libraryName: "secretmanager",
+			apiPath:     "google/iam/v3",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			api := &config.JavaAPI{}
+			applyJavaIAMSpecialOverrides(test.apiPath, test.libraryName, api)
+			if diff := cmp.Diff(test.wantGAPIC, api.GenerateGAPIC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantProto, api.GenerateProtoGRPC); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantResName, api.GenerateResourceNames); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

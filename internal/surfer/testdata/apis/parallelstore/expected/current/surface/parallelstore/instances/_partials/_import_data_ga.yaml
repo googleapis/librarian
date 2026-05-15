@@ -48,7 +48,7 @@
           name: instance
           plural_name: instances
         required: true
-      - arg_name: uri
+      - arg_name: source-gcs-bucket-uri
         api_field: importDataRequest.sourceGcsBucket.uri
         help_text: |-
           URI to a Cloud Storage bucket in the format:
@@ -56,7 +56,7 @@
           optional.
         is_positional: false
         required: true
-      - arg_name: path
+      - arg_name: destination-parallelstore-path
         api_field: importDataRequest.destinationParallelstore.path
         help_text: |-
           Root directory path to the Paralellstore filesystem, starting
@@ -95,6 +95,7 @@
           If unspecified, the Parallelstore service agent is used:
           `service-<PROJECT_NUMBER>@gcp-sa-parallelstore.iam.gserviceaccount.com`
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -106,12 +107,12 @@
               parameter_name: serviceAccountsId
           collection: parallelstore.projects.serviceAccounts
           disable_auto_completers: true
-          name: service_account
+          name: serviceAccount
           plural_name: serviceAccounts
         required: false
         resource_method_params:
           importDataRequest.serviceAccount: '{__relative_name__}'
-      - arg_name: uid
+      - arg_name: metadata-options-uid
         api_field: importDataRequest.metadataOptions.uid
         help_text: The UID preservation behavior.
         is_positional: false
@@ -119,11 +120,11 @@
         choices:
           - arg_value: uid-skip
             enum_value: UID_SKIP
-            help_text: Value for the `uid-skip` field.
+            help_text: Do not preserve UID during a transfer job.
           - arg_value: uid-number-preserve
             enum_value: UID_NUMBER_PRESERVE
-            help_text: Value for the `uid-number-preserve` field.
-      - arg_name: gid
+            help_text: Preserve UID that is in number format during a transfer job.
+      - arg_name: metadata-options-gid
         api_field: importDataRequest.metadataOptions.gid
         help_text: The GID preservation behavior.
         is_positional: false
@@ -131,11 +132,11 @@
         choices:
           - arg_value: gid-skip
             enum_value: GID_SKIP
-            help_text: Value for the `gid-skip` field.
+            help_text: Do not preserve GID during a transfer job.
           - arg_value: gid-number-preserve
             enum_value: GID_NUMBER_PRESERVE
-            help_text: Value for the `gid-number-preserve` field.
-      - arg_name: mode
+            help_text: Preserve GID that is in number format during a transfer job.
+      - arg_name: metadata-options-mode
         api_field: importDataRequest.metadataOptions.mode
         help_text: The mode preservation behavior.
         is_positional: false
@@ -143,10 +144,10 @@
         choices:
           - arg_value: mode-skip
             enum_value: MODE_SKIP
-            help_text: Value for the `mode-skip` field.
+            help_text: Do not preserve mode during a transfer job.
           - arg_value: mode-preserve
             enum_value: MODE_PRESERVE
-            help_text: Value for the `mode-preserve` field.
+            help_text: Preserve mode during a transfer job.
   request:
     api_version: v1
     collection:

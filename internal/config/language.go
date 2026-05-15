@@ -57,8 +57,6 @@ const (
 type GoModule struct {
 	// DeleteGenerationOutputPaths is a list of paths to delete before generation.
 	DeleteGenerationOutputPaths []string `yaml:"delete_generation_output_paths,omitempty"`
-	// GoAPIs is a list of Go-specific API configurations.
-	GoAPIs []*GoAPI `yaml:"go_apis,omitempty"`
 	// ModulePathVersion is the version of the Go module path.
 	ModulePathVersion string `yaml:"module_path_version,omitempty"`
 	// NestedModule is the name of a nested module directory.
@@ -85,8 +83,6 @@ type GoAPI struct {
 	// NoSnippets indicates whether to skip generating snippets.
 	// This is typically false.
 	NoSnippets bool `yaml:"no_snippets,omitempty"`
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
 	// ProtoOnly determines whether to generate a Proto-only client.
 	// A proto-only client does not define a service in the proto files.
 	ProtoOnly bool `yaml:"proto_only,omitempty"`
@@ -498,8 +494,9 @@ type JavaModule struct {
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
 
-	// ExcludedPOMs is a list of POM files to exclude.
-	ExcludedPOMs string `yaml:"excluded_poms,omitempty"`
+	// ExcludedPOMs is a list of artifact ids, whose module should be excluded
+	// when updating pom.xml and are omitted when counting new modules.
+	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
 
 	// ExtraVersionedModules is a list of extra versioned modules.
 	ExtraVersionedModules string `yaml:"extra_versioned_modules,omitempty"`
@@ -524,9 +521,6 @@ type JavaModule struct {
 	// NamePrettyOverride allows the "name_pretty" field in .repo-metadata.json
 	// to be overridden.
 	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
-
-	// JavaAPIs is a list of Java-specific API configurations.
-	JavaAPIs []*JavaAPI `yaml:"java_apis,omitempty"`
 
 	// ProductDocumentationOverride allows the "product_documentation" field in
 	// .repo-metadata.json to be overridden.
@@ -562,18 +556,26 @@ type JavaModule struct {
 
 // JavaAPI represents configuration for a single API within a Java module.
 type JavaAPI struct {
-	// Path is the source path.
-	Path string `yaml:"path,omitempty"`
-
 	// Monolithic indicates whether to merge all modules (proto, grpc, gapic)
 	// into a single directory. This is currently only used for the grafeas library
 	// to maintain its legacy code structure.
 	Monolithic bool `yaml:"monolithic,omitempty"`
 
-	// AdditionalProtos is a list of additional proto files to include in generation.
+	// AdditionalProtos is a list of additional proto files to include in GAPIC generation
+	// as dependencies. They are NOT included in the standard Proto Java classes
+	// generation step and are NOT copied to the destination directory. Use this for
+	// common protos that are needed for building the client but should not be
+	// packaged with the library.
 	// Note: google/cloud/common_resources.proto is included by default unless
 	// OmitCommonResources is set to true.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
+	// AdditionalProtosToGenerateAndCopy is a list of additional proto files to include
+	// in BOTH standard Protocol Buffer Java classes generation and GAPIC generation.
+	// They ARE copied to the destination directory (src/main/proto).
+	// Use this for protos that belong to this library but are located in a different
+	// directory (e.g., common protos specific to this API).
+	AdditionalProtosToGenerateAndCopy []string `yaml:"additional_protos_to_generate_and_copy,omitempty"`
 
 	// OmitCommonResources indicates whether to omit the default inclusion of
 	// google/cloud/common_resources.proto.
@@ -606,10 +608,17 @@ type JavaAPI struct {
 	// The artifact ID is also used as the name for the module's directory.
 	ProtoArtifactIDOverride string `yaml:"proto_artifact_id_override,omitempty"`
 
-	// ProtoGRPCOnly determines whether to skip GAPIC client generation.
-	// It is usually used for proto-only clients that do not define a service
-	// in the proto files, with the exception of google/cloud/location.
-	ProtoGRPCOnly bool `yaml:"proto_grpc_only,omitempty"`
+	// GenerateGAPIC indicates whether to generate the GAPIC client surface.
+	// Defaults to true.
+	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
+
+	// GenerateProtoGRPC indicates whether to generate proto and grpc modules.
+	// Defaults to true. If set to false, should also set generate_resource_names to false.
+	GenerateProtoGRPC *bool `yaml:"generate_proto_grpc,omitempty"`
+
+	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.
+	// Defaults to true.
+	GenerateResourceNames *bool `yaml:"generate_resource_names,omitempty"`
 
 	// CopyFiles is a list of file copies to perform after generation.
 	// It applies to files in the GAPIC module.
@@ -754,6 +763,17 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+}
+
+// GcloudCommand contains gcloud-specific library configuration.
+type GcloudCommand struct {
+	// ClientImportPath overrides the GAPIC Go client import path that
+	// would otherwise be derived from the proto package. Set this when
+	// the proto package and the published Go GAPIC location diverge.
+	// For example, the proto package google.cloud.recaptchaenterprise.v1
+	// publishes its Go client at
+	// "cloud.google.com/go/recaptchaenterprise/v2/apiv1".
+	ClientImportPath string `yaml:"client_import_path,omitempty"`
 }
 
 // Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.

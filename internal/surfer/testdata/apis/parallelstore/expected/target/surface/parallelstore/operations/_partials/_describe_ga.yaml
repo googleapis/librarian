@@ -27,8 +27,7 @@
           $ {command}
   arguments:
     params:
-      - help_text: |-
-          The name of the operation resource.
+      - help_text: The name of the operation resource.
         is_positional: true
         is_primary_resource: true
         resource_spec:

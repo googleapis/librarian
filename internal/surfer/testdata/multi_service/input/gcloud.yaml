@@ -22,3 +22,4 @@ apis:
     api_version: v1
     release_tracks:
       - GA
+    root_is_hidden: true

@@ -39,6 +39,7 @@ type CommandGroup struct {
 	ClassName string
 	FileName  string
 	HelpText  string
+	Hidden    bool
 	Commands  map[string]*Command
 	Groups    map[string]*CommandGroup
 }

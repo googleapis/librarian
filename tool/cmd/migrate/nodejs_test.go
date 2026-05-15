@@ -213,3 +213,72 @@ nodejs_gapic_library(
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestParseOwlBotAPIPaths(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, p := range []string{
+		"google/cloud/fake/v1",
+		"google/cloud/fake/v2",
+		"google/cloud/fake/dashboard/v1",
+	} {
+		fullPath := filepath.Join(tmpDir, p)
+		if err := os.MkdirAll(fullPath, 0755); err != nil {
+			t.Fatal(err)
+		}
+		bazelContent := `
+nodejs_gapic_library(
+    name = "fake_nodejs_gapic",
+    package_name = "@google-cloud/fake",
+)
+`
+		if err := os.WriteFile(filepath.Join(fullPath, "BUILD.bazel"), []byte(bazelContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	for _, test := range []struct {
+		name   string
+		owlBot *owlBotYAML
+		want   []*config.API
+	}{
+		{
+			name: "standard base path",
+			owlBot: &owlBotYAML{
+				DeepCopyRegex: []owlBotCopyRule{
+					{Source: "/google/cloud/fake/(.*)/.*-nodejs"},
+				},
+			},
+			want: []*config.API{
+				{Path: "google/cloud/fake/v1"},
+				{Path: "google/cloud/fake/v2"},
+			},
+		},
+		{
+			name: "with api-name metadata",
+			owlBot: &owlBotYAML{
+				DeepCopyRegex: []owlBotCopyRule{
+					{Source: "/google/cloud/fake/(.*)/.*-nodejs"},
+				},
+				APIName: "dashboard",
+			},
+			want: []*config.API{
+				{Path: "google/cloud/fake/dashboard/v1"},
+			},
+		},
+		{
+			name:   "empty copy regex",
+			owlBot: &owlBotYAML{},
+			want:   nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := parseOwlBotAPIPaths(test.owlBot, tmpDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("parseOwlBotAPIPaths mismatch for api-name %q (-want +got):\n%s", test.owlBot.APIName, diff)
+			}
+		})
+	}
+}

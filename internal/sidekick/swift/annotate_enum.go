@@ -32,7 +32,9 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
-		c.annotateUniqueEnumValue(ev)
+		if err := c.annotateUniqueEnumValue(ev); err != nil {
+			return err
+		}
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 		if ev.Number == 0 {
 			defaultCaseName = ev.Codec.(*enumValueAnnotations).CaseName
@@ -53,7 +55,10 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 	}
 
-	docLines := c.formatDocumentation(enum.Documentation)
+	docLines, err := c.formatDocumentation(enum.Documentation, enum.Scopes())
+	if err != nil {
+		return err
+	}
 	annotations := &enumAnnotations{
 		CopyrightYear:   model.CopyrightYear,
 		BoilerPlate:     model.BoilerPlate,

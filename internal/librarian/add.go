@@ -28,8 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian/dart"
+	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -131,6 +133,8 @@ func deriveLibraryName(language string, api string) string {
 		return dart.DefaultLibraryName(api)
 	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
+	case config.LanguageGcloud:
+		return gcloud.DefaultLibraryName(api)
 	case config.LanguageGo:
 		return golang.DefaultLibraryName(api)
 	case config.LanguageJava:
@@ -178,6 +182,8 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 // always as simple for historical reasons.
 func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
 	switch cfg.Language {
+	case config.LanguageNodejs:
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	case config.LanguagePython:
 		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
 	default:
@@ -254,7 +260,7 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 			return "", nil, err
 		}
 		existingLib.APIs = append(existingLib.APIs, api)
-	case config.LanguageGo:
+	case config.LanguageGo, config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
@@ -274,15 +280,32 @@ func syncToStateYAML(repoDir string, cfg *config.Config) error {
 		if legacyLib == nil {
 			// Add a new library
 			state.Libraries = append(state.Libraries, createLegacyLibrary(cfg.Language, lib))
-			continue
+		} else {
+			existingAPIs := make(map[string]bool)
+			for _, api := range legacyLib.APIs {
+				existingAPIs[api.Path] = true
+			}
+			for _, api := range lib.APIs {
+				if !existingAPIs[api.Path] {
+					legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
+				}
+			}
 		}
-		existingAPIs := make(map[string]bool)
-		for _, api := range legacyLib.APIs {
-			existingAPIs[api.Path] = true
-		}
-		for _, api := range lib.APIs {
-			if !existingAPIs[api.Path] {
-				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
+		if lib.Preview != nil {
+			previewID := lib.Name + "-preview"
+			legacyPreview := state.LibraryByID(previewID)
+			if legacyPreview == nil {
+				state.Libraries = append(state.Libraries, createLegacyPreviewLibrary(cfg.Language, lib.Name, lib.Preview))
+			} else {
+				existingPreviewAPIs := make(map[string]bool)
+				for _, api := range legacyPreview.APIs {
+					existingPreviewAPIs[api.Path] = true
+				}
+				for _, api := range lib.Preview.APIs {
+					if !existingPreviewAPIs[api.Path] {
+						legacyPreview.APIs = append(legacyPreview.APIs, &legacyconfig.API{Path: api.Path})
+					}
+				}
 			}
 		}
 	}
@@ -332,6 +355,38 @@ func createLegacyLibrary(language string, lib *config.Library) *legacyconfig.Lib
 			fmt.Sprintf("packages/%s/docs/", lib.Name),
 		}
 		legacyLib.TagFormat = "{id}-v{version}"
+	}
+	return legacyLib
+}
+
+func createLegacyPreviewLibrary(language string, stableName string, previewLib *config.Library) *legacyconfig.LibraryState {
+	libAPIs := make([]*legacyconfig.API, 0, len(previewLib.APIs))
+	for _, api := range previewLib.APIs {
+		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
+	}
+	legacyLib := &legacyconfig.LibraryState{
+		ID:      stableName + "-preview",
+		Version: previewLib.Version,
+		APIs:    libAPIs,
+	}
+	switch language {
+	case config.LanguageGo:
+		legacyLib.SourceRoots = []string{
+			fmt.Sprintf("preview/internal/%s", stableName),
+		}
+		legacyLib.TagFormat = fmt.Sprintf("%s/v{version}", stableName)
+	case config.LanguagePython:
+		legacyLib.SourceRoots = []string{
+			fmt.Sprintf("preview-packages/%s", stableName),
+		}
+		legacyLib.ReleaseExcludePaths = []string{
+			fmt.Sprintf("preview-packages/%s/.repo-metadata.json", stableName),
+			fmt.Sprintf("preview-packages/%s/noxfile.py", stableName),
+			fmt.Sprintf("preview-packages/%s/tests/", stableName),
+			fmt.Sprintf("preview-packages/%s/README.rst", stableName),
+			fmt.Sprintf("preview-packages/%s/docs/", stableName),
+		}
+		legacyLib.TagFormat = fmt.Sprintf("%s-v{version}", stableName)
 	}
 	return legacyLib
 }

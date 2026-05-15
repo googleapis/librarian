@@ -24,7 +24,7 @@ import (
 	"github.com/iancoleman/strcase"
 )
 
-func buildCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+func newCommand(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
 	args, err := newArguments(method, overrides, model, service)
 	if err != nil {
 		return nil, err
@@ -35,21 +35,59 @@ func buildCommand(method *api.Method, overrides *provider.Config, model *api.API
 		return nil, err
 	}
 
-	useUpdateMask := updateMask(method)
+	useUpdateMask := updateMask(model, method, overrides)
 	return &Command{
 		Name:                 name(method),
-		Hidden:               hidden(overrides),
+		Hidden:               hidden(overrides, method),
 		HelpText:             helpText(overrides, method, model),
 		APIVersion:           apiVersion,
 		Collection:           collectionPath(method, service, false),
 		Method:               requestMethod(method),
 		Arguments:            args,
 		ResponseIDField:      responseIDField(method),
-		OutputFormat:         outputFormat(),
+		OutputFormat:         outputFormat(overrides, method),
 		ReadModifyUpdate:     provider.IsUpdate(method),
 		StarUpdateMask:       useUpdateMask,
 		DisableAutoFieldMask: useUpdateMask,
 		Async:                async(method, model, service),
+	}, nil
+}
+
+// newWaitCommand synthesizes a 'wait' command for operations based on GetOperation method.
+func newWaitCommand(getMethod *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Command, error) {
+	arg, err := positionalResourceArg(getMethod, overrides, model, service)
+	if err != nil {
+		return nil, err
+	}
+
+	if arg == nil {
+		return nil, fmt.Errorf("missing positional resource argument for wait command")
+	}
+
+	apiVersion, err := provider.APIVersionFromMethod(getMethod)
+	if err != nil {
+		return nil, err
+	}
+
+	arg.HelpText = "The name of the operation resource to wait on."
+	waitArgs := []Argument{*arg}
+
+	return &Command{
+		Name:   "wait",
+		Hidden: hidden(overrides, getMethod),
+		HelpText: HelpText{
+
+			Brief:       "Wait operations",
+			Description: "Wait an operation",
+			Examples:    "To wait the operation, run:\n\n    $ {command}",
+		},
+		APIVersion: apiVersion,
+		Collection: collectionPath(getMethod, service, false),
+		Arguments:  waitArgs,
+		Async: &Async{
+			Collection:            collectionPath(getMethod, service, true),
+			ExtractResourceResult: false,
+		},
 	}, nil
 }
 
@@ -69,11 +107,9 @@ func responseIDField(method *api.Method) string {
 	return ""
 }
 
-// outputFormat generates the string output format for List commands.
-// TODO(https://github.com/googleapis/librarian/issues/5231): Make this default configurable by gcloud.yaml.
-// Use tableFormat if specified.
-func outputFormat() string {
-	return ""
+// TODO(https://github.com/googleapis/librarian/issues/5231): add default table output if not specified in the config.
+func outputFormat(overrides *provider.Config, method *api.Method) string {
+	return provider.OutputFormat(overrides, method.ID)
 }
 
 // async creates the `Async` part of the command definition for long-running operations.
@@ -110,12 +146,12 @@ func async(method *api.Method, model *api.API, service *api.Service) *Async {
 	return async
 }
 
-func hidden(overrides *provider.Config) bool {
-	if overrides != nil && len(overrides.APIs) > 0 {
-		return overrides.APIs[0].RootIsHidden
+func hidden(overrides *provider.Config, method *api.Method) bool {
+	apiCfg := provider.FindAPIConfig(overrides, method)
+	if apiCfg != nil {
+		return apiCfg.RootIsHidden
 	}
-	// Default to hidden if no API overrides are provided.
-	return true
+	return false
 }
 
 func helpText(overrides *provider.Config, method *api.Method, model *api.API) HelpText {
@@ -131,8 +167,8 @@ func helpText(overrides *provider.Config, method *api.Method, model *api.API) He
 func requestMethod(method *api.Method) string {
 	// For custom methods (AIP-136), the `method` field in the request configuration
 	// MUST match the custom verb defined in the HTTP binding (e.g., ":exportData" -> "exportData").
-	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != nil {
-		return *method.PathInfo.Bindings[0].PathTemplate.Verb
+	if method.PathInfo != nil && len(method.PathInfo.Bindings) > 0 && method.PathInfo.Bindings[0].PathTemplate.Verb != "" {
+		return method.PathInfo.Bindings[0].PathTemplate.Verb
 	} else if !provider.IsStandardMethod(method) {
 		commandName, _ := provider.GetCommandName(method)
 		// GetCommandName returns snake_case (e.g. "export_data"), but request.method expects camelCase (e.g. "exportData").
@@ -142,15 +178,10 @@ func requestMethod(method *api.Method) string {
 	return ""
 }
 
-type fieldWithPrefix struct {
-	field  *api.Field
-	prefix []string
-}
-
 type classifiedFields struct {
-	primaryField    *fieldWithPrefix
-	resourceIdField *fieldWithPrefix
-	other           []fieldWithPrefix
+	primaryField    []*api.Field
+	resourceIdField []*api.Field
+	other           [][]*api.Field
 }
 
 // newArguments generates the set of arguments for a command by parsing the
@@ -169,27 +200,28 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 	if cf.primaryField != nil {
 		var idField *api.Field
 		if cf.resourceIdField != nil {
-			idField = cf.resourceIdField.field
+			idField = cf.resourceIdField[len(cf.resourceIdField)-1]
 		}
-		arg := buildPrimaryResourceArgument(&argumentParams{
+		arg := newPrimaryResourceArgument(&argumentParams{
 			method:    method,
 			overrides: overrides,
 			model:     model,
 			service:   service,
-			field:     cf.primaryField.field,
-			apiField:  cf.primaryField.prefix,
+			field:     cf.primaryField[len(cf.primaryField)-1],
+			fieldPath: cf.primaryField,
 		}, idField)
 		args = append(args, arg)
 	}
 
-	for _, fwp := range cf.other {
-		arg, err := buildArgument(&argumentParams{
+	for _, path := range cf.other {
+		field := path[len(path)-1]
+		arg, err := newArgument(&argumentParams{
 			method:    method,
 			overrides: overrides,
 			model:     model,
 			service:   service,
-			field:     fwp.field,
-			apiField:  fwp.prefix,
+			field:     field,
+			fieldPath: path,
 		})
 		if err != nil {
 			return nil, err
@@ -203,6 +235,32 @@ func newArguments(method *api.Method, overrides *provider.Config, model *api.API
 	return args, nil
 }
 
+func positionalResourceArg(method *api.Method, overrides *provider.Config, model *api.API, service *api.Service) (*Argument, error) {
+	cf, err := categorizeFields(method, model)
+	if err != nil {
+		return nil, err
+	}
+
+	if cf.primaryField == nil {
+		return nil, nil
+	}
+
+	var idField *api.Field
+	if cf.resourceIdField != nil {
+		idField = cf.resourceIdField[len(cf.resourceIdField)-1]
+	}
+
+	arg := newPrimaryResourceArgument(&argumentParams{
+		method:    method,
+		overrides: overrides,
+		model:     model,
+		service:   service,
+		field:     cf.primaryField[len(cf.primaryField)-1],
+		fieldPath: cf.primaryField,
+	}, idField)
+	return &arg, nil
+}
+
 // categorizeFields gathers fields from the method input type, expanding the body field
 // if present, and separates them into at most one primary resource field, at most one
 // resource ID field, and other fields. Returns an error if multiple are found.
@@ -213,50 +271,42 @@ func categorizeFields(method *api.Method, model *api.API) (classifiedFields, err
 		bodyFieldPath = method.PathInfo.BodyFieldPath
 	}
 
-	var collected []fieldWithPrefix
+	var collected [][]*api.Field
 	for _, field := range method.InputType.Fields {
 		isExpandableMessage := field.MessageType != nil && !field.Map
 		isBodyWildcard := bodyFieldPath == "*"
 		isBodyField := bodyFieldPath == field.Name || isBodyWildcard
 
-		var prefix []string
-		if isBodyWildcard {
-			prefix = append(prefix, method.InputType.Name)
-		}
+		var path []*api.Field
 
 		if isExpandableMessage && isBodyField {
-			prefix = append(prefix, field.JSONName)
+			path = append(path, field)
 			for _, f := range field.MessageType.Fields {
-				collected = append(collected, fieldWithPrefix{
-					field:  f,
-					prefix: append(append([]string{}, prefix...), f.JSONName),
-				})
+				collected = append(collected, append(slices.Clone(path), f))
 			}
 			continue
 		}
 
-		collected = append(collected, fieldWithPrefix{
-			field:  field,
-			prefix: append(prefix, field.JSONName),
-		})
+		collected = append(collected, append(path, field))
 	}
 
-	for _, fwp := range collected {
+	for _, path := range collected {
+		field := path[len(path)-1]
 		switch {
-		case provider.IsPrimaryResourceField(fwp.field, method):
+		case provider.IsPrimaryResourceField(field, method):
 			if cf.primaryField != nil {
-				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", method.Name, cf.primaryField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple primary resource fields: %q and %q", method.Name, cf.primaryField[len(cf.primaryField)-1].Name, field.Name)
 			}
-			cf.primaryField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsResourceIdField(fwp.field, method, model):
+			cf.primaryField = path
+		case provider.IsResourceIdField(field, method, model):
 			if cf.resourceIdField != nil {
-				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", method.Name, cf.resourceIdField.field.Name, fwp.field.Name)
+				return cf, fmt.Errorf("method %q has multiple resource ID fields: %q and %q", method.Name, cf.resourceIdField[len(cf.resourceIdField)-1].Name, field.Name)
 			}
-			cf.resourceIdField = &fieldWithPrefix{field: fwp.field, prefix: fwp.prefix}
-		case provider.IsCreate(method) && fwp.field.Name == "name":
+			cf.resourceIdField = path
+		case provider.IsCreate(method) && field.Name == "name":
 			// Ignore name field in Create methods as it's redundant with resource_id
 		default:
-			cf.other = append(cf.other, fwp)
+			cf.other = append(cf.other, path)
 		}
 	}
 
@@ -304,8 +354,12 @@ func collectionPath(method *api.Method, service *api.Service, isAsync bool) []st
 	return slices.Compact(collections)
 }
 
-func updateMask(method *api.Method) bool {
+func updateMask(model *api.API, method *api.Method, overrides *provider.Config) bool {
 	if !provider.IsUpdate(method) || method.InputType == nil {
+		return false
+	}
+	version := provider.APIVersionFromModel(model)
+	if !provider.SupportsStarUpdateMasks(overrides, method.Service.Name, version) {
 		return false
 	}
 	for _, f := range method.InputType.Fields {

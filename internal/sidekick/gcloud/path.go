@@ -18,9 +18,26 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/iancoleman/strcase"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/surfer/provider"
 )
+
+// subgroupName returns the kebab-cased last literal segment of the method's
+// primary binding path. It returns ("", false) when the method has no
+// primary binding or the binding has no literal segments.
+func subgroupName(method *api.Method) (string, bool) {
+	binding := provider.PrimaryBinding(method)
+	if binding == nil {
+		return "", false
+	}
+	segments := provider.GetLiteralSegments(binding.PathTemplate.Segments)
+	if len(segments) == 0 {
+		return "", false
+	}
+	return strcase.ToKebab(segments[len(segments)-1]), true
+}
 
 // buildCommand constructs a Command for a method. The command's flags name
 // each component of the resource the method operates on, and (when the
@@ -61,7 +78,9 @@ func resourceSegments(method *api.Method, model *api.API) []api.PathSegment {
 
 // pathFlagsFromSegments returns one required string flag for each variable
 // segment in the pattern, named after the variable's last FieldPath
-// component. Duplicates (same FieldPath) are skipped.
+// component. Duplicates (same FieldPath) are skipped. The "project"
+// variable is also skipped because it is provided globally on the root
+// gcloud command and inherited by subcommands.
 func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
 	var flags []Flag
 	seen := map[string]bool{}
@@ -70,6 +89,9 @@ func pathFlagsFromSegments(segments []api.PathSegment) []Flag {
 			continue
 		}
 		name := seg.Variable.FieldPath[len(seg.Variable.FieldPath)-1]
+		if name == "project" {
+			continue
+		}
 		if seen[name] {
 			continue
 		}
@@ -86,8 +108,8 @@ func pathFormatFromSegments(segments []api.PathSegment) string {
 	var parts []string
 	for _, seg := range segments {
 		switch {
-		case seg.Literal != nil:
-			parts = append(parts, *seg.Literal)
+		case seg.Literal != "":
+			parts = append(parts, seg.Literal)
 		case seg.Variable != nil && len(seg.Variable.FieldPath) > 0:
 			parts = append(parts, "%s")
 			hasVar = true

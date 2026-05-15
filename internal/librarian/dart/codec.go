@@ -64,7 +64,7 @@ func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Source
 		Codec:               buildCodec(library),
 		Override: api.ModelOverride{
 			Name:        name,
-			Description: library.DescriptionOverride,
+			Description: svcConfig.Description,
 			Title:       title,
 		},
 	}

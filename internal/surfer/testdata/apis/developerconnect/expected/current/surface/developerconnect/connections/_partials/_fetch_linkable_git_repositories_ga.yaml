@@ -31,6 +31,7 @@
           The name of the Connection.
           Format: `projects/*/locations/*/connections/*`.
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project

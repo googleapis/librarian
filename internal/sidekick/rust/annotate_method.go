@@ -291,7 +291,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			Value: m.APIVersion,
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Service.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -593,8 +593,8 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		if i > 0 {
 			sb.WriteString("/")
 		}
-		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
+		if seg.Literal != "" {
+			sb.WriteString(seg.Literal)
 		} else if seg.Variable != nil {
 			sb.WriteString("{}")
 		}

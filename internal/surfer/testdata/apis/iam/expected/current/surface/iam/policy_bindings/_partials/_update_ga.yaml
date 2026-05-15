@@ -17,7 +17,6 @@
 - release_tracks:
     - GA
   auto_generated: true
-  hidden: true
   help_text:
     brief: Update PolicyBinding instance.
     description: |
@@ -55,7 +54,7 @@
               parameter_name: policyBindingsId
           collection: iam.organizations.locations.policyBindings
           disable_auto_completers: false
-          name: policy_binding
+          name: policyBinding
           plural_name: policyBindings
         required: true
       - arg_name: etag
@@ -142,8 +141,6 @@
       - iam.folders.locations.policyBindings
       - iam.organizations.locations.policyBindings
       - iam.projects.locations.policyBindings
-    static_fields:
-      updateMask: '*'
   async:
     collection:
       - iam.folders.locations.operations
@@ -151,5 +148,4 @@
       - iam.projects.locations.operations
     extract_resource_result: true
   update:
-    disable_auto_field_mask: true
     read_modify_update: true

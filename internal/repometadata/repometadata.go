@@ -126,12 +126,8 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
-	apiDescription := api.Description
-	if library.DescriptionOverride != "" {
-		apiDescription = library.DescriptionOverride
-	}
 	return &RepoMetadata{
-		APIDescription:       apiDescription,
+		APIDescription:       api.Description,
 		APIID:                api.ServiceName,
 		APIShortname:         api.ShortName,
 		DistributionName:     library.Name,

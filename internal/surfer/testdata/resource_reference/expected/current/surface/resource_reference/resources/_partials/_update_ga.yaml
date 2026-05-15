@@ -49,6 +49,7 @@
       - arg_name: reference
         help_text: Reference to another resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -68,6 +69,7 @@
       - arg_name: another-reference
         help_text: Reference to another resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -79,7 +81,7 @@
               parameter_name: anotherReferencesId
           collection: resourcereference.projects.anotherReferences
           disable_auto_completers: true
-          name: another_reference
+          name: anotherReference
           plural_name: anotherReferences
         required: false
         resource_method_params:
@@ -87,6 +89,7 @@
       - arg_name: multitype-reference
         help_text: Reference to multitype resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -106,6 +109,7 @@
       - arg_name: another-multitype-reference
         help_text: Reference to another multitype resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -117,7 +121,7 @@
               parameter_name: anotherMultiReferencesId
           collection: resourcereference.projects.anotherMultiReferences
           disable_auto_completers: true
-          name: another_multi_reference
+          name: anotherMultiReference
           plural_name: anotherMultiReferences
         required: false
         resource_method_params:
@@ -125,6 +129,7 @@
       - arg_name: singleton-reference
         help_text: Reference to singleton resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -139,6 +144,7 @@
       - arg_name: global-reference
         help_text: Reference to another singleton resource
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project

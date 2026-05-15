@@ -17,7 +17,6 @@
 - release_tracks:
     - GA
   auto_generated: true
-  hidden: true
   help_text:
     brief: Create PolicyBinding instance.
     description: |
@@ -59,7 +58,7 @@
               parameter_name: policyBindingsId
           collection: iam.organizations.locations.policyBindings
           disable_auto_completers: false
-          name: policy_binding
+          name: policyBinding
           plural_name: policyBindings
         required: true
       - arg_name: etag
@@ -91,7 +90,7 @@
       - arg_name: target
         api_field: policyBinding.target
         help_text: |-
-          Immutable. Target is the full resource name of the resource to
+          Target is the full resource name of the resource to
           which the policy will be bound. Immutable once set.
         is_positional: false
         required: true
@@ -99,7 +98,7 @@
       - arg_name: policy-kind
         api_field: policyBinding.policyKind
         help_text: |-
-          Immutable. The kind of the policy to attach in this binding. This field
+          The kind of the policy to attach in this binding. This field
           must be one of the following:
 
           - Left empty (will be automatically set to the policy kind)
@@ -109,11 +108,11 @@
         choices:
           - arg_value: principal-access-boundary
             enum_value: PRINCIPAL_ACCESS_BOUNDARY
-            help_text: Value for the `principal-access-boundary` field.
+            help_text: Principal access boundary policy kind
       - arg_name: policy
         api_field: policyBinding.policy
         help_text: |-
-          Immutable. The resource name of the policy to be bound. The
+          The resource name of the policy to be bound. The
           binding parent and policy must belong to the same organization.
         is_positional: false
         required: true

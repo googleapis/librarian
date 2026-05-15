@@ -113,9 +113,13 @@ func TestPostProcessAPI(t *testing.T) {
 			Name: libraryName,
 			APIs: []*config.API{api},
 		},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      apiProtos,
+		apiBase: apiBase,
+		protosToCopy: []protoFileToCopy{
+			{
+				absolutePath: apiProtos[0],
+				relativePath: "google/cloud/secretmanager/v1/service.proto",
+			},
+		},
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -190,12 +194,21 @@ func TestRestructureModules(t *testing.T) {
 	}
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
+	additionalProtoPath := filepath.Join(googleapisDir, "google", "cloud", "oslogin", "common", "common.proto")
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      []string{protoPath},
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID},
+		apiBase: apiBase,
+		protosToCopy: []protoFileToCopy{
+			{
+				absolutePath: protoPath,
+				relativePath: "google/cloud/secretmanager/v1/service.proto",
+			},
+			{
+				absolutePath: additionalProtoPath,
+				relativePath: "google/cloud/oslogin/common/common.proto",
+			},
+		},
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -219,6 +232,11 @@ func TestRestructureModules(t *testing.T) {
 	if _, err := os.Stat(wantProtoPath); err != nil {
 		t.Errorf("expected proto file at %s, but it was not found: %v", wantProtoPath, err)
 	}
+	// Verify additional proto file location
+	wantAdditionalProtoPath := filepath.Join(destRoot, fmt.Sprintf("proto-%s-%s", libraryName, apiBase), "src", "main", "proto", "google", "cloud", "oslogin", "common", "common.proto")
+	if _, err := os.Stat(wantAdditionalProtoPath); err != nil {
+		t.Errorf("expected additional proto file at %s, but it was not found: %v", wantAdditionalProtoPath, err)
+	}
 }
 
 func TestRestructureModules_CommonProtos(t *testing.T) {
@@ -227,11 +245,10 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: commonProtosLibrary},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: commonProtosLibrary},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
 			ProtoArtifactIDOverride: "proto-google-common-protos",
@@ -253,11 +270,10 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: "secretmanager"},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: "secretmanager"},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -306,11 +322,10 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	}
 
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID},
-		apiBase:        apiBase,
-		protoSourceDir: googleapisDir,
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI:        &config.JavaAPI{},
 	}
@@ -356,11 +371,10 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := postProcessParams{
-		outDir:         tmpDir,
-		library:        &config.Library{Name: libraryID, Java: &config.JavaModule{}},
-		apiBase:        apiBase,
-		protoSourceDir: t.TempDir(), // dummy
-		apiProtos:      nil,
+		outDir:  tmpDir,
+		library: &config.Library{Name: libraryID, Java: &config.JavaModule{}},
+		apiBase: apiBase,
+
 		includeSamples: false,
 		javaAPI: &config.JavaAPI{
 			Monolithic: true,
@@ -433,8 +447,13 @@ func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
 	proto1 := filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")
-	protos := []string{proto1}
-	if err := copyProtos(googleapisDir, protos, destDir); err != nil {
+	protos := []protoFileToCopy{
+		{
+			absolutePath: proto1,
+			relativePath: "google/cloud/secretmanager/v1/service.proto",
+		},
+	}
+	if err := copyProtos(protos, destDir); err != nil {
 		t.Fatal(err)
 	}
 	// Verify proto1 was copied
@@ -446,7 +465,7 @@ func TestCopyProtos_Success(t *testing.T) {
 func TestCopyProtos_ErrorCase(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
-	if err := copyProtos(googleapisDir, []string{"/other/path/proto.proto"}, destDir); err == nil {
+	if err := copyProtos([]protoFileToCopy{{absolutePath: "/other/path/proto.proto", relativePath: "other/path/proto.proto"}}, destDir); err == nil {
 		t.Error("expected error for proto not in googleapisDir, got nil")
 	}
 }
@@ -459,7 +478,10 @@ func TestPostProcessLibrary(t *testing.T) {
 		Name:    "secretmanager",
 		Version: "1.2.3",
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 	}
 	defaultCfg := &config.Config{
@@ -552,7 +574,10 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		Name:    "secretmanager",
 		Version: "1.2.3",
 		APIs: []*config.API{
-			{Path: "google/cloud/secretmanager/v1"},
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
 		},
 	}
 	defaultCfg := &config.Config{
@@ -572,11 +597,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		setup   func(t *testing.T, outDir string)
 		wantErr error
 	}{
-		{
-			name:    "owlbot.py missing",
-			cfg:     defaultCfg,
-			wantErr: errOwlBotMissing,
-		},
 		{
 			name: "findBOMVersion failure",
 			cfg:  &config.Config{},
@@ -616,17 +636,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				}
 			},
 			wantErr: errRunOwlBot,
-		},
-		{
-			name: "syncPOMs failure (missing module directories)",
-			cfg:  defaultCfg,
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErr: errTargetDir,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -888,5 +897,149 @@ func TestCopyFiles_Error(t *testing.T) {
 	}
 	if err := copyFiles(p); err == nil {
 		t.Error("copyFiles() error = nil, want error for non-existent source")
+	}
+}
+
+func TestRemoveKeptFilesFromStaging(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	stagingDir := filepath.Join(outDir, "owl-bot-staging")
+	// Set up dummy files in staging
+	// 1. Explicitly kept file
+	keptFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "File.java")
+	// 2. File matching versionRegexp (not explicitly in Keep)
+	versionFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Version.java")
+	// 3. Regular file (should be preserved in staging)
+	regularFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Regular.java")
+	// 4. File inside an explicitly kept directory
+	keptDirFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
+	// 5. Kept file that does NOT exist in destination (should remain in staging)
+	nonExistentKeptFile := filepath.Join(stagingDir, "v1", "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "NonExistent.java")
+
+	for _, file := range []string{keptFile, versionFile, regularFile, keptDirFile, nonExistentKeptFile} {
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Create corresponding destination files for keptFile, versionFile, and keptDirFile
+	// so that they are recognized as existing and removed from staging.
+	destKeptFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "kept", "File.java")
+	destVersionFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "cloud", "lib", "v1", "stub", "Version.java")
+	destKeptDirFile := filepath.Join(outDir, "google-cloud-lib", "src", "main", "java", "com", "google", "keptdir", "SubDir", "File.java")
+
+	for _, file := range []string{destKeptFile, destVersionFile, destKeptDirFile} {
+		if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(file, []byte("public class Dummy {}"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	library := &config.Library{
+		Name: "lib",
+		APIs: []*config.API{
+			{Path: "google/cloud/lib/v1"},
+		},
+		Keep: []string{
+			"google-cloud-lib/src/main/java/com/google/kept/File.java",
+			"google-cloud-lib/src/main/java/com/google/kept/NonExistent.java",
+			"google-cloud-lib/src/main/java/com/google/keptdir/", // Test with trailing slash
+		},
+	}
+	if err := removeKeptFilesFromStaging(library, outDir); err != nil {
+		t.Fatalf("removeKeptFilesFromStaging failed: %v", err)
+	}
+
+	if _, err := os.Stat(keptFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected kept file %s to be removed from staging, but it exists", keptFile)
+	}
+	if _, err := os.Stat(versionFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected version file %s to be removed from staging due to regex match, but it exists", versionFile)
+	}
+	if _, err := os.Stat(regularFile); err != nil {
+		t.Errorf("expected regular file %s to remain in staging, but got error: %v", regularFile, err)
+	}
+	if _, err := os.Stat(keptDirFile); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected file inside kept dir %s to be removed from staging, but it exists", keptDirFile)
+	}
+	if _, err := os.Stat(nonExistentKeptFile); err != nil {
+		t.Errorf("expected non-existent kept file %s to remain in staging, but got error: %v", nonExistentKeptFile, err)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy verifies that the createOrVerifyOwlbotPy function
+// successfully creates the owlbot.py post-processing script when it is missing
+// and generates a valid script that matches the expected golden content.
+func TestCreateOrVerifyOwlbotPy(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
+		t.Fatal(err)
+	}
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		t.Errorf("expected owlbot.py to be generated: %v", err)
+	}
+	gotContent, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenPath := filepath.Join("testdata", "postprocess", "owlbot.py.golden")
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenPath, gotContent, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	wantContent, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(wantContent), string(gotContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy_AlreadyExists verifies that createOrVerifyOwlbotPy
+// returns nil without modifying the file when owlbot.py already exists.
+func TestCreateOrVerifyOwlbotPy_AlreadyExists(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	existingContent := "existing content"
+	if err := os.WriteFile(owlbotPath, []byte(existingContent), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingContent, string(gotBytes)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy_Error verifies that createOrVerifyOwlbotPy returns an error
+// when os.OpenFile fails with an unexpected error such as permission denied.
+func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := os.Chmod(outDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(outDir, 0755)
+	err := createOrVerifyOwlbotPy(outDir)
+	if !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("error = %v, wantErr %v", err, fs.ErrPermission)
 	}
 }

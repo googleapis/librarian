@@ -35,6 +35,45 @@ import (
 
 const googleapisDir = "../../testdata/googleapis"
 
+func TestIsMixedLibrary(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want bool
+	}{
+		{
+			name: "mixed library case",
+			lib: &config.Library{
+				Output: "packages/typeless-sample-bot",
+				APIs:   nil,
+			},
+			want: true,
+		},
+		{
+			name: "standard gapic lib",
+			lib: &config.Library{
+				Output: "packages/gapic-lib",
+				APIs:   []*config.API{{Path: "google/example/v1"}},
+			},
+			want: false,
+		},
+		{
+			name: "no output set",
+			lib: &config.Library{
+				Output: "",
+				APIs:   nil,
+			},
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if got := IsMixedLibrary(test.lib); got != test.want {
+				t.Errorf("IsMixedLibrary() = %v, want %v", got, test.want)
+			}
+		})
+	}
+}
+
 func TestDerivePackageName(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -159,11 +198,11 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
 				"--rest-numeric-enums",
@@ -181,11 +220,11 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				"--package-name", "@google-cloud/access-approval",
 				"--metadata",
 				"--rest-numeric-enums",
@@ -207,15 +246,15 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				"--package-name", "@google-cloud/translate",
 				"--metadata",
 				"--rest-numeric-enums",
-				"--bundle-config", filepath.Join(absGoogleapisDir, "google/cloud/translate/v3/translate_gapic.yaml"),
+				"--bundle-config", "google/cloud/translate/v3/translate_gapic.yaml",
 				"--auto-populate-field-oauth-scope",
 				"--handwritten-layer",
 				"--main-service", "translate",
@@ -231,10 +270,10 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml"),
+				"--service-yaml", "google/cloud/apigeeconnect/v1/apigeeconnect_1.yaml",
 				"--package-name", "@google-cloud/apigeeconnect",
 				"--metadata",
 				"--rest-numeric-enums",
@@ -249,8 +288,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
 				"--package-name", "@google-cloud/fakefoo",
 				"--metadata",
@@ -269,11 +308,11 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
 				"--rest-numeric-enums",
@@ -297,11 +336,11 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			want: []string{
 				"gapic-generator-typescript",
 				"--protoc=" + protocPath,
-				"--common-proto-path=" + absGoogleapisDir,
-				"-I", absGoogleapisDir,
+				"--common-proto-path=.",
+				"-I", ".",
 				"--output-dir", "staging",
-				"--grpc-service-config", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json"),
-				"--service-yaml", filepath.Join(absGoogleapisDir, "google/cloud/secretmanager/v1/secretmanager_v1.yaml"),
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
 				"--package-name", "@google-cloud/secretmanager",
 				"--metadata",
 				"--rest-numeric-enums",
@@ -445,8 +484,13 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
-		t.Error("expected owl-bot-staging to be removed after post-processing")
+	// Verify that the package staging directory is successfully cleaned up
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected package staging directory to be removed after post-processing")
+	}
+	// Verify that the top-level owl-bot-staging parent folder itself remains intact to support parallel executions
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
+		t.Error("expected top-level owl-bot-staging directory to remain intact")
 	}
 }
 
@@ -549,8 +593,13 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); !errors.Is(err, fs.ErrNotExist) {
-		t.Error("expected owl-bot-staging to be removed after post-processing")
+	// Verify package staging directory is cleaned up
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging", library.Name)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected package staging directory to be removed after post-processing")
+	}
+	// Verify parent folder remains intact
+	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
+		t.Error("expected top-level owl-bot-staging directory to remain intact")
 	}
 
 	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {

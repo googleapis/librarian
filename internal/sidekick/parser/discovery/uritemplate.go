@@ -150,5 +150,5 @@ func parseLiteral(input string) (*api.PathSegment, int, error) {
 	if tail != "" && tail[0] != slash {
 		return nil, index, fmt.Errorf("found unexpected character %v in literal %q, stopped at position %v", tail[0], input, index)
 	}
-	return &api.PathSegment{Literal: &literal}, width, nil
+	return &api.PathSegment{Literal: literal}, width, nil
 }

@@ -188,10 +188,10 @@ func (d Default) MarshalYAML() (any, error) {
 type Arguments struct {
 	// Params is the ordered list of arguments the command accepts. Each entry
 	// becomes either a positional argument or a flag.
-	Params []Argument `yaml:"params,omitempty"`
+	Params []any `yaml:"params,omitempty"`
 }
 
-// Argument describes a single command argument.
+// Argument describes a standard command argument (scalar flag or positional).
 type Argument struct {
 	// ArgName is the name of the argument as it appears to the user, such as
 	// instance-id. For flags gcloud prepends --.
@@ -211,18 +211,6 @@ type Argument struct {
 
 	// IsPositional makes the argument positional rather than a flag.
 	IsPositional bool `yaml:"is_positional"`
-
-	// IsPrimaryResource marks this argument as the primary resource the
-	// command operates on. At most one argument per command may set this.
-	IsPrimaryResource bool `yaml:"is_primary_resource,omitempty"`
-
-	// RequestIDField is the request-message field that receives the
-	// user-supplied resource ID on a create command, for example instanceId.
-	RequestIDField string `yaml:"request_id_field,omitempty"`
-
-	// ResourceSpec declares this argument as a gcloud concept resource and
-	// describes its collection and attributes.
-	ResourceSpec *ResourceSpec `yaml:"resource_spec,omitempty"`
 
 	// Required makes the argument mandatory. gcloud rejects invocations that
 	// leave it unset.
@@ -246,6 +234,48 @@ type Argument struct {
 	// Choices is the fixed set of values the user can supply. Used for
 	// enum-typed fields; each choice maps an arg_value to an enum_value.
 	Choices []Choice `yaml:"choices,omitempty"`
+
+	// Spec lists the sub-fields of a structured argument such as a map. For a
+	// map field, Spec typically contains entries for key and value.
+	Spec []ArgSpec `yaml:"spec,omitempty"`
+}
+
+// ResourceArg describes a concept-resource command argument.
+type ResourceArg struct {
+	// ArgName is the name of the argument as it appears to the user, such as
+	// instance. For flags gcloud prepends --.
+	ArgName string `yaml:"arg_name,omitempty"`
+
+	// HelpText is the help text shown for the argument in gcloud help and
+	// error messages.
+	HelpText string `yaml:"help_text"`
+
+	// IsPositional makes the argument positional rather than a flag.
+	IsPositional bool `yaml:"is_positional"`
+
+	// IsPrimaryResource marks this argument as the primary resource the
+	// command operates on. At most one argument per command may set this.
+	IsPrimaryResource bool `yaml:"is_primary_resource"`
+
+	// RequestIDField is the request-message field that receives the
+	// user-supplied resource ID on a create command, for example instanceId.
+	RequestIDField string `yaml:"request_id_field,omitempty"`
+
+	// ResourceSpec declares this argument as a gcloud concept resource and
+	// describes its collection and attributes.
+	ResourceSpec *ResourceSpec `yaml:"resource_spec,omitempty"`
+
+	// Required makes the argument mandatory. gcloud rejects invocations that
+	// leave it unset.
+	Required bool `yaml:"required"`
+
+	// Repeated accepts more than one value for the argument and maps to a
+	// repeated API field.
+	Repeated bool `yaml:"repeated,omitempty"`
+
+	// Clearable causes gcloud to also generate companion flags such as
+	// --clear-..., --add-..., and --remove-... on update commands.
+	Clearable bool `yaml:"clearable,omitempty"`
 
 	// Spec lists the sub-fields of a structured argument such as a map. For a
 	// map field, Spec typically contains entries for key and value.

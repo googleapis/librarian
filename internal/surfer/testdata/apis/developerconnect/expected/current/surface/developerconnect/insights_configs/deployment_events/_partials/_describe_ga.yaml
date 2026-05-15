@@ -49,7 +49,7 @@
               parameter_name: deploymentEventsId
           collection: developerconnect.projects.locations.insightsConfigs.deploymentEvents
           disable_auto_completers: false
-          name: deployment_event
+          name: deploymentEvent
           plural_name: deploymentEvents
         required: true
   request:

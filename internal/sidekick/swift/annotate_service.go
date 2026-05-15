@@ -20,6 +20,7 @@ import (
 
 type serviceAnnotations struct {
 	Name             string
+	ClientName       string
 	DocLines         []string
 	RestMethods      []*api.Method
 	PackageName      string
@@ -28,7 +29,10 @@ type serviceAnnotations struct {
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
-	docLines := c.formatDocumentation(service.Documentation)
+	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
+	if err != nil {
+		return err
+	}
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
@@ -44,6 +48,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	}
 	annotations := &serviceAnnotations{
 		Name:             pascalCase(service.Name),
+		ClientName:       pascalCase(service.Name + "Client"),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
 		PackageName:      c.PackageName,

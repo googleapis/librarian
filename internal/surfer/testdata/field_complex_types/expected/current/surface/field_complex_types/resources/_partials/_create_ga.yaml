@@ -55,13 +55,13 @@
         choices:
           - arg_value: default
             enum_value: DEFAULT
-            help_text: Value for the `default` field.
+            help_text: Default.
           - arg_value: one
             enum_value: ONE
-            help_text: Value for the `one` field.
+            help_text: Enum One.
           - arg_value: two
             enum_value: TWO
-            help_text: Value for the `two` field.
+            help_text: Enum Two.
       - arg_name: my-message
         api_field: resource.myMessage
         help_text: Message field.

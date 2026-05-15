@@ -626,6 +626,10 @@ func TestCanDeriveAPIPath(t *testing.T) {
 			language: config.LanguagePython,
 		},
 		{
+			name:     "nodejs",
+			language: config.LanguageNodejs,
+		},
+		{
 			name:     "rust",
 			language: config.LanguageRust,
 			want:     true,
@@ -640,7 +644,7 @@ func TestCanDeriveAPIPath(t *testing.T) {
 	}
 }
 
-func TestIsVeneer(t *testing.T) {
+func TestIsMixedLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		language string
@@ -648,7 +652,7 @@ func TestIsVeneer(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "rust is veneer",
+			name:     "rust is mixed library",
 			language: config.LanguageRust,
 			lib: &config.Library{
 				Rust: &config.RustCrate{
@@ -658,13 +662,13 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "rust is not veneer",
+			name:     "rust is not mixed library",
 			language: config.LanguageRust,
 			lib:      &config.Library{},
 			want:     false,
 		},
 		{
-			name:     "nodejs handwritten tool is veneer",
+			name:     "nodejs handwritten tool is mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/typeless-sample-bot",
@@ -673,7 +677,7 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "nodejs gapic lib is not veneer",
+			name:     "nodejs gapic lib is not mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/gapic-lib",
@@ -683,8 +687,8 @@ func TestIsVeneer(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := isVeneer(test.language, test.lib); got != test.want {
-				t.Errorf("isVeneer(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
+			if got := isMixedLibrary(test.language, test.lib); got != test.want {
+				t.Errorf("isMixedLibrary(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
 			}
 		})
 	}
@@ -712,7 +716,6 @@ func TestResolvePreview(t *testing.T) {
 				Name:                "base-name",
 				Version:             "1.0.0",
 				CopyrightYear:       "2024",
-				DescriptionOverride: "base desc",
 				Keep:                []string{"base-keep"},
 				Output:              "base-out",
 				Roots:               []string{"base-root"},
@@ -727,7 +730,6 @@ func TestResolvePreview(t *testing.T) {
 					Version:             "1.1.0-alpha",
 					APIs:                []*config.API{{Path: "preview/api"}},
 					CopyrightYear:       "2025",
-					DescriptionOverride: "preview desc",
 					Keep:                []string{"preview-keep"},
 					Output:              "preview-out",
 					Roots:               []string{"preview-root"},
@@ -744,7 +746,6 @@ func TestResolvePreview(t *testing.T) {
 				Version:             "1.1.0-alpha",
 				APIs:                []*config.API{{Path: "preview/api"}},
 				CopyrightYear:       "2025",
-				DescriptionOverride: "preview desc",
 				Keep:                []string{"preview-keep"},
 				Output:              "preview-out",
 				Roots:               []string{"preview-root"},
@@ -1050,13 +1051,11 @@ func TestMergeGo(t *testing.T) {
 			dst:  &config.GoModule{ModulePathVersion: "v1"},
 			src: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
 			want: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
@@ -1102,7 +1101,7 @@ func TestMergeJava(t *testing.T) {
 				CodeownerTeam:                "team",
 				DistributionNameOverride:     "dist",
 				ExcludedDependencies:         "ex-dep",
-				ExcludedPOMs:                 "ex-pom",
+				ExcludedPOMs:                 []string{"ex-pom"},
 				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
@@ -1110,7 +1109,6 @@ func TestMergeJava(t *testing.T) {
 				LibraryTypeOverride:          "type",
 				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
-				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
 				BillingNotRequired:           true,
@@ -1126,7 +1124,7 @@ func TestMergeJava(t *testing.T) {
 				CodeownerTeam:                "team",
 				DistributionNameOverride:     "dist",
 				ExcludedDependencies:         "ex-dep",
-				ExcludedPOMs:                 "ex-pom",
+				ExcludedPOMs:                 []string{"ex-pom"},
 				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
@@ -1134,7 +1132,6 @@ func TestMergeJava(t *testing.T) {
 				LibraryTypeOverride:          "type",
 				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
-				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
 				BillingNotRequired:           true,

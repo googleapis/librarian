@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -35,6 +36,9 @@ const (
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
+	// versionsFileName is the name of the  manifest file that keeps track of
+	// artifact versions for release-please.
+	versionsFileName = "versions.txt"
 )
 
 var (
@@ -58,8 +62,14 @@ var (
 	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
 )
 
+// MissingArtifact pairs an artifact ID with the library it was generated from.
+type MissingArtifact struct {
+	ID      string
+	Library *config.Library
+}
+
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, missingArtifacts []MissingArtifact) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -67,6 +77,16 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
+	versions, err := deriveVersionLines(missingArtifacts)
+	if err != nil {
+		return err
+	}
+	if err := appendVersions(repoPath, versions); err != nil {
+		return err
+	}
+
 	modules, err := searchForJavaModules(repoPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
@@ -82,6 +102,50 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
+}
+
+func deriveVersionLines(missingArtifacts []MissingArtifact) ([]string, error) {
+	var lines []string
+	for _, ma := range missingArtifacts {
+		releasedVersion, err := deriveLastReleasedVersion(ma.Library.Version)
+		if err != nil {
+			return nil, fmt.Errorf("failed to derive released version for %s (%s): %w", ma.ID, ma.Library.Version, err)
+		}
+		lines = append(lines, fmt.Sprintf("%s:%s:%s", ma.ID, releasedVersion, ma.Library.Version))
+	}
+	return lines, nil
+}
+
+func appendVersions(repoPath string, versions []string) error {
+	versionsPath := filepath.Join(repoPath, versionsFileName)
+	if err := appendLines(versionsPath, versions); err != nil {
+		return fmt.Errorf("failed to update %s: %w", versionsFileName, err)
+	}
+	return nil
+}
+
+// appendLines appends the given lines to an existing file, ensuring that it
+// ends with a newline character before appending. It returns an error if the
+// file does not exist.
+func appendLines(path string, lines []string) error {
+	if len(lines) == 0 {
+		return nil
+	}
+	existing, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	buf.Write(existing)
+	// Ensure the file ends with a newline before appending.
+	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
+		buf.WriteByte('\n')
+	}
+	for _, line := range lines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+	}
+	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 var ignoredDirs = map[string]bool{

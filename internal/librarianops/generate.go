@@ -31,7 +31,7 @@ import (
 
 const (
 	branchPrefix = "librarianops-generateall-"
-	commitTitle  = "chore: run librarian update and generate --all"
+	commitTitle  = "feat: update API sources and regenerate"
 	// librarianImageTemplate is a template string to format a language and
 	// version into the name of a Docker image to run when the --docker flag
 	// has been specified.

@@ -15,6 +15,12 @@
 // Package provider contains configuration types and helpers for surfer tools.
 package provider
 
+import (
+	"strings"
+
+	"github.com/googleapis/librarian/internal/sidekick/api"
+)
+
 //go:generate go run -tags configdocgen ../../../../cmd/config_doc_generate.go -input . -output ../../../../doc/gcloud/gcloud-yaml-schema.md -title "gcloud.yaml"
 
 // Config represents the top-level schema of a gcloud config YAML file.
@@ -48,7 +54,7 @@ type API struct {
 	// SupportsStarUpdateMasks indicates that this API supports '*' updateMasks
 	// in accordance with https://google.aip.dev/134#request-message. The
 	// default is assumed to be true for AIP compliant APIs.
-	SupportsStarUpdateMasks bool `yaml:"supports_star_update_masks,omitempty"`
+	SupportsStarUpdateMasks *bool `yaml:"supports_star_update_masks,omitempty"`
 
 	// RootIsHidden applies the gcloud 'hidden' flag to the root command group
 	// of the generated surface.  When true, the top-level command group for
@@ -225,6 +231,19 @@ type ResourcePattern struct {
 	APIVersion string `yaml:"api_version,omitempty"`
 }
 
+// API finds the API configuration that matches the service/API name and version.
+func (c *Config) API(serviceName, version string) *API {
+	if c == nil {
+		return nil
+	}
+	for i, api := range c.APIs {
+		if api.Name == serviceName && api.APIVersion == version {
+			return &c.APIs[i]
+		}
+	}
+	return nil
+}
+
 // FindHelpTextRule finds the help text rule from the config that applies to the given method ID.
 func FindHelpTextRule(c *Config, methodID string) *HelpTextRule {
 	if c == nil || c.APIs == nil {
@@ -261,13 +280,18 @@ func FindFieldHelpTextRule(c *Config, fieldID string) *HelpTextRule {
 	return nil
 }
 
-// APIVersion extracts the API version from the configuration.
-func APIVersion(c *Config) string {
-	if c == nil {
+// OutputFormat returns the output format configuration for the given method from overrides.
+func OutputFormat(c *Config, methodID string) string {
+	if c == nil || c.APIs == nil {
 		return ""
 	}
-	if len(c.APIs) > 0 {
-		return c.APIs[0].APIVersion
+	methodID = strings.TrimPrefix(methodID, ".")
+	for _, api := range c.APIs {
+		for _, fmtRule := range api.OutputFormatting {
+			if fmtRule.Selector == methodID {
+				return fmtRule.Format
+			}
+		}
 	}
 	return ""
 }
@@ -279,4 +303,33 @@ func ShouldGenerateOperations(c *Config) bool {
 		return true
 	}
 	return *c.GenerateOperations
+}
+
+// SupportsStarUpdateMasks returns true if the API/Service supports '*' updateMasks.
+// It matches the service name and API version and defaults to true if omitted.
+func SupportsStarUpdateMasks(c *Config, serviceName, version string) bool {
+	apiConfig := c.API(serviceName, version)
+	if apiConfig == nil {
+		return true
+	}
+	if apiConfig.SupportsStarUpdateMasks == nil {
+		return true
+	}
+	return *apiConfig.SupportsStarUpdateMasks
+}
+
+// FindAPIConfigByService finds the API config that applies to the given service.
+func FindAPIConfigByService(c *Config, service *api.Service) *API {
+	if service == nil {
+		return nil
+	}
+	return c.API(service.Name, apiVersionFromPackage(service.Package))
+}
+
+// FindAPIConfig finds the API config that applies to the given method.
+func FindAPIConfig(c *Config, method *api.Method) *API {
+	if method == nil {
+		return nil
+	}
+	return FindAPIConfigByService(c, method.Service)
 }

@@ -29,6 +29,7 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
+		Hidden:    true,
 		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
 		Description: `publish releases the libraries that were updated in a release commit
@@ -84,7 +85,7 @@ Examples:
 			if cfg.Language == config.LanguageRust {
 				return legacyRustPublish(ctx, cfg, cmd)
 			}
-			return publish(ctx, cfg, cmd.String("release-commit"), cmd.Bool("execute"))
+			return publish(ctx, cmd.String("release-commit"), cmd.Bool("execute"))
 		},
 	}
 }
@@ -99,36 +100,38 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
 	command.Verbose = verbose
-	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, IgnoredChanges)
+	return rust.Publish(ctx, rust.PublishParams{
+		Config:           cfg,
+		DryRun:           dryRun,
+		DryRunKeepGoing:  dryRunKeepGoing,
+		SkipSemverChecks: skipSemverChecks,
+		Verbose:          verbose,
+		IgnoredChanges:   IgnoredChanges,
+	})
 }
 
-// publish implements the publish command. It is provided with the configuration
-// at HEAD, just to find the git executable to use, after which it finds the
-// release commit to publish. The configuration at the release commit is used
-// for all further operations (and the repo will be checked out at that commit).
+// publish implements the publish command. It finds the release commit to
+// publish. The configuration at the release commit is used for all further
+// operations (and the repo will be checked out at that commit).
 // The releaseCommit flag allows a user to identify a specific release commit to
 // publish, in case of overlapping releases being performed. The execute flag
 // says whether to actually publish (true) or just perform a dry run (false).
-func publish(ctx context.Context, cfg *config.Config, releaseCommit string, execute bool) error {
-	gitExe := command.Git
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Git)
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+func publish(ctx context.Context, releaseCommit string, execute bool) error {
+	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
 	var err error
 	if releaseCommit == "" {
-		releaseCommit, err = findLatestReleaseCommitHash(ctx, gitExe)
+		releaseCommit, err = findLatestReleaseCommitHash(ctx)
 		if err != nil {
 			return err
 		}
 	}
-	if err := git.Checkout(ctx, gitExe, releaseCommit); err != nil {
+	if err := git.Checkout(ctx, command.Git, releaseCommit); err != nil {
 		return err
 	}
 	// Reload the config after checking out the release commit.
-	cfg, err = yaml.Read[config.Config](config.LibrarianYAML)
+	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -137,7 +140,7 @@ func publish(ctx context.Context, cfg *config.Config, releaseCommit string, exec
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we want to be able to specify the release commit directly, we
 	// can skip findLatestReleaseCommitHash entirely.)
-	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, gitExe, "HEAD~", config.LibrarianYAML)
+	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, command.Git, "HEAD~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}

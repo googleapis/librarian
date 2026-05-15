@@ -11,24 +11,8 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
-| `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
-
-## Release Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
-
-## Tool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the name of the tool e.g. nox. |
-| `version` | string | Is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
 
@@ -115,7 +99,6 @@ This document describes the schema for the librarian.yaml.
 | `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
-| `description_override` | string | Overrides the library description. |
 | `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
@@ -125,6 +108,7 @@ This document describes the schema for the librarian.yaml.
 | `specification_format` | string | Specifies the API specification format. Valid values are "protobuf" (default) or "discovery". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific library configuration. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific library configuration. |
+| `gcloud` | [GcloudCommand](#gcloudcommand-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
@@ -138,6 +122,8 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+| `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
+| `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -230,6 +216,12 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
+## GcloudCommand Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `client_import_path` | string | Overrides the GAPIC Go client import path that would otherwise be derived from the proto package. Set this when the proto package and the published Go GAPIC location diverge. For example, the proto package google.cloud.recaptchaenterprise.v1 publishes its Go client at "cloud.google.com/go/recaptchaenterprise/v2/apiv1". |
+
 ## GcloudHelpTextRule Configuration
 
 | Field | Type | Description |
@@ -257,7 +249,6 @@ This document describes the schema for the librarian.yaml.
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
-| `path` | string | Is the source path. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
@@ -266,7 +257,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
@@ -274,16 +264,18 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string | Is the source path. |
 | `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
-| `additional_protos` | list of string | Is a list of additional proto files to include in generation. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
+| `additional_protos` | list of string | Is a list of additional proto files to include in GAPIC generation as dependencies. They are NOT included in the standard Proto Java classes generation step and are NOT copied to the destination directory. Use this for common protos that are needed for building the client but should not be packaged with the library. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
+| `additional_protos_to_generate_and_copy` | list of string | Is a list of additional proto files to include in BOTH standard Protocol Buffer Java classes generation and GAPIC generation. They ARE copied to the destination directory (src/main/proto). Use this for protos that belong to this library but are located in a different directory (e.g., common protos specific to this API). |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
 | `skip_proto_class_generation` | list of string | Is a list of proto files to exclude from generating proto module, but included in generating gRPC or GAPIC modules and packaged proto files. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto"). TODO(https://github.com/googleapis/librarian/issues/5661): remove after migration. |
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
-| `proto_grpc_only` | bool | Determines whether to skip GAPIC client generation. It is usually used for proto-only clients that do not define a service in the proto files, with the exception of google/cloud/location. |
+| `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
+| `generate_proto_grpc` | bool (optional) | Indicates whether to generate proto and grpc modules. Defaults to true. If set to false, should also set generate_resource_names to false. |
+| `generate_resource_names` | bool (optional) | Indicates whether to extract resource names from the GAPIC phase. Defaults to true. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
 
@@ -307,7 +299,7 @@ This document describes the schema for the librarian.yaml.
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
 | `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
-| `excluded_poms` | string | Is a list of POM files to exclude. |
+| `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
@@ -315,7 +307,6 @@ This document describes the schema for the librarian.yaml.
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
-| `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
 | `recommended_package` | string | Is the recommended package name. |
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |

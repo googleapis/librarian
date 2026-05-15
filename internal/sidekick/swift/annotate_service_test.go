@@ -24,25 +24,30 @@ import (
 
 func TestAnnotateService(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		serviceName string
-		doc         string
-		wantName    string
-		wantDocs    []string
+		name            string
+		serviceName     string
+		doc             string
+		wantAnnotations *serviceAnnotations
 	}{
 		{
 			name:        "IAM service",
 			serviceName: "IAM",
 			doc:         "IAM service documentation.",
-			wantName:    "IAM",
-			wantDocs:    []string{"IAM service documentation."},
+			wantAnnotations: &serviceAnnotations{
+				Name:       "IAM",
+				ClientName: "IAMClient",
+				DocLines:   []string{"IAM service documentation."},
+			},
 		},
 		{
 			name:        "SecretManagerService",
 			serviceName: "SecretManagerService",
 			doc:         "Secret Manager Service documentation.\nLine 2.",
-			wantName:    "SecretManagerService",
-			wantDocs:    []string{"Secret Manager Service documentation.", "Line 2."},
+			wantAnnotations: &serviceAnnotations{
+				Name:       "SecretManagerService",
+				ClientName: "SecretManagerServiceClient",
+				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -57,12 +62,7 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			want := &serviceAnnotations{
-				Name:     test.wantName,
-				DocLines: test.wantDocs,
-			}
-
-			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model")); diff != "" {
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

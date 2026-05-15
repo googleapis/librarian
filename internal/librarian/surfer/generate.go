@@ -88,6 +88,9 @@ func generateAPI(api *config.API, gcloudCfg *config.Surfer, googleapisDir, outDi
 	if err != nil {
 		return err
 	}
+	// Generating gcloud commands using surfer from librarian is not supported at the
+	// moment. The current implementation is incomplete and incorrect in how it
+	// initializes provider.Config{}.
 	providerCfg := &provider.Config{}
 	if gcloudCfg != nil && gcloudCfg.HelpText != nil {
 		providerCfg.APIs = []provider.API{{

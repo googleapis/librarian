@@ -73,6 +73,7 @@ type nodejsPackageJSON struct {
 // owlBotYAML represents the fields we need from an .OwlBot.yaml.
 type owlBotYAML struct {
 	DeepCopyRegex []owlBotCopyRule `yaml:"deep-copy-regex"`
+	APIName       string           `yaml:"api-name"`
 }
 
 // owlBotCopyRule represents a copy rule in .OwlBot.yaml.
@@ -149,6 +150,10 @@ func buildNodejsLibraries(repoPath, googleapisDir string) ([]*config.Library, er
 			return nil, err
 		}
 
+		if len(library.APIs) == 0 {
+			continue
+		}
+
 		libraries = append(libraries, library)
 	}
 	return libraries, nil
@@ -176,7 +181,7 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		if err != nil {
 			return nil, fmt.Errorf("reading .OwlBot.yaml for %s: %w", libraryName, err)
 		}
-		apis, err := parseOwlBotAPIPaths(owlBot, googleapisDir, pkgJSON.Name)
+		apis, err := parseOwlBotAPIPaths(owlBot, googleapisDir)
 		if err != nil {
 			return nil, fmt.Errorf("parsing API paths for %s: %w", libraryName, err)
 		}
@@ -322,10 +327,10 @@ func readNodejsPackageJSON(path string) (*nodejsPackageJSON, error) {
 }
 
 // parseOwlBotAPIPaths extracts API paths from .OwlBot.yaml deep-copy-regex
-// source patterns by finding the base path and then discovering version
-// directories in googleapis that contain a nodejs_gapic_library rule matching
-// the provided npm package name.
-func parseOwlBotAPIPaths(owlBot *owlBotYAML, googleapisDir, pkgName string) ([]*config.API, error) {
+// source patterns and optional api-name metadata by finding the base path
+// and then discovering version directories in googleapis that contain a
+// nodejs_gapic_library rule.
+func parseOwlBotAPIPaths(owlBot *owlBotYAML, googleapisDir string) ([]*config.API, error) {
 	if len(owlBot.DeepCopyRegex) == 0 {
 		return nil, nil
 	}
@@ -340,39 +345,36 @@ func parseOwlBotAPIPaths(owlBot *owlBotYAML, googleapisDir, pkgName string) ([]*
 		basePath = matches[2]
 	}
 
+	if owlBot.APIName != "" {
+		candidate := filepath.Join(basePath, owlBot.APIName)
+		if _, err := os.Stat(filepath.Join(googleapisDir, candidate)); err == nil {
+			basePath = candidate
+		}
+	}
+
 	// Find version directories in googleapis by walking the base path.
 	dir := filepath.Join(googleapisDir, basePath)
 	var apis []*config.API
-	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return nil // ignore inaccessible directories
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
 		}
-		if d.IsDir() {
-			return nil
+		return nil, fmt.Errorf("reading googleapis directory %s: %w", dir, err)
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() || !versionDirRegex.MatchString(entry.Name()) {
+			continue
 		}
-		if d.Name() != "BUILD.bazel" {
-			return nil
-		}
-		apiDir := filepath.Dir(path)
-		apiPath, err := filepath.Rel(googleapisDir, apiDir)
-		if err != nil {
-			return fmt.Errorf("getting relative path for %s: %w", apiDir, err)
-		}
+		apiPath := filepath.Join(basePath, entry.Name())
 		info, err := parseBazelNodejsInfo(googleapisDir, apiPath)
 		if err != nil {
-			return fmt.Errorf("parsing bazel info for %s: %w", apiPath, err)
+			return nil, fmt.Errorf("parsing bazel info for %s: %w", apiPath, err)
 		}
 		if info == nil {
-			return nil
+			continue
 		}
-		// Match the npm package name.
-		if info.packageName == pkgName {
-			apis = append(apis, &config.API{Path: apiPath})
-		}
-		return nil
-	})
-	if err != nil {
-		return nil, fmt.Errorf("walking googleapis directory %s: %w", dir, err)
+		apis = append(apis, &config.API{Path: apiPath})
 	}
 	sort.Slice(apis, func(i, j int) bool {
 		return apis[i].Path < apis[j].Path

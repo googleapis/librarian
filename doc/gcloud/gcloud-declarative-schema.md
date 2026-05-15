@@ -17,9 +17,6 @@ This document describes the schema for the gcloud Declarative YAML.
 | `help_text` | string | Is the help text shown for the argument in gcloud help and error messages. |
 | `action` | string | Overrides the argparse action used for the argument, for example store_true or store_true_false. Typically used with boolean fields. |
 | `is_positional` | bool | Makes the argument positional rather than a flag. |
-| `is_primary_resource` | bool | Marks this argument as the primary resource the command operates on. At most one argument per command may set this. |
-| `request_id_field` | string | Is the request-message field that receives the user-supplied resource ID on a create command, for example instanceId. |
-| `resource_spec` | [ResourceSpec](#resourcespec-configuration) (optional) | Declares this argument as a gcloud concept resource and describes its collection and attributes. |
 | `required` | bool | Makes the argument mandatory. gcloud rejects invocations that leave it unset. |
 | `repeated` | bool | Accepts more than one value for the argument and maps to a repeated API field. |
 | `clearable` | bool | Causes gcloud to also generate companion flags such as<br>--clear-..., --add-..., and --remove-... on update commands. |
@@ -27,13 +24,12 @@ This document describes the schema for the gcloud Declarative YAML.
 | `default` | [Default](#default-configuration) | Is the value used when the user does not supply the argument. |
 | `choices` | list of [Choice](#choice-configuration) | Is the fixed set of values the user can supply. Used for enum-typed fields; each choice maps an arg_value to an enum_value. |
 | `spec` | list of [ArgSpec](#argspec-configuration) | Lists the sub-fields of a structured argument such as a map. For a map field, Spec typically contains entries for key and value. |
-| `resource_method_params` | map[string]string | Maps API method parameter names to attribute names on a resource argument. Use it when the API method uses a non-standard parameter name for the resource. |
 
 ## Arguments Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `params` | list of [Argument](#argument-configuration) | Is the ordered list of arguments the command accepts. Each entry becomes either a positional argument or a flag. |
+| `params` | list of any | Is the ordered list of arguments the command accepts. Each entry becomes either a positional argument or a flag. |
 
 ## Async Configuration
 
@@ -102,6 +98,22 @@ This document describes the schema for the gcloud Declarative YAML.
 | `collection` | list of string | Is the list of gcloud API collections the command operates on. Multiple entries support AIP-127 multi-pattern resources. |
 | `method` | string | Is the API method name. When empty, gcloud infers the method from the command type (for example, list for a list command). |
 | `static_fields` | map[string]string | Sets request fields to fixed values regardless of user input. Keys are dot-separated field paths in the request message. |
+
+## ResourceArg Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `arg_name` | string | Is the name of the argument as it appears to the user, such as instance. For flags gcloud prepends --. |
+| `help_text` | string | Is the help text shown for the argument in gcloud help and error messages. |
+| `is_positional` | bool | Makes the argument positional rather than a flag. |
+| `is_primary_resource` | bool | Marks this argument as the primary resource the command operates on. At most one argument per command may set this. |
+| `request_id_field` | string | Is the request-message field that receives the user-supplied resource ID on a create command, for example instanceId. |
+| `resource_spec` | [ResourceSpec](#resourcespec-configuration) (optional) | Declares this argument as a gcloud concept resource and describes its collection and attributes. |
+| `required` | bool | Makes the argument mandatory. gcloud rejects invocations that leave it unset. |
+| `repeated` | bool | Accepts more than one value for the argument and maps to a repeated API field. |
+| `clearable` | bool | Causes gcloud to also generate companion flags such as<br>--clear-..., --add-..., and --remove-... on update commands. |
+| `spec` | list of [ArgSpec](#argspec-configuration) | Lists the sub-fields of a structured argument such as a map. For a map field, Spec typically contains entries for key and value. |
+| `resource_method_params` | map[string]string | Maps API method parameter names to attribute names on a resource argument. Use it when the API method uses a non-standard parameter name for the resource. |
 
 ## ResourceSpec Configuration
 

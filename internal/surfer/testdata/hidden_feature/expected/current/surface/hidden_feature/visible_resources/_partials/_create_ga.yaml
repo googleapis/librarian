@@ -44,7 +44,7 @@
               parameter_name: visibleResourcesId
           collection: hiddenfeature.projects.locations.visibleResources
           disable_auto_completers: false
-          name: visible_resource
+          name: visibleResource
           plural_name: visibleResources
         required: true
       - arg_name: labels

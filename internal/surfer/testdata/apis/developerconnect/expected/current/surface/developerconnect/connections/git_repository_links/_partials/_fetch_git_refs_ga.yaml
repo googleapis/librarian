@@ -31,6 +31,7 @@
           The resource name of GitRepositoryLink in the format
           `projects/*/locations/*/connections/*/gitRepositoryLinks/*`.
         is_positional: false
+        is_primary_resource: false
         resource_spec:
           attributes:
             - attribute_name: project
@@ -48,7 +49,7 @@
               parameter_name: gitRepositoryLinksId
           collection: developerconnect.projects.locations.connections.gitRepositoryLinks
           disable_auto_completers: true
-          name: git_repository_link
+          name: gitRepositoryLink
           plural_name: gitRepositoryLinks
         required: true
         resource_method_params:
@@ -61,10 +62,10 @@
         choices:
           - arg_value: tag
             enum_value: TAG
-            help_text: Value for the `tag` field.
+            help_text: To fetch tags.
           - arg_value: branch
             enum_value: BRANCH
-            help_text: Value for the `branch` field.
+            help_text: To fetch branches.
       - arg_name: page-size
         api_field: pageSize
         help_text: Number of results to return in the list. Default to 20.
