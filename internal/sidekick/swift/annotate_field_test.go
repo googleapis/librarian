@@ -173,3 +173,101 @@ func TestAnnotateField_PackageName(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateField_Recursive(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		optional      bool
+		repeated      bool
+		isOneOf       bool
+		wantType      string
+		wantBaseType  string
+		wantRecursive bool
+		wantUnwrapped string
+		oneofProperty string
+	}{
+		{
+			name:          "singular optional recursive",
+			optional:      true,
+			repeated:      false,
+			isOneOf:       false,
+			wantType:      "GoogleCloudWkt.Recursive<Node>?",
+			wantBaseType:  "GoogleCloudWkt.Recursive<Node>",
+			wantRecursive: true,
+			wantUnwrapped: "Node?",
+		},
+		{
+			name:          "repeated recursive",
+			optional:      false,
+			repeated:      true,
+			isOneOf:       false,
+			wantType:      "[Node]",
+			wantBaseType:  "Node",
+			wantRecursive: false,
+			wantUnwrapped: "",
+		},
+		{
+			name:          "oneof recursive",
+			optional:      false,
+			repeated:      false,
+			isOneOf:       true,
+			wantType:      "Node",
+			wantBaseType:  "Node",
+			wantRecursive: false,
+			wantUnwrapped: "",
+			oneofProperty: "alternatives",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field := &api.Field{
+				Name:          "child_node",
+				ID:            ".test.Node.child_node",
+				Typez:         api.TypezMessage,
+				TypezID:       ".test.Node",
+				Documentation: "Recursive link.",
+				Optional:      test.optional,
+				Repeated:      test.repeated,
+				IsOneOf:       test.isOneOf,
+				Recursive:     true,
+			}
+			msg := &api.Message{
+				Name:    "Node",
+				ID:      ".test.Node",
+				Package: "test",
+				Fields:  []*api.Field{field},
+			}
+			field.Parent = msg
+			field.MessageType = msg
+
+			if test.isOneOf {
+				oneof := &api.OneOf{
+					Name:   test.oneofProperty,
+					Fields: []*api.Field{field},
+				}
+				field.Group = oneof
+				msg.OneOfs = []*api.OneOf{oneof}
+			}
+
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			want := &fieldAnnotations{
+				Name:              "childNode",
+				DocLines:          []string{"Recursive link."},
+				FieldType:         test.wantType,
+				BaseFieldType:     test.wantBaseType,
+				PackageName:       "test",
+				Recursive:         test.wantRecursive,
+				UnwrappedType:     test.wantUnwrapped,
+				OneOfPropertyName: test.oneofProperty,
+			}
+
+			if diff := cmp.Diff(want, field.Codec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

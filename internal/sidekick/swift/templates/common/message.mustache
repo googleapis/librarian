@@ -27,7 +27,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public var {{Codec.Name}}: {{Codec.FieldType}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}}
   {{/IsOneOf}}
   {{/Fields}}
   {{#OneOfs}}
@@ -46,17 +46,22 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
     {{#Singular}}
     {{^Optional}}
-    {{Codec.Name}}: {{Codec.FieldType}} = {{Codec.FieldType}}(),
+    {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}(),
     {{/Optional}}
     {{#Optional}}
-    {{Codec.Name}}: {{Codec.FieldType}} = nil,
+    {{#Codec.Recursive}}
+    {{Codec.Name}}: {{{Codec.UnwrappedType}}} = nil,
+    {{/Codec.Recursive}}
+    {{^Codec.Recursive}}
+    {{Codec.Name}}: {{{Codec.FieldType}}} = nil,
+    {{/Codec.Recursive}}
     {{/Optional}}
     {{/Singular}}
     {{#Repeated}}
-    {{Codec.Name}}: {{Codec.FieldType}} = [],
+    {{Codec.Name}}: {{{Codec.FieldType}}} = [],
     {{/Repeated}}
     {{#Map}}
-    {{Codec.Name}}: {{Codec.FieldType}} = [:],
+    {{Codec.Name}}: {{{Codec.FieldType}}} = [:],
     {{/Map}}
     {{/IsOneOf}}
     {{/Fields}}
@@ -66,7 +71,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   ) {
     {{#Fields}}
     {{^IsOneOf}}
+    {{#Codec.Recursive}}
+    self.{{Codec.Name}} = {{Codec.Name}}.map { GoogleCloudWkt.Recursive(value: $0) }
+    {{/Codec.Recursive}}
+    {{^Codec.Recursive}}
     self.{{Codec.Name}} = {{Codec.Name}}
+    {{/Codec.Recursive}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
@@ -86,10 +96,10 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#Fields}}
     {{^IsOneOf}}
     {{#Optional}}
-    self.{{Codec.Name}} = try container.decodeIfPresent({{Codec.BaseFieldType}}.self, forKey: .{{Codec.Name}})
+    self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
     {{/Optional}}
     {{^Optional}}
-    self.{{Codec.Name}} = try container.decode({{Codec.FieldType}}.self, forKey: .{{Codec.Name}})
+    self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
     {{/Optional}}
     {{/IsOneOf}}
     {{/Fields}}
@@ -103,7 +113,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
       {{Codec.PropertyName}} = value
     }
     {{#Fields}}
-    if let {{Codec.Name}} = try container.decodeIfPresent({{Codec.FieldType}}.self, forKey: .{{Codec.Name}}) {
+    if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
       try {{Codec.OneOfPropertyName}}CheckAndSet(.{{Codec.Name}}({{Codec.Name}}))
     }
     {{/Fields}}
