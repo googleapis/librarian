@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"sort"
 	"strings"
 
@@ -356,10 +357,17 @@ func parseBazelNodejsInfo(googleapisDir, apiDir string) (*nodejsGapicInfo, error
 		return nil, fmt.Errorf("file %s/BUILD.bazel contains multiple nodejs_gapic_library rules", apiDir)
 	}
 	rule := rules[0]
+	extraProtocParameters := rule.AttrStrings("extra_protoc_parameters")
+	extraProtocParameters = slices.DeleteFunc(extraProtocParameters, func(p string) bool {
+		return p == "metadata"
+	})
+	if len(extraProtocParameters) == 0 {
+		extraProtocParameters = nil
+	}
 	info := &nodejsGapicInfo{
 		packageName:           rule.AttrString("package_name"),
 		bundleConfig:          rule.AttrString("bundle_config"),
-		extraProtocParameters: rule.AttrStrings("extra_protoc_parameters"),
+		extraProtocParameters: extraProtocParameters,
 		mainService:           rule.AttrString("main_service"),
 		mixins:                rule.AttrString("mixins"),
 	}
