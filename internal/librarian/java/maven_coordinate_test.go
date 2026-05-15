@@ -29,7 +29,7 @@ func TestDeriveDistributionName(t *testing.T) {
 	}{
 		{
 			name:    "default case",
-			library: &config.Library{Name: "secretmanager"},
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			want:    "com.google.cloud:google-cloud-secretmanager",
 		},
 		{
@@ -44,13 +44,13 @@ func TestDeriveDistributionName(t *testing.T) {
 			name: "distributionName override",
 			library: &config.Library{
 				Name: "secretmanager",
-				Java: &config.JavaModule{DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
+				Java: &config.JavaModule{GroupID: "com.google.cloud", DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
 			},
 			want: "com.google.cloud:google-cloud-secretmanager-v1",
 		},
 		{
 			name:    "library name already has prefix",
-			library: &config.Library{Name: "google-cloud-secretmanager"},
+			library: &config.Library{Name: "google-cloud-secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			want:    "com.google.cloud:google-cloud-secretmanager",
 		},
 	} {
@@ -110,6 +110,7 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
+				Java:    &config.JavaModule{GroupID: "com.google.cloud"},
 			},
 			want: LibraryCoordinate{
 				GAPIC: Coordinate{
@@ -135,6 +136,7 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 				Name:    "secretmanager",
 				Version: "1.2.3",
 				Java: &config.JavaModule{
+					GroupID:                  "com.google.cloud",
 					DistributionNameOverride: "com.google.cloud:google-secretmanager",
 				},
 			},

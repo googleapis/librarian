@@ -44,6 +44,9 @@ func TestSyncPOMs_Golden(t *testing.T) {
 				Java: &config.JavaAPI{},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	apiPath := library.APIs[0].Path
 	transports := map[string]serviceconfig.Transport{
@@ -189,6 +192,9 @@ func TestSyncPOMs_Update(t *testing.T) {
 				Java: &config.JavaAPI{},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	transports := map[string]serviceconfig.Transport{
 		"google/cloud/secretmanager/v1": serviceconfig.GRPC,
@@ -251,6 +257,9 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 				Java: &config.JavaAPI{},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	transports := map[string]serviceconfig.Transport{
 		"google/cloud/secretmanager/v1": serviceconfig.GRPC,
@@ -298,6 +307,9 @@ func TestCollectModules(t *testing.T) {
 						Java: &config.JavaAPI{},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			monorepoVersion: "1.2.3",
 			metadata: &repoMetadata{
@@ -340,6 +352,9 @@ func TestCollectModules(t *testing.T) {
 						Java: &config.JavaAPI{},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			monorepoVersion: "1.2.3",
 			metadata: &repoMetadata{
@@ -378,6 +393,9 @@ func TestCollectModules(t *testing.T) {
 						Path: "google/cloud/secretmanager/v1",
 						Java: &config.JavaAPI{},
 					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -425,6 +443,7 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
+					GroupID:      "com.google.cloud",
 					ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 				},
 			},
@@ -468,6 +487,9 @@ func TestCollectModules(t *testing.T) {
 						},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			monorepoVersion: "1.2.3",
 			metadata: &repoMetadata{
@@ -507,6 +529,9 @@ func TestCollectModules(t *testing.T) {
 							GenerateResourceNames: func() *bool { b := false; return &b }(),
 						},
 					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -607,15 +632,18 @@ func TestIsPOMMissing_DirMissing(t *testing.T) {
 
 func TestIdentifyMissingModules(t *testing.T) {
 	library := &config.Library{
-		Name:    "secretmanager",
-		Version: "1.2.3",
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-				Java: &config.JavaAPI{},
-			},
-		},
-	}
+				Name:    "secretmanager",
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{},
+					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
+			}
 	for _, test := range []struct {
 		name  string
 		setup func(t *testing.T, libraryDir string)
@@ -733,6 +761,7 @@ func TestIdentifyMissingModules_SkipPOMUpdates(t *testing.T) {
 			{Path: "google/cloud/secretmanager/v1"},
 		},
 		Java: &config.JavaModule{
+			GroupID:        "com.google.cloud",
 			SkipPOMUpdates: true,
 		},
 	}
@@ -758,6 +787,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
+			GroupID:      "com.google.cloud",
 			ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 		},
 	}
@@ -802,6 +832,9 @@ func TestIdentifyMissingModules_GenerateProtoGRPCFalse(t *testing.T) {
 				},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	tmpDir := t.TempDir()
 	dirs := []string{
@@ -842,6 +875,9 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 					GenerateResourceNames: func() *bool { b := false; return &b }(),
 				},
 			},
+		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
 		},
 	}
 	tmpDir := t.TempDir()
