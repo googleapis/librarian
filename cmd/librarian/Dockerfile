@@ -234,7 +234,7 @@ ARG NODEJS_PROTOC_VERSION
 ARG NODEJS_PROTOC_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv nodejs npm \
+    nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node-specific protoc version
@@ -243,20 +243,8 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Make sure Python uses /python-packages for all installations.
-# This makes it easier to predict where things are installed, e.g. for
-# SYNTHTOOL_TEMPLATES later.
-ENV PYTHONPATH=/python-packages
-ENV PATH=${PATH}:${PYTHONPATH}/bin
-# Specify where pip should install, and disable its cache.
-ENV PIP_TARGET=${PYTHONPATH}
-ENV PIP_NO_CACHE_DIR=1
-
 # Install all the tools that Librarian needs for Node generation.
 RUN /app/librarian install nodejs -v
-
-# Ensure we use the local synthtool templates.
-ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
 
 # Allow normal users to read /root (as the generator is installed
 # in /root/.cache, for example)

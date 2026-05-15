@@ -598,11 +598,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name:    "owlbot.py missing",
-			cfg:     defaultCfg,
-			wantErr: errOwlBotMissing,
-		},
-		{
 			name: "findBOMVersion failure",
 			cfg:  &config.Config{},
 			setup: func(t *testing.T, outDir string) {
@@ -974,5 +969,77 @@ func TestRemoveKeptFilesFromStaging(t *testing.T) {
 	}
 	if _, err := os.Stat(nonExistentKeptFile); err != nil {
 		t.Errorf("expected non-existent kept file %s to remain in staging, but got error: %v", nonExistentKeptFile, err)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy verifies that the createOrVerifyOwlbotPy function
+// successfully creates the owlbot.py post-processing script when it is missing
+// and generates a valid script that matches the expected golden content.
+func TestCreateOrVerifyOwlbotPy(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
+		t.Fatal(err)
+	}
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	if _, err := os.Stat(owlbotPath); err != nil {
+		t.Errorf("expected owlbot.py to be generated: %v", err)
+	}
+	gotContent, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	goldenPath := filepath.Join("testdata", "postprocess", "owlbot.py.golden")
+	if *update {
+		if err := os.MkdirAll(filepath.Dir(goldenPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(goldenPath, gotContent, 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	wantContent, err := os.ReadFile(goldenPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(wantContent), string(gotContent)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy_AlreadyExists verifies that createOrVerifyOwlbotPy
+// returns nil without modifying the file when owlbot.py already exists.
+func TestCreateOrVerifyOwlbotPy_AlreadyExists(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	owlbotPath := filepath.Join(outDir, "owlbot.py")
+	existingContent := "existing content"
+	if err := os.WriteFile(owlbotPath, []byte(existingContent), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := createOrVerifyOwlbotPy(outDir); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(owlbotPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(existingContent, string(gotBytes)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestCreateOrVerifyOwlbotPy_Error verifies that createOrVerifyOwlbotPy returns an error
+// when os.OpenFile fails with an unexpected error such as permission denied.
+func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
+	t.Parallel()
+	outDir := t.TempDir()
+	if err := os.Chmod(outDir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chmod(outDir, 0755)
+	err := createOrVerifyOwlbotPy(outDir)
+	if !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("error = %v, wantErr %v", err, fs.ErrPermission)
 	}
 }

@@ -497,9 +497,6 @@ func mergeGo(dst, src *config.GoModule) *config.GoModule {
 	if src.DeleteGenerationOutputPaths != nil {
 		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
 	}
-	if src.GoAPIs != nil {
-		res.GoAPIs = src.GoAPIs
-	}
 	if src.ModulePathVersion != "" {
 		res.ModulePathVersion = src.ModulePathVersion
 	}

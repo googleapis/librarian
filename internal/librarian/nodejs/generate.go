@@ -242,21 +242,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		// Old way: use synthtool
-		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
-			return fmt.Errorf("owlbot.py failed: %w", err)
-		}
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
-	}
-
-	// Template generation and exclusions are handled at the generator level.
-	// Synthtool is only used for post-processing handled by standalone scripts
-	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
-	// Librarian CLI tool).
 
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -378,6 +363,44 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 
 	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove package staging: %w", err)
+	}
+
+	if err := removeRedundantLinterFiles(library, outDir); err != nil {
+		return fmt.Errorf("failed to remove redundant linter files: %w", err)
+	}
+
+	return nil
+}
+
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8286): gapic-generator-typescript
+// unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
+// This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
+// Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
+func removeRedundantLinterFiles(library *config.Library, outDir string) error {
+	keepSet := make(map[string]bool)
+	for _, k := range library.Keep {
+		keepSet[filepath.Clean(k)] = true
+	}
+
+	linterFiles := []string{
+		".eslintignore",
+		".eslintrc.json",
+		".prettierignore",
+		".prettierrc.js",
+		".prettierrc.cjs",
+	}
+
+	for _, lf := range linterFiles {
+		if keepSet[lf] {
+			continue
+		}
+		path := filepath.Join(outDir, lf)
+		if err := os.Remove(path); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("failed to remove redundant linter file %s: %w", path, err)
+		}
 	}
 	return nil
 }

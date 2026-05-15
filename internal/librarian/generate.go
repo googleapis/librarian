@@ -285,13 +285,18 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguagePython:
+		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
-			// TODO(https://github.com/googleapis/librarian/issues/3730): separate
-			// generation and formatting for Python.
-			if err := python.Generate(ctx, cfg, library, src); err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
+			g.Go(func() error {
+				// TODO(https://github.com/googleapis/librarian/issues/3730):
+				// separate generation and formatting for Python.
+				if err := python.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
 		}
+		return g.Wait()
 	case config.LanguageRust:
 		// Generation can be parallelized but formatting cannot because
 		// cargo fmt shares the Cargo.toml workspace file across libraries.
@@ -330,7 +335,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	default:
 		return fmt.Errorf("%w: %q", errUnsupportedLanguage, cfg.Language)
 	}
-	return nil
 }
 
 func defaultOutput(language string, name, api, defaultOut string) string {
