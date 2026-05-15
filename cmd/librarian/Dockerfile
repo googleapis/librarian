@@ -234,7 +234,7 @@ ARG NODEJS_PROTOC_VERSION
 ARG NODEJS_PROTOC_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 nodejs npm \
+    nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node-specific protoc version
