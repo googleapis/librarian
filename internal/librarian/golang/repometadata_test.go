@@ -34,12 +34,12 @@ func TestGenerateRepoMetadata(t *testing.T) {
 		Name:    "secretmanager",
 		Output:  filepath.Join(tmpDir, "secretmanager"),
 		Version: "1.2.3",
-		Go: &config.GoModule{
-			GoAPIs: []*config.GoAPI{
-				{
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Go: &config.GoAPI{
 					ClientPackage: "secretmanager",
 					ImportPath:    "secretmanager/apiv1",
-					Path:          "google/cloud/secretmanager/v1",
 				},
 			},
 		},
@@ -63,7 +63,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 	if err := os.MkdirAll(metadataDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := generateRepoMetadata(api, library, library.Go.GoAPIs[0]); err != nil {
+	if err := generateRepoMetadata(api, library, library.APIs[0].Go); err != nil {
 		t.Fatal(err)
 	}
 
@@ -94,12 +94,12 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Go: &config.GoAPI{
 							ClientPackage: "secretmanager",
 							ImportPath:    "secretmanager/apiv1",
-							Path:          "google/cloud/secretmanager/v1",
 						},
 					},
 				},
@@ -107,7 +107,6 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			setup: func(library *config.Library, api *serviceconfig.API, output string) {
 				library.Output = filepath.Join(output, "secretmanager")
 				dir := filepath.Join(output, "secretmanager", "apiv1")
-				// Create a file where the directory should be so Write fails.
 				if err := os.MkdirAll(filepath.Dir(dir), 0755); err != nil {
 					t.Fatal(err)
 				}
@@ -124,7 +123,7 @@ func TestGenerateRepoMetadata_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(test.library, test.api, tempDir)
 			}
-			err := generateRepoMetadata(test.api, test.library, test.library.Go.GoAPIs[0])
+			err := generateRepoMetadata(test.api, test.library, test.library.APIs[0].Go)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("metadataReleaseLevel() error = %v, wantErr %v", err, test.wantErr)
 			}

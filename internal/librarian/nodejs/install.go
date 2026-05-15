@@ -56,15 +56,6 @@ func Install(ctx context.Context) error {
 			return err
 		}
 	}
-	for _, tool := range cfg.Tools.Pip {
-		pkg := tool.Package
-		if pkg == "" {
-			pkg = fmt.Sprintf("%s==%s", tool.Name, tool.Version)
-		}
-		if err := command.RunStreaming(ctx, "pip", "install", pkg); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

@@ -84,7 +84,16 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// Some aspects of generation currently require the repo root. Compute it
 	// once here and pass it down.
 	repoRoot := filepath.Dir(filepath.Dir(outdir))
-
+	// The "generation root" is a tmp directory created within the package
+	// directory, to isolate it from other generation operations which may
+	// happen in parallel. It is deleted by cleanUpFilesAfterPostProcessing.
+	var generationRoot string
+	if len(library.APIs) > 0 {
+		generationRoot, err = prepareGenerationRoot(outdir)
+		if err != nil {
+			return err
+		}
+	}
 	// In order to make sure we generate google/cloud/firestore/v1 *after*
 	// google/cloud/firestore/admin/v1 (etc), sort the APIs in descending path
 	// length order before generation. This is pretty ghastly, but it works to
@@ -96,7 +105,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return len(b.Path) - len(a.Path)
 	})
 	for _, api := range apisSortedByPathLength {
-		if err := generateAPI(ctx, api, library, googleapisDir, repoRoot); err != nil {
+		if err := generateAPI(ctx, api, library, googleapisDir, generationRoot); err != nil {
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
@@ -116,10 +125,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// The post processor needs to run from the repository root, not the package
 	// directory.
 	if len(library.APIs) > 0 {
-		if err := runPostProcessor(ctx, repoRoot, outdir); err != nil {
+		if err := runPostProcessor(ctx, repoRoot, outdir, generationRoot); err != nil {
 			return fmt.Errorf("failed to run post processor: %w", err)
 		}
-		if err := cleanUpFilesAfterPostProcessing(repoRoot, outdir); err != nil {
+		if err := cleanUpFilesAfterPostProcessing(generationRoot, outdir); err != nil {
 			return fmt.Errorf("failed to cleanup after post processing: %w", err)
 		}
 	}
@@ -132,6 +141,26 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to create changelog: %w", err)
 	}
 	return nil
+}
+
+// prepareGenerationRoot creates a tmp directory underneath the package root.
+// This is designed to "look like" the repo root as far as this package is
+// concerned, such that packages/{xyz}/tmp/packages/{xyz} is a symlink back to
+// packages/{xyz}, and we generate into packages/{xyz}/tmp/owl-bot-staging.
+// This allows the post-processor to operate on packages/{xyz}/tmp (which in
+// turn allows us to run everything in parallel) without changing the
+// post-processor itself.
+// See go/sdk:librarian-python-parallel-generation for more details.
+func prepareGenerationRoot(packageRoot string) (string, error) {
+	packageName := filepath.Base(packageRoot)
+	generationRoot := filepath.Join(packageRoot, "tmp")
+	if err := os.MkdirAll(filepath.Join(generationRoot, "packages"), 0755); err != nil {
+		return "", err
+	}
+	if err := os.Symlink("../..", filepath.Join(generationRoot, "packages", packageName)); err != nil {
+		return "", err
+	}
+	return generationRoot, nil
 }
 
 // createRepoMetadata creates (in memory, not on disk) a RepoMetadata suitable
@@ -216,7 +245,7 @@ func BuildClientDocumentationURI(libraryName, repoMetadataName string) string {
 }
 
 // generateAPI generates part of a library for a single api.
-func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, repoRoot string) error {
+func generateAPI(ctx context.Context, api *config.API, library *config.Library, googleapisDir, generationRoot string) error {
 	// Note: the Python Librarian container generates to a temporary directory,
 	// then the results into owl-bot-staging. We generate straight into
 	// owl-bot-staging instead. The post-processor then moves the files into
@@ -226,7 +255,7 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 	protoOnly := isProtoOnly(api, library)
 	stagingChildDirectory := getStagingChildDirectory(api.Path, protoOnly)
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
+	stagingDir := filepath.Join(generationRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
 	if err := os.MkdirAll(stagingDir, 0755); err != nil {
 		return err
 	}
@@ -373,7 +402,7 @@ func getStagingChildDirectory(apiPath string, isProtoOnly bool) string {
 }
 
 // runPostProcessor runs the synthtool post processor on the output directory.
-func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
+func runPostProcessor(ctx context.Context, repoRoot, outDir, generationRoot string) error {
 	// The post-processor expects the string replacement scripts to be in the
 	// output directory, so we need to copy them there.
 	// TODO(https://github.com/googleapis/librarian/issues/3008): reimplement
@@ -388,7 +417,7 @@ func runPostProcessor(ctx context.Context, repoRoot, outDir string) error {
 from synthtool.languages import python_mono_repo
 python_mono_repo.owlbot_main(%q)
 `, outDir)
-	if err := command.RunInDir(ctx, repoRoot, "python3", "-c", pythonCode); err != nil {
+	if err := command.RunInDir(ctx, generationRoot, "python3", "-c", pythonCode); err != nil {
 		return fmt.Errorf("failed to run post-processor: %w", err)
 	}
 
@@ -453,10 +482,12 @@ func copyReadmeToDocsDir(lib *config.Library, outdir string) error {
 // directly in place and remove the owl-bot-staging directory entirely.
 // TODO(https://github.com/googleapis/librarian/issues/3008): perform string
 // replacements in Go code, so we don't need to copy files.
-func cleanUpFilesAfterPostProcessing(repoRoot, outdir string) error {
-	// Remove owl-bot-staging from the repo root.
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
+func cleanUpFilesAfterPostProcessing(generationRoot, outdir string) error {
+	// Remove the temporary generation directory. RemoveAll will remove the
+	// packages/xyz symlink rather than following it and deleting the whole
+	// package.
+	if err := os.RemoveAll(generationRoot); err != nil {
+		return err
 	}
 	// Remove the post-processing scripts. This will leave the "scripts"
 	// directory, but that's okay if it's empty - git ignores empty directories.

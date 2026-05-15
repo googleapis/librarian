@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"testing"
 
@@ -358,33 +359,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
-	}
-}
-
-func TestRunPostProcessor_Owlbot(t *testing.T) {
-	testhelper.RequireCommand(t, "python3")
-
-	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	owlbotScript := filepath.Join(outDir, "owlbot.py")
-	if err := os.WriteFile(owlbotScript, []byte("import pathlib\npathlib.Path('owlbot-ran.txt').write_text('yes')\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &config.Config{
-		Language: config.LanguageNodejs,
-		Repo:     "googleapis/google-cloud-node",
-	}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, "owlbot-ran.txt")); err != nil {
-		t.Errorf("expected owlbot.py to run and create owlbot-ran.txt: %v", err)
 	}
 }
 
@@ -1303,6 +1277,68 @@ func TestInjectV1SmallExports(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRemoveRedundantLinterFiles(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		keep  []string
+		files []string
+		want  []string
+	}{
+		{
+			name:  "removes all redundant linter files when keep is empty",
+			keep:  []string{},
+			files: []string{".eslintignore", ".eslintrc.json", ".prettierignore", ".prettierrc.js", ".prettierrc.cjs", "package.json", "README.md"},
+			want:  []string{"README.md", "package.json"},
+		},
+		{
+			name:  "preserves explicitly kept linter files",
+			keep:  []string{".eslintignore", ".eslintrc.json"},
+			files: []string{".eslintignore", ".eslintrc.json", ".prettierignore", ".prettierrc.js", "package.json", "README.md"},
+			want:  []string{".eslintignore", ".eslintrc.json", "README.md", "package.json"},
+		},
+		{
+			name:  "skips missing linter files without error",
+			keep:  []string{},
+			files: []string{"package.json", "README.md"},
+			want:  []string{"README.md", "package.json"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			for _, f := range test.files {
+				path := filepath.Join(outDir, f)
+				if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			library := &config.Library{
+				Keep: test.keep,
+			}
+
+			if err := removeRedundantLinterFiles(library, outDir); err != nil {
+				t.Fatal(err)
+			}
+
+			var got []string
+			entries, err := os.ReadDir(outDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, entry := range entries {
+				got = append(got, entry.Name())
+			}
+
+			slices.Sort(got)
+			slices.Sort(test.want)
+
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
