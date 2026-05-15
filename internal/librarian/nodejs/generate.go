@@ -387,7 +387,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	return nil
 }
 
-// TODO(https://github.com/googleapis/google-cloud-node/issues/XXXX): gapic-generator-typescript
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8286): gapic-generator-typescript
 // unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
 // This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
 // Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
