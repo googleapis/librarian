@@ -87,7 +87,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	// The "generation root" is a tmp directory created within the package
 	// directory, to isolate it from other generation operations which may
 	// happen in parallel. It is deleted by cleanUpFilesAfterPostProcessing.
-	generationRoot := ""
+	var generationRoot string
 	if len(library.APIs) > 0 {
 		generationRoot, err = prepareGenerationRoot(outdir)
 		if err != nil {
