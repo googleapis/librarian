@@ -64,6 +64,14 @@ func Tidy(library *config.Library) *config.Library {
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
+	if library.Java != nil {
+		if library.Java.GroupID == "com.google.cloud" {
+			library.Java.GroupID = ""
+		}
+		if isEmptyJavaModule(library.Java) {
+			library.Java = nil
+		}
+	}
 	for _, api := range library.APIs {
 		if api.Java == nil {
 			continue
@@ -107,6 +115,37 @@ func isEmptyJavaAPI(j *config.JavaAPI) bool {
 		j.GenerateResourceNames == nil &&
 		len(j.CopyFiles) == 0 &&
 		j.Samples == nil
+}
+
+func isEmptyJavaModule(j *config.JavaModule) bool {
+	if j == nil {
+		return true
+	}
+	return j.APIIDOverride == "" &&
+		j.APIReference == "" &&
+		j.APIDescriptionOverride == "" &&
+		j.APIShortnameOverride == "" &&
+		j.ClientDocumentationOverride == "" &&
+		!j.NonCloudAPI &&
+		j.CodeownerTeam == "" &&
+		j.DistributionNameOverride == "" &&
+		j.ExcludedDependencies == "" &&
+		len(j.ExcludedPOMs) == 0 &&
+		j.ExtraVersionedModules == "" &&
+		j.GroupID == "" &&
+		j.IssueTrackerOverride == "" &&
+		j.LibrariesBOMVersion == "" &&
+		j.LibraryTypeOverride == "" &&
+		j.MinJavaVersion == 0 &&
+		j.NamePrettyOverride == "" &&
+		j.ProductDocumentationOverride == "" &&
+		j.RecommendedPackage == "" &&
+		!j.BillingNotRequired &&
+		j.RestDocumentation == "" &&
+		j.RpcDocumentation == "" &&
+		j.TransportOverride == "" &&
+		!j.SkipPOMUpdates &&
+		!j.SkipAPIID
 }
 
 var (

@@ -249,6 +249,28 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tidy default group id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
+			},
+			want: &config.Library{},
+		},
+		{
+			name: "do not tidy custom group id",
+			lib: &config.Library{
+				Java: &config.JavaModule{
+					GroupID: "com.google.analytics",
+				},
+			},
+			want: &config.Library{
+				Java: &config.JavaModule{
+					GroupID: "com.google.analytics",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := Tidy(test.lib)
