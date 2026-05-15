@@ -404,6 +404,9 @@ func syncVersion(state *legacyconfig.LibrarianState, cfg *config.Config) (*confi
 	return cfg, nil
 }
 
+// syncLibraryVersion checks that the verison in librarian.yaml is not greater than the same in
+// .librarian/state.yaml, which would imply version drift. Once that check is complete, it sets the library's
+// version in librarian.yaml to match that of .librarian/state.yaml, which is the current source of truth.
 func syncLibraryVersion(name string, state *legacyconfig.LibrarianState, currentVersion string) (string, error) {
 	legacyLibrary := state.LibraryByID(name)
 	if legacyLibrary == nil || legacyLibrary.Version == "" {
