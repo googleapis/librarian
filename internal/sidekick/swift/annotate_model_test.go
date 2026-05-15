@@ -71,9 +71,11 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
+			ann := test.model.Codec.(*modelAnnotations)
 			got := map[string]bool{}
 			for _, d := range codec.Dependencies {
-				got[d.Name] = d.Required
+				_, ok := ann.DependsOn[d.Name]
+				got[d.Name] = ok
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -127,22 +129,13 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	want := map[string]bool{
-		"GoogleCloudExternalWithOverrideV1": true,
-		"GoogleCloudGax":                    false, // required by the service, but not messages
-		"GoogleCloudWkt":                    true,
+	want := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudGax", "GoogleCloudWkt"}
+	var got []string
+	for name := range ann.DependsOn {
+		got = append(got, name)
 	}
-	got := map[string]bool{}
-	for name, dep := range ann.DependsOn {
-		got[name] = dep.Required
-	}
-
+	slices.Sort(got)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudWkt"}
-	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -158,20 +151,20 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 	model := api.NewTestAPI(
-		[]*api.Message{}, []*api.Enum{}, []*api.Service{{Name: "DummyService", Package: "google.cloud.placeholder.v1"}})
+		[]*api.Message{{
+			Name:    "LocalMessage",
+			Package: "google.cloud.placeholder.v1",
+			ID:      ".google.cloud.placeholder.v1.LocalMessage",
+		}},
+		[]*api.Enum{},
+		[]*api.Service{{Name: "DummyService", Package: "google.cloud.placeholder.v1"}},
+	)
 	model.PackageName = "google.cloud.placeholder.v1"
 	codec := newTestCodec(t, model, nil)
 	codec.withExtraDependencies(t, []config.SwiftDependency{
 		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
 		{ApiPackage: "google.cloud.other.v1", Name: "GoogleCloudOtherV1", RequiredByServices: true},
 	})
-	// Make GoogleCloudPlaceholderV1 required to verify the rest of the code works. Its position may
-	// change as the implementation of `withExtraDependencies()` changes, so search for it:
-	idx := slices.IndexFunc(codec.Dependencies, func(d *Dependency) bool { return d.Name == "GoogleCloudPlaceholderV1" })
-	if idx == -1 {
-		t.Fatalf("GoogleCloudPlaceholderV1 not found")
-	}
-	codec.Dependencies[idx].Required = true
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -182,15 +175,12 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	// Self dependency should be ignored, other should be present.
-	want := map[string]bool{
-		"GoogleCloudOtherV1": false, // required by the service, but not messages
+	want := []string{"GoogleCloudOtherV1", "GoogleCloudWkt"}
+	var got []string
+	for name := range ann.DependsOn {
+		got = append(got, name)
 	}
-	got := map[string]bool{}
-	for name, dep := range ann.DependsOn {
-		got[name] = dep.Required
-	}
-
+	slices.Sort(got)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -268,11 +258,105 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	// Since global pagination dependency setting is removed, GoogleCloudGax should NOT be required for messages.
-	if dep, ok := ann.DependsOn["GoogleCloudGax"]; !ok || dep.Required {
-		t.Errorf("expected GoogleCloudGax dependency to not be required, got %+v", dep)
+	// Verify GoogleCloudGax is in DependsOn because we have a service.
+	if _, ok := ann.DependsOn["GoogleCloudGax"]; !ok {
+		t.Errorf("expected GoogleCloudGax dependency to be in DependsOn")
 	}
-	if slices.Contains(ann.MessageImports, "GoogleCloudGax") {
-		t.Errorf("expected GoogleCloudGax to not be in MessageImports, got %v", ann.MessageImports)
+}
+
+func TestModelAnnotations_ConditionalLro(t *testing.T) {
+	emptyType := &api.Message{
+		Name:    "Empty",
+		Package: "google.protobuf",
+		ID:      ".google.protobuf.Empty",
+	}
+	operationType := &api.Message{
+		Name:    "Operation",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.Operation",
+	}
+
+	lroMethod := &api.Method{
+		Name:         "CreateWorkflow",
+		ID:           ".google.cloud.workflows.v1.Workflows.CreateWorkflow",
+		InputTypeID:  emptyType.ID,
+		InputType:    emptyType,
+		OutputTypeID: operationType.ID,
+		OutputType:   operationType,
+		IsLRO:        true,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{
+				Verb:         "POST",
+				PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows"),
+			}},
+		},
+	}
+	nonLroMethod := &api.Method{
+		Name:         "GetWorkflow",
+		ID:           ".google.cloud.workflows.v1.Workflows.GetWorkflow",
+		InputTypeID:  emptyType.ID,
+		InputType:    emptyType,
+		OutputTypeID: emptyType.ID,
+		OutputType:   emptyType,
+		IsLRO:        false,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{
+				Verb:         "GET",
+				PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows"),
+			}},
+		},
+	}
+
+	serviceWithLro := &api.Service{
+		Name:    "WorkflowsWithLro",
+		ID:      ".google.cloud.workflows.v1.WorkflowsWithLro",
+		Package: "google.cloud.workflows.v1",
+		Methods: []*api.Method{lroMethod},
+	}
+	lroMethod.Service = serviceWithLro
+	lroMethod.SourceService = serviceWithLro
+
+	serviceWithoutLro := &api.Service{
+		Name:    "WorkflowsWithoutLro",
+		ID:      ".google.cloud.workflows.v1.WorkflowsWithoutLro",
+		Package: "google.cloud.workflows.v1",
+		Methods: []*api.Method{nonLroMethod},
+	}
+	nonLroMethod.Service = serviceWithoutLro
+	nonLroMethod.SourceService = serviceWithoutLro
+
+	model := api.NewTestAPI([]*api.Message{emptyType, operationType}, nil, []*api.Service{serviceWithLro, serviceWithoutLro})
+	model.PackageName = "google.cloud.workflows.v1"
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{Name: "GoogleCloudLro", RequiredByServices: true},
+		{Name: "GoogleCloudGax", RequiredByServices: true},
+		{ApiPackage: "google.longrunning", Name: "GoogleLongrunning"},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify package-level DependsOn contains GoogleCloudLro because at least one service needs it.
+	ann, ok := model.Codec.(*modelAnnotations)
+	if !ok {
+		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+	}
+	if _, ok := ann.DependsOn["GoogleCloudLro"]; !ok {
+		t.Errorf("expected GoogleCloudLro to be in package-level DependsOn")
+	}
+
+	// Verify serviceWithLro imports GoogleCloudLro
+	gotLroServiceImports := serviceWithLro.Codec.(*serviceAnnotations).ServiceImports
+	if !slices.Contains(gotLroServiceImports, "GoogleCloudLro") {
+		t.Errorf("expected ServiceImports for serviceWithLro to contain GoogleCloudLro, got %v", gotLroServiceImports)
+	}
+
+	// Verify serviceWithoutLro does NOT import GoogleCloudLro
+	gotNonLroServiceImports := serviceWithoutLro.Codec.(*serviceAnnotations).ServiceImports
+	if slices.Contains(gotNonLroServiceImports, "GoogleCloudLro") {
+		t.Errorf("expected ServiceImports for serviceWithoutLro to NOT contain GoogleCloudLro, got %v", gotNonLroServiceImports)
 	}
 }

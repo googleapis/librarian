@@ -27,6 +27,8 @@ type serviceAnnotations struct {
 	PackageName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
+
+	ServiceImports []string
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {

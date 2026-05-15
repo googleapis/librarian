@@ -136,7 +136,10 @@ func TestGenerateService_Delegation(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{ApiPackage: "test", Name: "TestPackage"},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -199,7 +202,10 @@ func TestGenerateService_StubStructure(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{ApiPackage: "test", Name: "TestPackage"},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -213,8 +219,8 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	got := extractBlock(t, contentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
 	want := `  protocol ProtocolStub {
     func getThing(
-    request: Request, options: GoogleCloudGax.RequestOptions
-) async throws -> Response
+    request: TestPackage.Request, options: GoogleCloudGax.RequestOptions
+) async throws -> TestPackage.Response
 
   }`
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -359,9 +365,9 @@ func TestGenerateService_WithImports(t *testing.T) {
 	contentStr := string(content)
 
 	expectedImports := `import GoogleCloudAuth
+import GoogleCloudExternalV1
 import GoogleCloudGax
-
-import GoogleCloudExternalV1`
+import GoogleCloudWkt`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)

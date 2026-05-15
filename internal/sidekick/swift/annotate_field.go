@@ -53,6 +53,32 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return err
+		}
+		if m.Package != c.Model.PackageName {
+			if dep, ok := c.ApiPackages[m.Package]; ok {
+				if dep.Name != c.PackageName {
+					c.activeImports[dep.Name] = dep
+				}
+			}
+		}
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return err
+		}
+		if e.Package != c.Model.PackageName {
+			if dep, ok := c.ApiPackages[e.Package]; ok {
+				if dep.Name != c.PackageName {
+					c.activeImports[dep.Name] = dep
+				}
+			}
+		}
+	}
 	docLines, err := c.formatDocumentation(field.Documentation, field.Scopes())
 	if err != nil {
 		return err

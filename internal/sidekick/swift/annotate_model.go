@@ -71,9 +71,23 @@ func (c *codec) annotateModel() error {
 	}
 	c.Model.Codec = annotations
 	for _, message := range c.Model.Messages {
+		c.activeImports = map[string]*Dependency{}
 		if err := c.annotateMessage(message, annotations); err != nil {
 			return err
 		}
+		if len(c.Model.Messages) != 0 && wellKnownProtobufPackage != c.Model.PackageName {
+			if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+				c.activeImports[dep.Name] = dep
+			}
+		}
+
+		var imports []string
+		for _, dep := range c.activeImports {
+			imports = append(imports, dep.Name)
+			annotations.DependsOn[dep.Name] = dep
+		}
+		slices.Sort(imports)
+		message.Codec.(*messageAnnotations).MessageImports = imports
 	}
 	for _, enum := range c.Model.Enums {
 		if err := c.annotateEnum(enum, annotations); err != nil {
@@ -84,34 +98,45 @@ func (c *codec) annotateModel() error {
 	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
 	if len(c.Model.Messages) != 0 {
 		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-			dep.Required = true
+			annotations.DependsOn[dep.Name] = dep
 		} else {
 			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
 	}
 	for _, service := range c.Model.Services {
+		c.activeImports = map[string]*Dependency{}
+		for _, p := range c.Dependencies {
+			if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+				continue
+			}
+			if p.RequiredByServices && p.Name != lroSwiftPackage {
+				c.activeImports[p.Name] = p
+			}
+		}
 		if err := c.annotateService(service, annotations); err != nil {
 			return err
 		}
+		var imports []string
+		for _, dep := range c.activeImports {
+			imports = append(imports, dep.Name)
+			annotations.DependsOn[dep.Name] = dep
+		}
+		slices.Sort(imports)
+		service.Codec.(*serviceAnnotations).ServiceImports = imports
 	}
 	var serviceImports []string
-	var messageImports []string
 	for _, p := range c.Dependencies {
 		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
 			continue
 		}
 		if p.RequiredByServices && len(c.Model.Services) != 0 {
-			serviceImports = append(serviceImports, p.Name)
-			annotations.DependsOn[p.Name] = p
-		}
-		if p.Required {
-			messageImports = append(messageImports, p.Name)
-			annotations.DependsOn[p.Name] = p
+			if p.Name != lroSwiftPackage {
+				serviceImports = append(serviceImports, p.Name)
+				annotations.DependsOn[p.Name] = p
+			}
 		}
 	}
 	slices.Sort(serviceImports)
-	slices.Sort(messageImports)
 	annotations.ServiceImports = serviceImports
-	annotations.MessageImports = messageImports
 	return nil
 }

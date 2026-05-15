@@ -161,13 +161,15 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 }
 
 func (c *codec) externalTypePrefix(packageName string) (string, error) {
-	if packageName == c.Model.PackageName {
+	if packageName == "" || packageName == c.Model.PackageName {
 		return "", nil
 	}
 	dep, ok := c.ApiPackages[packageName]
 	if !ok {
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
 	}
-	dep.Required = true
+	if dep.Name != c.PackageName && dep.ApiPackage != c.Model.PackageName {
+		c.activeImports[dep.Name] = dep
+	}
 	return dep.Name, nil
 }

@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -63,6 +64,8 @@ func TestAnnotateMethod(t *testing.T) {
 				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
 				HTTPMethod:     "GET",
 				HasBody:        false,
+				InputType:      "Request",
+				OutputType:     "Response",
 			},
 		},
 		{
@@ -86,6 +89,8 @@ func TestAnnotateMethod(t *testing.T) {
 				HasBody:        true,
 				IsBodyWildcard: false,
 				BodyField:      "key",
+				InputType:      "Request",
+				OutputType:     "Response",
 			},
 		},
 		{
@@ -108,6 +113,8 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
+				InputType:      "Request",
+				OutputType:     "Response",
 			},
 		},
 		{
@@ -132,6 +139,8 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "GET",
 				HasBody:        false,
 				QueryParams:    []*api.Field{keyField},
+				InputType:      "Request",
+				OutputType:     "Response",
 			},
 		},
 	} {
@@ -217,6 +226,8 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
+				InputType:      "Request",
+				OutputType:     "Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -259,6 +270,9 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "google.cloud.external.v1", Name: "GoogleCloudExternalV1"},
+	})
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -344,6 +358,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
+		InputType:  "ListRequest",
+		OutputType: "ListResponse",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -355,7 +371,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Name:    "ListRequest",
 		TypeURL: "type.googleapis.com/test.ListRequest",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "MessageImports")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 
@@ -367,9 +383,8 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "items",
 		PageableItemType:    "Item",
-		ImportsGax:          true,
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "MessageImports")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

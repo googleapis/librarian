@@ -32,6 +32,8 @@ type methodAnnotations struct {
 	BodyField      string
 	QueryParams    []*api.Field
 	Pagination     *paginationAnnotations
+	InputType      string
+	OutputType     string
 }
 
 type paginationAnnotations struct {
@@ -69,6 +71,11 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 }
 
 func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) error {
+	if method.IsLRO {
+		if dep, ok := c.DependenciesByName[lroSwiftPackage]; ok {
+			c.activeImports[dep.Name] = dep
+		}
+	}
 	if method.InputType != nil {
 		if err := c.annotateMessage(method.InputType, modelAnn); err != nil {
 			return err
@@ -105,6 +112,20 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			ItemType: itemFieldCodec.BaseFieldType,
 		}
 	}
+	var inputTypeName string
+	if method.InputType != nil {
+		inputTypeName, err = c.messageTypeName(method.InputType)
+		if err != nil {
+			return err
+		}
+	}
+	var outputTypeName string
+	if method.OutputType != nil {
+		outputTypeName, err = c.messageTypeName(method.OutputType)
+		if err != nil {
+			return err
+		}
+	}
 	method.Codec = &methodAnnotations{
 		Name:           camelCase(method.Name),
 		DocLines:       docLines,
@@ -116,6 +137,8 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
 		Pagination:     pagination,
+		InputType:      inputTypeName,
+		OutputType:     outputTypeName,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)
