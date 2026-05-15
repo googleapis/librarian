@@ -199,6 +199,56 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tidy empty additional protos",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							AdditionalProtos: []*config.AdditionalProto{
+								{Path: ""},
+								{Path: "google/cloud/common_resources.proto"},
+							},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							AdditionalProtos: []*config.AdditionalProto{
+								{Path: "google/cloud/common_resources.proto"},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "tidy nil additional protos",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							AdditionalProtos: []*config.AdditionalProto{
+								nil,
+							},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := Tidy(test.lib)

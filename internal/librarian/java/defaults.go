@@ -16,6 +16,7 @@ package java
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -79,6 +80,9 @@ func Tidy(library *config.Library) *config.Library {
 		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
 			api.Java.GenerateResourceNames = nil
 		}
+		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
+			return p == nil || p.Path == ""
+		})
 		if isEmptyJavaAPI(api.Java) {
 			api.Java = nil
 		}
