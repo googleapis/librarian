@@ -60,5 +60,3 @@ go.work.sum
 
 # VSCode file
 .vscode/*
-AGENT_WORKFLOW.md
-bin/
