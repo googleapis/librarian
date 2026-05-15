@@ -125,8 +125,8 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	javaAPI := params.api.Java
 	primaryDir := params.srcCfg.Root(params.srcCfg.ActiveRoots[0])
 	googleapisDir := params.srcCfg.Root("googleapis")
-	additionalProtos := deriveAdditionalProtoPaths(javaAPI, googleapisDir)
-	additionalProtosToGenerateAndCopyAbs := deriveAbsoluteProtoPaths(javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
+	allAdditionalProtosAbs, additionalProtosToGenerateAbs,
+		additionalProtosToCopyRel := processAdditionalProtos(javaAPI, googleapisDir)
 
 	postParams := postProcessParams{
 		cfg:            params.cfg,
@@ -155,7 +155,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if len(apiProtos) == 0 {
 		return fmt.Errorf("%s: %w", params.api.Path, errNoProtos)
 	}
-	postParams.protosToCopy, err = deriveProtosToCopy(apiProtos, primaryDir, javaAPI.AdditionalProtosToGenerateAndCopy, googleapisDir)
+	postParams.protosToCopy, err = deriveProtosToCopy(apiProtos, primaryDir, additionalProtosToCopyRel, googleapisDir)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProtoGRPC(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
-		protoProtos = append(protoProtos, additionalProtosToGenerateAndCopyAbs...)
+		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
 		if err := runProtoc(ctx, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
@@ -182,7 +182,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 		if err != nil {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
-		args := gapicProtocArgs(apiProtos, append(additionalProtos, additionalProtosToGenerateAndCopyAbs...), params.srcCfg, gapicDir, gapicOpts)
+		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
 		if err := runProtoc(ctx, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
@@ -194,29 +194,30 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	return nil
 }
 
-// deriveAdditionalProtoPaths returns the absolute paths to additional proto files
-// configured via AdditionalProtos to include in GAPIC generation. It includes
-// google/cloud/common_resources.proto unless opted out via OmitCommonResources.
-func deriveAdditionalProtoPaths(javaAPI *config.JavaAPI, googleapisDir string) []string {
-	var additionalProtos []string
+// processAdditionalProtos returns absolute paths for all additional protos (GAPIC deps),
+// absolute paths for additional protos to generate proto classes for,
+// and relative paths for additional protos to copy to the output.
+func processAdditionalProtos(javaAPI *config.JavaAPI, googleapisDir string) (allAbs []string, toGenerateAbs []string, toCopyRel []string) {
 	if !javaAPI.OmitCommonResources {
-		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
+		allAbs = append(allAbs, filepath.Join(googleapisDir, filepath.FromSlash(commonResourcesProto)))
 	}
-	for _, p := range javaAPI.AdditionalProtos {
-		if p == commonResourcesProto {
+	for _, proto := range javaAPI.AdditionalProtos {
+		if proto == nil {
 			continue
 		}
-		additionalProtos = append(additionalProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
+		if proto.Path == commonResourcesProto {
+			continue
+		}
+		absPath := filepath.Join(googleapisDir, filepath.FromSlash(proto.Path))
+		allAbs = append(allAbs, absPath)
+		if proto.GenerateProtoClasses {
+			toGenerateAbs = append(toGenerateAbs, absPath)
+		}
+		if proto.CopyToOutput {
+			toCopyRel = append(toCopyRel, proto.Path)
+		}
 	}
-	return additionalProtos
-}
-
-func deriveAbsoluteProtoPaths(paths []string, baseDir string) []string {
-	var absPaths []string
-	for _, p := range paths {
-		absPaths = append(absPaths, filepath.Join(baseDir, filepath.FromSlash(p)))
-	}
-	return absPaths
+	return
 }
 
 // deriveProtosToCopy resolves absolute and relative paths for API and additional protos.

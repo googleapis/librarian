@@ -70,35 +70,26 @@ Examples:
 			},
 		},
 		Action: func(ctx context.Context, cmd *cli.Command) error {
-			cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-			if err != nil {
-				return err
-			}
-			return tag(ctx, cfg, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
+			return tag(ctx, cmd.String("release-commit"), cmd.Bool("create-release-tag"))
 		},
 	}
 }
 
-// tag implements the tag command. It is provided with the configuration
-// at HEAD, just to find the git executable to use, after which it finds the
-// release commit to publish (unless already specified). The configuration at
-// the release commit is used for all further operations.
-func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createReleaseTag bool) error {
-	gitExe := command.Git
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Git)
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
+// tag implements the tag command. It finds the release commit to publish
+// (unless already specified). The configuration at the release commit is used
+// for all further operations.
+func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error {
+	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
 		return err
 	}
 	if releaseCommit == "" {
-		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx, gitExe)
+		latestReleaseCommit, err := findLatestReleaseCommitHash(ctx)
 		if err != nil {
 			return err
 		}
 		releaseCommit = latestReleaseCommit
 	}
-	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit, config.LibrarianYAML)
+	releaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit, config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -111,7 +102,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 	// findLatestReleaseCommitHash, but keeps the interface simple - and means
 	// that if we specify the release commit directly, we can skip
 	// findLatestReleaseCommitHash entirely.)
-	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, gitExe, releaseCommit+"~", config.LibrarianYAML)
+	beforeReleaseCommitCfgContent, err := git.ShowFileAtRevision(ctx, command.Git, releaseCommit+"~", config.LibrarianYAML)
 	if err != nil {
 		return err
 	}
@@ -130,7 +121,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 	// If we need to create a release tag, do that first - in case we can't
 	// determine the tag name.
 	if createReleaseTag {
-		commitSubject, err := git.GetCommitSubject(ctx, gitExe, releaseCommit)
+		commitSubject, err := git.GetCommitSubject(ctx, command.Git, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("can't get commit subject for %s: %w, %w", releaseCommit, errCannotDeriveReleaseTag, err)
 		}
@@ -139,7 +130,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 			return fmt.Errorf("commit subject has unexpected format '%s': %w", commitSubject, errCannotDeriveReleaseTag)
 		}
 		tagName := "release-" + matches[1]
-		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
+		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}
@@ -152,7 +143,7 @@ func tag(ctx context.Context, cfg *config.Config, releaseCommit string, createRe
 			return err
 		}
 		tagName := formatTagName(tagFormat, lib)
-		err = git.Tag(ctx, gitExe, tagName, releaseCommit)
+		err = git.Tag(ctx, command.Git, tagName, releaseCommit)
 		if err != nil {
 			return fmt.Errorf("error creating tag %s: %w", tagName, err)
 		}

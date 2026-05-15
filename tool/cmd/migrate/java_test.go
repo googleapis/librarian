@@ -61,14 +61,25 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "filestore",
 			path: "google/cloud/filestore/v1",
 			want: &config.JavaAPI{
-				AdditionalProtos: []string{"google/cloud/common/operation_metadata.proto"},
+				AdditionalProtos: []*config.AdditionalProto{
+					{
+						Path:                 "google/cloud/common/operation_metadata.proto",
+						GenerateProtoClasses: true,
+					},
+				},
 			},
 		},
 		{
 			name: "oslogin",
 			path: "google/cloud/oslogin/v1",
 			want: &config.JavaAPI{
-				AdditionalProtosToGenerateAndCopy: []string{"google/cloud/oslogin/common/common.proto"},
+				AdditionalProtos: []*config.AdditionalProto{
+					{
+						Path:                 "google/cloud/oslogin/common/common.proto",
+						GenerateProtoClasses: true,
+						CopyToOutput:         true,
+					},
+				},
 			},
 		},
 		{
@@ -80,9 +91,9 @@ func TestApplyJavaProtoOverrides(t *testing.T) {
 			name: "showcase",
 			path: "schema/google/showcase/v1beta1",
 			want: &config.JavaAPI{
-				AdditionalProtos: []string{
-					"google/cloud/location/locations.proto",
-					"google/iam/v1/iam_policy.proto",
+				AdditionalProtos: []*config.AdditionalProto{
+					{Path: "google/cloud/location/locations.proto"},
+					{Path: "google/iam/v1/iam_policy.proto"},
 				},
 			},
 		},
@@ -425,7 +436,10 @@ func TestBuildConfig(t *testing.T) {
 							{
 								Path: "schema/google/showcase/v1beta1",
 								Java: &config.JavaAPI{
-									AdditionalProtos:        []string{"google/cloud/location/locations.proto", "google/iam/v1/iam_policy.proto"},
+									AdditionalProtos: []*config.AdditionalProto{
+										{Path: "google/cloud/location/locations.proto"},
+										{Path: "google/iam/v1/iam_policy.proto"},
+									},
 									GRPCArtifactIDOverride:  "grpc-gapic-showcase-v1beta1",
 									ProtoArtifactIDOverride: "proto-gapic-showcase-v1beta1",
 									OmitCommonResources:     true,

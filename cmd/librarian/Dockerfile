@@ -60,8 +60,8 @@ ARG GO_GAPIC_VERSION=0.59.0
 ARG GO_GOIMPORTS_VERSION=latest
 
 # NodeJS dependency versions
-ARG NODEJS_PROTOC_VERSION=31.0
-ARG NODEJS_PROTOC_CHECKSUM=45776e351baa6c2a9ba3b05a20d5302c5226db0579a6279a540592244d9de9b5f80c9905e90b6a1cebda12c3f8a2bd15450b46d967ba2e80dfc26fb246a84654
+ARG NODEJS_PROTOC_VERSION=33.2
+ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
@@ -234,7 +234,7 @@ ARG NODEJS_PROTOC_VERSION
 ARG NODEJS_PROTOC_CHECKSUM
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv nodejs npm \
+    nodejs npm \
     && rm -rf /var/lib/apt/lists/*
 
 # Install Node-specific protoc version
@@ -243,20 +243,8 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Make sure Python uses /python-packages for all installations.
-# This makes it easier to predict where things are installed, e.g. for
-# SYNTHTOOL_TEMPLATES later.
-ENV PYTHONPATH=/python-packages
-ENV PATH=${PATH}:${PYTHONPATH}/bin
-# Specify where pip should install, and disable its cache.
-ENV PIP_TARGET=${PYTHONPATH}
-ENV PIP_NO_CACHE_DIR=1
-
 # Install all the tools that Librarian needs for Node generation.
 RUN /app/librarian install nodejs -v
-
-# Ensure we use the local synthtool templates.
-ENV SYNTHTOOL_TEMPLATES=${PYTHONPATH}/synthtool/gcp/templates
 
 # Allow normal users to read /root (as the generator is installed
 # in /root/.cache, for example)

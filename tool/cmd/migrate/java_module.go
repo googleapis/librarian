@@ -14,6 +14,10 @@
 
 package main
 
+import (
+	"github.com/googleapis/librarian/internal/config"
+)
+
 type overrideKey struct {
 	libraryName string
 	apiPath     string
@@ -32,6 +36,7 @@ var (
 		"iam":               true,
 		"iam-policy":        true,
 		"bigtable":          true,
+		"firestore":         true,
 	}
 
 	keepOverride = map[string][]string{
@@ -78,6 +83,14 @@ var (
 		{apiPath: "google/datastore/admin/v1"}: {
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
 			grpcArtifactID:  "grpc-google-cloud-datastore-admin-v1",
+		},
+		{apiPath: "google/firestore/admin/v1"}: {
+			protoArtifactID: "proto-google-cloud-firestore-admin-v1",
+			grpcArtifactID:  "grpc-google-cloud-firestore-admin-v1",
+			gapicArtifactID: "google-cloud-firestore-admin",
+		},
+		{apiPath: "google/firestore/bundle"}: {
+			protoArtifactID: "proto-google-cloud-firestore-bundle-v1",
 		},
 		{apiPath: "google/api"}: {
 			protoArtifactID: "proto-google-common-protos",
@@ -216,25 +229,30 @@ var (
 	skipPOMUpdates = map[string]bool{
 		"grafeas":       true,
 		"common-protos": true,
+		"firestore":     true,
 	}
 
 	monolithicJavaAPIs = map[string]bool{
 		"grafeas/v1": true,
 	}
 
-	javaAdditionalProtosOverrides = map[string][]string{
+	javaAdditionalProtosOverrides = map[string][]*config.AdditionalProto{
 		"schema/google/showcase/v1beta1": {
-			"google/cloud/location/locations.proto",
-			"google/iam/v1/iam_policy.proto",
+			{Path: "google/cloud/location/locations.proto"},
+			{Path: "google/iam/v1/iam_policy.proto"},
 		},
 		"google/cloud/filestore": {
-			"google/cloud/common/operation_metadata.proto",
+			{
+				Path:                 "google/cloud/common/operation_metadata.proto",
+				GenerateProtoClasses: true,
+			},
 		},
-	}
-
-	javaAdditionalProtosToGenerateOverrides = map[string][]string{
 		"google/cloud/oslogin": {
-			"google/cloud/oslogin/common/common.proto",
+			{
+				Path:                 "google/cloud/oslogin/common/common.proto",
+				GenerateProtoClasses: true,
+				CopyToOutput:         true,
+			},
 		},
 	}
 

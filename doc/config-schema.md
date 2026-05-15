@@ -11,24 +11,8 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
-| `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
-
-## Release Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
-
-## Tool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the name of the tool e.g. nox. |
-| `version` | string | Is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
 
@@ -138,6 +122,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+| `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 
 ## GoDefault Configuration
@@ -145,6 +130,14 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `toolchain` | string | Is the desired Go toolchain version (e.g., "go1.25.0"). |
+
+## AdditionalProto Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Is the path to the proto file, relative to the googleapis root. |
+| `generate_proto_classes` | bool | Indicates whether to include this proto in standard Protocol Buffer Java classes generation. |
+| `copy_to_output` | bool | Indicates whether to copy this proto to the output directory. |
 
 ## DartPackage Configuration
 
@@ -264,7 +257,6 @@ This document describes the schema for the librarian.yaml.
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
-| `path` | string | Is the source path. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
@@ -273,7 +265,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
@@ -282,8 +273,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
-| `additional_protos` | list of string | Is a list of additional proto files to include in GAPIC generation as dependencies. They are NOT included in the standard Proto Java classes generation step and are NOT copied to the destination directory. Use this for common protos that are needed for building the client but should not be packaged with the library. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
-| `additional_protos_to_generate_and_copy` | list of string | Is a list of additional proto files to include in BOTH standard Protocol Buffer Java classes generation and GAPIC generation. They ARE copied to the destination directory (src/main/proto). Use this for protos that belong to this library but are located in a different directory (e.g., common protos specific to this API). |
+| `additional_protos` | list of [AdditionalProto](#additionalproto-configuration) (optional) | Is a list of additional proto files to include in generation. By default, these files are used purely as compilation dependencies for the GAPIC generator. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
 | `skip_proto_class_generation` | list of string | Is a list of proto files to exclude from generating proto module, but included in generating gRPC or GAPIC modules and packaged proto files. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto"). TODO(https://github.com/googleapis/librarian/issues/5661): remove after migration. |

@@ -16,10 +16,10 @@ package swift
 
 import "github.com/googleapis/librarian/internal/config"
 
-// IsModule reports whether the library has handwritten code wrapping generated code.
+// IsMixedLibrary reports whether the library has handwritten code wrapping generated code.
 //
 // At the moment, only libraries created for test protos are modules. Such libraries do not have an API and have an
 // explicit output directory.
-func IsModule(lib *config.Library) bool {
+func IsMixedLibrary(lib *config.Library) bool {
 	return lib.Swift != nil && len(lib.Swift.Modules) > 0
 }

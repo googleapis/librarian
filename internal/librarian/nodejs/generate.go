@@ -41,6 +41,12 @@ const (
 	commonProtos = "google/cloud/common_resources.proto"
 )
 
+// IsMixedLibrary reports whether the library has handwritten code wrapping
+// generated or librarian-managed code.
+func IsMixedLibrary(lib *config.Library) bool {
+	return lib.Output != "" && len(lib.APIs) == 0
+}
+
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
 	googleapisDir := srcs.Googleapis
@@ -98,18 +104,23 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if len(protos) == 0 {
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
+	for index := range protos {
+		rel, err := filepath.Rel(googleapisDir, protos[index])
+		if err != nil {
+			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
 
 	// Add additional protos from configuration.
-	for _, p := range nodejsAPI.AdditionalProtos {
-		protos = append(protos, filepath.Join(googleapisDir, p))
-	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
 	cmdArgs := append(args[1:], protos...)
-	return command.Run(ctx, args[0], cmdArgs...)
+	return command.RunInDir(ctx, googleapisDir, args[0], cmdArgs...)
 }
 
 // resolveNodejsAPI returns the Node.js-specific configuration for the given API,
@@ -165,8 +176,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	args := []string{
 		"gapic-generator-typescript",
 		"--protoc=" + protocPath,
-		"--common-proto-path=" + googleapisDir,
-		"-I", googleapisDir,
+		"--common-proto-path=.",
+		"-I", ".",
 		"--output-dir", stagingDir,
 	}
 
@@ -175,7 +186,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if grpcConfigPath != "" {
-		args = append(args, "--grpc-service-config", filepath.Join(googleapisDir, grpcConfigPath))
+		args = append(args, "--grpc-service-config", grpcConfigPath)
 	}
 
 	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageNodejs)
@@ -183,7 +194,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		args = append(args, "--service-yaml", filepath.Join(googleapisDir, apiMetadata.ServiceConfig))
+		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
 	args = append(args, "--package-name", DerivePackageName(library))
@@ -207,7 +218,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
-			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))
+			args = append(args, "--bundle-config", library.Nodejs.BundleConfig)
 		}
 		for _, param := range library.Nodejs.ExtraProtocParameters {
 			if param == "metadata" {
@@ -231,21 +242,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		// Old way: use synthtool
-		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
-			return fmt.Errorf("owlbot.py failed: %w", err)
-		}
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
-	}
-
-	// Template generation and exclusions are handled at the generator level.
-	// Synthtool is only used for post-processing handled by standalone scripts
-	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
-	// Librarian CLI tool).
 
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -367,6 +363,44 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 
 	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove package staging: %w", err)
+	}
+
+	if err := removeRedundantLinterFiles(library, outDir); err != nil {
+		return fmt.Errorf("failed to remove redundant linter files: %w", err)
+	}
+
+	return nil
+}
+
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8286): gapic-generator-typescript
+// unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
+// This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
+// Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
+func removeRedundantLinterFiles(library *config.Library, outDir string) error {
+	keepSet := make(map[string]bool)
+	for _, k := range library.Keep {
+		keepSet[filepath.Clean(k)] = true
+	}
+
+	linterFiles := []string{
+		".eslintignore",
+		".eslintrc.json",
+		".prettierignore",
+		".prettierrc.js",
+		".prettierrc.cjs",
+	}
+
+	for _, lf := range linterFiles {
+		if keepSet[lf] {
+			continue
+		}
+		path := filepath.Join(outDir, lf)
+		if err := os.Remove(path); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("failed to remove redundant linter file %s: %w", path, err)
+		}
 	}
 	return nil
 }

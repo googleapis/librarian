@@ -16,6 +16,7 @@ package java
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -79,6 +80,9 @@ func Tidy(library *config.Library) *config.Library {
 		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
 			api.Java.GenerateResourceNames = nil
 		}
+		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
+			return p == nil || p.Path == ""
+		})
 		if isEmptyJavaAPI(api.Java) {
 			api.Java = nil
 		}
@@ -92,7 +96,6 @@ func isEmptyJavaAPI(j *config.JavaAPI) bool {
 	}
 	return !j.Monolithic &&
 		len(j.AdditionalProtos) == 0 &&
-		len(j.AdditionalProtosToGenerateAndCopy) == 0 &&
 		!j.OmitCommonResources &&
 		len(j.ExcludedProtos) == 0 &&
 		len(j.SkipProtoClassGeneration) == 0 &&
@@ -131,8 +134,8 @@ func Validate(library *config.Library) error {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue
 		}
-		for _, p := range api.Java.AdditionalProtos {
-			if p == commonResourcesProto {
+		for _, proto := range api.Java.AdditionalProtos {
+			if proto != nil && proto.Path == commonResourcesProto {
 				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
 			}
 		}

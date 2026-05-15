@@ -39,7 +39,7 @@ For each repository, librarianops will:
  1. Clone the repository to a temporary directory (or use existing directory with -C)
  2. Create a branch: librarianops-generateall-YYYY-MM-DD
  3. Run librarian tidy
- 4. Run librarian update for configured sources (discovery, googleapis)
+ 4. Run librarian update for configured sources (sources.discovery, sources.googleapis)
  5. Run librarian generate --all
  6. Run cargo update --workspace (google-cloud-rust only)
  7. Commit changes

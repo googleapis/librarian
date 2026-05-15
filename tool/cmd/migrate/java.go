@@ -282,8 +282,12 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				log.Printf("Warning: skipping API %s for library %s because no Java build info was found", g.ProtoPath, name)
 				continue
 			}
+			var additionalProtos []*config.AdditionalProto
+			for _, p := range info.AdditionalProtos {
+				additionalProtos = append(additionalProtos, &config.AdditionalProto{Path: p})
+			}
 			javaAPI := &config.JavaAPI{
-				AdditionalProtos:    info.AdditionalProtos,
+				AdditionalProtos:    additionalProtos,
 				OmitCommonResources: info.OmitCommonResources,
 			}
 			if info.ProtoGRPCOnly {
@@ -501,11 +505,6 @@ func applyJavaProtoOverrides(apiPath string, api *config.JavaAPI) {
 	for prefix, protos := range javaAdditionalProtosOverrides {
 		if strings.HasPrefix(apiPath, prefix) {
 			api.AdditionalProtos = append(api.AdditionalProtos, protos...)
-		}
-	}
-	for prefix, protos := range javaAdditionalProtosToGenerateOverrides {
-		if strings.HasPrefix(apiPath, prefix) {
-			api.AdditionalProtosToGenerateAndCopy = append(api.AdditionalProtosToGenerateAndCopy, protos...)
 		}
 	}
 	switch {

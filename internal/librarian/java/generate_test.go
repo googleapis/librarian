@@ -265,7 +265,9 @@ func TestGenerateAPI(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 				Java: &config.JavaAPI{
-					AdditionalProtos: []string{"google/cloud/common_resources.proto"},
+					AdditionalProtos: []*config.AdditionalProto{
+						{Path: "google/cloud/common_resources.proto"},
+					},
 				},
 			},
 		},
@@ -468,7 +470,13 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 				Java: &config.JavaAPI{
-					AdditionalProtosToGenerateAndCopy: []string{additionalProto},
+					AdditionalProtos: []*config.AdditionalProto{
+						{
+							Path:                 additionalProto,
+							GenerateProtoClasses: true,
+							CopyToOutput:         true,
+						},
+					},
 				},
 			},
 		},
@@ -925,16 +933,18 @@ func TestFilterProtos(t *testing.T) {
 	}
 }
 
-func TestDeriveAdditionalProtoPaths(t *testing.T) {
+func TestProcessAdditionalProtos(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		javaAPI *config.JavaAPI
-		want    []string
+		name         string
+		javaAPI      *config.JavaAPI
+		wantAll      []string
+		wantGenerate []string
+		wantCopy     []string
 	}{
 		{
 			name:    "included by default",
 			javaAPI: &config.JavaAPI{},
-			want: []string{
+			wantAll: []string{
 				filepath.Join(googleapisDir, commonResourcesProto),
 			},
 		},
@@ -943,42 +953,69 @@ func TestDeriveAdditionalProtoPaths(t *testing.T) {
 			javaAPI: &config.JavaAPI{
 				OmitCommonResources: true,
 			},
-			want: nil,
 		},
 		{
 			name: "explicitly included in AdditionalProtos (still only one)",
 			javaAPI: &config.JavaAPI{
-				AdditionalProtos: []string{commonResourcesProto},
+				AdditionalProtos: []*config.AdditionalProto{
+					{Path: commonResourcesProto},
+				},
 			},
-			want: []string{
+			wantAll: []string{
 				filepath.Join(googleapisDir, commonResourcesProto),
 			},
 		},
 		{
 			name: "other additional protos",
 			javaAPI: &config.JavaAPI{
-				AdditionalProtos: []string{"other.proto"},
+				AdditionalProtos: []*config.AdditionalProto{
+					{Path: "other.proto"},
+				},
 			},
-			want: []string{
+			wantAll: []string{
 				filepath.Join(googleapisDir, commonResourcesProto),
 				filepath.Join(googleapisDir, "other.proto"),
 			},
 		},
 		{
-			name: "omitted via flag with other additional protos",
+			name: "generate and copy flags",
 			javaAPI: &config.JavaAPI{
-				OmitCommonResources: true,
-				AdditionalProtos:    []string{"other.proto"},
+				AdditionalProtos: []*config.AdditionalProto{
+					{
+						Path:                 "generate_copy.proto",
+						GenerateProtoClasses: true,
+						CopyToOutput:         true,
+					},
+					{
+						Path:                 "generate_only.proto",
+						GenerateProtoClasses: true,
+					},
+				},
 			},
-			want: []string{
-				filepath.Join(googleapisDir, "other.proto"),
+			wantAll: []string{
+				filepath.Join(googleapisDir, commonResourcesProto),
+				filepath.Join(googleapisDir, "generate_copy.proto"),
+				filepath.Join(googleapisDir, "generate_only.proto"),
+			},
+			wantGenerate: []string{
+				filepath.Join(googleapisDir, "generate_copy.proto"),
+				filepath.Join(googleapisDir, "generate_only.proto"),
+			},
+			wantCopy: []string{
+				"generate_copy.proto",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveAdditionalProtoPaths(test.javaAPI, googleapisDir)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			gotAll, gotGenerate, gotCopy := processAdditionalProtos(test.javaAPI, googleapisDir)
+			if diff := cmp.Diff(test.wantAll, gotAll); diff != "" {
+				t.Errorf("mismatch all (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantGenerate, gotGenerate); diff != "" {
+				t.Errorf("mismatch generate (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantCopy, gotCopy); diff != "" {
+				t.Errorf("mismatch copy (-want +got):\n%s", diff)
 			}
 		})
 	}

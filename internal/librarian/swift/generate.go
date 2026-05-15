@@ -31,7 +31,7 @@ import (
 
 // Generate generates a Swift client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	if IsModule(library) {
+	if IsMixedLibrary(library) {
 		return generateModule(ctx, library, src)
 	}
 	if len(library.APIs) != 1 {
