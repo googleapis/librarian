@@ -632,18 +632,18 @@ func TestIsPOMMissing_DirMissing(t *testing.T) {
 
 func TestIdentifyMissingModules(t *testing.T) {
 	library := &config.Library{
-				Name:    "secretmanager",
-				Version: "1.2.3",
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						Java: &config.JavaAPI{},
-					},
-				},
-				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
-				},
-			}
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+				Java: &config.JavaAPI{},
+			},
+		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
+	}
 	for _, test := range []struct {
 		name  string
 		setup func(t *testing.T, libraryDir string)
