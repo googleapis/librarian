@@ -238,17 +238,20 @@ var (
 
 	javaIAMLibraryOverrides = map[string]struct {
 		GenerateGAPIC         *bool
-		GenerateProtoGRPC     *bool
+		GenerateProto         *bool
+		GenerateGRPC          *bool
 		GenerateResourceNames *bool
 	}{
 		"iam": {
 			GenerateGAPIC:         new(false),
-			GenerateProtoGRPC:     new(true),
+			GenerateProto:         new(true),
+			GenerateGRPC:          new(true),
 			GenerateResourceNames: new(true),
 		},
 		"iam-policy": {
 			GenerateGAPIC:         new(true),
-			GenerateProtoGRPC:     new(false),
+			GenerateProto:         new(false),
+			GenerateGRPC:          new(false),
 			GenerateResourceNames: new(false),
 		},
 	}

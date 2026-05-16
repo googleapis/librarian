@@ -837,7 +837,8 @@ func applyJavaIAMSpecialOverrides(apiPath string, libraryName string, api *confi
 	}
 	if override, ok := javaIAMLibraryOverrides[libraryName]; ok {
 		api.GenerateGAPIC = override.GenerateGAPIC
-		api.GenerateProtoGRPC = override.GenerateProtoGRPC
+		api.GenerateProto = override.GenerateProto
+		api.GenerateGRPC = override.GenerateGRPC
 		api.GenerateResourceNames = override.GenerateResourceNames
 	}
 }

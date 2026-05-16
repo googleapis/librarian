@@ -1622,6 +1622,7 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 		apiPath     string
 		wantGAPIC   *bool
 		wantProto   *bool
+		wantGRPC    *bool
 		wantResName *bool
 	}{
 		{
@@ -1630,6 +1631,7 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 			apiPath:     "google/iam/v2",
 			wantGAPIC:   new(false),
 			wantProto:   new(true),
+			wantGRPC:    new(true),
 			wantResName: new(true),
 		},
 		{
@@ -1638,6 +1640,7 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 			apiPath:     "google/iam/v2",
 			wantGAPIC:   new(true),
 			wantProto:   new(false),
+			wantGRPC:    new(false),
 			wantResName: new(false),
 		},
 		{
@@ -1655,13 +1658,16 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 			api := &config.JavaAPI{}
 			applyJavaIAMSpecialOverrides(test.apiPath, test.libraryName, api)
 			if diff := cmp.Diff(test.wantGAPIC, api.GenerateGAPIC); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch gapic (-want +got):\n%s", diff)
 			}
-			if diff := cmp.Diff(test.wantProto, api.GenerateProtoGRPC); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.wantProto, api.GenerateProto); diff != "" {
+				t.Errorf("mismatch proto (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantGRPC, api.GenerateGRPC); diff != "" {
+				t.Errorf("mismatch grpc (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantResName, api.GenerateResourceNames); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch resname (-want +got):\n%s", diff)
 			}
 		})
 	}

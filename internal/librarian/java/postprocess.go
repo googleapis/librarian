@@ -290,19 +290,19 @@ func restructureModules(p postProcessParams, destRoot string) error {
 	}
 
 	var actions []moveAction
-	if shouldGenerateProtoGRPC(p.javaAPI) {
-		actions = append(actions, []moveAction{
-			{
-				src:         tempProtoSrcDir,
-				dest:        protoDest,
-				description: "proto source",
-			},
-			{
-				src:         p.gRPCDir(),
-				dest:        grpcDest,
-				description: "grpc source",
-			},
-		}...)
+	if shouldGenerateProto(p.javaAPI) {
+		actions = append(actions, moveAction{
+			src:         tempProtoSrcDir,
+			dest:        protoDest,
+			description: "proto source",
+		})
+	}
+	if shouldGenerateGRPC(p.javaAPI) {
+		actions = append(actions, moveAction{
+			src:         p.gRPCDir(),
+			dest:        grpcDest,
+			description: "grpc source",
+		})
 	}
 	if shouldGenerateGAPIC(p.javaAPI) {
 		actions = append(actions, []moveAction{
@@ -336,7 +336,7 @@ func restructureModules(p postProcessParams, destRoot string) error {
 		return err
 	}
 	// Copy proto files to proto-*/src/main/proto
-	if shouldGenerateProtoGRPC(p.javaAPI) {
+	if shouldGenerateProto(p.javaAPI) {
 		if err := copyProtos(p.protosToCopy, protoFilesDestDir); err != nil {
 			return fmt.Errorf("failed to copy proto files: %w", err)
 		}
