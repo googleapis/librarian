@@ -240,19 +240,6 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 	}
 
-	for _, name := range nodejsConfigFiles {
-		if _, err := os.Stat(filepath.Join(pkgDir, name)); err == nil {
-			library.Keep = append(library.Keep, name)
-		}
-	}
-	for _, dir := range []string{"samples", "system-test"} {
-		dirKeep, err := nodejsSubdirKeep(pkgDir, dir)
-		if err != nil {
-			return nil, fmt.Errorf("collecting %s for %s: %w", dir, libraryName, err)
-		}
-		library.Keep = append(library.Keep, dirKeep...)
-	}
-
 	if libraryName == "google-cloud-compute" {
 		v1smallKeep, err := nodejsV1SmallKeep(pkgDir)
 		if err != nil {
@@ -455,42 +442,6 @@ func extractCopyrightYear(pkgDir string) string {
 		return string(m[1])
 	}
 	return ""
-}
-
-// nodejsSubdirKeep walks the named subdirectory under pkgDir and returns all
-// file paths relative to pkgDir, excluding anything under a generated/
-// subdirectory. Returns nil if the subdirectory does not exist.
-func nodejsSubdirKeep(pkgDir, subdir string) ([]string, error) {
-	dir := filepath.Join(pkgDir, subdir)
-	if _, err := os.Stat(dir); err != nil {
-		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	var paths []string
-	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() {
-			if filepath.Base(path) == "generated" {
-				return filepath.SkipDir
-			}
-			return nil
-		}
-		rel, err := filepath.Rel(pkgDir, path)
-		if err != nil {
-			return fmt.Errorf("getting relative path for %s: %w", path, err)
-		}
-		paths = append(paths, rel)
-		return nil
-	})
-	if err != nil {
-		return nil, err
-	}
-	sort.Strings(paths)
-	return paths, nil
 }
 
 // deriveNpmPackageName derives the expected npm package name from a library

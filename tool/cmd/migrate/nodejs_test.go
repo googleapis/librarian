@@ -36,15 +36,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
-			Keep: []string{
-				".eslintrc.json",
-				".gitignore",
-				"package.json",
-				"samples/README.md",
-				"samples/quickstart.js",
-				"samples/test/quickstart.test.js",
-				"system-test/.eslintrc.yml",
-			},
 			Nodejs: &config.NodejsPackage{
 				ExtraProtocParameters: []string{"metadata"},
 				PackageName:           "@google-cloud/secret-manager",
@@ -56,7 +47,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/speech/v1"},
 			},
-			Keep: []string{".prettierrc.js", "package.json"},
 			Nodejs: &config.NodejsPackage{
 				Dependencies: map[string]string{
 					"@google-cloud/common": "^6.0.0",
@@ -71,7 +61,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/translate/v3"},
 			},
-			Keep: []string{"package.json"},
 			Nodejs: &config.NodejsPackage{
 				BundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
 				ExtraProtocParameters: []string{
@@ -89,7 +78,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/workstations/v1"},
 			},
-			Keep: []string{"package.json"},
 			Nodejs: &config.NodejsPackage{
 				ExtraProtocParameters: []string{"metadata"},
 			},
