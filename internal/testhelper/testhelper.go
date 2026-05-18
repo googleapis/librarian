@@ -281,6 +281,7 @@ func tempDir(t *testing.T) string {
 	if len(pattern) > 64 {
 		pattern = pattern[:64]
 	}
+	//nolint:usetesting // We use os.MkdirTemp to allow preserving directories on failure for debugging.
 	dir, err := os.MkdirTemp("", pattern+"-*")
 	if err != nil {
 		t.Fatal(err)
@@ -289,12 +290,14 @@ func tempDir(t *testing.T) string {
 		if t.Failed() {
 			return
 		}
+		var err error
 		for i := 0; i < 10; i++ {
-			if err := os.RemoveAll(dir); err == nil {
+			if err = os.RemoveAll(dir); err == nil {
 				return
 			}
 			time.Sleep(10 * time.Millisecond)
 		}
+		t.Logf("failed to cleanup temp dir %s: %v", dir, err)
 	})
 	return dir
 }
