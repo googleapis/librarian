@@ -523,6 +523,9 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.APIDescriptionOverride != "" {
 		res.APIDescriptionOverride = src.APIDescriptionOverride
 	}
+	if src.APIShortnameOverride != "" {
+		res.APIShortnameOverride = src.APIShortnameOverride
+	}
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
 	}
@@ -573,6 +576,15 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.RpcDocumentation != "" {
 		res.RpcDocumentation = src.RpcDocumentation
+	}
+	if src.TransportOverride != "" {
+		res.TransportOverride = src.TransportOverride
+	}
+	if src.SkipPOMUpdates {
+		res.SkipPOMUpdates = src.SkipPOMUpdates
+	}
+	if src.SkipAPIID {
+		res.SkipAPIID = src.SkipAPIID
 	}
 	return &res
 }
