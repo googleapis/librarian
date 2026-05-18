@@ -72,7 +72,8 @@ func TestFill(t *testing.T) {
 						Java: &config.JavaAPI{
 							Samples:               new(true),
 							GenerateGAPIC:         new(true),
-							GenerateProtoGRPC:     new(true),
+							GenerateProto:         new(true),
+							GenerateGRPC:          new(true),
 							GenerateResourceNames: new(true),
 						},
 					},
@@ -104,7 +105,8 @@ func TestFill(t *testing.T) {
 						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(true),
-							GenerateProtoGRPC:     new(true),
+							GenerateProto:         new(true),
+							GenerateGRPC:          new(true),
 							GenerateResourceNames: new(true),
 						},
 					},
@@ -180,7 +182,8 @@ func TestTidy(t *testing.T) {
 						Java: &config.JavaAPI{
 							Samples:               new(true),
 							GenerateGAPIC:         new(true),
-							GenerateProtoGRPC:     new(true),
+							GenerateProto:         new(true),
+							GenerateGRPC:          new(true),
 							GenerateResourceNames: new(true),
 						},
 					},
@@ -203,7 +206,8 @@ func TestTidy(t *testing.T) {
 						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(false),
-							GenerateProtoGRPC:     new(false),
+							GenerateProto:         new(false),
+							GenerateGRPC:          new(false),
 							GenerateResourceNames: new(false),
 						},
 					},
@@ -216,8 +220,33 @@ func TestTidy(t *testing.T) {
 						Java: &config.JavaAPI{
 							Samples:               new(false),
 							GenerateGAPIC:         new(false),
-							GenerateProtoGRPC:     new(false),
+							GenerateProto:         new(false),
+							GenerateGRPC:          new(false),
 							GenerateResourceNames: new(false),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "tidy default grpc when proto is false",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateProto: new(false),
+							GenerateGRPC:  new(true),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateProto: new(false),
 						},
 					},
 				},

@@ -76,63 +76,17 @@ public protocol {{Codec.Name}} {
 extension Clients {
   /// The recommended implementation for ``{{Codec.Name}}``.
   public class {{Codec.ClientName}}: {{Codec.Name}} {
-    let inner: GoogleCloudGax.HTTPClient
+    let inner: any {{Codec.StubPrefix}}Stub
 
     /// Creates a new `{{Codec.ClientName}}` instance.
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      self.inner = try GoogleCloudGax.HTTPClient(from: options, withDefaultEndpoint: "https://{{DefaultHost}}")
+      self.inner = try {{Codec.StubPrefix}}Transport(options)
     }
     {{#Codec.RestMethods}}
 
     /// See `{{Service.Codec.Name}}.{{Codec.Name}}`
     public func {{> /templates/common/method_signature/request_options}} {
-      let path = try { () throws -> String in
-        {{#Codec.PathVariables}}
-        guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
-          throw GoogleCloudGax.RequestError.binding("'request.{{FieldPath}}' is not set or is empty")
-        }
-        {{/Codec.PathVariables}}
-        return "{{Codec.PathExpression}}"
-      }()
-      {{#Codec.HasQueryParams}}
-      var query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
-      let encoder = GoogleCloudGax.QueryParameterEncoder()
-      {{/Codec.HasQueryParams}}
-      {{^Codec.HasQueryParams}}
-      let query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
-      {{/Codec.HasQueryParams}}
-      {{#Codec.QueryParams}}
-      {{!
-        Note that `Codec.Name` includes mangling and escaping, while `JSONName` does not. We want the latter
-        for the query parameter name, and the former to access the field in the Swift struct.
-      }}
-      query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
-      {{/Codec.QueryParams}}
-      var req = try await self.inner.Request(path: path, query: query)
-      req.httpMethod = "{{Codec.HTTPMethod}}"
-      {{#Codec.HasBody}}
-      {{#Codec.IsBodyWildcard}}
-      req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-      req.httpBody = try JSONEncoder().encode(request)
-      {{/Codec.IsBodyWildcard}}
-      {{^Codec.IsBodyWildcard}}
-      if let body = request.{{Codec.BodyField}} {
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.httpBody = try JSONEncoder().encode(body)
-      }
-      {{/Codec.IsBodyWildcard}}
-      {{/Codec.HasBody}}
-      let (data, response) = try await self.inner.data(for: req)
-      if !(200..<300).contains(response.statusCode) {
-        throw GoogleCloudGax.RequestError.http(GoogleCloudGax.HTTPDetails(
-          http_status_code: response.statusCode,
-          headers: [:],
-          payload: data,
-        ))
-      }
-      {{^ReturnsEmpty}}
-      return try GoogleCloudGax.ProtoJSONDecoder().decode({{OutputType.Codec.Name}}.self, from: data)
-      {{/ReturnsEmpty}}
+        try await self.inner.{{Codec.Name}}(request: request, options: options)
     }
     {{#Codec.Pagination}}
 

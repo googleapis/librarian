@@ -170,19 +170,25 @@ func camelCase(s string) string {
 //
 // This function is used for services, messages, and enums, where the Swift style is `PascalCase`.
 func pascalCase(s string) string {
+	return escapeKeyword(pascalCaseNoMangling(s))
+}
+
+// pascalCaseNoMangling converts an identifier to PascalCase (note the leading uppercase).
+func pascalCaseNoMangling(s string) string {
 	// In Swift, it is conventional to preserve ALL CAPS names:
 	//     https://www.swift.org/documentation/api-design-guidelines/#conventions
 	if strings.ToUpper(s) == s {
-		return escapeKeyword(s)
+		return s
 	}
 	// Symbols that are already `PascalCase` should need no mapping. This works
 	// better than calling `strcase.ToCamel()` in cases like `IAMPolicy`, which
 	// would be converted to `Iampolicy`. We are trusting that the original
 	// name in API definition chose to keep the acronym for a reason.
 	if unicode.IsUpper(rune(s[0])) && !strings.ContainsRune(s, '_') {
-		return escapeKeyword(s)
+		return s
 	}
-	return escapeKeyword(strcase.ToCamel(s))
+	return strcase.ToCamel(s)
+
 }
 
 // enumValueCaseName returns the name of the Swift enumeration case for a given enumeration value.

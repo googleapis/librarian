@@ -483,7 +483,8 @@ func TestCollectModules(t *testing.T) {
 					{
 						Path: "google/cloud/secretmanager/v1",
 						Java: &config.JavaAPI{
-							GenerateProtoGRPC: func() *bool { b := false; return &b }(),
+							GenerateProto: func() *bool { b := false; return &b }(),
+							GenerateGRPC:  func() *bool { b := false; return &b }(),
 						},
 					},
 				},
@@ -820,7 +821,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 	}
 }
 
-func TestIdentifyMissingModules_GenerateProtoGRPCFalse(t *testing.T) {
+func TestIdentifyMissingModules_GenerateProtoFalse(t *testing.T) {
 	library := &config.Library{
 		Name:    "secretmanager",
 		Version: "1.2.3",
@@ -828,7 +829,8 @@ func TestIdentifyMissingModules_GenerateProtoGRPCFalse(t *testing.T) {
 			{
 				Path: "google/cloud/secretmanager/v1",
 				Java: &config.JavaAPI{
-					GenerateProtoGRPC: func() *bool { b := false; return &b }(),
+					GenerateProto: func() *bool { b := false; return &b }(),
+					GenerateGRPC:  func() *bool { b := false; return &b }(),
 				},
 			},
 		},
