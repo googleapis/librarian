@@ -789,6 +789,7 @@ func TestBuildConfig(t *testing.T) {
 								Java: &config.JavaAPI{
 									ProtoArtifactIDOverride: "proto-google-apps-script-type-protos",
 									GenerateGAPIC:           new(bool),
+									GenerateGRPC:            new(bool),
 									GenerateResourceNames:   new(bool),
 									Samples:                 new(false),
 									OmitCommonResources:     true, // common_resources_proto not in testdata BUILD.bazel
@@ -1615,7 +1616,7 @@ func TestInsertMarkers_Full(t *testing.T) {
 	}
 }
 
-func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
+func TestApplyJavaAPIOverrides(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		libraryName string
@@ -1656,7 +1657,7 @@ func TestApplyJavaIAMSpecialOverrides(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			api := &config.JavaAPI{}
-			applyJavaIAMSpecialOverrides(test.apiPath, test.libraryName, api)
+			applyJavaAPIOverrides(test.apiPath, test.libraryName, api)
 			if diff := cmp.Diff(test.wantGAPIC, api.GenerateGAPIC); diff != "" {
 				t.Errorf("mismatch gapic (-want +got):\n%s", diff)
 			}
