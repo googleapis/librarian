@@ -132,7 +132,6 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 		j.APIDescriptionOverride == "" &&
 		j.APIShortnameOverride == "" &&
 		j.ClientDocumentationOverride == "" &&
-		!j.NonCloudAPI &&
 		j.CodeownerTeam == "" &&
 		j.DistributionNameOverride == "" &&
 		j.ExcludedDependencies == "" &&
