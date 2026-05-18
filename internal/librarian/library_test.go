@@ -502,6 +502,130 @@ func TestFillDefaults_Python(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_Go(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.GoDefault
+		want     *config.Library
+	}{
+		{
+			name: "default features populated when GoAPI is nil",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default features populated when GoAPI has empty features",
+			lib: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							ImportPath: "foo/apiv1",
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							ImportPath:               "foo/apiv1",
+							EnabledGeneratorFeatures: []string{"F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing features union-ed with defaults",
+			lib: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_custom"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_custom", "F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicates are de-duplicated in union. The defaults come at the end.",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_two"},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Go: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestPrepareLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name        string
