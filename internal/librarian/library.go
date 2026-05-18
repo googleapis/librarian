@@ -39,6 +39,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
+	if d.Go != nil {
+		return fillGo(lib, d)
+	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}
@@ -52,6 +55,41 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 		return fillSwift(lib, d)
 	}
 	return lib
+}
+
+// fillGo populates empty Go-specific fields in lib from the provided default.
+func fillGo(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.Go == nil {
+		return lib
+	}
+	for _, api := range lib.APIs {
+		if api.Go == nil {
+			api.Go = &config.GoAPI{}
+		}
+		api.Go.EnabledGeneratorFeatures = union(api.Go.EnabledGeneratorFeatures, d.Go.DefaultEnabledGeneratorFeatures)
+	}
+	return lib
+}
+
+// union returns the union of two string slices, de-duplicating elements
+// while preserving their original insertion order. Go standard library does
+// not provide a built-in order-preserving de-duplication helper.
+func union(a, b []string) []string {
+	seen := make(map[string]bool)
+	var res []string
+	for _, item := range a {
+		if !seen[item] {
+			seen[item] = true
+			res = append(res, item)
+		}
+	}
+	for _, item := range b {
+		if !seen[item] {
+			seen[item] = true
+			res = append(res, item)
+		}
+	}
+	return res
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
