@@ -29,11 +29,7 @@ import (
 )
 
 const (
-	librarianDir        = ".librarian"
-	librarianStateFile  = "state.yaml"
-	librarianConfigFile = "config.yaml"
-	defaultTagFormat    = "{name}/v{version}"
-	googleapisRepo      = "github.com/googleapis/googleapis"
+	googleapisRepo = "github.com/googleapis/googleapis"
 )
 
 var (
