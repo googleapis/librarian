@@ -616,6 +616,8 @@ type JavaAPI struct {
 
 	// GenerateGRPC indicates whether to generate grpc module.
 	// Defaults to true.
+	// TODO(https://github.com/googleapis/librarian/issues/6066):
+	// remove after this is resolved
 	GenerateGRPC *bool `yaml:"generate_grpc,omitempty"`
 
 	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.
