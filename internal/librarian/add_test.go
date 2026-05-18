@@ -1023,8 +1023,6 @@ func TestSyncToStateYAML_Error(t *testing.T) {
 }
 
 func TestAddLibraryCommand_Java(t *testing.T) {
-	copyrightYear := strconv.Itoa(time.Now().Year())
-	_ = copyrightYear // might not be used if it is reset to empty
 	googleapisDir, err := filepath.Abs("../testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
