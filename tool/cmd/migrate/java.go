@@ -329,7 +329,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
 				ClientDocumentationOverride:  l.ClientDocumentation,
-				NonCloudAPI:                  invertBoolPtr(l.CloudAPI),
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,

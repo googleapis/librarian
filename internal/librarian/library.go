@@ -526,9 +526,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
 	}
-	if src.NonCloudAPI {
-		res.NonCloudAPI = src.NonCloudAPI
-	}
 	if src.CodeownerTeam != "" {
 		res.CodeownerTeam = src.CodeownerTeam
 	}

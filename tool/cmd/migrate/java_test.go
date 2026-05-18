@@ -595,7 +595,6 @@ func TestBuildConfig(t *testing.T) {
 							APIReference:                 "https://api-ref.com",
 							APIDescriptionOverride:       "Pub/Sub description",
 							ClientDocumentationOverride:  "https://client-doc.com",
-							NonCloudAPI:                  true,
 							CodeownerTeam:                "team-pubsub",
 							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
