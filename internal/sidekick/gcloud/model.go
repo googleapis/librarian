@@ -117,14 +117,19 @@ func constructSurfaceModel(model *api.API, clientImportPath string) SurfaceModel
 			commandName, _ := provider.GetCommandName(method)
 			commandName = strcase.ToKebab(commandName)
 			cmd := buildCommand(method, model, commandName, subName)
-			if call := buildClientCall(method, goClient, cmd.HasPath()); call != nil {
+			call, extraFlags := buildClientCall(method, model, goClient, cmd.HasPath())
+			if call != nil {
 				cmd.ClientCall = call
+				cmd.Flags = append(cmd.Flags, extraFlags...)
 				hasClientCall = true
 				if call.Paged {
 					hasListCall = true
 					cmd.Flags = append(cmd.Flags, flag("limit", "Int", false))
 				}
 			}
+			sort.Slice(cmd.Flags, func(i, j int) bool {
+				return cmd.Flags[i].Name < cmd.Flags[j].Name
+			})
 
 			sg, ok := subgroups[subName]
 			if !ok {

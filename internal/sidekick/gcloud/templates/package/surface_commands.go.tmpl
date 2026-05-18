@@ -95,6 +95,42 @@ func Command() *cli.Command {
 			}
 		}
 		return nil
+		{{- else if .ClientCall.IsCreate}}
+		req := &{{.ClientCall.RequestType}}{
+			{{.ClientCall.NameField}}: {{.PathLabel}},
+			{{- if .ClientCall.IDField}}
+			{{.ClientCall.IDField}}: cmd.String("{{.ClientCall.IDFlag}}"),
+			{{- end}}
+			{{.ClientCall.BodyField}}: &{{.ClientCall.BodyType}}{
+				{{- range .ClientCall.BodyAssignments}}
+				{{.Name}}: cmd.{{.Kind}}("{{.Flag}}"),
+				{{- end}}
+				{{- range .ClientCall.BodySkippedFields}}
+				// TODO: {{.}}
+				{{- end}}
+			},
+		}
+		{{- if .ClientCall.IsLRO}}
+		op, err := client.{{.ClientCall.Method}}(ctx, req)
+		if err != nil {
+			return err
+		}
+		resp, err := op.Wait(ctx)
+		if err != nil {
+			return err
+		}
+		{{- else}}
+		resp, err := client.{{.ClientCall.Method}}(ctx, req)
+		if err != nil {
+			return err
+		}
+		{{- end}}
+		out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+		if err != nil {
+			return err
+		}
+		fmt.Println(string(out))
+		return nil
 		{{- else if .ClientCall.IsDelete}}
 		{{- if .ClientCall.IsLRO}}
 		op, err := client.{{.ClientCall.Method}}(ctx, &{{.ClientCall.RequestType}}{ {{.ClientCall.NameField}}: {{.PathLabel}} })

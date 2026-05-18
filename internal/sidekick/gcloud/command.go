@@ -33,6 +33,35 @@ type Command struct {
 // ClientCall describes a Go client method invocation that should replace the
 // default print-only action for a generated command.
 type ClientCall struct {
+	// BodyAssignments lists the body's scalar fields that become CLI
+	// flags. Each assignment is rendered as `Name: cmd.<Kind>("flag")`.
+	BodyAssignments []BodyAssignment
+
+	// BodyField is the Go field name on the request that takes the new
+	// resource's body (e.g., "Instance"). Empty when not Create.
+	BodyField string
+
+	// BodySkippedFields lists fields skipped during body walking with
+	// the reason. Rendered as `// TODO: <reason>` comments inside the
+	// body literal so the generated code documents what's missing.
+	BodySkippedFields []string
+
+	// BodyType is the qualified Go type of the body field, e.g.
+	// "parallelstorepb.Instance". Empty when BodyField is empty.
+	BodyType string
+
+	// IDField is the Go field name on the request that takes the new
+	// resource's id (e.g., "InstanceId" for AIP-133 Create). Empty when
+	// the request has no id field.
+	IDField string
+
+	// IDFlag is the kebab-cased CLI flag name corresponding to IDField
+	// (e.g., "instance-id"). Empty when IDField is empty.
+	IDFlag string
+
+	// IsCreate reports whether the method is a standard Create method.
+	IsCreate bool
+
 	// IsDelete reports whether the method is a standard Delete method.
 	IsDelete bool
 
@@ -62,6 +91,20 @@ type ClientCall struct {
 	// "parallelstorepb.GetInstanceRequest". The template composites a
 	// literal of this type and passes its address to the method.
 	RequestType string
+}
+
+// BodyAssignment is a scalar field on the resource body that becomes a
+// CLI flag.
+type BodyAssignment struct {
+	// Name is the Go field name on the resource (e.g., "Description").
+	Name string
+
+	// Flag is the kebab-cased CLI flag name (e.g., "description").
+	Flag string
+
+	// Kind is the urfave/cli accessor type (e.g., "String", "Int64",
+	// "Bool"), matching Flag.Kind.
+	Kind string
 }
 
 // HasPath reports whether the command composes a resource path.

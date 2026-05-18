@@ -25,8 +25,8 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.IntFlag{Name: "limit", Usage: "The limit.", Required: false},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -66,8 +66,8 @@ func Command() *cli.Command {
 						Name:  "describe",
 						Usage: "describe instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -95,14 +95,50 @@ func Command() *cli.Command {
 						Name:  "create",
 						Usage: "create instances",
 						Flags: []cli.Flag{
+							&cli.Int64Flag{Name: "capacity-gib", Usage: "The capacity gib.", Required: true},
+							&cli.StringFlag{Name: "description", Usage: "The description.", Required: false},
+							&cli.StringFlag{Name: "instance-id", Usage: "The instance id.", Required: true},
 							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
+							&cli.StringFlag{Name: "network", Usage: "The network.", Required: false},
+							&cli.StringFlag{Name: "reserved-ip-range", Usage: "The reserved ip range.", Required: false},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
 								return fmt.Errorf("--project is required")
 							}
 							parent := fmt.Sprintf("projects/%s/locations/%s", cmd.String("project"), cmd.String("location"))
-							fmt.Printf("Executing create on %s\n", parent)
+							client, err := parallelstore.NewClient(ctx)
+							if err != nil {
+								return err
+							}
+							defer client.Close()
+							req := &parallelstorepb.CreateInstanceRequest{
+								Parent:     parent,
+								InstanceId: cmd.String("instance-id"),
+								Instance: &parallelstorepb.Instance{
+									Description:     cmd.String("description"),
+									CapacityGib:     cmd.Int64("capacity-gib"),
+									Network:         cmd.String("network"),
+									ReservedIpRange: cmd.String("reserved-ip-range"),
+									// TODO: map field "labels"
+									// TODO: enum field "file_stripe_level"
+									// TODO: enum field "directory_stripe_level"
+									// TODO: enum field "deployment_type"
+								},
+							}
+							op, err := client.CreateInstance(ctx, req)
+							if err != nil {
+								return err
+							}
+							resp, err := op.Wait(ctx)
+							if err != nil {
+								return err
+							}
+							out, err := protojson.MarshalOptions{Multiline: true, Indent: "  "}.Marshal(resp)
+							if err != nil {
+								return err
+							}
+							fmt.Println(string(out))
 							return nil
 						},
 					},
@@ -110,8 +146,8 @@ func Command() *cli.Command {
 						Name:  "update",
 						Usage: "update instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -126,8 +162,8 @@ func Command() *cli.Command {
 						Name:  "delete",
 						Usage: "delete instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -154,8 +190,8 @@ func Command() *cli.Command {
 						Name:  "import-data",
 						Usage: "import-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -170,8 +206,8 @@ func Command() *cli.Command {
 						Name:  "export-data",
 						Usage: "export-data instances",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.StringFlag{Name: "instance", Usage: "The instance.", Required: true},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
@@ -266,8 +302,8 @@ func Command() *cli.Command {
 						Name:  "list",
 						Usage: "list operations",
 						Flags: []cli.Flag{
-							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 							&cli.IntFlag{Name: "limit", Usage: "The limit.", Required: false},
+							&cli.StringFlag{Name: "location", Usage: "The location.", Required: true},
 						},
 						Action: func(ctx context.Context, cmd *cli.Command) error {
 							if cmd.String("project") == "" {
