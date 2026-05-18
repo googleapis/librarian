@@ -884,6 +884,7 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
 						},
 						Java: &config.JavaModule{
+							GroupID:        "com.google.cloud",
 							SkipPOMUpdates: true,
 						},
 					},
