@@ -32,6 +32,8 @@ var (
 		"protos/protos.d.ts",
 		"protos/protos.js",
 		"protos/protos.json",
+		// TODO(https://github.com/googleapis/librarian/issues/6049): remove
+		// files that are no longer being generated, e.g. .OwlBot.yaml
 		"samples/package.json",
 		"package.json",
 		"tsconfig.json",
@@ -40,8 +42,6 @@ var (
 		".gitignore",
 		".nycrc",
 		"README.md",
-		// TODO(https://github.com/googleapis/librarian/issues/6049): remove
-		// this and any other files that are no longer being generated.
 		".OwlBot.yaml",
 	}
 	sourceDirectoriesToClean = []string{
