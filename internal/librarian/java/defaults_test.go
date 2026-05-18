@@ -36,7 +36,9 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
-				Java:   &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 		},
 		{
@@ -48,7 +50,9 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "custom-output",
-				Java:   &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 		},
 		{
@@ -73,7 +77,9 @@ func TestFill(t *testing.T) {
 						},
 					},
 				},
-				Java: &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 		},
 		{
@@ -103,7 +109,25 @@ func TestFill(t *testing.T) {
 						},
 					},
 				},
-				Java: &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
+			},
+		},
+		{
+			name: "do not overwrite non-default group id",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					GroupID: "com.google.custom",
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				Java: &config.JavaModule{
+					GroupID: "com.google.custom",
+				},
 			},
 		},
 	} {

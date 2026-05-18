@@ -126,6 +126,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 		{
 			name: "only overrides api shortname",
 			java: &config.JavaModule{
+				GroupID:              "com.google.cloud",
 				APIShortnameOverride: "custom-shortname",
 			},
 			want: &repoMetadata{
@@ -149,6 +150,7 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 		{
 			name: "transport override",
 			java: &config.JavaModule{
+				GroupID:           "com.google.cloud",
 				TransportOverride: "rest",
 			},
 			want: &repoMetadata{

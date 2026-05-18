@@ -81,6 +81,9 @@ func TestClean(t *testing.T) {
 				Java: &config.JavaAPI{},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	if err := Clean(lib); err != nil {
 		t.Fatal(err)
@@ -248,6 +251,9 @@ func TestCleanPatterns(t *testing.T) {
 						Java: &config.JavaAPI{},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			want: map[string]bool{
 				filepath.Join("google-cloud-secretmanager", "src"):          true,
@@ -274,6 +280,9 @@ func TestCleanPatterns(t *testing.T) {
 						},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			want: map[string]bool{
 				"google-cloud-accesscontextmanager/src":            true,
@@ -290,6 +299,7 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
+					GroupID:                  "com.google.cloud",
 					DistributionNameOverride: "com.google.cloud:secretmanager-special",
 				},
 				APIs: []*config.API{
@@ -321,6 +331,9 @@ func TestCleanPatterns(t *testing.T) {
 						Java: &config.JavaAPI{},
 					},
 				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 			want: map[string]bool{
 				filepath.Join("google-cloud-secretmanager", "src"):               true,
@@ -343,6 +356,9 @@ func TestCleanPatterns(t *testing.T) {
 							GAPICArtifactIDOverride: "custom-gapic-artifact",
 						},
 					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
 				},
 			},
 			want: map[string]bool{

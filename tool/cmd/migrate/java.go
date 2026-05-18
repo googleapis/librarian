@@ -481,6 +481,9 @@ func applyJavaArtifactOverrides(apiPath string, api *config.JavaAPI, libraryName
 
 // applyJavaLibraryOverrides sets library-level overrides.
 func applyJavaLibraryOverrides(lib *config.Library) {
+	if lib.Java.GroupID == "" {
+		lib.Java.GroupID = "com.google.cloud"
+	}
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
 	}

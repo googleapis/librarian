@@ -112,6 +112,9 @@ func TestPostProcessAPI(t *testing.T) {
 		library: &config.Library{
 			Name: libraryName,
 			APIs: []*config.API{api},
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
 		},
 		apiBase: apiBase,
 		protosToCopy: []protoFileToCopy{
@@ -196,8 +199,13 @@ func TestRestructureModules(t *testing.T) {
 
 	additionalProtoPath := filepath.Join(googleapisDir, "google", "cloud", "oslogin", "common", "common.proto")
 	p := postProcessParams{
-		outDir:  tmpDir,
-		library: &config.Library{Name: libraryID},
+		outDir: tmpDir,
+		library: &config.Library{
+			Name: libraryID,
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
+		},
 		apiBase: apiBase,
 		protosToCopy: []protoFileToCopy{
 			{
@@ -245,8 +253,13 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:  tmpDir,
-		library: &config.Library{Name: commonProtosLibrary},
+		outDir: tmpDir,
+		library: &config.Library{
+			Name: commonProtosLibrary,
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
+		},
 		apiBase: apiBase,
 
 		includeSamples: false,
@@ -270,8 +283,13 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
 	p := postProcessParams{
-		outDir:  tmpDir,
-		library: &config.Library{Name: "secretmanager"},
+		outDir: tmpDir,
+		library: &config.Library{
+			Name: "secretmanager",
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
+		},
 		apiBase: apiBase,
 
 		includeSamples: false,
@@ -322,8 +340,13 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 	}
 
 	p := postProcessParams{
-		outDir:  tmpDir,
-		library: &config.Library{Name: libraryID},
+		outDir: tmpDir,
+		library: &config.Library{
+			Name: libraryID,
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
+		},
 		apiBase: apiBase,
 
 		includeSamples: false,
@@ -371,8 +394,13 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		t.Fatal(err)
 	}
 	p := postProcessParams{
-		outDir:  tmpDir,
-		library: &config.Library{Name: libraryID, Java: &config.JavaModule{}},
+		outDir: tmpDir,
+		library: &config.Library{
+			Name: libraryID,
+			Java: &config.JavaModule{
+				GroupID: "com.google.cloud",
+			},
+		},
 		apiBase: apiBase,
 
 		includeSamples: false,
@@ -483,6 +511,9 @@ func TestPostProcessLibrary(t *testing.T) {
 				Java: &config.JavaAPI{},
 			},
 		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
+		},
 	}
 	defaultCfg := &config.Config{
 		Libraries: []*config.Library{
@@ -578,6 +609,9 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 				Path: "google/cloud/secretmanager/v1",
 				Java: &config.JavaAPI{},
 			},
+		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
 		},
 	}
 	defaultCfg := &config.Config{

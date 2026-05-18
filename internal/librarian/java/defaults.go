@@ -22,7 +22,10 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-const javaPrefix = "java-"
+const (
+	javaPrefix     = "java-"
+	defaultGroupID = "com.google.cloud"
+)
 
 // deriveOutput computes the default output directory name for a given library name.
 func deriveOutput(name string) string {
@@ -36,6 +39,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	if library.Java == nil {
 		library.Java = &config.JavaModule{}
+	}
+	if library.Java.GroupID == "" {
+		library.Java.GroupID = defaultGroupID
 	}
 	for _, api := range library.APIs {
 		if api.Java == nil {
@@ -65,7 +71,7 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	if library.Java != nil {
-		if library.Java.GroupID == "com.google.cloud" {
+		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
 		if isEmptyJavaModule(library.Java) {

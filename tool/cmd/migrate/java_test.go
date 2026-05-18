@@ -179,6 +179,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "alloydb-connectors",
 				Java: &config.JavaModule{
+					GroupID:           "com.google.cloud",
 					TransportOverride: "grpc",
 				},
 			},
@@ -192,6 +193,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "common-protos",
 				Java: &config.JavaModule{
+					GroupID:              "com.google.cloud",
 					APIShortnameOverride: "common-protos",
 					SkipPOMUpdates:       true,
 					SkipAPIID:            true,
@@ -208,6 +210,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "grafeas",
 				Java: &config.JavaModule{
+					GroupID:        "com.google.cloud",
 					SkipPOMUpdates: true,
 				},
 			},
@@ -241,6 +244,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
+					GroupID:        "com.google.cloud",
 					SkipPOMUpdates: true,
 				},
 			},
@@ -253,7 +257,9 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "language",
-				Java: &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 		},
 	} {
@@ -399,7 +405,9 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/secretmanager/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -451,6 +459,7 @@ func TestBuildConfig(t *testing.T) {
 							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 						},
 						Java: &config.JavaModule{
+							GroupID:   "com.google.cloud",
 							SkipAPIID: true,
 						},
 					},
@@ -485,7 +494,9 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -524,14 +535,18 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 					{
 						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -657,6 +672,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
+							GroupID:                  "com.google.cloud",
 							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
 						},
 					},
@@ -693,6 +709,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/maps/places/v1"},
 						},
 						Java: &config.JavaModule{
+							GroupID:              "com.google.cloud",
 							APIShortnameOverride: "maps-places",
 						},
 					},
@@ -735,7 +752,9 @@ func TestBuildConfig(t *testing.T) {
 								},
 							},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -777,7 +796,9 @@ func TestBuildConfig(t *testing.T) {
 								},
 							},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -842,7 +863,9 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslationTest.java",
 							"google-cloud-translate/src/test/java/com/google/cloud/translate/it/ITTranslateTest.java",
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -999,6 +1022,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 							},
 						},
 						Java: &config.JavaModule{
+							GroupID:           "com.google.cloud",
 							TransportOverride: test.wantTransport,
 						},
 					},
@@ -1319,6 +1343,9 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 			{Path: "google/cloud/vision/v1"},
 			{Path: "google/cloud/vision/v1p1beta1"},
 			{Path: "google/cloud/vision/type"},
+		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
 		},
 	}
 	ids := getModuleArtifactIDs(lib)
