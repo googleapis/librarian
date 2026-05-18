@@ -37,8 +37,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 				{Path: "google/cloud/secretmanager/v1"},
 			},
 			Nodejs: &config.NodejsPackage{
-				ExtraProtocParameters: []string{"metadata"},
-				PackageName:           "@google-cloud/secret-manager",
+				PackageName: "@google-cloud/secret-manager",
 			},
 		},
 		{
@@ -52,7 +51,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 					"@google-cloud/common": "^6.0.0",
 					"pumpify":              "^2.0.1",
 				},
-				ExtraProtocParameters: []string{"metadata"},
 			},
 		},
 		{
@@ -64,7 +62,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			Nodejs: &config.NodejsPackage{
 				BundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
 				ExtraProtocParameters: []string{
-					"metadata",
 					"auto-populate-field-oauth-scope",
 				},
 				HandwrittenLayer: true,
@@ -78,9 +75,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/workstations/v1"},
 			},
-			Nodejs: &config.NodejsPackage{
-				ExtraProtocParameters: []string{"metadata"},
-			},
+			Nodejs: &config.NodejsPackage{},
 		},
 	}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(func(a, b *config.Library) bool { return a.Name < b.Name })); diff != "" {
@@ -134,8 +129,7 @@ func TestParseBazelNodejsInfo(t *testing.T) {
 			name: "secretmanager",
 			api:  "google/cloud/secretmanager/v1",
 			want: &nodejsGapicInfo{
-				packageName:           "@google-cloud/secret-manager",
-				extraProtocParameters: []string{"metadata"},
+				packageName: "@google-cloud/secret-manager",
 			},
 		},
 		{
@@ -145,7 +139,6 @@ func TestParseBazelNodejsInfo(t *testing.T) {
 				packageName:  "@google-cloud/translate",
 				bundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
 				extraProtocParameters: []string{
-					"metadata",
 					"auto-populate-field-oauth-scope",
 				},
 				handwrittenLayer: true,
