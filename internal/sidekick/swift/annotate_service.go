@@ -21,6 +21,7 @@ import (
 type serviceAnnotations struct {
 	Name             string
 	ClientName       string
+	StubPrefix       string
 	DocLines         []string
 	RestMethods      []*api.Method
 	PackageName      string
@@ -49,6 +50,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	annotations := &serviceAnnotations{
 		Name:             pascalCase(service.Name),
 		ClientName:       pascalCase(service.Name + "Client"),
+		StubPrefix:       pascalCaseNoMangling(service.Name),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
 		PackageName:      c.PackageName,

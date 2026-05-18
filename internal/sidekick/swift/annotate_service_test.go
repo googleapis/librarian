@@ -36,7 +36,19 @@ func TestAnnotateService(t *testing.T) {
 			wantAnnotations: &serviceAnnotations{
 				Name:       "IAM",
 				ClientName: "IAMClient",
+				StubPrefix: "IAM",
 				DocLines:   []string{"IAM service documentation."},
+			},
+		},
+		{
+			name:        "Service with mangled name",
+			serviceName: "Protocol",
+			doc:         "Docs are not relevant.",
+			wantAnnotations: &serviceAnnotations{
+				Name:       "Protocol_",
+				ClientName: "ProtocolClient",
+				StubPrefix: "Protocol",
+				DocLines:   []string{"Docs are not relevant."},
 			},
 		},
 		{
@@ -46,6 +58,7 @@ func TestAnnotateService(t *testing.T) {
 			wantAnnotations: &serviceAnnotations{
 				Name:       "SecretManagerService",
 				ClientName: "SecretManagerServiceClient",
+				StubPrefix: "SecretManagerService",
 				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
 			},
 		},
