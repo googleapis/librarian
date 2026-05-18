@@ -401,6 +401,7 @@ This document describes the schema for the librarian.yaml.
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
+| `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
 
 ## RustDiscovery Configuration
@@ -424,6 +425,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
+| `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `extend_grpc_transport` | bool | Indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
