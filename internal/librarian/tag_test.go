@@ -16,7 +16,9 @@ package librarian
 
 import (
 	"errors"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -198,6 +200,24 @@ func TestTag_Error(t *testing.T) {
 // TestTagCommand is just a single "does it look like it passes things
 // through to the publish function" test. TestTag tests the bulk of the logic.
 func TestTagCommand(t *testing.T) {
+	t.Cleanup(func() {
+		files, err := filepath.Glob("/tmp/TestTagCommand*")
+		if err != nil {
+			t.Logf("Glob error: %v", err)
+			return
+		}
+		for _, file := range files {
+			t.Logf("Cleanup temp path: %s", file)
+			_ = filepath.WalkDir(file, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					t.Logf("WalkDir error on path %s: %v", path, err)
+					return nil
+				}
+				t.Logf("Remaining file: %s", path)
+				return nil
+			})
+		}
+	})
 	testhelper.RequireCommand(t, "git")
 	cfg := sample.Config()
 	cfg.Default.TagFormat = "{name}/v{version}"
@@ -207,11 +227,9 @@ func TestTagCommand(t *testing.T) {
 	writeConfigAndCommit(t, cfg)
 	cfg.Libraries[1].Version = "1.3.0"
 	writeConfigAndCommit(t, cfg)
-
 	if err := Run(t.Context(), "librarian", "tag", "--release-commit", "HEAD~"); err != nil {
 		t.Fatal(err)
 	}
-
 	wantTaggedCommit, err := git.GetCommitHash(t.Context(), "git", "HEAD~")
 	if err != nil {
 		t.Fatal(err)
@@ -221,7 +239,6 @@ func TestTagCommand(t *testing.T) {
 		t.Fatal(err)
 	}
 	if gotTaggedCommit != wantTaggedCommit {
-		// Deliberately not using diff as the hashes are basically opaque
 		t.Errorf("incorrect commit for tag: got = %s; want = %s", gotTaggedCommit, wantTaggedCommit)
 	}
 }
