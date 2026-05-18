@@ -72,11 +72,11 @@ version = "1.0.0"
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
 func SetupForVersionBump(t *testing.T, wantTag string) {
-	remoteDir := t.TempDir()
+	remoteDir := tempDir(t)
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
 	RunGit(t, "tag", wantTag)
-	cloneDir := t.TempDir()
+	cloneDir := tempDir(t)
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
@@ -98,18 +98,6 @@ func configNewGitRepository(t *testing.T) {
 	RunGit(t, "config", "user.name", "Test Account")
 	RunGit(t, "config", "gc.auto", "0")
 	RunGit(t, "remote", "add", TestRemote, testRemoteURL)
-	dir, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		for i := 0; i < 10; i++ {
-			if err := os.RemoveAll(dir); err == nil || os.IsNotExist(err) {
-				return
-			}
-			time.Sleep(10 * time.Millisecond)
-		}
-	})
 }
 
 func initRepositoryContents(t *testing.T) {
@@ -153,7 +141,7 @@ func AddCrate(t *testing.T, location, name string) {
 // SetupRepo creates a git repository for testing with some initial content. It
 // returns the path of the remote repository.
 func SetupRepo(t *testing.T) string {
-	remoteDir := t.TempDir()
+	remoteDir := tempDir(t)
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
 	return remoteDir
@@ -266,7 +254,7 @@ func CloneRepository(t *testing.T, remoteDir string) {
 // a temporary directory and changes the current working directory to the cloned
 // repository.
 func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
-	cloneDir := t.TempDir()
+	cloneDir := tempDir(t)
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
@@ -278,4 +266,21 @@ func RunGit(t *testing.T, args ...string) {
 	if err := command.Run(t.Context(), command.Git, args...); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func tempDir(t *testing.T) string {
+	t.Helper()
+	dir := t.TempDir()
+	t.Cleanup(func() {
+		if t.Failed() {
+			return
+		}
+		for i := 0; i < 10; i++ {
+			if err := os.RemoveAll(dir); err == nil {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	})
+	return dir
 }
