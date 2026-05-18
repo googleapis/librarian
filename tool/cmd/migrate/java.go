@@ -329,7 +329,6 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
 				ClientDocumentationOverride:  l.ClientDocumentation,
-				NonCloudAPI:                  invertBoolPtr(l.CloudAPI),
 				CodeownerTeam:                l.CodeownerTeam,
 				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
@@ -486,6 +485,9 @@ func applyJavaArtifactOverrides(apiPath string, api *config.JavaAPI, libraryName
 
 // applyJavaLibraryOverrides sets library-level overrides.
 func applyJavaLibraryOverrides(lib *config.Library) {
+	if lib.Java.GroupID == "" {
+		lib.Java.GroupID = "com.google.cloud"
+	}
 	if transport, ok := javaTransportOverrides[lib.Name]; ok {
 		lib.Java.TransportOverride = transport
 	}

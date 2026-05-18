@@ -47,7 +47,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 		{
 			name:    "basic case",
 			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager"},
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPCRest,
@@ -66,7 +66,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 		{
 			name:    "rest transport",
 			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager"},
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.Rest,
@@ -85,7 +85,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 		{
 			name:    "no rest numeric enum case",
 			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager"},
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
@@ -106,7 +106,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 		{
 			name:    "default transport with no apiCfgs",
 			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager"},
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{},
 			want: []string{
@@ -170,7 +170,7 @@ func TestResolveGAPICOptions_MultipleConfigsError(t *testing.T) {
 			apiCfgs := &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPC,
 			}}
-			_, err := resolveGAPICOptions(&config.Config{Repo: "test-repo"}, &config.Library{Name: "test"}, &config.API{Path: test.apiPath}, tmpDir, apiCfgs)
+			_, err := resolveGAPICOptions(&config.Config{Repo: "test-repo"}, &config.Library{Name: "test", Java: &config.JavaModule{GroupID: "com.google.cloud"}}, &config.API{Path: test.apiPath}, tmpDir, apiCfgs)
 			if err == nil {
 				t.Fatal("resolveGAPICOptions() error = nil, want non-nil")
 			}

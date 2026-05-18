@@ -480,10 +480,6 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 
-	// NonCloudAPI indicates whether the API is NOT a Google Cloud API.
-	// Defaults to false.
-	NonCloudAPI bool `yaml:"non_cloud_api,omitempty"`
-
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
 

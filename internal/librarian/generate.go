@@ -159,7 +159,7 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 		case config.LanguageJava:
 			err = java.Clean(library)
 		case config.LanguageNodejs:
-			err = checkAndClean(library.Output, library.Keep)
+			err = nodejs.Clean(library)
 		case config.LanguagePython:
 			err = python.Clean(library)
 		case config.LanguageRust:

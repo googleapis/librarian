@@ -298,29 +298,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			},
 		},
 		{
-			name: "metadata in extra params is skipped",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
-			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Nodejs: &config.NodejsPackage{
-					ExtraProtocParameters: []string{"metadata", "some-other-param"},
-				},
-			},
-			want: []string{
-				"gapic-generator-typescript",
-				"--protoc=" + protocPath,
-				"--common-proto-path=.",
-				"-I", ".",
-				"--output-dir", "staging",
-				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
-				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
-				"--package-name", "@google-cloud/secretmanager",
-				"--metadata",
-				"--rest-numeric-enums",
-				"--some-other-param",
-			},
-		},
-		{
 			name: "DIREGAPIC support",
 			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
 			library: &config.Library{

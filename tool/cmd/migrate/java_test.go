@@ -179,6 +179,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "alloydb-connectors",
 				Java: &config.JavaModule{
+					GroupID:           "com.google.cloud",
 					TransportOverride: "grpc",
 				},
 			},
@@ -192,6 +193,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "common-protos",
 				Java: &config.JavaModule{
+					GroupID:              "com.google.cloud",
 					APIShortnameOverride: "common-protos",
 					SkipPOMUpdates:       true,
 					SkipAPIID:            true,
@@ -208,6 +210,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			want: &config.Library{
 				Name: "grafeas",
 				Java: &config.JavaModule{
+					GroupID:        "com.google.cloud",
 					SkipPOMUpdates: true,
 				},
 			},
@@ -241,6 +244,7 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
+					GroupID:        "com.google.cloud",
 					SkipPOMUpdates: true,
 				},
 			},
@@ -253,7 +257,9 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 			},
 			want: &config.Library{
 				Name: "language",
-				Java: &config.JavaModule{},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
 			},
 		},
 	} {
@@ -399,7 +405,9 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/secretmanager/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -451,6 +459,7 @@ func TestBuildConfig(t *testing.T) {
 							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 						},
 						Java: &config.JavaModule{
+							GroupID:   "com.google.cloud",
 							SkipAPIID: true,
 						},
 					},
@@ -485,7 +494,9 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -524,14 +535,18 @@ func TestBuildConfig(t *testing.T) {
 						APIs: []*config.API{
 							{Path: "google/cloud/vision/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 					{
 						Name: "language",
 						APIs: []*config.API{
 							{Path: "google/cloud/language/v1"},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -595,7 +610,6 @@ func TestBuildConfig(t *testing.T) {
 							APIReference:                 "https://api-ref.com",
 							APIDescriptionOverride:       "Pub/Sub description",
 							ClientDocumentationOverride:  "https://client-doc.com",
-							NonCloudAPI:                  true,
 							CodeownerTeam:                "team-pubsub",
 							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
@@ -657,6 +671,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
+							GroupID:                  "com.google.cloud",
 							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
 						},
 					},
@@ -693,6 +708,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/maps/places/v1"},
 						},
 						Java: &config.JavaModule{
+							GroupID:              "com.google.cloud",
 							APIShortnameOverride: "maps-places",
 						},
 					},
@@ -735,7 +751,9 @@ func TestBuildConfig(t *testing.T) {
 								},
 							},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -777,7 +795,9 @@ func TestBuildConfig(t *testing.T) {
 								},
 							},
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -787,9 +807,9 @@ func TestBuildConfig(t *testing.T) {
 			gen: &GenerationConfig{
 				Libraries: []LibraryConfig{
 					{
-						APIShortName: "translate",
+						APIShortName: "aiplatform",
 						GAPICs: []GAPICConfig{
-							{ProtoPath: "google/cloud/translate/v3"},
+							{ProtoPath: "google/cloud/aiplatform/v1"},
 						},
 					},
 				},
@@ -806,43 +826,21 @@ func TestBuildConfig(t *testing.T) {
 				},
 				Libraries: []*config.Library{
 					{
-						Name: "translate",
+						Name: "aiplatform",
 						APIs: []*config.API{
 							{
-								Path: "google/cloud/translate/v3",
-								Java: &config.JavaAPI{
-									OmitCommonResources: true, // common_resources_proto not in testdata BUILD.bazel
-								},
+								Path: "google/cloud/aiplatform/v1",
 							},
 						},
 						Keep: []string{
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/Detection.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/Language.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/Option.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/Translate.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateException.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateFactory.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateImpl.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/TranslateOptions.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/Translation.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/package-info.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/TranslateRpcFactory.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/v2/HttpTranslateRpc.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/spi/v2/TranslateRpc.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/testing/RemoteTranslateHelper.java",
-							"google-cloud-translate/src/main/java/com/google/cloud/translate/testing/package-info.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/DetectionTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/LanguageTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/OptionTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/SerializationTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateExceptionTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateImplTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateOptionsTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslateTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/TranslationTest.java",
-							"google-cloud-translate/src/test/java/com/google/cloud/translate/it/ITTranslateTest.java",
+							"google-cloud-aiplatform/src/test/java/com/google/cloud/location/MockLocations.java",
+							"google-cloud-aiplatform/src/test/java/com/google/cloud/location/MockLocationsImpl.java",
+							"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicy.java",
+							"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicyImpl.java",
 						},
-						Java: &config.JavaModule{},
+						Java: &config.JavaModule{
+							GroupID: "com.google.cloud",
+						},
 					},
 				},
 			},
@@ -1044,6 +1042,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 							},
 						},
 						Java: &config.JavaModule{
+							GroupID:           "com.google.cloud",
 							TransportOverride: test.wantTransport,
 						},
 					},
@@ -1364,6 +1363,9 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 			{Path: "google/cloud/vision/v1"},
 			{Path: "google/cloud/vision/v1p1beta1"},
 			{Path: "google/cloud/vision/type"},
+		},
+		Java: &config.JavaModule{
+			GroupID: "com.google.cloud",
 		},
 	}
 	ids := getModuleArtifactIDs(lib)

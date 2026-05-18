@@ -36,18 +36,8 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
-			Keep: []string{
-				".eslintrc.json",
-				".gitignore",
-				"package.json",
-				"samples/README.md",
-				"samples/quickstart.js",
-				"samples/test/quickstart.test.js",
-				"system-test/.eslintrc.yml",
-			},
 			Nodejs: &config.NodejsPackage{
-				ExtraProtocParameters: []string{"metadata"},
-				PackageName:           "@google-cloud/secret-manager",
+				PackageName: "@google-cloud/secret-manager",
 			},
 		},
 		{
@@ -56,13 +46,11 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/speech/v1"},
 			},
-			Keep: []string{".prettierrc.js", "package.json"},
 			Nodejs: &config.NodejsPackage{
 				Dependencies: map[string]string{
 					"@google-cloud/common": "^6.0.0",
 					"pumpify":              "^2.0.1",
 				},
-				ExtraProtocParameters: []string{"metadata"},
 			},
 		},
 		{
@@ -71,11 +59,9 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/translate/v3"},
 			},
-			Keep: []string{"package.json"},
 			Nodejs: &config.NodejsPackage{
 				BundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
 				ExtraProtocParameters: []string{
-					"metadata",
 					"auto-populate-field-oauth-scope",
 				},
 				HandwrittenLayer: true,
@@ -89,10 +75,7 @@ func TestBuildNodejsLibraries(t *testing.T) {
 			APIs: []*config.API{
 				{Path: "google/cloud/workstations/v1"},
 			},
-			Keep: []string{"package.json"},
-			Nodejs: &config.NodejsPackage{
-				ExtraProtocParameters: []string{"metadata"},
-			},
+			Nodejs: &config.NodejsPackage{},
 		},
 	}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(func(a, b *config.Library) bool { return a.Name < b.Name })); diff != "" {
@@ -146,8 +129,7 @@ func TestParseBazelNodejsInfo(t *testing.T) {
 			name: "secretmanager",
 			api:  "google/cloud/secretmanager/v1",
 			want: &nodejsGapicInfo{
-				packageName:           "@google-cloud/secret-manager",
-				extraProtocParameters: []string{"metadata"},
+				packageName: "@google-cloud/secret-manager",
 			},
 		},
 		{
@@ -157,7 +139,6 @@ func TestParseBazelNodejsInfo(t *testing.T) {
 				packageName:  "@google-cloud/translate",
 				bundleConfig: "google/cloud/translate/v3/translate_gapic.yaml",
 				extraProtocParameters: []string{
-					"metadata",
 					"auto-populate-field-oauth-scope",
 				},
 				handwrittenLayer: true,
