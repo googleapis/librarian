@@ -50,6 +50,15 @@ var (
 			"gapic-showcase/src/test",
 			"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 		},
+		"spanner": {
+			"google-cloud-spanner-executor/src/main/java/com/google/cloud/spanner/executor/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/admin/database/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/admin/instance/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/resources/META-INF/native-image/com.google.cloud.spanner/reflect-config.json",
+			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyName.java",
+			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyVersionName.java",
+		},
 	}
 
 	javaArtifactIDOverrides = map[overrideKey]javaArtifactOverrides{
