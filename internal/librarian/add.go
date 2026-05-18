@@ -110,6 +110,16 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
+	case config.LanguageJava:
+		lib, err := FindLibrary(cfg, name)
+		if err != nil {
+			return nil, err
+		}
+		sources, err := LoadSources(ctx, cfg.Sources)
+		if err != nil {
+			return nil, err
+		}
+		return java.ResolveDependencies(ctx, cfg, lib, sources)
 	case config.LanguageRust:
 		lib, err := FindLibrary(cfg, name)
 		if err != nil {

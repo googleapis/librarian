@@ -1021,3 +1021,56 @@ func TestSyncToStateYAML_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestAddLibraryCommand_Java(t *testing.T) {
+	copyrightYear := strconv.Itoa(time.Now().Year())
+	_ = copyrightYear // might not be used if it is reset to empty
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
+
+	cfg := sample.Config()
+	cfg.Language = config.LanguageJava
+	cfg.Default.Output = "output"
+	cfg.Libraries = []*config.Library{}
+	cfg.Sources.Googleapis.Dir = googleapisDir
+	if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
+		t.Fatal(err)
+	}
+	// developerconnect has Locations mixin in its service.yaml
+	err = runAdd(t.Context(), cfg, "google/cloud/developerconnect/v1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	gotCfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantLibraries := []*config.Library{
+		{
+			Name:          "developerconnect",
+			CopyrightYear: "",
+			Version:       "0.1.0-SNAPSHOT",
+			APIs: []*config.API{
+				{
+					Path: "google/cloud/developerconnect/v1",
+					Java: &config.JavaAPI{
+						AdditionalProtos: []*config.AdditionalProto{
+							{
+								Path:                 "google/cloud/location/locations.proto",
+								GenerateProtoClasses: false,
+								CopyToOutput:         false,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
