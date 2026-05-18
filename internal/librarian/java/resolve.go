@@ -15,7 +15,6 @@
 package java
 
 import (
-	"context"
 	"fmt"
 	"path/filepath"
 	"sort"
@@ -25,43 +24,40 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-// ResolveDependencies automatically resolves Protobuf dependencies for a Java library.
-func ResolveDependencies(ctx context.Context, cfg *config.Config, lib *config.Library, srcs *sources.Sources) (*config.Config, error) {
+// ResolveMixinDependencies automatically resolves mixin dependencies for a Java library.
+func ResolveMixinDependencies(cfg *config.Config, lib *config.Library, srcs *sources.Sources) (*config.Config, error) {
 	if len(lib.APIs) == 0 {
 		return cfg, nil
 	}
 	for _, apiCfg := range lib.APIs {
-		if err := resolveAPIDependencies(lib, apiCfg, srcs); err != nil {
+		if err := resolveAPIMixinDependencies(lib, apiCfg, srcs); err != nil {
 			return nil, err
 		}
 	}
 	return cfg, nil
 }
 
-func resolveAPIDependencies(lib *config.Library, apiCfg *config.API, srcs *sources.Sources) error {
+// resolveAPIMixinDependencies automatically resolves mixin dependencies for a single API.
+// It parses the API's service config to identify and add required mixin dependencies
+// (e.g., locations, IAM policy) to the API's Java configuration.
+func resolveAPIMixinDependencies(lib *config.Library, apiCfg *config.API, srcs *sources.Sources) error {
 	if apiCfg.Java == nil {
 		apiCfg.Java = &config.JavaAPI{}
 	}
 
-	primaryRoot := srcs.Googleapis
-	if apiCfg.Path == "schema/google/showcase/v1beta1" {
-		primaryRoot = srcs.Showcase
-	}
-
+	srcCfg := sources.NewSourceConfig(srcs, lib.Roots)
+	primaryRoot := srcCfg.Root(srcCfg.ActiveRoots[0])
 	svcConfig, err := serviceconfig.Find(primaryRoot, apiCfg.Path, config.LanguageJava)
 	if err != nil {
 		return fmt.Errorf("failed to find service config for %s: %w", apiCfg.Path, err)
 	}
-
 	if svcConfig.ServiceConfig == "" {
 		return nil
 	}
-
 	serviceConfig, err := serviceconfig.Read(filepath.Join(primaryRoot, svcConfig.ServiceConfig))
 	if err != nil {
 		return fmt.Errorf("failed to read service config for %s: %w", apiCfg.Path, err)
 	}
-
 	for _, api := range serviceConfig.GetApis() {
 		var mixinProto string
 		switch api.GetName() {
@@ -72,7 +68,6 @@ func resolveAPIDependencies(lib *config.Library, apiCfg *config.API, srcs *sourc
 		default:
 			continue
 		}
-
 		if !hasAdditionalProto(apiCfg.Java.AdditionalProtos, mixinProto) {
 			apiCfg.Java.AdditionalProtos = append(apiCfg.Java.AdditionalProtos, &config.AdditionalProto{
 				Path:                 mixinProto,
@@ -81,7 +76,6 @@ func resolveAPIDependencies(lib *config.Library, apiCfg *config.API, srcs *sourc
 			})
 		}
 	}
-
 	sortAdditionalProtos(apiCfg.Java.AdditionalProtos)
 	return nil
 }

@@ -15,7 +15,6 @@
 package java
 
 import (
-	"context"
 	"path/filepath"
 	"testing"
 
@@ -113,7 +112,7 @@ func TestResolveDependencies(t *testing.T) {
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := ResolveDependencies(context.Background(), &config.Config{}, tt.lib, srcs)
+			_, err := ResolveMixinDependencies(&config.Config{}, tt.lib, srcs)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ResolveDependencies() error = %v, wantErr %v", err, tt.wantErr)
 				return

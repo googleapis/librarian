@@ -119,7 +119,7 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 		if err != nil {
 			return nil, err
 		}
-		return java.ResolveDependencies(ctx, cfg, lib, sources)
+		return java.ResolveMixinDependencies(cfg, lib, sources)
 	case config.LanguageRust:
 		lib, err := FindLibrary(cfg, name)
 		if err != nil {
