@@ -54,8 +54,11 @@ func Fill(library *config.Library) (*config.Library, error) {
 		if javaAPI.GenerateGAPIC == nil {
 			javaAPI.GenerateGAPIC = new(true)
 		}
-		if javaAPI.GenerateProtoGRPC == nil {
-			javaAPI.GenerateProtoGRPC = new(true)
+		if javaAPI.GenerateProto == nil {
+			javaAPI.GenerateProto = new(true)
+		}
+		if javaAPI.GenerateGRPC == nil {
+			javaAPI.GenerateGRPC = new(true)
 		}
 		if javaAPI.GenerateResourceNames == nil {
 			javaAPI.GenerateResourceNames = new(true)
@@ -88,8 +91,11 @@ func Tidy(library *config.Library) *config.Library {
 		if api.Java.GenerateGAPIC != nil && *api.Java.GenerateGAPIC {
 			api.Java.GenerateGAPIC = nil
 		}
-		if api.Java.GenerateProtoGRPC != nil && *api.Java.GenerateProtoGRPC {
-			api.Java.GenerateProtoGRPC = nil
+		if api.Java.GenerateProto != nil && *api.Java.GenerateProto {
+			api.Java.GenerateProto = nil
+		}
+		if api.Java.GenerateGRPC != nil && *api.Java.GenerateGRPC {
+			api.Java.GenerateGRPC = nil
 		}
 		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
 			api.Java.GenerateResourceNames = nil
@@ -117,7 +123,8 @@ func isEmptyJavaAPI(j *config.JavaAPI) bool {
 		j.GRPCArtifactIDOverride == "" &&
 		j.ProtoArtifactIDOverride == "" &&
 		j.GenerateGAPIC == nil &&
-		j.GenerateProtoGRPC == nil &&
+		j.GenerateProto == nil &&
+		j.GenerateGRPC == nil &&
 		j.GenerateResourceNames == nil &&
 		len(j.CopyFiles) == 0 &&
 		j.Samples == nil

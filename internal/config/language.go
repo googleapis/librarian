@@ -610,9 +610,15 @@ type JavaAPI struct {
 	// Defaults to true.
 	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
 
-	// GenerateProtoGRPC indicates whether to generate proto and grpc modules.
+	// GenerateProto indicates whether to generate proto module.
 	// Defaults to true. If set to false, should also set generate_resource_names to false.
-	GenerateProtoGRPC *bool `yaml:"generate_proto_grpc,omitempty"`
+	GenerateProto *bool `yaml:"generate_proto,omitempty"`
+
+	// GenerateGRPC indicates whether to generate grpc module.
+	// Defaults to true.
+	// TODO(https://github.com/googleapis/librarian/issues/6066):
+	// remove after this is resolved
+	GenerateGRPC *bool `yaml:"generate_grpc,omitempty"`
 
 	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.
 	// Defaults to true.

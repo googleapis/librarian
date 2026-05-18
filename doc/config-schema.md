@@ -282,7 +282,8 @@ This document describes the schema for the librarian.yaml.
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
 | `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
-| `generate_proto_grpc` | bool (optional) | Indicates whether to generate proto and grpc modules. Defaults to true. If set to false, should also set generate_resource_names to false. |
+| `generate_proto` | bool (optional) | Indicates whether to generate proto module. Defaults to true. If set to false, should also set generate_resource_names to false. |
+| `generate_grpc` | bool (optional) | Indicates whether to generate grpc module. Defaults to true. TODO(https://github.com/googleapis/librarian/issues/6066): remove after this is resolved |
 | `generate_resource_names` | bool (optional) | Indicates whether to extract resource names from the GAPIC phase. Defaults to true. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
