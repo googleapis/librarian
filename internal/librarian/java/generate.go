@@ -360,13 +360,10 @@ func collectJavaFiles(root string) ([]string, error) {
 		if d.IsDir() || filepath.Ext(path) != ".java" {
 			return nil
 		}
-		// exclude samples/snippets/generated
-		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) {
-			return nil
-		}
-		// exclude samples in java-spanner, which has a different directory than
-		// other libraries.
-		if strings.Contains(path, filepath.Join("samples", "snippets", "src")) {
+		// Exclude generated samples and Spanner-specific sample source directory.
+		// Spanner stores its samples in a different location than other libraries.
+		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) ||
+			strings.Contains(path, filepath.Join("samples", "snippets", "src")) {
 			return nil
 		}
 		files = append(files, path)
