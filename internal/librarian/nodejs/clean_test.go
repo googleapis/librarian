@@ -129,6 +129,7 @@ func verifyFileDeletions(t *testing.T, dir string, setupFiles, wantDeleted []str
 }
 
 func createFileAndDirectories(t *testing.T, path, content string) {
+	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		t.Fatal(err)
 	}

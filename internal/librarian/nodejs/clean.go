@@ -40,6 +40,8 @@ var (
 		".gitignore",
 		".nycrc",
 		"README.md",
+		// TODO(https://github.com/googleapis/librarian/issues/6049): remove
+		// this and any other files that are no longer being generated.
 		".OwlBot.yaml",
 	}
 	sourceDirectoriesToClean = []string{
@@ -87,6 +89,11 @@ func Clean(lib *config.Library) error {
 	return nil
 }
 
+// cleanFiles recursively deletes files with a given suffix from a subdirectory
+// of the given library's output directory, obeying the keep list (passed as
+// keepSet for efficiency). If marker is non-empty, only files with content
+// containing it are deleted; this is used to ensure we only delete generated
+// source code, preserving handwritten code.
 func cleanFiles(lib *config.Library, keepSet map[string]bool, subDir, suffix string, marker []byte) error {
 	dir := filepath.Join(lib.Output, subDir)
 	// If the directory we'd clean doesn't exist, that's fine.
