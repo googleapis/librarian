@@ -29,7 +29,7 @@ import (
 )
 
 const (
-	googleapisRepo      = "github.com/googleapis/googleapis"
+	googleapisRepo = "github.com/googleapis/googleapis"
 )
 
 var (
