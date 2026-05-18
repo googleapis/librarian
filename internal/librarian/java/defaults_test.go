@@ -115,7 +115,7 @@ func TestFill(t *testing.T) {
 			},
 		},
 		{
-			name: "do not overwrite group id",
+			name: "do not overwrite non-default group id",
 			lib: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
