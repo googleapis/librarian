@@ -451,7 +451,7 @@ func shouldGenerateGRPC(javaAPI *config.JavaAPI) bool {
 	if javaAPI.GenerateGRPC != nil {
 		return *javaAPI.GenerateGRPC
 	}
-	return shouldGenerateProto(javaAPI)
+	return true
 }
 
 func shouldGenerateResourceNames(javaAPI *config.JavaAPI) bool {

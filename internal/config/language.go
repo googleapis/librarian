@@ -615,7 +615,7 @@ type JavaAPI struct {
 	GenerateProto *bool `yaml:"generate_proto,omitempty"`
 
 	// GenerateGRPC indicates whether to generate grpc module.
-	// Defaults to true if GenerateProto is true.
+	// Defaults to true.
 	GenerateGRPC *bool `yaml:"generate_grpc,omitempty"`
 
 	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.

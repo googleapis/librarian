@@ -221,7 +221,32 @@ func TestTidy(t *testing.T) {
 							Samples:               new(false),
 							GenerateGAPIC:         new(false),
 							GenerateProto:         new(false),
+							GenerateGRPC:          new(false),
 							GenerateResourceNames: new(false),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "tidy default grpc when proto is false",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateProto: new(false),
+							GenerateGRPC:  new(true),
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateProto: new(false),
 						},
 					},
 				},

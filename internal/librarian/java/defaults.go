@@ -91,14 +91,10 @@ func Tidy(library *config.Library) *config.Library {
 		if api.Java.GenerateGAPIC != nil && *api.Java.GenerateGAPIC {
 			api.Java.GenerateGAPIC = nil
 		}
-		var defaultGRPC = true
-		if api.Java.GenerateProto != nil {
-			defaultGRPC = *api.Java.GenerateProto
-		}
 		if api.Java.GenerateProto != nil && *api.Java.GenerateProto {
 			api.Java.GenerateProto = nil
 		}
-		if api.Java.GenerateGRPC != nil && *api.Java.GenerateGRPC == defaultGRPC {
+		if api.Java.GenerateGRPC != nil && *api.Java.GenerateGRPC {
 			api.Java.GenerateGRPC = nil
 		}
 		if api.Java.GenerateResourceNames != nil && *api.Java.GenerateResourceNames {
