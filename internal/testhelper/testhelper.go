@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
 	"time"
 
@@ -270,7 +271,20 @@ func RunGit(t *testing.T, args ...string) {
 
 func tempDir(t *testing.T) string {
 	t.Helper()
-	dir := t.TempDir()
+	pattern := t.Name()
+	pattern = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, pattern)
+	if len(pattern) > 64 {
+		pattern = pattern[:64]
+	}
+	dir, err := os.MkdirTemp("", pattern+"-*")
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Cleanup(func() {
 		if t.Failed() {
 			return
