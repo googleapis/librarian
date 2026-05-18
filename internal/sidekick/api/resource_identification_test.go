@@ -528,3 +528,115 @@ func TestIdentifyTargetResources_HeuristicsDisabled(t *testing.T) {
 		t.Errorf("IdentifyTargetResources(model, false) populated TargetResource %v, want nil", binding.TargetResource)
 	}
 }
+
+func TestIdentifyTargetResources_FromMessage(t *testing.T) {
+	path := (&PathTemplate{}).WithLiteral("v2").WithLiteral("DeleteBucket")
+	fields := []*Field{
+		{Name: "name", Typez: TypezString},
+	}
+
+	model, binding := setupTestModel("storage.googleapis.com", path, fields)
+	// Override method name to match CRUD prefix
+	model.Services[0].Methods[0].Name = "DeleteBucket"
+
+	IdentifyTargetResources(model, true)
+
+	got := binding.TargetResource
+	want := &TargetResource{
+		FieldPaths: [][]string{{"name"}},
+		Template:   ParseTemplateForTest("//test-api.googleapis.com/{name}"),
+	}
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestIdentifyTargetFromMessage(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		fields     []*Field
+		messages   map[string]*Message
+		vocabulary map[string]bool
+		want       []string // Expected FieldPath
+	}{
+		{
+			name: "Rule 1: Priority List (Direct Match)",
+			fields: []*Field{
+				{Name: "full_resource_name", Typez: TypezString},
+			},
+			want: []string{"full_resource_name"},
+		},
+		{
+			name: "Rule 2: Vocabulary Match (String Field)",
+			fields: []*Field{
+				{Name: "dataset", Typez: TypezString},
+			},
+			vocabulary: map[string]bool{"datasets": true},
+			want:       []string{"dataset"},
+		},
+		{
+			name: "Rule 2: Vocabulary Match (Message Field)",
+			fields: []*Field{
+				{Name: "object", Typez: TypezMessage, TypezID: ".Object"},
+			},
+			messages: map[string]*Message{
+				".Object": {Fields: []*Field{{Name: "name", Typez: TypezString}}},
+			},
+			vocabulary: map[string]bool{"objects": true},
+			want:       []string{"object", "name"},
+		},
+		{
+			name: "Rule 3: Nested Fields Fallback",
+			fields: []*Field{
+				{Name: "destination", Typez: TypezMessage, TypezID: ".Object"},
+			},
+			messages: map[string]*Message{
+				".Object": {Fields: []*Field{{Name: "name", Typez: TypezString}}},
+			},
+			want: []string{"destination", "name"},
+		},
+		{
+			name: "Rule 3: Nested Fields Fallback (service_name)",
+			fields: []*Field{
+				{Name: "service", Typez: TypezMessage, TypezID: ".Service"},
+			},
+			messages: map[string]*Message{
+				".Service": {Fields: []*Field{{Name: "service_name", Typez: TypezString}}},
+			},
+			want: []string{"service", "service_name"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			method := &Method{
+				Name:      "TestMethod",
+				InputType: &Message{Fields: test.fields},
+			}
+			model := &API{
+				Name:        "test-api",
+				messageByID: test.messages,
+			}
+			method.Model = model
+
+			got, err := identifyTargetFromMessage(model, method, test.vocabulary)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if test.want == nil {
+				if got != nil {
+					t.Errorf("want nil, got %v", got)
+				}
+				return
+			}
+
+			if got == nil {
+				t.Fatalf("want %v, got nil", test.want)
+			}
+
+			if diff := cmp.Diff(test.want, got.FieldPaths[0]); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
