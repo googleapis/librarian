@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path"
 	"testing"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -97,6 +98,18 @@ func configNewGitRepository(t *testing.T) {
 	RunGit(t, "config", "user.name", "Test Account")
 	RunGit(t, "config", "gc.auto", "0")
 	RunGit(t, "remote", "add", TestRemote, testRemoteURL)
+	dir, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		for i := 0; i < 10; i++ {
+			if err := os.RemoveAll(dir); err == nil || os.IsNotExist(err) {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+	})
 }
 
 func initRepositoryContents(t *testing.T) {
