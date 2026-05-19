@@ -34,6 +34,7 @@ var knownPrefixes = []string{
 var nonCloudGroupIDs = map[string]string{
 	"google/shopping/": "com.google.shopping",
 	"google/maps/":     "com.google.maps",
+	"google/ads/":      "com.google.api-ads",
 }
 
 const defaultVersion = "0.1.0-SNAPSHOT"

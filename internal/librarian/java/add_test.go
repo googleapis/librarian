@@ -103,6 +103,27 @@ func TestAdd(t *testing.T) {
 				CopyrightYear: "",
 			},
 		},
+		{
+			name: "ads API",
+			lib: &config.Library{
+				Name: "ads-admanager",
+				APIs: []*config.API{
+					{Path: "google/ads/admanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "ads-admanager",
+				APIs: []*config.API{
+					{Path: "google/ads/admanager/v1"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+				Java: &config.JavaModule{
+					GroupID:                  "com.google.api-ads",
+					DistributionNameOverride: "com.google.api-ads:google-ads-admanager",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := Add(test.lib)
