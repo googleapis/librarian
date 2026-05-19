@@ -20,7 +20,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/git"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -52,14 +51,6 @@ Examples:
 	librarian publish --release-commit=<sha>   # publish a specific commit`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "execute",
-				Usage: "fully publish (default is to only perform a dry run)",
-			},
-			&cli.StringFlag{
-				Name:  "release-commit",
-				Usage: "the release commit to publish; default finds latest release commit",
-			},
-			&cli.BoolFlag{
 				Name:  "dry-run",
 				Usage: "print commands without executing (legacy Rust-only flag)",
 			},
@@ -85,7 +76,7 @@ Examples:
 			if cfg.Language == config.LanguageRust {
 				return legacyRustPublish(ctx, cfg, cmd)
 			}
-			return publish(ctx, cmd.String("release-commit"), cmd.Bool("execute"))
+			return fmt.Errorf("publish is not supported for %q", cfg.Language)
 		},
 	}
 }
@@ -108,58 +99,4 @@ func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command
 		Verbose:          verbose,
 		IgnoredChanges:   IgnoredChanges,
 	})
-}
-
-// publish implements the publish command. It finds the release commit to
-// publish. The configuration at the release commit is used for all further
-// operations (and the repo will be checked out at that commit).
-// The releaseCommit flag allows a user to identify a specific release commit to
-// publish, in case of overlapping releases being performed. The execute flag
-// says whether to actually publish (true) or just perform a dry run (false).
-func publish(ctx context.Context, releaseCommit string, execute bool) error {
-	if err := git.AssertGitStatusClean(ctx, command.Git); err != nil {
-		return err
-	}
-	var err error
-	if releaseCommit == "" {
-		releaseCommit, err = findLatestReleaseCommitHash(ctx)
-		if err != nil {
-			return err
-		}
-	}
-	if err := git.Checkout(ctx, command.Git, releaseCommit); err != nil {
-		return err
-	}
-	// Reload the config after checking out the release commit.
-	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	// Load the immediately-preceding config so we can find all libraries that
-	// were released by that commit. (This duplicates work done in
-	// findLatestReleaseCommitHash, but keeps the interface simple - and means
-	// that if we want to be able to specify the release commit directly, we
-	// can skip findLatestReleaseCommitHash entirely.)
-	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, command.Git, "HEAD~", config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	cfgBeforeReleaseCommit, err := yaml.Unmarshal[config.Config]([]byte(cfgContentBeforeCommit))
-	if err != nil {
-		return err
-	}
-	librariesToPublish, err := findReleasedLibraries(cfgBeforeReleaseCommit, cfg)
-	if err != nil {
-		return err
-	}
-	if len(librariesToPublish) == 0 {
-		return fmt.Errorf("error publishing %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
-	}
-
-	switch cfg.Language {
-	case config.LanguageFake:
-		return fakePublish(librariesToPublish, execute)
-	default:
-		return fmt.Errorf("%q does not support publish", cfg.Language)
-	}
 }
