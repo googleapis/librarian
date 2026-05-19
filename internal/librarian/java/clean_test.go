@@ -369,6 +369,52 @@ func TestCleanPatterns(t *testing.T) {
 				".repo-metadata.json":                                  false,
 			},
 		},
+		{
+			name: "gapic_disabled_for_all_apis",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateGAPIC: new(false),
+						},
+					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("proto-google-cloud-secretmanager-v1", "src"): false,
+				filepath.Join("grpc-google-cloud-secretmanager-v1", "src"):  false,
+				filepath.Join("samples", "snippets", "generated"):           false,
+				".repo-metadata.json": false,
+			},
+		},
+		{
+			name: "proto_and_grpc_disabled",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Java: &config.JavaAPI{
+							GenerateProto: new(false),
+							GenerateGRPC:  new(false),
+						},
+					},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.cloud",
+				},
+			},
+			want: map[string]bool{
+				filepath.Join("google-cloud-secretmanager", "src"): true,
+				filepath.Join("samples", "snippets", "generated"):  false,
+				".repo-metadata.json":                              false,
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := cleanPatterns(test.library)

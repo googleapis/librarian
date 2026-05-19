@@ -70,6 +70,13 @@ func Clean(library *config.Library) error {
 	return nil
 }
 
+// cleanPatterns returns a map of directory patterns to be cleaned.
+// The key is the path pattern relative to the library output directory.
+// The boolean value indicates whether marker-based cleaning should be used:
+//   - true: Enable marker-based cleaning. Only .java files containing auto-generation
+//     markers are deleted. Used for GAPIC source directories to protect manual edits.
+//   - false: Disable marker-based cleaning. Files are deleted unconditionally
+//     (subject to general preservation rules). Used for Proto, GRPC, and samples.
 func cleanPatterns(library *config.Library) map[string]bool {
 	libraryCoordinates := DeriveLibraryCoordinates(library)
 	patterns := map[string]bool{
@@ -80,13 +87,13 @@ func cleanPatterns(library *config.Library) map[string]bool {
 		javaAPI := api.Java
 		version := filepath.Base(api.Path)
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
-		if apiCoordinates.Proto.ArtifactID != "" {
+		if apiCoordinates.Proto.ArtifactID != "" && shouldGenerateProto(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.Proto.ArtifactID, "src")] = false
 		}
-		if apiCoordinates.GRPC.ArtifactID != "" {
+		if apiCoordinates.GRPC.ArtifactID != "" && shouldGenerateGRPC(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.GRPC.ArtifactID, "src")] = false
 		}
-		if apiCoordinates.GAPIC.ArtifactID != "" {
+		if apiCoordinates.GAPIC.ArtifactID != "" && shouldGenerateGAPIC(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.GAPIC.ArtifactID, "src")] = true
 		}
 	}
