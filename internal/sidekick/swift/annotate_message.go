@@ -41,15 +41,13 @@ type messageAnnotations struct {
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
 	if dep, ok := c.ApiPackages[message.Package]; ok {
-		if dep.ApiPackage != c.Model.PackageName && dep.Name != c.PackageName {
-			c.activeImports[dep.Name] = dep
-		}
+		c.registerPackageDependency(dep)
 	}
 	if message.Codec != nil {
 		if ann, ok := message.Codec.(*messageAnnotations); ok {
 			for _, imp := range ann.MessageImports {
 				if dep, ok := c.DependenciesByName[imp]; ok {
-					c.activeImports[dep.Name] = dep
+					c.registerPackageDependency(dep)
 				}
 			}
 		}
@@ -85,7 +83,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	annotations.IsPaginatedResponse = message.Pagination != nil
 	if message.Pagination != nil {
 		if dep, ok := c.DependenciesByName["GoogleCloudGax"]; ok {
-			c.activeImports[dep.Name] = dep
+			c.registerPackageDependency(dep)
 		}
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)

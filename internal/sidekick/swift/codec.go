@@ -121,3 +121,15 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	}
 	return result, nil
 }
+
+// registerPackageDependency adds a dependency to the active imports list if it is not the current package or
+// the model's API package.
+func (c *codec) registerPackageDependency(dep *Dependency) {
+	if dep == nil {
+		return
+	}
+	if dep.Name == c.PackageName || dep.ApiPackage == c.Model.PackageName {
+		return
+	}
+	c.activeImports[dep.Name] = dep
+}

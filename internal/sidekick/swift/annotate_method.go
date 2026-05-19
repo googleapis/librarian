@@ -73,7 +73,7 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) error {
 	if method.IsLRO {
 		if dep, ok := c.DependenciesByName[lroSwiftPackage]; ok {
-			c.activeImports[dep.Name] = dep
+			c.registerPackageDependency(dep)
 		}
 	}
 	if method.InputType != nil {

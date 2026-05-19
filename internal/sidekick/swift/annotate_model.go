@@ -77,7 +77,7 @@ func (c *codec) annotateModel() error {
 		}
 		if len(c.Model.Messages) != 0 && wellKnownProtobufPackage != c.Model.PackageName {
 			if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-				c.activeImports[dep.Name] = dep
+				c.registerPackageDependency(dep)
 			}
 		}
 
@@ -106,11 +106,8 @@ func (c *codec) annotateModel() error {
 	for _, service := range c.Model.Services {
 		c.activeImports = map[string]*Dependency{}
 		for _, p := range c.Dependencies {
-			if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
-				continue
-			}
 			if p.RequiredByServices && p.Name != lroSwiftPackage {
-				c.activeImports[p.Name] = p
+				c.registerPackageDependency(p)
 			}
 		}
 		if err := c.annotateService(service, annotations); err != nil {
