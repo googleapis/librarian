@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -76,28 +78,79 @@ func TestCamelCase(t *testing.T) {
 	}
 }
 
+func TestPascalCaseNoMangling(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "SecretManagerService", want: "SecretManagerService"},
+		{input: "IAMPolicy", want: "IAMPolicy"},
+		{input: "IAM", want: "IAM"},
+		{input: "Protocol", want: "Protocol"},
+		{input: "Type", want: "Type"},
+		{input: "Self", want: "Self"},
+		{input: "Any", want: "Any"},
+		{input: "class", want: "Class"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := pascalCaseNoMangling(test.input)
+			if got != test.want {
+				t.Errorf("pascalCaseNoMangling(%q) = %q, want %q", test.input, got, test.want)
+			}
+		})
+	}
+}
+
 func TestPascalCase(t *testing.T) {
 	for _, test := range []struct {
 		input string
 		want  string
 	}{
 		{input: "SecretManagerService", want: "SecretManagerService"},
-		{input: "CreateSecretRequest", want: "CreateSecretRequest"},
 		{input: "IAMPolicy", want: "IAMPolicy"},
 		{input: "IAM", want: "IAM"},
-
-		// Keywords that should be escaped after pascalCase
 		{input: "Protocol", want: "Protocol_"},
 		{input: "Type", want: "Type_"},
 		{input: "Self", want: "`Self`"},
 		{input: "Any", want: "`Any`"},
+		{input: "class", want: "Class"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
 			got := pascalCase(test.input)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("pascalCaseNoMangling(%q) = %q, want %q", test.input, got, test.want)
 			}
 		})
+	}
+}
+
+// The stubs are named by appending some names to the result of `PascalCaseNoMangling`.
+// Verify these do not conflict with a mangled name.
+func TestStubSuffixes(t *testing.T) {
+	for _, test := range []struct {
+		suffix string
+	}{
+		{suffix: "Stub"},
+		{suffix: "Transport"},
+		{suffix: "Debug"},
+		{suffix: "Retry"},
+		{suffix: "ClientSignals"},
+		{suffix: "TransportSignals"},
+	} {
+		for keyword := range keywords {
+			t.Run(fmt.Sprintf("%s : %s", test.suffix, keyword), func(t *testing.T) {
+				if strings.HasPrefix(keyword, "#") || keyword == "_" {
+					// These keywords are not relevant.
+					return
+				}
+				pascal := pascalCaseNoMangling(keyword)
+				input := pascal + test.suffix
+				got := pascalCase(input)
+				if got != input {
+					t.Errorf("mismatched pascalCase(%s) = %s, want %s", input, got, input)
+				}
+			})
+		}
 	}
 }
 

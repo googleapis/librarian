@@ -128,27 +128,26 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 			shouldGenerateClient = true
 		}
 		apiBase := deriveAPIBase(library, api.Path)
-		if !shouldGenerateProtoGRPC(javaAPI) {
-			continue
-		}
 		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
 		// Proto module
-		protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
-		isProtoMissing, err := isPOMMissing(protoDir)
-		if err != nil {
-			return nil, err
+		if shouldGenerateProto(javaAPI) {
+			protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
+			isProtoMissing, err := isPOMMissing(protoDir)
+			if err != nil {
+				return nil, err
+			}
+			modules = append(modules, expectedModule{
+				ArtifactID: apiCoord.Proto.ArtifactID,
+				Dir:        protoDir,
+				Kind:       kindProto,
+				IsMissing:  isProtoMissing,
+				Coordinate: apiCoord.Proto,
+				APICoords:  &apiCoord,
+			})
 		}
-		modules = append(modules, expectedModule{
-			ArtifactID: apiCoord.Proto.ArtifactID,
-			Dir:        protoDir,
-			Kind:       kindProto,
-			IsMissing:  isProtoMissing,
-			Coordinate: apiCoord.Proto,
-			APICoords:  &apiCoord,
-		})
 		// gRPC module
-		if transport != serviceconfig.Rest {
+		if shouldGenerateGRPC(javaAPI) && transport != serviceconfig.Rest {
 			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
 			isGRPCMissing, err := isPOMMissing(gRPCDir)
 			if err != nil {

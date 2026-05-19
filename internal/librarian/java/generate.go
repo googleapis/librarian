@@ -161,7 +161,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	if shouldGenerateProtoGRPC(javaAPI) {
+	if shouldGenerateProto(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
@@ -171,7 +171,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
-	if shouldGenerateProtoGRPC(javaAPI) && transport != "rest" {
+	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
 		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
@@ -440,9 +440,16 @@ func shouldGenerateGAPIC(javaAPI *config.JavaAPI) bool {
 	return true
 }
 
-func shouldGenerateProtoGRPC(javaAPI *config.JavaAPI) bool {
-	if javaAPI.GenerateProtoGRPC != nil {
-		return *javaAPI.GenerateProtoGRPC
+func shouldGenerateProto(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateProto != nil {
+		return *javaAPI.GenerateProto
+	}
+	return true
+}
+
+func shouldGenerateGRPC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateGRPC != nil {
+		return *javaAPI.GenerateGRPC
 	}
 	return true
 }
