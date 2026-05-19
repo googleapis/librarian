@@ -31,12 +31,6 @@ var knownPrefixes = []string{
 	"google/",
 }
 
-var nonCloudGroupIDs = map[string]string{
-	"google/shopping/": "com.google.shopping",
-	"google/maps/":     "com.google.maps",
-	"google/ads/":      "com.google.api-ads",
-}
-
 const defaultVersion = "0.1.0-SNAPSHOT"
 
 // Add initializes a new Java library with default values.
@@ -46,28 +40,33 @@ func Add(lib *config.Library) *config.Library {
 	// so we reset it here to avoid redundancy in librarian.yaml.
 	lib.CopyrightYear = ""
 
-	if len(lib.APIs) > 0 {
-		apiPath := lib.APIs[0].Path
-		matched := false
-		for prefix, groupID := range nonCloudGroupIDs {
-			if strings.HasPrefix(apiPath, prefix) {
-				if lib.Java == nil {
-					lib.Java = &config.JavaModule{}
-				}
-				lib.Java.GroupID = groupID
-				lib.Java.DistributionNameOverride = groupID + ":google-" + lib.Name
-				matched = true
-				break
-			}
-		}
-		if !matched && !strings.HasPrefix(apiPath, "google/cloud/") {
-			log.Printf(
-				"WARNING: unrecognized non-cloud API path %q. Defaulting to com.google.cloud GroupID. "+
-					"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml if this is incorrect.",
-				apiPath,
-			)
-		}
+	// We use the first API to infer the GroupID and distribution name override.
+	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
+	apiPath := lib.APIs[0].Path
+	switch {
+	case strings.HasPrefix(apiPath, "google/shopping/"):
+		return setJavaConfig(lib, "com.google.shopping")
+	case strings.HasPrefix(apiPath, "google/maps/"):
+		return setJavaConfig(lib, "com.google.maps")
+	case strings.HasPrefix(apiPath, "google/ads/"):
+		return setJavaConfig(lib, "com.google.api-ads")
 	}
+	if !strings.HasPrefix(apiPath, "google/cloud/") {
+		log.Printf(
+			"WARNING: unrecognized non-cloud API path %q. Defaulting to com.google.cloud GroupID. "+
+				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml if this is incorrect.",
+			apiPath,
+		)
+	}
+	return lib
+}
+
+func setJavaConfig(lib *config.Library, groupID string) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	lib.Java.GroupID = groupID
+	lib.Java.DistributionNameOverride = groupID + ":google-" + lib.Name
 	return lib
 }
 
