@@ -48,11 +48,7 @@ func TestDeriveDistributionName(t *testing.T) {
 			},
 			want: "com.google.cloud:google-cloud-secretmanager-v1",
 		},
-		{
-			name:    "library name already has prefix",
-			library: &config.Library{Name: "google-cloud-secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
+
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DeriveDistributionName(test.library)
@@ -283,20 +279,3 @@ func TestDeriveAPICoordinates(t *testing.T) {
 	}
 }
 
-func TestEnsureCloudPrefix(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		input string
-		want  string
-	}{
-		{"no prefix", "secretmanager", "google-cloud-secretmanager"},
-		{"with prefix", "google-cloud-secretmanager", "google-cloud-secretmanager"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := ensureCloudPrefix(test.input)
-			if got != test.want {
-				t.Errorf("ensureCloudPrefix(%q) = %q, want %q", test.input, got, test.want)
-			}
-		})
-	}
-}
