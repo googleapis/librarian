@@ -1593,8 +1593,6 @@
 - path: google/cloud/iamconnectorcredentials/v1alpha
   languages:
     - python
-  release_level:
-    all: preview
 - path: google/cloud/iap/v1
   documentation_uri: https://cloud.google.com/iap
   languages:
