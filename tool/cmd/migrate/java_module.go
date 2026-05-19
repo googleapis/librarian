@@ -61,6 +61,13 @@ var (
 		},
 	}
 
+	keepAppends = map[string][]string{
+		"firestore": {
+			"google-cloud-firestore/src/main/resources/META-INF/native-image/com.google.cloud/google-cloud-firestore/reflect-config.json",
+			"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
+		},
+	}
+
 	javaArtifactIDOverrides = map[overrideKey]javaArtifactOverrides{
 		{apiPath: "google/datastore/admin/v1"}: {
 			protoArtifactID: "proto-google-cloud-datastore-admin-v1",
