@@ -41,6 +41,7 @@ const (
 	versionsFileName = "versions.txt"
 )
 
+// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
 var excludedBOMs = map[string]bool{
 	"google-cloud-bigtable-deps-bom": true,
 }
