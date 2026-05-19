@@ -41,8 +41,6 @@
     - go
     - nodejs
     - python
-  release_level:
-    go: preview
 - path: google/ai/generativelanguage/v1beta
   languages:
     - dart
@@ -420,8 +418,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    go: preview
 - path: google/cloud/alloydb/v1beta
   languages:
     - go
@@ -691,7 +687,6 @@
     - java
     - python
   release_level:
-    go: preview
     java: preview
 - path: google/cloud/bigquery/connection/v1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
@@ -813,8 +808,6 @@
     - go
     - java
     - python
-  release_level:
-    go: preview
   transports:
     all: grpc
 - path: google/cloud/bigquery/storage/v1beta
@@ -1030,7 +1023,6 @@
     - nodejs
     - python
   release_level:
-    go: preview
     java: preview
 - path: google/cloud/config/v1
   languages:
@@ -1232,8 +1224,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    go: preview
 - path: google/cloud/discoveryengine/v1beta
   languages:
     - go
@@ -3222,7 +3212,6 @@
     - java
     - python
   release_level:
-    go: preview
     java: preview
 - path: google/shopping/merchant/promotions/v1
   languages:
