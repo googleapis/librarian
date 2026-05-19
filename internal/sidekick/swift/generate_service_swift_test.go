@@ -359,9 +359,8 @@ func TestGenerateService_WithImports(t *testing.T) {
 	contentStr := string(content)
 
 	expectedImports := `import GoogleCloudAuth
-import GoogleCloudGax
-
-import GoogleCloudExternalV1`
+import GoogleCloudExternalV1
+import GoogleCloudGax`
 
 	if !strings.Contains(contentStr, expectedImports) {
 		t.Errorf("expected imports block not found in %s. Got content:\n%s", filename, contentStr)

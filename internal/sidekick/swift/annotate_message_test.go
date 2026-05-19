@@ -189,9 +189,57 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
-		ImportsGax:          true,
+		MessageImports:      []string{"GoogleCloudGax"},
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMessage_RecursiveNested(t *testing.T) {
+	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	nestedOutputType := &api.Message{
+		Name:    "ListSecretsResponse",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.OuterMessage.ListSecretsResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = nestedOutputType
+	nextPageTokenField.Parent = nestedOutputType
+
+	outerMessage := &api.Message{
+		Name:     "OuterMessage",
+		Package:  "google.cloud.secretmanager.v1",
+		ID:       ".google.cloud.secretmanager.v1.OuterMessage",
+		Messages: []*api.Message{nestedOutputType},
+	}
+
+	secretType := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+	}
+
+	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil)
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	gotOuter := outerMessage.Codec.(*messageAnnotations)
+	wantOuter := &messageAnnotations{
+		Name:           "OuterMessage",
+		TypeURL:        "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+		MessageImports: []string{"GoogleCloudGax"},
+	}
+	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

@@ -367,7 +367,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "items",
 		PageableItemType:    "Item",
-		ImportsGax:          true,
+		MessageImports:      []string{"GoogleCloudGax"},
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

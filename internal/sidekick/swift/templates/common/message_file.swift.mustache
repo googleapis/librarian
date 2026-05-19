@@ -21,14 +21,8 @@ limitations under the License.
 {{/Codec.Model.BoilerPlate}}
 
 import Foundation
-{{#Codec.ImportsGax}}
-import GoogleCloudGax
-{{/Codec.ImportsGax}}
-{{#Codec.Model.HasMessageImports}}
-
-{{/Codec.Model.HasMessageImports}}
-{{#Codec.Model.MessageImports}}
-import {{.}}
-{{/Codec.Model.MessageImports}}
+{{#Codec.MessageImports}}
+import {{Name}}
+{{/Codec.MessageImports}}
 
 {{> /templates/common/message}}

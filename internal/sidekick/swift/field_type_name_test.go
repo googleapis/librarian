@@ -361,6 +361,8 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 	model.PackageName = "google.cloud.test.v1"
 	model.AddMessage(externalMessage)
 	c := newTestCodec(t, model, nil)
+	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
+	c.Model.Codec = ann
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -388,7 +390,7 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {
-		gotRequired[k] = v.Required
+		_, gotRequired[k] = ann.DependsOn[v.Name]
 	}
 	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -406,6 +408,8 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 	model.PackageName = "google.cloud.test.v1"
 	model.AddEnum(externalEnum)
 	c := newTestCodec(t, model, nil)
+	ann := &modelAnnotations{DependsOn: map[string]*Dependency{}}
+	c.Model.Codec = ann
 	c.withExtraDependencies(t, []config.SwiftDependency{
 		{
 			ApiPackage: "google.cloud.external.v1",
@@ -433,7 +437,7 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 	}
 	gotRequired := map[string]bool{}
 	for k, v := range c.ApiPackages {
-		gotRequired[k] = v.Required
+		_, gotRequired[k] = ann.DependsOn[v.Name]
 	}
 	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

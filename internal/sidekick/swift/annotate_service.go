@@ -15,6 +15,10 @@
 package swift
 
 import (
+	"cmp"
+	"maps"
+	"slices"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -27,6 +31,14 @@ type serviceAnnotations struct {
 	PackageName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
+	DependsOn        map[string]*Dependency
+}
+
+// Imports returns the list of dependencies for this package.
+func (ann *serviceAnnotations) ServiceImports() []*Dependency {
+	deps := slices.Collect(maps.Values(ann.DependsOn))
+	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
+	return deps
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -47,6 +59,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	if service.QuickstartMethod != nil && isGeneratedMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
 	}
+
 	annotations := &serviceAnnotations{
 		Name:             pascalCase(service.Name),
 		ClientName:       pascalCase(service.Name + "Client"),
@@ -56,7 +69,42 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		PackageName:      c.PackageName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
+		DependsOn:        map[string]*Dependency{},
 	}
+
+	for _, p := range c.Dependencies {
+		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+			continue
+		}
+		if p.RequiredByServices {
+			c.addPackageDependency(p.Name)
+			annotations.DependsOn[p.Name] = p
+		}
+	}
+
+	// Services always depend on well known types
+	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+		c.addPackageDependency(dep.Name)
+		annotations.DependsOn[dep.Name] = dep
+	}
+
+	for _, method := range restMethods {
+		if method.InputType != nil {
+			if method.InputType.Package != c.Model.PackageName {
+				if dep, ok := c.ApiPackages[method.InputType.Package]; ok {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
+		if method.OutputType != nil {
+			if method.OutputType.Package != c.Model.PackageName {
+				if dep, ok := c.ApiPackages[method.OutputType.Package]; ok {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
+	}
+
 	service.Codec = annotations
 	return nil
 }

@@ -15,7 +15,10 @@
 package swift
 
 import (
+	"cmp"
 	"fmt"
+	"maps"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -35,13 +38,20 @@ type messageAnnotations struct {
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
-	ImportsGax          bool
+	DependsOn           map[string]*Dependency
+}
+
+// Imports returns the list of dependencies for this package.
+func (ann *messageAnnotations) MessageImports() []*Dependency {
+	deps := slices.Collect(maps.Values(ann.DependsOn))
+	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
+	return deps
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
-	if dep, ok := c.ApiPackages[message.Package]; ok {
-		dep.Required = true
-	}
+	// Ensure the entire package depends on the package this message belongs to.
+	c.addApiPackageDependency(message.Package)
+
 	if message.Codec != nil {
 		return nil
 	}
@@ -55,6 +65,13 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		Model:               model,
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
+		DependsOn:           map[string]*Dependency{},
+	}
+
+	// Messages always depend on well known types
+	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+		c.addDependency(dep)
+		annotations.DependsOn[dep.Name] = dep
 	}
 
 	message.Codec = annotations
@@ -70,10 +87,29 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok && fieldCodec.Name != field.JSONName {
 			annotations.CustomSerialization = true
 		}
+		switch field.Typez {
+		case api.TypezMessage:
+			if m, err := lookupMessage(c.Model, field.TypezID); err == nil && m.Package != c.Model.PackageName {
+				if dep, ok := c.ApiPackages[m.Package]; ok {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		case api.TypezEnum:
+			if e, err := lookupEnum(c.Model, field.TypezID); err == nil && e.Package != c.Model.PackageName {
+				if dep, ok := c.ApiPackages[e.Package]; ok {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
 	}
 
 	annotations.IsPaginatedResponse = message.Pagination != nil
-	annotations.ImportsGax = annotations.IsPaginatedResponse
+	if annotations.IsPaginatedResponse {
+		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
+			c.addPackageDependency(dep.Name)
+			annotations.DependsOn[dep.Name] = dep
+		}
+	}
 	if message.Pagination != nil {
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
@@ -87,6 +123,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	for _, nested := range message.Messages {
 		if err := c.annotateMessage(nested, model); err != nil {
 			return err
+		}
+		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
+			for _, dep := range nestedCodec.DependsOn {
+				c.addPackageDependency(dep.Name)
+				annotations.DependsOn[dep.Name] = dep
+			}
 		}
 	}
 	for _, enum := range message.Enums {

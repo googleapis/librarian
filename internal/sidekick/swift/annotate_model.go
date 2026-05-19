@@ -24,14 +24,12 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear  string
-	BoilerPlate    []string
-	PackageName    string
-	MonorepoRoot   string
-	DependsOn      map[string]*Dependency
-	WktPackage     string
-	ServiceImports []string
-	MessageImports []string
+	CopyrightYear string
+	BoilerPlate   []string
+	PackageName   string
+	MonorepoRoot  string
+	DependsOn     map[string]*Dependency
+	WktPackage    string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -47,13 +45,6 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	deps := slices.Collect(maps.Values(ann.DependsOn))
 	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
 	return deps
-}
-
-// HasMessageImports returns true if the package needs imports for the methods.
-//
-// The mustache templates use this to format the generated code.
-func (ann *modelAnnotations) HasMessageImports() bool {
-	return len(ann.MessageImports) != 0
 }
 
 func (c *codec) annotateModel() error {
@@ -84,7 +75,7 @@ func (c *codec) annotateModel() error {
 	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
 	if len(c.Model.Messages) != 0 {
 		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-			dep.Required = true
+			c.addPackageDependency(dep.Name)
 		} else {
 			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
@@ -94,24 +85,13 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
-	var serviceImports []string
-	var messageImports []string
 	for _, p := range c.Dependencies {
 		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
 			continue
 		}
 		if p.RequiredByServices && len(c.Model.Services) != 0 {
-			serviceImports = append(serviceImports, p.Name)
-			annotations.DependsOn[p.Name] = p
-		}
-		if p.Required {
-			messageImports = append(messageImports, p.Name)
 			annotations.DependsOn[p.Name] = p
 		}
 	}
-	slices.Sort(serviceImports)
-	slices.Sort(messageImports)
-	annotations.ServiceImports = serviceImports
-	annotations.MessageImports = messageImports
 	return nil
 }

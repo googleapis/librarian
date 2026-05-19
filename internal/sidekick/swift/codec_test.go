@@ -38,12 +38,13 @@ func TestParseOptions(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := &codec{
-		GenerationYear: "2038",
-		PackageName:    "GoogleCloudBigtable",
-		MonorepoRoot:   ".",
-		RootName:       "test-root",
-		Model:          model,
-		ApiPackages:    map[string]*Dependency{},
+		GenerationYear:     "2038",
+		PackageName:        "GoogleCloudBigtable",
+		MonorepoRoot:       ".",
+		RootName:           "test-root",
+		Model:              model,
+		ApiPackages:        map[string]*Dependency{},
+		DependenciesByName: map[string]*Dependency{},
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
 		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
@@ -113,6 +114,7 @@ func (c *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependenc
 			}
 			c.ApiPackages[d.ApiPackage] = dep
 		}
+		c.DependenciesByName[d.Name] = dep
 		c.Dependencies = append(c.Dependencies, dep)
 	}
 }

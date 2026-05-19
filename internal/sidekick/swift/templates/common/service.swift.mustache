@@ -26,15 +26,9 @@ import Foundation
   import FoundationNetworking
 #endif
 
-{{#Codec.Model.ServiceImports}}
-import {{.}}
-{{/Codec.Model.ServiceImports}}
-{{#Codec.Model.HasMessageImports}}
-
-{{/Codec.Model.HasMessageImports}}
-{{#Codec.Model.MessageImports}}
-import {{.}}
-{{/Codec.Model.MessageImports}}
+{{#Codec.ServiceImports}}
+import {{Name}}
+{{/Codec.ServiceImports}}
 
 {{#Codec.DocLines}}
 /// {{{.}}}
