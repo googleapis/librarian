@@ -162,13 +162,12 @@ echo "pip $@" >> %q
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedGapicContent := `exec java -cp "` + filepath.Join(t.TempDir(), "sdk-platform-java/gapic-generator-java/target/gapic-generator-java-2.71.0.jar") // TempDir is different, we need to resolve relative to current workdir which we changed.
-	// Wait, we changed to t.TempDir() at the beginning. So working directory is a temp dir.
+	// Wait, we changed to t.TempDir() at the beginning, so working directory is a temp dir.
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	expectedGapicContent = `exec java -cp "` + filepath.Join(wd, "sdk-platform-java/gapic-generator-java/target/gapic-generator-java-2.71.0.jar") + `" com.google.api.generator.Main`
+	expectedGapicContent := `exec java -cp "` + filepath.Join(wd, "sdk-platform-java/gapic-generator-java/target/gapic-generator-java-2.71.0.jar") + `" com.google.api.generator.Main`
 	if !strings.Contains(string(content), expectedGapicContent) {
 		t.Errorf("unexpected gapic wrapper content:\n%s\nwant it to contain:\n%s", string(content), expectedGapicContent)
 	}
