@@ -101,6 +101,10 @@ func TestAdd(t *testing.T) {
 				},
 				Version:       defaultVersion,
 				CopyrightYear: "",
+				Java: &config.JavaModule{
+					GroupID:                  "please-configure-java-group-id",
+					DistributionNameOverride: "please-configure-java-group-id:google-foo-bar",
+				},
 			},
 		},
 		{

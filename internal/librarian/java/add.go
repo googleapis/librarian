@@ -31,7 +31,10 @@ var knownPrefixes = []string{
 	"google/",
 }
 
-const defaultVersion = "0.1.0-SNAPSHOT"
+const (
+	defaultVersion = "0.1.0-SNAPSHOT"
+	fakeGroupID    = "please-configure-java-group-id"
+)
 
 // Add initializes a new Java library with default values.
 func Add(lib *config.Library) *config.Library {
@@ -53,10 +56,11 @@ func Add(lib *config.Library) *config.Library {
 	}
 	if !strings.HasPrefix(apiPath, "google/cloud/") {
 		log.Printf(
-			"WARNING: unrecognized non-cloud API path %q. Defaulting to com.google.cloud GroupID. "+
-				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml if this is incorrect.",
-			apiPath,
+			"WARNING: unrecognized non-cloud API path %q. Setting fake GroupID %q. "+
+				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
+			apiPath, fakeGroupID,
 		)
+		setJavaConfig(lib, fakeGroupID)
 	}
 	return lib
 }

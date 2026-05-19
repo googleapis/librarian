@@ -582,6 +582,20 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			wantErr: errMonorepoVersion,
 		},
+		{
+			name: "fake group ID error",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					GroupID: fakeGroupID,
+				},
+			},
+			wantErr: errUnrecognizedAPI,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := Fill(test.library); err != nil {
