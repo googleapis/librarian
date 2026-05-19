@@ -21,7 +21,9 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -71,11 +73,11 @@ version = "1.0.0"
 
 // SetupForVersionBump sets up a git repository for testing version bumping scenarios.
 func SetupForVersionBump(t *testing.T, wantTag string) {
-	remoteDir := t.TempDir()
+	remoteDir := tempDir(t)
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
 	RunGit(t, "tag", wantTag)
-	cloneDir := t.TempDir()
+	cloneDir := tempDir(t)
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
@@ -140,7 +142,7 @@ func AddCrate(t *testing.T, location, name string) {
 // SetupRepo creates a git repository for testing with some initial content. It
 // returns the path of the remote repository.
 func SetupRepo(t *testing.T) string {
-	remoteDir := t.TempDir()
+	remoteDir := tempDir(t)
 	ContinueInNewGitRepository(t, remoteDir)
 	initRepositoryContents(t)
 	return remoteDir
@@ -253,7 +255,7 @@ func CloneRepository(t *testing.T, remoteDir string) {
 // a temporary directory and changes the current working directory to the cloned
 // repository.
 func CloneRepositoryBranch(t *testing.T, remoteDir, branch string) {
-	cloneDir := t.TempDir()
+	cloneDir := tempDir(t)
 	t.Chdir(cloneDir)
 	RunGit(t, "clone", "--branch", branch, remoteDir, ".")
 	RunGit(t, "remote", "rename", "origin", config.RemoteUpstream)
@@ -265,4 +267,37 @@ func RunGit(t *testing.T, args ...string) {
 	if err := command.Run(t.Context(), command.Git, args...); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func tempDir(t *testing.T) string {
+	t.Helper()
+	pattern := t.Name()
+	pattern = strings.Map(func(r rune) rune {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') || r == '-' || r == '_' {
+			return r
+		}
+		return '_'
+	}, pattern)
+	if len(pattern) > 64 {
+		pattern = pattern[:64]
+	}
+	//nolint:usetesting // We use os.MkdirTemp to allow preserving directories on failure for debugging.
+	dir, err := os.MkdirTemp("", pattern+"-*")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		if t.Failed() {
+			return
+		}
+		var err error
+		for i := 0; i < 10; i++ {
+			if err = os.RemoveAll(dir); err == nil {
+				return
+			}
+			time.Sleep(10 * time.Millisecond)
+		}
+		t.Logf("failed to cleanup temp dir %s: %v", dir, err)
+	})
+	return dir
 }
