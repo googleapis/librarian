@@ -36,6 +36,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -111,21 +112,13 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
 	case config.LanguageJava:
-		lib, err := FindLibrary(cfg, name)
-		if err != nil {
-			return nil, err
-		}
-		sources, err := LoadSources(ctx, cfg.Sources)
+		lib, sources, err := setupResolve(ctx, cfg, name)
 		if err != nil {
 			return nil, err
 		}
 		return java.ResolveMixinDependencies(cfg, lib, sources)
 	case config.LanguageRust:
-		lib, err := FindLibrary(cfg, name)
-		if err != nil {
-			return nil, err
-		}
-		sources, err := LoadSources(ctx, cfg.Sources)
+		lib, sources, err := setupResolve(ctx, cfg, name)
 		if err != nil {
 			return nil, err
 		}
@@ -133,6 +126,18 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 	default:
 		return cfg, nil
 	}
+}
+
+func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config.Library, *sources.Sources, error) {
+	lib, err := FindLibrary(cfg, name)
+	if err != nil {
+		return nil, nil, err
+	}
+	sources, err := LoadSources(ctx, cfg.Sources)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lib, sources, nil
 }
 
 // deriveLibraryName derives a library name from an API path.
