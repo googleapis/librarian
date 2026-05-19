@@ -48,7 +48,6 @@ func TestDeriveDistributionName(t *testing.T) {
 			},
 			want: "com.google.cloud:google-cloud-secretmanager-v1",
 		},
-
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := DeriveDistributionName(test.library)
@@ -278,4 +277,3 @@ func TestDeriveAPICoordinates(t *testing.T) {
 		})
 	}
 }
-
