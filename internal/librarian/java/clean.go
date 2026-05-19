@@ -80,13 +80,13 @@ func cleanPatterns(library *config.Library) map[string]bool {
 		javaAPI := api.Java
 		version := filepath.Base(api.Path)
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
-		if apiCoordinates.Proto.ArtifactID != "" {
+		if apiCoordinates.Proto.ArtifactID != "" && shouldGenerateProto(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.Proto.ArtifactID, "src")] = false
 		}
-		if apiCoordinates.GRPC.ArtifactID != "" {
+		if apiCoordinates.GRPC.ArtifactID != "" && shouldGenerateGRPC(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.GRPC.ArtifactID, "src")] = false
 		}
-		if apiCoordinates.GAPIC.ArtifactID != "" {
+		if apiCoordinates.GAPIC.ArtifactID != "" && shouldGenerateGAPIC(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.GAPIC.ArtifactID, "src")] = true
 		}
 	}
