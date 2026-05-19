@@ -299,7 +299,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			}
 			applyJavaArtifactOverrides(g.ProtoPath, javaAPI, name)
 			applyJavaProtoOverrides(g.ProtoPath, javaAPI)
-			applyJavaIAMSpecialOverrides(g.ProtoPath, name, javaAPI)
+			applyJavaAPIOverrides(g.ProtoPath, name, javaAPI)
 
 			if name == "storage" && g.ProtoPath == "google/storage/v2" {
 				javaAPI.CopyFiles = []*config.JavaFileCopy{
@@ -828,17 +828,25 @@ func extractVersionFromPOM(pomPath string) (string, error) {
 	return string(match[1]), nil
 }
 
-// applyJavaIAMSpecialOverrides applies special generation overrides for IAM v2 and v3 APIs.
-// These API paths are used by both iam and iam-policy libraries, iam contains all grpc and
-// proto modules plus resource name classes, iam-policy contains generated gapic modules.
-func applyJavaIAMSpecialOverrides(apiPath string, libraryName string, api *config.JavaAPI) {
-	if !slices.Contains(javaIAMSpecialPaths, apiPath) {
-		return
+// applyJavaAPIOverrides applies special generation overrides for specific APIs.
+func applyJavaAPIOverrides(apiPath string, libraryName string, api *config.JavaAPI) {
+	override, ok := javaAPIOverrides[overrideKey{libraryName: libraryName, apiPath: apiPath}]
+	if !ok {
+		override, ok = javaAPIOverrides[overrideKey{apiPath: apiPath}]
 	}
-	if override, ok := javaIAMLibraryOverrides[libraryName]; ok {
-		api.GenerateGAPIC = override.GenerateGAPIC
-		api.GenerateProtoGRPC = override.GenerateProtoGRPC
-		api.GenerateResourceNames = override.GenerateResourceNames
+	if ok {
+		if override.GenerateGAPIC != nil {
+			api.GenerateGAPIC = override.GenerateGAPIC
+		}
+		if override.GenerateProto != nil {
+			api.GenerateProto = override.GenerateProto
+		}
+		if override.GenerateGRPC != nil {
+			api.GenerateGRPC = override.GenerateGRPC
+		}
+		if override.GenerateResourceNames != nil {
+			api.GenerateResourceNames = override.GenerateResourceNames
+		}
 	}
 }
 
