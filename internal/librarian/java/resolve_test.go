@@ -31,18 +31,16 @@ func TestResolveDependencies(t *testing.T) {
 	srcs := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	for _, tt := range []struct {
-		name    string
-		lib     *config.Library
-		want    []*config.AdditionalProto
-		wantErr bool
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []*config.AdditionalProto
 	}{
 		{
 			name: "no APIs",
 			lib: &config.Library{
 				APIs: []*config.API{},
 			},
-			want: nil,
 		},
 		{
 			name: "locations mixin (developerconnect)",
@@ -53,9 +51,7 @@ func TestResolveDependencies(t *testing.T) {
 			},
 			want: []*config.AdditionalProto{
 				{
-					Path:                 "google/cloud/location/locations.proto",
-					GenerateProtoClasses: false,
-					CopyToOutput:         false,
+					Path: "google/cloud/location/locations.proto",
 				},
 			},
 		},
@@ -68,9 +64,7 @@ func TestResolveDependencies(t *testing.T) {
 			},
 			want: []*config.AdditionalProto{
 				{
-					Path:                 "google/cloud/location/locations.proto",
-					GenerateProtoClasses: false,
-					CopyToOutput:         false,
+					Path: "google/cloud/location/locations.proto",
 				},
 			},
 		},
@@ -81,7 +75,6 @@ func TestResolveDependencies(t *testing.T) {
 					{Path: "google/cloud/dataproc/v1"},
 				},
 			},
-			want: nil,
 		},
 		{
 			name: "preserve existing and sort",
@@ -101,9 +94,7 @@ func TestResolveDependencies(t *testing.T) {
 			},
 			want: []*config.AdditionalProto{
 				{
-					Path:                 "google/cloud/location/locations.proto",
-					GenerateProtoClasses: false,
-					CopyToOutput:         false,
+					Path: "google/cloud/location/locations.proto",
 				},
 				{
 					Path: "google/example/v1/example.proto",
@@ -111,23 +102,17 @@ func TestResolveDependencies(t *testing.T) {
 			},
 		},
 	} {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := ResolveMixinDependencies(&config.Config{}, tt.lib, srcs)
-			if (err != nil) != tt.wantErr {
-				t.Errorf("ResolveDependencies() error = %v, wantErr %v", err, tt.wantErr)
-				return
-			}
+		t.Run(test.name, func(t *testing.T) {
+			_, err := ResolveMixinDependencies(&config.Config{}, test.lib, srcs)
 			if err != nil {
-				return
+				t.Fatal()
 			}
-
 			var got []*config.AdditionalProto
-			if len(tt.lib.APIs) > 0 && tt.lib.APIs[0].Java != nil {
-				got = tt.lib.APIs[0].Java.AdditionalProtos
+			if len(test.lib.APIs) > 0 && test.lib.APIs[0].Java != nil {
+				got = test.lib.APIs[0].Java.AdditionalProtos
 			}
-
-			if diff := cmp.Diff(tt.want, got); diff != "" {
-				t.Errorf("ResolveDependencies() mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

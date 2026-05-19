@@ -1058,9 +1058,7 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 					Java: &config.JavaAPI{
 						AdditionalProtos: []*config.AdditionalProto{
 							{
-								Path:                 "google/cloud/location/locations.proto",
-								GenerateProtoClasses: false,
-								CopyToOutput:         false,
+								Path: "google/cloud/location/locations.proto",
 							},
 						},
 					},
