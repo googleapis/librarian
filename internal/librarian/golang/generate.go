@@ -226,7 +226,17 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir 
 	if trans := transport(sc); trans != "" {
 		opts = append(opts, fmt.Sprintf("transport=%s", trans))
 	}
-	opts = append(opts, "release-level="+sc.ReleaseLevel(config.LanguageGo, version))
+	releaseLevel := sc.ReleaseLevel(config.LanguageGo, version)
+	switch releaseLevel {
+	case "preview":
+		releaseLevel = "beta"
+		if strings.Contains(serviceconfig.ExtractVersion(apiPath), "alpha") {
+			releaseLevel = "alpha"
+		}
+	case "stable":
+		releaseLevel = "ga"
+	}
+	opts = append(opts, "release-level="+releaseLevel)
 	return opts, nil
 }
 

@@ -919,8 +919,14 @@ func TestShouldExcludeSamples(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "exclude if lib is in excludedSamplesLibraries",
+			name: "exclude if lib is in excludedSamplesLibraries (datastore)",
 			lib:  "datastore",
+			info: &javaGAPICInfo{Samples: true},
+			want: true,
+		},
+		{
+			name: "exclude if lib is in excludedSamplesLibraries (pubsub)",
+			lib:  "pubsub",
 			info: &javaGAPICInfo{Samples: true},
 			want: true,
 		},

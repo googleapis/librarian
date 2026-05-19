@@ -42,7 +42,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
 - path: google/ai/generativelanguage/v1beta
   languages:
     - dart
@@ -421,7 +421,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
 - path: google/cloud/alloydb/v1beta
   languages:
     - go
@@ -691,7 +691,7 @@
     - java
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/cloud/bigquery/connection/v1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
@@ -740,7 +740,7 @@
   languages:
     - all
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/cloud/bigquery/datapolicies/v2beta1
   languages:
@@ -814,7 +814,7 @@
     - java
     - python
   release_level:
-    go: beta
+    go: preview
   transports:
     all: grpc
 - path: google/cloud/bigquery/storage/v1beta
@@ -855,7 +855,7 @@
   skip_rest_numeric_enums:
     - go
   release_level:
-    go: alpha
+    go: preview
   transports:
     python: rest
 - path: google/cloud/billing/budgets/v1
@@ -1030,7 +1030,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/cloud/config/v1
   languages:
@@ -1233,7 +1233,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
 - path: google/cloud/discoveryengine/v1beta
   languages:
     - go
@@ -1593,8 +1593,6 @@
 - path: google/cloud/iamconnectorcredentials/v1alpha
   languages:
     - python
-  release_level:
-    all: preview
 - path: google/cloud/iap/v1
   documentation_uri: https://cloud.google.com/iap
   languages:
@@ -2223,7 +2221,7 @@
   languages:
     - all
   release_level:
-    go: beta
+    go: preview
     java: stable
 - path: google/cloud/security/publicca/v1alpha1
   languages:
@@ -2276,7 +2274,7 @@
   languages:
     - all
   release_level:
-    go: beta
+    go: preview
 - path: google/cloud/securitycentermanagement/v1
   languages:
     - all
@@ -2787,7 +2785,7 @@
     - all
   new_issue_uri: https://issuetracker.google.com/savedsearches/559776
   release_level:
-    go: beta
+    go: preview
   title: Cloud Trace API
 - path: google/devtools/containeranalysis/v1
   documentation_uri: https://cloud.google.com/container-registry/docs/container-analysis
@@ -2895,7 +2893,7 @@
   languages:
     - all
   release_level:
-    go: beta
+    go: preview
 - path: google/iam/v3beta
   languages:
     - go
@@ -2944,7 +2942,7 @@
     - go
     - php
   release_level:
-    go: ga
+    go: stable
 - path: google/maps/addressvalidation/v1
   documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
   languages:
@@ -2964,7 +2962,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/maps/fleetengine/delivery/v1
   languages:
@@ -3017,7 +3015,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/maps/routeoptimization/v1
   languages:
@@ -3026,7 +3024,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/maps/routing/v2
   documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
@@ -3075,7 +3073,7 @@
     - all
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
   release_level:
-    go: beta
+    go: preview
   transports:
     csharp: grpc
     go: grpc
@@ -3108,7 +3106,7 @@
     - nodejs
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/shopping/merchant/accounts/v1
   languages:
@@ -3224,7 +3222,7 @@
     - java
     - python
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/shopping/merchant/promotions/v1
   languages:
@@ -3292,7 +3290,7 @@
     - go
     - java
   release_level:
-    go: beta
+    go: preview
     java: preview
 - path: google/spanner/admin/database/v1
   languages:
@@ -3305,7 +3303,7 @@
     - go
     - java
   release_level:
-    go: beta
+    go: preview
   transports:
     go: grpc
 - path: google/spanner/v1
@@ -3347,9 +3345,9 @@
 - path: schema/google/showcase/v1beta1
   languages:
     - all
-  service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
   skip_rest_numeric_enums:
     - java
+  service_config: schema/google/showcase/v1beta1/showcase_v1beta1.yaml
 - path: src/google/protobuf
   languages:
     - all

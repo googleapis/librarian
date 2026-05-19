@@ -37,6 +37,7 @@ var (
 		"iam-policy":        true,
 		"bigtable":          true,
 		"firestore":         true,
+		"pubsub":            true,
 	}
 
 	keepOverride = map[string][]string{

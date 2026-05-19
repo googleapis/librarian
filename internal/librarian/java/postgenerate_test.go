@@ -132,6 +132,11 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 	}) {
 		t.Errorf("%s should NOT contain google-maps-places-bom", path)
 	}
+	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
+		return d.ArtifactID == "google-cloud-bigtable-deps-bom"
+	}) {
+		t.Errorf("%s should NOT contain google-cloud-bigtable-deps-bom", path)
+	}
 }
 
 func TestSearchForJavaModules(t *testing.T) {

@@ -144,21 +144,12 @@ func protoGroupID(mainArtifactGroupID string) string {
 	return prefix + protoGRPCSuffix
 }
 
-// ensureCloudPrefix returns name with the "google-cloud-" prefix,
-// adding it if not already present.
-func ensureCloudPrefix(name string) string {
-	if !strings.HasPrefix(name, cloudPrefix) {
-		return cloudPrefix + name
-	}
-	return name
-}
-
 // DeriveDistributionName returns the Maven distribution name (GroupID:ArtifactID)
 // for the library, applying overrides and defaults as necessary.
 func DeriveDistributionName(library *config.Library) string {
-	if library.Java != nil && library.Java.DistributionNameOverride != "" {
+	if library.Java.DistributionNameOverride != "" {
 		return library.Java.DistributionNameOverride
 	}
-	artifactID := ensureCloudPrefix(library.Name)
+	artifactID := cloudPrefix + library.Name
 	return fmt.Sprintf("%s:%s", library.Java.GroupID, artifactID)
 }
