@@ -20,6 +20,7 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -77,7 +78,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
-func Tidy(library *config.Library) *config.Library {
+func Tidy(library *config.Library) (*config.Library, error) {
 	library.Keep = tidyKeep(library.Keep)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
@@ -89,7 +90,11 @@ func Tidy(library *config.Library) *config.Library {
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
-		if isEmptyJavaModule(library.Java) {
+		empty, err := yaml.Empty(library.Java)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
 			library.Java = nil
 		}
 	}
@@ -115,11 +120,15 @@ func Tidy(library *config.Library) *config.Library {
 		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
 			return p == nil || p.Path == ""
 		})
-		if isEmptyJavaAPI(api.Java) {
+		empty, err := yaml.Empty(api.Java)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
 			api.Java = nil
 		}
 	}
-	return library
+	return library, nil
 }
 
 // tidyKeep removes default files from the library's keep configuration.

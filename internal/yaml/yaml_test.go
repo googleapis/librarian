@@ -26,8 +26,8 @@ import (
 )
 
 type testConfig struct {
-	Name    string `yaml:"name"`
-	Version string `yaml:"version"`
+	Name    string `yaml:"name,omitempty"`
+	Version string `yaml:"version,omitempty"`
 }
 
 func TestUnmarshal(t *testing.T) {
@@ -139,5 +139,37 @@ func TestStringSlice_NilSlice(t *testing.T) {
 	got := strSlice.IsZero()
 	if diff := cmp.Diff(true, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestEmpty(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		value testConfig
+		want  bool
+	}{
+		{
+			name: "empty",
+			value: testConfig{
+				Name: "",
+			},
+			want: true,
+		},
+		{
+			name: "not empty",
+			value: testConfig{
+				Name: "name",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Empty(test.value)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

@@ -399,7 +399,10 @@ func TestTidy(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Tidy(test.lib)
+			got, err := Tidy(test.lib)
+			if err != nil {
+				t.Fatal(err)
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
