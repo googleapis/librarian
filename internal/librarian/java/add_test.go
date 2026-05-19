@@ -22,17 +22,94 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	lib := &config.Library{
-		Name: "test-library",
-	}
-	want := &config.Library{
-		Name:          "test-library",
-		Version:       defaultVersion,
-		CopyrightYear: "",
-	}
-	got := Add(lib)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "standard cloud API",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+			},
+		},
+		{
+			name: "shopping API",
+			lib: &config.Library{
+				Name: "shopping-css",
+				APIs: []*config.API{
+					{Path: "google/shopping/css/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "shopping-css",
+				APIs: []*config.API{
+					{Path: "google/shopping/css/v1"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+				Java: &config.JavaModule{
+					GroupID:                  "com.google.shopping",
+					DistributionNameOverride: "com.google.shopping:google-shopping-css",
+				},
+			},
+		},
+		{
+			name: "maps API",
+			lib: &config.Library{
+				Name: "maps-routing",
+				APIs: []*config.API{
+					{Path: "google/maps/routing/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "maps-routing",
+				APIs: []*config.API{
+					{Path: "google/maps/routing/v1"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+				Java: &config.JavaModule{
+					GroupID:                  "com.google.maps",
+					DistributionNameOverride: "com.google.maps:google-maps-routing",
+				},
+			},
+		},
+		{
+			name: "unrecognized non-cloud API",
+			lib: &config.Library{
+				Name: "foo-bar",
+				APIs: []*config.API{
+					{Path: "google/foo/bar/v1"},
+				},
+			},
+			want: &config.Library{
+				Name: "foo-bar",
+				APIs: []*config.API{
+					{Path: "google/foo/bar/v1"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := Add(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
