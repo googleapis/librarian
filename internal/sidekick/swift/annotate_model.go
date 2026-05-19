@@ -24,14 +24,15 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear  string
-	BoilerPlate    []string
-	PackageName    string
-	MonorepoRoot   string
-	DependsOn      map[string]*Dependency
-	WktPackage     string
-	ServiceImports []string
-	MessageImports []string
+	CopyrightYear     string
+	BoilerPlate       []string
+	PackageName       string
+	MonorepoRoot      string
+	DependsOn         map[string]*Dependency
+	WktPackage        string
+	PaginationPackage string
+	ServiceImports    []string
+	MessageImports    []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -65,6 +66,7 @@ func (c *codec) annotateModel() error {
 		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
 		WktPackage:    wellKnownSwiftPackage,
+		PaginationPackage: paginationSwiftPackage,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name

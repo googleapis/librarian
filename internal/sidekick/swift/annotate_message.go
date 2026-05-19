@@ -82,7 +82,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 
 	annotations.IsPaginatedResponse = message.Pagination != nil
 	if message.Pagination != nil {
-		if dep, ok := c.DependenciesByName["GoogleCloudGax"]; ok {
+		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
 			c.registerPackageDependency(dep)
 		}
 		itemField := message.Pagination.PageableItem
