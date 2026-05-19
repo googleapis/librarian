@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -102,6 +103,8 @@ Examples:
 				return nil
 			case config.LanguageGo:
 				return golang.Install(ctx, tools)
+			case config.LanguageJava:
+				return java.Install(ctx)
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx)
 			case config.LanguagePython:
