@@ -16,8 +16,8 @@ package java
 
 import (
 	"context"
-	"encoding/xml"
 	_ "embed"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"os/exec"
