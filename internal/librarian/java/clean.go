@@ -74,9 +74,9 @@ func Clean(library *config.Library) error {
 // The key is the path pattern relative to the library output directory.
 // The boolean value indicates whether marker-based cleaning should be used:
 //   - true: Enable marker-based cleaning. Only .java files containing auto-generation
-//           markers are deleted. Used for GAPIC source directories to protect manual edits.
+//     markers are deleted. Used for GAPIC source directories to protect manual edits.
 //   - false: Disable marker-based cleaning. Files are deleted unconditionally
-//            (subject to general preservation rules). Used for Proto, GRPC, and samples.
+//     (subject to general preservation rules). Used for Proto, GRPC, and samples.
 func cleanPatterns(library *config.Library) map[string]bool {
 	libraryCoordinates := DeriveLibraryCoordinates(library)
 	patterns := map[string]bool{
