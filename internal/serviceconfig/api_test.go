@@ -77,10 +77,10 @@ func TestReleaseLevel(t *testing.T) {
 			want:     "stable",
 		},
 		{
-			name:     "go defaults to ga",
+			name:     "go defaults to stable",
 			sc:       &API{},
 			language: config.LanguageGo,
-			want:     "ga",
+			want:     "stable",
 		},
 		{
 			name: "language-specific level",
@@ -137,121 +137,70 @@ func TestReleaseLevel(t *testing.T) {
 			want:     "preview",
 		},
 		{
-			name:     "go alpha due to alpha path",
+			name:     "go preview due to alpha path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1alpha"},
 			language: config.LanguageGo,
-			want:     "alpha",
+			want:     "preview",
 		},
 		{
-			name:     "go beta due to beta path",
+			name:     "go preview due to beta path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1beta"},
 			language: config.LanguageGo,
-			want:     "beta",
+			want:     "preview",
 		},
 		{
-			name:     "go ga for stable path",
+			name:     "go stable for stable path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1"},
 			language: config.LanguageGo,
 			version:  "1.0.0",
-			want:     "ga",
+			want:     "stable",
 		},
 		{
-			name:     "go beta for stable path with 0.x version",
+			name:     "go preview for stable path with 0.x version",
 			sc:       &API{Path: "google/cloud/secretmanager/v1"},
 			language: config.LanguageGo,
 			version:  "0.1.0",
-			want:     "beta",
+			want:     "preview",
+		},
+		{
+			name: "go preview explicitly set",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageGo: "preview"},
+			},
+			language: config.LanguageGo,
+			want:     "preview",
+		},
+		{
+			name: "go stable explicitly set",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageGo: "stable"},
+			},
+			language: config.LanguageGo,
+			want:     "stable",
+		},
+		{
+			name: "all preview set maps to preview for go",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageAll: "preview"},
+			},
+			language: config.LanguageGo,
+			want:     "preview",
+		},
+		{
+			name: "all stable set maps to stable for go",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageAll: "stable"},
+			},
+			language: config.LanguageGo,
+			want:     "stable",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.ReleaseLevel(test.language, test.version)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestRepoMetadataReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		sc       *API
-		language string
-		version  string
-		want     string
-	}{
-		{
-			name: "go, stable",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			language: config.LanguageGo,
-			version:  "1.0.0",
-			want:     "stable",
-		},
-		{
-			name:     "go, stable empty path",
-			sc:       &API{},
-			language: config.LanguageGo,
-			version:  "1.0.0",
-			want:     "stable",
-		},
-		{
-			name: "go, preview alpha api path",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1alpha",
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview alpha release level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview beta api path",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1beta",
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview beta release level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name:     "go, preview due to version 0.x",
-			sc:       &API{Path: "google/cloud/secretmanager/v1"},
-			language: config.LanguageGo,
-			version:  "0.1.0",
-			want:     "preview",
-		},
-		{
-			name:     "non-go returns raw release level",
-			sc:       &API{},
-			language: config.LanguageRust,
-			want:     "stable",
-		},
-		{
-			name: "non-go returns language-specific level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageRust: "beta"},
-			},
-			language: config.LanguageRust,
-			want:     "beta",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.RepoMetadataReleaseLevel(test.language, test.version)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -162,37 +162,7 @@ func (api *API) ReleaseLevel(language, version string) string {
 	if isAlpha || isBeta || strings.HasPrefix(version, "0.") {
 		level = "preview"
 	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across languages.
-	if language == config.LanguageGo {
-		if isAlpha {
-			return "alpha"
-		}
-		if isBeta || level == "preview" {
-			return "beta"
-		}
-		if level == "stable" {
-			return "ga"
-		}
-	}
 	return level
-}
-
-// RepoMetadataReleaseLevel returns the release level for repo metadata.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
-// function once the issue is resolved.
-// For Go, it maps the raw release level to "stable" or "preview".
-// For other languages, it returns the raw release level.
-func (api *API) RepoMetadataReleaseLevel(language, version string) string {
-	if language == config.LanguageGo {
-		if api.ReleaseLevel(language, version) == "ga" {
-			return "stable"
-		}
-		return "preview"
-	}
-	return api.ReleaseLevel(language, version)
 }
 
 // RepoMetadataTransport returns the transport for repo metadata.
