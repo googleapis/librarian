@@ -372,6 +372,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			}
 			lib.Keep = keep
 		}
+		if appends, ok := keepAppends[lib.Name]; ok {
+			lib.Keep = append(lib.Keep, appends...)
+			slices.Sort(lib.Keep)
+			lib.Keep = slices.Compact(lib.Keep)
+		}
 		libs = append(libs, lib)
 	}
 	if len(libs) == 0 {
