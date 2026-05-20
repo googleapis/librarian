@@ -132,7 +132,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	annotations.IsPaginatedResponse = message.Pagination != nil
 	if annotations.IsPaginatedResponse {
 		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
-			c.addPackageDependency(dep.Name)
+			c.addDependency(dep)
 			annotations.DependsOn[dep.Name] = dep
 		}
 	}
@@ -152,7 +152,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
 			for _, dep := range nestedCodec.DependsOn {
-				c.addPackageDependency(dep.Name)
+				c.addDependency(dep)
 				annotations.DependsOn[dep.Name] = dep
 			}
 		}

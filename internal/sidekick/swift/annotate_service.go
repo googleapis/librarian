@@ -81,14 +81,14 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			continue
 		}
 		if p.RequiredByServices {
-			c.addPackageDependency(p.Name)
+			c.addDependency(p)
 			annotations.DependsOn[p.Name] = p
 		}
 	}
 
 	// Services always depend on well known types
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-		c.addPackageDependency(dep.Name)
+		c.addDependency(dep)
 		annotations.DependsOn[dep.Name] = dep
 	}
 
