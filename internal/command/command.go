@@ -92,6 +92,19 @@ func RunStreaming(ctx context.Context, command string, arg ...string) error {
 	return nil
 }
 
+// RunStreamingInDir runs the given binary in a specific directory,
+// setting its output and errors streams to those of the current process.
+func RunStreamingInDir(ctx context.Context, dir, command string, arg ...string) error {
+	cmd := buildCmd(ctx, dir, nil, command, arg...)
+	cmd.Stderr = stderr
+	cmd.Stdout = stdout
+	err := cmd.Run()
+	if err != nil {
+		return fmt.Errorf("%s: %w", cmd, err)
+	}
+	return nil
+}
+
 // Output executes a program (with arguments) and returns stdout. It is a
 // convenience wrapper around OutputWithEnv.
 func Output(ctx context.Context, command string, arg ...string) (string, error) {
