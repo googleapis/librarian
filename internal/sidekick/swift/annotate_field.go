@@ -108,7 +108,7 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
-	// when the followin conditions are met:
+	// when the following conditions are met:
 	// 1. field.Recursive: The field is part of a recursive reference cycle.
 	// 2. field.Singular(): Repeated fields ([T]) and Maps ([K: V]) store their elements dynamically
 	//    on the heap, so they do not cause compile-time infinite struct size issues.
