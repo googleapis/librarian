@@ -15,9 +15,7 @@
 package swift
 
 import (
-	"cmp"
 	"fmt"
-	"maps"
 	"slices"
 	"strings"
 
@@ -42,10 +40,13 @@ type messageAnnotations struct {
 }
 
 // Imports returns the list of dependencies for this package.
-func (ann *messageAnnotations) MessageImports() []*Dependency {
-	deps := slices.Collect(maps.Values(ann.DependsOn))
-	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
-	return deps
+func (ann *messageAnnotations) MessageImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {

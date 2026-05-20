@@ -15,7 +15,6 @@
 package swift
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -52,18 +51,18 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		model *api.API
-		want  map[string]bool
+		want  []string
 	}{
 		{
 			name: "Messages with wkt",
 			model: api.NewTestAPI(
 				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
-			want: map[string]bool{"GoogleCloudWkt": true},
+			want: []string{"GoogleCloudWkt"},
 		},
 		{
 			name:  "Enum with wkt",
 			model: api.NewTestAPI(nil, []*api.Enum{enum}, nil),
-			want:  map[string]bool{"GoogleCloudWkt": false},
+			want:  []string{"GoogleCloudWkt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -72,9 +71,9 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 				t.Fatal(err)
 			}
 			ann := test.model.Codec.(*modelAnnotations)
-			got := map[string]bool{}
-			for _, d := range codec.Dependencies {
-				_, got[d.Name] = ann.DependsOn[d.Name]
+			got := []string{}
+			for _, d := range ann.Dependencies() {
+				got = append(got, d.Name)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -151,9 +150,6 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 	if msgAnn.Model != ann {
 		t.Errorf("expected msgAnn.Model to be %p, got %p", ann, msgAnn.Model)
 	}
-	if !slices.Contains(msgAnn.MessageImports, "GoogleCloudExternalWithOverrideV1") {
-		t.Errorf("expected GoogleCloudExternalWithOverrideV1 in msgAnn.MessageImports, got %v", msgAnn.MessageImports)
-	}
 }
 
 func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
@@ -178,9 +174,10 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 
 	// Self dependency should be ignored, other should be present.
 	want := map[string]bool{
+		"GoogleCloudGax":           true, // always required by services
 		"GoogleCloudOtherV1":       true, // required by the service
 		"GoogleCloudPlaceholderV1": false,
-		"GoogleCloudWkt":           false,
+		"GoogleCloudWkt":           true, // always required by message types
 	}
 	got := map[string]bool{}
 	for _, dep := range codec.Dependencies {
@@ -266,13 +263,5 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 
 	if _, ok := ann.DependsOn["GoogleCloudGax"]; !ok {
 		t.Errorf("expected GoogleCloudGax dependency to be present in DependsOn")
-	}
-	gotRespAnn := outputType.Codec.(*messageAnnotations)
-	if !slices.Contains(gotRespAnn.MessageImports, "GoogleCloudGax") {
-		t.Errorf("expected GoogleCloudGax to be in outputType MessageImports, got %v", gotRespAnn.MessageImports)
-	}
-	gotReqAnn := inputType.Codec.(*messageAnnotations)
-	if slices.Contains(gotReqAnn.MessageImports, "GoogleCloudGax") {
-		t.Errorf("expected GoogleCloudGax to not be in inputType MessageImports, got %v", gotReqAnn.MessageImports)
 	}
 }

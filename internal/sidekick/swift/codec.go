@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"log/slog"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -31,7 +32,7 @@ const (
 	// The name of the corresponding Swift package that contains the Swift implementations of these
 	// types.
 	wellKnownSwiftPackage = "GoogleCloudWkt"
-
+	// The name of the Swift package that contains the pagination helper types.
 	paginationSwiftPackage = "GoogleCloudGax"
 )
 
@@ -129,12 +130,17 @@ func (c *codec) addApiPackageDependency(apiName string) {
 func (c *codec) addPackageDependency(packageName string) {
 	dep, ok := c.DependenciesByName[packageName]
 	if !ok {
-		dep = &Dependency{SwiftDependency: config.SwiftDependency{Name: packageName}}
+		slog.Warn("Attempted to add a dependency on an unknown package", "package", packageName)
+		return
 	}
 	c.addDependency(dep)
 }
 
 func (c *codec) addDependency(dep *Dependency) {
+	if dep == nil {
+		slog.Warn("BUG: Attempting to add nil dependency", "api_package", c.Model.PackageName)
+		return
+	}
 	// Skip including self as a dependency
 	if dep.Name == c.PackageName {
 		return

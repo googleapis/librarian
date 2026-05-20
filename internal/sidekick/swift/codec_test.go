@@ -94,6 +94,7 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
 				{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+				{Name: paginationSwiftPackage, RequiredByServices: true},
 			},
 		},
 	}

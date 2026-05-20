@@ -15,8 +15,6 @@
 package swift
 
 import (
-	"cmp"
-	"maps"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -35,10 +33,13 @@ type serviceAnnotations struct {
 }
 
 // Imports returns the list of dependencies for this package.
-func (ann *serviceAnnotations) ServiceImports() []*Dependency {
-	deps := slices.Collect(maps.Values(ann.DependsOn))
-	slices.SortFunc(deps, func(a, b *Dependency) int { return cmp.Compare(a.Name, b.Name) })
-	return deps
+func (ann *serviceAnnotations) ServiceImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {

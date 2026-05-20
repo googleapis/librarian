@@ -312,8 +312,9 @@ func TestGenerateService_WithImports(t *testing.T) {
 		Name: "IAM",
 		Methods: []*api.Method{
 			{
-				Name:      "TestMethod",
-				InputType: inputMessage,
+				Name:       "TestMethod",
+				InputType:  inputMessage,
+				OutputType: externalMessage,
 				PathInfo: &api.PathInfo{
 					Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
 				},
