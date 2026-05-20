@@ -102,6 +102,7 @@ func TestCollectJavaFiles(t *testing.T) {
 		"subdir/NotJava.txt",
 		"samples/snippets/generated/Ignored.java",
 		"another/dir/More.java",
+		"samples/snippets/src/Ignored.java",
 	}
 	for _, f := range filesToCreate {
 		path := filepath.Join(tmpDir, f)
