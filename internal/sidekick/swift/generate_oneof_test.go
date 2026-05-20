@@ -179,6 +179,7 @@ func TestGenerateOneOf(t *testing.T) {
 
 
   /// A group of fields where only one is set.
+  @nonexhaustive
   public enum OneOf_Choice: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
     case stringField(String)
