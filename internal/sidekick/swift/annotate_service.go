@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -93,6 +94,8 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		c.addDependency(dep)
 		annotations.DependsOn[dep.Name] = dep
+	} else {
+		return fmt.Errorf("missing required dependency %q for well-known types", wellKnownProtobufPackage)
 	}
 
 	for _, method := range restMethods {
