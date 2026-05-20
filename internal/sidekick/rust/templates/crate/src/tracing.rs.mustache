@@ -100,13 +100,11 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                                 _ => 0,
                             };
                             _span.record("gcp.longrunning.status_code", code);
-                            if let Some(err) = &op.result {
-                                if let {{Codec.LongrunningModelModule}}::operation::Result::Error(status) = err {
-                                    _span.record("otel.status_code", "ERROR");
-                                    _span.record("otel.status_description", &status.message);
-                                    _span.record("rpc.response.status_code", status.code);
-                                    _span.record("error.type", google_cloud_gax::error::rpc::Code::from(status.code).to_string());
-                                }
+                            if let Some({{Codec.LongrunningModelModule}}::operation::Result::Error(status)) = &op.result {
+                                _span.record("otel.status_code", "ERROR");
+                                _span.record("otel.status_description", &status.message);
+                                _span.record("rpc.response.status_code", status.code);
+                                _span.record("error.type", google_cloud_gax::error::rpc::Code::from(status.code).to_string());
                             }
                         }
                     }
