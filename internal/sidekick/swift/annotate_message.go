@@ -89,7 +89,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			annotations.CustomSerialization = true
 		}
 
-		// Messages depend on the packages of their fields. Recursively find the 
+		// Messages depend on the packages of their fields. Recursively find the
 		usedApiPackages := make(map[string]struct{})
 		switch field.Typez {
 		case api.TypezMessage:
