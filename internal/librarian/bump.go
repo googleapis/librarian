@@ -417,3 +417,9 @@ func legacyRustBumpLibrary(ctx context.Context, cfg *config.Config, lib *config.
 		return fmt.Errorf("%q should not be using legacyRustBumpLibrary", cfg.Language)
 	}
 }
+
+// formatTagName computes the name of the tag expected to be applied to the
+// commit that released the given library.
+func formatTagName(tagFormat string, lib *config.Library) string {
+	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
+}
