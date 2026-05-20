@@ -34,7 +34,7 @@ type serviceAnnotations struct {
 	DependsOn        map[string]*Dependency
 }
 
-// Imports returns the list of dependencies for this package.
+// ServiceImports returns the list of dependencies for this service.
 func (ann *serviceAnnotations) ServiceImports() []string {
 	result := make([]string, 0, len(ann.DependsOn))
 	for _, dep := range ann.DependsOn {

@@ -39,7 +39,7 @@ type messageAnnotations struct {
 	DependsOn           map[string]*Dependency
 }
 
-// Imports returns the list of dependencies for this package.
+// MessageImports returns the list of dependencies for this message.
 func (ann *messageAnnotations) MessageImports() []string {
 	result := make([]string, 0, len(ann.DependsOn))
 	for _, dep := range ann.DependsOn {
@@ -91,7 +91,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			if fieldCodec.Name != field.JSONName {
 				annotations.CustomSerialization = true
 			}
-			if fieldCodec.PackageName != "" {
+			if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
 				if dep, ok := c.ApiPackages[fieldCodec.PackageName]; ok {
 					c.addDependency(dep)
 					annotations.DependsOn[dep.Name] = dep
