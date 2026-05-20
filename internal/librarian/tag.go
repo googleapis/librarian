@@ -19,7 +19,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -149,10 +148,4 @@ func tag(ctx context.Context, releaseCommit string, createReleaseTag bool) error
 		}
 	}
 	return nil
-}
-
-// formatTagName computes the name of the tag expected to be applied to the
-// commit that released the given library.
-func formatTagName(tagFormat string, lib *config.Library) string {
-	return strings.NewReplacer("{name}", lib.Name, "{version}", lib.Version).Replace(tagFormat)
 }
