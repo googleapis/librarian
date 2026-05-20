@@ -19,8 +19,8 @@ import (
 	_ "embed"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -36,13 +36,5 @@ func Install(ctx context.Context) error {
 	if len(cfg.Tools.Pip) == 0 {
 		return nil
 	}
-	args := []string{"install"}
-	for _, tool := range cfg.Tools.Pip {
-		pkg := tool.Package
-		if pkg == "" {
-			pkg = fmt.Sprintf("%s==%s", tool.Name, tool.Version)
-		}
-		args = append(args, pkg)
-	}
-	return command.RunStreaming(ctx, "pip", args...)
+	return pip.Install(ctx, cfg.Tools.Pip)
 }

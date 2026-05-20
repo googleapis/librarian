@@ -25,35 +25,18 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 //go:embed librarian.yaml
 var librarianYAML []byte
 
-type mavenTool struct {
-	Name          string `yaml:"name"`
-	LocalPath     string `yaml:"local_path,omitempty"`
-	LocalArtifact string `yaml:"local_artifact,omitempty"`
-	MainClass     string `yaml:"main_class,omitempty"`
-	Packaging     string `yaml:"packaging"`
-	GroupID       string `yaml:"group_id,omitempty"`
-	ArtifactID    string `yaml:"artifact_id,omitempty"`
-	Version       string `yaml:"version,omitempty"`
-	Classifier    string `yaml:"classifier,omitempty"`
-}
-
-type pipTool struct {
-	Name      string `yaml:"name"`
-	LocalPath string `yaml:"local_path,omitempty"`
-	Package   string `yaml:"package,omitempty"`
-	Version   string `yaml:"version,omitempty"`
-}
-
 type javaToolsConfig struct {
 	Tools struct {
-		Maven []*mavenTool `yaml:"maven"`
-		Pip   []*pipTool   `yaml:"pip"`
+		Maven []*config.MavenTool `yaml:"maven"`
+		Pip   []*config.PipTool   `yaml:"pip"`
 	} `yaml:"tools"`
 }
 
@@ -101,7 +84,7 @@ func Install(ctx context.Context) error {
 
 	// Task 4: Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
-		if err := installPipTools(ctx, cfg.Tools.Pip); err != nil {
+		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
@@ -145,53 +128,49 @@ func getLocalToolVersion(pomPath string) (string, error) {
 	return proj.Version, nil
 }
 
-func installLocalMavenTool(ctx context.Context, t *mavenTool, installDir string) error {
+func installLocalMavenTool(ctx context.Context, mavenTool *config.MavenTool, installDir string) error {
 	// 1. Build the tool
 	args := []string{
 		"package", "-B", "-ntp", "-T", "1.5C",
 		"-DskipTests", "-Dcheckstyle.skip", "-Dclirr.skip", "-Denforcer.skip", "-Dfmt.skip",
-		"-pl", t.LocalPath, "--also-make",
+		"-pl", mavenTool.LocalPath, "--also-make",
 	}
-	fmt.Printf("Building local tool %s...\n", t.Name)
+	fmt.Printf("Building local tool %s...\n", mavenTool.Name)
 	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to build local tool: %w", err)
 	}
-
 	// 2. Get version
-	pomPath := filepath.Join(t.LocalPath, "pom.xml")
+	pomPath := filepath.Join(mavenTool.LocalPath, "pom.xml")
 	version, err := getLocalToolVersion(pomPath)
 	if err != nil {
 		return fmt.Errorf("failed to get local tool version: %w", err)
 	}
-
 	// 3. Resolve jar path
-	jarPath := strings.ReplaceAll(t.LocalArtifact, "{{Version}}", version)
+	// Replace the "{{Version}}" placeholder in LocalArtifact with the actual version
+	// parsed from the local pom.xml.
+	jarPath := strings.ReplaceAll(mavenTool.LocalArtifact, "{{Version}}", version)
 	if _, err := os.Stat(jarPath); err != nil {
 		return fmt.Errorf("built JAR not found at %s: %w", jarPath, err)
 	}
-
 	absJarPath, err := filepath.Abs(jarPath)
 	if err != nil {
 		return fmt.Errorf("failed to resolve absolute path for %s: %w", jarPath, err)
 	}
-
 	// 4. Create wrapper
-	wrapperPath := filepath.Join(installDir, t.Name)
+	wrapperPath := filepath.Join(installDir, mavenTool.Name)
 	var wrapperContent string
-	if t.MainClass != "" {
-		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -cp %q %s \"$@\"\n", absJarPath, t.MainClass)
+	if mavenTool.MainClass != "" {
+		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -cp %q %s \"$@\"\n", absJarPath, mavenTool.MainClass)
 	} else {
 		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -jar %q \"$@\"\n", absJarPath)
 	}
-
 	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
 	}
-
 	return nil
 }
 
-func installExternalMavenTool(ctx context.Context, t *mavenTool, installDir string) error {
+func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installDir string) error {
 	// 1. Construct artifact string for maven
 	ext := strings.ToLower(t.Packaging)
 	if ext == "" {
@@ -254,44 +233,6 @@ func installExternalMavenTool(ctx context.Context, t *mavenTool, installDir stri
 
 	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
 		return fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return nil
-}
-
-func installPipTools(ctx context.Context, tools []*pipTool) error {
-	var installTargets []string
-	hasLocal := false
-	for _, t := range tools {
-		if t.LocalPath != "" {
-			absPath, err := filepath.Abs(t.LocalPath)
-			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for local pip package %s: %w", t.Name, err)
-			}
-			// Verify local path exists
-			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("local pip package path not found: %s: %w", absPath, err)
-			}
-			installTargets = append(installTargets, absPath)
-			hasLocal = true
-		} else if t.Package != "" {
-			installTargets = append(installTargets, t.Package)
-		} else if t.Version != "" {
-			installTargets = append(installTargets, fmt.Sprintf("%s==%s", t.Name, t.Version))
-		} else {
-			installTargets = append(installTargets, t.Name)
-		}
-	}
-
-	args := []string{"install"}
-	if hasLocal {
-		args = append(args, "--no-build-isolation")
-	}
-	args = append(args, installTargets...)
-
-	fmt.Printf("Installing Python packages via pip...\n")
-	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
-		return fmt.Errorf("failed to install python packages: %w", err)
 	}
 
 	return nil
