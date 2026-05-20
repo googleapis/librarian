@@ -169,6 +169,7 @@ var (
 		{apiPath: "google/spanner/executor/v1"}: {
 			protoArtifactID: "proto-google-cloud-spanner-executor-v1",
 			grpcArtifactID:  "grpc-google-cloud-spanner-executor-v1",
+			gapicArtifactID: "google-cloud-spanner-executor",
 		},
 		{apiPath: "google/devtools/clouderrorreporting/v1beta1"}: {
 			protoArtifactID: "proto-google-cloud-error-reporting-v1beta1",
