@@ -746,6 +746,7 @@ func TestBuildConfig(t *testing.T) {
 								Java: &config.JavaAPI{
 									Samples:               new(false),
 									GenerateGAPIC:         new(bool),
+									GenerateGRPC:          new(bool),
 									GenerateResourceNames: new(bool),
 									OmitCommonResources:   true, // common_resources_proto not in testdata BUILD.bazel
 								},
