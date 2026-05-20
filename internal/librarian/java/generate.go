@@ -366,6 +366,8 @@ func collectJavaFiles(root string) ([]string, error) {
 		}
 		// Exclude generated samples and Spanner-specific sample source directory.
 		// Spanner stores its samples in a different location than other libraries.
+		// TODO(https://github.com/googleapis/librarian/issues/6095): Remove spanner
+		// samples exclusion once we got confirm from the spanner team.
 		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) ||
 			strings.Contains(path, filepath.Join("samples", "snippets", "src")) {
 			return nil
