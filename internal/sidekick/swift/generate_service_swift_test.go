@@ -46,7 +46,14 @@ func TestGenerateService_Files(t *testing.T) {
 	}
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
-	for _, expected := range []string{"IAM.swift", "SecretManagerService.swift", "Clients.swift", "SecretManagerServiceStub.swift"} {
+	wantFiles := []string{
+		"IAM.swift",
+		"SecretManagerService.swift",
+		"Clients.swift",
+		"SecretManagerServiceStub.swift",
+		"SecretManagerServiceLogging.swift",
+	}
+	for _, expected := range wantFiles {
 		filename := filepath.Join(expectedDir, expected)
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)
@@ -149,7 +156,7 @@ func TestGenerateService_Delegation(t *testing.T) {
 
 	for _, want := range []string{
 		"let inner: any IAMStub",
-		"self.inner = try IAMTransport(options)",
+		"var inner: any IAMStub = try IAMTransport(options)",
 		"try await self.inner.createRole(request: request, options: options)",
 	} {
 		if !strings.Contains(contentStr, want) {
