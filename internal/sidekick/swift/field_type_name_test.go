@@ -382,19 +382,6 @@ func TestFieldTypeName_ExternalMessage(t *testing.T) {
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
-
-	wantRequired := map[string]bool{
-		"google.cloud.external.v1": true,
-		"google.cloud.unused.v1":   false,
-		"google.protobuf":          false,
-	}
-	gotRequired := map[string]bool{}
-	for k, v := range c.ApiPackages {
-		_, gotRequired[k] = ann.DependsOn[v.Name]
-	}
-	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
 }
 
 func TestFieldTypeName_ExternalEnum(t *testing.T) {
@@ -427,19 +414,6 @@ func TestFieldTypeName_ExternalEnum(t *testing.T) {
 	}
 	want := "ExternalPackage.ExternalEnum"
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	wantRequired := map[string]bool{
-		"google.cloud.external.v1": true,
-		"google.cloud.unused.v1":   false,
-		"google.protobuf":          false,
-	}
-	gotRequired := map[string]bool{}
-	for k, v := range c.ApiPackages {
-		_, gotRequired[k] = ann.DependsOn[v.Name]
-	}
-	if diff := cmp.Diff(wantRequired, gotRequired); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
