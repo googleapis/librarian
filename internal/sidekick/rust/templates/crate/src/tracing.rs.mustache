@@ -105,6 +105,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
 
     {{#Model.Codec.LroStubOptions}}
     #[cfg(google_cloud_unstable_tracing)]
+    #[doc(hidden)]
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
