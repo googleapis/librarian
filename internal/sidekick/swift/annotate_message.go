@@ -50,9 +50,7 @@ func (ann *messageAnnotations) MessageImports() []string {
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
-	// Ensure the entire package depends on the package this message belongs to.
-	c.addApiPackageDependency(message.Package)
-
+	// If the message is already annotated, don't process again
 	if message.Codec != nil {
 		return nil
 	}
@@ -69,7 +67,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		DependsOn:           map[string]*Dependency{},
 	}
 
-	// Messages always depend on well known types
+	// Ensure the entire package depends on the package this message belongs to.
+	c.addApiPackageDependency(message.Package)
+	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		c.addDependency(dep)
 		annotations.DependsOn[dep.Name] = dep

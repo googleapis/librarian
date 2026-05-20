@@ -16,7 +16,6 @@ package swift
 
 import (
 	"cmp"
-	"fmt"
 	"maps"
 	"slices"
 
@@ -48,7 +47,6 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 }
 
 func (c *codec) annotateModel() error {
-
 	annotations := &modelAnnotations{
 		CopyrightYear: c.GenerationYear,
 		BoilerPlate:   license.HeaderBulk(),
@@ -69,15 +67,6 @@ func (c *codec) annotateModel() error {
 	for _, enum := range c.Model.Enums {
 		if err := c.annotateEnum(enum, annotations); err != nil {
 			return err
-		}
-	}
-	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
-	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
-	if len(c.Model.Messages) != 0 {
-		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-			c.addPackageDependency(dep.Name)
-		} else {
-			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
 		}
 	}
 	for _, service := range c.Model.Services {
