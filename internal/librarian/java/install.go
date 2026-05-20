@@ -32,32 +32,22 @@ import (
 //go:embed librarian.yaml
 var librarianYAML []byte
 
-type javaToolsConfig struct {
-	Tools struct {
-		Maven []*config.MavenTool `yaml:"maven"`
-		Pip   []*config.PipTool   `yaml:"pip"`
-	} `yaml:"tools"`
-}
-
 // Install installs Java tool dependencies.
 func Install(ctx context.Context) error {
 	// Task 1: Prerequisite check: must run in google-cloud-java root
 	if _, err := os.Stat("sdk-platform-java/gapic-generator-java/pom.xml"); err != nil {
 		return fmt.Errorf("librarian install java must be run from the root of a google-cloud-java repository clone: %w", err)
 	}
-
 	// Check other required tools in PATH
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
 		}
 	}
-
-	cfg, err := yaml.Unmarshal[javaToolsConfig](librarianYAML)
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-
 	installDir, err := getInstallDir()
 	if err != nil {
 		return err
@@ -65,7 +55,6 @@ func Install(ctx context.Context) error {
 	if err := os.MkdirAll(installDir, 0755); err != nil {
 		return fmt.Errorf("failed to create install directory %q: %w", installDir, err)
 	}
-
 	// Install Maven tools
 	for _, t := range cfg.Tools.Maven {
 		if t.LocalPath != "" {
@@ -80,19 +69,16 @@ func Install(ctx context.Context) error {
 			}
 		}
 	}
-
 	// Task 4: Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
 		if err := config.InstallPipTools(ctx, cfg.Tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
-
 	fmt.Printf("--------------------------------------------------\n")
 	fmt.Printf("All Java tools installed in %s\n", installDir)
 	fmt.Printf("Please ensure this directory is in your PATH.\n")
 	fmt.Printf("--------------------------------------------------\n")
-
 	return nil
 }
 
@@ -186,15 +172,7 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installD
 		"-Dartifact=" + artifact,
 	}
 	fmt.Printf("Downloading external tool %s...\n", t.Name)
-	cwd, err := os.Getwd()
-	if err != nil {
-		return fmt.Errorf("failed to get current directory: %w", err)
-	}
-	if err := os.Chdir(installDir); err != nil {
-		return fmt.Errorf("failed to change directory to %s: %w", installDir, err)
-	}
-	defer os.Chdir(cwd)
-	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
+	if err := command.RunStreamingInDir(ctx, installDir, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
 
@@ -220,7 +198,7 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installD
 	// 4. Create wrapper
 	wrapperPath := filepath.Join(installDir, t.Name)
 	var wrapperContent string
-	if strings.ToLower(t.Packaging) == "exe" {
+	if t.Packaging == "exe" {
 		// Make the downloaded binary executable
 		if err := os.Chmod(artifactPath, 0755); err != nil {
 			return fmt.Errorf("failed to make %s executable: %w", artifactPath, err)
