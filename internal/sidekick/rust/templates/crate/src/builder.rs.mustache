@@ -209,6 +209,10 @@ pub mod {{Codec.ModuleName}} {
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
             {{#Model.Codec.LroStubOptions}}
+            {{!
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            }}
             #[cfg(google_cloud_unstable_tracing)]
             let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
             #[cfg(google_cloud_unstable_tracing)]
@@ -248,14 +252,14 @@ pub mod {{Codec.ModuleName}} {
             {{#Model.Codec.LroStubOptions}}
             #[cfg(google_cloud_unstable_tracing)]
             {
-                let poller = google_cloud_lro::internal::new_discovery_poller(
+                use google_cloud_lro::internal::PollerExt;
+                google_cloud_lro::internal::new_discovery_poller(
                     polling_error_policy,
                     polling_backoff_policy,
                     start,
                     query,
-                );
-                use google_cloud_lro::internal::PollerExt;
-                poller.with_options(poller_options)
+                )
+                .with_options(poller_options)
             }
 
             #[cfg(not(google_cloud_unstable_tracing))]
@@ -299,6 +303,10 @@ pub mod {{Codec.ModuleName}} {
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
             {{#Model.Codec.LroStubOptions}}
+            {{!
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            }}
             #[cfg(google_cloud_unstable_tracing)]
             let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
             #[cfg(google_cloud_unstable_tracing)]
@@ -332,18 +340,21 @@ pub mod {{Codec.ModuleName}} {
             #[cfg(google_cloud_unstable_tracing)]
             {
                 use google_cloud_lro::internal::PollerExt;
-                {{#Codec.NoneAreEmpty}}
-                google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query).with_options(poller_options)
-                {{/Codec.NoneAreEmpty}}
-                {{#Codec.OnlyResponseIsEmpty}}
-                google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query).with_options(poller_options)
-                {{/Codec.OnlyResponseIsEmpty}}
-                {{#Codec.OnlyMetadataIsEmpty}}
-                google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query).with_options(poller_options)
-                {{/Codec.OnlyMetadataIsEmpty}}
-                {{#Codec.BothAreEmpty}}
-                google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query).with_options(poller_options)
-                {{/Codec.BothAreEmpty}}
+                {
+                    {{#Codec.NoneAreEmpty}}
+                    google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.NoneAreEmpty}}
+                    {{#Codec.OnlyResponseIsEmpty}}
+                    google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.OnlyResponseIsEmpty}}
+                    {{#Codec.OnlyMetadataIsEmpty}}
+                    google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.OnlyMetadataIsEmpty}}
+                    {{#Codec.BothAreEmpty}}
+                    google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.BothAreEmpty}}
+                }
+                .with_options(poller_options)
             }
 
             #[cfg(not(google_cloud_unstable_tracing))]
