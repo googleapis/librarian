@@ -73,6 +73,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		DependsOn:        map[string]*Dependency{},
 	}
 
+	// Iterate through the list of all dependencies declared in librarian.yaml
+	// If the dependency is marked as "required_by_services", then we force it
+	// as an import for the generated service files.
 	for _, p := range c.Dependencies {
 		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
 			continue
@@ -93,6 +96,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		if method.InputType != nil {
 			if method.InputType.Package != c.Model.PackageName {
 				if dep, ok := c.ApiPackages[method.InputType.Package]; ok {
+					c.addDependency(dep)
 					annotations.DependsOn[dep.Name] = dep
 				}
 			}
@@ -100,6 +104,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		if method.OutputType != nil {
 			if method.OutputType.Package != c.Model.PackageName {
 				if dep, ok := c.ApiPackages[method.OutputType.Package]; ok {
+					c.addDependency(dep)
 					annotations.DependsOn[dep.Name] = dep
 				}
 			}

@@ -74,13 +74,5 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
-	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
-			continue
-		}
-		if p.RequiredByServices && len(c.Model.Services) != 0 {
-			annotations.DependsOn[p.Name] = p
-		}
-	}
 	return nil
 }
