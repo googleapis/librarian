@@ -144,19 +144,12 @@ echo "pip $@" >> %q
 
 func TestInstallPipTools_AbsPathError(t *testing.T) {
 	tmpDir := t.TempDir()
-	origWd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer os.Chdir(origWd)
 
 	targetDir := filepath.Join(tmpDir, "delete_me")
 	if err := os.Mkdir(targetDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Chdir(targetDir); err != nil {
-		t.Fatal(err)
-	}
+	t.Chdir(targetDir)
 	if err := os.RemoveAll(targetDir); err != nil {
 		t.Fatal(err)
 	}
@@ -164,7 +157,7 @@ func TestInstallPipTools_AbsPathError(t *testing.T) {
 	tools := []*PipTool{
 		{Name: "mylocal", LocalPath: "relative_path_will_fail"},
 	}
-	err = InstallPipTools(t.Context(), tools)
+	err := InstallPipTools(t.Context(), tools)
 	if err == nil {
 		t.Errorf("expected error due to deleted working directory but got nil")
 	}
