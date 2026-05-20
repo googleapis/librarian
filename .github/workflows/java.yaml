@@ -59,6 +59,12 @@ jobs:
         run: |
           ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          pip install git+https://github.com/googleapis/synthtool.git
       - name: Checkout google-cloud-java
         uses: actions/checkout@v6
         with:
@@ -66,6 +72,8 @@ jobs:
           path: google-cloud-java
       - name: Run librarian generate
         working-directory: google-cloud-java
+        env:
+          PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
   create-issue-on-failure:
     needs: [integration]
