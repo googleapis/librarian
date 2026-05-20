@@ -87,46 +87,15 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err := c.annotateField(field); err != nil {
 			return err
 		}
-		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok && fieldCodec.Name != field.JSONName {
-			annotations.CustomSerialization = true
-		}
-
-		// Messages depend on the packages of their fields. Recursively find the
-		usedApiPackages := make(map[string]struct{})
-		switch field.Typez {
-		case api.TypezMessage:
-			if m, err := lookupMessage(c.Model, field.TypezID); err == nil {
-				if m.IsMap {
-					for _, mf := range m.Fields {
-						if mf.Name == "value" {
-							switch mf.Typez {
-							case api.TypezMessage:
-								if vm, err := lookupMessage(c.Model, mf.TypezID); err == nil {
-									usedApiPackages[vm.Package] = struct{}{}
-								}
-							case api.TypezEnum:
-								if ve, err := lookupEnum(c.Model, mf.TypezID); err == nil {
-									usedApiPackages[ve.Package] = struct{}{}
-								}
-							}
-							break
-						}
-					}
-				} else if m.Package != c.Model.PackageName {
-					usedApiPackages[m.Package] = struct{}{}
+		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok {
+			if fieldCodec.Name != field.JSONName {
+				annotations.CustomSerialization = true
+			}
+			if fieldCodec.PackageName != "" {
+				if dep, ok := c.ApiPackages[fieldCodec.PackageName]; ok {
+					c.addDependency(dep)
+					annotations.DependsOn[dep.Name] = dep
 				}
-			}
-		case api.TypezEnum:
-			if e, err := lookupEnum(c.Model, field.TypezID); err == nil {
-				usedApiPackages[e.Package] = struct{}{}
-			}
-		}
-
-		// Add dependencies for the used packages
-		for pkg := range usedApiPackages {
-			if dep, ok := c.ApiPackages[pkg]; ok {
-				c.addDependency(dep)
-				annotations.DependsOn[dep.Name] = dep
 			}
 		}
 	}

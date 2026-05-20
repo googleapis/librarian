@@ -35,6 +35,9 @@ type fieldAnnotations struct {
 	// This is used in the mustache templates, which sometimes need to refer to the underlying type.
 	BaseFieldType string
 
+	// PackageName is the name of the package defining the type of this field.
+	PackageName string
+
 	// DocLines is the field documentation broken by lines with any filtering / corrections for Swift.
 	DocLines []string
 
@@ -57,10 +60,40 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
+	var packageName string
+	switch field.Typez {
+	case api.TypezMessage:
+		if m, err := lookupMessage(c.Model, field.TypezID); err == nil {
+			if m.IsMap {
+				for _, mf := range m.Fields {
+					if mf.Name == "value" {
+						switch mf.Typez {
+						case api.TypezMessage:
+							if vm, err := lookupMessage(c.Model, mf.TypezID); err == nil {
+								packageName = vm.Package
+							}
+						case api.TypezEnum:
+							if ve, err := lookupEnum(c.Model, mf.TypezID); err == nil {
+								packageName = ve.Package
+							}
+						}
+						break
+					}
+				}
+			} else {
+				packageName = m.Package
+			}
+		}
+	case api.TypezEnum:
+		if e, err := lookupEnum(c.Model, field.TypezID); err == nil {
+			packageName = e.Package
+		}
+	}
 	annotations := &fieldAnnotations{
 		Name:          camelCase(field.Name),
 		FieldType:     fieldType,
 		BaseFieldType: baseFieldType,
+		PackageName:   packageName,
 		DocLines:      docLines,
 	}
 	if field.IsOneOf && field.Group != nil {
