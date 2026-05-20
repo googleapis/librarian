@@ -582,6 +582,20 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			wantErr: errMonorepoVersion,
 		},
+		{
+			name: "fake group ID error",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					GroupID: fakeGroupID,
+				},
+			},
+			wantErr: errUnrecognizedAPI,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := Fill(test.library); err != nil {
@@ -1066,44 +1080,48 @@ func TestGenerateAPI_Gating(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 
 	for _, test := range []struct {
-		name              string
-		generateGAPIC     *bool
-		generateProtoGRPC *bool
-		generateResNames  *bool
-		wantProtoDir      bool
-		wantGRPCDir       bool
-		wantGAPICDir      bool
-		wantResNameFiles  bool
+		name             string
+		generateGAPIC    *bool
+		generateProto    *bool
+		generateGRPC     *bool
+		generateResNames *bool
+		wantProtoDir     bool
+		wantGRPCDir      bool
+		wantGAPICDir     bool
+		wantResNameFiles bool
 	}{
 		{
-			name:              "default all true",
-			generateGAPIC:     nil,
-			generateProtoGRPC: nil,
-			generateResNames:  nil,
-			wantProtoDir:      true,
-			wantGRPCDir:       true,
-			wantGAPICDir:      true,
-			wantResNameFiles:  true,
+			name:             "default all true",
+			generateGAPIC:    nil,
+			generateProto:    nil,
+			generateGRPC:     nil,
+			generateResNames: nil,
+			wantProtoDir:     true,
+			wantGRPCDir:      true,
+			wantGAPICDir:     true,
+			wantResNameFiles: true,
 		},
 		{
-			name:              "proto/grpc only (skip gapic, skip res names)",
-			generateGAPIC:     new(false),
-			generateProtoGRPC: nil,
-			generateResNames:  new(false),
-			wantProtoDir:      true,
-			wantGRPCDir:       true,
-			wantGAPICDir:      false,
-			wantResNameFiles:  false,
+			name:             "proto/grpc only (skip gapic, skip res names)",
+			generateGAPIC:    new(false),
+			generateProto:    nil,
+			generateGRPC:     nil,
+			generateResNames: new(false),
+			wantProtoDir:     true,
+			wantGRPCDir:      true,
+			wantGAPICDir:     false,
+			wantResNameFiles: false,
 		},
 		{
-			name:              "gapic only (skip proto/grpc, skip res names)",
-			generateGAPIC:     nil,
-			generateProtoGRPC: new(false),
-			generateResNames:  new(false),
-			wantProtoDir:      false,
-			wantGRPCDir:       false,
-			wantGAPICDir:      true,
-			wantResNameFiles:  false,
+			name:             "gapic only (skip proto/grpc, skip res names)",
+			generateGAPIC:    nil,
+			generateProto:    new(false),
+			generateGRPC:     new(false),
+			generateResNames: new(false),
+			wantProtoDir:     false,
+			wantGRPCDir:      false,
+			wantGAPICDir:     true,
+			wantResNameFiles: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -1126,7 +1144,8 @@ func TestGenerateAPI_Gating(t *testing.T) {
 						Path: api.Path,
 						Java: &config.JavaAPI{
 							GenerateGAPIC:         test.generateGAPIC,
-							GenerateProtoGRPC:     test.generateProtoGRPC,
+							GenerateProto:         test.generateProto,
+							GenerateGRPC:          test.generateGRPC,
 							GenerateResourceNames: test.generateResNames,
 						},
 					},

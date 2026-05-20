@@ -46,7 +46,7 @@ func TestGenerateService_Files(t *testing.T) {
 	}
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
-	for _, expected := range []string{"IAM.swift", "SecretManagerService.swift", "Clients.swift"} {
+	for _, expected := range []string{"IAM.swift", "SecretManagerService.swift", "Clients.swift", "SecretManagerServiceStub.swift"} {
 		filename := filepath.Join(expectedDir, expected)
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)
@@ -85,6 +85,146 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	wantBlock := `/// @Snippet(path: "ProtocolQuickstart")
 public protocol Protocol_ {`
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateService_Delegation(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := &api.Message{
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+	}
+	response := &api.Message{
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
+	}
+	iam := &api.Service{
+		Name:    "IAM",
+		ID:      ".test.IAM",
+		Package: "test",
+
+		Methods: []*api.Method{
+			{
+				Name:         "CreateRole",
+				ID:           ".test.IAM.CreateRole",
+				InputTypeID:  ".test.Request",
+				InputType:    request,
+				OutputTypeID: ".test.Response",
+				OutputType:   response,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb:         "POST",
+							PathTemplate: (&api.PathTemplate{}).WithLiteral("v1"),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{iam})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "IAM.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	for _, want := range []string{
+		"let inner: any IAMStub",
+		"self.inner = try IAMTransport(options)",
+		"try await self.inner.createRole(request: request, options: options)",
+	} {
+		if !strings.Contains(contentStr, want) {
+			t.Errorf("expected %q in IAM.swift, got:\n%s", want, contentStr)
+		}
+	}
+}
+
+func TestGenerateService_StubStructure(t *testing.T) {
+	outDir := t.TempDir()
+
+	request := &api.Message{
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+	}
+	response := &api.Message{
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
+	}
+	service := &api.Service{
+		Name:    "Protocol",
+		ID:      ".test.Prototocol",
+		Package: "test",
+		Methods: []*api.Method{
+			{
+				Name:         "GetThing",
+				ID:           ".test.IAM.CreateRole",
+				InputTypeID:  ".test.Request",
+				InputType:    request,
+				OutputTypeID: ".test.Response",
+				OutputType:   response,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{request, response}, nil, []*api.Service{service})
+	model.PackageName = "google.cloud.test.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "ProtocolStub.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	got := extractBlock(t, contentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
+	want := `  protocol ProtocolStub {
+    func getThing(
+    request: Request, options: GoogleCloudGax.RequestOptions
+) async throws -> Response
+
+  }`
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	got = extractBlock(t, contentStr, `  class ProtocolTransport: `, `HTTPClient`)
+	want = `  class ProtocolTransport: ProtocolStub {
+    let inner: GoogleCloudGax.HTTPClient`
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
@@ -349,7 +489,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService.swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerServiceStub.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)

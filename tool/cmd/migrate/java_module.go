@@ -37,6 +37,7 @@ var (
 		"iam-policy":        true,
 		"bigtable":          true,
 		"firestore":         true,
+		"pubsub":            true,
 	}
 
 	keepOverride = map[string][]string{
@@ -49,6 +50,15 @@ var (
 		"showcase": {
 			"gapic-showcase/src/test",
 			"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
+		},
+		"spanner": {
+			"google-cloud-spanner-executor/src/main/java/com/google/cloud/spanner/executor/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/admin/database/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/admin/instance/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/java/com/google/cloud/spanner/v1/stub/Version.java",
+			"google-cloud-spanner/src/main/resources/META-INF/native-image/com.google.cloud.spanner/reflect-config.json",
+			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyName.java",
+			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyVersionName.java",
 		},
 	}
 
@@ -229,26 +239,96 @@ var (
 		},
 	}
 
-	javaIAMSpecialPaths = []string{
-		"google/iam/v2",
-		"google/iam/v2beta",
-		"google/iam/v3",
-		"google/iam/v3beta",
-	}
-
-	javaIAMLibraryOverrides = map[string]struct {
+	javaAPIOverrides = map[overrideKey]struct {
 		GenerateGAPIC         *bool
-		GenerateProtoGRPC     *bool
+		GenerateProto         *bool
+		GenerateGRPC          *bool
 		GenerateResourceNames *bool
 	}{
-		"iam": {
+		// IAM v2 and v3 special overrides
+		{libraryName: "iam", apiPath: "google/iam/v2"}: {
 			GenerateGAPIC:         new(false),
-			GenerateProtoGRPC:     new(true),
+			GenerateProto:         new(true),
+			GenerateGRPC:          new(true),
 			GenerateResourceNames: new(true),
 		},
-		"iam-policy": {
+		{libraryName: "iam", apiPath: "google/iam/v2beta"}: {
+			GenerateGAPIC:         new(false),
+			GenerateProto:         new(true),
+			GenerateGRPC:          new(true),
+			GenerateResourceNames: new(true),
+		},
+		{libraryName: "iam", apiPath: "google/iam/v3"}: {
+			GenerateGAPIC:         new(false),
+			GenerateProto:         new(true),
+			GenerateGRPC:          new(true),
+			GenerateResourceNames: new(true),
+		},
+		{libraryName: "iam", apiPath: "google/iam/v3beta"}: {
+			GenerateGAPIC:         new(false),
+			GenerateProto:         new(true),
+			GenerateGRPC:          new(true),
+			GenerateResourceNames: new(true),
+		},
+		{libraryName: "iam-policy", apiPath: "google/iam/v2"}: {
 			GenerateGAPIC:         new(true),
-			GenerateProtoGRPC:     new(false),
+			GenerateProto:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "iam-policy", apiPath: "google/iam/v2beta"}: {
+			GenerateGAPIC:         new(true),
+			GenerateProto:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "iam-policy", apiPath: "google/iam/v3"}: {
+			GenerateGAPIC:         new(true),
+			GenerateProto:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "iam-policy", apiPath: "google/iam/v3beta"}: {
+			GenerateGAPIC:         new(true),
+			GenerateProto:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		// orgpolicy v1
+		{libraryName: "orgpolicy", apiPath: "google/cloud/orgpolicy/v1"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		// gsuite-addons types
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type/docs"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type/drive"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type/gmail"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type/sheets"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
+			GenerateResourceNames: new(false),
+		},
+		{libraryName: "gsuite-addons", apiPath: "google/apps/script/type/slides"}: {
+			GenerateGAPIC:         new(false),
+			GenerateGRPC:          new(false),
 			GenerateResourceNames: new(false),
 		},
 	}

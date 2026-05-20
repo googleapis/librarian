@@ -41,6 +41,11 @@ const (
 	versionsFileName = "versions.txt"
 )
 
+// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
+var excludedBOMs = map[string]bool{
+	"google-cloud-bigtable-deps-bom": true,
+}
+
 var (
 	errModuleDiscovery      = errors.New("failed to search for java modules")
 	errRootPOMGeneration    = errors.New("failed to generate root pom.xml")
@@ -248,6 +253,9 @@ func searchModuleForBOM(repoPath, moduleName string) ([]*bomConfig, error) {
 		conf, err := extractBOMConfig(repoPath, moduleName, submodule.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract BOM config from %s: %w", pomPath, err)
+		}
+		if excludedBOMs[conf.ArtifactID] {
+			continue
 		}
 		if groupInclusions[conf.GroupID] {
 			configs = append(configs, conf)

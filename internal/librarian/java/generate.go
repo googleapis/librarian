@@ -48,10 +48,14 @@ var (
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
+	errUnrecognizedAPI   = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
 )
 
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Java.GroupID == fakeGroupID {
+		return errUnrecognizedAPI
+	}
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
@@ -161,7 +165,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 
 	// 1. Generate standard Protocol Buffer Java classes.
-	if shouldGenerateProtoGRPC(javaAPI) {
+	if shouldGenerateProto(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
@@ -171,7 +175,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
-	if shouldGenerateProtoGRPC(javaAPI) && transport != "rest" {
+	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
 		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
@@ -442,9 +446,16 @@ func shouldGenerateGAPIC(javaAPI *config.JavaAPI) bool {
 	return true
 }
 
-func shouldGenerateProtoGRPC(javaAPI *config.JavaAPI) bool {
-	if javaAPI.GenerateProtoGRPC != nil {
-		return *javaAPI.GenerateProtoGRPC
+func shouldGenerateProto(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateProto != nil {
+		return *javaAPI.GenerateProto
+	}
+	return true
+}
+
+func shouldGenerateGRPC(javaAPI *config.JavaAPI) bool {
+	if javaAPI.GenerateGRPC != nil {
+		return *javaAPI.GenerateGRPC
 	}
 	return true
 }

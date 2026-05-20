@@ -110,6 +110,9 @@ type RustDefault struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
 
+	// LroStubOptions indicates whether to include LRO poller options in generated stub traits.
+	LroStubOptions *bool `yaml:"lro_stub_options,omitempty"`
+
 	// ResourceNameHeuristic indicates whether to apply heuristics to identify and generate resource names.
 	ResourceNameHeuristic *bool `yaml:"resource_name_heuristic,omitempty"`
 }
@@ -124,6 +127,10 @@ type RustModule struct {
 	// DetailedTracingAttributes indicates whether to include detailed tracing attributes.
 	// This overrides the crate-level setting.
 	DetailedTracingAttributes *bool `yaml:"detailed_tracing_attributes,omitempty"`
+
+	// LroStubOptions indicates whether to include LRO poller options in generated stub traits.
+	// This overrides the crate-level setting.
+	LroStubOptions *bool `yaml:"lro_stub_options,omitempty"`
 
 	// DocumentationOverrides contains overrides for element documentation.
 	DocumentationOverrides []RustDocumentationOverride `yaml:"documentation_overrides,omitempty"`
@@ -610,9 +617,15 @@ type JavaAPI struct {
 	// Defaults to true.
 	GenerateGAPIC *bool `yaml:"generate_gapic,omitempty"`
 
-	// GenerateProtoGRPC indicates whether to generate proto and grpc modules.
+	// GenerateProto indicates whether to generate proto module.
 	// Defaults to true. If set to false, should also set generate_resource_names to false.
-	GenerateProtoGRPC *bool `yaml:"generate_proto_grpc,omitempty"`
+	GenerateProto *bool `yaml:"generate_proto,omitempty"`
+
+	// GenerateGRPC indicates whether to generate grpc module.
+	// Defaults to true.
+	// TODO(https://github.com/googleapis/librarian/issues/6066):
+	// remove after this is resolved
+	GenerateGRPC *bool `yaml:"generate_grpc,omitempty"`
 
 	// GenerateResourceNames indicates whether to extract resource names from the GAPIC phase.
 	// Defaults to true.
