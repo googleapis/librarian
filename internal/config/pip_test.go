@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package pip
+package config
 
 import (
 	"fmt"
@@ -20,17 +20,18 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
-
-	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestInstall(t *testing.T) {
+func TestInstallPipTools(t *testing.T) {
 	// 1. Create a temporary directory for the stub executable and test inputs
 	tmpDir := t.TempDir()
 
 	// 2. Create a stub "pip" script that writes its arguments to a log file
 	stubLogPath := filepath.Join(tmpDir, "pip_invocations.log")
 	stubContent := fmt.Sprintf(`#!/bin/bash
+if [[ "$*" == *"failpkg"* ]]; then
+  exit 1
+fi
 echo "pip $@" >> %q
 `, stubLogPath)
 
@@ -54,13 +55,13 @@ echo "pip $@" >> %q
 
 	tests := []struct {
 		name        string
-		tools       []*config.PipTool
+		tools       []*PipTool
 		wantArgs    string
 		expectError bool
 	}{
 		{
 			name: "install external packages",
-			tools: []*config.PipTool{
+			tools: []*PipTool{
 				{Name: "PyYAML", Version: "6.0.2"},
 				{Name: "jinja2", Version: "3.1.6"},
 			},
@@ -68,21 +69,21 @@ echo "pip $@" >> %q
 		},
 		{
 			name: "install external packages with raw package spec",
-			tools: []*config.PipTool{
+			tools: []*PipTool{
 				{Name: "synthtool", Package: "git+https://github.com/..."},
 			},
 			wantArgs: "install git+https://github.com/...",
 		},
 		{
 			name: "install local package",
-			tools: []*config.PipTool{
+			tools: []*PipTool{
 				{Name: "mylocal", LocalPath: localPkgDir},
 			},
 			wantArgs: "install --no-build-isolation " + localPkgDir,
 		},
 		{
 			name: "install mixed local and external",
-			tools: []*config.PipTool{
+			tools: []*PipTool{
 				{Name: "mylocal", LocalPath: localPkgDir},
 				{Name: "PyYAML", Version: "6.0.2"},
 			},
@@ -90,8 +91,22 @@ echo "pip $@" >> %q
 		},
 		{
 			name: "install local package missing error",
-			tools: []*config.PipTool{
+			tools: []*PipTool{
 				{Name: "mylocal", LocalPath: filepath.Join(tmpDir, "does_not_exist")},
+			},
+			expectError: true,
+		},
+		{
+			name: "install package with name only (no version/package/local_path)",
+			tools: []*PipTool{
+				{Name: "requests"},
+			},
+			wantArgs: "install requests",
+		},
+		{
+			name: "pip command execution failure",
+			tools: []*PipTool{
+				{Name: "failpkg"},
 			},
 			expectError: true,
 		},
@@ -102,7 +117,7 @@ echo "pip $@" >> %q
 			// Clear the log file before each test
 			_ = os.Remove(stubLogPath)
 
-			err := Install(t.Context(), tc.tools)
+			err := InstallPipTools(t.Context(), tc.tools)
 			if tc.expectError {
 				if err == nil {
 					t.Errorf("expected error but got nil")
@@ -124,5 +139,33 @@ echo "pip $@" >> %q
 				t.Errorf("unexpected invocations:\n got: %q\nwant: %q", gotInvocations, wantInvocation)
 			}
 		})
+	}
+}
+
+func TestInstallPipTools_AbsPathError(t *testing.T) {
+	tmpDir := t.TempDir()
+	origWd, err := os.Getwd()
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.Chdir(origWd)
+
+	targetDir := filepath.Join(tmpDir, "delete_me")
+	if err := os.Mkdir(targetDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Chdir(targetDir); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.RemoveAll(targetDir); err != nil {
+		t.Fatal(err)
+	}
+
+	tools := []*PipTool{
+		{Name: "mylocal", LocalPath: "relative_path_will_fail"},
+	}
+	err = InstallPipTools(t.Context(), tools)
+	if err == nil {
+		t.Errorf("expected error due to deleted working directory but got nil")
 	}
 }

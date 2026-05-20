@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -84,7 +83,7 @@ func Install(ctx context.Context) error {
 
 	// Task 4: Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
-		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
+		if err := config.InstallPipTools(ctx, cfg.Tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
