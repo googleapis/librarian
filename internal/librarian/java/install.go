@@ -152,7 +152,7 @@ func installLocalMavenTool(ctx context.Context, t *mavenTool, installDir string)
 		"-DskipTests", "-Dcheckstyle.skip", "-Dclirr.skip", "-Denforcer.skip", "-Dfmt.skip",
 		"-pl", t.LocalPath, "--also-make",
 	}
-	fmt.Printf("Building local tool %s...\n", tName(t.Name))
+	fmt.Printf("Building local tool %s...\n", t.Name)
 	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to build local tool: %w", err)
 	}
@@ -207,7 +207,7 @@ func installExternalMavenTool(ctx context.Context, t *mavenTool, installDir stri
 		"dependency:get",
 		"-Dartifact=" + artifact,
 	}
-	fmt.Printf("Downloading external tool %s...\n", tName(t.Name))
+	fmt.Printf("Downloading external tool %s...\n", t.Name)
 	cwd, err := os.Getwd()
 	if err == nil {
 		if err := os.Chdir(installDir); err != nil {
@@ -296,7 +296,3 @@ func installPipTools(ctx context.Context, tools []*pipTool) error {
 	return nil
 }
 
-// tName returns a formatted tool name for output.
-func tName(name string) string {
-	return fmt.Sprintf("\033[1m%s\033[0m", name)
-}
