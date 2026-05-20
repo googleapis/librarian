@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -332,50 +331,6 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 func gapicOpt(key, value string) string {
 	return fmt.Sprintf("%s=%s", key, value)
-}
-
-// Format formats a Java client library using google-java-format.
-func Format(ctx context.Context, library *config.Library) error {
-	files, err := collectJavaFiles(library.Output)
-	if err != nil {
-		return fmt.Errorf("failed to find java files for formatting: %w", err)
-	}
-	if len(files) == 0 {
-		return nil
-	}
-
-	if _, err := exec.LookPath("google-java-format"); err != nil {
-		return fmt.Errorf("google-java-format not found in PATH: %w", err)
-	}
-
-	args := append([]string{"--replace"}, files...)
-	if err := command.Run(ctx, "google-java-format", args...); err != nil {
-		return fmt.Errorf("failed to format files: %w", err)
-	}
-	return nil
-}
-
-func collectJavaFiles(root string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || filepath.Ext(path) != ".java" {
-			return nil
-		}
-		// Exclude generated samples and Spanner-specific sample source directory.
-		// Spanner stores its samples in a different location than other libraries.
-		// TODO(https://github.com/googleapis/librarian/issues/6095): Remove spanner
-		// samples exclusion once we got confirm from the spanner team.
-		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) ||
-			strings.Contains(path, filepath.Join("samples", "snippets", "src")) {
-			return nil
-		}
-		files = append(files, path)
-		return nil
-	})
-	return files, err
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):
