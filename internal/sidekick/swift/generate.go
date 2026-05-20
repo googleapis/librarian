@@ -120,12 +120,20 @@ func (c *codec) generateServices(outdir string, model *api.API, provider languag
 
 func (c *codec) generateStubs(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, s := range model.Services {
-		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/stub.swift.mustache",
-			OutputPath:   c.outputPath(s.Name + "Stub.swift"),
-		}
-		if err := language.GenerateService(outdir, s, provider, generated); err != nil {
-			return err
+		for _, stub := range []struct {
+			suffix   string
+			template string
+		}{
+			{suffix: "Stub.swift", template: "templates/common/stub.swift.mustache"},
+			{suffix: "Logging.swift", template: "templates/common/logging.swift.mustache"},
+		} {
+			generated := language.GeneratedFile{
+				TemplatePath: stub.template,
+				OutputPath:   c.outputPath(s.Name + stub.suffix),
+			}
+			if err := language.GenerateService(outdir, s, provider, generated); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
