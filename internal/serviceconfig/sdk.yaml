@@ -3295,6 +3295,7 @@
     go: preview
   transports:
     go: grpc
+    java: grpc
 - path: google/spanner/v1
   languages:
     - all
