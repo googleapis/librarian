@@ -209,12 +209,13 @@ func installExternalMavenTool(ctx context.Context, t *mavenTool, installDir stri
 	}
 	fmt.Printf("Downloading external tool %s...\n", t.Name)
 	cwd, err := os.Getwd()
-	if err == nil {
-		if err := os.Chdir(installDir); err != nil {
-			return fmt.Errorf("failed to change directory to %s: %w", installDir, err)
-		}
-		defer os.Chdir(cwd)
+	if err != nil {
+		return fmt.Errorf("failed to get current directory: %w", err)
 	}
+	if err := os.Chdir(installDir); err != nil {
+		return fmt.Errorf("failed to change directory to %s: %w", installDir, err)
+	}
+	defer os.Chdir(cwd)
 	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
