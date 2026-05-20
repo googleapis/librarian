@@ -96,6 +96,30 @@ func TestAnnotateMessage(t *testing.T) {
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
+		{
+			name: "with pagination",
+			message: &api.Message{
+				Name:    "WithPagination",
+				ID:      ".test.WithPagination",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "secret_key", JSONName: "secretKey", Typez: api.TypezString},
+				},
+				Pagination: &api.PaginationInfo{
+					NextPageToken: &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString},
+					PageableItem:  &api.Field{Name: "pageable_item", JSONName: "pageableItem", Typez: api.TypezString, Codec: &fieldAnnotations{Name: "secretKey", BaseFieldType: "SecretKey"}},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "WithPagination",
+				TypeURL:             "type.googleapis.com/test.WithPagination",
+				CustomSerialization: false,
+				IsPaginatedResponse: true,
+				PageableItemField:   "secretKey",
+				PageableItemType:    "SecretKey",
+			},
+			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			for _, f := range test.message.Fields {

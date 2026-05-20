@@ -129,14 +129,14 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 
-	annotations.IsPaginatedResponse = message.Pagination != nil
-	if annotations.IsPaginatedResponse {
+	if message.Pagination != nil {
+		annotations.IsPaginatedResponse = true
+		// If this message is a paginated response, then require the pagination helpers package
 		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
 			c.addDependency(dep)
 			annotations.DependsOn[dep.Name] = dep
 		}
-	}
-	if message.Pagination != nil {
+
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
 		if !ok {
@@ -151,6 +151,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return err
 		}
 		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
+			// If there are required packages from nested messages, add them to the outer message as well
 			for _, dep := range nestedCodec.DependsOn {
 				c.addDependency(dep)
 				annotations.DependsOn[dep.Name] = dep
