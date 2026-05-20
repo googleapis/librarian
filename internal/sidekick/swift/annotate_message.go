@@ -70,10 +70,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	// Ensure the entire package depends on the package this message belongs to.
 	c.addApiPackageDependency(message.Package)
 	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
-	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-		c.addDependency(dep)
-		annotations.DependsOn[dep.Name] = dep
-	}
+if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
+	c.addDependency(dep)
+	annotations.DependsOn[dep.Name] = dep
+} else {
+	return fmt.Errorf("missing required dependency %q for well-known types", wellKnownProtobufPackage)
+}
 
 	message.Codec = annotations
 	for _, oneof := range message.OneOfs {
@@ -132,10 +134,12 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if message.Pagination != nil {
 		annotations.IsPaginatedResponse = true
 		// If this message is a paginated response, then require the pagination helpers package
-		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
-			c.addDependency(dep)
-			annotations.DependsOn[dep.Name] = dep
-		}
+if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
+	c.addDependency(dep)
+	annotations.DependsOn[dep.Name] = dep
+} else {
+	return fmt.Errorf("missing required dependency %q for pagination", paginationSwiftPackage)
+}
 
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
