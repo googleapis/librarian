@@ -82,6 +82,8 @@ func Install(ctx context.Context) error {
 	return nil
 }
 
+// getInstallDir returns the absolute path of the installation directory for Java tools.
+// It resolves LIBRARIAN_INSTALL_DIR if set, otherwise defaults to "$HOME/java_tools/bin".
 func getInstallDir() (string, error) {
 	dir := os.Getenv("LIBRARIAN_INSTALL_DIR")
 	if dir == "" {
