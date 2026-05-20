@@ -702,6 +702,8 @@ func TestDeriveLastReleasedVersion(t *testing.T) {
 		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
 		{input: "0.0.1-SNAPSHOT", want: "0.0.0"},
 		{input: "1.10.1-SNAPSHOT", want: "1.10.0"},
+		{input: "0.214.0-beta-SNAPSHOT", want: "0.213.0-beta"},
+		{input: "0.214.0-beta", want: "0.214.0-beta"},
 		{input: "1.2.3", want: "1.2.3"},
 	} {
 		t.Run(test.input, func(t *testing.T) {
