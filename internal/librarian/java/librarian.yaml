@@ -34,7 +34,6 @@ tools:
   pip:
     - name: synthtool
       local_path: sdk-platform-java/hermetic_build/library_generation
-      package: "git+https://github.com/googleapis/google-cloud-java.git@0720279588c08d41875cba7af206882113ac33b5#subdirectory=sdk-platform-java/hermetic_build/library_generation"
     - name: PyYAML
       version: "6.0.2"
     - name: jinja2
