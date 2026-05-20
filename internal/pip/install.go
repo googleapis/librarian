@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pip provides functions for installing python packages using the pip command.
 package pip
 
 import (
