@@ -82,14 +82,7 @@ func RunWithEnv(ctx context.Context, env map[string]string, command string, arg 
 // the behavior of this function in terms of whether the command being executed
 // is first written to stdout.
 func RunStreaming(ctx context.Context, command string, arg ...string) error {
-	cmd := buildCmd(ctx, "", nil, command, arg...)
-	cmd.Stderr = stderr
-	cmd.Stdout = stdout
-	err := cmd.Run()
-	if err != nil {
-		return fmt.Errorf("%s: %w", cmd, err)
-	}
-	return nil
+	return RunStreamingInDir(ctx, "", command, arg...)
 }
 
 // RunStreamingInDir runs the given binary in a specific directory,
