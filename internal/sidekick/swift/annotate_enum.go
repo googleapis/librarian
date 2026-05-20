@@ -29,9 +29,6 @@ type enumAnnotations struct {
 }
 
 func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
-	// enums require the well-known types
-	c.addApiPackageDependency(wellKnownProtobufPackage)
-
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
