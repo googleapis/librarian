@@ -63,12 +63,6 @@ impl<T> super::stub::{{Codec.Name}} for {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
 
-    {{#Codec.DetailedTracingAttributes}}
-    #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
-    {{/Codec.DetailedTracingAttributes}}
-    {{^Codec.DetailedTracingAttributes}}
-    #[tracing::instrument(ret)]
-    {{/Codec.DetailedTracingAttributes}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -79,7 +73,18 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             metric: self.duration.clone(),
             info: *info::INSTRUMENTATION_CLIENT_INFO,
             method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
-            self.inner.{{Codec.Name}}(req, options));
+            self.inner.{{Codec.Name}}(req.clone(), options.clone()));
+        {{#Codec.HasLROs}}
+        {{#Codec.IsGetOperation}}
+        #[cfg(google_cloud_unstable_tracing)]
+        {
+            if let Ok(attempt) = google_cloud_lro::POLL_ATTEMPT_COUNT.try_with(|c| *c) {
+                _span.record("gcp.longrunning.poll_attempt_count", attempt);
+                _span.record("gcp.longrunning.done", false);
+            }
+        }
+        {{/Codec.IsGetOperation}}
+        {{/Codec.HasLROs}}
         pending.await
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
