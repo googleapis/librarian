@@ -746,6 +746,7 @@ func TestBuildConfig(t *testing.T) {
 								Java: &config.JavaAPI{
 									Samples:               new(false),
 									GenerateGAPIC:         new(bool),
+									GenerateGRPC:          new(bool),
 									GenerateResourceNames: new(bool),
 									OmitCommonResources:   true, // common_resources_proto not in testdata BUILD.bazel
 								},
@@ -846,6 +847,52 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "keep appends",
+			gen: &GenerationConfig{
+				Libraries: []LibraryConfig{
+					{
+						APIShortName: "firestore",
+						GAPICs: []GAPICConfig{
+							{ProtoPath: "google/cloud/translate/v3"},
+						},
+					},
+				},
+			},
+			src: &config.Source{Dir: "testdata/googleapis"},
+			want: &config.Config{
+				Language: "java",
+				Repo:     "googleapis/google-cloud-java",
+				Default: &config.Default{
+					Java: &config.JavaModule{},
+				},
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: "testdata/googleapis"},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "firestore",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/translate/v3",
+								Java: &config.JavaAPI{
+									OmitCommonResources: true,
+									Samples:             new(false),
+								},
+							},
+						},
+						Keep: []string{
+							"google-cloud-firestore/src/main/resources/META-INF/native-image/com.google.cloud/google-cloud-firestore/reflect-config.json",
+							"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
+						},
+						Java: &config.JavaModule{
+							GroupID:        "com.google.cloud",
+							SkipPOMUpdates: true,
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := buildConfig(test.gen, ".", test.src, nil, test.versions)
@@ -873,8 +920,14 @@ func TestShouldExcludeSamples(t *testing.T) {
 			want: true,
 		},
 		{
-			name: "exclude if lib is in excludedSamplesLibraries",
+			name: "exclude if lib is in excludedSamplesLibraries (datastore)",
 			lib:  "datastore",
+			info: &javaGAPICInfo{Samples: true},
+			want: true,
+		},
+		{
+			name: "exclude if lib is in excludedSamplesLibraries (pubsub)",
+			lib:  "pubsub",
 			info: &javaGAPICInfo{Samples: true},
 			want: true,
 		},

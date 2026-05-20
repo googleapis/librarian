@@ -293,6 +293,9 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			if info.ProtoGRPCOnly {
 				javaAPI.GenerateGAPIC = new(false)
 				javaAPI.GenerateResourceNames = new(false)
+				if name != "common-protos" && name != "iam" {
+					javaAPI.GenerateGRPC = new(false)
+				}
 			}
 			if shouldExcludeSamples(name, info) {
 				javaAPI.Samples = new(false)
@@ -368,6 +371,11 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				return nil, err
 			}
 			lib.Keep = keep
+		}
+		if appends, ok := keepAppends[lib.Name]; ok {
+			lib.Keep = append(lib.Keep, appends...)
+			slices.Sort(lib.Keep)
+			lib.Keep = slices.Compact(lib.Keep)
 		}
 		libs = append(libs, lib)
 	}

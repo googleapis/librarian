@@ -37,6 +37,7 @@ var (
 		"iam-policy":        true,
 		"bigtable":          true,
 		"firestore":         true,
+		"pubsub":            true,
 	}
 
 	keepOverride = map[string][]string{
@@ -58,6 +59,13 @@ var (
 			"google-cloud-spanner/src/main/resources/META-INF/native-image/com.google.cloud.spanner/reflect-config.json",
 			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyName.java",
 			"proto-google-cloud-spanner-admin-database-v1/src/main/java/com/google/spanner/admin/database/v1/CryptoKeyVersionName.java",
+		},
+	}
+
+	keepAppends = map[string][]string{
+		"firestore": {
+			"google-cloud-firestore/src/main/resources/META-INF/native-image/com.google.cloud/google-cloud-firestore/reflect-config.json",
+			"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
 		},
 	}
 
@@ -161,6 +169,7 @@ var (
 		{apiPath: "google/spanner/executor/v1"}: {
 			protoArtifactID: "proto-google-cloud-spanner-executor-v1",
 			grpcArtifactID:  "grpc-google-cloud-spanner-executor-v1",
+			gapicArtifactID: "google-cloud-spanner-executor",
 		},
 		{apiPath: "google/devtools/clouderrorreporting/v1beta1"}: {
 			protoArtifactID: "proto-google-cloud-error-reporting-v1beta1",

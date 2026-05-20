@@ -208,6 +208,18 @@ pub mod {{Codec.ModuleName}} {
         {
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
+            {{#Model.Codec.LroStubOptions}}
+            {{!
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            }}
+            #[cfg(google_cloud_unstable_tracing)]
+            let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
+            #[cfg(google_cloud_unstable_tracing)]
+            if let Some(ref mut details) = poller_options.tracing {
+                details.method_name = "{{Model.Codec.PackageNamespace}}::client::{{Codec.ServiceNameToPascal}}::{{Codec.MethodName}}::until_done";
+            }
+            {{/Model.Codec.LroStubOptions}}
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
@@ -237,12 +249,35 @@ pub mod {{Codec.ModuleName}} {
                 self.send().await
             };
 
+            {{#Model.Codec.LroStubOptions}}
+            #[cfg(google_cloud_unstable_tracing)]
+            {
+                use google_cloud_lro::internal::PollerExt;
+                google_cloud_lro::internal::new_discovery_poller(
+                    polling_error_policy,
+                    polling_backoff_policy,
+                    start,
+                    query,
+                )
+                .with_options(poller_options)
+            }
+
+            #[cfg(not(google_cloud_unstable_tracing))]
             google_cloud_lro::internal::new_discovery_poller(
                 polling_error_policy,
                 polling_backoff_policy,
                 start,
                 query,
             )
+            {{/Model.Codec.LroStubOptions}}
+            {{^Model.Codec.LroStubOptions}}
+            google_cloud_lro::internal::new_discovery_poller(
+                polling_error_policy,
+                polling_backoff_policy,
+                start,
+                query,
+            )
+            {{/Model.Codec.LroStubOptions}}
         }
         {{/DiscoveryLro}}
         {{#OperationInfo}}
@@ -267,6 +302,18 @@ pub mod {{Codec.ModuleName}} {
             type Operation = google_cloud_lro::internal::Operation<{{Codec.ResponseType}}, {{Codec.MetadataType}}>;
             let polling_error_policy = self.0.stub.get_polling_error_policy(&self.0.options);
             let polling_backoff_policy = self.0.stub.get_polling_backoff_policy(&self.0.options);
+            {{#Model.Codec.LroStubOptions}}
+            {{!
+              `poller_options` must be extracted here before `self` is moved into
+              the `start` closure.
+            }}
+            #[cfg(google_cloud_unstable_tracing)]
+            let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
+            #[cfg(google_cloud_unstable_tracing)]
+            if let Some(ref mut details) = poller_options.tracing {
+                details.method_name = "{{Model.Codec.PackageNamespace}}::client::{{Method.Codec.ServiceNameToPascal}}::{{Method.Codec.Name}}::until_done";
+            }
+            {{/Model.Codec.LroStubOptions}}
 
             let stub = self.0.stub.clone();
             let mut options = self.0.options.clone();
@@ -289,6 +336,44 @@ pub mod {{Codec.ModuleName}} {
                 Ok(Operation::new(op))
             };
 
+            {{#Model.Codec.LroStubOptions}}
+            #[cfg(google_cloud_unstable_tracing)]
+            {
+                use google_cloud_lro::internal::PollerExt;
+                {
+                    {{#Codec.NoneAreEmpty}}
+                    google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.NoneAreEmpty}}
+                    {{#Codec.OnlyResponseIsEmpty}}
+                    google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.OnlyResponseIsEmpty}}
+                    {{#Codec.OnlyMetadataIsEmpty}}
+                    google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.OnlyMetadataIsEmpty}}
+                    {{#Codec.BothAreEmpty}}
+                    google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+                    {{/Codec.BothAreEmpty}}
+                }
+                .with_options(poller_options)
+            }
+
+            #[cfg(not(google_cloud_unstable_tracing))]
+            {
+                {{#Codec.NoneAreEmpty}}
+                google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.NoneAreEmpty}}
+                {{#Codec.OnlyResponseIsEmpty}}
+                google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.OnlyResponseIsEmpty}}
+                {{#Codec.OnlyMetadataIsEmpty}}
+                google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.OnlyMetadataIsEmpty}}
+                {{#Codec.BothAreEmpty}}
+                google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.BothAreEmpty}}
+            }
+            {{/Model.Codec.LroStubOptions}}
+            {{^Model.Codec.LroStubOptions}}
             {{#Codec.NoneAreEmpty}}
             google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.NoneAreEmpty}}
@@ -301,6 +386,7 @@ pub mod {{Codec.ModuleName}} {
             {{#Codec.BothAreEmpty}}
             google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
             {{/Codec.BothAreEmpty}}
+            {{/Model.Codec.LroStubOptions}}
         }
         {{/OperationInfo}}
         {{#HasAutoPopulatedFields}}

@@ -379,7 +379,9 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 }
 
 // deriveLastReleasedVersion derives the last released version from a snapshot version
-// (e.g., x.y.z-SNAPSHOT) by decrementing the patch or minor version.
+// (e.g., x.y.z-SNAPSHOT or x.y.z-beta-SNAPSHOT) by decrementing the patch or minor version.
+// If the version has a prerelease tag (like "beta") before "SNAPSHOT", that tag is preserved
+// in the derived version (e.g., x.y.z-beta-SNAPSHOT becomes x.y.(z-1)-beta).
 //
 // It returns an error if both minor and patch versions are zero, as it's
 // ambiguous what the last released version was in that case.
@@ -388,7 +390,7 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	if sv.Prerelease != "SNAPSHOT" {
+	if !strings.HasSuffix(sv.Prerelease, "SNAPSHOT") {
 		return sv.String(), nil
 	}
 	if sv.Patch > 0 {
@@ -399,7 +401,8 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	} else {
 		return "", errInvalidVersion
 	}
-	sv.Prerelease = ""
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
 	return sv.String(), nil
 }
 

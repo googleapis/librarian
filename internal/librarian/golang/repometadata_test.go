@@ -29,51 +29,96 @@ import (
 
 func TestGenerateRepoMetadata(t *testing.T) {
 	t.Parallel()
-	tmpDir := t.TempDir()
-	library := &config.Library{
-		Name:    "secretmanager",
-		Output:  filepath.Join(tmpDir, "secretmanager"),
-		Version: "1.2.3",
-		APIs: []*config.API{
-			{
-				Path: "google/cloud/secretmanager/v1",
-				Go: &config.GoAPI{
-					ClientPackage: "secretmanager",
-					ImportPath:    "secretmanager/apiv1",
-				},
+	for _, test := range []struct {
+		name       string
+		path       string
+		importPath string
+		want       *repometadata.RepoMetadata
+	}{
+		{
+			name:       "stable release level",
+			path:       "google/cloud/secretmanager/v1",
+			importPath: "secretmanager/apiv1",
+			want: &repometadata.RepoMetadata{
+				APIShortname:        "secretmanager",
+				ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
+				ClientLibraryType:   "generated",
+				Description:         "Secret Manager API",
+				DistributionName:    "cloud.google.com/go/secretmanager/apiv1",
+				Language:            config.LanguageGo,
+				LibraryType:         repometadata.GAPICAutoLibraryType,
+				ReleaseLevel:        "stable",
 			},
 		},
-	}
-	api := &serviceconfig.API{
-		ShortName: "secretmanager",
-		Title:     "Secret Manager API",
-		Path:      "google/cloud/secretmanager/v1",
-	}
-	metadataDir := filepath.Join(tmpDir, "secretmanager", "apiv1")
-	want := &repometadata.RepoMetadata{
-		APIShortname:        "secretmanager",
-		ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1",
-		ClientLibraryType:   "generated",
-		Description:         "Secret Manager API",
-		DistributionName:    "cloud.google.com/go/secretmanager/apiv1",
-		Language:            config.LanguageGo,
-		LibraryType:         repometadata.GAPICAutoLibraryType,
-		ReleaseLevel:        "stable",
-	}
-	if err := os.MkdirAll(metadataDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := generateRepoMetadata(api, library, library.APIs[0].Go); err != nil {
-		t.Fatal(err)
-	}
+		{
+			name:       "preview release level",
+			path:       "google/cloud/secretmanager/v1alpha",
+			importPath: "secretmanager/apiv1alpha",
+			want: &repometadata.RepoMetadata{
+				APIShortname:        "secretmanager",
+				ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1alpha",
+				ClientLibraryType:   "generated",
+				Description:         "Secret Manager API",
+				DistributionName:    "cloud.google.com/go/secretmanager/apiv1alpha",
+				Language:            config.LanguageGo,
+				LibraryType:         repometadata.GAPICAutoLibraryType,
+				ReleaseLevel:        "preview",
+			},
+		},
+		{
+			name:       "preview release level (beta path)",
+			path:       "google/cloud/secretmanager/v1beta",
+			importPath: "secretmanager/apiv1beta",
+			want: &repometadata.RepoMetadata{
+				APIShortname:        "secretmanager",
+				ClientDocumentation: "https://cloud.google.com/go/docs/reference/cloud.google.com/go/secretmanager/latest/apiv1beta",
+				ClientLibraryType:   "generated",
+				Description:         "Secret Manager API",
+				DistributionName:    "cloud.google.com/go/secretmanager/apiv1beta",
+				Language:            config.LanguageGo,
+				LibraryType:         repometadata.GAPICAutoLibraryType,
+				ReleaseLevel:        "preview",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			library := &config.Library{
+				Name:    "secretmanager",
+				Output:  filepath.Join(tmpDir, "secretmanager"),
+				Version: "1.2.3",
+				APIs: []*config.API{
+					{
+						Path: test.path,
+						Go: &config.GoAPI{
+							ClientPackage: "secretmanager",
+							ImportPath:    test.importPath,
+						},
+					},
+				},
+			}
+			api := &serviceconfig.API{
+				ShortName: "secretmanager",
+				Title:     "Secret Manager API",
+				Path:      test.path,
+			}
+			metadataDir := filepath.Join(tmpDir, "secretmanager", filepath.Base(test.importPath))
+			if err := os.MkdirAll(metadataDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := generateRepoMetadata(api, library, library.APIs[0].Go); err != nil {
+				t.Fatal(err)
+			}
 
-	got, err := repometadata.Read(metadataDir)
-	if err != nil {
-		t.Fatal(err)
-	}
+			got, err := repometadata.Read(metadataDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

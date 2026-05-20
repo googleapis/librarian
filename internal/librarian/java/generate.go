@@ -20,7 +20,6 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"os/exec"
 	"path"
 	"path/filepath"
 	"sort"
@@ -48,10 +47,14 @@ var (
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
+	errUnrecognizedAPI   = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
 )
 
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
+	if library.Java.GroupID == fakeGroupID {
+		return errUnrecognizedAPI
+	}
 	outdir, err := filepath.Abs(library.Output)
 	if err != nil {
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
@@ -328,46 +331,6 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 func gapicOpt(key, value string) string {
 	return fmt.Sprintf("%s=%s", key, value)
-}
-
-// Format formats a Java client library using google-java-format.
-func Format(ctx context.Context, library *config.Library) error {
-	files, err := collectJavaFiles(library.Output)
-	if err != nil {
-		return fmt.Errorf("failed to find java files for formatting: %w", err)
-	}
-	if len(files) == 0 {
-		return nil
-	}
-
-	if _, err := exec.LookPath("google-java-format"); err != nil {
-		return fmt.Errorf("google-java-format not found in PATH: %w", err)
-	}
-
-	args := append([]string{"--replace"}, files...)
-	if err := command.Run(ctx, "google-java-format", args...); err != nil {
-		return fmt.Errorf("failed to format files: %w", err)
-	}
-	return nil
-}
-
-func collectJavaFiles(root string) ([]string, error) {
-	var files []string
-	err := filepath.WalkDir(root, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			return err
-		}
-		if d.IsDir() || filepath.Ext(path) != ".java" {
-			return nil
-		}
-		// exclude samples/snippets/generated
-		if strings.Contains(path, filepath.Join("samples", "snippets", "generated")) {
-			return nil
-		}
-		files = append(files, path)
-		return nil
-	})
-	return files, err
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):

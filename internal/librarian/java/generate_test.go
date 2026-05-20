@@ -22,8 +22,6 @@ import (
 	"strings"
 	"syscall"
 
-	"sort"
-
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -582,6 +580,20 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			},
 			wantErr: errMonorepoVersion,
 		},
+		{
+			name: "fake group ID error",
+			library: &config.Library{
+				Name:   "secretmanager",
+				Output: t.TempDir(),
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+				Java: &config.JavaModule{
+					GroupID: fakeGroupID,
+				},
+			},
+			wantErr: errUnrecognizedAPI,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if _, err := Fill(test.library); err != nil {
@@ -733,109 +745,6 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(protoPkgDir, "ServiceProto.java")); err != nil {
 		t.Errorf("ServiceProto.java SHOULD be generated: %v", err)
-	}
-}
-
-func TestFormat_Success(t *testing.T) {
-	testhelper.RequireCommand(t, "google-java-format")
-	for _, test := range []struct {
-		name  string
-		setup func(t *testing.T, root string)
-	}{
-		{
-			name: "successful format",
-			setup: func(t *testing.T, root string) {
-				if err := os.WriteFile(filepath.Join(root, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name:  "no files found",
-			setup: func(t *testing.T, root string) {},
-		},
-		{
-			name: "nested files in subdirectories",
-			setup: func(t *testing.T, root string) {
-				dir := filepath.Join(root, "sub", "dir")
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(dir, "Nested.java"), []byte("public class Nested {}"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-		{
-			name: "files in excluded samples path are ignored",
-			setup: func(t *testing.T, root string) {
-				dir := filepath.Join(root, "samples", "snippets", "generated")
-				if err := os.MkdirAll(dir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				// This file should NOT be passed to the formatter.
-				if err := os.WriteFile(filepath.Join(dir, "Ignored.java"), []byte("public class Ignored {}"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
-			tmpDir := t.TempDir()
-			test.setup(t, tmpDir)
-			if err := Format(t.Context(), &config.Library{Output: tmpDir}); err != nil {
-				t.Errorf("Format() error = %v, want nil", err)
-			}
-		})
-	}
-}
-
-func TestFormat_LookPathError(t *testing.T) {
-	tmpDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(tmpDir, "SomeClass.java"), []byte("public class SomeClass {}"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", "")
-	err := Format(t.Context(), &config.Library{Output: tmpDir})
-	if err == nil {
-		t.Fatal(err)
-	}
-}
-
-func TestCollectJavaFiles(t *testing.T) {
-	t.Parallel()
-	tmpDir := t.TempDir()
-	// Create a mix of files
-	filesToCreate := []string{
-		"Root.java",
-		"subdir/Nested.java",
-		"subdir/NotJava.txt",
-		"samples/snippets/generated/Ignored.java",
-		"another/dir/More.java",
-	}
-	for _, f := range filesToCreate {
-		path := filepath.Join(tmpDir, f)
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			t.Fatal(err)
-		}
-		if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	want := []string{
-		filepath.Join(tmpDir, "Root.java"),
-		filepath.Join(tmpDir, "subdir", "Nested.java"),
-		filepath.Join(tmpDir, "another", "dir", "More.java"),
-	}
-	got, err := collectJavaFiles(tmpDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	sort.Strings(got)
-	sort.Strings(want)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
