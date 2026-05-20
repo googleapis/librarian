@@ -12,8 +12,9 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package pip provides functions for installing python packages using the pip command.
-package pip
+// Package config provides types and functions for reading and writing
+// librarian.yaml configuration files, as well as pip tool installations.
+package config
 
 import (
 	"context"
@@ -22,11 +23,10 @@ import (
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
-	"github.com/googleapis/librarian/internal/config"
 )
 
-// Install installs a list of pip tools.
-func Install(ctx context.Context, tools []*config.PipTool) error {
+// InstallPipTools installs a list of pip tools into the environment.
+func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	var installTargets []string
 	hasLocal := false
 	for _, t := range tools {
