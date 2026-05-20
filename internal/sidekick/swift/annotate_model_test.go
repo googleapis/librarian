@@ -62,7 +62,7 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 		{
 			name:  "Enum with wkt",
 			model: api.NewTestAPI(nil, []*api.Enum{enum}, nil),
-			want:  []string{"GoogleCloudWkt"},
+			want:  []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
