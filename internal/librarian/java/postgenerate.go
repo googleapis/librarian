@@ -41,16 +41,24 @@ const (
 	versionsFileName = "versions.txt"
 )
 
-// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
-var excludedBOMs = map[string]bool{
-	"google-cloud-bigtable-deps-bom": true,
-}
-
 var (
 	errModuleDiscovery      = errors.New("failed to search for java modules")
 	errRootPOMGeneration    = errors.New("failed to generate root pom.xml")
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
+	// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
+	excludedBOMs            = map[string]bool{
+		"google-cloud-bigtable-deps-bom": true,
+	}
+	ignoredDirs = map[string]bool{
+		gapicBOM:                   true,
+		"google-cloud-jar-parent":  true,
+		"google-cloud-pom-parent":  true,
+		"google-cloud-shared-deps": true,
+	}
+	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
+	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
+	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
 )
 
 // legacyBOM represents a library that does not have a -bom module
@@ -61,16 +69,26 @@ type legacyBOM struct {
 	artifactID string
 }
 
-var (
-	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
-	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
-	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
-)
-
 // MissingArtifact pairs an artifact ID with the library it was generated from.
 type MissingArtifact struct {
 	ID      string
 	Library *config.Library
+}
+
+type bomConfig struct {
+	GroupID           string
+	ArtifactID        string
+	Version           string
+	VersionAnnotation string
+	IsImport          bool
+}
+
+// mavenProject represents a minimal Maven pom.xml for discovery.
+type mavenProject struct {
+	XMLName    xml.Name `xml:"http://maven.apache.org/POM/4.0.0 project"`
+	GroupID    string   `xml:"groupId"`
+	ArtifactID string   `xml:"artifactId"`
+	Version    string   `xml:"version"`
 }
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
@@ -153,13 +171,6 @@ func appendLines(path string, lines []string) error {
 	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
-var ignoredDirs = map[string]bool{
-	gapicBOM:                   true,
-	"google-cloud-jar-parent":  true,
-	"google-cloud-pom-parent":  true,
-	"google-cloud-shared-deps": true,
-}
-
 // searchForJavaModules scans top-level subdirectories in the repoPath for those that
 // contain a pom.xml file, excluding known non-library directories. Returns a sorted list of
 // subdirectory names as module names.
@@ -179,22 +190,6 @@ func searchForJavaModules(repoPath string) ([]string, error) {
 	}
 	sort.Strings(names)
 	return names, nil
-}
-
-type bomConfig struct {
-	GroupID           string
-	ArtifactID        string
-	Version           string
-	VersionAnnotation string
-	IsImport          bool
-}
-
-// mavenProject represents a minimal Maven pom.xml for discovery.
-type mavenProject struct {
-	XMLName    xml.Name `xml:"http://maven.apache.org/POM/4.0.0 project"`
-	GroupID    string   `xml:"groupId"`
-	ArtifactID string   `xml:"artifactId"`
-	Version    string   `xml:"version"`
 }
 
 // searchForBOMArtifacts scans the repoPath for subdirectories that contain a -bom subdirectory
