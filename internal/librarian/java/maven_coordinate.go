@@ -23,7 +23,6 @@ import (
 const (
 	googleGroupID   = "com.google"
 	protoGRPCSuffix = ".api.grpc"
-	cloudPrefix     = "google-cloud-"
 	gRPCPrefix      = "grpc-"
 	protoPrefix     = "proto-"
 )
