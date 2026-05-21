@@ -26,12 +26,6 @@ import (
 	"text/template"
 )
 
-var (
-	//go:embed template/*.tmpl
-	templatesFS embed.FS
-	templates   = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
-)
-
 const (
 	// clirrIgnoreFile is the name of the Clirr ignore file to generate.
 	clirrIgnoreFile = "clirr-ignored-differences.xml"
@@ -40,6 +34,12 @@ const (
 	// protoGooglePrefix is the prefix used to identify proto modules
 	// for Clirr ignore generation.
 	protoGooglePrefix = "proto-google-"
+)
+
+var (
+	//go:embed template/*.tmpl
+	templatesFS embed.FS
+	templates   = template.Must(template.New("").ParseFS(templatesFS, "template/*.tmpl"))
 )
 
 // clirrIgnoreShouldGenerate determines if the clirr-ignored-differences.xml file
