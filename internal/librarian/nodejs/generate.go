@@ -315,27 +315,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
 
-	// In monorepos (like google-cloud-node), individual packages track standard metadata files in git (e.g. package.json, .eslintrc.json, handwritten scripts).
-	// Because combine-library wipes outDir during post-processing and only copies generated outputs (src/, protos/), 
-	// these tracked baseline files remain deleted on disk, which alters protobuf namespace generation.
-	// We dynamically query the git index and restore only those tracked files reported deleted under outDir.
-	statusOut, err := command.Output(ctx, "git", "status", "--porcelain", outDir)
-	if err == nil {
-		lines := strings.Split(statusOut, "\n")
-		for _, line := range lines {
-			if len(line) < 4 {
-				continue
-			}
-			status := line[:3]
-			if strings.Contains(status, "D") {
-				filePath := strings.TrimSpace(line[3:])
-				if filePath != "" {
-					_ = command.Run(ctx, "git", "checkout", "--", filePath)
-				}
-			}
-		}
-	}
-
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}

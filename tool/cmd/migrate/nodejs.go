@@ -217,6 +217,12 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		library.Keep = append(library.Keep, v1smallKeep...)
 	}
 
+	// Prevent the clean and post-processing phases from deleting tracked package.json configurations.
+	library.Keep = append(library.Keep, "package.json")
+	if _, err := os.Stat(filepath.Join(pkgDir, "samples", "package.json")); err == nil {
+		library.Keep = append(library.Keep, "samples/package.json")
+	}
+
 	return library, nil
 }
 
