@@ -90,7 +90,7 @@ func TestInstall(t *testing.T) {
 		}
 		got := strings.TrimSpace(string(data))
 		if diff := cmp.Diff(s.wantArgs, got); diff != "" {
-			t.Errorf("%s invocations mismatch (-want +got):\n%s", s.name, diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
@@ -122,8 +122,8 @@ func TestInstall(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if string(data) != test.wantContent {
-				t.Errorf("copied file contents mismatch: got %q, want %q", string(data), test.wantContent)
+			if diff := cmp.Diff(test.wantContent, string(data)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			wrapperPath := filepath.Join(installDir, test.wrapperName)
 			wrapper, err := os.ReadFile(wrapperPath)
@@ -132,7 +132,7 @@ func TestInstall(t *testing.T) {
 			}
 			wantWrapper := fmt.Sprintf(test.wantFormat, copiedPath)
 			if diff := cmp.Diff(wantWrapper, string(wrapper)); diff != "" {
-				t.Errorf("wrapper contents mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

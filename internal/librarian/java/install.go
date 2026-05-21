@@ -48,6 +48,8 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// binDir ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
+	// libDir ($HOME/java_tools/lib) is a sibling directory that hermetically isolates the downloaded compiled .jar/.exe files.
 	libDir := filepath.Join(filepath.Dir(binDir), "lib")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
@@ -105,22 +107,15 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
 	// 3. Resolve path in .m2/repository
-	home, err := os.UserHomeDir()
+	artifactPath, err := resolveM2ArtifactPath(mvnTool, ext)
 	if err != nil {
-		return fmt.Errorf("failed to get user home directory: %w", err)
+		return err
 	}
-	m2Repo := filepath.Join(home, ".m2", "repository")
-	groupIDPath := strings.ReplaceAll(mvnTool.GroupID, ".", "/")
-	fileName := fmt.Sprintf("%s-%s", mvnTool.ArtifactID, mvnTool.Version)
-	if mvnTool.Classifier != "" {
-		fileName = fmt.Sprintf("%s-%s", fileName, mvnTool.Classifier)
-	}
-	fileName = fmt.Sprintf("%s.%s", fileName, ext)
-	artifactPath := filepath.Join(m2Repo, groupIDPath, mvnTool.ArtifactID, mvnTool.Version, fileName)
 	if _, err := os.Stat(artifactPath); err != nil {
 		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
 	}
 	// 4. Copy artifact file to hermetic libDir
+	fileName := filepath.Base(artifactPath)
 	destPath := filepath.Join(libDir, fileName)
 	if err := filesystem.CopyFile(artifactPath, destPath); err != nil {
 		return fmt.Errorf("failed to copy artifact to lib folder: %w", err)
@@ -139,4 +134,20 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
+}
+
+// resolveM2ArtifactPath returns the absolute path to the downloaded artifact in the local .m2 repository.
+func resolveM2ArtifactPath(mvnTool *config.MavenTool, ext string) (string, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	m2Repo := filepath.Join(home, ".m2", "repository")
+	groupIDPath := strings.ReplaceAll(mvnTool.GroupID, ".", "/")
+	fileName := fmt.Sprintf("%s-%s", mvnTool.ArtifactID, mvnTool.Version)
+	if mvnTool.Classifier != "" {
+		fileName = fmt.Sprintf("%s-%s", fileName, mvnTool.Classifier)
+	}
+	fileName = fmt.Sprintf("%s.%s", fileName, ext)
+	return filepath.Join(m2Repo, groupIDPath, mvnTool.ArtifactID, mvnTool.Version, fileName), nil
 }
