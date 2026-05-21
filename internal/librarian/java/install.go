@@ -18,7 +18,6 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
-	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -26,6 +25,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -124,8 +124,13 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, 
 	}
 	// 4. Copy artifact file to hermetic libDir
 	destPath := filepath.Join(libDir, fileName)
-	if err := copyFile(artifactPath, destPath, 0755); err != nil {
+	if err := filesystem.CopyFile(artifactPath, destPath); err != nil {
 		return fmt.Errorf("failed to copy artifact to lib folder: %w", err)
+	}
+	if ext == "exe" {
+		if err := os.Chmod(destPath, 0755); err != nil {
+			return fmt.Errorf("failed to make copied exe executable: %w", err)
+		}
 	}
 	// 5. Create wrapper script in binDir pointing to libDir
 	wrapperPath := filepath.Join(binDir, t.Name)
@@ -136,29 +141,4 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, 
 		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
-}
-
-func copyFile(src, dst string, perm os.FileMode) (err error) {
-	in, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cErr := in.Close(); err == nil {
-			err = cErr
-		}
-	}()
-	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		if cErr := out.Close(); err == nil {
-			err = cErr
-		}
-	}()
-	if _, err = io.Copy(out, in); err != nil {
-		return err
-	}
-	return out.Sync()
 }
