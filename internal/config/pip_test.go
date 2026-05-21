@@ -118,68 +118,71 @@ echo "pip $@" >> %q
 	}
 }
 
-func TestInstallPipTools_LocalPathMissingError(t *testing.T) {
+func TestInstallPipTools_Error(t *testing.T) {
 	tmpDir := t.TempDir()
-	tools := []*PipTool{
-		{Name: "mylocal", LocalPath: filepath.Join(tmpDir, "does_not_exist")},
-	}
-	err := InstallPipTools(t.Context(), tools)
-	if err == nil {
-		t.Fatal("expected error but got nil")
-	}
-	want := "local pip package path not found"
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("unexpected error: got %v, want to contain %s", err, want)
-	}
-}
 
-func TestInstallPipTools_PipCommandError(t *testing.T) {
-	tmpDir := t.TempDir()
-	stubContent := `#!/bin/bash
-exit 1
-`
+	// Setup a failing stub pip for the command error case
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "pip")
-	if err := os.WriteFile(stubPath, []byte(stubContent), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte("#!/bin/bash\nexit 1\n"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	t.Setenv("PATH", stubDir)
 
-	tools := []*PipTool{
-		{Name: "failpkg"},
-	}
-	err := InstallPipTools(t.Context(), tools)
-	if err == nil {
-		t.Fatal("expected error but got nil")
-	}
-	want := "failed to install python packages"
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("unexpected error: got %v, want to contain %s", err, want)
-	}
-}
-
-func TestInstallPipTools_AbsPathError(t *testing.T) {
-	tmpDir := t.TempDir()
-	targetDir := filepath.Join(tmpDir, "delete_me")
-	if err := os.Mkdir(targetDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	t.Chdir(targetDir)
-	if err := os.RemoveAll(targetDir); err != nil {
-		t.Fatal(err)
-	}
-	tools := []*PipTool{
-		{Name: "mylocal", LocalPath: "relative_path_will_fail"},
-	}
-	err := InstallPipTools(t.Context(), tools)
-	if err == nil {
-		t.Fatal("expected error but got nil")
-	}
-	want := "failed to resolve absolute path for local pip package"
-	if !strings.Contains(err.Error(), want) {
-		t.Errorf("unexpected error: got %v, want to contain %s", err, want)
+	for _, test := range []struct {
+		name       string
+		tools      []*PipTool
+		setup      func(t *testing.T)
+		wantErrSub string
+	}{
+		{
+			name: "local path missing",
+			tools: []*PipTool{
+				{Name: "mylocal", LocalPath: filepath.Join(tmpDir, "does_not_exist")},
+			},
+			wantErrSub: "local pip package path not found",
+		},
+		{
+			name: "pip command fails",
+			tools: []*PipTool{
+				{Name: "failpkg"},
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", stubDir)
+			},
+			wantErrSub: "failed to install python packages",
+		},
+		{
+			name: "deleted working directory abs path error",
+			tools: []*PipTool{
+				{Name: "mylocal", LocalPath: "relative_path_will_fail"},
+			},
+			setup: func(t *testing.T) {
+				targetDir := filepath.Join(tmpDir, "delete_me")
+				if err := os.Mkdir(targetDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				t.Chdir(targetDir)
+				if err := os.RemoveAll(targetDir); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErrSub: "failed to resolve absolute path for local pip package",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
+			err := InstallPipTools(t.Context(), test.tools)
+			if err == nil {
+				t.Fatal("expected error but got nil")
+			}
+			if !strings.Contains(err.Error(), test.wantErrSub) {
+				t.Errorf("unexpected error: got %v, want to contain %q", err, test.wantErrSub)
+			}
+		})
 	}
 }
