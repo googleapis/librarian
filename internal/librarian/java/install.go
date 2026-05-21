@@ -36,7 +36,7 @@ var librarianYAML []byte
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
 // - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
-// - lib/ ($HOME/java_tools/lib) hermetically isolates the downloaded compiled .jar/.exe files.
+// - lib/ ($HOME/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context) error {
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
@@ -51,6 +51,8 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	// binDir ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
+	// libDir ($HOME/java_tools/lib) is a sibling directory that isolates the downloaded compiled .jar/.exe files.
 	libDir := filepath.Join(filepath.Dir(binDir), "lib")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
@@ -87,10 +89,30 @@ func getInstallDir() (string, error) {
 }
 
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
-// (.jar or .exe) hermetically to the sibling lib folder, and creates an executable wrapper script
+// (.jar or .exe) to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
-	// 1. Construct artifact string for maven
+	artifact, ext := getM2ArtifactSpec(mvnTool)
+	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
+		return err
+	}
+	artifactPath, err := resolveM2ArtifactPath(mvnTool, ext)
+	if err != nil {
+		return err
+	}
+	if _, err := os.Stat(artifactPath); err != nil {
+		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
+	}
+	isExe := ext == "exe"
+	destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
+	if err != nil {
+		return err
+	}
+	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe)
+}
+
+// getM2ArtifactSpec constructs the Maven coordinate string and returns it along with the lowercased file extension.
+func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
 	ext := strings.ToLower(mvnTool.Packaging)
 	if ext == "" {
 		ext = "jar"
@@ -99,42 +121,19 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	if mvnTool.Classifier != "" {
 		artifact = fmt.Sprintf("%s:%s", artifact, mvnTool.Classifier)
 	}
-	// 2. Download via mvn inside binDir (local .m2 populate)
+	return artifact, ext
+}
+
+// downloadM2Artifact executes mvn dependency:get to download the target artifact.
+func downloadM2Artifact(ctx context.Context, artifact, workDir string) error {
 	args := []string{
 		"dependency:get",
 		"-Dartifact=" + artifact,
 	}
-	if err := command.RunStreamingInDir(ctx, binDir, "mvn", args...); err != nil {
+	if err := command.RunStreamingInDir(ctx, workDir, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
-	// 3. Resolve path in .m2/repository
-	artifactPath, err := resolveM2ArtifactPath(mvnTool, ext)
-	if err != nil {
-		return err
-	}
-	if _, err := os.Stat(artifactPath); err != nil {
-		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
-	}
-	// 4. Copy artifact file to hermetic libDir
-	fileName := filepath.Base(artifactPath)
-	destPath := filepath.Join(libDir, fileName)
-	if err := filesystem.CopyFile(artifactPath, destPath); err != nil {
-		return fmt.Errorf("failed to copy artifact to lib folder: %w", err)
-	}
-	if ext == "exe" {
-		if err := os.Chmod(destPath, 0755); err != nil {
-			return fmt.Errorf("failed to make copied exe executable: %w", err)
-		}
-	}
-	// 5. Create wrapper script in binDir pointing to libDir
-	wrapperPath := filepath.Join(binDir, mvnTool.Name)
-	var wrapperContent string
-	if ext == "exe" {
-		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-	} else {
-		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
-	}
-	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
+	return nil
 }
 
 // resolveM2ArtifactPath returns the absolute path to the downloaded artifact in the local .m2 repository.
@@ -151,4 +150,31 @@ func resolveM2ArtifactPath(mvnTool *config.MavenTool, ext string) (string, error
 	}
 	fileName = fmt.Sprintf("%s.%s", fileName, ext)
 	return filepath.Join(m2Repo, groupIDPath, mvnTool.ArtifactID, mvnTool.Version, fileName), nil
+}
+
+// copyArtifactToLib copies the artifact file into the isolated sibling lib directory, applying execution permission bits if needed.
+func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, error) {
+	fileName := filepath.Base(srcPath)
+	destPath := filepath.Join(libDir, fileName)
+	if err := filesystem.CopyFile(srcPath, destPath); err != nil {
+		return "", fmt.Errorf("failed to copy artifact to lib folder: %w", err)
+	}
+	if makeExecutable {
+		if err := os.Chmod(destPath, 0755); err != nil {
+			return "", fmt.Errorf("failed to make copied exe executable: %w", err)
+		}
+	}
+	return destPath, nil
+}
+
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the library file.
+func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool) error {
+	wrapperPath := filepath.Join(binDir, wrapperName)
+	var content string
+	if isExecutable {
+		content = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+	} else {
+		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
+	}
+	return os.WriteFile(wrapperPath, []byte(content), 0755)
 }
