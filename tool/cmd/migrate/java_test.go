@@ -609,9 +609,9 @@ func TestBuildConfig(t *testing.T) {
 							APIIDOverride:                "pubsub.googleapis.com",
 							APIReference:                 "https://api-ref.com",
 							APIDescriptionOverride:       "Pub/Sub description",
+							ArtifactID:                   "google-cloud-pubsub",
 							ClientDocumentationOverride:  "https://client-doc.com",
 							CodeownerTeam:                "team-pubsub",
-							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
 							ExcludedPOMs:                 []string{"pom1", "pom2"},
 							ExtraVersionedModules:        "module1",
@@ -671,8 +671,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID:                  "com.google.cloud",
-							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
+							ArtifactID: "google-cloud-accessapproval",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -1624,10 +1624,11 @@ func TestInsertMarkers_Full(t *testing.T) {
 					{Path: "google/cloud/vision/v1"},
 				},
 				Java: &config.JavaModule{
-					DistributionNameOverride: "com.google.cloud:" + artifactID,
+					ArtifactID: artifactID,
+					GroupID:    "com.google.cloud",
 				},
 			},
-		},
+		},	
 	}
 	if err := insertMarkers(repoPath, cfg); err != nil {
 		t.Fatal(err)

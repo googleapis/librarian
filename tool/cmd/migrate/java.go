@@ -331,7 +331,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
-				ArtifactIDOverride:           artifactID,
+				ArtifactID:                   artifactID,
 				ClientDocumentationOverride:  l.ClientDocumentation,
 				CodeownerTeam:                l.CodeownerTeam,
 				ExcludedDependencies:         l.ExcludedDependencies,
