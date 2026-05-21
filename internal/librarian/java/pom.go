@@ -47,14 +47,6 @@ const (
 	managedModulesEndMarker        = "<!-- {x-generated-modules-end} -->"
 )
 
-const (
-	kindProto moduleKind = iota
-	kindGRPC
-	kindClient
-	kindBOM
-	kindParent
-)
-
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
 	Proto          Coordinate
@@ -93,6 +85,14 @@ type javaModule struct {
 }
 
 type moduleKind int
+
+const (
+	kindProto moduleKind = iota
+	kindGRPC
+	kindClient
+	kindBOM
+	kindParent
+)
 
 type expectedModule struct {
 	ArtifactID string
