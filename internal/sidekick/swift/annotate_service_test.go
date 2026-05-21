@@ -28,6 +28,7 @@ func TestAnnotateService(t *testing.T) {
 		serviceName     string
 		doc             string
 		wantAnnotations *serviceAnnotations
+		wantImports     []string
 	}{
 		{
 			name:        "IAM service",
@@ -39,6 +40,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix: "IAM",
 				DocLines:   []string{"IAM service documentation."},
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name:        "Service with mangled name",
@@ -50,6 +52,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix: "Protocol",
 				DocLines:   []string{"Docs are not relevant."},
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name:        "SecretManagerService",
@@ -61,6 +64,7 @@ func TestAnnotateService(t *testing.T) {
 				StubPrefix: "SecretManagerService",
 				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -76,6 +80,11 @@ func TestAnnotateService(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			annotations := s.Codec.(*serviceAnnotations)
+			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
