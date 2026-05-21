@@ -41,7 +41,12 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	// Ensure pnpm is activated globally using corepack to avoid using npm
+	// Ensure pnpm is enabled and shims are linked globally using corepack
+	if err := command.RunStreaming(ctx, "corepack", "enable", "pnpm"); err != nil {
+		return fmt.Errorf("failed to enable pnpm shims: %w", err)
+	}
+
+	// Ensure pnpm version 7.32.2 is prepared and activated globally to enable lockfile-respecting builds
 	if err := command.RunStreaming(ctx, "corepack", "prepare", "pnpm@7.32.2", "--activate"); err != nil {
 		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
 	}
