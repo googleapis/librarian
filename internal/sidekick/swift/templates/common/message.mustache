@@ -45,17 +45,17 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{^IsOneOf}}
     {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
     {{#Singular}}
+    {{#Codec.Recursive}}
+    {{Codec.Name}}: {{{Codec.InitializerType}}} = nil,
+    {{/Codec.Recursive}}
+    {{^Codec.Recursive}}
     {{^Optional}}
     {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}(),
     {{/Optional}}
     {{#Optional}}
-    {{#Codec.Recursive}}
-    {{Codec.Name}}: {{{Codec.UnwrappedType}}} = nil,
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    {{Codec.Name}}: {{{Codec.FieldType}}} = nil,
-    {{/Codec.Recursive}}
+    {{Codec.Name}}: {{{Codec.InitializerType}}} = nil,
     {{/Optional}}
+    {{/Codec.Recursive}}
     {{/Singular}}
     {{#Repeated}}
     {{Codec.Name}}: {{{Codec.FieldType}}} = [],
@@ -99,7 +99,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
     {{/Optional}}
     {{^Optional}}
+    {{#Codec.Recursive}}
+    self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
+    {{/Codec.Recursive}}
+    {{^Codec.Recursive}}
     self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
+    {{/Codec.Recursive}}
     {{/Optional}}
     {{/IsOneOf}}
     {{/Fields}}

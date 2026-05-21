@@ -74,10 +74,11 @@ func TestAnnotateField(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:          "secretPayload",
-				DocLines:      []string{"The secret version payload."},
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantBaseType,
+				Name:            "secretPayload",
+				DocLines:        []string{"The secret version payload."},
+				FieldType:       test.wantType,
+				BaseFieldType:   test.wantBaseType,
+				InitializerType: test.wantType,
 			}
 
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
@@ -117,10 +118,11 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:          "testField",
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantType,
-				DocLines:      []string{"Test documentation."},
+				Name:            "testField",
+				FieldType:       test.wantType,
+				BaseFieldType:   test.wantType,
+				DocLines:        []string{"Test documentation."},
+				InitializerType: test.wantType,
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -163,11 +165,12 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	}
 	got := field.Codec.(*fieldAnnotations)
 	want := &fieldAnnotations{
-		Name:          "externalMessage",
-		FieldType:     "GoogleCloudExternalV1.SomeMessage",
-		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
-		PackageName:   "google.cloud.external.v1",
-		DocLines:      []string{"The external message."},
+		Name:            "externalMessage",
+		FieldType:       "GoogleCloudExternalV1.SomeMessage",
+		BaseFieldType:   "GoogleCloudExternalV1.SomeMessage",
+		PackageName:     "google.cloud.external.v1",
+		DocLines:        []string{"The external message."},
+		InitializerType: "GoogleCloudExternalV1.SomeMessage",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -183,7 +186,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		wantType      string
 		wantBaseType  string
 		wantRecursive bool
-		wantUnwrapped string
+		wantInitType  string
 		oneofProperty string
 	}{
 		{
@@ -194,7 +197,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "GoogleCloudWkt.Recursive<Node>?",
 			wantBaseType:  "GoogleCloudWkt.Recursive<Node>",
 			wantRecursive: true,
-			wantUnwrapped: "Node?",
+			wantInitType:  "Node?",
 		},
 		{
 			name:          "repeated recursive",
@@ -204,7 +207,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "[Node]",
 			wantBaseType:  "Node",
 			wantRecursive: false,
-			wantUnwrapped: "",
+			wantInitType:  "[Node]",
 		},
 		{
 			name:          "oneof recursive",
@@ -214,7 +217,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "Node",
 			wantBaseType:  "Node",
 			wantRecursive: false,
-			wantUnwrapped: "",
+			wantInitType:  "Node",
 			oneofProperty: "alternatives",
 		},
 	} {
@@ -261,7 +264,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				BaseFieldType:     test.wantBaseType,
 				PackageName:       "test",
 				Recursive:         test.wantRecursive,
-				UnwrappedType:     test.wantUnwrapped,
+				InitializerType:   test.wantInitType,
 				OneOfPropertyName: test.oneofProperty,
 			}
 
