@@ -624,7 +624,7 @@ func TestDeriveLibraryName_Error(t *testing.T) {
 		{
 			name:    "missing configuration directory",
 			apiPath: "google/cloud/nonexistent/v1",
-			wantErr: java.ErrShortNameNotFound,
+			wantErr: java.ErrServiceNameNotFound,
 		},
 		{
 			name:    "unallowed non-cloud API",

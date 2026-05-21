@@ -28,8 +28,8 @@ import (
 var (
 	// ErrSourceRequired indicates that the googleapis source is required.
 	ErrSourceRequired = errors.New("googleapis source is required to derive library name")
-	// ErrShortNameNotFound indicates that the api_short_name was not found in the service config.
-	ErrShortNameNotFound = errors.New("api_short_name not found in service config")
+	// ErrServiceNameNotFound indicates that the service name was not found in the service config.
+	ErrServiceNameNotFound = errors.New("service name not found in service config")
 	// ErrAPIValidation indicates that the API validation failed.
 	ErrAPIValidation = errors.New("API validation failed")
 )
@@ -78,8 +78,7 @@ func setJavaConfig(lib *config.Library, groupID string) *config.Library {
 }
 
 // DefaultLibraryName derives a default library name from an API path by parsing
-// the publishing.api_short_name (or logical fallback) from the target One Platform
-// service configuration YAML.
+// name from service configuration YAML and taking its subdomain.
 func DefaultLibraryName(srcs *sources.Sources, api string) (string, error) {
 	if srcs == nil || srcs.Googleapis == "" {
 		return "", ErrSourceRequired
@@ -88,8 +87,9 @@ func DefaultLibraryName(srcs *sources.Sources, api string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("%w: %v", ErrAPIValidation, err)
 	}
-	if apiConfig.ShortName == "" {
-		return "", fmt.Errorf("%w for %s", ErrShortNameNotFound, api)
+	if apiConfig.ServiceName == "" {
+		return "", fmt.Errorf("%w for %s", ErrServiceNameNotFound, api)
 	}
-	return apiConfig.ShortName, nil
+	subdomain := strings.Split(apiConfig.ServiceName, ".")[0]
+	return subdomain, nil
 }

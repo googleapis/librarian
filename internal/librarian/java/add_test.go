@@ -187,7 +187,7 @@ func TestDefaultLibraryName_Error(t *testing.T) {
 		{
 			name:    "missing configuration directory",
 			api:     "google/cloud/nonexistent/v1",
-			wantErr: ErrShortNameNotFound,
+			wantErr: ErrServiceNameNotFound,
 		},
 		{
 			name:    "unallowed non-cloud API",
