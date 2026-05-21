@@ -47,11 +47,11 @@ func TestInstall(t *testing.T) {
 		}
 	}
 
-	// Stub corepack and pnpm. The pnpm stub also creates
-	// node_modules/.bin/tsc in the working directory during 'pnpm install'
-	// so the subsequent "./node_modules/.bin/tsc" build step finds an executable.
+	// Stub corepack. The corepack stub creates node_modules/.bin/tsc in the
+	// working directory during 'corepack pnpm install' delegation calls so that the subsequent
+	// "./node_modules/.bin/tsc" build step finds an executable target.
 	bin := t.TempDir()
-	pnpmStub := `#!/bin/sh
+	corepackStub := `#!/bin/sh
 case "$*" in
     *install*)
         mkdir -p node_modules/.bin
@@ -61,12 +61,6 @@ case "$*" in
 esac
 exit 0
 `
-	corepackStub := `#!/bin/sh
-exit 0
-`
-	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	if err := os.WriteFile(filepath.Join(bin, "corepack"), []byte(corepackStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
