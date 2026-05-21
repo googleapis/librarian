@@ -483,7 +483,7 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
 
-	ArtifactIDOverride string `yaml:"artifact_id_override,omitempty"`
+	ArtifactID string `yaml:"artifact_id,omitempty"`
 
 	// ClientDocumentationOverride allows the "client_documentation" field in
 	// .repo-metadata.json to be overridden.

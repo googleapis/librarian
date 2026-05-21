@@ -17,15 +17,19 @@ package java
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
 	javaPrefix     = "java-"
+	defaultArtifactIDPrefix   = "google-cloud-"
 	defaultGroupID = "com.google.cloud"
 )
+
+func deriveArtifactID(name string) string {
+	return defaultArtifactIDPrefix + name
+}
 
 // deriveOutput computes the default output directory name for a given library name.
 func deriveOutput(name string) string {
@@ -39,6 +43,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	if library.Java == nil {
 		library.Java = &config.JavaModule{}
+	}
+	if library.Java.ArtifactID == "" {
+		library.Java.ArtifactID = deriveArtifactID(library.Name)
 	}
 	if library.Java.GroupID == "" {
 		library.Java.GroupID = defaultGroupID
@@ -74,6 +81,9 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	if library.Java != nil {
+		if library.Java.ArtifactID == deriveArtifactID(library.Name) {
+			library.Java.ArtifactID = ""
+		}
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}

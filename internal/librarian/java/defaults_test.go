@@ -340,14 +340,6 @@ func TestValidate(t *testing.T) {
 		lib  *config.Library
 	}{
 		{
-			name: "valid distribution name override",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "part1:part2",
-				},
-			},
-		},
-		{
 			name: "empty java config",
 			lib:  &config.Library{},
 		},
@@ -372,51 +364,6 @@ func TestValidate_Error(t *testing.T) {
 		lib     *config.Library
 		wantErr error
 	}{
-		{
-			name: "missing colon",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "nocolon",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "too many colons",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "too:many:colons",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "empty parts",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: ":",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "missing artifact id",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "groupid:",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "missing group id",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: ":artifactid",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
 		{
 			name: "omit common resources conflict",
 			lib: &config.Library{
