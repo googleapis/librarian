@@ -45,23 +45,32 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
 		t.Fatal(err)
 	}
+	stubs := []struct {
+		name        string
+		logFilename string
+		wantArgs    string
+	}{
+		{
+			name:        "pip",
+			logFilename: "pip_invocations.log",
+			wantArgs:    "pip install PyYAML==6.0.2 jinja2==3.1.6",
+		},
+		{
+			name:        "mvn",
+			logFilename: "mvn_invocations.log",
+			wantArgs:    "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\nmvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64",
+		},
+	}
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	pipLogPath := filepath.Join(tmpDir, "pip_invocations.log")
-	pipContent := fmt.Sprintf(`#!/bin/sh
-echo "pip $@" >> %q
-`, pipLogPath)
-	if err := os.WriteFile(filepath.Join(stubDir, "pip"), []byte(pipContent), 0755); err != nil {
-		t.Fatal(err)
-	}
-	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
-	mvnContent := fmt.Sprintf(`#!/bin/sh
-echo "mvn $@" >> %q
-`, mvnLogPath)
-	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0755); err != nil {
-		t.Fatal(err)
+	for _, s := range stubs {
+		logPath := filepath.Join(tmpDir, s.logFilename)
+		content := fmt.Sprintf("#!/bin/sh\necho %q \"$@\" >> %q\n", s.name, logPath)
+		if err := os.WriteFile(filepath.Join(stubDir, s.name), []byte(content), 0755); err != nil {
+			t.Fatal(err)
+		}
 	}
 	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
 		t.Fatal(err)
@@ -73,23 +82,16 @@ echo "mvn $@" >> %q
 	if err != nil {
 		t.Fatal(err)
 	}
-	pipData, err := os.ReadFile(pipLogPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gotPip := strings.TrimSpace(string(pipData))
-	wantPip := "pip install PyYAML==6.0.2 jinja2==3.1.6"
-	if diff := cmp.Diff(wantPip, gotPip); diff != "" {
-		t.Errorf("pip invocations mismatch (-want +got):\n%s", diff)
-	}
-	mvnData, err := os.ReadFile(mvnLogPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	gotMvn := strings.TrimSpace(string(mvnData))
-	wantMvn := "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\nmvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64"
-	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
-		t.Errorf("mvn invocations mismatch (-want +got):\n%s", diff)
+	for _, s := range stubs {
+		logPath := filepath.Join(tmpDir, s.logFilename)
+		data, err := os.ReadFile(logPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := strings.TrimSpace(string(data))
+		if diff := cmp.Diff(s.wantArgs, got); diff != "" {
+			t.Errorf("%s invocations mismatch (-want +got):\n%s", s.name, diff)
+		}
 	}
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
 	for _, test := range []struct {
