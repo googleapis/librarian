@@ -92,38 +92,46 @@ echo "mvn $@" >> %q
 		t.Errorf("mvn invocations mismatch (-want +got):\n%s", diff)
 	}
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
-	gjfCopiedPath := filepath.Join(libDir, "google-java-format-1.25.2-all-deps.jar")
-	gjfData, err := os.ReadFile(gjfCopiedPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(gjfData) != "gjf jar content" {
-		t.Errorf("copied GJF jar contents mismatch: got %q", string(gjfData))
-	}
-	grpcCopiedPath := filepath.Join(libDir, "protoc-gen-grpc-java-1.76.3-linux-x86_64.exe")
-	grpcData, err := os.ReadFile(grpcCopiedPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if string(grpcData) != "grpc exe content" {
-		t.Errorf("copied grpc exe contents mismatch: got %q", string(grpcData))
-	}
-	gjfWrapperPath := filepath.Join(installDir, "google-java-format")
-	gjfWrapper, err := os.ReadFile(gjfWrapperPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantGjfWrapper := fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", gjfCopiedPath)
-	if diff := cmp.Diff(wantGjfWrapper, string(gjfWrapper)); diff != "" {
-		t.Errorf("GJF wrapper contents mismatch (-want +got):\n%s", diff)
-	}
-	grpcWrapperPath := filepath.Join(installDir, "protoc-gen-java_grpc")
-	grpcWrapper, err := os.ReadFile(grpcWrapperPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantGrpcWrapper := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", grpcCopiedPath)
-	if diff := cmp.Diff(wantGrpcWrapper, string(grpcWrapper)); diff != "" {
-		t.Errorf("grpc wrapper contents mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name        string
+		filename    string
+		wantContent string
+		wrapperName string
+		wantFormat  string
+	}{
+		{
+			name:        "google-java-format",
+			filename:    "google-java-format-1.25.2-all-deps.jar",
+			wantContent: "gjf jar content",
+			wrapperName: "google-java-format",
+			wantFormat:  "#!/bin/sh\nexec java -jar %q \"$@\"\n",
+		},
+		{
+			name:        "protoc-gen-java_grpc",
+			filename:    "protoc-gen-grpc-java-1.76.3-linux-x86_64.exe",
+			wantContent: "grpc exe content",
+			wrapperName: "protoc-gen-java_grpc",
+			wantFormat:  "#!/bin/sh\nexec %q \"$@\"\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			copiedPath := filepath.Join(libDir, test.filename)
+			data, err := os.ReadFile(copiedPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if string(data) != test.wantContent {
+				t.Errorf("copied file contents mismatch: got %q, want %q", string(data), test.wantContent)
+			}
+			wrapperPath := filepath.Join(installDir, test.wrapperName)
+			wrapper, err := os.ReadFile(wrapperPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantWrapper := fmt.Sprintf(test.wantFormat, copiedPath)
+			if diff := cmp.Diff(wantWrapper, string(wrapper)); diff != "" {
+				t.Errorf("wrapper contents mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

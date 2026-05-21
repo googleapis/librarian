@@ -86,15 +86,15 @@ func getInstallDir() (string, error) {
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
 // (.jar or .exe) hermetically to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
-func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, libDir string) error {
+func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
 	// 1. Construct artifact string for maven
-	ext := strings.ToLower(t.Packaging)
+	ext := strings.ToLower(mvnTool.Packaging)
 	if ext == "" {
 		ext = "jar"
 	}
-	artifact := fmt.Sprintf("%s:%s:%s:%s", t.GroupID, t.ArtifactID, t.Version, ext)
-	if t.Classifier != "" {
-		artifact = fmt.Sprintf("%s:%s", artifact, t.Classifier)
+	artifact := fmt.Sprintf("%s:%s:%s:%s", mvnTool.GroupID, mvnTool.ArtifactID, mvnTool.Version, ext)
+	if mvnTool.Classifier != "" {
+		artifact = fmt.Sprintf("%s:%s", artifact, mvnTool.Classifier)
 	}
 	// 2. Download via mvn inside binDir (local .m2 populate)
 	args := []string{
@@ -110,13 +110,13 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, 
 		return fmt.Errorf("failed to get user home directory: %w", err)
 	}
 	m2Repo := filepath.Join(home, ".m2", "repository")
-	groupIDPath := strings.ReplaceAll(t.GroupID, ".", "/")
-	fileName := fmt.Sprintf("%s-%s", t.ArtifactID, t.Version)
-	if t.Classifier != "" {
-		fileName = fmt.Sprintf("%s-%s", fileName, t.Classifier)
+	groupIDPath := strings.ReplaceAll(mvnTool.GroupID, ".", "/")
+	fileName := fmt.Sprintf("%s-%s", mvnTool.ArtifactID, mvnTool.Version)
+	if mvnTool.Classifier != "" {
+		fileName = fmt.Sprintf("%s-%s", fileName, mvnTool.Classifier)
 	}
 	fileName = fmt.Sprintf("%s.%s", fileName, ext)
-	artifactPath := filepath.Join(m2Repo, groupIDPath, t.ArtifactID, t.Version, fileName)
+	artifactPath := filepath.Join(m2Repo, groupIDPath, mvnTool.ArtifactID, mvnTool.Version, fileName)
 	if _, err := os.Stat(artifactPath); err != nil {
 		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
 	}
@@ -131,7 +131,7 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, 
 		}
 	}
 	// 5. Create wrapper script in binDir pointing to libDir
-	wrapperPath := filepath.Join(binDir, t.Name)
+	wrapperPath := filepath.Join(binDir, mvnTool.Name)
 	var wrapperContent string
 	if ext == "exe" {
 		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
