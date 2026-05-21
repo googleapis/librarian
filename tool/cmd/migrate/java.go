@@ -458,6 +458,8 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 // distributionName is empty.
 func parseGroupAndArtifactID(distributionName, name string) (string, string) {
 	if distributionName != "" {
+		// We assume the distributionName is correct since it is parsed from
+		// generation_config.yaml.
 		parts := strings.Split(distributionName, ":")
 		return parts[0], parts[1]
 	}
