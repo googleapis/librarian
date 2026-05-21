@@ -1740,3 +1740,38 @@ func TestApplyJavaAPIOverrides(t *testing.T) {
 		})
 	}
 }
+
+func TestParseGroupAndArtifactID(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		distributionName string
+		libName          string
+		wantGroup        string
+		wantArtifact     string
+	}{
+		{
+			name:             "distributionName provided",
+			distributionName: "com.google.cloud:google-cloud-pubsub",
+			libName:          "pubsub",
+			wantGroup:        "com.google.cloud",
+			wantArtifact:     "google-cloud-pubsub",
+		},
+		{
+			name:             "empty distributionName fallback",
+			distributionName: "",
+			libName:          "secretmanager",
+			wantGroup:        "com.google.cloud",
+			wantArtifact:     "google-cloud-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotGroup, gotArtifact := parseGroupAndArtifactID(test.distributionName, test.libName)
+			if diff := cmp.Diff(test.wantGroup, gotGroup); diff != "" {
+				t.Errorf("mismatch group id (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantArtifact, gotArtifact); diff != "" {
+				t.Errorf("mismatch artifact id (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
