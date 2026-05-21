@@ -35,8 +35,9 @@ var (
 )
 
 const (
-	defaultVersion = "0.1.0-SNAPSHOT"
-	fakeGroupID    = "please-configure-java-group-id"
+	defaultVersion   = "0.1.0-SNAPSHOT"
+	fakeGroupID      = "please-configure-java-group-id"
+	googleapisSuffix = ".googleapis.com"
 )
 
 // Add initializes a new Java library with default values.
@@ -90,6 +91,9 @@ func DefaultLibraryName(srcs *sources.Sources, api string) (string, error) {
 	if apiConfig.ServiceName == "" {
 		return "", fmt.Errorf("%w for %s", ErrServiceNameNotFound, api)
 	}
-	subdomain := strings.Split(apiConfig.ServiceName, ".")[0]
+	if !strings.HasSuffix(apiConfig.ServiceName, googleapisSuffix) {
+		return "", fmt.Errorf("%w: service name %q does not end with %q", ErrAPIValidation, apiConfig.ServiceName, googleapisSuffix)
+	}
+	subdomain := strings.TrimSuffix(apiConfig.ServiceName, googleapisSuffix)
 	return subdomain, nil
 }

@@ -199,6 +199,11 @@ func TestDefaultLibraryName_Error(t *testing.T) {
 			api:     "google/ai/generativelanguage/v1",
 			wantErr: ErrAPIValidation,
 		},
+		{
+			name:    "non-standard service name (does not end in .googleapis.com)",
+			api:     "google/cloud/nonstandardname/v1",
+			wantErr: ErrAPIValidation,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := DefaultLibraryName(srcs, test.api)
