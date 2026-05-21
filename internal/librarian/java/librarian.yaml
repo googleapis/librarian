@@ -35,3 +35,5 @@ tools:
       version: "6.0.2"
     - name: jinja2
       version: "3.1.6"
+    - name: synthtool
+      local_path: sdk-platform-java/hermetic_build/library_generation

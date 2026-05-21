@@ -29,7 +29,7 @@ import (
 func TestInstall(t *testing.T) {
 	tmpDir := t.TempDir()
 	stubLogPath := filepath.Join(tmpDir, "pip_invocations.log")
-	stubContent := fmt.Sprintf(`#!/bin/bash
+	stubContent := fmt.Sprintf(`#!/bin/sh
 echo "pip $@" >> %q
 `, stubLogPath)
 	stubDir := filepath.Join(tmpDir, "bin")
@@ -41,6 +41,10 @@ echo "pip $@" >> %q
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
+	localPkgPath := filepath.Join(tmpDir, "mylocalpkg")
+	if err := os.MkdirAll(localPkgPath, 0755); err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name     string
 		tools    []*config.PipTool
@@ -67,6 +71,13 @@ echo "pip $@" >> %q
 				{Name: "requests"},
 			},
 			wantArgs: "install requests",
+		},
+		{
+			name: "install local package path",
+			tools: []*config.PipTool{
+				{Name: "synthtool", LocalPath: localPkgPath},
+			},
+			wantArgs: "install " + localPkgPath,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -95,7 +106,7 @@ func TestInstall_Error(t *testing.T) {
 		t.Fatal(err)
 	}
 	stubPath := filepath.Join(stubDir, "pip")
-	if err := os.WriteFile(stubPath, []byte("#!/bin/bash\nexit 1\n"), 0755); err != nil {
+	if err := os.WriteFile(stubPath, []byte("#!/bin/sh\nexit 1\n"), 0755); err != nil {
 		t.Fatal(err)
 	}
 	for _, test := range []struct {
@@ -113,6 +124,13 @@ func TestInstall_Error(t *testing.T) {
 				t.Setenv("PATH", stubDir)
 			},
 			wantErr: ErrInstall,
+		},
+		{
+			name: "local path not found",
+			tools: []*config.PipTool{
+				{Name: "failpkg", LocalPath: filepath.Join(tmpDir, "nonexistentpkg")},
+			},
+			wantErr: ErrLocalPathNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

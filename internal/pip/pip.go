@@ -19,6 +19,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -27,10 +29,24 @@ import (
 // ErrInstall indicates a failure to install pip packages.
 var ErrInstall = errors.New("failed to install python packages")
 
+// ErrLocalPathNotFound indicates that the specified local package path does not exist.
+var ErrLocalPathNotFound = errors.New("local pip package path not found")
+
 // Install installs a list of pip tools into the environment.
 func Install(ctx context.Context, tools []*config.PipTool) error {
 	var installTargets []string
 	for _, tool := range tools {
+		if tool.LocalPath != "" {
+			absPath, err := filepath.Abs(tool.LocalPath)
+			if err != nil {
+				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
+			}
+			if _, err := os.Stat(absPath); err != nil {
+				return fmt.Errorf("%w: %s", ErrLocalPathNotFound, absPath)
+			}
+			installTargets = append(installTargets, absPath)
+			continue
+		}
 		if tool.Package != "" {
 			installTargets = append(installTargets, tool.Package)
 			continue

@@ -26,8 +26,13 @@ import (
 
 func TestInstall(t *testing.T) {
 	tmpDir := t.TempDir()
+	t.Chdir(tmpDir)
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
+	localPkgDir := filepath.Join(tmpDir, "sdk-platform-java", "hermetic_build", "library_generation")
+	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
 	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
 	if err := os.MkdirAll(gjfDir, 0755); err != nil {
@@ -53,7 +58,7 @@ func TestInstall(t *testing.T) {
 		{
 			name:        "pip",
 			logFilename: "pip_invocations.log",
-			wantArgs:    "pip install PyYAML==6.0.2 jinja2==3.1.6",
+			wantArgs:    "pip install PyYAML==6.0.2 jinja2==3.1.6 " + localPkgDir,
 		},
 		{
 			name:        "mvn",
