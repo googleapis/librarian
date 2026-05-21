@@ -17,8 +17,6 @@ package config
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 )
@@ -26,20 +24,7 @@ import (
 // InstallPipTools installs a list of pip tools into the environment.
 func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	var installTargets []string
-	hasLocal := false
 	for _, tool := range tools {
-		if tool.LocalPath != "" {
-			absPath, err := filepath.Abs(tool.LocalPath)
-			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for local pip package %s: %w", tool.Name, err)
-			}
-			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("local pip package path not found: %s: %w", absPath, err)
-			}
-			installTargets = append(installTargets, absPath)
-			hasLocal = true
-			continue
-		}
 		if tool.Package != "" {
 			installTargets = append(installTargets, tool.Package)
 			continue
@@ -52,9 +37,6 @@ func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	}
 
 	args := []string{"install"}
-	if hasLocal {
-		args = append(args, "--no-build-isolation")
-	}
 	args = append(args, installTargets...)
 
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {

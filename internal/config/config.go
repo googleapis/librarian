@@ -97,9 +97,6 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
-	// Maven defines tools to install via maven.
-	Maven []*MavenTool `yaml:"maven,omitempty"`
-
 	// NPM defines tools to install via npm.
 	NPM []*NPMTool `yaml:"npm,omitempty"`
 
@@ -143,45 +140,10 @@ type PipTool struct {
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
-	Version string `yaml:"version,omitempty"`
+	Version string `yaml:"version"`
 
 	// Package is the pip install specifier (e.g., "pkg@git+https://...").
 	Package string `yaml:"package,omitempty"`
-
-	// LocalPath is a local directory path to use for installation.
-	LocalPath string `yaml:"local_path,omitempty"`
-}
-
-// MavenTool defines a tool to install via maven.
-type MavenTool struct {
-	// Name is the maven tool name.
-	Name string `yaml:"name"`
-
-	// Version is the version to install.
-	Version string `yaml:"version,omitempty"`
-
-	// GroupID is the maven groupId.
-	GroupID string `yaml:"group_id,omitempty"`
-
-	// ArtifactID is the maven artifactId.
-	ArtifactID string `yaml:"artifact_id,omitempty"`
-
-	// Classifier is the maven classifier.
-	Classifier string `yaml:"classifier,omitempty"`
-
-	// Packaging is the maven packaging (e.g. jar, exe).
-	Packaging string `yaml:"packaging,omitempty"`
-
-	// LocalPath is the local path to the maven project.
-	LocalPath string `yaml:"local_path,omitempty"`
-
-	// LocalArtifact is the path to the built local artifact.
-	// It supports the "{{Version}}" placeholder, which is dynamically replaced
-	// with the version parsed from the local project's pom.xml at installation time.
-	LocalArtifact string `yaml:"local_artifact,omitempty"`
-
-	// MainClass is the main class to execute for JAR packaging.
-	MainClass string `yaml:"main_class,omitempty"`
 }
 
 // GoTool defines a tool to install via go.

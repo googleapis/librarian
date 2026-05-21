@@ -38,7 +38,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
-| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via maven. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
@@ -67,21 +66,6 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pip package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
-| `local_path` | string | Is a local directory path to use for installation. |
-
-## MavenTool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the maven tool name. |
-| `version` | string | Is the version to install. |
-| `group_id` | string | Is the maven groupId. |
-| `artifact_id` | string | Is the maven artifactId. |
-| `classifier` | string | Is the maven classifier. |
-| `packaging` | string | Is the maven packaging (e.g. jar, exe). |
-| `local_path` | string | Is the local path to the maven project. |
-| `local_artifact` | string | Is the path to the built local artifact. It supports the "{{Version}}" placeholder, which is dynamically replaced with the version parsed from the local project's pom.xml at installation time. |
-| `main_class` | string | Is the main class to execute for JAR packaging. |
 
 ## GoTool Configuration
 

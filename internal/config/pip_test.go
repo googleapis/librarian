@@ -46,12 +46,6 @@ echo "pip $@" >> %q
 	// 3. Set PATH so our stub "pip" is executed instead of system pip
 	t.Setenv("PATH", stubDir)
 
-	// 4. Create some local packages we want to test
-	localPkgDir := filepath.Join(tmpDir, "my_local_pkg")
-	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
 	for _, test := range []struct {
 		name     string
 		tools    []*PipTool
@@ -73,22 +67,7 @@ echo "pip $@" >> %q
 			wantArgs: "install git+https://github.com/...",
 		},
 		{
-			name: "install local package",
-			tools: []*PipTool{
-				{Name: "mylocal", LocalPath: localPkgDir},
-			},
-			wantArgs: "install --no-build-isolation " + localPkgDir,
-		},
-		{
-			name: "install mixed local and external",
-			tools: []*PipTool{
-				{Name: "mylocal", LocalPath: localPkgDir},
-				{Name: "PyYAML", Version: "6.0.2"},
-			},
-			wantArgs: "install --no-build-isolation " + localPkgDir + " PyYAML==6.0.2",
-		},
-		{
-			name: "install package with name only (no version/package/local_path)",
+			name: "install package with name only (no version/package)",
 			tools: []*PipTool{
 				{Name: "requests"},
 			},
@@ -136,13 +115,6 @@ func TestInstallPipTools_Error(t *testing.T) {
 		wantErrSub string
 	}{
 		{
-			name: "local path missing",
-			tools: []*PipTool{
-				{Name: "mylocal", LocalPath: filepath.Join(tmpDir, "does_not_exist")},
-			},
-			wantErrSub: "local pip package path not found",
-		},
-		{
 			name: "pip command fails",
 			tools: []*PipTool{
 				{Name: "failpkg"},
@@ -151,23 +123,6 @@ func TestInstallPipTools_Error(t *testing.T) {
 				t.Setenv("PATH", stubDir)
 			},
 			wantErrSub: "failed to install python packages",
-		},
-		{
-			name: "deleted working directory abs path error",
-			tools: []*PipTool{
-				{Name: "mylocal", LocalPath: "relative_path_will_fail"},
-			},
-			setup: func(t *testing.T) {
-				targetDir := filepath.Join(tmpDir, "delete_me")
-				if err := os.Mkdir(targetDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				t.Chdir(targetDir)
-				if err := os.RemoveAll(targetDir); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantErrSub: "failed to resolve absolute path for local pip package",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
