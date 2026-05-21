@@ -138,9 +138,9 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 		j.APIReference == "" &&
 		j.APIDescriptionOverride == "" &&
 		j.APIShortnameOverride == "" &&
+		j.ArtifactIDOverride == "" &&
 		j.ClientDocumentationOverride == "" &&
 		j.CodeownerTeam == "" &&
-		j.DistributionNameOverride == "" &&
 		j.ExcludedDependencies == "" &&
 		len(j.ExcludedPOMs) == 0 &&
 		j.ExtraVersionedModules == "" &&
@@ -171,16 +171,9 @@ var (
 )
 
 // Validate checks that the Java-specific configuration for a library is
-// correctly formatted. It ensures that the distribution name override
-// contains exactly two parts separated by a colon, and that there are no
-// conflicts in common resources configuration.
+// correctly formatted. It ensures that there are no conflicts in common
+// resources configuration.
 func Validate(library *config.Library) error {
-	if library.Java != nil && library.Java.DistributionNameOverride != "" {
-		parts := strings.Split(library.Java.DistributionNameOverride, ":")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
-		}
-	}
 	for _, api := range library.APIs {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue

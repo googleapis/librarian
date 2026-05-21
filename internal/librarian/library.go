@@ -558,6 +558,9 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.APIIDOverride != "" {
 		res.APIIDOverride = src.APIIDOverride
 	}
+	if src.ArtifactIDOverride != "" {
+		res.ArtifactIDOverride = src.ArtifactIDOverride
+	}
 	if src.APIReference != "" {
 		res.APIReference = src.APIReference
 	}
@@ -572,9 +575,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.CodeownerTeam != "" {
 		res.CodeownerTeam = src.CodeownerTeam
-	}
-	if src.DistributionNameOverride != "" {
-		res.DistributionNameOverride = src.DistributionNameOverride
 	}
 	if src.ExcludedDependencies != "" {
 		res.ExcludedDependencies = src.ExcludedDependencies

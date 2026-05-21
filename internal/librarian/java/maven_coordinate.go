@@ -147,9 +147,9 @@ func protoGroupID(mainArtifactGroupID string) string {
 // DeriveDistributionName returns the Maven distribution name (GroupID:ArtifactID)
 // for the library, applying overrides and defaults as necessary.
 func DeriveDistributionName(library *config.Library) string {
-	if library.Java.DistributionNameOverride != "" {
-		return library.Java.DistributionNameOverride
+	artifactID := library.Java.ArtifactIDOverride
+	if artifactID == "" {
+		artifactID = cloudPrefix + library.Name
 	}
-	artifactID := cloudPrefix + library.Name
 	return fmt.Sprintf("%s:%s", library.Java.GroupID, artifactID)
 }

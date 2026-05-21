@@ -125,9 +125,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		if library.Java.APIDescriptionOverride != "" {
 			metadata.APIDescription = library.Java.APIDescriptionOverride
 		}
-		if library.Java.DistributionNameOverride != "" {
-			metadata.DistributionName = library.Java.DistributionNameOverride
-		}
+		metadata.DistributionName = DeriveDistributionName(library)
 		if library.Java.IssueTrackerOverride != "" {
 			metadata.IssueTracker = library.Java.IssueTrackerOverride
 		}
