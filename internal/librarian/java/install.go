@@ -61,7 +61,6 @@ func Install(ctx context.Context) error {
 			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
-	// TODO(https://github.com/googleapis/librarian/issues/5850): Refactor this once Librarian-wide variable is ready.
 	// Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
 		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
@@ -73,6 +72,7 @@ func Install(ctx context.Context) error {
 
 // getInstallDir returns the absolute path of the installation directory for Java tools.
 // It resolves LIBRARIAN_INSTALL_DIR if set, otherwise defaults to "$HOME/java_tools/bin".
+// TODO(https://github.com/googleapis/librarian/issues/5850): Refactor this once Librarian-wide variable is ready.
 func getInstallDir() (string, error) {
 	dir := os.Getenv("LIBRARIAN_INSTALL_DIR")
 	if dir == "" {
