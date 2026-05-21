@@ -45,6 +45,17 @@ func Install(ctx context.Context) error {
 	if err := command.RunStreaming(ctx, "npm", "install", "-g", "pnpm@7.32.2"); err != nil {
 		return fmt.Errorf("failed to install pnpm: %w", err)
 	}
+
+	// Resolve Node's global bin path and align pnpm's global-bin-dir
+	prefixOut, err := command.Output(ctx, "npm", "config", "get", "prefix")
+	if err != nil {
+		return fmt.Errorf("failed to query npm prefix: %w", err)
+	}
+	globalBin := filepath.Join(strings.TrimSpace(prefixOut), "bin")
+	if err := command.RunStreaming(ctx, "pnpm", "config", "set", "global-bin-dir", globalBin); err != nil {
+		return fmt.Errorf("failed to set pnpm global-bin-dir: %w", err)
+	}
+
 	for _, tool := range cfg.Tools.NPM {
 		if len(tool.Build) > 0 {
 			if err := installNPMToolFromSource(ctx, tool); err != nil {
@@ -56,7 +67,7 @@ func Install(ctx context.Context) error {
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := command.RunStreaming(ctx, "npm", "install", "-g", pkg); err != nil {
+		if err := command.RunStreaming(ctx, "pnpm", "add", "-g", pkg); err != nil {
 			return err
 		}
 	}
