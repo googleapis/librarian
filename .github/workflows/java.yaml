@@ -15,6 +15,7 @@ name: Java
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
+  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -44,3 +45,40 @@ jobs:
           test -x "$(which protoc-gen-java_gapic)"
       - name: Run internal/librarian/java tests and check coverage
         run: go run ./tool/cmd/coverage ./internal/librarian/java
+  integration:
+    runs-on: ubuntu-24.04
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-librarian
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+      - name: Install Java tools
+        run: |
+          ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
+          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+      - name: Checkout google-cloud-java
+        uses: actions/checkout@v6
+        with:
+          repository: googleapis/google-cloud-java
+          path: google-cloud-java
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install Python dependencies
+        run: |
+          pip install -e ./google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot/synthtool
+      - name: Run librarian generate
+        working-directory: google-cloud-java
+        env:
+          PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
+        run: librarian generate --all
+  create-issue-on-failure:
+    needs: [integration]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Java
+      repository: google-cloud-java
