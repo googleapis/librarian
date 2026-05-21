@@ -24,9 +24,10 @@ import (
 
 func TestAnnotateMessage(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		message *api.Message
-		want    *messageAnnotations
+		name        string
+		message     *api.Message
+		want        *messageAnnotations
+		wantImports []string
 	}{
 		{
 			name: "simple",
@@ -45,6 +46,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name: "escaped name",
@@ -60,6 +62,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Protocol",
 				CustomSerialization: false,
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name: "with oneof",
@@ -74,6 +77,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithOneof",
 				CustomSerialization: true,
 			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name: "with custom json name",
@@ -90,6 +94,31 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
 				CustomSerialization: true,
 			},
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name: "with pagination",
+			message: &api.Message{
+				Name:    "WithPagination",
+				ID:      ".test.WithPagination",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "secret_key", JSONName: "secretKey", Typez: api.TypezString},
+				},
+				Pagination: &api.PaginationInfo{
+					NextPageToken: &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString},
+					PageableItem:  &api.Field{Name: "pageable_item", JSONName: "pageableItem", Typez: api.TypezString, Codec: &fieldAnnotations{Name: "secretKey", BaseFieldType: "SecretKey"}},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "WithPagination",
+				TypeURL:             "type.googleapis.com/test.WithPagination",
+				CustomSerialization: false,
+				IsPaginatedResponse: true,
+				PageableItemField:   "secretKey",
+				PageableItemType:    "SecretKey",
+			},
+			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -101,7 +130,10 @@ func TestAnnotateMessage(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})
@@ -177,7 +209,11 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		Name:    "ListSecretsRequest",
 		TypeURL: "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	wantRequestImports := []string{"GoogleCloudWkt"}
+	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 
@@ -189,9 +225,64 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
-		ImportsGax:          true,
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateMessage_RecursiveNested(t *testing.T) {
+	itemField := &api.Field{Name: "secrets", JSONName: "secrets", Typez: api.TypezMessage, TypezID: ".google.cloud.secretmanager.v1.Secret", Repeated: true}
+	nextPageTokenField := &api.Field{Name: "next_page_token", JSONName: "nextPageToken", Typez: api.TypezString}
+	nestedOutputType := &api.Message{
+		Name:    "ListSecretsResponse",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.OuterMessage.ListSecretsResponse",
+		Fields:  []*api.Field{itemField, nextPageTokenField},
+		Pagination: &api.PaginationInfo{
+			NextPageToken: nextPageTokenField,
+			PageableItem:  itemField,
+		},
+	}
+	itemField.Parent = nestedOutputType
+	nextPageTokenField.Parent = nestedOutputType
+
+	outerMessage := &api.Message{
+		Name:     "OuterMessage",
+		Package:  "google.cloud.secretmanager.v1",
+		ID:       ".google.cloud.secretmanager.v1.OuterMessage",
+		Messages: []*api.Message{nestedOutputType},
+	}
+
+	secretType := &api.Message{
+		Name:    "Secret",
+		Package: "google.cloud.secretmanager.v1",
+		ID:      ".google.cloud.secretmanager.v1.Secret",
+	}
+
+	model := api.NewTestAPI([]*api.Message{outerMessage, secretType}, nil, nil)
+	model.PackageName = "google.cloud.secretmanager.v1"
+
+	codec := newTestCodec(t, model, nil)
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	gotOuter := outerMessage.Codec.(*messageAnnotations)
+	wantOuter := &messageAnnotations{
+		Name:    "OuterMessage",
+		TypeURL: "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+	}
+	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+
+	wantImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantImports, gotOuter.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

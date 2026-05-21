@@ -26,15 +26,9 @@ import Foundation
   import FoundationNetworking
 #endif
 
-{{#Codec.Model.ServiceImports}}
+{{#Codec.ServiceImports}}
 import {{.}}
-{{/Codec.Model.ServiceImports}}
-{{#Codec.Model.HasMessageImports}}
-
-{{/Codec.Model.HasMessageImports}}
-{{#Codec.Model.MessageImports}}
-import {{.}}
-{{/Codec.Model.MessageImports}}
+{{/Codec.ServiceImports}}
 
 extension Clients {
   protocol {{Codec.StubPrefix}}Stub {
