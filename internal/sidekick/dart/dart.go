@@ -200,7 +200,7 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 // - `[google.rpc.Code][]`.
 var commentRefsRegex = regexp.MustCompile(`\[([^\]]+)\]\[([\w\d\._]*)\]`)
 
-func formatDocComments(documentation string, model *api.API) []string {
+func (annotate *annotateModel) formatDocComments(documentation string) []string {
 	lines := strings.Split(documentation, "\n")
 
 	// Remove trailing whitespace.
@@ -210,9 +210,9 @@ func formatDocComments(documentation string, model *api.API) []string {
 
 	lines, codeBlocks := extractCodeBlocks(lines)
 	lines = sanitizeUrls(lines)
-	lines = resolveGoogleApiRefs(lines, model)
+	lines = annotate.resolveGoogleApiRefs(lines)
 	lines = escapeHtml(lines)
-	lines = processSingleBracketRefs(lines, model)
+	lines = annotate.processSingleBracketRefs(lines)
 	lines = cleanupDoubleTicks(lines)
 	lines = restoreCodeBlocks(lines, codeBlocks)
 
@@ -286,11 +286,11 @@ func extractCodeBlocks(lines []string) ([]string, [][]string) {
 			}
 		}
 
-		// If line is indented by 3 spaces.
-		if strings.HasPrefix(line, "   ") {
+		// If line is indented by 4 spaces.
+		if strings.HasPrefix(line, "    ") {
 			// Find the end of the candidate block.
 			j := i
-			for j < len(lines) && (strings.HasPrefix(lines[j], "   ") || lines[j] == "") {
+			for j < len(lines) && (strings.HasPrefix(lines[j], "    ") || lines[j] == "") {
 				j++
 			}
 
@@ -392,46 +392,26 @@ func sanitizeUrls(lines []string) []string {
 	return result
 }
 
-func findMessageByName(name string, model *api.API) *api.Message {
-	if model == nil {
+func (annotate *annotateModel) findMessageByName(name string) *api.Message {
+	if annotate == nil {
 		return nil
 	}
-	for msg := range model.AllMessages() {
-		if msg.Name == name {
-			return msg
-		}
-	}
-	return nil
+	return annotate.messageShortNames[name]
 }
 
-func findEnumByName(name string, model *api.API) *api.Enum {
-	if model == nil {
+func (annotate *annotateModel) findEnumByName(name string) *api.Enum {
+	if annotate == nil {
 		return nil
 	}
-	for en := range model.AllEnums() {
-		if en.Name == name {
-			return en
-		}
-	}
-	return nil
+	return annotate.enumShortNames[name]
 }
 
-func classExists(name string, model *api.API) bool {
-	return findMessageByName(name, model) != nil || findEnumByName(name, model) != nil
-}
-
-func getFlattenedName(msg *api.Message) string {
-	var parts []string
-	curr := msg
-	for curr != nil {
-		parts = append([]string{curr.Name}, parts...)
-		curr = curr.Parent
-	}
-	return strings.Join(parts, "_")
+func (annotate *annotateModel) classExists(name string) bool {
+	return annotate.findMessageByName(name) != nil || annotate.findEnumByName(name) != nil
 }
 
 // resolveGoogleApiRefs rewrites Google API doc references to code formatted text.
-func resolveGoogleApiRefs(lines []string, model *api.API) []string {
+func (annotate *annotateModel) resolveGoogleApiRefs(lines []string) []string {
 	result := make([]string, len(lines))
 	copy(result, lines)
 
@@ -455,7 +435,7 @@ func resolveGoogleApiRefs(lines []string, model *api.API) []string {
 			}
 
 			// If ref is a valid symbol, leave it as is.
-			if ref != "" && classExists(ref, model) {
+			if ref != "" && annotate.classExists(ref) {
 				continue
 			}
 
@@ -489,7 +469,7 @@ func escapeHtml(lines []string) []string {
 }
 
 // processSingleBracketRefs handles array access, literals, and symbol resolution.
-func processSingleBracketRefs(lines []string, model *api.API) []string {
+func (annotate *annotateModel) processSingleBracketRefs(lines []string) []string {
 	arrayAccessRegex := regexp.MustCompile(`[\w\d_\.]+\[\d+\](?:\.[\w\d_]+(?:\[\d+\])?)*`)
 	arrayLiteralRegex := regexp.MustCompile(`\[\d+(?:,\d+)*\]`)
 	singleRefRegex := regexp.MustCompile(`\[([\w\d\._]+)\]`)
@@ -544,7 +524,7 @@ func processSingleBracketRefs(lines []string, model *api.API) []string {
 			replacement := ""
 
 			if !strings.Contains(content, ".") {
-				if classExists(content, model) {
+				if annotate.classExists(content) {
 					continue
 				}
 				replacement = "`[" + content + "]`"
@@ -552,24 +532,19 @@ func processSingleBracketRefs(lines []string, model *api.API) []string {
 				parts := strings.Split(content, ".")
 				if len(parts) == 2 {
 					msgName := parts[0]
-					fieldName := parts[1]
+					targetFieldName := parts[1]
 
 					found := false
-					mappedFieldName := fieldName
+					mappedFieldName := targetFieldName
 					var targetMsg *api.Message
 
-					if model != nil {
-						for msg := range model.AllMessages() {
-							if msg.Name == msgName {
-								for _, f := range msg.Fields {
-									if f.Name == fieldName || f.JSONName == fieldName {
-										mappedFieldName = f.JSONName
-										found = true
-										targetMsg = msg
-										break
-									}
-								}
-								if found {
+					if annotate != nil {
+						if msg, ok := annotate.messageShortNames[msgName]; ok {
+							for _, f := range msg.Fields {
+								if f.Name == targetFieldName || f.JSONName == targetFieldName {
+									mappedFieldName = fieldName(f)
+									found = true
+									targetMsg = msg
 									break
 								}
 							}
@@ -577,7 +552,7 @@ func processSingleBracketRefs(lines []string, model *api.API) []string {
 					}
 
 					if found {
-						flattenedName := getFlattenedName(targetMsg)
+						flattenedName := messageName(targetMsg)
 						replacement = "[" + flattenedName + "." + mappedFieldName + "]"
 					}
 				}

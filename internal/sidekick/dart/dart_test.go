@@ -509,7 +509,8 @@ We want to respect whitespace at the beginning, because it important in Markdown
 		"/// - The next thing",
 	}
 	model := api.NewTestAPI(nil, nil, nil)
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -520,7 +521,8 @@ func TestFormatDocCommentsEmpty(t *testing.T) {
 
 	want := []string{}
 	model := api.NewTestAPI(nil, nil, nil)
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -537,7 +539,8 @@ This line has trailing spaces.  `
 		"/// This line has trailing spaces.",
 	}
 	model := api.NewTestAPI(nil, nil, nil)
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -556,7 +559,8 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 		"/// Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
 	}
 	model := api.NewTestAPI(nil, nil, nil)
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -662,13 +666,13 @@ is set to true, this field will contain the sentiment for the sentence.`,
 			output:   "/// You can reference `Java` page using Markdown reference link syntax:\n/// `[Java][Tutorial.Java]`.",
 		},
 		{
-			testName: "Code block indentation (3 spaces)",
-			input:    "There are bounds:\n\n   Upper bound: bounds[i]\n   Lower bound: bounds[i - 1]\n\nEnd.",
+			testName: "Code block indentation (4 spaces)",
+			input:    "There are bounds:\n\n    Upper bound: bounds[i]\n    Lower bound: bounds[i - 1]\n\nEnd.",
 			output:   "/// There are bounds:\n///\n/// ```text\n/// Upper bound: bounds[i]\n/// Lower bound: bounds[i - 1]\n/// ```\n///\n/// End.",
 		},
 		{
 			testName: "Code block indentation mixed spaces",
-			input:    "Required. The resource name:\n\n    \"projects/[PROJECT_ID]...\"\n\nFor example:\n\n   \"projects/my-project...\"",
+			input:    "Required. The resource name:\n\n    \"projects/[PROJECT_ID]...\"\n\nFor example:\n\n    \"projects/my-project...\"",
 			output:   "/// Required. The resource name:\n///\n/// ```text\n/// \"projects/[PROJECT_ID]...\"\n/// ```\n///\n/// For example:\n///\n/// ```text\n/// \"projects/my-project...\"\n/// ```",
 		},
 		{
@@ -713,7 +717,8 @@ is set to true, this field will contain the sentiment for the sentence.`,
 		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {
-			gotLines := formatDocComments(test.input, model)
+			annotate := newAnnotateModel(model)
+			gotLines := annotate.formatDocComments(test.input)
 			got := strings.Join(gotLines, "\n")
 			if diff := cmp.Diff(test.output, got); diff != "" {
 				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
@@ -742,7 +747,8 @@ func TestFormatDocCommentsNestedMessageReferences(t *testing.T) {
 		"/// [NasJobSpec_MultiTrialAlgorithmSpec_TrainTrialSpec.frequency] trials searched.",
 	}
 
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestFormatDocCommentsNestedMessageReferences (-want, +got)\n:%s", diff)
 	}
@@ -766,7 +772,8 @@ func TestFormatDocCommentsDuplicateMessageNames(t *testing.T) {
 		"/// Check [Model.supportedExportFormats] object.",
 	}
 
-	got := formatDocComments(input, model)
+	annotate := newAnnotateModel(model)
+	got := annotate.formatDocComments(input)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in TestFormatDocCommentsDuplicateMessageNames (-want, +got)\n:%s", diff)
 	}
