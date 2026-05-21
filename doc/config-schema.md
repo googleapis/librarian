@@ -38,6 +38,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
@@ -58,6 +59,17 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the URL or path of the package to install. |
 | `checksum` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## MavenTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the Maven tool name. It is used as the filename for the generated executable wrapper script. |
+| `version` | string | Is the version to install. |
+| `group_id` | string | Is the Maven artifact group ID. |
+| `artifact_id` | string | Is the Maven artifact ID. |
+| `classifier` | string | Is the classifier of the Maven artifact. |
+| `packaging` | string | Is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
 
 ## PipTool Configuration
 

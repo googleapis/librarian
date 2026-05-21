@@ -251,7 +251,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			name = l.APIShortName
 		}
 		output := "java-" + name
-		artifactID := parseArtifactID(l.DistributionName, name)
+		groupID, artifactID := parseGroupAndArtifactID(l.DistributionName, name)
 		version := versions[artifactID]
 		var apis []*config.API
 		var roots []string
@@ -337,7 +337,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				ExcludedDependencies:         l.ExcludedDependencies,
 				ExcludedPOMs:                 parseStringList(l.ExcludedPoms),
 				ExtraVersionedModules:        l.ExtraVersionedModules,
-				GroupID:                      l.GroupID,
+				GroupID:                      groupID,
 				IssueTrackerOverride:         l.IssueTracker,
 				LibraryTypeOverride:          l.LibraryType,
 				MinJavaVersion:               l.MinJavaVersion,
@@ -453,17 +453,17 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 	return keeps, nil
 }
 
-// parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
-// or name. If distributionName is empty, it returns "google-cloud-" + name.
-func parseArtifactID(distributionName, name string) string {
-	artifactID := distributionName
-	if artifactID == "" {
-		artifactID = "google-cloud-" + name
+// parseGroupAndArtifactID returns the Maven group ID and artifact ID from
+// distributionName (groupId:artifactId) or fallback to default value if
+// distributionName is empty.
+func parseGroupAndArtifactID(distributionName, name string) (string, string) {
+	if distributionName != "" {
+		// We assume the distributionName is correct since it is parsed from
+		// generation_config.yaml.
+		parts := strings.Split(distributionName, ":")
+		return parts[0], parts[1]
 	}
-	if i := strings.Index(artifactID, ":"); i != -1 {
-		artifactID = artifactID[i+1:]
-	}
-	return artifactID
+	return "com.google.cloud", "google-cloud-" + name
 }
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where
@@ -551,18 +551,33 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 			log.Printf("Debug: skipping library %s (SkipGenerate is true)", lib.Name)
 			continue
 		}
+		if lib.Java != nil && lib.Java.SkipPOMUpdates {
+			log.Printf("Debug: skipping library %s (SkipPOMUpdates is true)", lib.Name)
+			continue
+		}
 		libDir := filepath.Join(repoPath, "java-"+lib.Name)
 		ids := getModuleArtifactIDs(lib)
-		// 1. Client module pom.xml
-		clientPOMPath := filepath.Join(libDir, ids.Client, "pom.xml")
-		if updated, err := updatePOMMarkers(clientPOMPath, ids, "client"); err == nil {
-			if updated {
-				clientCount++
+		isExcluded := func(id string) bool {
+			if lib.Java == nil {
+				return false
 			}
-		} else if os.IsNotExist(err) {
-			log.Printf("Debug: skipping library %s (client pom.xml not found at %s)", lib.Name, clientPOMPath)
+			return slices.Contains(lib.Java.ExcludedPOMs, id)
+		}
+
+		// 1. Client module pom.xml
+		if !isExcluded(ids.Client) {
+			clientPOMPath := filepath.Join(libDir, ids.Client, "pom.xml")
+			if updated, err := updatePOMMarkers(clientPOMPath, ids, "client"); err == nil {
+				if updated {
+					clientCount++
+				}
+			} else if os.IsNotExist(err) {
+				log.Printf("Debug: skipping library %s (client pom.xml not found at %s)", lib.Name, clientPOMPath)
+			} else {
+				return err
+			}
 		} else {
-			return err
+			log.Printf("Debug: skipping library %s client POM (excluded: %s)", lib.Name, ids.Client)
 		}
 		// 2. Parent pom.xml
 		parentPOMPath := filepath.Join(libDir, "pom.xml")
@@ -576,15 +591,19 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 			return err
 		}
 		// 3. BOM pom.xml
-		bomPOMPath := filepath.Join(libDir, ids.BOM, "pom.xml")
-		if updated, err := updatePOMMarkers(bomPOMPath, ids, "bom"); err == nil {
-			if updated {
-				bomCount++
+		if !isExcluded(ids.BOM) {
+			bomPOMPath := filepath.Join(libDir, ids.BOM, "pom.xml")
+			if updated, err := updatePOMMarkers(bomPOMPath, ids, "bom"); err == nil {
+				if updated {
+					bomCount++
+				}
+			} else if os.IsNotExist(err) {
+				log.Printf("Debug: skipping library %s (BOM pom.xml not found at %s)", lib.Name, bomPOMPath)
+			} else {
+				return err
 			}
-		} else if os.IsNotExist(err) {
-			log.Printf("Debug: skipping library %s (BOM pom.xml not found at %s)", lib.Name, bomPOMPath)
 		} else {
-			return err
+			log.Printf("Debug: skipping library %s BOM POM (excluded: %s)", lib.Name, ids.BOM)
 		}
 	}
 

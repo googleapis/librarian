@@ -1568,66 +1568,8 @@ func TestInsertMarkers_Full(t *testing.T) {
 	libName := "vision"
 	artifactID := "google-cloud-vision"
 	repoPath := dir
-	libDir := filepath.Join(repoPath, "java-"+libName)
-	clientDir := filepath.Join(libDir, artifactID)
-	bomDir := filepath.Join(libDir, artifactID+"-bom")
 
-	if err := os.MkdirAll(clientDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.MkdirAll(bomDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	clientPOM := `<project>
-  <dependencies>
-    <dependency>
-      <groupId>com.google.api.grpc</groupId>
-      <artifactId>proto-google-cloud-vision-v1</artifactId>
-    </dependency>
-  </dependencies>
-</project>`
-
-	parentPOM := `<project>
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-vision</artifactId>
-      </dependency>
-      <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-vision-bom</artifactId>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-  <modules>
-    <module>google-cloud-vision</module>
-    <module>google-cloud-vision-bom</module>
-    <module>proto-google-cloud-vision-v1</module>
-  </modules>
-</project>`
-
-	bomPOM := `<project>
-  <dependencyManagement>
-    <dependencies>
-      <dependency>
-        <groupId>com.google.cloud</groupId>
-        <artifactId>google-cloud-vision</artifactId>
-      </dependency>
-    </dependencies>
-  </dependencyManagement>
-</project>`
-
-	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(clientPOM), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(libDir, "pom.xml"), []byte(parentPOM), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bomDir, "pom.xml"), []byte(bomPOM), 0644); err != nil {
-		t.Fatal(err)
-	}
+	libDir, clientDir, bomDir := setupJavaPOMs(t, repoPath, libName, artifactID)
 
 	cfg := &config.Config{
 		Libraries: []*config.Library{
@@ -1648,18 +1590,15 @@ func TestInsertMarkers_Full(t *testing.T) {
 	}
 
 	// Verify Client
-	clientGot, _ := os.ReadFile(filepath.Join(clientDir, "pom.xml"))
-	if !strings.Contains(string(clientGot), managedProtoStartMarker) {
-		t.Error("client pom missing proto markers")
-	}
+	verifyMarker(t, clientDir, managedProtoStartMarker, true)
 
 	// Verify Parent
-	parentGot, _ := os.ReadFile(filepath.Join(libDir, "pom.xml"))
-	if !strings.Contains(string(parentGot), managedDepsStartMarker) {
-		t.Error("parent pom missing dependency markers")
-	}
-	if !strings.Contains(string(parentGot), managedModulesStartMarker) {
-		t.Error("parent pom missing module markers")
+	verifyMarker(t, libDir, managedDepsStartMarker, true)
+	verifyMarker(t, libDir, managedModulesStartMarker, true)
+
+	parentGot, err := os.ReadFile(filepath.Join(libDir, "pom.xml"))
+	if err != nil {
+		t.Fatalf("failed to read parent POM: %v", err)
 	}
 	if !strings.Contains(string(parentGot), "proto-google-cloud-vision-v1") {
 		t.Error("parent pom missing proto module")
@@ -1677,10 +1616,7 @@ func TestInsertMarkers_Full(t *testing.T) {
 	}
 
 	// Verify BOM
-	bomGot, _ := os.ReadFile(filepath.Join(bomDir, "pom.xml"))
-	if !strings.Contains(string(bomGot), managedDepsStartMarker) {
-		t.Error("bom pom missing dependency markers")
-	}
+	verifyMarker(t, bomDir, managedDepsStartMarker, true)
 }
 
 func TestApplyJavaAPIOverrides(t *testing.T) {
@@ -1736,6 +1672,183 @@ func TestApplyJavaAPIOverrides(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.wantResName, api.GenerateResourceNames); diff != "" {
 				t.Errorf("mismatch resname (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInsertMarkers_ExcludedAndSkip(t *testing.T) {
+	libName := "vision"
+	artifactID := "google-cloud-vision"
+	for _, test := range []struct {
+		name             string
+		excludedPOMs     []string
+		skipPOMUpdates   bool
+		wantClientMarker bool
+		wantBOMMarker    bool
+		wantParentMarker bool
+	}{
+		{
+			name:             "exclude_client",
+			excludedPOMs:     []string{artifactID},
+			wantClientMarker: false,
+			wantBOMMarker:    true,
+			wantParentMarker: true,
+		},
+		{
+			name:             "exclude_bom",
+			excludedPOMs:     []string{artifactID + "-bom"},
+			wantClientMarker: true,
+			wantBOMMarker:    false,
+			wantParentMarker: true,
+		},
+		{
+			name:             "skip_pom_updates",
+			skipPOMUpdates:   true,
+			wantClientMarker: false,
+			wantBOMMarker:    false,
+			wantParentMarker: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			libDir, clientDir, bomDir := setupJavaPOMs(t, dir, libName, artifactID)
+			cfg := &config.Config{
+				Libraries: []*config.Library{
+					{
+						Name: libName,
+						APIs: []*config.API{
+							{Path: "google/cloud/vision/v1"},
+						},
+						Java: &config.JavaModule{
+							GroupID:        "com.google.cloud",
+							ArtifactID:     artifactID,
+							ExcludedPOMs:   test.excludedPOMs,
+							SkipPOMUpdates: test.skipPOMUpdates,
+						},
+					},
+				},
+			}
+			if err := insertMarkers(dir, cfg); err != nil {
+				t.Fatal(err)
+			}
+			verifyMarker(t, clientDir, managedProtoStartMarker, test.wantClientMarker)
+			verifyMarker(t, bomDir, managedDepsStartMarker, test.wantBOMMarker)
+			verifyMarker(t, libDir, managedDepsStartMarker, test.wantParentMarker)
+		})
+	}
+}
+
+func setupJavaPOMs(t *testing.T, dir, libName, artifactID string) (libDir, clientDir, bomDir string) {
+	t.Helper()
+	libDir = filepath.Join(dir, "java-"+libName)
+	clientDir = filepath.Join(libDir, artifactID)
+	bomDir = filepath.Join(libDir, artifactID+"-bom")
+
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(bomDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	clientPOM := fmt.Sprintf(`<project>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-%s-v1</artifactId>
+    </dependency>
+  </dependencies>
+</project>`, libName)
+
+	parentPOM := fmt.Sprintf(`<project>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>%s</artifactId>
+      </dependency>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>%s-bom</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+  <modules>
+    <module>%s</module>
+    <module>%s-bom</module>
+    <module>proto-google-cloud-%s-v1</module>
+  </modules>
+</project>`, artifactID, artifactID, artifactID, artifactID, libName)
+
+	bomPOM := fmt.Sprintf(`<project>
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.google.cloud</groupId>
+        <artifactId>%s</artifactId>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+</project>`, artifactID)
+
+	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(clientPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(libDir, "pom.xml"), []byte(parentPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bomDir, "pom.xml"), []byte(bomPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	return libDir, clientDir, bomDir
+}
+
+func verifyMarker(t *testing.T, dir, marker string, wantPresent bool) {
+	t.Helper()
+	path := filepath.Join(dir, "pom.xml")
+	got, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hasMarker := strings.Contains(string(got), marker)
+	if hasMarker != wantPresent {
+		t.Errorf("POM at %s marker %q presence = %v, want %v", path, marker, hasMarker, wantPresent)
+	}
+}
+
+func TestParseGroupAndArtifactID(t *testing.T) {
+	for _, test := range []struct {
+		name             string
+		distributionName string
+		libName          string
+		wantGroup        string
+		wantArtifact     string
+	}{
+		{
+			name:             "distributionName provided",
+			distributionName: "com.google.cloud:google-cloud-pubsub",
+			libName:          "pubsub",
+			wantGroup:        "com.google.cloud",
+			wantArtifact:     "google-cloud-pubsub",
+		},
+		{
+			name:             "empty distributionName fallback",
+			distributionName: "",
+			libName:          "secretmanager",
+			wantGroup:        "com.google.cloud",
+			wantArtifact:     "google-cloud-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotGroup, gotArtifact := parseGroupAndArtifactID(test.distributionName, test.libName)
+			if diff := cmp.Diff(test.wantGroup, gotGroup); diff != "" {
+				t.Errorf("mismatch group id (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantArtifact, gotArtifact); diff != "" {
+				t.Errorf("mismatch artifact id (-want +got):\n%s", diff)
 			}
 		})
 	}

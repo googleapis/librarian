@@ -36,19 +36,31 @@ const (
 	commonProtosLibrary  = "common-protos"
 )
 
-// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
-var nonRecursivePaths = map[string]bool{
-	"google/api":   true,
-	"google/cloud": true,
-	"google/rpc":   true,
-}
-
 var (
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 	errUnrecognizedAPI   = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
+	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
+	nonRecursivePaths = map[string]bool{
+		"google/api":   true,
+		"google/cloud": true,
+		"google/rpc":   true,
+	}
+	runProtoc = func(ctx context.Context, args []string) error {
+		return command.Run(ctx, "protoc", args...)
+	}
 )
+
+type generateAPIParams struct {
+	cfg      *config.Config
+	api      *config.API
+	library  *config.Library
+	srcCfg   *sources.SourceConfig
+	outdir   string
+	metadata *repoMetadata
+	apiCfg   *serviceconfig.API
+}
 
 // Generate generates a Java client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
@@ -112,16 +124,6 @@ func deriveAPIBase(library *config.Library, apiPath string) string {
 		return "v1"
 	}
 	return path.Base(apiPath)
-}
-
-type generateAPIParams struct {
-	cfg      *config.Config
-	api      *config.API
-	library  *config.Library
-	srcCfg   *sources.SourceConfig
-	outdir   string
-	metadata *repoMetadata
-	apiCfg   *serviceconfig.API
 }
 
 func generateAPI(ctx context.Context, params generateAPIParams) error {
@@ -244,10 +246,6 @@ func deriveProtosToCopy(apiProtos []string, primaryDir string, additionalRel []s
 		})
 	}
 	return res, nil
-}
-
-var runProtoc = func(ctx context.Context, args []string) error {
-	return command.Run(ctx, "protoc", args...)
 }
 
 func baseProtocArgs(srcCfg *sources.SourceConfig) []string {
