@@ -50,20 +50,20 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	pipLogPath := filepath.Join(tmpDir, "pip_invocations.log")
-	pipContent := fmt.Sprintf(`#!/bin/bash
+	pipContent := fmt.Sprintf(`#!/bin/sh
 echo "pip $@" >> %q
 `, pipLogPath)
 	if err := os.WriteFile(filepath.Join(stubDir, "pip"), []byte(pipContent), 0755); err != nil {
 		t.Fatal(err)
 	}
 	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
-	mvnContent := fmt.Sprintf(`#!/bin/bash
+	mvnContent := fmt.Sprintf(`#!/bin/sh
 echo "mvn $@" >> %q
 `, mvnLogPath)
 	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/bash\nexit 0\n"), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
