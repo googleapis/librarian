@@ -69,8 +69,8 @@ func setJavaConfig(lib *config.Library, groupID string) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
+	lib.Java.ArtifactIDOverride = "google-" + lib.Name
 	lib.Java.GroupID = groupID
-	lib.Java.DistributionNameOverride = groupID + ":google-" + lib.Name
 	return lib
 }
 
