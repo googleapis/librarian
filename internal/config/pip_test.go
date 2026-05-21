@@ -52,7 +52,7 @@ echo "pip $@" >> %q
 		t.Fatal(err)
 	}
 
-	tests := []struct {
+	for _, test := range []struct {
 		name     string
 		tools    []*PipTool
 		wantArgs string
@@ -94,13 +94,11 @@ echo "pip $@" >> %q
 			},
 			wantArgs: "install requests",
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			// Clear the log file before each test
 			_ = os.Remove(stubLogPath)
-			err := InstallPipTools(t.Context(), tc.tools)
+			err := InstallPipTools(t.Context(), test.tools)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -110,7 +108,7 @@ echo "pip $@" >> %q
 				t.Fatal(err)
 			}
 			gotInvocations := strings.TrimSpace(string(data))
-			wantInvocation := "pip " + tc.wantArgs
+			wantInvocation := "pip " + test.wantArgs
 			if diff := cmp.Diff(wantInvocation, gotInvocations); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
