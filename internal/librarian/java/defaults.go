@@ -171,10 +171,6 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 }
 
 var (
-	// ErrInvalidDistributionName is returned when a distribution name override
-	// is incorrectly formatted.
-	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
-
 	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
 	// but common_resources.proto is also explicitly listed in AdditionalProtos.
 	ErrOmitCommonResourcesConflict = fmt.Errorf("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
