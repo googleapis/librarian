@@ -108,7 +108,10 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
-				Java:    &config.JavaModule{GroupID: "com.google.cloud"},
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
 			},
 			want: LibraryCoordinate{
 				GAPIC: Coordinate{

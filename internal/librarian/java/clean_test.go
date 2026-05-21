@@ -82,7 +82,8 @@ func TestClean(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	if err := Clean(lib); err != nil {
@@ -252,6 +253,7 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
 					GroupID: "com.google.cloud",
 				},
 			},
@@ -281,7 +283,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-accesscontextmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -332,7 +335,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -358,7 +362,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -382,7 +387,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -406,7 +412,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
