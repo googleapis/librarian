@@ -798,6 +798,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
+			ArtifactID: "google-cloud-secretmanager",
 			GroupID:      "com.google.cloud",
 			ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 		},
@@ -845,7 +846,8 @@ func TestIdentifyMissingModules_GenerateProtoFalse(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	tmpDir := t.TempDir()
@@ -889,7 +891,8 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	tmpDir := t.TempDir()

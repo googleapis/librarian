@@ -113,7 +113,8 @@ func TestPostProcessAPI(t *testing.T) {
 			Name: libraryName,
 			APIs: []*config.API{api},
 			Java: &config.JavaModule{
-				GroupID: "com.google.cloud",
+				ArtifactID: "google-cloud-secretmanager",
+				GroupID:    "com.google.cloud",
 			},
 		},
 		apiBase: apiBase,
