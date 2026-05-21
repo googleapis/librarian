@@ -47,7 +47,7 @@ var (
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
 	// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
-	excludedBOMs            = map[string]bool{
+	excludedBOMs = map[string]bool{
 		"google-cloud-bigtable-deps-bom": true,
 	}
 	ignoredDirs = map[string]bool{

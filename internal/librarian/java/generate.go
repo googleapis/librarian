@@ -49,7 +49,7 @@ var (
 	}
 	runProtoc = func(ctx context.Context, args []string) error {
 		return command.Run(ctx, "protoc", args...)
-	}	
+	}
 )
 
 type generateAPIParams struct {
