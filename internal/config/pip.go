@@ -27,25 +27,28 @@ import (
 func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	var installTargets []string
 	hasLocal := false
-	for _, t := range tools {
-		if t.LocalPath != "" {
-			absPath, err := filepath.Abs(t.LocalPath)
+	for _, tool := range tools {
+		if tool.LocalPath != "" {
+			absPath, err := filepath.Abs(tool.LocalPath)
 			if err != nil {
-				return fmt.Errorf("failed to resolve absolute path for local pip package %s: %w", t.Name, err)
+				return fmt.Errorf("failed to resolve absolute path for local pip package %s: %w", tool.Name, err)
 			}
-			// Verify local path exists
 			if _, err := os.Stat(absPath); err != nil {
 				return fmt.Errorf("local pip package path not found: %s: %w", absPath, err)
 			}
 			installTargets = append(installTargets, absPath)
 			hasLocal = true
-		} else if t.Package != "" {
-			installTargets = append(installTargets, t.Package)
-		} else if t.Version != "" {
-			installTargets = append(installTargets, fmt.Sprintf("%s==%s", t.Name, t.Version))
-		} else {
-			installTargets = append(installTargets, t.Name)
+			continue
 		}
+		if tool.Package != "" {
+			installTargets = append(installTargets, tool.Package)
+			continue
+		}
+		if tool.Version != "" {
+			installTargets = append(installTargets, fmt.Sprintf("%s==%s", tool.Name, tool.Version))
+			continue
+		}
+		installTargets = append(installTargets, tool.Name)
 	}
 
 	args := []string{"install"}
