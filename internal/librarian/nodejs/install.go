@@ -41,6 +41,10 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
+	// Ensure pnpm is installed globally to enable lockfile-respecting builds
+	if err := command.RunStreaming(ctx, "npm", "install", "-g", "pnpm@7.32.2"); err != nil {
+		return fmt.Errorf("failed to install pnpm: %w", err)
+	}
 	for _, tool := range cfg.Tools.NPM {
 		if len(tool.Build) > 0 {
 			if err := installNPMToolFromSource(ctx, tool); err != nil {

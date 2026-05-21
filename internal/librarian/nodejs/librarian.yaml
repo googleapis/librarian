@@ -19,11 +19,11 @@ language: nodejs
 tools:
   npm:
     - name: gapic-generator-typescript
-      version: "561f7eef8b725359f650c22cce001b08d36811cd"
-      package: "https://github.com/googleapis/google-cloud-node/archive/561f7eef8b725359f650c22cce001b08d36811cd.tar.gz"
-      checksum: "1de85e60e02feb1fef7bd733398f0ed076c847ca86520a90a687142d26a787d2"
+      version: "92b328bd72b7418e5eca12ee0ffc32829daf0a77"
+      package: "https://github.com/googleapis/google-cloud-node/archive/92b328bd72b7418e5eca12ee0ffc32829daf0a77.tar.gz"
+      checksum: "34a49ef9c0ded1e14d8d00a32353048e91656a87ecfe285c15f1f2375016a5c6"
       build:
-        - "npm install"
+        - "pnpm install"
         # tsc only compiles TypeScript; the generator also needs templates/
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
