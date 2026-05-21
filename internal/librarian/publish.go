@@ -34,33 +34,19 @@ func publishCommand() *cli.Command {
 		Description: `publish releases the libraries that were updated in a release commit
 prepared by librarian bump.
 
-By default, publish performs a dry run that prints the actions it would
-take. Pass --execute to actually publish. By default, the most recent
-release commit reachable from HEAD is used; --release-commit overrides
-this with a specific commit.
-
-The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
-only honored when the workspace language is Rust; they are retained for
-backwards compatibility with the legacy Rust release jobs and will be
-removed once Rust migrates to the unified flow.
-
-Examples:
-
-	librarian publish                          # dry run
-	librarian publish --execute                # publish for real
-	librarian publish --release-commit=<sha>   # publish a specific commit`,
+Only Rust is supported.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "dry-run",
-				Usage: "print commands without executing (legacy Rust-only flag)",
+				Usage: "print commands without executing",
 			},
 			&cli.BoolFlag{
 				Name:  "dry-run-keep-going",
-				Usage: "print commands without executing, don't stop on error (legacy Rust-only flag)",
+				Usage: "print commands without executing, don't stop on error",
 			},
 			&cli.BoolFlag{
 				Name:  "skip-semver-checks",
-				Usage: "skip semantic versioning checks (legacy Rust-only flag)",
+				Usage: "skip semantic versioning checks",
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -74,18 +60,14 @@ Examples:
 				return err
 			}
 			if cfg.Language == config.LanguageRust {
-				return legacyRustPublish(ctx, cfg, cmd)
+				return rustPublish(ctx, cfg, cmd)
 			}
 			return fmt.Errorf("publish is not supported for %q", cfg.Language)
 		},
 	}
 }
 
-// legacyRustPublish implements the legacy publish behavior while new publish
-// behavior is being implemented.
-// TODO(https://github.com/googleapis/librarian/issues/3600): align flags
-// with new design and remove this function once Rust has migrated.
-func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {
+func rustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {
 	dryRun := cmd.Bool("dry-run")
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")

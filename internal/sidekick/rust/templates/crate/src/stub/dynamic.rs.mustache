@@ -46,7 +46,6 @@ pub trait {{Codec.Name}}: std::fmt::Debug + Send + Sync {
 
     {{#Model.Codec.LroStubOptions}}
     #[cfg(google_cloud_unstable_tracing)]
-    #[allow(dead_code)]
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,
@@ -89,7 +88,6 @@ impl<T: super::{{Codec.Name}}> {{Codec.Name}} for T {
 
     {{#Model.Codec.LroStubOptions}}
     #[cfg(google_cloud_unstable_tracing)]
-    #[allow(dead_code)]
     fn get_poller_options(
         &self,
         options: &crate::RequestOptions,

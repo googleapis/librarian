@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -35,13 +36,21 @@ type messageAnnotations struct {
 	IsPaginatedResponse bool
 	PageableItemField   string
 	PageableItemType    string
-	ImportsGax          bool
+	DependsOn           map[string]*Dependency
+}
+
+// MessageImports returns the list of dependencies for this message.
+func (ann *messageAnnotations) MessageImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {
-	if dep, ok := c.ApiPackages[message.Package]; ok {
-		dep.Required = true
-	}
+	// If the message is already annotated, don't process again
 	if message.Codec != nil {
 		return nil
 	}
@@ -55,7 +64,19 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		Model:               model,
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
+		DependsOn:           map[string]*Dependency{},
 	}
+
+	// Ensure the entire package depends on the package this message belongs to.
+	if _, err := c.addApiPackageDependency(message.Package); err != nil {
+		return err
+	}
+	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
+	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
+	if err != nil {
+		return err
+	}
+	annotations.DependsOn[wktDep.Name] = wktDep
 
 	message.Codec = annotations
 	for _, oneof := range message.OneOfs {
@@ -67,14 +88,29 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err := c.annotateField(field); err != nil {
 			return err
 		}
-		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok && fieldCodec.Name != field.JSONName {
-			annotations.CustomSerialization = true
+		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok {
+			if fieldCodec.Name != field.JSONName {
+				annotations.CustomSerialization = true
+			}
+			if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
+				if err != nil {
+					return err
+				}
+				annotations.DependsOn[dep.Name] = dep
+			}
 		}
 	}
 
-	annotations.IsPaginatedResponse = message.Pagination != nil
-	annotations.ImportsGax = annotations.IsPaginatedResponse
 	if message.Pagination != nil {
+		annotations.IsPaginatedResponse = true
+		// If this message is a paginated response, then require the pagination helpers package
+		paginationDep, err := c.addPackageDependency(paginationSwiftPackage)
+		if err != nil {
+			return err
+		}
+		annotations.DependsOn[paginationDep.Name] = paginationDep
+
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
 		if !ok {
@@ -87,6 +123,15 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	for _, nested := range message.Messages {
 		if err := c.annotateMessage(nested, model); err != nil {
 			return err
+		}
+		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
+			// If there are required packages from nested messages, add them to the outer message as well
+			for _, dep := range nestedCodec.DependsOn {
+				if _, err := c.addDependency(dep); err != nil {
+					return err
+				}
+				annotations.DependsOn[dep.Name] = dep
+			}
 		}
 	}
 	for _, enum := range message.Enums {

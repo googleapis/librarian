@@ -44,6 +44,7 @@ type methodAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
+	IsLroPoller               bool
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -311,6 +312,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
+		IsLroPoller:               m.IsLroPoller,
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {

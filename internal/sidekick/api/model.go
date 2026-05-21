@@ -397,6 +397,8 @@ type Method struct {
 	ClientSideStreaming bool
 	// ServerSideStreaming is true if the method supports server-side streaming.
 	ServerSideStreaming bool
+	// IsLroPoller is true if the method is an LRO poller.
+	IsLroPoller bool
 	// OperationInfo contains information for methods returning long-running operations.
 	OperationInfo *OperationInfo
 	// DiscoveryLro has a value if this is a discovery-style long-running operation.

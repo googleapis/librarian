@@ -355,7 +355,11 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Name:    "ListRequest",
 		TypeURL: "type.googleapis.com/test.ListRequest",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	wantRequestImports := []string{"GoogleCloudWkt"}
+	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 
@@ -367,9 +371,13 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "items",
 		PageableItemType:    "Item",
-		ImportsGax:          true,
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	// Response type is a paginated response which depends on gax
+	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
+	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }

@@ -38,6 +38,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
@@ -58,6 +59,17 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the URL or path of the package to install. |
 | `checksum` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## MavenTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the Maven tool name. It is used as the filename for the generated executable wrapper script. |
+| `version` | string | Is the version to install. |
+| `group_id` | string | Is the Maven artifact group ID. |
+| `artifact_id` | string | Is the Maven artifact ID. |
+| `classifier` | string | Is the classifier of the Maven artifact. |
+| `packaging` | string | Is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
 
 ## PipTool Configuration
 
@@ -303,9 +315,9 @@ This document describes the schema for the librarian.yaml.
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
 | `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
+| `artifact_id` | string | Is the Maven artifact ID. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
-| `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
 | `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
