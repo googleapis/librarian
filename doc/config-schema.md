@@ -303,9 +303,9 @@ This document describes the schema for the librarian.yaml.
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
 | `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
+| `artifact_id` | string | Is the Maven artifact ID. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
-| `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
 | `excluded_dependencies` | string | Is a list of dependencies to exclude. |
 | `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |

@@ -28,31 +28,34 @@ func TestDeriveDistributionName(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "default case",
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			want:    "com.google.cloud:google-cloud-secretmanager",
+			name: "default case",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{ArtifactID: "google-cloud-secretmanager", GroupID: "com.google.cloud"},
+			},
+			want: "com.google.cloud:google-cloud-secretmanager",
 		},
 		{
 			name: "groupID override",
 			library: &config.Library{
 				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.custom"},
+				Java: &config.JavaModule{ArtifactID: "google-cloud-secretmanager", GroupID: "com.custom"},
 			},
 			want: "com.custom:google-cloud-secretmanager",
 		},
 		{
-			name: "distributionName override",
+			name: "artifact id override",
 			library: &config.Library{
 				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.google.cloud", DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
+				Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-secretmanager-v1"},
 			},
 			want: "com.google.cloud:google-cloud-secretmanager-v1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DeriveDistributionName(test.library)
-			if got != test.want {
-				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
+			got := DistributionName(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -105,7 +108,10 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
-				Java:    &config.JavaModule{GroupID: "com.google.cloud"},
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
 			},
 			want: LibraryCoordinate{
 				GAPIC: Coordinate{
@@ -126,13 +132,13 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 			},
 		},
 		{
-			name: "with distribution name override",
+			name: "with custom artifact id",
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.cloud",
-					DistributionNameOverride: "com.google.cloud:google-secretmanager",
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-secretmanager",
 				},
 			},
 			want: LibraryCoordinate{

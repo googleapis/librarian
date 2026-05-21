@@ -82,7 +82,8 @@ func TestClean(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	if err := Clean(lib); err != nil {
@@ -252,7 +253,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -281,7 +283,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-accesscontextmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -299,8 +302,8 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.cloud",
-					DistributionNameOverride: "com.google.cloud:secretmanager-special",
+					ArtifactID: "secretmanager-special",
+					GroupID:    "com.google.cloud",
 				},
 				APIs: []*config.API{
 					{
@@ -332,7 +335,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -358,7 +362,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -382,7 +387,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{
@@ -406,7 +412,8 @@ func TestCleanPatterns(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{

@@ -17,15 +17,19 @@ package java
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
-	javaPrefix     = "java-"
-	defaultGroupID = "com.google.cloud"
+	javaPrefix              = "java-"
+	defaultArtifactIDPrefix = "google-cloud-"
+	defaultGroupID          = "com.google.cloud"
 )
+
+func deriveArtifactID(name string) string {
+	return defaultArtifactIDPrefix + name
+}
 
 // deriveOutput computes the default output directory name for a given library name.
 func deriveOutput(name string) string {
@@ -39,6 +43,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	if library.Java == nil {
 		library.Java = &config.JavaModule{}
+	}
+	if library.Java.ArtifactID == "" {
+		library.Java.ArtifactID = deriveArtifactID(library.Name)
 	}
 	if library.Java.GroupID == "" {
 		library.Java.GroupID = defaultGroupID
@@ -74,6 +81,9 @@ func Tidy(library *config.Library) *config.Library {
 		library.Output = ""
 	}
 	if library.Java != nil {
+		if library.Java.ArtifactID == deriveArtifactID(library.Name) {
+			library.Java.ArtifactID = ""
+		}
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
@@ -138,9 +148,9 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 		j.APIReference == "" &&
 		j.APIDescriptionOverride == "" &&
 		j.APIShortnameOverride == "" &&
+		j.ArtifactID == "" &&
 		j.ClientDocumentationOverride == "" &&
 		j.CodeownerTeam == "" &&
-		j.DistributionNameOverride == "" &&
 		j.ExcludedDependencies == "" &&
 		len(j.ExcludedPOMs) == 0 &&
 		j.ExtraVersionedModules == "" &&
@@ -161,26 +171,15 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 }
 
 var (
-	// ErrInvalidDistributionName is returned when a distribution name override
-	// is incorrectly formatted.
-	ErrInvalidDistributionName = fmt.Errorf("invalid distribution name override")
-
 	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
 	// but common_resources.proto is also explicitly listed in AdditionalProtos.
 	ErrOmitCommonResourcesConflict = fmt.Errorf("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
 )
 
 // Validate checks that the Java-specific configuration for a library is
-// correctly formatted. It ensures that the distribution name override
-// contains exactly two parts separated by a colon, and that there are no
-// conflicts in common resources configuration.
+// correctly formatted. It ensures that there are no conflicts in common
+// resources configuration.
 func Validate(library *config.Library) error {
-	if library.Java != nil && library.Java.DistributionNameOverride != "" {
-		parts := strings.Split(library.Java.DistributionNameOverride, ":")
-		if len(parts) != 2 || parts[0] == "" || parts[1] == "" {
-			return fmt.Errorf("%w: %s: want \"groupId:artifactId\", got %q", ErrInvalidDistributionName, library.Name, library.Java.DistributionNameOverride)
-		}
-	}
 	for _, api := range library.APIs {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue

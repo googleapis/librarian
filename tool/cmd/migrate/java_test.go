@@ -17,6 +17,7 @@ package main
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -406,7 +407,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/secretmanager/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-secretmanager-v1",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -459,8 +461,9 @@ func TestBuildConfig(t *testing.T) {
 							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 						},
 						Java: &config.JavaModule{
-							GroupID:   "com.google.cloud",
-							SkipAPIID: true,
+							ArtifactID: "google-cloud-showcase",
+							GroupID:    "com.google.cloud",
+							SkipAPIID:  true,
 						},
 					},
 				},
@@ -495,7 +498,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/language/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-language",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -536,7 +540,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/vision/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-vision",
+							GroupID:    "com.google.cloud",
 						},
 					},
 					{
@@ -545,7 +550,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/language/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-language",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -609,9 +615,9 @@ func TestBuildConfig(t *testing.T) {
 							APIIDOverride:                "pubsub.googleapis.com",
 							APIReference:                 "https://api-ref.com",
 							APIDescriptionOverride:       "Pub/Sub description",
+							ArtifactID:                   "google-cloud-pubsub",
 							ClientDocumentationOverride:  "https://client-doc.com",
 							CodeownerTeam:                "team-pubsub",
-							DistributionNameOverride:     "com.google.cloud:google-cloud-pubsub",
 							ExcludedDependencies:         "dep1,dep2",
 							ExcludedPOMs:                 []string{"pom1", "pom2"},
 							ExtraVersionedModules:        "module1",
@@ -671,8 +677,8 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
-							GroupID:                  "com.google.cloud",
-							DistributionNameOverride: "com.google.cloud:" + "google-cloud-accessapproval",
+							ArtifactID: "google-cloud-accessapproval",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -708,6 +714,7 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/maps/places/v1"},
 						},
 						Java: &config.JavaModule{
+							ArtifactID:           "google-cloud-maps-places",
 							GroupID:              "com.google.cloud",
 							APIShortnameOverride: "maps-places",
 						},
@@ -753,7 +760,8 @@ func TestBuildConfig(t *testing.T) {
 							},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-gkehub",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -798,7 +806,8 @@ func TestBuildConfig(t *testing.T) {
 							},
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-gsuite-addons",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -841,7 +850,8 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-aiplatform/src/test/java/com/google/iam/v1/MockIAMPolicyImpl.java",
 						},
 						Java: &config.JavaModule{
-							GroupID: "com.google.cloud",
+							ArtifactID: "google-cloud-aiplatform",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -886,6 +896,7 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
 						},
 						Java: &config.JavaModule{
+							ArtifactID:     "google-cloud-firestore",
 							GroupID:        "com.google.cloud",
 							SkipPOMUpdates: true,
 						},
@@ -1051,6 +1062,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 							},
 						},
 						Java: &config.JavaModule{
+							ArtifactID:        fmt.Sprintf("google-cloud-%s", test.libraryName),
 							GroupID:           "com.google.cloud",
 							TransportOverride: test.wantTransport,
 						},
@@ -1374,7 +1386,8 @@ func TestGetModuleArtifactIDs(t *testing.T) {
 			{Path: "google/cloud/vision/type"},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-vision",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	ids := getModuleArtifactIDs(lib)
@@ -1624,7 +1637,8 @@ func TestInsertMarkers_Full(t *testing.T) {
 					{Path: "google/cloud/vision/v1"},
 				},
 				Java: &config.JavaModule{
-					DistributionNameOverride: "com.google.cloud:" + artifactID,
+					ArtifactID: artifactID,
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},

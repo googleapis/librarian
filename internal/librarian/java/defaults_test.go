@@ -37,7 +37,8 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -51,7 +52,8 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "custom-output",
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -79,7 +81,8 @@ func TestFill(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -112,7 +115,8 @@ func TestFill(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -128,7 +132,39 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				Java: &config.JavaModule{
-					GroupID: "com.google.custom",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.custom",
+				},
+			},
+		},
+		{
+			name: "fill default artifact id",
+			lib: &config.Library{
+				Name: "secretmanager",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+		},
+		{
+			name: "do not overwrite artifact id",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "custom-secretmanager",
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "custom-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -340,14 +376,6 @@ func TestValidate(t *testing.T) {
 		lib  *config.Library
 	}{
 		{
-			name: "valid distribution name override",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "part1:part2",
-				},
-			},
-		},
-		{
 			name: "empty java config",
 			lib:  &config.Library{},
 		},
@@ -372,51 +400,6 @@ func TestValidate_Error(t *testing.T) {
 		lib     *config.Library
 		wantErr error
 	}{
-		{
-			name: "missing colon",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "nocolon",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "too many colons",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "too:many:colons",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "empty parts",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: ":",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "missing artifact id",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: "groupid:",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
-		{
-			name: "missing group id",
-			lib: &config.Library{
-				Java: &config.JavaModule{
-					DistributionNameOverride: ":artifactid",
-				},
-			},
-			wantErr: ErrInvalidDistributionName,
-		},
 		{
 			name: "omit common resources conflict",
 			lib: &config.Library{
