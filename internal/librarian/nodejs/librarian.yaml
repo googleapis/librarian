@@ -23,12 +23,12 @@ tools:
       package: "https://github.com/googleapis/google-cloud-node/archive/92b328bd72b7418e5eca12ee0ffc32829daf0a77.tar.gz"
       checksum: "34a49ef9c0ded1e14d8d00a32353048e91656a87ecfe285c15f1f2375016a5c6"
       build:
-        - "corepack pnpm install"
+        - "pnpm install"
         # tsc only compiles TypeScript; the generator also needs templates/
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
         - "cp -r templates protos build/"
-        - "corepack pnpm link --global"
+        - "pnpm link --global"
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
