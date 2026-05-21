@@ -28,15 +28,18 @@ func TestDeriveDistributionName(t *testing.T) {
 		want    string
 	}{
 		{
-			name:    "default case",
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			want:    "com.google.cloud:google-cloud-secretmanager",
+			name: "default case",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{ArtifactID: "google-cloud-secretmanager", GroupID: "com.google.cloud"},
+			},
+			want: "com.google.cloud:google-cloud-secretmanager",
 		},
 		{
 			name: "groupID override",
 			library: &config.Library{
 				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.custom"},
+				Java: &config.JavaModule{ArtifactID: "google-cloud-secretmanager", GroupID: "com.custom"},
 			},
 			want: "com.custom:google-cloud-secretmanager",
 		},
