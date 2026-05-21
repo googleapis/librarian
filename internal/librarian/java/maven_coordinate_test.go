@@ -21,6 +21,43 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestDeriveDistributionName(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    string
+	}{
+		{
+			name:    "default case",
+			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
+			want:    "com.google.cloud:google-cloud-secretmanager",
+		},
+		{
+			name: "groupID override",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{GroupID: "com.custom"},
+			},
+			want: "com.custom:google-cloud-secretmanager",
+		},
+		{
+			name: "artifact id override",
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-secretmanager-v1"},
+			},
+			want: "com.google.cloud:google-cloud-secretmanager-v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DistributionName(test.library)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestProtoGroupID(t *testing.T) {
 	for _, test := range []struct {
 		name                string

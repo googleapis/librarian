@@ -70,6 +70,12 @@ type APICoordinate struct {
 	GRPC Coordinate
 }
 
+// DistributionName returns the Maven distribution name (GroupID:ArtifactID)
+// for the library.
+func DistributionName(library *config.Library) string {
+	return fmt.Sprintf("%s:%s", library.Java.GroupID, library.Java.ArtifactID)
+}
+
 // DeriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
 // its parent, and its BOM based on the library's configuration.
 func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
