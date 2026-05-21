@@ -37,7 +37,8 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -51,7 +52,8 @@ func TestFill(t *testing.T) {
 				Name:   "secretmanager",
 				Output: "custom-output",
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -79,7 +81,8 @@ func TestFill(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -112,7 +115,8 @@ func TestFill(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 		},
@@ -121,14 +125,15 @@ func TestFill(t *testing.T) {
 			lib: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
-					GroupID: "com.google.custom",
+					GroupID:    "com.google.custom",
 				},
 			},
 			want: &config.Library{
 				Name:   "secretmanager",
 				Output: "java-secretmanager",
 				Java: &config.JavaModule{
-					GroupID: "com.google.custom",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.custom",
 				},
 			},
 		},
