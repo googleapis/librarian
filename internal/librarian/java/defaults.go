@@ -148,7 +148,7 @@ func isEmptyJavaModule(j *config.JavaModule) bool {
 		j.APIReference == "" &&
 		j.APIDescriptionOverride == "" &&
 		j.APIShortnameOverride == "" &&
-		j.ArtifactIDOverride == "" &&
+		j.ArtifactID == "" &&
 		j.ClientDocumentationOverride == "" &&
 		j.CodeownerTeam == "" &&
 		j.ExcludedDependencies == "" &&
