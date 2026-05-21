@@ -127,14 +127,14 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, 
 	wrapperPath := filepath.Join(binDir, t.Name)
 	var wrapperContent string
 	if ext == "exe" {
-		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec %q \"$@\"\n", destPath)
+		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 	} else {
-		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -jar %q \"$@\"\n", destPath)
+		wrapperContent = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
 }
 
-func copyFile(src, dst string, perm os.FileMode) error {
+func copyFile(src, dst string, perm os.FileMode) (err error) {
 	in, err := os.Open(src)
 	if err != nil {
 		return err
@@ -144,9 +144,13 @@ func copyFile(src, dst string, perm os.FileMode) error {
 	if err != nil {
 		return err
 	}
-	defer out.Close()
+	defer func() {
+		if cErr := out.Close(); err == nil {
+			err = cErr
+		}
+	}()
 	if _, err = io.Copy(out, in); err != nil {
 		return err
 	}
-	return nil
+	return out.Sync()
 }

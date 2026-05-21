@@ -128,7 +128,7 @@ echo "mvn $@" >> %q
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantGjfWrapper := fmt.Sprintf("#!/bin/bash\nexec java -jar %q \"$@\"\n", gjfCopiedPath)
+	wantGjfWrapper := fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", gjfCopiedPath)
 	if diff := cmp.Diff(wantGjfWrapper, string(gjfWrapper)); diff != "" {
 		t.Errorf("GJF wrapper contents mismatch (-want +got):\n%s", diff)
 	}
@@ -137,7 +137,7 @@ echo "mvn $@" >> %q
 	if err != nil {
 		t.Fatal(err)
 	}
-	wantGrpcWrapper := fmt.Sprintf("#!/bin/bash\nexec %q \"$@\"\n", grpcCopiedPath)
+	wantGrpcWrapper := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", grpcCopiedPath)
 	if diff := cmp.Diff(wantGrpcWrapper, string(grpcWrapper)); diff != "" {
 		t.Errorf("grpc wrapper contents mismatch (-want +got):\n%s", diff)
 	}
