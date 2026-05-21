@@ -54,10 +54,8 @@ func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	}
 	args = append(args, installTargets...)
 
-	fmt.Printf("Installing Python packages via pip...\n")
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
 		return fmt.Errorf("failed to install python packages: %w", err)
 	}
-
 	return nil
 }
