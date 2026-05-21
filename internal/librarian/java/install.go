@@ -29,7 +29,6 @@ var librarianYAML []byte
 
 // Install installs Java tool dependencies.
 func Install(ctx context.Context) error {
-	// Check required tools in PATH
 	for _, cmd := range []string{"pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
@@ -39,7 +38,6 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	// Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
 		if err := config.InstallPipTools(ctx, cfg.Tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)

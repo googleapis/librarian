@@ -16,10 +16,14 @@ package config
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
 )
+
+// ErrPipInstall indicates a failure to install pip packages.
+var ErrPipInstall = errors.New("failed to install python packages")
 
 // InstallPipTools installs a list of pip tools into the environment.
 func InstallPipTools(ctx context.Context, tools []*PipTool) error {
@@ -35,12 +39,10 @@ func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 		}
 		installTargets = append(installTargets, tool.Name)
 	}
-
 	args := []string{"install"}
 	args = append(args, installTargets...)
-
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
-		return fmt.Errorf("failed to install python packages: %w", err)
+		return fmt.Errorf("%w: %w", ErrPipInstall, err)
 	}
 	return nil
 }

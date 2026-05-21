@@ -26,13 +26,10 @@ import (
 
 func TestInstall(t *testing.T) {
 	tmpDir := t.TempDir()
-
-	// Setup a stub pip executable
 	stubLogPath := filepath.Join(tmpDir, "pip_invocations.log")
 	stubContent := fmt.Sprintf(`#!/bin/bash
 echo "pip $@" >> %q
 `, stubLogPath)
-
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
@@ -42,13 +39,10 @@ echo "pip $@" >> %q
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
-
 	err := Install(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	// Verify stub logs show the expected pip install arguments
 	data, err := os.ReadFile(stubLogPath)
 	if err != nil {
 		t.Fatal(err)

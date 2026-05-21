@@ -15,6 +15,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -25,15 +26,11 @@ import (
 )
 
 func TestInstallPipTools(t *testing.T) {
-	// 1. Create a temporary directory for the stub executable and test inputs
 	tmpDir := t.TempDir()
-
-	// 2. Create a stub "pip" script that writes its arguments to a log file
 	stubLogPath := filepath.Join(tmpDir, "pip_invocations.log")
 	stubContent := fmt.Sprintf(`#!/bin/bash
 echo "pip $@" >> %q
 `, stubLogPath)
-
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
@@ -42,10 +39,7 @@ echo "pip $@" >> %q
 	if err := os.WriteFile(stubPath, []byte(stubContent), 0755); err != nil {
 		t.Fatal(err)
 	}
-
-	// 3. Set PATH so our stub "pip" is executed instead of system pip
 	t.Setenv("PATH", stubDir)
-
 	for _, test := range []struct {
 		name     string
 		tools    []*PipTool
@@ -75,13 +69,11 @@ echo "pip $@" >> %q
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// Clear the log file before each test
 			_ = os.Remove(stubLogPath)
 			err := InstallPipTools(t.Context(), test.tools)
 			if err != nil {
 				t.Fatal(err)
 			}
-			// Verify the stub log file contains the expected arguments
 			data, err := os.ReadFile(stubLogPath)
 			if err != nil {
 				t.Fatal(err)
@@ -97,8 +89,6 @@ echo "pip $@" >> %q
 
 func TestInstallPipTools_Error(t *testing.T) {
 	tmpDir := t.TempDir()
-
-	// Setup a failing stub pip for the command error case
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
@@ -107,12 +97,11 @@ func TestInstallPipTools_Error(t *testing.T) {
 	if err := os.WriteFile(stubPath, []byte("#!/bin/bash\nexit 1\n"), 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	for _, test := range []struct {
-		name       string
-		tools      []*PipTool
-		setup      func(t *testing.T)
-		wantErrSub string
+		name    string
+		tools   []*PipTool
+		setup   func(t *testing.T)
+		wantErr error
 	}{
 		{
 			name: "pip command fails",
@@ -122,7 +111,7 @@ func TestInstallPipTools_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", stubDir)
 			},
-			wantErrSub: "failed to install python packages",
+			wantErr: ErrPipInstall,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -130,11 +119,8 @@ func TestInstallPipTools_Error(t *testing.T) {
 				test.setup(t)
 			}
 			err := InstallPipTools(t.Context(), test.tools)
-			if err == nil {
-				t.Fatal("expected error but got nil")
-			}
-			if !strings.Contains(err.Error(), test.wantErrSub) {
-				t.Errorf("unexpected error: got %v, want to contain %q", err, test.wantErrSub)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("InstallPipTools() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
