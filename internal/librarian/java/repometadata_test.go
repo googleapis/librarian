@@ -94,11 +94,11 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 			name: "all overrides",
 			java: &config.JavaModule{
 				GroupID:                      "com.custom",
-				DistributionNameOverride:     "com.custom:custom-artifact",
 				APIIDOverride:                "custom.googleapis.com",
 				APIDescriptionOverride:       "Custom description",
 				APIShortnameOverride:         "custom-shortname",
 				APIReference:                 "https://custom.api.reference",
+				ArtifactID:                   "custom-artifact",
 				NamePrettyOverride:           "Custom Pretty Name",
 				ProductDocumentationOverride: "https://custom.docs",
 				ClientDocumentationOverride:  "https://custom.client.docs",

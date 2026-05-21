@@ -125,7 +125,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		if library.Java.APIDescriptionOverride != "" {
 			metadata.APIDescription = library.Java.APIDescriptionOverride
 		}
-		metadata.DistributionName = DeriveDistributionName(library)
+		metadata.DistributionName = fmt.Sprintf("%s:%s", library.Java.GroupID, library.Java.ArtifactID)
 		if library.Java.IssueTrackerOverride != "" {
 			metadata.IssueTracker = library.Java.IssueTrackerOverride
 		}
@@ -154,10 +154,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}
 
-	// distribution_name default for Java is groupId:artifactId
-	if !strings.Contains(metadata.DistributionName, ":") {
-		metadata.DistributionName = DeriveDistributionName(library)
-	}
 	// Default ClientDocumentation uses artifact ID
 	if metadata.ClientDocumentation == "" {
 		parts := strings.Split(metadata.DistributionName, ":")
