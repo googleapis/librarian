@@ -34,6 +34,9 @@ import (
 var librarianYAML []byte
 
 // Install installs Java tool dependencies.
+// It creates two sibling directories:
+// - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
+// - lib/ ($HOME/java_tools/lib) hermetically isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context) error {
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
@@ -48,8 +51,6 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
-	// binDir ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
-	// libDir ($HOME/java_tools/lib) is a sibling directory that hermetically isolates the downloaded compiled .jar/.exe files.
 	libDir := filepath.Join(filepath.Dir(binDir), "lib")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
