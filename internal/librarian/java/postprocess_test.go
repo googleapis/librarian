@@ -204,6 +204,7 @@ func TestRestructureModules(t *testing.T) {
 		library: &config.Library{
 			Name: libraryID,
 			Java: &config.JavaModule{
+				ArtifactID: libraryName,
 				GroupID: "com.google.cloud",
 			},
 		},
