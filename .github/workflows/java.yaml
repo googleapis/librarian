@@ -69,7 +69,7 @@ jobs:
           python-version: "3.12"
       - name: Install Python dependencies
         run: |
-          pip install ./google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot/synthtool
+          pip install -e ./google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot/synthtool
       - name: Run librarian generate
         working-directory: google-cloud-java
         env:
