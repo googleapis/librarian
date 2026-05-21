@@ -145,13 +145,13 @@ type MavenTool struct {
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
 
-	// GroupID is the maven groupId.
+	// GroupID is the Maven artifact group ID.
 	GroupID string `yaml:"group_id,omitempty"`
 
-	// ArtifactID is the maven artifactId.
+	// ArtifactID is the Maven artifact ID.
 	ArtifactID string `yaml:"artifact_id,omitempty"`
 
-	// Classifier is the maven classifier.
+	// Classifier is the classifier of the Maven artifact.
 	Classifier string `yaml:"classifier,omitempty"`
 
 	// Packaging is the Maven packaging (e.g. jar, exe). If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar".
