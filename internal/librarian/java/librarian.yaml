@@ -17,6 +17,19 @@
 # librarian.
 language: java
 tools:
+  maven:
+    - name: google-java-format
+      group_id: com.google.googlejavaformat
+      artifact_id: google-java-format
+      version: "1.25.2"
+      classifier: all-deps
+      packaging: jar
+    - name: protoc-gen-java_grpc
+      group_id: io.grpc
+      artifact_id: protoc-gen-grpc-java
+      version: 1.76.3
+      packaging: exe
+      classifier: linux-x86_64
   pip:
     - name: PyYAML
       version: "6.0.2"
