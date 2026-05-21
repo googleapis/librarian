@@ -30,5 +30,5 @@ tools:
       version: "23.7.0"
       package: "black[jupyter]==23.7.0"
     - name: synthtool
-      version: "e8051785da36c3f23860bf45dfa5adc8325d973f"
-      package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@e8051785da36c3f23860bf45dfa5adc8325d973f"
+      version: "e643ce8e20f8fe237a31a1754524ba987de72875"
+      package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@e643ce8e20f8fe237a31a1754524ba987de72875"
