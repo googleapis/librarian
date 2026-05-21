@@ -16,7 +16,6 @@ package java
 
 import (
 	"fmt"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -74,16 +73,9 @@ type APICoordinate struct {
 // DeriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
 // its parent, and its BOM based on the library's configuration.
 func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
-	distName := DeriveDistributionName(library)
-	parts := strings.SplitN(distName, ":", 2)
-	groupID := parts[0]
-	artifactID := groupID
-	if len(parts) == 2 {
-		artifactID = parts[1]
-	}
 	gapic := Coordinate{
-		GroupID:    groupID,
-		ArtifactID: artifactID,
+		GroupID:    library.Java.GroupID,
+		ArtifactID: library.Java.ArtifactID,
 		Version:    library.Version,
 	}
 	return LibraryCoordinate{
@@ -142,14 +134,4 @@ func protoGroupID(mainArtifactGroupID string) string {
 		prefix = googleGroupID
 	}
 	return prefix + protoGRPCSuffix
-}
-
-// DeriveDistributionName returns the Maven distribution name (GroupID:ArtifactID)
-// for the library, applying overrides and defaults as necessary.
-func DeriveDistributionName(library *config.Library) string {
-	artifactID := library.Java.ArtifactIDOverride
-	if artifactID == "" {
-		artifactID = cloudPrefix + library.Name
-	}
-	return fmt.Sprintf("%s:%s", library.Java.GroupID, artifactID)
 }

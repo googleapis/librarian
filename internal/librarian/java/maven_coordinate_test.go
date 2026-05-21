@@ -21,43 +21,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestDeriveDistributionName(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		want    string
-	}{
-		{
-			name:    "default case",
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			want:    "com.google.cloud:google-cloud-secretmanager",
-		},
-		{
-			name: "groupID override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.custom"},
-			},
-			want: "com.custom:google-cloud-secretmanager",
-		},
-		{
-			name: "distributionName override",
-			library: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{GroupID: "com.google.cloud", DistributionNameOverride: "com.google.cloud:google-cloud-secretmanager-v1"},
-			},
-			want: "com.google.cloud:google-cloud-secretmanager-v1",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := DeriveDistributionName(test.library)
-			if got != test.want {
-				t.Errorf("deriveDistributionName() = %q, want %q", got, test.want)
-			}
-		})
-	}
-}
-
 func TestProtoGroupID(t *testing.T) {
 	for _, test := range []struct {
 		name                string
@@ -126,13 +89,13 @@ func TestDeriveLibraryCoordinates(t *testing.T) {
 			},
 		},
 		{
-			name: "with distribution name override",
+			name: "with custom artifact id",
 			library: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.3",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.cloud",
-					DistributionNameOverride: "com.google.cloud:google-secretmanager",
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-secretmanager",
 				},
 			},
 			want: LibraryCoordinate{
