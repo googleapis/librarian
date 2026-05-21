@@ -60,8 +60,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactIDOverride: "google-shopping-css",
-					GroupID:              "com.google.shopping",
+					ArtifactID: "google-shopping-css",
+					GroupID:    "com.google.shopping",
 				},
 			},
 		},
@@ -81,8 +81,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactIDOverride: "google-maps-routing",
-					GroupID:              "com.google.maps",
+					ArtifactID: "google-maps-routing",
+					GroupID:    "com.google.maps",
 				},
 			},
 		},
@@ -102,8 +102,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactIDOverride: "google-foo-bar",
-					GroupID:              "please-configure-java-group-id",
+					ArtifactID: "google-foo-bar",
+					GroupID:    "please-configure-java-group-id",
 				},
 			},
 		},
@@ -123,8 +123,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactIDOverride: "google-ads-admanager",
-					GroupID:              "com.google.api-ads",
+					ArtifactID: "google-ads-admanager",
+					GroupID:    "com.google.api-ads",
 				},
 			},
 		},
