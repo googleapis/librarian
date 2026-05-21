@@ -16,7 +16,9 @@ package java
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -77,6 +79,41 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) *config.Library {
+	if len(library.Keep) > 0 {
+		coordinates := DeriveLibraryCoordinates(library)
+		gapicDirs := []string{coordinates.GAPIC.ArtifactID}
+		for _, api := range library.APIs {
+			if api.Java != nil && api.Java.GAPICArtifactIDOverride != "" {
+				gapicDirs = append(gapicDirs, api.Java.GAPICArtifactIDOverride)
+			}
+		}
+		var kept []string
+		for _, keepPath := range library.Keep {
+			keepPathSlash := filepath.ToSlash(keepPath)
+			if itTestRegexp.MatchString(keepPathSlash) || versionRegexp.MatchString(keepPathSlash) {
+				continue
+			}
+			omit := false
+			for _, gapicDir := range gapicDirs {
+				prefix := gapicDir + "/src/"
+				if strings.HasPrefix(keepPathSlash, prefix) {
+					filename := filepath.Base(keepPathSlash)
+					if filename != "gapic_metadata.json" && filename != "reflect-config.json" {
+						omit = true
+						break
+					}
+				}
+			}
+			if !omit {
+				kept = append(kept, keepPath)
+			}
+		}
+		slices.Sort(kept)
+		library.Keep = slices.Compact(kept)
+		if len(library.Keep) == 0 {
+			library.Keep = nil
+		}
+	}
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
