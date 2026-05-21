@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"strings"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -22,6 +24,7 @@ type serviceAnnotations struct {
 	Name             string
 	ClientName       string
 	StubPrefix       string
+	HostnameShort    string
 	DocLines         []string
 	RestMethods      []*api.Method
 	PackageName      string
@@ -51,6 +54,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		Name:             pascalCase(service.Name),
 		ClientName:       pascalCase(service.Name + "Client"),
 		StubPrefix:       pascalCaseNoMangling(service.Name),
+		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
 		DocLines:         docLines,
 		RestMethods:      restMethods,
 		PackageName:      c.PackageName,
