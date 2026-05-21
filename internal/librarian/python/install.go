@@ -20,6 +20,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -35,5 +36,5 @@ func Install(ctx context.Context) error {
 	if len(cfg.Tools.Pip) == 0 {
 		return nil
 	}
-	return config.InstallPipTools(ctx, cfg.Tools.Pip)
+	return pip.Install(ctx, cfg.Tools.Pip)
 }

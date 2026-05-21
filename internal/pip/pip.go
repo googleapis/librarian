@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package config
+// Package pip provides utility functions for installing Python packages via pip.
+package pip
 
 import (
 	"context"
@@ -20,13 +21,14 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
 )
 
-// ErrPipInstall indicates a failure to install pip packages.
-var ErrPipInstall = errors.New("failed to install python packages")
+// ErrInstall indicates a failure to install pip packages.
+var ErrInstall = errors.New("failed to install python packages")
 
-// InstallPipTools installs a list of pip tools into the environment.
-func InstallPipTools(ctx context.Context, tools []*PipTool) error {
+// Install installs a list of pip tools into the environment.
+func Install(ctx context.Context, tools []*config.PipTool) error {
 	var installTargets []string
 	for _, tool := range tools {
 		if tool.Package != "" {
@@ -42,7 +44,7 @@ func InstallPipTools(ctx context.Context, tools []*PipTool) error {
 	args := []string{"install"}
 	args = append(args, installTargets...)
 	if err := command.RunStreaming(ctx, "pip", args...); err != nil {
-		return fmt.Errorf("%w: %w", ErrPipInstall, err)
+		return fmt.Errorf("%w: %w", ErrInstall, err)
 	}
 	return nil
 }
