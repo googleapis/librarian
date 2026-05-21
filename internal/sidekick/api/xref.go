@@ -357,6 +357,12 @@ func enrichMethodSamples(m *Method) {
 
 	m.IsLRO = m.OperationInfo != nil
 
+	if m.SourceServiceID == ".google.longrunning.Operations" &&
+		m.Name == "GetOperation" &&
+		m.Service != nil && m.Service.Package != "google.longrunning" {
+		m.IsLroPoller = true
+	}
+
 	if m.OperationInfo != nil && m.Model != nil {
 		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}

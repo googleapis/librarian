@@ -64,6 +64,7 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 			Service:         svc,
 			SourceService:   svcMixin.Service,
 			SourceServiceID: svcMixin.SourceServiceID,
+			IsLroPoller:     true,
 		}
 		svc.Methods = append(svc.Methods, method)
 		model.AddMethod(method)

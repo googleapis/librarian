@@ -79,6 +79,7 @@ func TestLroAnnotations(t *testing.T) {
 		Name:         "getOperation",
 		InputTypeID:  "..zoneOperations.getRequest",
 		OutputTypeID: "..Operation",
+		IsLroPoller:  true,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
