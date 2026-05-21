@@ -132,6 +132,37 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "fill default artifact id",
+			lib: &config.Library{
+				Name: "secretmanager",
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+		},
+		{
+			name: "do not overwrite artifact id",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "custom-secretmanager",
+				},
+			},
+			want: &config.Library{
+				Name:   "secretmanager",
+				Output: "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "custom-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.lib)
