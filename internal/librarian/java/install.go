@@ -152,7 +152,8 @@ func resolveM2ArtifactPath(mvnTool *config.MavenTool, ext string) (string, error
 	return filepath.Join(m2Repo, groupIDPath, mvnTool.ArtifactID, mvnTool.Version, fileName), nil
 }
 
-// copyArtifactToLib copies the artifact file into the isolated sibling lib directory, applying execution permission bits if needed.
+// copyArtifactToLib copies the artifact file into the isolated sibling lib directory,
+// applying execution permission bits if needed.
 func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, error) {
 	fileName := filepath.Base(srcPath)
 	destPath := filepath.Join(libDir, fileName)

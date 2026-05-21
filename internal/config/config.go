@@ -154,7 +154,9 @@ type MavenTool struct {
 	// Classifier is the classifier of the Maven artifact.
 	Classifier string `yaml:"classifier,omitempty"`
 
-	// Packaging is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar".
+	// Packaging is the Maven packaging. Acceptable values are lowercase "jar" and "exe".
+	// If the packaging is "exe", the wrapper script executes it directly.
+	// Otherwise, it executes the tool using "java -jar".
 	Packaging string `yaml:"packaging,omitempty"`
 }
 
