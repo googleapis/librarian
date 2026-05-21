@@ -45,7 +45,6 @@ func TestInstall_Success(t *testing.T) {
 	if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	// Setup temp install dir
 	installDir := t.TempDir()
 	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)

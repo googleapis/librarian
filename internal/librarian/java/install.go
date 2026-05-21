@@ -56,17 +56,17 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to create install directory %q: %w", installDir, err)
 	}
 	// Install Maven tools
-	for _, t := range cfg.Tools.Maven {
-		if t.LocalPath != "" {
+	for _, mvnTool := range cfg.Tools.Maven {
+		if mvnTool.LocalPath != "" {
 			// Task 2: Local Maven artifact (gapic-generator-java)
-			if err := installLocalMavenTool(ctx, t, installDir); err != nil {
-				return fmt.Errorf("failed to install local maven tool %s: %w", t.Name, err)
+			if err := installLocalMavenTool(ctx, mvnTool, installDir); err != nil {
+				return fmt.Errorf("failed to install local maven tool %s: %w", mvnTool.Name, err)
 			}
-		} else {
-			// Task 3: External Maven artifact (google-java-format, protoc-gen-grpc-java)
-			if err := installExternalMavenTool(ctx, t, installDir); err != nil {
-				return fmt.Errorf("failed to install external maven tool %s: %w", t.Name, err)
-			}
+			continue
+		}
+		// Task 3: External Maven artifact (google-java-format, protoc-gen-grpc-java)
+		if err := installExternalMavenTool(ctx, mvnTool, installDir); err != nil {
+			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
 	// Task 4: Install Pip tools
@@ -75,10 +75,6 @@ func Install(ctx context.Context) error {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
-	fmt.Printf("--------------------------------------------------\n")
-	fmt.Printf("All Java tools installed in %s\n", installDir)
-	fmt.Printf("Please ensure this directory is in your PATH.\n")
-	fmt.Printf("--------------------------------------------------\n")
 	return nil
 }
 
@@ -122,7 +118,6 @@ func installLocalMavenTool(ctx context.Context, mavenTool *config.MavenTool, ins
 		"-DskipTests", "-Dcheckstyle.skip", "-Dclirr.skip", "-Denforcer.skip", "-Dfmt.skip",
 		"-pl", mavenTool.LocalPath, "--also-make",
 	}
-	fmt.Printf("Building local tool %s...\n", mavenTool.Name)
 	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to build local tool: %w", err)
 	}
@@ -151,10 +146,7 @@ func installLocalMavenTool(ctx context.Context, mavenTool *config.MavenTool, ins
 	} else {
 		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -jar %q \"$@\"\n", absJarPath)
 	}
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
-		return fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-	return nil
+	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
 }
 
 func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installDir string) error {
@@ -167,17 +159,14 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installD
 	if t.Classifier != "" {
 		artifact = fmt.Sprintf("%s:%s", artifact, t.Classifier)
 	}
-
 	// 2. Download via mvn
 	args := []string{
 		"dependency:get",
 		"-Dartifact=" + artifact,
 	}
-	fmt.Printf("Downloading external tool %s...\n", t.Name)
 	if err := command.RunStreamingInDir(ctx, installDir, "mvn", args...); err != nil {
 		return fmt.Errorf("failed to download artifact %s: %w", artifact, err)
 	}
-
 	// 3. Resolve path in .m2/repository
 	home, err := os.UserHomeDir()
 	if err != nil {
@@ -185,18 +174,15 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installD
 	}
 	m2Repo := filepath.Join(home, ".m2", "repository")
 	groupIDPath := strings.ReplaceAll(t.GroupID, ".", "/")
-
 	fileName := fmt.Sprintf("%s-%s", t.ArtifactID, t.Version)
 	if t.Classifier != "" {
 		fileName = fmt.Sprintf("%s-%s", fileName, t.Classifier)
 	}
 	fileName = fmt.Sprintf("%s.%s", fileName, ext)
-
 	artifactPath := filepath.Join(m2Repo, groupIDPath, t.ArtifactID, t.Version, fileName)
 	if _, err := os.Stat(artifactPath); err != nil {
 		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
 	}
-
 	// 4. Create wrapper
 	wrapperPath := filepath.Join(installDir, t.Name)
 	var wrapperContent string
@@ -209,10 +195,5 @@ func installExternalMavenTool(ctx context.Context, t *config.MavenTool, installD
 	} else {
 		wrapperContent = fmt.Sprintf("#!/bin/bash\nexec java -jar %q \"$@\"\n", artifactPath)
 	}
-
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
-		return fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return nil
+	return os.WriteFile(wrapperPath, []byte(wrapperContent), 0755)
 }
