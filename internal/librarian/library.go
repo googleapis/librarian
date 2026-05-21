@@ -558,8 +558,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.APIIDOverride != "" {
 		res.APIIDOverride = src.APIIDOverride
 	}
-	if src.ArtifactIDOverride != "" {
-		res.ArtifactIDOverride = src.ArtifactIDOverride
+	if src.ArtifactID != "" {
+		res.ArtifactID = src.ArtifactID
 	}
 	if src.APIReference != "" {
 		res.APIReference = src.APIReference
