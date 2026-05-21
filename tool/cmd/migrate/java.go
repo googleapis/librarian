@@ -251,7 +251,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			name = l.APIShortName
 		}
 		output := "java-" + name
-		artifactID := parseArtifactID(l.DistributionName, name)
+		groupID, artifactID := parseGroupAndArtifactID(l.DistributionName, name)
 		version := versions[artifactID]
 		var apis []*config.API
 		var roots []string
@@ -331,13 +331,13 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,
+				ArtifactID:                   artifactID,
 				ClientDocumentationOverride:  l.ClientDocumentation,
 				CodeownerTeam:                l.CodeownerTeam,
-				DistributionNameOverride:     l.DistributionName,
 				ExcludedDependencies:         l.ExcludedDependencies,
 				ExcludedPOMs:                 parseStringList(l.ExcludedPoms),
 				ExtraVersionedModules:        l.ExtraVersionedModules,
-				GroupID:                      l.GroupID,
+				GroupID:                      groupID,
 				IssueTrackerOverride:         l.IssueTracker,
 				LibraryTypeOverride:          l.LibraryType,
 				MinJavaVersion:               l.MinJavaVersion,
@@ -453,17 +453,17 @@ func parseOwlBotKeep(repoPath, outputDir string) ([]string, error) {
 	return keeps, nil
 }
 
-// parseArtifactID returns the Maven artifact ID from distributionName (groupId:artifactId)
-// or name. If distributionName is empty, it returns "google-cloud-" + name.
-func parseArtifactID(distributionName, name string) string {
-	artifactID := distributionName
-	if artifactID == "" {
-		artifactID = "google-cloud-" + name
+// parseGroupAndArtifactID returns the Maven group ID and artifact ID from
+// distributionName (groupId:artifactId) or fallback to default value if
+// distributionName is empty.
+func parseGroupAndArtifactID(distributionName, name string) (string, string) {
+	if distributionName != "" {
+		// We assume the distributionName is correct since it is parsed from
+		// generation_config.yaml.
+		parts := strings.Split(distributionName, ":")
+		return parts[0], parts[1]
 	}
-	if i := strings.Index(artifactID, ":"); i != -1 {
-		artifactID = artifactID[i+1:]
-	}
-	return artifactID
+	return "com.google.cloud", "google-cloud-" + name
 }
 
 // applyJavaArtifactOverrides sets artifact ID overrides for specific cases where

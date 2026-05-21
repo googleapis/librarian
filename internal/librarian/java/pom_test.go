@@ -45,7 +45,8 @@ func TestSyncPOMs_Golden(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	apiPath := library.APIs[0].Path
@@ -193,7 +194,8 @@ func TestSyncPOMs_Update(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	transports := map[string]serviceconfig.Transport{
@@ -258,7 +260,8 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	transports := map[string]serviceconfig.Transport{
@@ -308,7 +311,8 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -353,7 +357,8 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -395,7 +400,8 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -443,6 +449,7 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
+					ArtifactID:   "google-cloud-secretmanager",
 					GroupID:      "com.google.cloud",
 					ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 				},
@@ -489,7 +496,8 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -532,7 +540,8 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.cloud",
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			monorepoVersion: "1.2.3",
@@ -642,7 +651,8 @@ func TestIdentifyMissingModules(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	for _, test := range []struct {
@@ -788,6 +798,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
+			ArtifactID:   "google-cloud-secretmanager",
 			GroupID:      "com.google.cloud",
 			ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 		},
@@ -835,7 +846,8 @@ func TestIdentifyMissingModules_GenerateProtoFalse(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	tmpDir := t.TempDir()
@@ -879,7 +891,8 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			ArtifactID: "google-cloud-secretmanager",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	tmpDir := t.TempDir()

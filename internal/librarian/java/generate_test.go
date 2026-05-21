@@ -43,10 +43,16 @@ func TestResolveGAPICOptions(t *testing.T) {
 		want    []string
 	}{
 		{
-			name:    "basic case",
-			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			name: "basic case",
+			cfg:  &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.GRPCRest,
 			}},
@@ -62,10 +68,16 @@ func TestResolveGAPICOptions(t *testing.T) {
 			},
 		},
 		{
-			name:    "rest transport",
-			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			name: "rest transport",
+			cfg:  &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{Transports: map[string]serviceconfig.Transport{
 				config.LanguageJava: serviceconfig.Rest,
 			}},
@@ -81,10 +93,16 @@ func TestResolveGAPICOptions(t *testing.T) {
 			},
 		},
 		{
-			name:    "no rest numeric enum case",
-			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
-			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
+			name: "no rest numeric enum case",
+			cfg:  &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{
 				Transports: map[string]serviceconfig.Transport{
 					config.LanguageJava: serviceconfig.GRPCRest,
@@ -102,9 +120,15 @@ func TestResolveGAPICOptions(t *testing.T) {
 			},
 		},
 		{
-			name:    "default transport with no apiCfgs",
-			cfg:     &config.Config{Repo: "googleapis/google-cloud-java"},
-			library: &config.Library{Name: "secretmanager", Java: &config.JavaModule{GroupID: "com.google.cloud"}},
+			name: "default transport with no apiCfgs",
+			cfg:  &config.Config{Repo: "googleapis/google-cloud-java"},
+			library: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{},
 			want: []string{

@@ -47,7 +47,7 @@ func Add(lib *config.Library) *config.Library {
 	// so we reset it here to avoid redundancy in librarian.yaml.
 	lib.CopyrightYear = ""
 
-	// We use the first API to infer the GroupID and distribution name override.
+	// We use the first API to infer the group ID.
 	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
 	apiPath := lib.APIs[0].Path
 	switch {
@@ -73,8 +73,8 @@ func setJavaConfig(lib *config.Library, groupID string) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
+	lib.Java.ArtifactID = "google-" + lib.Name
 	lib.Java.GroupID = groupID
-	lib.Java.DistributionNameOverride = groupID + ":google-" + lib.Name
 	return lib
 }
 

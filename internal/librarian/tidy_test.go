@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -50,19 +49,6 @@ func TestValidateLibraries(t *testing.T) {
 				{Name: "google-cloud-secretmanager-v1"},
 			},
 			wantErr: errDuplicateLibraryName,
-		},
-		{
-			name: "invalid distribution name override for java",
-			libraries: []*config.Library{
-				{
-					Name: "lib",
-					Java: &config.JavaModule{
-						DistributionNameOverride: "invalid-name",
-					},
-				},
-			},
-			language: config.LanguageJava,
-			wantErr:  java.ErrInvalidDistributionName,
 		},
 		{
 			name: "skipped duplicate api paths",

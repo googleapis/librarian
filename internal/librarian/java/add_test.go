@@ -63,8 +63,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.shopping",
-					DistributionNameOverride: "com.google.shopping:google-shopping-css",
+					ArtifactID: "google-shopping-css",
+					GroupID:    "com.google.shopping",
 				},
 			},
 		},
@@ -84,8 +84,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.maps",
-					DistributionNameOverride: "com.google.maps:google-maps-routing",
+					ArtifactID: "google-maps-routing",
+					GroupID:    "com.google.maps",
 				},
 			},
 		},
@@ -105,8 +105,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					GroupID:                  "please-configure-java-group-id",
-					DistributionNameOverride: "please-configure-java-group-id:google-foo-bar",
+					ArtifactID: "google-foo-bar",
+					GroupID:    "please-configure-java-group-id",
 				},
 			},
 		},
@@ -126,8 +126,8 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.api-ads",
-					DistributionNameOverride: "com.google.api-ads:google-ads-admanager",
+					ArtifactID: "google-ads-admanager",
+					GroupID:    "com.google.api-ads",
 				},
 			},
 		},

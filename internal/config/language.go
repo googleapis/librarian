@@ -483,16 +483,15 @@ type JavaModule struct {
 	// .repo-metadata.json to be overridden.
 	APIShortnameOverride string `yaml:"api_shortname_override,omitempty"`
 
+	// ArtifactID is the Maven artifact ID.
+	ArtifactID string `yaml:"artifact_id,omitempty"`
+
 	// ClientDocumentationOverride allows the "client_documentation" field in
 	// .repo-metadata.json to be overridden.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
-
-	// DistributionNameOverride allows the "distribution_name" field in
-	// .repo-metadata.json to be overridden.
-	DistributionNameOverride string `yaml:"distribution_name_override,omitempty"`
 
 	// ExcludedDependencies is a list of dependencies to exclude.
 	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`

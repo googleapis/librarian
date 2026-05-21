@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -125,5 +126,50 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAnnotateField_PackageName(t *testing.T) {
+	referencedMsg := &api.Message{
+		Name:    "SomeMessage",
+		Package: "google.cloud.external.v1",
+		ID:      ".google.cloud.external.v1.SomeMessage",
+	}
+	field := &api.Field{
+		Name:          "external_message",
+		Documentation: "The external message.",
+		ID:            ".test.SecretVersion.external_message",
+		Typez:         api.TypezMessage,
+		TypezID:       referencedMsg.ID,
+	}
+	msg := &api.Message{
+		Name:    "Secret",
+		ID:      ".test.SecretVersion",
+		Package: "test",
+		Fields:  []*api.Field{field},
+	}
+	field.Parent = msg
+	model := api.NewTestAPI([]*api.Message{msg, referencedMsg}, nil, nil)
+	model.PackageName = "test"
+	codec := newTestCodec(t, model, map[string]string{})
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
+		},
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+	got := field.Codec.(*fieldAnnotations)
+	want := &fieldAnnotations{
+		Name:          "externalMessage",
+		FieldType:     "GoogleCloudExternalV1.SomeMessage",
+		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
+		PackageName:   "google.cloud.external.v1",
+		DocLines:      []string{"The external message."},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

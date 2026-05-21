@@ -15,7 +15,6 @@
 package swift
 
 import (
-	"slices"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -52,18 +51,18 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		model *api.API
-		want  map[string]bool
+		want  []string
 	}{
 		{
 			name: "Messages with wkt",
 			model: api.NewTestAPI(
 				[]*api.Message{{Name: "Request", ID: ".test.Request", Package: "test"}}, nil, nil),
-			want: map[string]bool{"GoogleCloudWkt": true},
+			want: []string{"GoogleCloudWkt"},
 		},
 		{
 			name:  "Enum with wkt",
 			model: api.NewTestAPI(nil, []*api.Enum{enum}, nil),
-			want:  map[string]bool{"GoogleCloudWkt": false},
+			want:  []string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -71,9 +70,10 @@ func TestModelAnnotations_MessagesWithWkt(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			got := map[string]bool{}
-			for _, d := range codec.Dependencies {
-				got[d.Name] = d.Required
+			ann := test.model.Codec.(*modelAnnotations)
+			got := []string{}
+			for _, d := range ann.Dependencies() {
+				got = append(got, d.Name)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -129,20 +129,16 @@ func TestModelAnnotations_WithExternalDependencies(t *testing.T) {
 
 	want := map[string]bool{
 		"GoogleCloudExternalWithOverrideV1": true,
-		"GoogleCloudGax":                    false, // required by the service, but not messages
+		"GoogleCloudGax":                    true, // required by the service
 		"GoogleCloudWkt":                    true,
+		"GoogleUnusedPackage":               false,
 	}
 	got := map[string]bool{}
-	for name, dep := range ann.DependsOn {
-		got[name] = dep.Required
+	for _, dep := range codec.Dependencies {
+		_, got[dep.Name] = ann.DependsOn[dep.Name]
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-
-	wantMessageImports := []string{"GoogleCloudExternalWithOverrideV1", "GoogleCloudWkt"}
-	if diff := cmp.Diff(wantMessageImports, ann.MessageImports); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
@@ -165,16 +161,16 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 		{ApiPackage: "google.cloud.placeholder.v1", Name: "GoogleCloudPlaceholderV1"},
 		{ApiPackage: "google.cloud.other.v1", Name: "GoogleCloudOtherV1", RequiredByServices: true},
 	})
-	// Make GoogleCloudPlaceholderV1 required to verify the rest of the code works. Its position may
-	// change as the implementation of `withExtraDependencies()` changes, so search for it:
-	idx := slices.IndexFunc(codec.Dependencies, func(d *Dependency) bool { return d.Name == "GoogleCloudPlaceholderV1" })
-	if idx == -1 {
-		t.Fatalf("GoogleCloudPlaceholderV1 not found")
-	}
-	codec.Dependencies[idx].Required = true
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
+	}
+	dep, err := codec.addPackageDependency("GoogleCloudPlaceholderV1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dep != nil {
+		t.Errorf("expected to not set ignore self dependency, got %v", dep)
 	}
 
 	ann, ok := model.Codec.(*modelAnnotations)
@@ -184,11 +180,14 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 
 	// Self dependency should be ignored, other should be present.
 	want := map[string]bool{
-		"GoogleCloudOtherV1": false, // required by the service, but not messages
+		"GoogleCloudGax":           true,  // always required by services
+		"GoogleCloudOtherV1":       true,  // required by the service
+		"GoogleCloudPlaceholderV1": false, // this is the current package and should not be included as a dependency
+		"GoogleCloudWkt":           true,  // always required by message types
 	}
 	got := map[string]bool{}
-	for name, dep := range ann.DependsOn {
-		got[name] = dep.Required
+	for _, dep := range codec.Dependencies {
+		_, got[dep.Name] = ann.DependsOn[dep.Name]
 	}
 
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -268,11 +267,7 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	// Since global pagination dependency setting is removed, GoogleCloudGax should NOT be required for messages.
-	if dep, ok := ann.DependsOn["GoogleCloudGax"]; !ok || dep.Required {
-		t.Errorf("expected GoogleCloudGax dependency to not be required, got %+v", dep)
-	}
-	if slices.Contains(ann.MessageImports, "GoogleCloudGax") {
-		t.Errorf("expected GoogleCloudGax to not be in MessageImports, got %v", ann.MessageImports)
+	if _, ok := ann.DependsOn["GoogleCloudGax"]; !ok {
+		t.Errorf("expected GoogleCloudGax dependency to be present in DependsOn")
 	}
 }
