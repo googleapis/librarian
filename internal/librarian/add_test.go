@@ -599,7 +599,7 @@ func TestDeriveLibraryName(t *testing.T) {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
 			got, err := deriveLibraryName(srcs, test.language, test.apiPath)
 			if err != nil {
-				t.Fatal()
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)

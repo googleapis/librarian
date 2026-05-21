@@ -162,7 +162,7 @@ func TestDefaultLibraryName(t *testing.T) {
 		t.Run(test.api, func(t *testing.T) {
 			got, err := DefaultLibraryName(srcs, test.api)
 			if err != nil {
-				t.Fatal()
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
