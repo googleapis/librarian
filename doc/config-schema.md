@@ -39,6 +39,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via maven. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
@@ -58,6 +59,17 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the URL or path of the package to install. |
 | `checksum` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## MavenTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the maven tool name. |
+| `version` | string | Is the version to install. |
+| `group_id` | string | Is the maven groupId. |
+| `artifact_id` | string | Is the maven artifactId. |
+| `classifier` | string | Is the maven classifier. |
+| `packaging` | string | Is the maven packaging (e.g. jar, exe). |
 
 ## PipTool Configuration
 

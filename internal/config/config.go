@@ -97,6 +97,9 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Maven defines tools to install via maven.
+	Maven []*MavenTool `yaml:"maven,omitempty"`
+
 	// NPM defines tools to install via npm.
 	NPM []*NPMTool `yaml:"npm,omitempty"`
 
@@ -132,6 +135,27 @@ type NPMTool struct {
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`
+}
+
+// MavenTool defines a tool to install via maven.
+type MavenTool struct {
+	// Name is the maven tool name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version,omitempty"`
+
+	// GroupID is the maven groupId.
+	GroupID string `yaml:"group_id,omitempty"`
+
+	// ArtifactID is the maven artifactId.
+	ArtifactID string `yaml:"artifact_id,omitempty"`
+
+	// Classifier is the maven classifier.
+	Classifier string `yaml:"classifier,omitempty"`
+
+	// Packaging is the maven packaging (e.g. jar, exe).
+	Packaging string `yaml:"packaging,omitempty"`
 }
 
 // PipTool defines a tool to install via pip.
