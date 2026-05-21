@@ -557,7 +557,6 @@ func insertMarkers(repoPath string, cfg *config.Config) error {
 		}
 		libDir := filepath.Join(repoPath, "java-"+lib.Name)
 		ids := getModuleArtifactIDs(lib)
-
 		isExcluded := func(id string) bool {
 			if lib.Java == nil {
 				return false

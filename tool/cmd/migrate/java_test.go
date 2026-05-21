@@ -1680,7 +1680,6 @@ func TestApplyJavaAPIOverrides(t *testing.T) {
 func TestInsertMarkers_ExcludedAndSkip(t *testing.T) {
 	libName := "vision"
 	artifactID := "google-cloud-vision"
-
 	for _, test := range []struct {
 		name             string
 		excludedPOMs     []string
