@@ -299,8 +299,8 @@ func TestCleanPatterns(t *testing.T) {
 			library: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
-					GroupID:                  "com.google.cloud",
-					DistributionNameOverride: "com.google.cloud:secretmanager-special",
+					ArtifactIDOverride: "secretmanager-special",
+					GroupID:              "com.google.cloud",
 				},
 				APIs: []*config.API{
 					{
