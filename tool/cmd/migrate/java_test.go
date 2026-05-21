@@ -408,7 +408,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-secretmanager-v1",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -462,8 +462,8 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-showcase",
-							GroupID:   "com.google.cloud",
-							SkipAPIID: true,
+							GroupID:    "com.google.cloud",
+							SkipAPIID:  true,
 						},
 					},
 				},
@@ -499,7 +499,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-language",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -541,7 +541,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-vision",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 					{
@@ -551,7 +551,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-language",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -761,7 +761,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-gkehub",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -807,7 +807,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-gsuite-addons",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -851,7 +851,7 @@ func TestBuildConfig(t *testing.T) {
 						},
 						Java: &config.JavaModule{
 							ArtifactID: "google-cloud-aiplatform",
-							GroupID: "com.google.cloud",
+							GroupID:    "com.google.cloud",
 						},
 					},
 				},
@@ -896,7 +896,7 @@ func TestBuildConfig(t *testing.T) {
 							"google-cloud-firestore/src/test/resources/META-INF/native-image/reflect-config.json",
 						},
 						Java: &config.JavaModule{
-							ArtifactID: "google-cloud-firestore",
+							ArtifactID:     "google-cloud-firestore",
 							GroupID:        "com.google.cloud",
 							SkipPOMUpdates: true,
 						},
@@ -1641,7 +1641,7 @@ func TestInsertMarkers_Full(t *testing.T) {
 					GroupID:    "com.google.cloud",
 				},
 			},
-		},	
+		},
 	}
 	if err := insertMarkers(repoPath, cfg); err != nil {
 		t.Fatal(err)

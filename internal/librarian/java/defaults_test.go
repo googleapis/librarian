@@ -125,7 +125,7 @@ func TestFill(t *testing.T) {
 			lib: &config.Library{
 				Name: "secretmanager",
 				Java: &config.JavaModule{
-					GroupID:    "com.google.custom",
+					GroupID: "com.google.custom",
 				},
 			},
 			want: &config.Library{

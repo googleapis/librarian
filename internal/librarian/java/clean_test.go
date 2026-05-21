@@ -254,7 +254,7 @@ func TestCleanPatterns(t *testing.T) {
 				},
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
-					GroupID: "com.google.cloud",
+					GroupID:    "com.google.cloud",
 				},
 			},
 			want: map[string]bool{

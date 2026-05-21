@@ -22,9 +22,9 @@ import (
 )
 
 const (
-	javaPrefix     = "java-"
-	defaultArtifactIDPrefix   = "google-cloud-"
-	defaultGroupID = "com.google.cloud"
+	javaPrefix              = "java-"
+	defaultArtifactIDPrefix = "google-cloud-"
+	defaultGroupID          = "com.google.cloud"
 )
 
 func deriveArtifactID(name string) string {

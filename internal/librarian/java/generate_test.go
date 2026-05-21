@@ -129,7 +129,7 @@ func TestResolveGAPICOptions(t *testing.T) {
 					GroupID:    "com.google.cloud",
 				},
 			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			apiCfgs: &serviceconfig.API{},
 			want: []string{
 				"metadata",

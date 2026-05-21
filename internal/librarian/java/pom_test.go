@@ -46,7 +46,7 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			ArtifactID: "google-cloud-secretmanager",
-			GroupID: "com.google.cloud",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	apiPath := library.APIs[0].Path
@@ -449,7 +449,7 @@ func TestCollectModules(t *testing.T) {
 					},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "google-cloud-secretmanager",
+					ArtifactID:   "google-cloud-secretmanager",
 					GroupID:      "com.google.cloud",
 					ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 				},
@@ -652,7 +652,7 @@ func TestIdentifyMissingModules(t *testing.T) {
 		},
 		Java: &config.JavaModule{
 			ArtifactID: "google-cloud-secretmanager",
-			GroupID: "com.google.cloud",
+			GroupID:    "com.google.cloud",
 		},
 	}
 	for _, test := range []struct {
@@ -798,7 +798,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			ArtifactID: "google-cloud-secretmanager",
+			ArtifactID:   "google-cloud-secretmanager",
 			GroupID:      "com.google.cloud",
 			ExcludedPOMs: []string{"grpc-google-cloud-secretmanager-v1"},
 		},
