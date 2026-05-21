@@ -15,10 +15,13 @@
 package java
 
 import (
+	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
 func TestAdd(t *testing.T) {
@@ -139,23 +142,68 @@ func TestAdd(t *testing.T) {
 }
 
 func TestDefaultLibraryName(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
 	for _, test := range []struct {
 		api  string
 		want string
 	}{
 		{"google/cloud/secretmanager/v1", "secretmanager"},
-		{"google/api/serviceusage/v1", "serviceusage"},
-		{"google/devtools/cloudbuild/v1", "cloudbuild"},
-		{"google/pubsub/v1", "pubsub"},
-		{"other/api/v1", "other-api"},
-		{"google/cloud/datacatalog/lineage/v1", "datacatalog-lineage"},
-		{"google/cloud/aiplatform/v1beta1", "aiplatform"},
-		{"google/shopping/merchant/datasources/v1", "shopping-merchant-datasources"},
+		{"google/cloud/apigeeconnect/v1", "apigeeconnect"},
+		{"google/cloud/tasks/v2", "cloudtasks"},
+		{"google/cloud/workflows/v1", "workflows"},
+		{"google/maps/places/v1", "places"},
 	} {
 		t.Run(test.api, func(t *testing.T) {
-			got := DefaultLibraryName(test.api)
+			got, err := DefaultLibraryName(srcs, test.api)
+			if err != nil {
+				t.Fatal()
+			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDefaultLibraryName_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	for _, test := range []struct {
+		name    string
+		api     string
+		wantErr error
+	}{
+		{
+			name:    "missing configuration directory",
+			api:     "google/cloud/nonexistent/v1",
+			wantErr: ErrShortNameNotFound,
+		},
+		{
+			name:    "unallowed non-cloud API",
+			api:     "google/unallowed/v1",
+			wantErr: ErrAPIValidation,
+		},
+		{
+			name:    "language-restricted API",
+			api:     "google/ai/generativelanguage/v1",
+			wantErr: ErrAPIValidation,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := DefaultLibraryName(srcs, test.api)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("DefaultLibraryName(%q) error = %v, wantErr %v", test.api, err, test.wantErr)
 			}
 		})
 	}

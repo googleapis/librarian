@@ -27,7 +27,9 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/sample"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -234,7 +236,7 @@ func TestAddLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, cfg, err := addLibrary(cfg, test.apiPath)
+			gotName, cfg, err := addLibrary(cfg, nil, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -261,6 +263,10 @@ func TestAddLibrary(t *testing.T) {
 }
 
 func TestAddLibrary_ExistingLibrary(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
 	for _, test := range []struct {
 		name     string
 		apiPath  string
@@ -409,7 +415,11 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			gotName, gotCfg, err := addLibrary(test.cfg, test.apiPath)
+			var srcs *sources.Sources
+			if test.cfg.Language == config.LanguageJava {
+				srcs = &sources.Sources{Googleapis: googleapisDir}
+			}
+			gotName, gotCfg, err := addLibrary(test.cfg, srcs, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -455,7 +465,7 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
-			_, _, err := addLibrary(test.cfg, test.apiPath)
+			_, _, err := addLibrary(test.cfg, nil, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -491,7 +501,7 @@ func TestAddLibrary_Preview(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			gotName, gotCfg, err := addLibrary(cfg, test.apiPath)
+			gotName, gotCfg, err := addLibrary(cfg, nil, test.apiPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -545,7 +555,7 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 				Language:  config.LanguageGo,
 				Libraries: test.initialLibraries,
 			}
-			_, _, err := addLibrary(cfg, test.apiPath)
+			_, _, err := addLibrary(cfg, nil, test.apiPath)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("expected error %v, got %v", test.wantErr, err)
 			}
@@ -554,6 +564,13 @@ func TestAddLibrary_Preview_Error(t *testing.T) {
 }
 
 func TestDeriveLibraryName(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
 	for _, test := range []struct {
 		language string
 		apiPath  string
@@ -570,20 +587,60 @@ func TestDeriveLibraryName(t *testing.T) {
 		{config.LanguageFake, "google/cloud/secretmanager/v1", "google-cloud-secretmanager-v1"},
 		{config.LanguageGo, "google/cloud/secretmanager/v1", "secretmanager"},
 		{config.LanguageJava, "google/cloud/secretmanager/v1", "secretmanager"},
-		{config.LanguageJava, "google/api/serviceusage/v1", "serviceusage"},
-		{config.LanguageJava, "google/devtools/cloudbuild/v1", "cloudbuild"},
-		{config.LanguageJava, "google/pubsub/v1", "pubsub"},
-		{config.LanguageJava, "other/api/v1", "other-api"},
-		{config.LanguageJava, "google/cloud/datacatalog/lineage/v1", "datacatalog-lineage"},
+		{config.LanguageJava, "google/cloud/apigeeconnect/v1", "apigeeconnect"},
+		{config.LanguageJava, "google/cloud/tasks/v2", "cloudtasks"},
+		{config.LanguageJava, "google/cloud/workflows/v1", "workflows"},
+		{config.LanguageJava, "google/maps/places/v1", "places"},
 		{config.LanguageNodejs, "google/cloud/secretmanager/v1", "google-cloud-secretmanager"},
 		{config.LanguageNodejs, "google/cloud/secretmanager/v1beta2", "google-cloud-secretmanager"},
 		{config.LanguageNodejs, "google/cloud/storage/v2alpha", "google-cloud-storage"},
 		{config.LanguageNodejs, "google/maps/addressvalidation/v1", "google-maps-addressvalidation"},
 	} {
 		t.Run(test.language+"/"+test.apiPath, func(t *testing.T) {
-			got := deriveLibraryName(test.language, test.apiPath)
-			if got != test.want {
-				t.Errorf("deriveLibraryName(%q, %q) = %q, want %q", test.language, test.apiPath, got, test.want)
+			got, err := deriveLibraryName(srcs, test.language, test.apiPath)
+			if err != nil {
+				t.Fatal()
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveLibraryName_Error(t *testing.T) {
+	googleapisDir, err := filepath.Abs("../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	srcs := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	for _, test := range []struct {
+		name    string
+		apiPath string
+		wantErr error
+	}{
+		{
+			name:    "missing configuration directory",
+			apiPath: "google/cloud/nonexistent/v1",
+			wantErr: java.ErrShortNameNotFound,
+		},
+		{
+			name:    "unallowed non-cloud API",
+			apiPath: "google/unallowed/v1",
+			wantErr: java.ErrAPIValidation,
+		},
+		{
+			name:    "language-restricted API",
+			apiPath: "google/ai/generativelanguage/v1",
+			wantErr: java.ErrAPIValidation,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := deriveLibraryName(srcs, config.LanguageJava, test.apiPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}

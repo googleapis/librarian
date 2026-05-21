@@ -91,11 +91,15 @@ A typical librarian workflow for adding a new client library is:
 }
 
 func runAdd(ctx context.Context, cfg *config.Config, api string) error {
-	name, cfg, err := addLibrary(cfg, api)
+	srcs, err := LoadSources(ctx, cfg.Sources)
 	if err != nil {
 		return err
 	}
-	cfg, err = resolveDependencies(ctx, cfg, name)
+	name, cfg, err := addLibrary(cfg, srcs, api)
+	if err != nil {
+		return err
+	}
+	cfg, err = resolveDependencies(ctx, cfg, srcs, name)
 	if err != nil {
 		return err
 	}
@@ -109,61 +113,49 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
-func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
+func resolveDependencies(ctx context.Context, cfg *config.Config, srcs *sources.Sources, name string) (*config.Config, error) {
 	switch cfg.Language {
 	case config.LanguageJava:
-		lib, sources, err := setupResolve(ctx, cfg, name)
+		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
 		}
-		return java.ResolveMixinDependencies(cfg, lib, sources)
+		return java.ResolveMixinDependencies(cfg, lib, srcs)
 	case config.LanguageRust:
-		lib, sources, err := setupResolve(ctx, cfg, name)
+		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
 		}
-		return rust.ResolveDependencies(ctx, cfg, lib, sources)
+		return rust.ResolveDependencies(ctx, cfg, lib, srcs)
 	default:
 		return cfg, nil
 	}
 }
 
-func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config.Library, *sources.Sources, error) {
-	lib, err := FindLibrary(cfg, name)
-	if err != nil {
-		return nil, nil, err
-	}
-	sources, err := LoadSources(ctx, cfg.Sources)
-	if err != nil {
-		return nil, nil, err
-	}
-	return lib, sources, nil
-}
-
 // deriveLibraryName derives a library name from an API path.
 // The derivation is language-specific.
-func deriveLibraryName(language string, api string) string {
+func deriveLibraryName(srcs *sources.Sources, language string, api string) (string, error) {
 	switch language {
 	case config.LanguageDart:
-		return dart.DefaultLibraryName(api)
+		return dart.DefaultLibraryName(api), nil
 	case config.LanguageFake:
-		return fakeDefaultLibraryName(api)
+		return fakeDefaultLibraryName(api), nil
 	case config.LanguageGcloud:
-		return gcloud.DefaultLibraryName(api)
+		return gcloud.DefaultLibraryName(api), nil
 	case config.LanguageGo:
-		return golang.DefaultLibraryName(api)
+		return golang.DefaultLibraryName(api), nil
 	case config.LanguageJava:
-		return java.DefaultLibraryName(api)
+		return java.DefaultLibraryName(srcs, api)
 	case config.LanguageNodejs:
-		return nodejs.DefaultLibraryName(api)
+		return nodejs.DefaultLibraryName(api), nil
 	case config.LanguagePython:
-		return python.DefaultLibraryName(api)
+		return python.DefaultLibraryName(api), nil
 	case config.LanguageRust:
-		return rust.DefaultLibraryName(api)
+		return rust.DefaultLibraryName(api), nil
 	case config.LanguageSwift:
-		return swift.DefaultLibraryName(api)
+		return swift.DefaultLibraryName(api), nil
 	default:
-		return strings.ReplaceAll(api, "/", "-")
+		return strings.ReplaceAll(api, "/", "-"), nil
 	}
 }
 
@@ -171,14 +163,17 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, srcs *sources.Sources, apiPath string) (string, *config.Config, error) {
 	isPreview := strings.HasPrefix(apiPath, "preview/")
 	stablePath := apiPath
 	if isPreview {
 		stablePath = strings.TrimPrefix(apiPath, "preview/")
 	}
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForNewAPI(cfg, stablePath)
+	existingLib, err := findExistingLibraryForNewAPI(cfg, srcs, stablePath)
+	if err != nil {
+		return "", nil, err
+	}
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -188,7 +183,7 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 	if existingLib != nil {
 		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, api)
+	return addNewLibrary(cfg, srcs, api)
 }
 
 // findExistingLibraryForNewAPI determines if an existing library in cfg is
@@ -197,21 +192,24 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
+func findExistingLibraryForNewAPI(cfg *config.Config, srcs *sources.Sources, apiPath string) (*config.Library, error) {
 	switch cfg.Language {
 	case config.LanguageNodejs:
-		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	case config.LanguagePython:
-		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath), nil
 	default:
-		name := deriveLibraryName(cfg.Language, apiPath)
+		name, err := deriveLibraryName(srcs, cfg.Language, apiPath)
+		if err != nil {
+			return nil, err
+		}
 		// Not using FindLibrary as the error handling becomes awkward.
 		for _, library := range cfg.Libraries {
 			if library.Name == name {
-				return library
+				return library, nil
 			}
 		}
-		return nil
+		return nil, nil
 	}
 }
 
@@ -237,8 +235,11 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config, error) {
-	name := deriveLibraryName(cfg.Language, api.Path)
+func addNewLibrary(cfg *config.Config, srcs *sources.Sources, api *config.API) (string, *config.Config, error) {
+	name, err := deriveLibraryName(srcs, cfg.Language, api.Path)
+	if err != nil {
+		return "", nil, err
+	}
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),

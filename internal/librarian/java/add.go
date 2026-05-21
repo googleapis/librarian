@@ -15,21 +15,24 @@
 package java
 
 import (
+	"errors"
+	"fmt"
 	"log"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sources"
 )
 
-// knownPrefixes contains API path prefixes to be stripped when deriving a
-// library name. The order matters: more specific prefixes must come before
-// less specific ones (e.g., "google/cloud/" before "google/").
-var knownPrefixes = []string{
-	"google/cloud/",
-	"google/api/",
-	"google/devtools/",
-	"google/",
-}
+var (
+	// ErrSourceRequired indicates that the googleapis source is required.
+	ErrSourceRequired = errors.New("googleapis source is required to derive library name")
+	// ErrShortNameNotFound indicates that the api_short_name was not found in the service config.
+	ErrShortNameNotFound = errors.New("api_short_name not found in service config")
+	// ErrAPIValidation indicates that the API validation failed.
+	ErrAPIValidation = errors.New("API validation failed")
+)
 
 const (
 	defaultVersion = "0.1.0-SNAPSHOT"
@@ -74,19 +77,19 @@ func setJavaConfig(lib *config.Library, groupID string) *config.Library {
 	return lib
 }
 
-// DefaultLibraryName derives a default library name from an API path by stripping
-// known prefixes (e.g., "google/cloud/", "google/api/") and returning all
-// segments except the last one, joined by dashes.
-func DefaultLibraryName(api string) string {
-	path := api
-	if idx := strings.LastIndex(api, "/"); idx != -1 {
-		path = api[:idx]
+// DefaultLibraryName derives a default library name from an API path by parsing
+// the publishing.api_short_name (or logical fallback) from the target One Platform
+// service configuration YAML.
+func DefaultLibraryName(srcs *sources.Sources, api string) (string, error) {
+	if srcs == nil || srcs.Googleapis == "" {
+		return "", ErrSourceRequired
 	}
-	for _, p := range knownPrefixes {
-		if strings.HasPrefix(path, p) {
-			path = strings.TrimPrefix(path, p)
-			break
-		}
+	apiConfig, err := serviceconfig.Find(srcs.Googleapis, api, config.LanguageJava)
+	if err != nil {
+		return "", fmt.Errorf("%w: %v", ErrAPIValidation, err)
 	}
-	return strings.ReplaceAll(path, "/", "-")
+	if apiConfig.ShortName == "" {
+		return "", fmt.Errorf("%w for %s", ErrShortNameNotFound, api)
+	}
+	return apiConfig.ShortName, nil
 }
