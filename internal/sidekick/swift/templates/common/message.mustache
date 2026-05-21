@@ -72,7 +72,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#Fields}}
     {{^IsOneOf}}
     {{#Codec.Recursive}}
-    self.{{Codec.Name}} = {{Codec.Name}}.map { GoogleCloudWkt.Recursive(value: $0) }
+    self.{{Codec.Name}} = {{Codec.Name}}.map { {{Parent.Codec.Model.WktPackage}}.Recursive(value: $0) }
     {{/Codec.Recursive}}
     {{^Codec.Recursive}}
     self.{{Codec.Name}} = {{Codec.Name}}
