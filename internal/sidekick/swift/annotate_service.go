@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -30,6 +31,17 @@ type serviceAnnotations struct {
 	PackageName      string
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
+	DependsOn        map[string]*Dependency
+}
+
+// ServiceImports returns the list of dependencies for this service.
+func (ann *serviceAnnotations) ServiceImports() []string {
+	result := make([]string, 0, len(ann.DependsOn))
+	for _, dep := range ann.DependsOn {
+		result = append(result, dep.Name)
+	}
+	slices.Sort(result)
+	return result
 }
 
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
@@ -50,6 +62,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	if service.QuickstartMethod != nil && isGeneratedMethod(service.QuickstartMethod) {
 		quickstartMethod = service.QuickstartMethod
 	}
+
 	annotations := &serviceAnnotations{
 		Name:             pascalCase(service.Name),
 		ClientName:       pascalCase(service.Name + "Client"),
@@ -60,7 +73,56 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		PackageName:      c.PackageName,
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
+		DependsOn:        map[string]*Dependency{},
 	}
+
+	// Iterate through the list of all dependencies declared in librarian.yaml
+	// If the dependency is marked as "required_by_services", then we force it
+	// as an import for the generated service files.
+	for _, p := range c.Dependencies {
+		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+			continue
+		}
+		if p.RequiredByServices {
+			if _, err := c.addDependency(p); err != nil {
+				return err
+			}
+			annotations.DependsOn[p.Name] = p
+		}
+	}
+
+	// Services always depend on well known types
+	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
+	if err != nil {
+		return err
+	}
+	annotations.DependsOn[wktDep.Name] = wktDep
+
+	for _, method := range restMethods {
+		if method.InputType != nil {
+			if method.InputType.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.InputType.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
+		if method.OutputType != nil {
+			if method.OutputType.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(method.OutputType.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
+	}
+
 	service.Codec = annotations
 	return nil
 }

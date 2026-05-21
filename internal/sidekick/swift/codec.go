@@ -31,6 +31,8 @@ const (
 	// The name of the corresponding Swift package that contains the Swift implementations of these
 	// types.
 	wellKnownSwiftPackage = "GoogleCloudWkt"
+	// The name of the Swift package that contains the pagination helper types.
+	paginationSwiftPackage = "GoogleCloudGax"
 )
 
 // codec represents the configuration for a Swift sidekick Codec.
@@ -42,8 +44,9 @@ const (
 // information needed to generate the library.
 type codec struct {
 	GenerationYear string
-	PackageName    string
-	MonorepoRoot   string
+	// The name of the swift package (e.g. "GoogleCloudSecretManagerV1")
+	PackageName  string
+	MonorepoRoot string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
 	RootName string
@@ -51,7 +54,10 @@ type codec struct {
 	Module       bool
 	Model        *api.API
 	Dependencies []*Dependency
-	ApiPackages  map[string]*Dependency
+	// Map of proto package to dependency (e.g. "google.protobuf" -> <dependency>)
+	ApiPackages map[string]*Dependency
+	// Map of dependency name to dependency (e.g. GoogleCloudGax -> <dependency>)
+	DependenciesByName map[string]*Dependency
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -72,12 +78,13 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		return nil, err
 	}
 	result := &codec{
-		GenerationYear: fmt.Sprintf("%04d", year),
-		PackageName:    PackageName(model),
-		MonorepoRoot:   rel,
-		RootName:       "googleapis",
-		Model:          model,
-		ApiPackages:    map[string]*Dependency{},
+		GenerationYear:     fmt.Sprintf("%04d", year),
+		PackageName:        PackageName(model),
+		MonorepoRoot:       rel,
+		RootName:           "googleapis",
+		Model:              model,
+		ApiPackages:        map[string]*Dependency{},
+		DependenciesByName: map[string]*Dependency{},
 	}
 	if swiftCfg != nil {
 		for _, d := range swiftCfg.Dependencies {
@@ -86,6 +93,7 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 			if d.ApiPackage != "" {
 				result.ApiPackages[d.ApiPackage] = &dependency
 			}
+			result.DependenciesByName[d.Name] = &dependency
 		}
 	}
 	for key, definition := range cfg.Codec {
@@ -107,4 +115,36 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		}
 	}
 	return result, nil
+}
+
+func (c *codec) addApiPackageDependency(apiName string) (*Dependency, error) {
+	dep, ok := c.ApiPackages[apiName]
+	if !ok {
+		// If there is no explicitly configured dependency for this API, we assume it is
+		// provided by the same package that this API is contained within.
+		return nil, nil
+	}
+	return c.addDependency(dep)
+}
+
+func (c *codec) addPackageDependency(packageName string) (*Dependency, error) {
+	dep, ok := c.DependenciesByName[packageName]
+	if !ok {
+		return nil, fmt.Errorf("dependency not found for package %q", packageName)
+	}
+	return c.addDependency(dep)
+}
+
+func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
+	if dep == nil {
+		return nil, fmt.Errorf("attempting to add nil dependency")
+	}
+	// Skip including self as a dependency
+	if dep.Name == c.PackageName {
+		return nil, nil
+	}
+	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
+		ann.DependsOn[dep.Name] = dep
+	}
+	return dep, nil
 }
