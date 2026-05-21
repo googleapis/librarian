@@ -42,7 +42,7 @@ func Install(ctx context.Context, tools []*config.PipTool) error {
 				return fmt.Errorf("failed to resolve absolute path for %s: %w", tool.LocalPath, err)
 			}
 			if _, err := os.Stat(absPath); err != nil {
-				return fmt.Errorf("%w: %s", ErrLocalPathNotFound, absPath)
+				return fmt.Errorf("%w: %w", ErrLocalPathNotFound, err)
 			}
 			installTargets = append(installTargets, absPath)
 			continue
