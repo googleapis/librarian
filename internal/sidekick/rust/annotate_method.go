@@ -312,7 +312,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
-		IsLroPoller:               isLongRunningPoll(m),
+		IsLroPoller:               m.IsLroPoller,
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
@@ -627,8 +627,4 @@ func isIdempotent(p *api.PathInfo) string {
 		}
 	}
 	return "true"
-}
-
-func isLongRunningPoll(m *api.Method) bool {
-	return m.IsLroPoller
 }
