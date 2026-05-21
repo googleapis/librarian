@@ -61,6 +61,7 @@ func Install(ctx context.Context) error {
 			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/5850): Refactor this once Librarian-wide variable is ready.
 	// Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
 		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
@@ -84,6 +85,9 @@ func getInstallDir() (string, error) {
 	return filepath.Abs(dir)
 }
 
+// installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
+// (.jar or .exe) hermetically to the sibling lib folder, and creates an executable wrapper script
+// in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, t *config.MavenTool, binDir, libDir string) error {
 	// 1. Construct artifact string for maven
 	ext := strings.ToLower(t.Packaging)
@@ -139,7 +143,11 @@ func copyFile(src, dst string, perm os.FileMode) (err error) {
 	if err != nil {
 		return err
 	}
-	defer in.Close()
+	defer func() {
+		if cErr := in.Close(); err == nil {
+			err = cErr
+		}
+	}()
 	out, err := os.OpenFile(dst, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, perm)
 	if err != nil {
 		return err

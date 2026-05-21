@@ -26,12 +26,9 @@ import (
 
 func TestInstall(t *testing.T) {
 	tmpDir := t.TempDir()
-	// 1. Setup temp HOME to isolate .m2/repository
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
-	// 2. Pre-create dummy downloaded artifacts in mock .m2 repository
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
-	// (a) Pre-create google-java-format JAR
 	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
 	if err := os.MkdirAll(gjfDir, 0755); err != nil {
 		t.Fatal(err)
@@ -40,7 +37,6 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(gjfJarPath, []byte("gjf jar content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	// (b) Pre-create protoc-gen-grpc-java exe
 	grpcDir := filepath.Join(m2Repo, "io", "grpc", "protoc-gen-grpc-java", "1.76.3")
 	if err := os.MkdirAll(grpcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -49,12 +45,10 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
 		t.Fatal(err)
 	}
-	// 3. Setup stub executables directory
 	stubDir := filepath.Join(tmpDir, "bin")
 	if err := os.MkdirAll(stubDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	// (a) Stub pip
 	pipLogPath := filepath.Join(tmpDir, "pip_invocations.log")
 	pipContent := fmt.Sprintf(`#!/bin/bash
 echo "pip $@" >> %q
@@ -62,7 +56,6 @@ echo "pip $@" >> %q
 	if err := os.WriteFile(filepath.Join(stubDir, "pip"), []byte(pipContent), 0755); err != nil {
 		t.Fatal(err)
 	}
-	// (b) Stub mvn
 	mvnLogPath := filepath.Join(tmpDir, "mvn_invocations.log")
 	mvnContent := fmt.Sprintf(`#!/bin/bash
 echo "mvn $@" >> %q
@@ -70,21 +63,16 @@ echo "mvn $@" >> %q
 	if err := os.WriteFile(filepath.Join(stubDir, "mvn"), []byte(mvnContent), 0755); err != nil {
 		t.Fatal(err)
 	}
-	// (c) Stub java
 	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/bash\nexit 0\n"), 0755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
-	// 4. Setup temp install dir
 	installDir := filepath.Join(tmpDir, "java_tools", "bin")
 	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
-	// 5. Execute Installer
 	err := Install(t.Context())
 	if err != nil {
 		t.Fatal(err)
 	}
-	// 6. Assertions
-	// (a) Verify pip calls
 	pipData, err := os.ReadFile(pipLogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -94,7 +82,6 @@ echo "mvn $@" >> %q
 	if diff := cmp.Diff(wantPip, gotPip); diff != "" {
 		t.Errorf("pip invocations mismatch (-want +got):\n%s", diff)
 	}
-	// (b) Verify mvn calls
 	mvnData, err := os.ReadFile(mvnLogPath)
 	if err != nil {
 		t.Fatal(err)
@@ -104,7 +91,6 @@ echo "mvn $@" >> %q
 	if diff := cmp.Diff(wantMvn, gotMvn); diff != "" {
 		t.Errorf("mvn invocations mismatch (-want +got):\n%s", diff)
 	}
-	// (c) Verify files copied to libDir
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
 	gjfCopiedPath := filepath.Join(libDir, "google-java-format-1.25.2-all-deps.jar")
 	gjfData, err := os.ReadFile(gjfCopiedPath)
@@ -122,7 +108,6 @@ echo "mvn $@" >> %q
 	if string(grpcData) != "grpc exe content" {
 		t.Errorf("copied grpc exe contents mismatch: got %q", string(grpcData))
 	}
-	// (d) Verify wrappers are written to binDir pointing to libDir
 	gjfWrapperPath := filepath.Join(installDir, "google-java-format")
 	gjfWrapper, err := os.ReadFile(gjfWrapperPath)
 	if err != nil {

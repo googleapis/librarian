@@ -97,7 +97,7 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
-	// Maven defines tools to install via maven.
+	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
 
 	// NPM defines tools to install via npm.
@@ -137,9 +137,9 @@ type NPMTool struct {
 	Build []string `yaml:"build,omitempty"`
 }
 
-// MavenTool defines a tool to install via maven.
+// MavenTool defines a tool to install via Maven.
 type MavenTool struct {
-	// Name is the maven tool name.
+	// Name is the Maven tool name. It is used as the filename for the generated executable wrapper script.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -154,7 +154,7 @@ type MavenTool struct {
 	// Classifier is the maven classifier.
 	Classifier string `yaml:"classifier,omitempty"`
 
-	// Packaging is the maven packaging (e.g. jar, exe).
+	// Packaging is the Maven packaging (e.g. jar, exe). If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar".
 	Packaging string `yaml:"packaging,omitempty"`
 }
 
