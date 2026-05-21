@@ -44,7 +44,7 @@ type methodAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
-	IsLongRunningPoll         bool
+	IsLroPoller               bool
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -312,7 +312,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
-		IsLongRunningPoll:         isLongRunningPoll(m),
+		IsLroPoller:               isLongRunningPoll(m),
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
@@ -630,7 +630,5 @@ func isIdempotent(p *api.PathInfo) string {
 }
 
 func isLongRunningPoll(m *api.Method) bool {
-	return m.SourceServiceID == ".google.longrunning.Operations" &&
-		m.Name == "GetOperation" &&
-		m.Service.Package != "google.longrunning"
+	return m.IsLroPoller
 }

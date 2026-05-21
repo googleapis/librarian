@@ -63,6 +63,12 @@ impl<T> super::stub::{{Codec.Name}} for {{Codec.Name}}<T>
 where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     {{#Codec.Methods}}
 
+    {{#Codec.DetailedTracingAttributes}}
+    #[tracing::instrument(level = tracing::Level::DEBUG, ret)]
+    {{/Codec.DetailedTracingAttributes}}
+    {{^Codec.DetailedTracingAttributes}}
+    #[tracing::instrument(ret)]
+    {{/Codec.DetailedTracingAttributes}}
     async fn {{Codec.Name}}(
         &self,
         req: {{InputType.Codec.QualifiedName}},
@@ -74,8 +80,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             info: *info::INSTRUMENTATION_CLIENT_INFO,
             method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
             self.inner.{{Codec.Name}}(req, options));
-        {{#Codec.HasLROs}}
-        {{#Codec.IsLongRunningPoll}}
+        {{#Codec.IsLroPoller}}
         #[cfg(google_cloud_unstable_tracing)]
         {
             if let Ok(attempt) = google_cloud_lro::POLL_ATTEMPT_COUNT.try_with(|c| *c) {
@@ -83,9 +88,8 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                 _span.record("gcp.longrunning.done", false);
             }
         }
-        {{/Codec.IsLongRunningPoll}}
-        {{/Codec.HasLROs}}
-        {{#Codec.IsLongRunningPoll}}
+        {{/Codec.IsLroPoller}}
+        {{#Codec.IsLroPoller}}
         let result = pending.await;
         #[cfg(google_cloud_unstable_tracing)]
         {
@@ -116,10 +120,10 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             }
         }
         result
-        {{/Codec.IsLongRunningPoll}}
-        {{^Codec.IsLongRunningPoll}}
+        {{/Codec.IsLroPoller}}
+        {{^Codec.IsLroPoller}}
         pending.await
-        {{/Codec.IsLongRunningPoll}}
+        {{/Codec.IsLroPoller}}
         {{/Codec.DetailedTracingAttributes}}
         {{^Codec.DetailedTracingAttributes}}
         self.inner.{{Codec.Name}}(req, options).await
