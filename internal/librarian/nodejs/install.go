@@ -41,11 +41,6 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	// Ensure pnpm is enabled and shims are linked globally using corepack
-	if err := command.RunStreaming(ctx, "corepack", "enable", "pnpm"); err != nil {
-		return fmt.Errorf("failed to enable pnpm shims: %w", err)
-	}
-
 	// Ensure pnpm version 7.32.2 is prepared and activated globally to enable lockfile-respecting builds
 	if err := command.RunStreaming(ctx, "corepack", "prepare", "pnpm@7.32.2", "--activate"); err != nil {
 		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
@@ -57,7 +52,7 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to resolve node bin directory: %w", err)
 	}
 	globalBin := strings.TrimSpace(binOut)
-	if err := command.RunStreaming(ctx, "pnpm", "config", "set", "global-bin-dir", globalBin); err != nil {
+	if err := command.RunStreaming(ctx, "corepack", "pnpm", "config", "set", "global-bin-dir", globalBin); err != nil {
 		return fmt.Errorf("failed to set pnpm global-bin-dir: %w", err)
 	}
 
@@ -72,7 +67,7 @@ func Install(ctx context.Context) error {
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := command.RunStreaming(ctx, "pnpm", "add", "-g", pkg); err != nil {
+		if err := command.RunStreaming(ctx, "corepack", "pnpm", "add", "-g", pkg); err != nil {
 			return err
 		}
 	}
