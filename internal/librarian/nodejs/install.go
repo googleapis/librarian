@@ -41,17 +41,17 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	// Ensure pnpm is installed globally to enable lockfile-respecting builds
-	if err := command.RunStreaming(ctx, "npm", "install", "-g", "pnpm@7.32.2"); err != nil {
-		return fmt.Errorf("failed to install pnpm: %w", err)
+	// Ensure pnpm is activated globally using corepack to avoid using npm
+	if err := command.RunStreaming(ctx, "corepack", "prepare", "pnpm@7.32.2", "--activate"); err != nil {
+		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
 	}
 
-	// Resolve Node's global bin path and align pnpm's global-bin-dir
-	prefixOut, err := command.Output(ctx, "npm", "config", "get", "prefix")
+	// Resolve Node's global bin path dynamically from process.execPath and align pnpm's global-bin-dir
+	binOut, err := command.Output(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
 	if err != nil {
-		return fmt.Errorf("failed to query npm prefix: %w", err)
+		return fmt.Errorf("failed to resolve node bin directory: %w", err)
 	}
-	globalBin := filepath.Join(strings.TrimSpace(prefixOut), "bin")
+	globalBin := strings.TrimSpace(binOut)
 	if err := command.RunStreaming(ctx, "pnpm", "config", "set", "global-bin-dir", globalBin); err != nil {
 		return fmt.Errorf("failed to set pnpm global-bin-dir: %w", err)
 	}
