@@ -55,13 +55,11 @@ func Install(ctx context.Context) error {
 	if err := os.MkdirAll(libDir, 0755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
-	// Install Maven tools
 	for _, mvnTool := range cfg.Tools.Maven {
 		if err := installExternalMavenTool(ctx, mvnTool, binDir, libDir); err != nil {
 			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
-	// Install Pip tools
 	if len(cfg.Tools.Pip) > 0 {
 		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)
