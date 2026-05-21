@@ -198,9 +198,9 @@ func httpPathFmt(pathInfo *api.PathInfo) string {
 //
 // - `[Code][google.rpc.Code]`
 // - `[google.rpc.Code][]`.
-var commentRefsRegex = regexp.MustCompile(`\[([\w\d\._]+)\]\[([\d\w\._]*)\]`)
+var commentRefsRegex = regexp.MustCompile(`\[([^\]]+)\]\[([\w\d\._]*)\]`)
 
-func formatDocComments(documentation string, _ *api.API) []string {
+func formatDocComments(documentation string, model *api.API) []string {
 	lines := strings.Split(documentation, "\n")
 
 	// Remove trailing whitespace.
@@ -208,27 +208,443 @@ func formatDocComments(documentation string, _ *api.API) []string {
 		lines[i] = strings.TrimRightFunc(line, unicode.IsSpace)
 	}
 
-	// Re-write Google API doc references to code formatted text.
-	// TODO(#1575): Instead, resolve and insert dartdoc style references.
-	for i, line := range lines {
-		lines[i] = commentRefsRegex.ReplaceAllString(line, "`$1`")
-	}
+	lines, codeBlocks := extractCodeBlocks(lines)
+	lines = sanitizeUrls(lines)
+	lines = resolveGoogleApiRefs(lines, model)
+	lines = escapeHtml(lines)
+	lines = processSingleBracketRefs(lines, model)
+	lines = cleanupDoubleTicks(lines)
+	lines = restoreCodeBlocks(lines, codeBlocks)
 
-	// Remove trailing blank lines.
+	return toDartDoc(lines)
+}
+
+// extractCodeBlocks detects code blocks (indented by at least 2 spaces or fenced)
+// and replaces them with placeholders to avoid processing references inside them.
+func extractCodeBlocks(lines []string) ([]string, [][]string) {
+	var processedLines []string
+	var codeBlocks [][]string
+
+	i := 0
+	for i < len(lines) {
+		line := lines[i]
+
+		// Check for existing code fences.
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "```") {
+			// Find the closing fence.
+			j := i + 1
+			for j < len(lines) {
+				if strings.HasPrefix(strings.TrimSpace(lines[j]), "```") {
+					break
+				}
+				j++
+			}
+
+			// If we found a closing fence.
+			if j < len(lines) {
+				// Valid fenced block!
+				// Find minimum indentation of non-empty lines in the block (including fences).
+				minIndent := 1000
+				for k := i; k <= j; k++ {
+					if lines[k] == "" {
+						continue
+					}
+					indent := 0
+					for indent < len(lines[k]) && lines[k][indent] == ' ' {
+						indent++
+					}
+					if indent < minIndent {
+						minIndent = indent
+					}
+				}
+
+				var blockContent []string
+				for k := i; k <= j; k++ {
+					var lineContent string
+					if lines[k] == "" {
+						lineContent = ""
+					} else if len(lines[k]) >= minIndent {
+						lineContent = lines[k][minIndent:]
+					} else {
+						lineContent = lines[k]
+					}
+
+					// If it's the opening fence and it's just "```", add "text".
+					if k == i && lineContent == "```" {
+						lineContent = "```text"
+					}
+
+					blockContent = append(blockContent, lineContent)
+				}
+
+				codeBlocks = append(codeBlocks, blockContent)
+				processedLines = append(processedLines, fmt.Sprintf("__CODE_BLOCK_%d__", len(codeBlocks)-1))
+
+				i = j + 1
+				continue
+			}
+		}
+
+		// If line is indented by 3 spaces.
+		if strings.HasPrefix(line, "   ") {
+			// Find the end of the candidate block.
+			j := i
+			for j < len(lines) && (strings.HasPrefix(lines[j], "   ") || lines[j] == "") {
+				j++
+			}
+
+			// Remove trailing empty lines from the candidate block.
+			for j > i && lines[j-1] == "" {
+				j--
+			}
+
+			// Candidate block is lines[i:j].
+			// Check if it's a valid code block (preceded and followed by empty lines).
+			validPre := i == 0 || lines[i-1] == ""
+			validPost := j == len(lines) || lines[j] == ""
+
+			if validPre && validPost && j > i {
+				// Valid code block!
+				// Find minimum indentation of non-empty lines in the block.
+				minIndent := 1000 // Arbitrary large number.
+				for k := i; k < j; k++ {
+					if lines[k] == "" {
+						continue
+					}
+					// Count leading spaces.
+					indent := 0
+					for indent < len(lines[k]) && lines[k][indent] == ' ' {
+						indent++
+					}
+					if indent < minIndent {
+						minIndent = indent
+					}
+				}
+
+				var blockContent []string
+				for k := i; k < j; k++ {
+					if lines[k] == "" {
+						blockContent = append(blockContent, "")
+					} else {
+						// Remove minIndent spaces.
+						if len(lines[k]) >= minIndent {
+							blockContent = append(blockContent, lines[k][minIndent:])
+						} else {
+							blockContent = append(blockContent, lines[k])
+						}
+					}
+				}
+
+				codeBlocks = append(codeBlocks, blockContent)
+				processedLines = append(processedLines, fmt.Sprintf("__CODE_BLOCK_%d__", len(codeBlocks)-1))
+
+				i = j
+				continue
+			}
+		}
+
+		processedLines = append(processedLines, line)
+		i++
+	}
+	return processedLines, codeBlocks
+}
+
+// sanitizeUrls converts URLs containing brackets to ticked URLs and strips ref targets.
+func sanitizeUrls(lines []string) []string {
+	refTargetRegex := regexp.MustCompile(`\[([^\]]+)\]\[([^\]]+)\]`)
+	quotedUrlWithBracketsRegex := regexp.MustCompile(`"(https?://[^"]*\[[^"]*)"`)
+	nonQuotedUrlWithBracketsRegex := regexp.MustCompile(`(^|\s)(https?://[^\s\[]*\[[^\s]*)`)
+
+	result := make([]string, len(lines))
+	copy(result, lines)
+
+	for i, line := range result {
+		// Quoted URLs.
+		result[i] = quotedUrlWithBracketsRegex.ReplaceAllStringFunc(line, func(m string) string {
+			submatches := quotedUrlWithBracketsRegex.FindStringSubmatch(m)
+			if len(submatches) == 2 {
+				url := submatches[1]
+				url = refTargetRegex.ReplaceAllStringFunc(url, func(rm string) string {
+					rSubmatches := refTargetRegex.FindStringSubmatch(rm)
+					return "[" + rSubmatches[1] + "]"
+				})
+				return "`" + url + "`"
+			}
+			return m
+		})
+
+		// Non-quoted URLs.
+		result[i] = nonQuotedUrlWithBracketsRegex.ReplaceAllStringFunc(result[i], func(m string) string {
+			submatches := nonQuotedUrlWithBracketsRegex.FindStringSubmatch(m)
+			if len(submatches) == 3 {
+				prefix := submatches[1]
+				url := submatches[2]
+				url = refTargetRegex.ReplaceAllStringFunc(url, func(rm string) string {
+					rSubmatches := refTargetRegex.FindStringSubmatch(rm)
+					return "[" + rSubmatches[1] + "]"
+				})
+				return prefix + "`" + url + "`"
+			}
+			return m
+		})
+	}
+	return result
+}
+
+func findMessageByName(name string, model *api.API) *api.Message {
+	if model == nil {
+		return nil
+	}
+	for msg := range model.AllMessages() {
+		if msg.Name == name {
+			return msg
+		}
+	}
+	return nil
+}
+
+func findEnumByName(name string, model *api.API) *api.Enum {
+	if model == nil {
+		return nil
+	}
+	for en := range model.AllEnums() {
+		if en.Name == name {
+			return en
+		}
+	}
+	return nil
+}
+
+func classExists(name string, model *api.API) bool {
+	return findMessageByName(name, model) != nil || findEnumByName(name, model) != nil
+}
+
+func getFlattenedName(msg *api.Message) string {
+	var parts []string
+	curr := msg
+	for curr != nil {
+		parts = append([]string{curr.Name}, parts...)
+		curr = curr.Parent
+	}
+	return strings.Join(parts, "_")
+}
+
+// resolveGoogleApiRefs rewrites Google API doc references to code formatted text.
+func resolveGoogleApiRefs(lines []string, model *api.API) []string {
+	result := make([]string, len(lines))
+	copy(result, lines)
+
+	for i := 0; i < len(result); i++ {
+		line := result[i]
+		matches := commentRefsRegex.FindAllStringSubmatchIndex(line, -1)
+		for j := len(matches) - 1; j >= 0; j-- {
+			start, end := matches[j][0], matches[j][1]
+			// Skip if inside backticks
+			if strings.Count(line[:start], "`")%2 != 0 {
+				continue
+			}
+
+			textStart, textEnd := matches[j][2], matches[j][3]
+			refStart, refEnd := matches[j][4], matches[j][5]
+
+			text := line[textStart:textEnd]
+			ref := ""
+			if refStart != -1 {
+				ref = line[refStart:refEnd]
+			}
+
+			// If ref is a valid symbol, leave it as is.
+			if ref != "" && classExists(ref, model) {
+				continue
+			}
+
+			replacement := ""
+			if ref == "" {
+				replacement = "`" + text + "`"
+			} else {
+				if !strings.Contains(text, " ") {
+					replacement = "`" + text + "`"
+				} else {
+					replacement = text
+				}
+			}
+
+			line = line[:start] + replacement + line[end:]
+		}
+		result[i] = line
+	}
+	return result
+}
+
+// escapeHtml replaces < and > with HTML entities to avoid analyzer warnings.
+func escapeHtml(lines []string) []string {
+	result := make([]string, len(lines))
+	for i, line := range lines {
+		line = strings.ReplaceAll(line, "<", "&lt;")
+		line = strings.ReplaceAll(line, ">", "&gt;")
+		result[i] = line
+	}
+	return result
+}
+
+// processSingleBracketRefs handles array access, literals, and symbol resolution.
+func processSingleBracketRefs(lines []string, model *api.API) []string {
+	arrayAccessRegex := regexp.MustCompile(`[\w\d_\.]+\[\d+\](?:\.[\w\d_]+(?:\[\d+\])?)*`)
+	arrayLiteralRegex := regexp.MustCompile(`\[\d+(?:,\d+)*\]`)
+	singleRefRegex := regexp.MustCompile(`\[([\w\d\._]+)\]`)
+
+	result := make([]string, len(lines))
+	copy(result, lines)
+
+	for i, line := range result {
+		// Process array access.
+		matches := arrayAccessRegex.FindAllStringIndex(line, -1)
+		for j := len(matches) - 1; j >= 0; j-- {
+			match := matches[j]
+			start := match[0]
+			end := match[1]
+			if strings.Count(line[:start], "`")%2 != 0 {
+				continue
+			}
+			line = line[:start] + "`" + line[start:end] + "`" + line[end:]
+		}
+
+		// Process array literals.
+		matches = arrayLiteralRegex.FindAllStringIndex(line, -1)
+		for j := len(matches) - 1; j >= 0; j-- {
+			match := matches[j]
+			start := match[0]
+			end := match[1]
+			if strings.Count(line[:start], "`")%2 != 0 {
+				continue
+			}
+			line = line[:start] + "`" + line[start:end] + "`" + line[end:]
+		}
+
+		// Process single brackets.
+		matches = singleRefRegex.FindAllStringSubmatchIndex(line, -1)
+		for j := len(matches) - 1; j >= 0; j-- {
+			match := matches[j]
+			start := match[0]
+			end := match[1]
+			contentStart := match[2]
+			contentEnd := match[3]
+
+			content := line[contentStart:contentEnd]
+
+			if strings.Count(line[:start], "`")%2 != 0 {
+				continue
+			}
+
+			if end < len(line) && (line[end] == '(' || line[end] == '[') {
+				continue
+			}
+
+			replacement := ""
+
+			if !strings.Contains(content, ".") {
+				if classExists(content, model) {
+					continue
+				}
+				replacement = "`[" + content + "]`"
+			} else {
+				parts := strings.Split(content, ".")
+				if len(parts) == 2 {
+					msgName := parts[0]
+					fieldName := parts[1]
+
+					found := false
+					mappedFieldName := fieldName
+					var targetMsg *api.Message
+
+					if model != nil {
+						for msg := range model.AllMessages() {
+							if msg.Name == msgName {
+								for _, f := range msg.Fields {
+									if f.Name == fieldName || f.JSONName == fieldName {
+										mappedFieldName = f.JSONName
+										found = true
+										targetMsg = msg
+										break
+									}
+								}
+								if found {
+									break
+								}
+							}
+						}
+					}
+
+					if found {
+						flattenedName := getFlattenedName(targetMsg)
+						replacement = "[" + flattenedName + "." + mappedFieldName + "]"
+					}
+				}
+
+				if replacement == "" {
+					replacement = "`[" + content + "]`"
+				}
+			}
+
+			if replacement != "" {
+				line = line[:start] + replacement + line[end:]
+			}
+		}
+		result[i] = line
+	}
+	return result
+}
+
+// cleanupDoubleTicks removes double backticks around simple words.
+func cleanupDoubleTicks(lines []string) []string {
+	doubleTicksRegex := regexp.MustCompile("``([\\w\\d_]+)``")
+	result := make([]string, len(lines))
+	for i, line := range lines {
+		result[i] = doubleTicksRegex.ReplaceAllString(line, "`$1`")
+	}
+	return result
+}
+
+// restoreCodeBlocks replaces placeholders with original code blocks.
+func restoreCodeBlocks(lines []string, codeBlocks [][]string) []string {
+	var finalLines []string
+	for _, line := range lines {
+		if strings.HasPrefix(line, "__CODE_BLOCK_") && strings.HasSuffix(line, "__") {
+			var index int
+			fmt.Sscanf(line, "__CODE_BLOCK_%d__", &index)
+			if index >= 0 && index < len(codeBlocks) {
+				block := codeBlocks[index]
+				if len(block) > 0 && strings.HasPrefix(strings.TrimSpace(block[0]), "```") {
+					finalLines = append(finalLines, block...)
+				} else {
+					finalLines = append(finalLines, "```text")
+					finalLines = append(finalLines, block...)
+					finalLines = append(finalLines, "```")
+				}
+				continue
+			}
+		}
+		finalLines = append(finalLines, line)
+	}
+	return finalLines
+}
+
+// toDartDoc removes trailing blank lines and converts to dartdoc format.
+func toDartDoc(lines []string) []string {
 	for len(lines) > 0 && len(lines[len(lines)-1]) == 0 {
 		lines = lines[:len(lines)-1]
 	}
 
-	// Convert to dartdoc format.
+	result := make([]string, len(lines))
 	for i, line := range lines {
 		if len(line) == 0 {
-			lines[i] = "///"
+			result[i] = "///"
 		} else {
-			lines[i] = "/// " + line
+			result[i] = "/// " + line
 		}
 	}
-
-	return lines
+	return result
 }
 
 func packageName(api *api.API, packageNameOverride string) string {

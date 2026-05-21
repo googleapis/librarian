@@ -508,7 +508,8 @@ We want to respect whitespace at the beginning, because it important in Markdown
 		"///   - A nested thing",
 		"/// - The next thing",
 	}
-	got := formatDocComments(input, nil)
+	model := api.NewTestAPI(nil, nil, nil)
+	got := formatDocComments(input, model)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -518,7 +519,8 @@ func TestFormatDocCommentsEmpty(t *testing.T) {
 	input := ``
 
 	want := []string{}
-	got := formatDocComments(input, nil)
+	model := api.NewTestAPI(nil, nil, nil)
+	got := formatDocComments(input, model)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -534,7 +536,8 @@ This line has trailing spaces.  `
 		"///",
 		"/// This line has trailing spaces.",
 	}
-	got := formatDocComments(input, nil)
+	model := api.NewTestAPI(nil, nil, nil)
+	got := formatDocComments(input, model)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
@@ -552,13 +555,18 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 		"/// sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.",
 		"/// Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.",
 	}
-	got := formatDocComments(input, nil)
+	model := api.NewTestAPI(nil, nil, nil)
+	got := formatDocComments(input, model)
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 	}
 }
 
 func TestFormatDocCommentsRewriteReferences(t *testing.T) {
+	model := api.NewTestAPI([]*api.Message{
+		{Name: "Secret", ID: "Secret"},
+	}, nil, nil)
+
 	for _, test := range []struct {
 		testName string
 		input    string
@@ -591,21 +599,176 @@ is set to true, this field will contain the sentiment for the sentence.`,
 		{
 			testName: "no match - spaces",
 			input:    "foo [Code ref][google.rpc.Code] bar",
-			output:   "/// foo [Code ref][google.rpc.Code] bar",
+			output:   "/// foo Code ref bar",
 		},
 		{
 			testName: "no match - missing brackets",
 			input:    "foo [google.rpc.Code] bar",
-			output:   "/// foo [google.rpc.Code] bar",
+			output:   "/// foo `[google.rpc.Code]` bar",
+		},
+		{
+			testName: "array access with dot",
+			input:    "foo logging.producer_destinations[0] bar",
+			output:   "/// foo `logging.producer_destinations[0]` bar",
+		},
+		{
+			testName: "simple array access",
+			input:    "foo grounding_chunk[1] bar",
+			output:   "/// foo `grounding_chunk[1]` bar",
+		},
+		{
+			testName: "double backticks cleanup",
+			input:    "foo ``Distribution`` bar",
+			output:   "/// foo `Distribution` bar",
+		},
+		{
+			testName: "complex path with array access",
+			input:    "foo emailAddresses[3].type[2] bar",
+			output:   "/// foo `emailAddresses[3].type[2]` bar",
+		},
+		{
+			testName: "complex path ending with field",
+			input:    "foo emailAddresses[1].email bar",
+			output:   "/// foo `emailAddresses[1].email` bar",
+		},
+		{
+			testName: "quoted URL with brackets",
+			input:    `foo "https://[service.name]/[google.protobuf.Api.name]" bar`,
+			output:   "/// foo `https://[service.name]/[google.protobuf.Api.name]` bar",
+		},
+		{
+			testName: "non-quoted URL with brackets",
+			input:    "foo https://[Service_name]/[API_name] bar",
+			output:   "/// foo `https://[Service_name]/[API_name]` bar",
+		},
+		{
+			testName: "URL at start of line with brackets",
+			input:    "https://[Service_name]/[API_name]",
+			output:   "/// `https://[Service_name]/[API_name]`",
+		},
+		{
+			testName: "URL with reference targets",
+			input:    "foo https://[Service_name][google.api.Service.name]/[API_name][google.protobuf.Api.name] bar",
+			output:   "/// foo `https://[Service_name]/[API_name]` bar",
+		},
+		{
+			testName: "URL with reference targets at start of line",
+			input:    "https://[Service_name][google.api.Service.name]/[API_name][google.protobuf.Api.name]",
+			output:   "/// `https://[Service_name]/[API_name]`",
+		},
+		{
+			testName: "Markdown reference syntax example",
+			input:    "You can reference [Java][Tutorial.Java] page using Markdown reference link syntax:\n`[Java][Tutorial.Java]`.",
+			output:   "/// You can reference `Java` page using Markdown reference link syntax:\n/// `[Java][Tutorial.Java]`.",
+		},
+		{
+			testName: "Code block indentation (3 spaces)",
+			input:    "There are bounds:\n\n   Upper bound: bounds[i]\n   Lower bound: bounds[i - 1]\n\nEnd.",
+			output:   "/// There are bounds:\n///\n/// ```text\n/// Upper bound: bounds[i]\n/// Lower bound: bounds[i - 1]\n/// ```\n///\n/// End.",
+		},
+		{
+			testName: "Code block indentation mixed spaces",
+			input:    "Required. The resource name:\n\n    \"projects/[PROJECT_ID]...\"\n\nFor example:\n\n   \"projects/my-project...\"",
+			output:   "/// Required. The resource name:\n///\n/// ```text\n/// \"projects/[PROJECT_ID]...\"\n/// ```\n///\n/// For example:\n///\n/// ```text\n/// \"projects/my-project...\"\n/// ```",
+		},
+		{
+			testName: "List items with 2 spaces should NOT be code block",
+			input:    "Example values:\n\n  - `000000000000004a`\n  - `7a2190356c3fc94b`\n\nEnd.",
+			output:   "/// Example values:\n///\n///   - `000000000000004a`\n///   - `7a2190356c3fc94b`\n///\n/// End.",
+		},
+		{
+			testName: "Code block relative indentation",
+			input:    "There is a block:\n\n    Line 1\n      Line 2\n    Line 3\n\nEnd.",
+			output:   "/// There is a block:\n///\n/// ```text\n/// Line 1\n///   Line 2\n/// Line 3\n/// ```\n///\n/// End.",
+		},
+		{
+			testName: "Existing code fence without name",
+			input:    "See follows:\n\n```\nparent_contexts:\n\"projects/...\"\n```\nEnd.",
+			output:   "/// See follows:\n///\n/// ```text\n/// parent_contexts:\n/// \"projects/...\"\n/// ```\n/// End.",
+		},
+		{
+			testName: "Existing code fence with name",
+			input:    "See follows:\n\n```json\n{\n  \"a\": 1\n}\n```\nEnd.",
+			output:   "/// See follows:\n///\n/// ```json\n/// {\n///   \"a\": 1\n/// }\n/// ```\n/// End.",
+		},
+		{
+			testName: "Existing code fence indented",
+			input:    "See follows:\n\n   ```\n   parent_contexts:\n   \"projects/...\"\n   ```\nEnd.",
+			output:   "/// See follows:\n///\n/// ```text\n/// parent_contexts:\n/// \"projects/...\"\n/// ```\n/// End.",
+		},
+		{
+			testName: "double bracket with valid symbol",
+			input:    "foo [Label][Secret] bar",
+			output:   "/// foo [Label][Secret] bar",
+		},
+		{
+			testName: "double bracket with invalid symbol (phrase)",
+			input:    "foo [Some Label][NonExistent] bar",
+			output:   "/// foo Some Label bar",
+		},
+		{
+			testName: "double bracket with invalid symbol (symbol)",
+			input:    "foo [SomeLabel][NonExistent] bar",
+			output:   "/// foo `SomeLabel` bar",
 		},
 	} {
 		t.Run(test.testName, func(t *testing.T) {
-			gotLines := formatDocComments(test.input, nil)
+			gotLines := formatDocComments(test.input, model)
 			got := strings.Join(gotLines, "\n")
 			if diff := cmp.Diff(test.output, got); diff != "" {
 				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
 			}
 		})
+	}
+}
+
+func TestFormatDocCommentsNestedMessageReferences(t *testing.T) {
+	parent := &api.Message{Name: "NasJobSpec", ID: ".test.NasJobSpec"}
+	msg := &api.Message{Name: "MultiTrialAlgorithmSpec", ID: ".test.NasJobSpec.MultiTrialAlgorithmSpec"}
+	nested := &api.Message{Name: "TrainTrialSpec", ID: ".test.NasJobSpec.MultiTrialAlgorithmSpec.TrainTrialSpec"}
+
+	nested.Fields = []*api.Field{
+		{Name: "frequency", JSONName: "frequency"},
+		{Name: "max_parallel_trial_count", JSONName: "maxParallelTrialCount"},
+	}
+
+	model := api.NewTestAPI([]*api.Message{parent, msg, nested}, nil, nil)
+
+	input := "Spec for train trials. Top N [TrainTrialSpec.maxParallelTrialCount]\nsearch trials will be trained for every M\n[TrainTrialSpec.frequency] trials searched."
+
+	want := []string{
+		"/// Spec for train trials. Top N [NasJobSpec_MultiTrialAlgorithmSpec_TrainTrialSpec.maxParallelTrialCount]",
+		"/// search trials will be trained for every M",
+		"/// [NasJobSpec_MultiTrialAlgorithmSpec_TrainTrialSpec.frequency] trials searched.",
+	}
+
+	got := formatDocComments(input, model)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestFormatDocCommentsNestedMessageReferences (-want, +got)\n:%s", diff)
+	}
+}
+
+func TestFormatDocCommentsDuplicateMessageNames(t *testing.T) {
+	// Message 1: named "Model" but without the field.
+	msg1 := &api.Message{Name: "Model", ID: "msg1"}
+
+	// Message 2: named "Model" with the field!
+	msg2 := &api.Message{Name: "Model", ID: "msg2"}
+	msg2.Fields = []*api.Field{
+		{Name: "supported_export_formats", JSONName: "supportedExportFormats"},
+	}
+
+	model := api.NewTestAPI([]*api.Message{msg1, msg2}, nil, nil)
+
+	input := "Check [Model.supported_export_formats] object."
+
+	want := []string{
+		"/// Check [Model.supportedExportFormats] object.",
+	}
+
+	got := formatDocComments(input, model)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in TestFormatDocCommentsDuplicateMessageNames (-want, +got)\n:%s", diff)
 	}
 }
 
