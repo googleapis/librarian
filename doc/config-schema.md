@@ -69,7 +69,7 @@ This document describes the schema for the librarian.yaml.
 | `group_id` | string | Is the Maven artifact group ID. |
 | `artifact_id` | string | Is the Maven artifact ID. |
 | `classifier` | string | Is the classifier of the Maven artifact. |
-| `packaging` | string | Is the Maven packaging (e.g. jar, exe). If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
+| `packaging` | string | Is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
 
 ## PipTool Configuration
 

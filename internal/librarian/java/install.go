@@ -111,9 +111,9 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe)
 }
 
-// getM2ArtifactSpec constructs the Maven coordinate string and returns it along with the lowercased file extension.
+// getM2ArtifactSpec constructs the Maven coordinate string and returns it along with the file extension.
 func getM2ArtifactSpec(mvnTool *config.MavenTool) (string, string) {
-	ext := strings.ToLower(mvnTool.Packaging)
+	ext := mvnTool.Packaging
 	if ext == "" {
 		ext = "jar"
 	}

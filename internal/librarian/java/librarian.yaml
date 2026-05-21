@@ -23,7 +23,7 @@ tools:
       artifact_id: google-java-format
       version: "1.25.2"
       classifier: all-deps
-      packaging: JAR
+      packaging: jar
     - name: protoc-gen-java_grpc
       group_id: io.grpc
       artifact_id: protoc-gen-grpc-java
