@@ -38,7 +38,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
-| `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
+| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
@@ -49,11 +49,11 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
 
-## NPMTool Configuration
+## PNPMTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the npm package name. |
+| `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
 | `checksum` | string | Is the SHA256 checksum of the package. |

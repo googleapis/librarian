@@ -334,10 +334,10 @@ func TestFormatConfig(t *testing.T) {
 			want: []string{"cargo-semver-checks", "taplo-cli"},
 		},
 		{
-			name: "sorts npm tools by name",
+			name: "sorts pnpm tools by name",
 			input: &config.Config{
 				Tools: &config.Tools{
-					NPM: []*config.NPMTool{
+					PNPM: []*config.PNPMTool{
 						{Name: "gapic-tools", Version: "1.0.5"},
 						{Name: "gapic-generator-typescript", Version: "1.0.0"},
 						{Name: "gapic-node-processing", Version: "0.1.7"},
@@ -346,7 +346,7 @@ func TestFormatConfig(t *testing.T) {
 			},
 			got: func(c *config.Config) []string {
 				var names []string
-				for _, tool := range c.Tools.NPM {
+				for _, tool := range c.Tools.PNPM {
 					names = append(names, tool.Name)
 				}
 				return names

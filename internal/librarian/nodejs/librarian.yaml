@@ -17,7 +17,7 @@
 # librarian.
 language: nodejs
 tools:
-  npm:
+  pnpm:
     - name: gapic-generator-typescript
       version: "92b328bd72b7418e5eca12ee0ffc32829daf0a77"
       package: "https://github.com/googleapis/google-cloud-node/archive/92b328bd72b7418e5eca12ee0ffc32829daf0a77.tar.gz"

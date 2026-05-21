@@ -56,9 +56,9 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to set pnpm global-bin-dir: %w", err)
 	}
 
-	for _, tool := range cfg.Tools.NPM {
+	for _, tool := range cfg.Tools.PNPM {
 		if len(tool.Build) > 0 {
-			if err := installNPMToolFromSource(ctx, tool); err != nil {
+			if err := installPNPMToolFromSource(ctx, tool); err != nil {
 				return err
 			}
 			continue
@@ -74,9 +74,9 @@ func Install(ctx context.Context) error {
 	return nil
 }
 
-func installNPMToolFromSource(ctx context.Context, tool *config.NPMTool) error {
+func installPNPMToolFromSource(ctx context.Context, tool *config.PNPMTool) error {
 	if tool.Package == "" {
-		return fmt.Errorf("npm tool %s has build steps but no package URL", tool.Name)
+		return fmt.Errorf("pnpm tool %s has build steps but no package URL", tool.Name)
 	}
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
