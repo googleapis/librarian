@@ -15,7 +15,6 @@
 package swift
 
 import (
-	"fmt"
 	"slices"
 	"strings"
 
@@ -85,32 +84,39 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			continue
 		}
 		if p.RequiredByServices {
-			c.addDependency(p)
+			if _, err := c.addDependency(p); err != nil {
+				return err
+			}
 			annotations.DependsOn[p.Name] = p
 		}
 	}
 
 	// Services always depend on well known types
-	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-		c.addDependency(dep)
-		annotations.DependsOn[dep.Name] = dep
-	} else {
-		return fmt.Errorf("missing required dependency %q for well-known types", wellKnownProtobufPackage)
+	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
+	if err != nil {
+		return err
 	}
+	annotations.DependsOn[wktDep.Name] = wktDep
 
 	for _, method := range restMethods {
 		if method.InputType != nil {
 			if method.InputType.Package != c.Model.PackageName {
-				if dep, ok := c.ApiPackages[method.InputType.Package]; ok {
-					c.addDependency(dep)
+				dep, err := c.addApiPackageDependency(method.InputType.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
 				}
 			}
 		}
 		if method.OutputType != nil {
 			if method.OutputType.Package != c.Model.PackageName {
-				if dep, ok := c.ApiPackages[method.OutputType.Package]; ok {
-					c.addDependency(dep)
+				dep, err := c.addApiPackageDependency(method.OutputType.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
 				}
 			}

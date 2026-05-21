@@ -16,7 +16,6 @@ package swift
 
 import (
 	"fmt"
-	"log/slog"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -45,8 +44,9 @@ const (
 // information needed to generate the library.
 type codec struct {
 	GenerationYear string
-	PackageName    string
-	MonorepoRoot   string
+	// The name of the swift package (e.g. "GoogleCloudSecretManagerV1")
+	PackageName  string
+	MonorepoRoot string
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
 	RootName string
@@ -117,35 +117,34 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 	return result, nil
 }
 
-func (c *codec) addApiPackageDependency(apiName string) {
+func (c *codec) addApiPackageDependency(apiName string) (*Dependency, error) {
 	dep, ok := c.ApiPackages[apiName]
 	if !ok {
 		// If there is no explicitly configured dependency for this API, we assume it is
 		// provided by the same package that this API is contained within.
-		return
+		return nil, nil
 	}
-	c.addDependency(dep)
+	return c.addDependency(dep)
 }
 
-func (c *codec) addPackageDependency(packageName string) {
+func (c *codec) addPackageDependency(packageName string) (*Dependency, error) {
 	dep, ok := c.DependenciesByName[packageName]
 	if !ok {
-		slog.Warn("Attempted to add a dependency on an unknown package", "package", packageName)
-		return
+		return nil, fmt.Errorf("dependency not found for package %q", packageName)
 	}
-	c.addDependency(dep)
+	return c.addDependency(dep)
 }
 
-func (c *codec) addDependency(dep *Dependency) {
+func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 	if dep == nil {
-		slog.Warn("BUG: Attempting to add nil dependency", "api_package", c.Model.PackageName)
-		return
+		return nil, fmt.Errorf("attempting to add nil dependency")
 	}
 	// Skip including self as a dependency
 	if dep.Name == c.PackageName {
-		return
+		return nil, nil
 	}
 	if ann, ok := c.Model.Codec.(*modelAnnotations); ok {
 		ann.DependsOn[dep.Name] = dep
 	}
+	return dep, nil
 }

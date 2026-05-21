@@ -68,14 +68,15 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.
-	c.addApiPackageDependency(message.Package)
-	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
-	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-		c.addDependency(dep)
-		annotations.DependsOn[dep.Name] = dep
-	} else {
-		return fmt.Errorf("missing required dependency %q for well-known types", wellKnownProtobufPackage)
+	if _, err := c.addApiPackageDependency(message.Package); err != nil {
+		return err
 	}
+	// All messages require the well known types for GoogleCloudWkt._AnyPackable.
+	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
+	if err != nil {
+		return err
+	}
+	annotations.DependsOn[wktDep.Name] = wktDep
 
 	message.Codec = annotations
 	for _, oneof := range message.OneOfs {
@@ -92,10 +93,11 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				annotations.CustomSerialization = true
 			}
 			if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
-				if dep, ok := c.ApiPackages[fieldCodec.PackageName]; ok {
-					c.addDependency(dep)
-					annotations.DependsOn[dep.Name] = dep
+				dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
+				if err != nil {
+					return err
 				}
+				annotations.DependsOn[dep.Name] = dep
 			}
 		}
 	}
@@ -103,12 +105,11 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if message.Pagination != nil {
 		annotations.IsPaginatedResponse = true
 		// If this message is a paginated response, then require the pagination helpers package
-		if dep, ok := c.DependenciesByName[paginationSwiftPackage]; ok {
-			c.addDependency(dep)
-			annotations.DependsOn[dep.Name] = dep
-		} else {
-			return fmt.Errorf("missing required dependency %q for pagination", paginationSwiftPackage)
+		paginationDep, err := c.addPackageDependency(paginationSwiftPackage)
+		if err != nil {
+			return err
 		}
+		annotations.DependsOn[paginationDep.Name] = paginationDep
 
 		itemField := message.Pagination.PageableItem
 		itemFieldCodec, ok := itemField.Codec.(*fieldAnnotations)
@@ -126,7 +127,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if nestedCodec, ok := nested.Codec.(*messageAnnotations); ok {
 			// If there are required packages from nested messages, add them to the outer message as well
 			for _, dep := range nestedCodec.DependsOn {
-				c.addDependency(dep)
+				if _, err := c.addDependency(dep); err != nil {
+					return err
+				}
 				annotations.DependsOn[dep.Name] = dep
 			}
 		}

@@ -165,7 +165,13 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
 	}
-	codec.addPackageDependency("GoogleCloudPlaceholderV1")
+	dep, err := codec.addPackageDependency("GoogleCloudPlaceholderV1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if dep != nil {
+		t.Errorf("expected to not set ignore self dependency, got %v", dep)
+	}
 
 	ann, ok := model.Codec.(*modelAnnotations)
 	if !ok {
@@ -174,10 +180,10 @@ func TestModelAnnotations_IgnoreSelfDependency(t *testing.T) {
 
 	// Self dependency should be ignored, other should be present.
 	want := map[string]bool{
-		"GoogleCloudGax":           true, // always required by services
-		"GoogleCloudOtherV1":       true, // required by the service
-		"GoogleCloudPlaceholderV1": false,
-		"GoogleCloudWkt":           true, // always required by message types
+		"GoogleCloudGax":           true,  // always required by services
+		"GoogleCloudOtherV1":       true,  // required by the service
+		"GoogleCloudPlaceholderV1": false, // this is the current package and should not be included as a dependency
+		"GoogleCloudWkt":           true,  // always required by message types
 	}
 	got := map[string]bool{}
 	for _, dep := range codec.Dependencies {
