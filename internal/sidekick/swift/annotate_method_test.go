@@ -221,7 +221,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
-				ReturnType:     "Response",
+				ReturnType:     "Google.Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -349,7 +349,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
-		ReturnType: "ListResponse",
+		ReturnType: "GoogleTest.ListResponse",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

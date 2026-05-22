@@ -613,7 +613,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Error>
  {
-      let listRpc = { (token: String) async throws -> ListSecretsResponse in
+      let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
         var request = byItem
         request.pageToken = token
         return try await self.listSecrets(request: request, options: options)

@@ -81,7 +81,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			return err
 		}
 		var err error
-		returnType, err = c.messageTypeName(method.OutputType)
+		returnType, err = c.fullyQualifiedMessageTypeName(method.OutputType)
 		if err != nil {
 			return err
 		}

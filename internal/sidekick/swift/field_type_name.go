@@ -137,6 +137,26 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	return fmt.Sprintf("%s.%s", parent, name), nil
 }
 
+func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
+	name := pascalCase(m.Name)
+	if m.Parent == nil {
+		if m.Package == c.Model.PackageName {
+			// this is the current package
+			return fmt.Sprintf("%s.%s", c.PackageName, name), nil
+		}
+		dep, ok := c.ApiPackages[m.Package]
+		if !ok {
+			return "", fmt.Errorf("package %q not found", m.Package)
+		}
+		return fmt.Sprintf("%s.%s", dep.Name, name), nil
+	}
+	parent, err := c.fullyQualifiedMessageTypeName(m.Parent)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", parent, name), nil
+}
+
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	name := pascalCase(e.Name)
 	if e.Parent == nil {
