@@ -644,6 +644,9 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.Dependencies != nil {
 		res.Dependencies = src.Dependencies
 	}
+	if src.ESM {
+		res.ESM = src.ESM
+	}
 	if src.ExtraProtocParameters != nil {
 		res.ExtraProtocParameters = src.ExtraProtocParameters
 	}
