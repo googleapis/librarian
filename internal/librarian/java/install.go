@@ -98,7 +98,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 		if err != nil {
 			return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
 		}
-		if err := buildLocalMavenProject(ctx, absLocalPath); err != nil {
+		if err := buildLocalMavenProject(ctx, mvnTool.LocalPath); err != nil {
 			return err
 		}
 		pomPath := filepath.Join(absLocalPath, "pom.xml")
@@ -215,11 +215,23 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 	return os.WriteFile(wrapperPath, []byte(content), 0755)
 }
 
-// buildLocalMavenProject builds the local Maven project at the target absolute path.
-func buildLocalMavenProject(ctx context.Context, absPath string) error {
-	args := []string{"package", "-DskipTests"}
-	if err := command.RunStreamingInDir(ctx, absPath, "mvn", args...); err != nil {
-		return fmt.Errorf("failed to build local Maven project at %s: %w", absPath, err)
+// buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.
+func buildLocalMavenProject(ctx context.Context, localPath string) error {
+	args := []string{
+		"package",
+		"-B",
+		"-ntp",
+		"-T", "1.5C",
+		"-DskipTests",
+		"-Dcheckstyle.skip",
+		"-Dclirr.skip",
+		"-Denforcer.skip",
+		"-Dfmt.skip",
+		"-pl", localPath,
+		"--also-make",
+	}
+	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
+		return fmt.Errorf("failed to build local Maven project %q: %w", localPath, err)
 	}
 	return nil
 }

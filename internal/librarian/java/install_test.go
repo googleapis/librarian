@@ -88,7 +88,10 @@ func TestInstall(t *testing.T) {
 		{
 			name:        "mvn",
 			logFilename: "mvn_invocations.log",
-			wantArgs:    "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\nmvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64\nmvn package -DskipTests",
+			wantArgs: "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
+				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64\n" +
+				"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
+				"-pl sdk-platform-java/gapic-generator-java --also-make",
 		},
 	}
 	stubDir := filepath.Join(tmpDir, "bin")
