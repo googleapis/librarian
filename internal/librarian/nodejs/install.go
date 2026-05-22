@@ -49,7 +49,6 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-
 	env, err := getPNPMEnv(ctx)
 	if err != nil {
 		return err
@@ -62,6 +61,7 @@ func Install(ctx context.Context) error {
 			}
 			continue
 		}
+
 		pkg := tool.Package
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
