@@ -17,8 +17,20 @@ package maven
 
 import (
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"os"
+)
+
+var (
+	// ErrReadPOM indicates a failure to read the pom.xml file.
+	ErrReadPOM = errors.New("failed to read pom.xml")
+
+	// ErrParsePOM indicates a failure to parse the pom.xml file XML syntax.
+	ErrParsePOM = errors.New("failed to parse pom.xml")
+
+	// ErrInvalidPOM indicates that the pom.xml is missing required metadata fields.
+	ErrInvalidPOM = errors.New("invalid pom.xml metadata")
 )
 
 // POMProject represents the target Maven metadata structured from pom.xml.
@@ -31,22 +43,21 @@ type POMProject struct {
 	} `xml:"parent"`
 }
 
-// ParsePOM extracts the artifactId and version from the specified pom.xml path.
-func ParsePOM(pomPath string) (string, string, error) {
+// ParsePOM extracts the Maven metadata from the specified pom.xml path.
+func ParsePOM(pomPath string) (*POMProject, error) {
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to read pom.xml %q: %w", pomPath, err)
+		return nil, fmt.Errorf("%w %q: %w", ErrReadPOM, pomPath, err)
 	}
 	var proj POMProject
 	if err := xml.Unmarshal(data, &proj); err != nil {
-		return "", "", fmt.Errorf("failed to parse pom.xml %q: %w", pomPath, err)
+		return nil, fmt.Errorf("%w %q: %w", ErrParsePOM, pomPath, err)
 	}
-	version := proj.Version
-	if version == "" {
-		version = proj.Parent.Version
+	if proj.Version == "" {
+		proj.Version = proj.Parent.Version
 	}
-	if proj.ArtifactID == "" || version == "" {
-		return "", "", fmt.Errorf("missing artifactId or version in pom.xml %q", pomPath)
+	if proj.ArtifactID == "" || proj.Version == "" {
+		return nil, fmt.Errorf("%w %q: missing artifactId or version", ErrInvalidPOM, pomPath)
 	}
-	return proj.ArtifactID, version, nil
+	return &proj, nil
 }

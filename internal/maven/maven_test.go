@@ -15,10 +15,12 @@
 package maven
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestParsePOM(t *testing.T) {
@@ -34,62 +36,64 @@ func TestParsePOM(t *testing.T) {
 	if err := os.WriteFile(pomPath, []byte(mockPOM), 0644); err != nil {
 		t.Fatal(err)
 	}
+	got, err := ParsePOM(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &POMProject{
+		ArtifactID: "gapic-generator-java",
+		Version:    "2.28.0-SNAPSHOT",
+	}
+	// Ignore parent/xmlname internal coordinates comparison details
+	if diff := cmp.Diff(want.ArtifactID, got.ArtifactID); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+	if diff := cmp.Diff(want.Version, got.Version); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
+func TestParsePOM_Error(t *testing.T) {
+	tmpDir := t.TempDir()
 	for _, test := range []struct {
-		name          string
-		pomPath       string
-		wantArtifact  string
-		wantVersion   string
-		wantErrSubstr string
+		name    string
+		pomPath string
+		setup   func(t *testing.T)
+		wantErr error
 	}{
 		{
-			name:         "parse POM successfully",
-			pomPath:      pomPath,
-			wantArtifact: "gapic-generator-java",
-			wantVersion:  "2.28.0-SNAPSHOT",
+			name:    "missing file error",
+			pomPath: filepath.Join(tmpDir, "nonexistent.xml"),
+			wantErr: ErrReadPOM,
 		},
 		{
-			name:          "missing file error",
-			pomPath:       filepath.Join(tmpDir, "nonexistent.xml"),
-			wantErrSubstr: "failed to read pom.xml",
+			name:    "invalid XML syntax",
+			pomPath: filepath.Join(tmpDir, "invalid.xml"),
+			setup: func(t *testing.T) {
+				if err := os.WriteFile(filepath.Join(tmpDir, "invalid.xml"), []byte("<project><invalid"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: ErrParsePOM,
 		},
 		{
-			name:          "invalid XML syntax",
-			pomPath:       filepath.Join(tmpDir, "invalid.xml"),
-			wantErrSubstr: "failed to parse pom.xml",
-		},
-		{
-			name:          "missing artifactId or version",
-			pomPath:       filepath.Join(tmpDir, "empty.xml"),
-			wantErrSubstr: "missing artifactId or version",
+			name:    "missing artifactId or version",
+			pomPath: filepath.Join(tmpDir, "empty.xml"),
+			setup: func(t *testing.T) {
+				if err := os.WriteFile(filepath.Join(tmpDir, "empty.xml"), []byte("<project></project>"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: ErrInvalidPOM,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.name == "invalid XML syntax" {
-				if err := os.WriteFile(test.pomPath, []byte("<project><invalid"), 0644); err != nil {
-					t.Fatal(err)
-				}
+			if test.setup != nil {
+				test.setup(t)
 			}
-			if test.name == "missing artifactId or version" {
-				if err := os.WriteFile(test.pomPath, []byte("<project></project>"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			gotArtifact, gotVersion, err := ParsePOM(test.pomPath)
-			if test.wantErrSubstr != "" {
-				if err == nil || !strings.Contains(err.Error(), test.wantErrSubstr) {
-					t.Errorf("ParsePOM() error = %v, wantErrSubstr = %q", err, test.wantErrSubstr)
-				}
-				return
-			}
-			if err != nil {
-				t.Fatal(err)
-			}
-			if gotArtifact != test.wantArtifact {
-				t.Errorf("ParsePOM() gotArtifact = %q, wantArtifact = %q", gotArtifact, test.wantArtifact)
-			}
-			if gotVersion != test.wantVersion {
-				t.Errorf("ParsePOM() gotVersion = %q, wantVersion = %q", gotVersion, test.wantVersion)
+			_, err := ParsePOM(test.pomPath)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ParsePOM() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

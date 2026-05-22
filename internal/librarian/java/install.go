@@ -102,7 +102,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 			return err
 		}
 		pomPath := filepath.Join(absLocalPath, "pom.xml")
-		artifactID, version, err := maven.ParsePOM(pomPath)
+		proj, err := maven.ParsePOM(pomPath)
 		if err != nil {
 			return err
 		}
@@ -110,7 +110,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 		if ext == "" {
 			ext = "jar"
 		}
-		fileName := fmt.Sprintf("%s-%s.%s", artifactID, version, ext)
+		fileName := fmt.Sprintf("%s-%s.%s", proj.ArtifactID, proj.Version, ext)
 		artifactPath := filepath.Join(absLocalPath, "target", fileName)
 		if _, err := os.Stat(artifactPath); err != nil {
 			return fmt.Errorf("compiled artifact not found at %q: %w", artifactPath, err)
