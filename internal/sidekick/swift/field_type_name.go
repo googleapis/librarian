@@ -125,11 +125,7 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	name := pascalCase(m.Name)
 	if m.Parent == nil {
-		prefix, err := c.externalTypePrefix(m.Package)
-		if err != nil {
-			return "", err
-		}
-		if prefix != "" {
+		if prefix := c.externalTypePrefix(m.Package); prefix != "" {
 			return fmt.Sprintf("%s.%s", prefix, name), nil
 		}
 		return name, nil
@@ -144,11 +140,7 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	name := pascalCase(e.Name)
 	if e.Parent == nil {
-		prefix, err := c.externalTypePrefix(e.Package)
-		if err != nil {
-			return "", err
-		}
-		if prefix != "" {
+		if prefix := c.externalTypePrefix(e.Package); prefix != "" {
 			return fmt.Sprintf("%s.%s", prefix, name), nil
 		}
 		return name, nil
@@ -160,13 +152,13 @@ func (c *codec) enumTypeName(e *api.Enum) (string, error) {
 	return fmt.Sprintf("%s.%s", parent, name), nil
 }
 
-func (c *codec) externalTypePrefix(packageName string) (string, error) {
+func (c *codec) externalTypePrefix(packageName string) string {
 	if packageName == c.Model.PackageName {
-		return "", nil
+		return ""
 	}
 	dep, ok := c.ApiPackages[packageName]
 	if !ok {
-		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
+		return ""
 	}
-	return dep.Name, nil
+	return dep.Name
 }

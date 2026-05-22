@@ -63,6 +63,7 @@ func TestAnnotateMethod(t *testing.T) {
 				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
 				HTTPMethod:     "GET",
 				HasBody:        false,
+				ReturnType:     "Response",
 			},
 		},
 		{
@@ -86,6 +87,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HasBody:        true,
 				IsBodyWildcard: false,
 				BodyField:      "key",
+				ReturnType:     "Response",
 			},
 		},
 		{
@@ -108,6 +110,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
+				ReturnType:     "Response",
 			},
 		},
 		{
@@ -132,6 +135,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "GET",
 				HasBody:        false,
 				QueryParams:    []*api.Field{keyField},
+				ReturnType:     "Response",
 			},
 		},
 	} {
@@ -217,6 +221,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
+				ReturnType:     "Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -344,6 +349,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		Pagination: &paginationAnnotations{
 			ItemType: "Item",
 		},
+		ReturnType: "ListResponse",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
