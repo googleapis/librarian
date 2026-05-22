@@ -70,6 +70,8 @@ This document describes the schema for the librarian.yaml.
 | `artifact_id` | string | Is the Maven artifact ID. |
 | `classifier` | string | Is the classifier of the Maven artifact. |
 | `packaging` | string | Is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
+| `local_path` | string | Is the path to a local Maven project directory containing a pom.xml file. |
+| `main_class` | string | Is the fully qualified main class name to execute (used with -cp). |
 
 ## PipTool Configuration
 

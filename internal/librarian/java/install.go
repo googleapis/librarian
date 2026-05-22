@@ -17,6 +17,7 @@ package java
 import (
 	"context"
 	_ "embed"
+	"encoding/xml"
 	"fmt"
 	"os"
 	"os/exec"
@@ -92,6 +93,36 @@ func getInstallDir() (string, error) {
 // (.jar or .exe) to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
+	if mvnTool.LocalPath != "" {
+		absLocalPath, err := filepath.Abs(mvnTool.LocalPath)
+		if err != nil {
+			return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
+		}
+		if err := buildLocalMavenProject(ctx, absLocalPath); err != nil {
+			return err
+		}
+		pomPath := filepath.Join(absLocalPath, "pom.xml")
+		artifactID, version, err := parsePOMMetadata(pomPath)
+		if err != nil {
+			return err
+		}
+		ext := mvnTool.Packaging
+		if ext == "" {
+			ext = "jar"
+		}
+		fileName := fmt.Sprintf("%s-%s.%s", artifactID, version, ext)
+		artifactPath := filepath.Join(absLocalPath, "target", fileName)
+		if _, err := os.Stat(artifactPath); err != nil {
+			return fmt.Errorf("compiled artifact not found at %s: %w", artifactPath, err)
+		}
+		isExe := ext == "exe"
+		destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
+		if err != nil {
+			return err
+		}
+		return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
+	}
+
 	artifact, ext := getM2ArtifactSpec(mvnTool)
 	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
 		return err
@@ -108,7 +139,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	if err != nil {
 		return err
 	}
-	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe)
+	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
 }
 
 // getM2ArtifactSpec constructs the Maven coordinate string and returns it along with the file extension.
@@ -169,13 +200,54 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the library file.
-func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool) error {
+func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, mainClass string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	var content string
 	if isExecutable {
 		content = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+	} else if mainClass != "" {
+		content = fmt.Sprintf("#!/bin/sh\nexec java -cp %q %q \"$@\"\n", destPath, mainClass)
 	} else {
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(content), 0755)
+}
+
+// POMProject represents the target Maven metadata structured from pom.xml.
+type POMProject struct {
+	XMLName    xml.Name `xml:"project"`
+	ArtifactID string   `xml:"artifactId"`
+	Version    string   `xml:"version"`
+	Parent     struct {
+		Version string `xml:"version"`
+	} `xml:"parent"`
+}
+
+// parsePOMMetadata extracts the artifactId and version from the specified pom.xml path.
+func parsePOMMetadata(pomPath string) (string, string, error) {
+	data, err := os.ReadFile(pomPath)
+	if err != nil {
+		return "", "", fmt.Errorf("failed to read pom.xml: %w", err)
+	}
+	var proj POMProject
+	if err := xml.Unmarshal(data, &proj); err != nil {
+		return "", "", fmt.Errorf("failed to parse pom.xml: %w", err)
+	}
+	version := proj.Version
+	if version == "" {
+		version = proj.Parent.Version
+	}
+	if proj.ArtifactID == "" || version == "" {
+		return "", "", fmt.Errorf("missing artifactId or version in pom.xml %s", pomPath)
+	}
+	return proj.ArtifactID, version, nil
+}
+
+// buildLocalMavenProject builds the local Maven project at the target absolute path.
+func buildLocalMavenProject(ctx context.Context, absPath string) error {
+	args := []string{"package", "-DskipTests"}
+	if err := command.RunStreamingInDir(ctx, absPath, "mvn", args...); err != nil {
+		return fmt.Errorf("failed to build local Maven project at %s: %w", absPath, err)
+	}
+	return nil
 }

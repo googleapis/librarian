@@ -158,6 +158,12 @@ type MavenTool struct {
 	// If the packaging is "exe", the wrapper script executes it directly.
 	// Otherwise, it executes the tool using "java -jar".
 	Packaging string `yaml:"packaging,omitempty"`
+
+	// LocalPath is the path to a local Maven project directory containing a pom.xml file.
+	LocalPath string `yaml:"local_path,omitempty"`
+
+	// MainClass is the fully qualified main class name to execute (used with -cp).
+	MainClass string `yaml:"main_class,omitempty"`
 }
 
 // PipTool defines a tool to install via pip.
