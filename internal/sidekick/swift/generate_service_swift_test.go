@@ -148,10 +148,6 @@ func TestGenerateService_Delegation(t *testing.T) {
 			Name:       "SomeTestPackage",
 			ApiPackage: "test",
 		},
-		{
-			Name:       "SomeTestPackage",
-			ApiPackage: "test",
-		},
 	})
 	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
