@@ -89,6 +89,7 @@ func TestMakeEnumFields(t *testing.T) {
 	gotEnum := model.Enum(wantEnum.ID)
 	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
+		return
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
 	if gotEnum.Parent == nil {
@@ -173,6 +174,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 	gotEnum := model.Enum(wantEnum.ID)
 	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
+		return
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
 	if gotEnum.Parent == nil {
@@ -280,6 +282,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 	gotEnum := model.Enum(wantEnum.ID)
 	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
+		return
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
 	if gotEnum.Parent == nil {

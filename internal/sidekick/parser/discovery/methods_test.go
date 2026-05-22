@@ -169,6 +169,7 @@ func TestMakeServiceMethodsApiversion(t *testing.T) {
 			got := model.Method(test.id)
 			if got == nil {
 				t.Fatalf("expected method %s in the API model", test.id)
+				return
 			}
 			if got.APIVersion != test.wantVersion {
 				t.Errorf("method.APIVersion = %q, want = %q", got.APIVersion, test.wantVersion)
@@ -209,12 +210,14 @@ func TestMethodEmptyBody(t *testing.T) {
 	got := model.Message(want.ID)
 	if got == nil {
 		t.Fatalf("expected message %s in the API model", want.ID)
+		return
 	}
 	apitest.CheckMessage(t, got, want)
 
 	wantParent := model.Message("..zones")
 	if wantParent == nil {
 		t.Fatalf("expected message %s in the API model", "..zones")
+		return
 	}
 	if wantParent != got.Parent {
 		t.Errorf("mismatched parent for synthetic request message")

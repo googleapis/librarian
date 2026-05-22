@@ -96,6 +96,7 @@ func TestMaybeInlineObject(t *testing.T) {
 	gotInlineMessage := model.Message(wantInlineMessage.ID)
 	if gotInlineMessage == nil {
 		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
+		return
 	}
 	apitest.CheckMessage(t, gotInlineMessage, wantInlineMessage)
 	if gotInlineMessage.Parent != message {
@@ -181,6 +182,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 	gotInlineMessage := model.Message(wantInlineMessage.ID)
 	if gotInlineMessage == nil {
 		t.Fatalf("missing inline message %s", wantInlineMessage.ID)
+		return
 	}
 	apitest.CheckMessage(t, gotInlineMessage, wantInlineMessage)
 	if gotInlineMessage.Parent != message {

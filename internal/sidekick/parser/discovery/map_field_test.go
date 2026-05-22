@@ -259,6 +259,7 @@ func TestMapFieldWithEnumValues(t *testing.T) {
 	gotEnum := model.Enum(wantEnum.ID)
 	if gotEnum == nil {
 		t.Fatalf("missing enum %s", wantEnum.ID)
+		return
 	}
 	apitest.CheckEnum(t, *gotEnum, *wantEnum)
 }
