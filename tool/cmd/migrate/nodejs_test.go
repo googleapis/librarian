@@ -33,7 +33,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 		{
 			Name: "google-cloud-secretmanager", Version: "6.1.0",
 			CopyrightYear: "2020",
-			Keep:          []string{"package.json"},
 			APIs: []*config.API{
 				{Path: "google/cloud/secretmanager/v1"},
 			},
@@ -44,7 +43,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 		{
 			Name:    "google-cloud-speech",
 			Version: "7.2.0",
-			Keep:    []string{"package.json"},
 			APIs: []*config.API{
 				{Path: "google/cloud/speech/v1"},
 			},
@@ -58,7 +56,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 		{
 			Name:    "google-cloud-translate",
 			Version: "9.1.0",
-			Keep:    []string{"package.json"},
 			APIs: []*config.API{
 				{Path: "google/cloud/translate/v3"},
 			},
@@ -75,7 +72,6 @@ func TestBuildNodejsLibraries(t *testing.T) {
 		{
 			Name:    "google-cloud-workstations",
 			Version: "1.3.0",
-			Keep:    []string{"package.json"},
 			APIs: []*config.API{
 				{Path: "google/cloud/workstations/v1"},
 			},

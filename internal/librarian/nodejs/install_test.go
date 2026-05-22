@@ -47,11 +47,17 @@ func TestInstall(t *testing.T) {
 		}
 	}
 
-	// Stub corepack and pnpm. The pnpm stub also creates
+	// Stub pnpm, node and git. The pnpm stub also creates
 	// node_modules/.bin/tsc in the working directory during 'pnpm install'
 	// so the subsequent "./node_modules/.bin/tsc" build step finds an executable.
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
+# Assert that target environmental variables are set dynamically for process lifetime
+if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ]; then
+    echo "Error: Required transient PNPM environment variables are missing!" >&2
+    exit 1
+fi
+
 case "$*" in
     *install*)
         mkdir -p node_modules/.bin
@@ -59,9 +65,6 @@ case "$*" in
         chmod +x node_modules/.bin/tsc
         ;;
 esac
-exit 0
-`
-	corepackStub := `#!/bin/sh
 exit 0
 `
 	nodeStub := `#!/bin/sh
@@ -73,9 +76,6 @@ esac
 exit 0
 `
 	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bin, "corepack"), []byte(corepackStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {

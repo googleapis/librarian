@@ -18,11 +18,11 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -38,45 +38,25 @@ var librarianYAML []byte
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context) error {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
-	}
-	for _, cmd := range []string{"node", "corepack"} {
+	for _, cmd := range []string{"node", "pnpm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
 		}
 	}
 
-	// Ensure pnpm is prepared and activated globally to enable lockfile-respecting builds
-	if cfg.Default == nil || cfg.Default.Nodejs == nil || cfg.Default.Nodejs.PNPMVersion == "" {
-		return fmt.Errorf("pnpm_version must be specified in default.nodejs inside librarian.yaml")
-	}
-	pnpmVersion := cfg.Default.Nodejs.PNPMVersion
-	pnpmSpec := "pnpm@" + pnpmVersion
-
-	// Ensure pnpm is enabled and shims are linked globally using corepack
-	if err := command.RunStreaming(ctx, "corepack", "enable", "pnpm"); err != nil {
-		return fmt.Errorf("failed to enable pnpm shims: %w", err)
-	}
-
-	if err := command.RunStreaming(ctx, "corepack", "prepare", pnpmSpec, "--activate"); err != nil {
-		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
-	}
-
-	// Resolve Node's global bin path dynamically from process.execPath and align pnpm's global-bin-dir
-	binOut, err := command.Output(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
+	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
 	if err != nil {
-		return fmt.Errorf("failed to resolve node bin directory: %w", err)
+		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	globalBin := strings.TrimSpace(binOut)
-	if err := command.RunStreaming(ctx, "pnpm", "config", "set", "global-bin-dir", globalBin); err != nil {
-		return fmt.Errorf("failed to set pnpm global-bin-dir: %w", err)
+
+	env, err := getPNPMEnv(ctx)
+	if err != nil {
+		return err
 	}
 
 	for _, tool := range cfg.Tools.PNPM {
 		if len(tool.Build) > 0 {
-			if err := installPNPMToolFromSource(ctx, tool); err != nil {
+			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
 			}
 			continue
@@ -85,14 +65,63 @@ func Install(ctx context.Context) error {
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := command.RunStreaming(ctx, "pnpm", "add", "-g", pkg); err != nil {
+		if err := runPNPM(ctx, "", env, "add", "-g", pkg); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func installPNPMToolFromSource(ctx context.Context, tool *config.PNPMTool) error {
+func getPNPMEnv(ctx context.Context) ([]string, error) {
+	binOut, err := commandOutput(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve node bin directory: %w", err)
+	}
+	globalBin := strings.TrimSpace(binOut)
+
+	env := os.Environ()
+	env = append(env, "PNPM_HOME="+globalBin)
+	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	return env, nil
+}
+
+func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
+	cmd := exec.CommandContext(ctx, "pnpm", args...)
+	cmd.Dir = dir
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr string) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	cmd.Dir = dir
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func commandOutput(ctx context.Context, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	var out bytesBuffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	return out.String(), err
+}
+
+type bytesBuffer struct {
+	strings.Builder
+}
+
+func (b *bytesBuffer) Write(p []byte) (n int, err error) {
+	return b.WriteString(string(p))
+}
+
+func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
 		return fmt.Errorf("pnpm tool %s has build steps but no package URL", tool.Name)
 	}
@@ -108,7 +137,7 @@ func installPNPMToolFromSource(ctx context.Context, tool *config.PNPMTool) error
 	// Run build steps.
 	genDir := filepath.Join(dir, gapicGeneratorSubdir)
 	for _, cmd := range tool.Build {
-		if err := command.RunInDir(ctx, genDir, "sh", "-c", cmd); err != nil {
+		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
 			return err
 		}
 	}
