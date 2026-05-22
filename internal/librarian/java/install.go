@@ -17,7 +17,6 @@ package java
 import (
 	"context"
 	_ "embed"
-	"encoding/xml"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/maven"
 	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -102,7 +102,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 			return err
 		}
 		pomPath := filepath.Join(absLocalPath, "pom.xml")
-		artifactID, version, err := parsePOMMetadata(pomPath)
+		artifactID, version, err := maven.ParsePOM(pomPath)
 		if err != nil {
 			return err
 		}
@@ -113,7 +113,7 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 		fileName := fmt.Sprintf("%s-%s.%s", artifactID, version, ext)
 		artifactPath := filepath.Join(absLocalPath, "target", fileName)
 		if _, err := os.Stat(artifactPath); err != nil {
-			return fmt.Errorf("compiled artifact not found at %s: %w", artifactPath, err)
+			return fmt.Errorf("compiled artifact not found at %q: %w", artifactPath, err)
 		}
 		isExe := ext == "exe"
 		destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
@@ -211,36 +211,6 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(content), 0755)
-}
-
-// POMProject represents the target Maven metadata structured from pom.xml.
-type POMProject struct {
-	XMLName    xml.Name `xml:"project"`
-	ArtifactID string   `xml:"artifactId"`
-	Version    string   `xml:"version"`
-	Parent     struct {
-		Version string `xml:"version"`
-	} `xml:"parent"`
-}
-
-// parsePOMMetadata extracts the artifactId and version from the specified pom.xml path.
-func parsePOMMetadata(pomPath string) (string, string, error) {
-	data, err := os.ReadFile(pomPath)
-	if err != nil {
-		return "", "", fmt.Errorf("failed to read pom.xml: %w", err)
-	}
-	var proj POMProject
-	if err := xml.Unmarshal(data, &proj); err != nil {
-		return "", "", fmt.Errorf("failed to parse pom.xml: %w", err)
-	}
-	version := proj.Version
-	if version == "" {
-		version = proj.Parent.Version
-	}
-	if proj.ArtifactID == "" || version == "" {
-		return "", "", fmt.Errorf("missing artifactId or version in pom.xml %s", pomPath)
-	}
-	return proj.ArtifactID, version, nil
 }
 
 // buildLocalMavenProject builds the local Maven project at the target absolute path.
