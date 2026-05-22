@@ -46,8 +46,14 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to enable pnpm shims: %w", err)
 	}
 
-	// Ensure pnpm version 7.32.2 is prepared and activated globally to enable lockfile-respecting builds
-	if err := command.RunStreaming(ctx, "corepack", "prepare", "pnpm@7.32.2", "--activate"); err != nil {
+	// Ensure pnpm is prepared and activated globally to enable lockfile-respecting builds
+	pnpmVersion := "7.32.2"
+	if cfg.Default != nil && cfg.Default.Nodejs != nil && cfg.Default.Nodejs.PNPMVersion != "" {
+		pnpmVersion = cfg.Default.Nodejs.PNPMVersion
+	}
+	pnpmSpec := "pnpm@" + pnpmVersion
+
+	if err := command.RunStreaming(ctx, "corepack", "prepare", pnpmSpec, "--activate"); err != nil {
 		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
 	}
 
