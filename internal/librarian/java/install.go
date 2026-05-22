@@ -212,11 +212,12 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, mainClass string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	var content string
-	if isExecutable {
+	switch {
+	case isExecutable:
 		content = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-	} else if mainClass != "" {
+	case mainClass != "":
 		content = fmt.Sprintf("#!/bin/sh\nexec java -cp %q %q \"$@\"\n", destPath, mainClass)
-	} else {
+	default:
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(content), 0755)
