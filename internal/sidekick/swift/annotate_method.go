@@ -130,3 +130,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 	}
 	return nil
 }
+
+func (a *methodAnnotations) Idempotent() bool {
+	return a.HTTPMethod == "GET" || a.HTTPMethod == "PUT"
+}
