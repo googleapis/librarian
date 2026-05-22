@@ -106,7 +106,6 @@ func TestToolUsage(t *testing.T) {
 		want string
 	}{
 		{"import-configs root", "github.com/googleapis/librarian/tool/cmd/importconfigs", nil, "import-configs [command]"},
-		{"import-metadata", "github.com/googleapis/librarian/tool/cmd/importmetadata", nil, "import-metadata --python-repo <path> --librarian-repo <path>"},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
 			got := runUsage(t, test.bin, test.args)
