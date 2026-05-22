@@ -266,11 +266,15 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	}
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-	if err := command.Run(ctx, "gapic-node-processing",
+	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
 		"--destination-path", outDir,
-	); err != nil {
+	}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		combineArgs = append(combineArgs, "--is-esm")
+	}
+	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
