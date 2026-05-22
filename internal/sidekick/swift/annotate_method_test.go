@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -221,7 +222,7 @@ func TestAnnotateMethod_EscapedName(t *testing.T) {
 				DocLines:       []string{"Test documentation."},
 				PathExpression: "/",
 				HTTPMethod:     "GET",
-				ReturnType:     "Google.Response",
+				ReturnType:     "Response",
 			}
 
 			if diff := cmp.Diff(want, method.Codec); diff != "" {
@@ -264,6 +265,12 @@ func TestAnnotateMethod_WithExternalMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.cloud.external.v1",
+			Name:       "GoogleCloudExternalV1",
+		},
+	})
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)

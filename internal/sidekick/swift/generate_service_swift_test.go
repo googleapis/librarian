@@ -143,7 +143,17 @@ func TestGenerateService_Delegation(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -206,7 +216,13 @@ func TestGenerateService_StubStructure(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -221,7 +237,7 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	want := `  protocol ProtocolStub {
     func getThing(
     request: Request, options: GoogleCloudGax.RequestOptions
-) async throws -> Response
+) async throws -> SomeTestPackage.Response
 
   }`
 	if diff := cmp.Diff(want, got); diff != "" {
