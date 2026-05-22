@@ -64,10 +64,21 @@ exit 0
 	corepackStub := `#!/bin/sh
 exit 0
 `
+	nodeStub := `#!/bin/sh
+case "$*" in
+    *dirname*)
+        echo "/usr/local/bin"
+        ;;
+esac
+exit 0
+`
 	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(bin, "corepack"), []byte(corepackStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))

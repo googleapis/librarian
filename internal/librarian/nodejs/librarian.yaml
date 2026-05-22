@@ -16,8 +16,9 @@
 # github.com/googleapis/google-cloud-node after the repository has migrated to
 # librarian.
 language: nodejs
-nodejs:
-  pnpm_version: "7.32.2"
+default:
+  nodejs:
+    pnpm_version: "7.32.2"
 tools:
   pnpm:
     - name: gapic-generator-typescript

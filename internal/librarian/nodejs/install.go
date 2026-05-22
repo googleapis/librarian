@@ -18,6 +18,7 @@ import (
 	"context"
 	_ "embed"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -41,17 +42,23 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
+	for _, cmd := range []string{"node", "corepack"} {
+		if _, err := exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
+		}
+	}
+
+	// Ensure pnpm is prepared and activated globally to enable lockfile-respecting builds
+	if cfg.Default == nil || cfg.Default.Nodejs == nil || cfg.Default.Nodejs.PNPMVersion == "" {
+		return fmt.Errorf("pnpm_version must be specified in default.nodejs inside librarian.yaml")
+	}
+	pnpmVersion := cfg.Default.Nodejs.PNPMVersion
+	pnpmSpec := "pnpm@" + pnpmVersion
+
 	// Ensure pnpm is enabled and shims are linked globally using corepack
 	if err := command.RunStreaming(ctx, "corepack", "enable", "pnpm"); err != nil {
 		return fmt.Errorf("failed to enable pnpm shims: %w", err)
 	}
-
-	// Ensure pnpm is prepared and activated globally to enable lockfile-respecting builds
-	pnpmVersion := "7.32.2"
-	if cfg.Default != nil && cfg.Default.Nodejs != nil && cfg.Default.Nodejs.PNPMVersion != "" {
-		pnpmVersion = cfg.Default.Nodejs.PNPMVersion
-	}
-	pnpmSpec := "pnpm@" + pnpmVersion
 
 	if err := command.RunStreaming(ctx, "corepack", "prepare", pnpmSpec, "--activate"); err != nil {
 		return fmt.Errorf("failed to prepare pnpm via corepack: %w", err)
