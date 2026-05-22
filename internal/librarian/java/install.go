@@ -62,8 +62,14 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
 	for _, mvnTool := range cfg.Tools.Maven {
-		if err := installExternalMavenTool(ctx, mvnTool, binDir, libDir); err != nil {
-			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
+		var err error
+		if mvnTool.LocalPath != "" {
+			err = installLocalMavenTool(ctx, mvnTool, binDir, libDir)
+		} else {
+			err = installExternalMavenTool(ctx, mvnTool, binDir, libDir)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to install maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
 	if len(cfg.Tools.Pip) > 0 {
@@ -93,36 +99,6 @@ func getInstallDir() (string, error) {
 // (.jar or .exe) to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
 func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
-	if mvnTool.LocalPath != "" {
-		absLocalPath, err := filepath.Abs(mvnTool.LocalPath)
-		if err != nil {
-			return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
-		}
-		if err := buildLocalMavenProject(ctx, mvnTool.LocalPath); err != nil {
-			return err
-		}
-		pomPath := filepath.Join(absLocalPath, "pom.xml")
-		proj, err := maven.ParsePOM(pomPath)
-		if err != nil {
-			return err
-		}
-		ext := mvnTool.Packaging
-		if ext == "" {
-			ext = "jar"
-		}
-		fileName := fmt.Sprintf("%s-%s.%s", proj.ArtifactID, proj.Version, ext)
-		artifactPath := filepath.Join(absLocalPath, "target", fileName)
-		if _, err := os.Stat(artifactPath); err != nil {
-			return fmt.Errorf("compiled artifact not found at %q: %w", artifactPath, err)
-		}
-		isExe := ext == "exe"
-		destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
-		if err != nil {
-			return err
-		}
-		return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
-	}
-
 	artifact, ext := getM2ArtifactSpec(mvnTool)
 	if err := downloadM2Artifact(ctx, artifact, binDir); err != nil {
 		return err
@@ -133,6 +109,39 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	}
 	if _, err := os.Stat(artifactPath); err != nil {
 		return fmt.Errorf("downloaded artifact not found at %s: %w", artifactPath, err)
+	}
+	isExe := ext == "exe"
+	destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
+	if err != nil {
+		return err
+	}
+	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
+}
+
+// installLocalMavenTool compiles a local Maven project, parses its pom.xml metadata coordinates,
+// copies the built target artifact (.jar or .exe) to the sibling lib folder, and creates an executable
+// wrapper script in the bin folder.
+func installLocalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
+	absLocalPath, err := filepath.Abs(mvnTool.LocalPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
+	}
+	if err := buildLocalMavenProject(ctx, mvnTool.LocalPath); err != nil {
+		return err
+	}
+	pomPath := filepath.Join(absLocalPath, "pom.xml")
+	proj, err := maven.ParsePOM(pomPath)
+	if err != nil {
+		return err
+	}
+	ext := mvnTool.Packaging
+	if ext == "" {
+		ext = "jar"
+	}
+	fileName := fmt.Sprintf("%s-%s.%s", proj.ArtifactID, proj.Version, ext)
+	artifactPath := filepath.Join(absLocalPath, "target", fileName)
+	if _, err := os.Stat(artifactPath); err != nil {
+		return fmt.Errorf("compiled artifact not found at %q: %w", artifactPath, err)
 	}
 	isExe := ext == "exe"
 	destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
@@ -199,9 +208,7 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 	return destPath, nil
 }
 
-// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions
-// to the library file. If mainClass is provided, the wrapper executes it via class path specification (java -cp).
-// If mainClass is empty, it defaults to executing the library tool directly using java -jar.
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the library file.
 func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, mainClass string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	var content string
