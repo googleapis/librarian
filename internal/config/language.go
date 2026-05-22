@@ -743,6 +743,8 @@ type NodejsPackage struct {
 
 	// ESM indicates that generation should produce ES Modules (ESM) outputs.
 	ESM bool `yaml:"esm,omitempty"`
+	// PNPMVersion is the desired pnpm package manager version (e.g., "7.32.2").
+	PNPMVersion string `yaml:"pnpm_version,omitempty"`
 
 	// ExtraProtocParameters is a list of extra parameters to pass to protoc.
 	ExtraProtocParameters []string `yaml:"extra_protoc_parameters,omitempty"`

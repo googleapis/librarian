@@ -20,56 +20,5 @@ Librarianops orchestrates librarian operations across multiple repositories.
 Usage:
 
 	librarianops <command> [arguments]
-
-# Generate libraries across repositories
-
-Usage:
-
-	librarianops generate [<repo> | -C <dir>]
-
-Examples:
-
-	librarianops generate google-cloud-rust
-	librarianops generate -C ~/workspace/google-cloud-rust
-
-Specify a repository name to clone and process, or use -C to work in a specific
-directory (repo name is inferred from the directory basename).
-
-For each repository, librarianops will:
- 1. Clone the repository to a temporary directory (or use existing directory with -C)
- 2. Create a branch: librarianops-generateall-YYYY-MM-DD
- 3. Run librarian tidy
- 4. Run librarian update for configured sources (sources.discovery, sources.googleapis)
- 5. Run librarian generate --all
- 6. Run cargo update --workspace (google-cloud-rust only)
- 7. Commit changes
- 8. Create a pull request
-
-Flags:
-
-	-C directory  work in directory (repo name inferred from basename)
-	-v            run librarian with verbose output
-	--docker      run librarian in Docker
-
-# Upgrade librarian version in librarian.yaml
-
-Usage:
-
-	librarianops upgrade [<repo> | -C <dir>]
-
-Examples:
-
-	librarianops upgrade google-cloud-rust
-	librarianops upgrade -C ~/workspace/google-cloud-rust
-
-For each repository, librarianops will:
- 1. Get the latest librarian version from @main.
- 2. Update the version field in librarian.yaml.
- 3. Run 'librarian generate --all'.
-
-Flags:
-
-	-C directory  work in directory (repo name inferred from basename)
-	-v            run librarian with verbose output
 */
 package main

@@ -115,6 +115,7 @@ func TestDisco_ParsePagination(t *testing.T) {
 	got := model.Method(wantID)
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
+		return
 	}
 	wantPagination := &api.Field{
 		Name:     "pageToken",
@@ -142,6 +143,7 @@ func TestDisco_ParsePaginationAggregate(t *testing.T) {
 	got := model.Method(wantID)
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantID)
+		return
 	}
 	wantPagination := &api.Field{
 		Name:     "pageToken",
@@ -170,6 +172,7 @@ func TestDisco_ParseDeprecatedEnum(t *testing.T) {
 	got := model.Enum(wantEnum.ID)
 	if got == nil {
 		t.Fatalf("expected method %s in the API model", wantEnum.ID)
+		return
 	}
 	if len(got.Values) < 7 {
 		t.Fatalf("expected at least 7 values in the enum value list, got=%v", got)

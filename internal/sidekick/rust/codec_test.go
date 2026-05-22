@@ -741,6 +741,7 @@ func TestFieldType(t *testing.T) {
 	message := model.Message("..Message")
 	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
+		return
 	}
 	expectedTypes := map[string]string{
 		"f_int32":                  "i32",
@@ -805,6 +806,7 @@ func TestOneOfFieldType(t *testing.T) {
 	message := model.Message("..Message")
 	if message == nil {
 		t.Fatalf("cannot find message `..Message`")
+		return
 	}
 
 	expectedTypes := map[string]string{
