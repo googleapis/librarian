@@ -160,6 +160,7 @@ type MavenTool struct {
 	Packaging string `yaml:"packaging,omitempty"`
 
 	// LocalPath is the path to a local Maven project directory containing a pom.xml file.
+	// When present, version, group_id, artifact_id are ignored.
 	LocalPath string `yaml:"local_path,omitempty"`
 
 	// MainClass is the fully qualified main class name to execute (used with -cp).
