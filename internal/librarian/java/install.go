@@ -61,8 +61,14 @@ func Install(ctx context.Context) error {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
 	for _, mvnTool := range cfg.Tools.Maven {
-		if err := installExternalMavenTool(ctx, mvnTool, binDir, libDir); err != nil {
-			return fmt.Errorf("failed to install external maven tool %s: %w", mvnTool.Name, err)
+		var err error
+		if mvnTool.LocalPath != "" {
+			err = installLocalMavenTool(ctx, mvnTool, binDir, libDir)
+		} else {
+			err = installExternalMavenTool(ctx, mvnTool, binDir, libDir)
+		}
+		if err != nil {
+			return fmt.Errorf("failed to install maven tool %s: %w", mvnTool.Name, err)
 		}
 	}
 	if len(cfg.Tools.Pip) > 0 {
@@ -108,7 +114,40 @@ func installExternalMavenTool(ctx context.Context, mvnTool *config.MavenTool, bi
 	if err != nil {
 		return err
 	}
-	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe)
+	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
+}
+
+// installLocalMavenTool compiles a local Maven project, parses its pom.xml metadata coordinates,
+// copies the built target artifact (.jar or .exe) to the sibling lib folder, and creates an executable
+// wrapper script in the bin folder.
+func installLocalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDir, libDir string) error {
+	absLocalPath, err := filepath.Abs(mvnTool.LocalPath)
+	if err != nil {
+		return fmt.Errorf("failed to resolve absolute local path for %s: %w", mvnTool.LocalPath, err)
+	}
+	if err := buildLocalMavenProject(ctx, mvnTool.LocalPath); err != nil {
+		return err
+	}
+	pomPath := filepath.Join(absLocalPath, "pom.xml")
+	proj, err := parsePOM(pomPath)
+	if err != nil {
+		return err
+	}
+	ext := mvnTool.Packaging
+	if ext == "" {
+		ext = "jar"
+	}
+	fileName := fmt.Sprintf("%s-%s.%s", proj.ArtifactID, proj.Version, ext)
+	artifactPath := filepath.Join(absLocalPath, "target", fileName)
+	if _, err := os.Stat(artifactPath); err != nil {
+		return fmt.Errorf("compiled artifact not found at %q: %w", artifactPath, err)
+	}
+	isExe := ext == "exe"
+	destPath, err := copyArtifactToLib(artifactPath, libDir, isExe)
+	if err != nil {
+		return err
+	}
+	return createBinWrapper(mvnTool.Name, destPath, binDir, isExe, mvnTool.MainClass)
 }
 
 // getM2ArtifactSpec constructs the Maven coordinate string and returns it along with the file extension.
@@ -169,13 +208,37 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 }
 
 // createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the library file.
-func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool) error {
+func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, mainClass string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	var content string
-	if isExecutable {
+	switch {
+	case isExecutable:
 		content = fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-	} else {
+	case mainClass != "":
+		content = fmt.Sprintf("#!/bin/sh\nexec java -cp %q %q \"$@\"\n", destPath, mainClass)
+	default:
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
 	return os.WriteFile(wrapperPath, []byte(content), 0755)
+}
+
+// buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.
+func buildLocalMavenProject(ctx context.Context, localPath string) error {
+	args := []string{
+		"package",
+		"-B",
+		"-ntp",
+		"-T", "1.5C",
+		"-DskipTests",
+		"-Dcheckstyle.skip",
+		"-Dclirr.skip",
+		"-Denforcer.skip",
+		"-Dfmt.skip",
+		"-pl", localPath,
+		"--also-make",
+	}
+	if err := command.RunStreaming(ctx, "mvn", args...); err != nil {
+		return fmt.Errorf("failed to build local Maven project %q: %w", localPath, err)
+	}
+	return nil
 }
