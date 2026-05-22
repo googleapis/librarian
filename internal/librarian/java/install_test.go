@@ -33,6 +33,24 @@ func TestInstall(t *testing.T) {
 	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	localMvnDir := filepath.Join(tmpDir, "sdk-platform-java", "gapic-generator-java")
+	if err := os.MkdirAll(filepath.Join(localMvnDir, "target"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	mockPOM := `<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <parent>
+    <groupId>com.google.api.generator</groupId>
+    <version>2.28.0-SNAPSHOT</version>
+  </parent>
+  <artifactId>gapic-generator-java</artifactId>
+</project>`
+	if err := os.WriteFile(filepath.Join(localMvnDir, "pom.xml"), []byte(mockPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mockJarPath := filepath.Join(localMvnDir, "target", "gapic-generator-java-2.28.0-SNAPSHOT.jar")
+	if err := os.WriteFile(mockJarPath, []byte("local gapic jar content"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
 	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
 	if err := os.MkdirAll(gjfDir, 0755); err != nil {
@@ -63,7 +81,10 @@ func TestInstall(t *testing.T) {
 		{
 			name:        "mvn",
 			logFilename: "mvn_invocations.log",
-			wantArgs:    "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\nmvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64",
+			wantArgs: "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
+				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64\n" +
+				"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
+				"-pl sdk-platform-java/gapic-generator-java --also-make",
 		},
 	}
 	stubDir := filepath.Join(tmpDir, "bin")
@@ -119,6 +140,13 @@ func TestInstall(t *testing.T) {
 			wantContent: "grpc exe content",
 			wrapperName: "protoc-gen-java_grpc",
 			wantFormat:  "#!/bin/sh\nexec %q \"$@\"\n",
+		},
+		{
+			name:        "protoc-gen-java_gapic",
+			filename:    "gapic-generator-java-2.28.0-SNAPSHOT.jar",
+			wantContent: "local gapic jar content",
+			wrapperName: "protoc-gen-java_gapic",
+			wantFormat:  "#!/bin/sh\nexec java -cp %q \"com.google.api.generator.Main\" \"$@\"\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

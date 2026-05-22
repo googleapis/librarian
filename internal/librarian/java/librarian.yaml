@@ -30,6 +30,10 @@ tools:
       version: 1.76.3
       packaging: exe
       classifier: linux-x86_64
+    - name: protoc-gen-java_gapic
+      local_path: sdk-platform-java/gapic-generator-java
+      main_class: com.google.api.generator.Main
+      packaging: jar
   pip:
     - name: PyYAML
       version: "6.0.2"
