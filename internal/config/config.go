@@ -170,6 +170,9 @@ type PipTool struct {
 
 	// Package is the pip install specifier (e.g., "pkg@git+https://...").
 	Package string `yaml:"package,omitempty"`
+
+	// LocalPath is the path to a local Python package to install.
+	LocalPath string `yaml:"local_path,omitempty"`
 }
 
 // GoTool defines a tool to install via go.

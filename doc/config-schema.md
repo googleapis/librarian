@@ -78,6 +78,7 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pip package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
+| `local_path` | string | Is the path to a local Python package to install. |
 
 ## GoTool Configuration
 

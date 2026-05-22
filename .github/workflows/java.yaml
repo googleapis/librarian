@@ -15,6 +15,7 @@ name: Java
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
+  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
