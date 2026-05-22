@@ -28,7 +28,7 @@ tools:
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
         - "cp -r templates protos build/"
-        - "pnpm link --global"
+        - "pnpm add -g ."
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
