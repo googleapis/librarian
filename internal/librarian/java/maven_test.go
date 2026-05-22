@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package maven
+package java
 
 import (
 	"errors"
@@ -36,15 +36,14 @@ func TestParsePOM(t *testing.T) {
 	if err := os.WriteFile(pomPath, []byte(mockPOM), 0644); err != nil {
 		t.Fatal(err)
 	}
-	got, err := ParsePOM(pomPath)
+	got, err := parsePOM(pomPath)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := &POMProject{
+	want := &pomProject{
 		ArtifactID: "gapic-generator-java",
 		Version:    "2.28.0-SNAPSHOT",
 	}
-	// Ignore parent/xmlname internal coordinates comparison details
 	if diff := cmp.Diff(want.ArtifactID, got.ArtifactID); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -64,7 +63,7 @@ func TestParsePOM_Error(t *testing.T) {
 		{
 			name:    "missing file error",
 			pomPath: filepath.Join(tmpDir, "nonexistent.xml"),
-			wantErr: ErrReadPOM,
+			wantErr: errReadPOM,
 		},
 		{
 			name:    "invalid XML syntax",
@@ -74,7 +73,7 @@ func TestParsePOM_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: ErrParsePOM,
+			wantErr: errParsePOM,
 		},
 		{
 			name:    "missing artifactId or version",
@@ -84,16 +83,16 @@ func TestParsePOM_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: ErrInvalidPOM,
+			wantErr: errInvalidPOM,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t)
 			}
-			_, err := ParsePOM(test.pomPath)
+			_, err := parsePOM(test.pomPath)
 			if !errors.Is(err, test.wantErr) {
-				t.Errorf("ParsePOM() error = %v, wantErr = %v", err, test.wantErr)
+				t.Errorf("parsePOM() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

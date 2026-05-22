@@ -26,7 +26,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/maven"
 	"github.com/googleapis/librarian/internal/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -130,7 +129,7 @@ func installLocalMavenTool(ctx context.Context, mvnTool *config.MavenTool, binDi
 		return err
 	}
 	pomPath := filepath.Join(absLocalPath, "pom.xml")
-	proj, err := maven.ParsePOM(pomPath)
+	proj, err := parsePOM(pomPath)
 	if err != nil {
 		return err
 	}

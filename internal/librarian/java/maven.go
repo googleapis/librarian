@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package maven provides utility functions for unmarshalling and parsing Maven pom.xml files.
-package maven
+package java
 
 import (
 	"encoding/xml"
@@ -23,18 +22,13 @@ import (
 )
 
 var (
-	// ErrReadPOM indicates a failure to read the pom.xml file.
-	ErrReadPOM = errors.New("failed to read pom.xml")
-
-	// ErrParsePOM indicates a failure to parse the pom.xml file XML syntax.
-	ErrParsePOM = errors.New("failed to parse pom.xml")
-
-	// ErrInvalidPOM indicates that the pom.xml is missing required metadata fields.
-	ErrInvalidPOM = errors.New("invalid pom.xml metadata")
+	errReadPOM    = errors.New("failed to read pom.xml")
+	errParsePOM   = errors.New("failed to parse pom.xml")
+	errInvalidPOM = errors.New("invalid pom.xml metadata")
 )
 
-// POMProject represents the target Maven metadata structured from pom.xml.
-type POMProject struct {
+// pomProject represents the target Maven metadata structured from pom.xml.
+type pomProject struct {
 	XMLName    xml.Name `xml:"project"`
 	ArtifactID string   `xml:"artifactId"`
 	Version    string   `xml:"version"`
@@ -43,21 +37,21 @@ type POMProject struct {
 	} `xml:"parent"`
 }
 
-// ParsePOM extracts the Maven metadata from the specified pom.xml path.
-func ParsePOM(pomPath string) (*POMProject, error) {
+// parsePOM extracts the Maven metadata from the specified pom.xml path.
+func parsePOM(pomPath string) (*pomProject, error) {
 	data, err := os.ReadFile(pomPath)
 	if err != nil {
-		return nil, fmt.Errorf("%w %q: %w", ErrReadPOM, pomPath, err)
+		return nil, fmt.Errorf("%w %q: %w", errReadPOM, pomPath, err)
 	}
-	var proj POMProject
+	var proj pomProject
 	if err := xml.Unmarshal(data, &proj); err != nil {
-		return nil, fmt.Errorf("%w %q: %w", ErrParsePOM, pomPath, err)
+		return nil, fmt.Errorf("%w %q: %w", errParsePOM, pomPath, err)
 	}
 	if proj.Version == "" {
 		proj.Version = proj.Parent.Version
 	}
 	if proj.ArtifactID == "" || proj.Version == "" {
-		return nil, fmt.Errorf("%w %q: missing artifactId or version", ErrInvalidPOM, pomPath)
+		return nil, fmt.Errorf("%w %q: missing artifactId or version", errInvalidPOM, pomPath)
 	}
 	return &proj, nil
 }
