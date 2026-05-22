@@ -18,8 +18,8 @@ runs:
   steps:
     - uses: actions/setup-go@v6
       with:
-        go-version-file: "go.mod"
-    - uses: ./.github/actions/install-protoc
+        go-version-file: "${{ github.action_path }}/go.mod"
+    - uses: ${{ github.action_path }}/.github/actions/install-protoc
     - name: Install librarian
       run: |
         VERSION="latest"
