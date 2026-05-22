@@ -154,7 +154,7 @@ func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
 		}
 		dep, ok := c.ApiPackages[m.Package]
 		if !ok {
-			return "", fmt.Errorf("package %q not found", m.Package)
+return "", fmt.Errorf("package %q not found in ApiPackages", m.Package)
 		}
 		return fmt.Sprintf("%s.%s", dep.Name, name), nil
 	}
