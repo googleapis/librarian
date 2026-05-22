@@ -86,7 +86,6 @@ func TestServiceAnnotations(t *testing.T) {
 	got := model.Service(".google.cloud.workflows.v1.Workflows")
 	if got == nil {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows")
-		return
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {
 		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
@@ -129,7 +128,6 @@ func TestMethodAnnotations(t *testing.T) {
 	got := model.Method(".google.cloud.workflows.v1.Workflows.GetWorkflow")
 	if got == nil {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows.GetWorkflow")
-		return
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {
 		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
