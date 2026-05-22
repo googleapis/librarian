@@ -19,7 +19,6 @@ runs:
     - uses: actions/setup-go@v6
       with:
         go-version-file: "go.mod"
-        cache: false
     - uses: ./.github/actions/install-protoc
     - name: Install librarian
       run: |
