@@ -52,7 +52,7 @@ extension Clients {
       let attempt = { (attemptTimeout: Swift.Duration?) async throws -> Output in
         var attemptOptions = options
         attemptOptions.attemptTimeout = attemptTimeout
-        return try await action(request, options)
+        return try await action(request, attemptOptions)
       }
       return try await loop.run(attempt: attempt)
     }
