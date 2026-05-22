@@ -40,10 +40,9 @@ jobs:
         run: |
           go run ./cmd/librarian install go
       - name: Run tests and check coverage
-        # TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
         run: |
-          go run ./tool/cmd/coverage -target=78 \
-            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian')
+          go run ./tool/cmd/coverage -target=80 \
+            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian|internal/sample|internal/testhelper')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     needs: [legacylibrarian, test]
