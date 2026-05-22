@@ -26,11 +26,13 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// ErrInstall indicates a failure to install pip packages.
-var ErrInstall = errors.New("failed to install python packages")
+var (
+	// ErrInstall indicates a failure to install pip packages.
+	ErrInstall = errors.New("failed to install python packages")
 
-// ErrLocalPathNotFound indicates that the specified local package path does not exist.
-var ErrLocalPathNotFound = errors.New("local pip package path not found")
+	// ErrLocalPathNotFound indicates that the specified local package path does not exist.
+	ErrLocalPathNotFound = errors.New("local pip package path not found")
+)
 
 // Install installs a list of pip tools into the environment.
 func Install(ctx context.Context, tools []*config.PipTool) error {
