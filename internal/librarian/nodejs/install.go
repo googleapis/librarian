@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
@@ -72,6 +73,14 @@ func Install(ctx context.Context) error {
 	return nil
 }
 
+// getPNPMEnv resolves Node's global installation bin prefix path dynamically
+// and constructs a transient environment variable block to configure pnpm.
+//
+// This redirects all globally-installed pnpm binaries, virtual stores, and
+// content-addressable storage caches to be nested under the Node prefix folder.
+// This enables complete environment caching and restore on CI runners,
+// while permanently avoiding persistent side-effects on the host machine
+// (it does not modify the user's personal ~/.config/pnpm/rc files).
 func getPNPMEnv(ctx context.Context) ([]string, error) {
 	binOut, err := commandOutput(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
 	if err != nil {
@@ -107,18 +116,10 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 
 func commandOutput(ctx context.Context, name string, args ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, name, args...)
-	var out bytesBuffer
+	var out bytes.Buffer
 	cmd.Stdout = &out
 	err := cmd.Run()
 	return out.String(), err
-}
-
-type bytesBuffer struct {
-	strings.Builder
-}
-
-func (b *bytesBuffer) Write(p []byte) (n int, err error) {
-	return b.WriteString(string(p))
 }
 
 func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {

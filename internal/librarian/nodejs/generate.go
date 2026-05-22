@@ -314,7 +314,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
-
 	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}

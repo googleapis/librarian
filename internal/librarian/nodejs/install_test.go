@@ -47,7 +47,7 @@ func TestInstall(t *testing.T) {
 		}
 	}
 
-	// Stub pnpm, node, and git. The pnpm stub also creates
+	// Stub pnpm and node. The pnpm stub also creates
 	// node_modules/.bin/tsc in the working directory during 'pnpm install'
 	// so the subsequent "./node_modules/.bin/tsc" build step finds an executable.
 	bin := t.TempDir()
