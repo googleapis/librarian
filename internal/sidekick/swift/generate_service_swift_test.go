@@ -143,7 +143,13 @@ func TestGenerateService_Delegation(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -206,7 +212,13 @@ func TestGenerateService_StubStructure(t *testing.T) {
 		},
 	}
 
-	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:       "SomeTestPackage",
+			ApiPackage: "test",
+		},
+	})
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
 		t.Fatal(err)
 	}
 
@@ -221,7 +233,7 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	want := `  protocol ProtocolStub {
     func getThing(
     request: Request, options: GoogleCloudGax.RequestOptions
-) async throws -> Response
+) async throws -> SomeTestPackage.Response
 
   }`
 	if diff := cmp.Diff(want, got); diff != "" {
@@ -613,7 +625,7 @@ func verifyGeneratedService(t *testing.T, outDir string) {
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Error>
  {
-      let listRpc = { (token: String) async throws -> ListSecretsResponse in
+      let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
         var request = byItem
         request.pageToken = token
         return try await self.listSecrets(request: request, options: options)
