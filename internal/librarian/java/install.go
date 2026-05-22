@@ -199,7 +199,9 @@ func copyArtifactToLib(srcPath, libDir string, makeExecutable bool) (string, err
 	return destPath, nil
 }
 
-// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the library file.
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions
+// to the library file. If mainClass is provided, the wrapper executes it via class path specification (java -cp).
+// If mainClass is empty, it defaults to executing the library tool directly using java -jar.
 func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, mainClass string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	var content string
