@@ -47,6 +47,11 @@ func Install(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
+	if len(cfg.Tools.Pip) > 0 {
+		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
+			return fmt.Errorf("failed to install pip tools: %w", err)
+		}
+	}
 	binDir, err := getInstallDir()
 	if err != nil {
 		return err
@@ -69,11 +74,6 @@ func Install(ctx context.Context) error {
 		}
 		if err != nil {
 			return fmt.Errorf("failed to install maven tool %s: %w", mvnTool.Name, err)
-		}
-	}
-	if len(cfg.Tools.Pip) > 0 {
-		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
-			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
 	return nil
