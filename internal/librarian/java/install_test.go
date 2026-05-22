@@ -29,14 +29,10 @@ func TestInstall(t *testing.T) {
 	t.Chdir(tmpDir)
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
-
-	// 1. Mock Pip Local Package Path
 	localPkgDir := filepath.Join(tmpDir, "sdk-platform-java", "hermetic_build", "library_generation")
 	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
-	// 2. Mock Maven Local Project Path (with pom.xml and pre-created target artifact jar)
 	localMvnDir := filepath.Join(tmpDir, "sdk-platform-java", "gapic-generator-java")
 	if err := os.MkdirAll(filepath.Join(localMvnDir, "target"), 0755); err != nil {
 		t.Fatal(err)
@@ -55,8 +51,6 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(mockJarPath, []byte("local gapic jar content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
-	// 3. Mock Remote .m2 cache repository artifacts
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
 	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
 	if err := os.MkdirAll(gjfDir, 0755); err != nil {
@@ -74,7 +68,6 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	stubs := []struct {
 		name        string
 		logFilename string
