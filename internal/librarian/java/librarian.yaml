@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# TODO(https://github.com/googleapis/librarian/issues/5154): move this file to
+# TODO(https://github.com/googleapis/librarian/issues/6155): move this file to
 # github.com/googleapis/google-cloud-java after the repository has migrated to
 # librarian.
 language: java
@@ -27,7 +27,7 @@ tools:
     - name: protoc-gen-java_grpc
       group_id: io.grpc
       artifact_id: protoc-gen-grpc-java
-      version: 1.76.3
+      version: 1.81.0
       packaging: exe
       classifier: linux-x86_64
     - name: protoc-gen-java_gapic

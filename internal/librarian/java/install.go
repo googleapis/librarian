@@ -31,7 +31,7 @@ import (
 )
 
 //go:embed librarian.yaml
-var librarianYAML []byte
+var LibrarianYAML []byte
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
@@ -43,7 +43,7 @@ func Install(ctx context.Context) error {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
 		}
 	}
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	cfg, err := yaml.Unmarshal[config.Config](LibrarianYAML)
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}

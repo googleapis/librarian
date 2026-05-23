@@ -60,11 +60,11 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(gjfJarPath, []byte("gjf jar content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	grpcDir := filepath.Join(m2Repo, "io", "grpc", "protoc-gen-grpc-java", "1.76.3")
+	grpcDir := filepath.Join(m2Repo, "io", "grpc", "protoc-gen-grpc-java", "1.81.0")
 	if err := os.MkdirAll(grpcDir, 0755); err != nil {
 		t.Fatal(err)
 	}
-	grpcExePath := filepath.Join(grpcDir, "protoc-gen-grpc-java-1.76.3-linux-x86_64.exe")
+	grpcExePath := filepath.Join(grpcDir, "protoc-gen-grpc-java-1.81.0-linux-x86_64.exe")
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +82,7 @@ func TestInstall(t *testing.T) {
 			name:        "mvn",
 			logFilename: "mvn_invocations.log",
 			wantArgs: "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
-				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.3:exe:linux-x86_64\n" +
+				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
 				"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
 				"-pl sdk-platform-java/gapic-generator-java --also-make",
 		},
@@ -136,7 +136,7 @@ func TestInstall(t *testing.T) {
 		},
 		{
 			name:        "protoc-gen-java_grpc",
-			filename:    "protoc-gen-grpc-java-1.76.3-linux-x86_64.exe",
+			filename:    "protoc-gen-grpc-java-1.81.0-linux-x86_64.exe",
 			wantContent: "grpc exe content",
 			wrapperName: "protoc-gen-java_grpc",
 			wantFormat:  "#!/bin/sh\nexec %q \"$@\"\n",

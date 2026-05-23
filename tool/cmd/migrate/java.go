@@ -190,6 +190,11 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
+	embeddedCfg, err := yaml.Unmarshal[config.Config](java.LibrarianYAML)
+	if err != nil {
+		return fmt.Errorf("failed to parse embedded librarian.yaml: %w", err)
+	}
+	cfg.Tools = embeddedCfg.Tools
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
