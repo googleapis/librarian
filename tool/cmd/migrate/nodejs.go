@@ -91,6 +91,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 		},
 		Default: &config.Default{
 			Output: "packages",
+			Keep:   []string{"package.json", "samples/package.json"},
 		},
 		Libraries: libraries,
 	}
@@ -216,13 +217,6 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 		library.Keep = append(library.Keep, v1smallKeep...)
 	}
-
-	// Prevent the clean and post-processing phases from deleting tracked package.json configurations.
-	library.Keep = append(library.Keep, "package.json")
-	if _, err := os.Stat(filepath.Join(pkgDir, "samples", "package.json")); err == nil {
-		library.Keep = append(library.Keep, "samples/package.json")
-	}
-
 	return library, nil
 }
 

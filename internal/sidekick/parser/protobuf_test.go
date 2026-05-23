@@ -363,7 +363,6 @@ func TestProtobuf_SkipExternaEnums(t *testing.T) {
 	enum := test.Enum(".test.LocalEnum")
 	if enum == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.LocalEnum")
-		return
 	}
 	apitest.CheckEnum(t, *enum, api.Enum{
 		Name:          "LocalEnum",
@@ -442,7 +441,6 @@ func TestProtobuf_Comments(t *testing.T) {
 	e := test.Enum(".test.Response.Status")
 	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Response.Status")
-		return
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
 		Name:          "Status",
@@ -509,7 +507,6 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 	withAlias := test.Enum(".test.WithAlias")
 	if withAlias == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.WithAlias")
-		return
 	}
 	fullList := []*api.EnumValue{
 		{
@@ -784,7 +781,6 @@ func TestProtobuf_MapFields(t *testing.T) {
 	message := test.Message(".test.Fake")
 	if message == nil {
 		t.Fatalf("Cannot find message %s in API State", ".test.Fake")
-		return
 	}
 	apitest.CheckMessage(t, message, &api.Message{
 		Name:    "Fake",
@@ -1092,7 +1088,6 @@ func TestProtobuf_Enum(t *testing.T) {
 	e := test.Enum(".test.Code")
 	if e == nil {
 		t.Fatalf("Cannot find enum %s in API State", ".test.Code")
-		return
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
 		Name:          "Code",
@@ -1742,7 +1737,6 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 	method := test.Method(".test.TestService.CreateFoo")
 	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
-		return
 	}
 	want := []*api.Field{request_id, request_id_optional, request_id_with_field_behavior}
 	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
@@ -1829,7 +1823,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	e := test.Enum(".test.EnumA")
 	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumA")
-		return
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
 		Name:       "EnumA",
@@ -1847,7 +1840,6 @@ func TestProtobuf_Deprecated(t *testing.T) {
 	e = test.Enum(".test.EnumB")
 	if e == nil {
 		t.Fatalf("Cannot find %s in API State", ".test.EnumB")
-		return
 	}
 	apitest.CheckEnum(t, *e, api.Enum{
 		Name:    "EnumB",
@@ -1957,7 +1949,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		bookResource := test.Resource("library.googleapis.com/Book")
 		if bookResource == nil {
 			t.Fatalf("Expected resource 'library.googleapis.com/Book' not found in ResourceByType map")
-			return
 		}
 		if bookResource.Type != "library.googleapis.com/Book" {
 			t.Errorf("bookResource.Type = %q; want %q", bookResource.Type, "library.googleapis.com/Book")
@@ -1971,7 +1962,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		bookMessage := test.Message(".test.Book")
 		if bookMessage == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.Book")
-			return
 		}
 
 		// Check Resource separately to handle 'Self' cycle and ignore Codec
@@ -2088,7 +2078,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		msg := test.Message(".test.NoResourceMessage")
 		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoResourceMessage")
-			return
 		}
 		if msg.Resource != nil {
 			t.Errorf("Expected NoResourceMessage to have nil Resource, got %v", msg.Resource)
@@ -2100,7 +2089,6 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 
 		if msg == nil {
 			t.Fatalf("Cannot find message %s in API State", ".test.NoReferenceMessage")
-			return
 		}
 
 		field := msg.Fields[0] // simple_field

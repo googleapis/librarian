@@ -250,7 +250,6 @@ func TestExamples(t *testing.T) {
 			got := api.Method(test.methodID)
 			if got == nil {
 				t.Fatalf("Cannot find method %s in API State", test.methodID)
-				return
 			}
 			if diff := cmp.Diff(test.want, got.Routing); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)

@@ -1153,7 +1153,6 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 	method := test.Method(".test.TestService.CreateFoo")
 	if method == nil {
 		t.Fatalf("Cannot find method %s in API State", ".test.TestService.CreateFoo")
-		return
 	}
 	wantField := []*api.Field{request_id, request_id_explicit}
 	if diff := cmp.Diff(wantField, method.AutoPopulated); diff != "" {

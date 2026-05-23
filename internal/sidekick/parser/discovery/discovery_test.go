@@ -175,7 +175,6 @@ func TestDeprecatedField(t *testing.T) {
 	gotMessage := model.Message(id)
 	if gotMessage == nil {
 		t.Fatalf("expected message %s in the API model", id)
-		return
 	}
 	idx := slices.IndexFunc(gotMessage.Fields, func(f *api.Field) bool { return f.Name == "port" })
 	if idx == -1 {

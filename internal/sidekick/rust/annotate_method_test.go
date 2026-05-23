@@ -111,7 +111,6 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	gotMethod := model.Method(methodID)
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
-		return
 	}
 	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
 	want := &discoveryLroAnnotations{
@@ -140,7 +139,6 @@ func TestAnnotateMethodAPIVersion(t *testing.T) {
 	gotMethod := model.Method(methodID)
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
-		return
 	}
 	gotMethod.APIVersion = "v1_20260205"
 
@@ -179,7 +177,6 @@ func TestAnnotateMethodInternalBuilders(t *testing.T) {
 	gotMethod := model.Method(methodID)
 	if gotMethod == nil {
 		t.Fatalf("missing method %s", methodID)
-		return
 	}
 	got := gotMethod.Codec.(*methodAnnotation)
 	if !got.InternalBuilders {
@@ -294,7 +291,6 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 		m := model.Method(methodID)
 		if m == nil {
 			t.Fatalf("missing method %s", methodID)
-			return
 		}
 		if m.PathInfo != nil && len(m.PathInfo.Bindings) > 0 {
 			m.PathInfo.Bindings[0].PathTemplate = (&api.PathTemplate{}).
@@ -409,7 +405,6 @@ func TestAnnotateMethodResourceNameTemplate(t *testing.T) {
 			m := model.Method(test.id)
 			if m == nil {
 				t.Fatalf("missing method %s", test.id)
-				return
 			}
 			got := m.Codec.(*methodAnnotation)
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreFields(methodAnnotation{},
@@ -563,7 +558,6 @@ func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	method := model.Method(".test.v1.ResourceService.GetResource")
 	if method == nil {
 		t.Fatal("cannot find .test.v1.ResourceService.GetResource")
-		return
 	}
 	codec := newTestCodec(t, libconfig.SpecProtobuf, "", map[string]string{
 		"detailed-tracing-attributes": "true",

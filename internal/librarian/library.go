@@ -647,9 +647,6 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.ESM {
 		res.ESM = src.ESM
 	}
-	if src.PNPMVersion != "" {
-		res.PNPMVersion = src.PNPMVersion
-	}
 	if src.ExtraProtocParameters != nil {
 		res.ExtraProtocParameters = src.ExtraProtocParameters
 	}
