@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstall(t *testing.T) {
@@ -102,10 +103,49 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
+	tools := &config.Tools{
+		Maven: []*config.MavenTool{
+			{
+				Name:       "google-java-format",
+				GroupID:    "com.google.googlejavaformat",
+				ArtifactID: "google-java-format",
+				Version:    "1.25.2",
+				Classifier: "all-deps",
+				Packaging:  "jar",
+			},
+			{
+				Name:       "protoc-gen-java_grpc",
+				GroupID:    "io.grpc",
+				ArtifactID: "protoc-gen-grpc-java",
+				Version:    "1.81.0",
+				Classifier: "linux-x86_64",
+				Packaging:  "exe",
+			},
+			{
+				Name:      "protoc-gen-java_gapic",
+				LocalPath: "sdk-platform-java/gapic-generator-java",
+				MainClass: "com.google.api.generator.Main",
+				Packaging: "jar",
+			},
+		},
+		Pip: []*config.PipTool{
+			{
+				Name:    "PyYAML",
+				Version: "6.0.2",
+			},
+			{
+				Name:    "jinja2",
+				Version: "3.1.6",
+			},
+			{
+				Name:      "synthtool",
+				LocalPath: "sdk-platform-java/hermetic_build/library_generation",
+			},
+		},
+	}
 	installDir := filepath.Join(tmpDir, "java_tools", "bin")
 	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
-	err := Install(t.Context())
-	if err != nil {
+	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
 	for _, s := range stubs {

@@ -16,7 +16,7 @@ package java
 
 import (
 	"context"
-	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,28 +27,26 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/pip"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
-//go:embed librarian.yaml
-var LibrarianYAML []byte
+// errNoToolsSpecified indicates no Java tools were provided in the configuration.
+var errNoToolsSpecified = errors.New("no tools specified in configuration")
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
 // - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
 // - lib/ ($HOME/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
-func Install(ctx context.Context) error {
+func Install(ctx context.Context, tools *config.Tools) error {
+	if tools == nil || (len(tools.Maven) == 0 && len(tools.Pip) == 0) {
+		return errNoToolsSpecified
+	}
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
 		}
 	}
-	cfg, err := yaml.Unmarshal[config.Config](LibrarianYAML)
-	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
-	}
-	if len(cfg.Tools.Pip) > 0 {
-		if err := pip.Install(ctx, cfg.Tools.Pip); err != nil {
+	if len(tools.Pip) > 0 {
+		if err := pip.Install(ctx, tools.Pip); err != nil {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
@@ -65,7 +63,7 @@ func Install(ctx context.Context) error {
 	if err := os.MkdirAll(libDir, 0755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
-	for _, mvnTool := range cfg.Tools.Maven {
+	for _, mvnTool := range tools.Maven {
 		var err error
 		if mvnTool.LocalPath != "" {
 			err = installLocalMavenTool(ctx, mvnTool, binDir, libDir)

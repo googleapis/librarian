@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -33,6 +34,9 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+//go:embed librarian.yaml
+var librarianYAML []byte
 
 const (
 	generationConfigFileName = "generation_config.yaml"
@@ -190,7 +194,7 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
-	embeddedCfg, err := yaml.Unmarshal[config.Config](java.LibrarianYAML)
+	embeddedCfg, err := yaml.Unmarshal[config.Config](librarianYAML)
 	if err != nil {
 		return fmt.Errorf("failed to parse embedded librarian.yaml: %w", err)
 	}
