@@ -91,7 +91,7 @@ extension Clients {
         ))
       }
       {{^ReturnsEmpty}}
-      return try GoogleCloudGax.ProtoJSONDecoder().decode({{Codec.ReturnType}}.self, from: data)
+      return try GoogleCloudWkt._ProtoJSONDecoder().decode({{Codec.ReturnType}}.self, from: data)
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}
