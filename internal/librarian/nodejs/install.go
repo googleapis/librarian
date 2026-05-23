@@ -15,13 +15,15 @@
 package nodejs
 
 import (
+	"bytes"
 	"context"
 	_ "embed"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -37,31 +39,92 @@ var librarianYAML []byte
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context) error {
+	for _, cmd := range []string{"node", "pnpm"} {
+		if _, err := exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
+		}
+	}
+
 	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
 	if err != nil {
 		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
 	}
-	for _, tool := range cfg.Tools.NPM {
+	env, err := getPNPMEnv(ctx)
+	if err != nil {
+		return err
+	}
+
+	for _, tool := range cfg.Tools.PNPM {
 		if len(tool.Build) > 0 {
-			if err := installNPMToolFromSource(ctx, tool); err != nil {
+			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
 			}
 			continue
 		}
+
 		pkg := tool.Package
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := command.RunStreaming(ctx, "npm", "install", "-g", pkg); err != nil {
+		if err := runPNPM(ctx, "", env, "add", "-g", pkg); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func installNPMToolFromSource(ctx context.Context, tool *config.NPMTool) error {
+// getPNPMEnv resolves Node's global installation bin prefix path dynamically
+// and constructs a transient environment variable block to configure pnpm.
+//
+// This redirects all globally-installed pnpm binaries, virtual stores, and
+// content-addressable storage caches to be nested under the Node prefix folder.
+// This enables complete environment caching and restore on CI runners,
+// while permanently avoiding persistent side-effects on the host machine
+// (it does not modify the user's personal ~/.config/pnpm/rc files).
+func getPNPMEnv(ctx context.Context) ([]string, error) {
+	binOut, err := commandOutput(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve node bin directory: %w", err)
+	}
+	globalBin := strings.TrimSpace(binOut)
+
+	env := os.Environ()
+	env = append(env, "PNPM_HOME="+globalBin)
+	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	return env, nil
+}
+
+func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
+	cmd := exec.CommandContext(ctx, "pnpm", args...)
+	cmd.Dir = dir
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr string) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	cmd.Dir = dir
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+func commandOutput(ctx context.Context, name string, args ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, name, args...)
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	err := cmd.Run()
+	return out.String(), err
+}
+
+func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
-		return fmt.Errorf("npm tool %s has build steps but no package URL", tool.Name)
+		return fmt.Errorf("pnpm tool %s has build steps but no package URL", tool.Name)
 	}
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
@@ -75,7 +138,7 @@ func installNPMToolFromSource(ctx context.Context, tool *config.NPMTool) error {
 	// Run build steps.
 	genDir := filepath.Join(dir, gapicGeneratorSubdir)
 	for _, cmd := range tool.Build {
-		if err := command.RunInDir(ctx, genDir, "sh", "-c", cmd); err != nil {
+		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
 			return err
 		}
 	}

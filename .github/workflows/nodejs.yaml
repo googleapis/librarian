@@ -26,6 +26,10 @@ jobs:
       - uses: actions/setup-node@v6
         with:
           node-version: "18"
+      - name: "Set up pnpm via corepack"
+        run: |
+          corepack enable pnpm
+          corepack prepare pnpm@7.32.2 --activate
       - uses: actions/setup-python@v6
         with:
           python-version: "3.14"
@@ -41,7 +45,7 @@ jobs:
           path: |
             ${{ steps.tool-paths.outputs.npm }}
             ${{ steps.tool-paths.outputs.pip }}
-          key: nodejs-tools-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
+          key: nodejs-tools-v2-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'
         run: librarian -v install nodejs
