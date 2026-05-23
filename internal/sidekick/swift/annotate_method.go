@@ -32,6 +32,7 @@ type methodAnnotations struct {
 	BodyField      string
 	QueryParams    []*api.Field
 	Pagination     *paginationAnnotations
+	ReturnType     string
 }
 
 type paginationAnnotations struct {
@@ -74,8 +75,14 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			return err
 		}
 	}
+	var returnType string
 	if method.OutputType != nil {
 		if err := c.annotateMessage(method.OutputType, modelAnn); err != nil {
+			return err
+		}
+		var err error
+		returnType, err = c.fullyQualifiedMessageTypeName(method.OutputType)
+		if err != nil {
 			return err
 		}
 	}
@@ -116,6 +123,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
 		Pagination:     pagination,
+		ReturnType:     returnType,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

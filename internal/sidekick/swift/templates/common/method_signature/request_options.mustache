@@ -15,4 +15,4 @@ limitations under the License.
 }}
 {{Codec.Name}}(
     request: {{InputType.Codec.Name}}, options: GoogleCloudGax.RequestOptions
-) async throws{{^ReturnsEmpty}} -> {{OutputType.Codec.Name}}{{/ReturnsEmpty}}
+) async throws{{^ReturnsEmpty}} -> {{Codec.ReturnType}}{{/ReturnsEmpty}}
