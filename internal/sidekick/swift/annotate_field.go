@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"fmt"
+
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -45,6 +47,15 @@ type fieldAnnotations struct {
 	//
 	// This is empty for fields that are not part of a oneof group.
 	OneOfPropertyName string
+
+	// Recursive is true if the field is a recursive reference to another message.
+	Recursive bool
+
+	// InitializerType is the Swift type name of this field as it appears in the initializer signature.
+	//
+	// For recursive fields, this is the unwrapped type with an optional suffix (e.g., `Node?`), rather
+	// than the boxed type (`GoogleCloudWkt.Recursive<Node>?`). For standard fields, it matches `FieldType`.
+	InitializerType string
 }
 
 func (c *codec) annotateField(field *api.Field) error {
@@ -90,11 +101,26 @@ func (c *codec) annotateField(field *api.Field) error {
 		}
 	}
 	annotations := &fieldAnnotations{
-		Name:          camelCase(field.Name),
-		FieldType:     fieldType,
-		BaseFieldType: baseFieldType,
-		PackageName:   packageName,
-		DocLines:      docLines,
+		Name:            camelCase(field.Name),
+		FieldType:       fieldType,
+		BaseFieldType:   baseFieldType,
+		PackageName:     packageName,
+		DocLines:        docLines,
+		InitializerType: fieldType,
+	}
+	// Swift value types (structs) cannot contain recursive references directly because their
+	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
+	// when the following conditions are met:
+	// 1. field.Recursive: The field is part of a recursive reference cycle.
+	// 2. field.Singular(): Repeated fields ([T]) and Maps ([K: V]) store their elements dynamically
+	//    on the heap, so they do not cause compile-time infinite struct size issues.
+	// 3. !field.IsOneOf: Oneof fields are nested inside a Swift enum which handles recursive boxing
+	//    automatically using the native indirect case mechanism.
+	if field.Recursive && field.Singular() && !field.IsOneOf {
+		annotations.Recursive = true
+		annotations.InitializerType = baseFieldType + "?"
+		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, baseFieldType)
+		annotations.FieldType = fmt.Sprintf("%s.Recursive<%s>?", wellKnownSwiftPackage, baseFieldType)
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {

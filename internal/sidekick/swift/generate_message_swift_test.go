@@ -247,3 +247,262 @@ func TestGenerateMessage_WithExternalImports(t *testing.T) {
 		t.Errorf("unexpected 'import GoogleCloudUnusedV1' in %s", filename)
 	}
 }
+
+func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
+	outDir := t.TempDir()
+
+	nodeA := &api.Message{
+		Name:    "NodeA",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.NodeA",
+	}
+	nodeB := &api.Message{
+		Name:    "NodeB",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.NodeB",
+	}
+
+	fieldA := &api.Field{
+		Name:     "node_b",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.NodeB",
+		Optional: true,
+		Parent:   nodeA,
+	}
+	nodeA.Fields = []*api.Field{fieldA}
+
+	fieldB := &api.Field{
+		Name:     "node_a",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.NodeA",
+		Optional: true,
+		Parent:   nodeB,
+	}
+	nodeB.Fields = []*api.Field{fieldB}
+
+	// Set the MessageType fields correctly
+	fieldA.MessageType = nodeB
+	fieldB.MessageType = nodeA
+
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+
+	// Run LabelRecursiveFields to mark recursive fields
+	api.LabelRecursiveFields(model)
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	filenameA := filepath.Join(expectedDir, "NodeA.swift")
+	contentA, err := os.ReadFile(filenameA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStrA := string(contentA)
+
+	// Verify struct property uses Recursive
+	wantProp := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	if !strings.Contains(contentStrA, wantProp) {
+		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStrA)
+	}
+
+	// Verify initializer parameter uses the unwrapped type
+	wantParam := "nodeB: NodeB? = nil"
+	if !strings.Contains(contentStrA, wantParam) {
+		t.Errorf("initializer parameter mismatch: want %q; got:\n%s", wantParam, contentStrA)
+	}
+
+	// Verify initializer maps the value
+	wantMap := "self.nodeB = nodeB.map { GoogleCloudWkt.Recursive(value: $0) }"
+	if !strings.Contains(contentStrA, wantMap) {
+		t.Errorf("initializer body mapping mismatch: want %q; got:\n%s", wantMap, contentStrA)
+	}
+}
+
+func TestGenerateMessage_SelfRecursive(t *testing.T) {
+	outDir := t.TempDir()
+
+	node := &api.Message{
+		Name:    "Node",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.Node",
+	}
+
+	field := &api.Field{
+		Name:     "child",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.Node",
+		Optional: true,
+		Parent:   node,
+	}
+	node.Fields = []*api.Field{field}
+	field.MessageType = node
+
+	model := api.NewTestAPI([]*api.Message{node}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+
+	// Run LabelRecursiveFields to mark recursive fields
+	api.LabelRecursiveFields(model)
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	filename := filepath.Join(expectedDir, "Node.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	// Verify struct property uses Recursive
+	wantProp := "public var child: GoogleCloudWkt.Recursive<Node>?"
+	if !strings.Contains(contentStr, wantProp) {
+		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStr)
+	}
+
+	// Verify initializer parameter uses the unwrapped type
+	wantParam := "child: Node? = nil"
+	if !strings.Contains(contentStr, wantParam) {
+		t.Errorf("initializer parameter mismatch: want %q; got:\n%s", wantParam, contentStr)
+	}
+
+	// Verify initializer maps the value
+	wantMap := "self.child = child.map { GoogleCloudWkt.Recursive(value: $0) }"
+	if !strings.Contains(contentStr, wantMap) {
+		t.Errorf("initializer body mapping mismatch: want %q; got:\n%s", wantMap, contentStr)
+	}
+}
+
+func TestGenerateMessage_RecursiveChain(t *testing.T) {
+	outDir := t.TempDir()
+
+	nodeA := &api.Message{
+		Name:    "NodeA",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.NodeA",
+	}
+	nodeB := &api.Message{
+		Name:    "NodeB",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.NodeB",
+	}
+	nodeC := &api.Message{
+		Name:    "NodeC",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.NodeC",
+	}
+
+	fieldA := &api.Field{
+		Name:     "node_b",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.NodeB",
+		Optional: true,
+		Parent:   nodeA,
+	}
+	nodeA.Fields = []*api.Field{fieldA}
+
+	fieldB := &api.Field{
+		Name:     "node_c",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.NodeC",
+		Optional: true,
+		Parent:   nodeB,
+	}
+	nodeB.Fields = []*api.Field{fieldB}
+
+	fieldC := &api.Field{
+		Name:     "node_a",
+		Typez:    api.TypezMessage,
+		TypezID:  ".google.cloud.test.v1.NodeA",
+		Optional: true,
+		Parent:   nodeC,
+	}
+	nodeC.Fields = []*api.Field{fieldC}
+
+	fieldA.MessageType = nodeB
+	fieldB.MessageType = nodeC
+	fieldC.MessageType = nodeA
+
+	model := api.NewTestAPI([]*api.Message{nodeA, nodeB, nodeC}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+
+	// Run LabelRecursiveFields to mark recursive fields
+	api.LabelRecursiveFields(model)
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+
+	// Verify NodeA contains wrapped NodeB
+	filenameA := filepath.Join(expectedDir, "NodeA.swift")
+	contentA, err := os.ReadFile(filenameA)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStrA := string(contentA)
+	// Verify NodeA contains wrapped NodeB
+	wantPropA := "public var nodeB: GoogleCloudWkt.Recursive<NodeB>?"
+	if !strings.Contains(contentStrA, wantPropA) {
+		t.Errorf("nodeB property definition mismatch: want %q; got:\n%s", wantPropA, contentStrA)
+	}
+	wantParamA := "nodeB: NodeB? = nil"
+	if !strings.Contains(contentStrA, wantParamA) {
+		t.Errorf("nodeB initializer parameter mismatch: want %q; got:\n%s", wantParamA, contentStrA)
+	}
+
+	// Verify NodeB contains wrapped NodeC
+	filenameB := filepath.Join(expectedDir, "NodeB.swift")
+	contentB, err := os.ReadFile(filenameB)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStrB := string(contentB)
+	wantPropB := "public var nodeC: GoogleCloudWkt.Recursive<NodeC>?"
+	if !strings.Contains(contentStrB, wantPropB) {
+		t.Errorf("nodeC property definition mismatch: want %q; got:\n%s", wantPropB, contentStrB)
+	}
+	wantParamB := "nodeC: NodeC? = nil"
+	if !strings.Contains(contentStrB, wantParamB) {
+		t.Errorf("nodeC initializer parameter mismatch: want %q; got:\n%s", wantParamB, contentStrB)
+	}
+
+	// Verify NodeC contains wrapped NodeA
+	filenameC := filepath.Join(expectedDir, "NodeC.swift")
+	contentC, err := os.ReadFile(filenameC)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStrC := string(contentC)
+	wantPropC := "public var nodeA: GoogleCloudWkt.Recursive<NodeA>?"
+	if !strings.Contains(contentStrC, wantPropC) {
+		t.Errorf("nodeA property definition mismatch: want %q; got:\n%s", wantPropC, contentStrC)
+	}
+	wantParamC := "nodeA: NodeA? = nil"
+	if !strings.Contains(contentStrC, wantParamC) {
+		t.Errorf("nodeA initializer parameter mismatch: want %q; got:\n%s", wantParamC, contentStrC)
+	}
+}
