@@ -70,6 +70,9 @@ type GoAPI struct {
 	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+	// DisabledGeneratorFeatures provides a mechanism for disabling generator features
+	// at the API level.
+	DisabledGeneratorFeatures []string `yaml:"disabled_generator_features,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
