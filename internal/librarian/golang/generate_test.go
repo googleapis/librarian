@@ -794,6 +794,26 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "a feature is specified in both enabled and disabled list",
+			apiPath: "google/cloud/compute/v1",
+			goAPI: &config.GoAPI{
+				ClientPackage:             "compute",
+				ImportPath:                "compute/apiv1",
+				EnabledGeneratorFeatures:  []string{"F_one", "F_two", "F_three"},
+				DisabledGeneratorFeatures: []string{"F_three"},
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/compute/apiv1;compute",
+				"metadata",
+				"F_one",
+				"F_two",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
+				"transport=rest",
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
