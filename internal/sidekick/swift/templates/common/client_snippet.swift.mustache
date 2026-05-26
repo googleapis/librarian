@@ -31,10 +31,7 @@ import {{.}}
 func sample() async throws {
     let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
     {{#Codec.QuickstartMethod}}
-    let response = try await client.{{Codec.Name}}(
-        request: {{InputType.Codec.Name}}(/* set fields */)
-    )
-    print("Success: \(response)")
+    {{> /templates/snippet/generic}}
     {{/Codec.QuickstartMethod}}
     {{^Codec.QuickstartMethod}}
     // Use `client` to make requests to the {{Codec.Name}}.

@@ -1,0 +1,36 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+{{#ReturnsEmpty}}
+{{! For now, only "simple" RPCs may return empty, so we can simplify the dispatch. }}
+try await client.{{Codec.Name}}(
+  request: {{> /templates/snippet/method_request_body}})
+print("Success (no response expected)")
+{{/ReturnsEmpty}}
+{{^ReturnsEmpty}}
+{{! The example code is different for simple vs. LRO vs. List RPCs }}
+{{#IsSimple}}
+let response = try await client.{{Codec.Name}}(
+  request: {{> /templates/snippet/method_request_body}})
+print("Success: \(response)")
+{{/IsSimple}}
+{{#IsList}}
+let items = try await client.{{Codec.Name}}(
+  byItem: {{> /templates/snippet/method_request_body}})
+for try await item in items {
+  print("  \(item)")
+}
+{{/IsList}}
+{{/ReturnsEmpty}}
