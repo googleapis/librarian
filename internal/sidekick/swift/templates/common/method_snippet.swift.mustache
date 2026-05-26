@@ -22,11 +22,11 @@ limitations under the License.
 {{/Service.Codec.Model.BoilerPlate}}
 
 // snippet.show
-{{#Service.Codec.Model.MessageImports}}
-import {{.}}
-{{/Service.Codec.Model.MessageImports}}
-import {{Service.Codec.PackageName}}
 import Foundation
+import {{Service.Codec.PackageName}}
+{{#Service.Codec.SnippetImports}}
+import {{.}}
+{{/Service.Codec.SnippetImports}}
 
 func sample(client: some {{Service.Codec.Name}}{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: String{{/Codec.Parameters}}{{/SampleInfo}}) async throws {
     {{^ReturnsEmpty}}
