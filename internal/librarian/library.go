@@ -67,7 +67,7 @@ func fillGo(lib *config.Library, d *config.Default) *config.Library {
 			api.Go = &config.GoAPI{}
 		}
 		api.Go.EnabledGeneratorFeatures = union(api.Go.EnabledGeneratorFeatures, d.Go.DefaultEnabledGeneratorFeatures)
-	  api.Go.EnabledGeneratorFeatures = deleteFromSlice(api.Go.EnabledGeneratorFeatures, d.Go.DefaultDisabledGeneratorFeatures)
+		api.Go.EnabledGeneratorFeatures = deleteFromSlice(api.Go.EnabledGeneratorFeatures, d.Go.DefaultDisabledGeneratorFeatures)
 	}
 	return lib
 }
@@ -94,15 +94,12 @@ func union(a, b []string) []string {
 }
 
 func deleteFromSlice(src, toDelete []string) []string {
-	srcMap := toMap(src)
-	for _, td := range toDelete {
-		if srcMap[td] {
-			delete(srcMap, td)
-		}
-	}
+	tdMap := toMap(toDelete)
 	var res []string
-	for k := range srcMap {
-		res = append(res, k)
+	for _, item := range src {
+		if !tdMap[item] {
+			res = append(res, item)
+		}
 	}
 	return res
 }
