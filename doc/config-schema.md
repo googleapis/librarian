@@ -39,7 +39,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
-| `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
+| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
 
@@ -50,11 +50,11 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
 
-## NPMTool Configuration
+## PNPMTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the npm package name. |
+| `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
 | `checksum` | string | Is the SHA256 checksum of the package. |
@@ -268,6 +268,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. These features will be disabled if both specified in EnabledGeneratorFeatures and DisabledGeneratorFeatures. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
@@ -354,6 +355,7 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `esm` | bool | Indicates that generation should produce ES Modules (ESM) outputs. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |

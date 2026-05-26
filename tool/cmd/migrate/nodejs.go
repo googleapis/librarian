@@ -91,6 +91,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 		},
 		Default: &config.Default{
 			Output: "packages",
+			Keep:   []string{"package.json", "samples/package.json"},
 		},
 		Libraries: libraries,
 	}
@@ -216,7 +217,6 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 		library.Keep = append(library.Keep, v1smallKeep...)
 	}
-
 	return library, nil
 }
 

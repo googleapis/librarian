@@ -74,10 +74,11 @@ func TestAnnotateField(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:          "secretPayload",
-				DocLines:      []string{"The secret version payload."},
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantBaseType,
+				Name:            "secretPayload",
+				DocLines:        []string{"The secret version payload."},
+				FieldType:       test.wantType,
+				BaseFieldType:   test.wantBaseType,
+				InitializerType: test.wantType,
 			}
 
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
@@ -117,10 +118,11 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:          "testField",
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantType,
-				DocLines:      []string{"Test documentation."},
+				Name:            "testField",
+				FieldType:       test.wantType,
+				BaseFieldType:   test.wantType,
+				DocLines:        []string{"Test documentation."},
+				InitializerType: test.wantType,
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -163,13 +165,112 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	}
 	got := field.Codec.(*fieldAnnotations)
 	want := &fieldAnnotations{
-		Name:          "externalMessage",
-		FieldType:     "GoogleCloudExternalV1.SomeMessage",
-		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
-		PackageName:   "google.cloud.external.v1",
-		DocLines:      []string{"The external message."},
+		Name:            "externalMessage",
+		FieldType:       "GoogleCloudExternalV1.SomeMessage",
+		BaseFieldType:   "GoogleCloudExternalV1.SomeMessage",
+		PackageName:     "google.cloud.external.v1",
+		DocLines:        []string{"The external message."},
+		InitializerType: "GoogleCloudExternalV1.SomeMessage",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestAnnotateField_Recursive(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		optional      bool
+		repeated      bool
+		isOneOf       bool
+		wantType      string
+		wantBaseType  string
+		wantRecursive bool
+		wantInitType  string
+		oneofProperty string
+	}{
+		{
+			name:          "singular optional recursive",
+			optional:      true,
+			repeated:      false,
+			isOneOf:       false,
+			wantType:      "GoogleCloudWkt.Recursive<Node>?",
+			wantBaseType:  "GoogleCloudWkt.Recursive<Node>",
+			wantRecursive: true,
+			wantInitType:  "Node?",
+		},
+		{
+			name:          "repeated recursive",
+			optional:      false,
+			repeated:      true,
+			isOneOf:       false,
+			wantType:      "[Node]",
+			wantBaseType:  "Node",
+			wantRecursive: false,
+			wantInitType:  "[Node]",
+		},
+		{
+			name:          "oneof recursive",
+			optional:      false,
+			repeated:      false,
+			isOneOf:       true,
+			wantType:      "Node",
+			wantBaseType:  "Node",
+			wantRecursive: false,
+			wantInitType:  "Node",
+			oneofProperty: "alternatives",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			field := &api.Field{
+				Name:          "child_node",
+				ID:            ".test.Node.child_node",
+				Typez:         api.TypezMessage,
+				TypezID:       ".test.Node",
+				Documentation: "Recursive link.",
+				Optional:      test.optional,
+				Repeated:      test.repeated,
+				IsOneOf:       test.isOneOf,
+				Recursive:     true,
+			}
+			msg := &api.Message{
+				Name:    "Node",
+				ID:      ".test.Node",
+				Package: "test",
+				Fields:  []*api.Field{field},
+			}
+			field.Parent = msg
+			field.MessageType = msg
+
+			if test.isOneOf {
+				oneof := &api.OneOf{
+					Name:   test.oneofProperty,
+					Fields: []*api.Field{field},
+				}
+				field.Group = oneof
+				msg.OneOfs = []*api.OneOf{oneof}
+			}
+
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			want := &fieldAnnotations{
+				Name:              "childNode",
+				DocLines:          []string{"Recursive link."},
+				FieldType:         test.wantType,
+				BaseFieldType:     test.wantBaseType,
+				PackageName:       "test",
+				Recursive:         test.wantRecursive,
+				InitializerType:   test.wantInitType,
+				OneOfPropertyName: test.oneofProperty,
+			}
+
+			if diff := cmp.Diff(want, field.Codec); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

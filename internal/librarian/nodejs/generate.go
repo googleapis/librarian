@@ -220,6 +220,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		if library.Nodejs.BundleConfig != "" {
 			args = append(args, "--bundle-config", library.Nodejs.BundleConfig)
 		}
+		if library.Nodejs.ESM {
+			args = append(args, "--format=esm")
+		}
 		for _, param := range library.Nodejs.ExtraProtocParameters {
 			args = append(args, "--"+param)
 		}
@@ -263,11 +266,15 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	}
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-	if err := command.Run(ctx, "gapic-node-processing",
+	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
 		"--destination-path", outDir,
-	); err != nil {
+	}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		combineArgs = append(combineArgs, "--is-esm")
+	}
+	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
 
@@ -311,10 +318,19 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("failed to write repo metadata: %w", err)
 		}
 	}
+
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
-	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
+	protoDir := "src"
+	var compileArgs []string
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		protoDir = "esm/src"
+		compileArgs = []string{"--esm"}
+	}
+	runArgs := append([]string{protoDir}, compileArgs...)
+
+	if err := command.RunInDir(ctx, outDir, "compileProtos", runArgs...); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 

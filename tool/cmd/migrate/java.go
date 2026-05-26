@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -33,6 +34,9 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+//go:embed java/librarian.yaml
+var librarianYAML []byte
 
 const (
 	generationConfigFileName = "generation_config.yaml"
@@ -190,6 +194,11 @@ func runJavaMigration(ctx context.Context, repoPath string, shouldInsertMarkers 
 	if cfg == nil {
 		return fmt.Errorf("no libraries found to migrate")
 	}
+	embeddedCfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+	if err != nil {
+		return fmt.Errorf("failed to parse embedded librarian.yaml: %w", err)
+	}
+	cfg.Tools = embeddedCfg.Tools
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
@@ -731,9 +740,15 @@ type wrapArgs struct {
 // wrapBlocks inserts start and end markers around a set of matching blocks.
 // If matching blocks are not contiguous, it moves them together to the
 // position of the first matching block.
+// It returns the original lines unchanged if the markers are already present.
 func wrapBlocks(args wrapArgs) []string {
 	if len(args.targets) == 0 {
 		return args.lines
+	}
+	for _, line := range args.lines {
+		if strings.Contains(line, args.startMarker) || strings.Contains(line, args.endMarker) {
+			return args.lines
+		}
 	}
 	kept, moved, insertAt := splitMatchingBlocks(args)
 	if insertAt == -1 {

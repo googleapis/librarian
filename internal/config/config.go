@@ -100,8 +100,8 @@ type Tools struct {
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
 
-	// NPM defines tools to install via npm.
-	NPM []*NPMTool `yaml:"npm,omitempty"`
+	// PNPM defines tools to install via pnpm.
+	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
 
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
@@ -119,9 +119,9 @@ type CargoTool struct {
 	Version string `yaml:"version"`
 }
 
-// NPMTool defines a tool to install via npm.
-type NPMTool struct {
-	// Name is the npm package name.
+// PNPMTool defines a tool to install via pnpm.
+type PNPMTool struct {
+	// Name is the pnpm package name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -340,7 +340,6 @@ type API struct {
 type GoDefault struct {
 	// Toolchain is the desired Go toolchain version (e.g., "go1.25.0").
 	Toolchain string `yaml:"toolchain,omitempty"`
-
 	// DefaultEnabledGeneratorFeatures lists the generator features enabled by default for all APIs.
 	// These default features are appended AFTER any features explicitly declared in individual APIs.
 	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`

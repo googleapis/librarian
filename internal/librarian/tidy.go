@@ -240,7 +240,7 @@ func tidyRustConfig(lib *config.Library) *config.Library {
 
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
-	return len(tools.Cargo) == 0 && len(tools.NPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
+	return len(tools.Cargo) == 0 && len(tools.PNPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
 }
 
 // isDefaultEmpty returns true if the default configuration is empty.
@@ -275,7 +275,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 		slices.SortFunc(cfg.Tools.Cargo, func(a, b *config.CargoTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})
-		slices.SortFunc(cfg.Tools.NPM, func(a, b *config.NPMTool) int {
+		slices.SortFunc(cfg.Tools.PNPM, func(a, b *config.PNPMTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})
 		slices.SortFunc(cfg.Tools.Pip, func(a, b *config.PipTool) int {

@@ -28,7 +28,7 @@ func TestInstall(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	tool := cfg.Tools.NPM[0]
+	tool := cfg.Tools.PNPM[0]
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
 		t.Fatal(err)
@@ -47,25 +47,38 @@ func TestInstall(t *testing.T) {
 		}
 	}
 
-	// Stub npm so "npm install" and "npm link" are no-ops. The npm stub
-	// also creates node_modules/.bin/tsc in the working directory so the
-	// subsequent "./node_modules/.bin/tsc" build step finds an executable.
-	// Global installs (npm install -g) write into NPM_GLOBAL_PREFIX to
-	// avoid polluting the source tree.
+	// Stub pnpm and node. The pnpm stub also creates
+	// node_modules/.bin/tsc in the working directory during 'pnpm install'
+	// so the subsequent "./node_modules/.bin/tsc" build step finds an executable.
 	bin := t.TempDir()
-	npmGlobalPrefix := t.TempDir()
-	t.Setenv("NPM_GLOBAL_PREFIX", npmGlobalPrefix)
-	npmStub := `#!/bin/sh
-case "$*" in *-g*)
-	mkdir -p "$NPM_GLOBAL_PREFIX/lib"
-	exit 0
-	;;
+	pnpmStub := `#!/bin/sh
+# Assert that transient environmental variables are set dynamically for process lifetime
+if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ]; then
+    echo "Error: Required transient PNPM environment variables are missing!" >&2
+    exit 1
+fi
+
+case "$*" in
+    *install*)
+        mkdir -p node_modules/.bin
+        printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
+        chmod +x node_modules/.bin/tsc
+        ;;
 esac
-mkdir -p node_modules/.bin
-printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
-chmod +x node_modules/.bin/tsc
+exit 0
 `
-	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
+	nodeStub := `#!/bin/sh
+case "$*" in
+    *dirname*)
+        echo "/usr/local/bin"
+        ;;
+esac
+exit 0
+`
+	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))

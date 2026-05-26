@@ -27,6 +27,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestApplyJavaProtoOverrides(t *testing.T) {
@@ -273,7 +274,12 @@ func TestApplyJavaLibraryOverrides(t *testing.T) {
 	}
 }
 
-func TestRunJavaMigration(t *testing.T) {
+func setupMigrationTest(t *testing.T, sourceRepoPath string) string {
+	t.Helper()
+	// Save original fetchers
+	origFetchGoogleapis := fetchGoogleapisWithCommitVar
+	origFetchShowcase := fetchShowcaseWithCommitVar
+	// Mock fetchers
 	fetchGoogleapisWithCommitVar = func(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
 		return &config.Source{
 			Commit: commitish,
@@ -288,16 +294,64 @@ func TestRunJavaMigration(t *testing.T) {
 			Dir:    "../../../internal/testdata/gapic-showcase",
 		}, nil
 	}
-	for _, test := range []struct {
+
+	t.Cleanup(func() {
+		fetchGoogleapisWithCommitVar = origFetchGoogleapis
+		fetchShowcaseWithCommitVar = origFetchShowcase
+	})
+
+	dir := t.TempDir()
+	if err := os.CopyFS(dir, os.DirFS(sourceRepoPath)); err != nil {
+		t.Fatal(err)
+	}
+	writeVersionsFile(t, dir, "")
+
+	// Create dummy showcase pom.xml to avoid failure in runJavaMigration
+	showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
+	if err := os.MkdirAll(showcaseDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	pomPath := filepath.Join(showcaseDir, "pom.xml")
+	if err := os.WriteFile(pomPath, []byte("<gapic-showcase.version>0.39.0</gapic-showcase.version>"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	return dir
+}
+
+func TestRunJavaMigration_Tools(t *testing.T) {
+	dir := setupMigrationTest(t, "testdata/run/success-java")
+	err := runJavaMigration(t.Context(), dir, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// Verify librarian.yaml was written and contains tools
+	libYAMLPath := filepath.Join(dir, "librarian.yaml")
+	cfg, err := yaml.Read[config.Config](libYAMLPath)
+	if err != nil {
+		t.Fatalf("failed to read generated librarian.yaml: %v", err)
+	}
+	if cfg.Tools == nil {
+		t.Errorf("expected tools to be populated in librarian.yaml, got nil")
+	} else {
+		found := false
+		for _, tool := range cfg.Tools.Maven {
+			if tool.Name == "google-java-format" {
+				found = true
+				break
+			}
+		}
+		if !found {
+			t.Errorf("expected google-java-format in tools, but not found")
+		}
+	}
+}
+
+func TestRunJavaMigration_err(t *testing.T) {
+	tests := []struct {
 		name     string
 		repoPath string
 		wantErr  error
-		insert   bool
 	}{
-		{
-			name:     "success",
-			repoPath: "testdata/run/success-java",
-		},
 		{
 			name:     "tidy_failed",
 			repoPath: "testdata/run/tidy-fails-java",
@@ -308,37 +362,27 @@ func TestRunJavaMigration(t *testing.T) {
 			repoPath: "testdata/run/no-config",
 			wantErr:  fs.ErrNotExist,
 		},
-		{
-			name:     "insert_markers",
-			repoPath: "testdata/run/success-java",
-			insert:   true,
-		},
-	} {
+	}
+	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			if err := os.CopyFS(dir, os.DirFS(test.repoPath)); err != nil {
+			dir := setupMigrationTest(t, test.repoPath)
+			err := runJavaMigration(t.Context(), dir, false)
+			if !errors.Is(err, test.wantErr) {
 				t.Fatal(err)
 			}
-			writeVersionsFile(t, dir, "")
+		})
+	}
+}
 
-			// Create dummy showcase pom.xml to avoid failure in runJavaMigration
-			showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
-			if err := os.MkdirAll(showcaseDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-			pomPath := filepath.Join(showcaseDir, "pom.xml")
-			if err := os.WriteFile(pomPath, []byte("<gapic-showcase.version>0.39.0</gapic-showcase.version>"), 0644); err != nil {
-				t.Fatal(err)
-			}
-
-			if test.insert {
-				// Create dummy pom.xml to be updated
-				libDir := filepath.Join(dir, "java-language-v1")
-				clientDir := filepath.Join(libDir, "google-cloud-language-v1")
-				if err := os.MkdirAll(clientDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				pomContent := `<project>
+func TestRunJavaMigration_insertMarker(t *testing.T) {
+	dir := setupMigrationTest(t, "testdata/run/success-java")
+	// Create dummy pom.xml to be updated
+	libDir := filepath.Join(dir, "java-language-v1")
+	clientDir := filepath.Join(libDir, "google-cloud-language-v1")
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	pomContent := `<project>
   <dependencies>
     <dependency>
       <groupId>com.google.api.grpc</groupId>
@@ -346,26 +390,70 @@ func TestRunJavaMigration(t *testing.T) {
     </dependency>
   </dependencies>
 </project>`
-				if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(pomContent), 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			err := runJavaMigration(t.Context(), dir, test.insert)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("expected error %v, got %v", test.wantErr, err)
-			}
-			if test.insert {
-				// Verify markers were inserted
-				pomPath := filepath.Join(dir, "java-language-v1", "google-cloud-language-v1", "pom.xml")
-				content, err := os.ReadFile(pomPath)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if !strings.Contains(string(content), managedProtoStartMarker) {
-					t.Errorf("markers not found in %s", pomPath)
-				}
-			}
-		})
+	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(pomContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	err := runJavaMigration(t.Context(), dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify markers were inserted
+	pomPath := filepath.Join(dir, "java-language-v1", "google-cloud-language-v1", "pom.xml")
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(content), managedProtoStartMarker) {
+		t.Errorf("markers not found in %s", pomPath)
+	}
+}
+
+func TestRunJavaMigration_insertMarker_repeatedly(t *testing.T) {
+	dir := setupMigrationTest(t, "testdata/run/success-java")
+	// Create dummy pom.xml to be updated
+	libDir := filepath.Join(dir, "java-language-v1")
+	clientDir := filepath.Join(libDir, "google-cloud-language-v1")
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	pomContent := `<project>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-language-v1-v1</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(pomContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// First run: should insert markers
+	err := runJavaMigration(t.Context(), dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pomPath := filepath.Join(dir, "java-language-v1", "google-cloud-language-v1", "pom.xml")
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(content), managedProtoStartMarker); got != 1 {
+		t.Fatalf("expected exactly 1 proto start marker after first run, got %d", got)
+	}
+
+	// Second run: should NOT duplicate markers
+	err = runJavaMigration(t.Context(), dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content2, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(content2), managedProtoStartMarker); got != 1 {
+		t.Errorf("expected exactly 1 proto start marker after second run, got %d. Content:\n%s", got, string(content2))
 	}
 }
 
