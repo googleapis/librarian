@@ -1598,7 +1598,7 @@ func TestDeleteFromSlice(t *testing.T) {
 			name:     "empty src",
 			src:      []string{},
 			toDelete: []string{"a"},
-			want:     nil,
+			want:     []string{},
 		},
 		{
 			name:     "nil toDelete",

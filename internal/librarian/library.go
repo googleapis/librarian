@@ -94,6 +94,9 @@ func union(a, b []string) []string {
 }
 
 func deleteFromSlice(src, toDelete []string) []string {
+	if len(src) == 0 || len(toDelete) == 0 {
+		return src
+	}
 	tdMap := toMap(toDelete)
 	var res []string
 	for _, item := range src {
