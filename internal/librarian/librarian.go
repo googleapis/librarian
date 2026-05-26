@@ -104,7 +104,7 @@ Examples:
 			case config.LanguageGo:
 				return golang.Install(ctx, tools)
 			case config.LanguageJava:
-				return java.Install(ctx)
+				return java.Install(ctx, tools)
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx)
 			case config.LanguagePython:
