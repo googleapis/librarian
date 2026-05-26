@@ -440,7 +440,7 @@ func TestRunJavaMigration_insertMarker_repeatedly(t *testing.T) {
 		t.Fatal(err)
 	}
 	if got := strings.Count(string(content), managedProtoStartMarker); got != 1 {
-		t.Fatal(err)
+		t.Fatalf("expected exactly 1 proto start marker after first run, got %d", got)
 	}
 
 	// Second run: should NOT duplicate markers
