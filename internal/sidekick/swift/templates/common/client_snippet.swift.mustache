@@ -24,9 +24,9 @@ limitations under the License.
 // snippet.show
 import Foundation
 import {{Codec.PackageName}}
-{{#Service.Codec.SnippetImports}}
+{{#Codec.SnippetImports}}
 import {{.}}
-{{/Service.Codec.SnippetImports}}
+{{/Codec.SnippetImports}}
 
 func sample() async throws {
     let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
