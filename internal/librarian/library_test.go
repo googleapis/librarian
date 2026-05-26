@@ -627,7 +627,7 @@ func TestFillDefaults_Go(t *testing.T) {
 			},
 			defaults: &config.GoDefault{
 				DefaultDisabledGeneratorFeatures: []string{"F_three"},
-				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+				DefaultEnabledGeneratorFeatures:  []string{"F_one", "F_two"},
 			},
 			want: &config.Library{
 				APIs: []*config.API{
@@ -654,7 +654,7 @@ func TestFillDefaults_Go(t *testing.T) {
 			},
 			defaults: &config.GoDefault{
 				DefaultDisabledGeneratorFeatures: []string{"F_one"},
-				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+				DefaultEnabledGeneratorFeatures:  []string{"F_one", "F_two"},
 			},
 			want: &config.Library{
 				APIs: []*config.API{
