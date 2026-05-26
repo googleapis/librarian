@@ -318,7 +318,7 @@ func setupMigrationTest(t *testing.T, sourceRepoPath string) string {
 	return dir
 }
 
-func TestRunJavaMigration(t *testing.T) {
+func TestRunJavaMigration_Tools(t *testing.T) {
 	dir := setupMigrationTest(t, "testdata/run/success-java")
 	err := runJavaMigration(t.Context(), dir, false)
 	if err != nil {
