@@ -213,7 +213,11 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir 
 	}
 	genFeatures := goAPI.EnabledGeneratorFeatures
 	if genFeatures != nil {
-		genFeatures = deleteFromSlice(genFeatures, goAPI.DisabledGeneratorFeatures)
+		for _, toDetele := range goAPI.DisabledGeneratorFeatures {
+			genFeatures = slices.DeleteFunc(genFeatures, func(feat string) bool {
+				return feat == toDetele
+			})
+		}
 		opts = append(opts, genFeatures...)
 	}
 	if sc != nil {
@@ -368,26 +372,4 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview/internal")
-}
-
-func deleteFromSlice(src, toDelete []string) []string {
-	if len(src) == 0 || len(toDelete) == 0 {
-		return src
-	}
-	tdMap := toMap(toDelete)
-	var res []string
-	for _, item := range src {
-		if !tdMap[item] {
-			res = append(res, item)
-		}
-	}
-	return res
-}
-
-func toMap(s []string) map[string]bool {
-	res := make(map[string]bool, len(s))
-	for _, v := range s {
-		res[v] = true
-	}
-	return res
 }
