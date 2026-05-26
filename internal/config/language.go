@@ -72,7 +72,7 @@ type GoAPI struct {
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 	// DisabledGeneratorFeatures provides a mechanism for disabling generator features
 	// at the API level.
-	DisabledGeneratorFeatures []string `yaml:"disable_generator_features,omitempty"`
+	DisabledGeneratorFeatures []string `yaml:"disabled_generator_features,omitempty"`
 	// EnabledGeneratorFeatures provides a mechanism for enabling generator features
 	// at the API level.
 	EnabledGeneratorFeatures []string `yaml:"enabled_generator_features,omitempty"`
