@@ -35,7 +35,7 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-//go:embed librarian.yaml
+//go:embed java/librarian.yaml
 var librarianYAML []byte
 
 const (
