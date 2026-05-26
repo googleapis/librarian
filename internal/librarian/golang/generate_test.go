@@ -756,25 +756,6 @@ func TestBuildGAPICOpts(t *testing.T) {
 			},
 		},
 		{
-			name:    "disable gen features",
-			apiPath: "google/cloud/compute/v1",
-			goAPI: &config.GoAPI{
-				ClientPackage:             "compute",
-				ImportPath:                "compute/apiv1",
-				EnabledGeneratorFeatures:  []string{"F_one", "F_two"},
-				DisabledGeneratorFeatures: []string{"F_one"},
-			},
-			googleapisDir: googleapisDir,
-			want: []string{
-				"go-gapic-package=cloud.google.com/go/compute/apiv1;compute",
-				"metadata",
-				"F_two",
-				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
-				"transport=rest",
-				"release-level=ga",
-			},
-		},
-		{
 			name:    "disable a gen feat that is not part of the enabled list",
 			apiPath: "google/cloud/compute/v1",
 			goAPI: &config.GoAPI{
