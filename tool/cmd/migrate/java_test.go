@@ -410,6 +410,53 @@ func TestRunJavaMigration_insertMarker(t *testing.T) {
 	}
 }
 
+func TestRunJavaMigration_insertMarker_repeatedly(t *testing.T) {
+	dir := setupMigrationTest(t, "testdata/run/success-java")
+	// Create dummy pom.xml to be updated
+	libDir := filepath.Join(dir, "java-language-v1")
+	clientDir := filepath.Join(libDir, "google-cloud-language-v1")
+	if err := os.MkdirAll(clientDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	pomContent := `<project>
+  <dependencies>
+    <dependency>
+      <groupId>com.google.api.grpc</groupId>
+      <artifactId>proto-google-cloud-language-v1-v1</artifactId>
+    </dependency>
+  </dependencies>
+</project>`
+	if err := os.WriteFile(filepath.Join(clientDir, "pom.xml"), []byte(pomContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// First run: should insert markers
+	err := runJavaMigration(t.Context(), dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	pomPath := filepath.Join(dir, "java-language-v1", "google-cloud-language-v1", "pom.xml")
+	content, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(content), managedProtoStartMarker); got != 1 {
+		t.Fatalf("expected exactly 1 proto start marker after first run, got %d", got)
+	}
+
+	// Second run: should NOT duplicate markers
+	err = runJavaMigration(t.Context(), dir, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	content2, err := os.ReadFile(pomPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := strings.Count(string(content2), managedProtoStartMarker); got != 1 {
+		t.Errorf("expected exactly 1 proto start marker after second run, got %d. Content:\n%s", got, string(content2))
+	}
+}
+
 func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
 		name     string
