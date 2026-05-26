@@ -44,7 +44,8 @@ func (ann *serviceAnnotations) ServiceImports() []string {
 	return result
 }
 
-// SnippetImports returns the list of dependencies for this service snippets.
+// SnippetImports returns the sorted list of dependencies for this service's
+// snippets.
 //
 // Service snippets are generated examples that show how to initialize the
 // service and call its key methods. They need imports beyond the package for
