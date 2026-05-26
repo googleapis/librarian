@@ -613,6 +613,60 @@ func TestFillDefaults_Go(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "disable gen features in API level",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_three"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultDisabledGeneratorFeatures: []string{"F_three"},
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "disable gen features in Library level",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultDisabledGeneratorFeatures: []string{"F_one"},
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_custom", "F_two"},
+						},
+					},
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			defaults := &config.Default{
