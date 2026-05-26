@@ -268,7 +268,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
-| `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. |
+| `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. These features will be disabled if both specified in EnabledGeneratorFeatures and DisabledGeneratorFeatures. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
