@@ -18,7 +18,6 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 )
@@ -80,38 +79,14 @@ func Fill(library *config.Library) (*config.Library, error) {
 // values.
 func Tidy(library *config.Library) *config.Library {
 	if len(library.Keep) > 0 {
-		// 1. Find all GAPIC module directories to identify where marker cleaning applies.
-		coordinates := DeriveLibraryCoordinates(library)
-		seen := map[string]bool{coordinates.GAPIC.ArtifactID: true}
-		gapicDirs := []string{coordinates.GAPIC.ArtifactID}
-		for _, api := range library.APIs {
-			if api.Java != nil && api.Java.GAPICArtifactIDOverride != "" && !seen[api.Java.GAPICArtifactIDOverride] {
-				seen[api.Java.GAPICArtifactIDOverride] = true
-				gapicDirs = append(gapicDirs, api.Java.GAPICArtifactIDOverride)
-			}
-		}
 		var kept []string
 		for _, keepPath := range library.Keep {
 			keepPathSlash := filepath.ToSlash(keepPath)
-			// 2. Skip files matching standard test/version regexes since they are preserved globally.
+			// Skip files matching standard test/version regexes since they are preserved globally.
 			if isDefaultPreserved(keepPathSlash) {
 				continue
 			}
-			omit := false
-			// 3. Skip manual files in GAPIC src folders since they are preserved by marker-based clean.
-			for _, gapicDir := range gapicDirs {
-				prefix := gapicDir + "/src/"
-				if strings.HasPrefix(keepPathSlash, prefix) {
-					filename := filepath.Base(keepPathSlash)
-					if filename != "gapic_metadata.json" && filename != "reflect-config.json" {
-						omit = true
-						break
-					}
-				}
-			}
-			if !omit {
-				kept = append(kept, keepPath)
-			}
+			kept = append(kept, keepPath)
 		}
 		slices.Sort(kept)
 		library.Keep = slices.Compact(kept)
