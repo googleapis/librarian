@@ -213,9 +213,9 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir 
 	}
 	genFeatures := goAPI.EnabledGeneratorFeatures
 	if genFeatures != nil {
-		for _, toDetele := range goAPI.DisabledGeneratorFeatures {
+		for _, toDelete := range goAPI.DisabledGeneratorFeatures {
 			genFeatures = slices.DeleteFunc(genFeatures, func(feat string) bool {
-				return feat == toDetele
+				return feat == toDelete
 			})
 		}
 		opts = append(opts, genFeatures...)
