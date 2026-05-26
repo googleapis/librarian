@@ -759,10 +759,10 @@ func TestBuildGAPICOpts(t *testing.T) {
 			name:    "disable gen features",
 			apiPath: "google/cloud/compute/v1",
 			goAPI: &config.GoAPI{
-				ClientPackage:            "compute",
-				ImportPath:               "compute/apiv1",
-				EnabledGeneratorFeatures: []string{"F_one", "F_two"},
-				DisabledGeneratorFeatures:  []string{"F_one"},
+				ClientPackage:             "compute",
+				ImportPath:                "compute/apiv1",
+				EnabledGeneratorFeatures:  []string{"F_one", "F_two"},
+				DisabledGeneratorFeatures: []string{"F_one"},
 			},
 			googleapisDir: googleapisDir,
 			want: []string{
