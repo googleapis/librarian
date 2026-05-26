@@ -354,6 +354,7 @@ This document describes the schema for the librarian.yaml.
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `esm` | bool | Indicates that generation should produce ES Modules (ESM) outputs. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |

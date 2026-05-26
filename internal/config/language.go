@@ -741,6 +741,9 @@ type NodejsPackage struct {
 	// Dependencies maps npm package names to version constraints.
 	Dependencies map[string]string `yaml:"dependencies,omitempty"`
 
+	// ESM indicates that generation should produce ES Modules (ESM) outputs.
+	ESM bool `yaml:"esm,omitempty"`
+
 	// ExtraProtocParameters is a list of extra parameters to pass to protoc.
 	ExtraProtocParameters []string `yaml:"extra_protoc_parameters,omitempty"`
 
