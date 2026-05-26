@@ -211,8 +211,14 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir 
 	if goAPI.DIREGAPIC {
 		opts = append(opts, "diregapic")
 	}
-	if goAPI.EnabledGeneratorFeatures != nil {
-		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
+	genFeatures := goAPI.EnabledGeneratorFeatures
+	if genFeatures != nil {
+		for _, toDelete := range goAPI.DisabledGeneratorFeatures {
+			genFeatures = slices.DeleteFunc(genFeatures, func(feat string) bool {
+				return feat == toDelete
+			})
+		}
+		opts = append(opts, genFeatures...)
 	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
