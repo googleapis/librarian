@@ -145,6 +145,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `toolchain` | string | Is the desired Go toolchain version (e.g., "go1.25.0"). |
+| `disabled_generator_features` | list of string | Lists the generator features disabled by default for all APIs. These default features will be removed AFTER any features explicitly declared in individual APIs and in DefaultEnabledGeneratorFeatures. |
 | `default_enabled_generator_features` | list of string | Lists the generator features enabled by default for all APIs. These default features are appended AFTER any features explicitly declared in individual APIs. |
 
 ## AdditionalProto Configuration
