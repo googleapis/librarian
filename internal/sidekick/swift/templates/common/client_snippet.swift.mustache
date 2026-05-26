@@ -22,9 +22,11 @@ limitations under the License.
 {{/Codec.Model.BoilerPlate}}
 
 // snippet.show
-import {{Codec.PackageName}}
 import Foundation
-import {{Codec.Model.WktPackage}}
+import {{Codec.PackageName}}
+{{#Codec.SnippetImports}}
+import {{.}}
+{{/Codec.SnippetImports}}
 
 func sample() async throws {
     let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()

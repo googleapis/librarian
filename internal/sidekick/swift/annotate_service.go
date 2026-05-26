@@ -44,6 +44,26 @@ func (ann *serviceAnnotations) ServiceImports() []string {
 	return result
 }
 
+// SnippetImports returns the sorted list of dependencies for this service's
+// snippets.
+//
+// Service snippets are generated examples that show how to initialize the
+// service and call its key methods. They need imports beyond the package for
+// mixins and other external packages. But they do not need the implementation
+// dependencies, such as `GoogleCloudAuth` or `GoogleCloudGax`.
+func (ann *serviceAnnotations) SnippetImports() []string {
+	var result []string
+	for _, dep := range ann.DependsOn {
+		// Only dependencies that map to some source-API package
+		// (e.g. google.protobuf) are needed by the snippets.
+		if dep.ApiPackage != "" {
+			result = append(result, dep.Name)
+		}
+	}
+	slices.Sort(result)
+	return result
+}
+
 func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
 	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
 	if err != nil {
