@@ -740,9 +740,15 @@ type wrapArgs struct {
 // wrapBlocks inserts start and end markers around a set of matching blocks.
 // If matching blocks are not contiguous, it moves them together to the
 // position of the first matching block.
+// It returns the original lines unchanged if the markers are already present.
 func wrapBlocks(args wrapArgs) []string {
 	if len(args.targets) == 0 {
 		return args.lines
+	}
+	for _, line := range args.lines {
+		if strings.Contains(line, args.startMarker) || strings.Contains(line, args.endMarker) {
+			return args.lines
+		}
 	}
 	kept, moved, insertAt := splitMatchingBlocks(args)
 	if insertAt == -1 {
