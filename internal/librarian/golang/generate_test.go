@@ -755,6 +755,25 @@ func TestBuildGAPICOpts(t *testing.T) {
 				"release-level=ga",
 			},
 		},
+		{
+			name:    "disable gen features",
+			apiPath: "google/cloud/compute/v1",
+			goAPI: &config.GoAPI{
+				ClientPackage:            "compute",
+				ImportPath:               "compute/apiv1",
+				EnabledGeneratorFeatures: []string{"F_one", "F_two"},
+				DisabledGeneratorFeatures:  []string{"F_one"},
+			},
+			googleapisDir: googleapisDir,
+			want: []string{
+				"go-gapic-package=cloud.google.com/go/compute/apiv1;compute",
+				"metadata",
+				"F_two",
+				"api-service-config=" + filepath.Join(googleapisDir, "google/cloud/compute/v1/compute_v1.yaml"),
+				"transport=rest",
+				"release-level=ga",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -1042,5 +1061,70 @@ func setupSnippets(t *testing.T, repoRoot string) {
 	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
 	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestDeleteFromSlice(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		src      []string
+		toDelete []string
+		want     []string
+	}{
+		{
+			name:     "nil src",
+			src:      nil,
+			toDelete: []string{"a"},
+			want:     nil,
+		},
+		{
+			name:     "empty src",
+			src:      []string{},
+			toDelete: []string{"a"},
+			want:     []string{},
+		},
+		{
+			name:     "nil toDelete",
+			src:      []string{"a", "b"},
+			toDelete: nil,
+			want:     []string{"a", "b"},
+		},
+		{
+			name:     "empty toDelete",
+			src:      []string{"a", "b"},
+			toDelete: []string{},
+			want:     []string{"a", "b"},
+		},
+		{
+			name:     "deletes match",
+			src:      []string{"a", "b", "c"},
+			toDelete: []string{"b"},
+			want:     []string{"a", "c"},
+		},
+		{
+			name:     "deletes multiple matches preserving order",
+			src:      []string{"a", "b", "c", "d"},
+			toDelete: []string{"d", "a"},
+			want:     []string{"b", "c"},
+		},
+		{
+			name:     "deletes no matches",
+			src:      []string{"a", "b"},
+			toDelete: []string{"x", "y"},
+			want:     []string{"a", "b"},
+		},
+		{
+			name:     "deletes all",
+			src:      []string{"a", "b"},
+			toDelete: []string{"a", "b"},
+			want:     nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := deleteFromSlice(test.src, test.toDelete)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

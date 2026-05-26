@@ -340,10 +340,6 @@ type API struct {
 type GoDefault struct {
 	// Toolchain is the desired Go toolchain version (e.g., "go1.25.0").
 	Toolchain string `yaml:"toolchain,omitempty"`
-	// DefaultDisabledGeneratorFeatures lists the generator features disabled by default for all APIs.
-	// These default features will be removed AFTER any features explicitly declared in individual APIs
-	// and in DefaultEnabledGeneratorFeatures.
-	DefaultDisabledGeneratorFeatures []string `yaml:"disabled_generator_features,omitempty"`
 	// DefaultEnabledGeneratorFeatures lists the generator features enabled by default for all APIs.
 	// These default features are appended AFTER any features explicitly declared in individual APIs.
 	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`

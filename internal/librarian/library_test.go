@@ -613,60 +613,6 @@ func TestFillDefaults_Go(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "disable gen features in API level",
-			lib: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/foo/v1",
-						Go: &config.GoAPI{
-							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_three"},
-						},
-					},
-				},
-			},
-			defaults: &config.GoDefault{
-				DefaultDisabledGeneratorFeatures: []string{"F_three"},
-				DefaultEnabledGeneratorFeatures:  []string{"F_one", "F_two"},
-			},
-			want: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/foo/v1",
-						Go: &config.GoAPI{
-							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_two"},
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "disable gen features in Library level",
-			lib: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/foo/v1",
-						Go: &config.GoAPI{
-							EnabledGeneratorFeatures: []string{"F_one", "F_custom"},
-						},
-					},
-				},
-			},
-			defaults: &config.GoDefault{
-				DefaultDisabledGeneratorFeatures: []string{"F_one"},
-				DefaultEnabledGeneratorFeatures:  []string{"F_one", "F_two"},
-			},
-			want: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/foo/v1",
-						Go: &config.GoAPI{
-							EnabledGeneratorFeatures: []string{"F_custom", "F_two"},
-						},
-					},
-				},
-			},
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			defaults := &config.Default{
@@ -1574,71 +1520,6 @@ func TestMergeRust(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := mergeRust(test.dst, test.src)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDeleteFromSlice(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		src      []string
-		toDelete []string
-		want     []string
-	}{
-		{
-			name:     "nil src",
-			src:      nil,
-			toDelete: []string{"a"},
-			want:     nil,
-		},
-		{
-			name:     "empty src",
-			src:      []string{},
-			toDelete: []string{"a"},
-			want:     []string{},
-		},
-		{
-			name:     "nil toDelete",
-			src:      []string{"a", "b"},
-			toDelete: nil,
-			want:     []string{"a", "b"},
-		},
-		{
-			name:     "empty toDelete",
-			src:      []string{"a", "b"},
-			toDelete: []string{},
-			want:     []string{"a", "b"},
-		},
-		{
-			name:     "deletes match",
-			src:      []string{"a", "b", "c"},
-			toDelete: []string{"b"},
-			want:     []string{"a", "c"},
-		},
-		{
-			name:     "deletes multiple matches preserving order",
-			src:      []string{"a", "b", "c", "d"},
-			toDelete: []string{"d", "a"},
-			want:     []string{"b", "c"},
-		},
-		{
-			name:     "deletes no matches",
-			src:      []string{"a", "b"},
-			toDelete: []string{"x", "y"},
-			want:     []string{"a", "b"},
-		},
-		{
-			name:     "deletes all",
-			src:      []string{"a", "b"},
-			toDelete: []string{"a", "b"},
-			want:     nil,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := deleteFromSlice(test.src, test.toDelete)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

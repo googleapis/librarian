@@ -211,8 +211,10 @@ func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir 
 	if goAPI.DIREGAPIC {
 		opts = append(opts, "diregapic")
 	}
-	if goAPI.EnabledGeneratorFeatures != nil {
-		opts = append(opts, goAPI.EnabledGeneratorFeatures...)
+	genFeatures := goAPI.EnabledGeneratorFeatures
+	if genFeatures != nil {
+		genFeatures = deleteFromSlice(genFeatures, goAPI.DisabledGeneratorFeatures)
+		opts = append(opts, genFeatures...)
 	}
 	if sc != nil {
 		opts = append(opts, "api-service-config="+filepath.Join(googleapisDir, sc.ServiceConfig))
@@ -366,4 +368,26 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview/internal")
+}
+
+func deleteFromSlice(src, toDelete []string) []string {
+	if len(src) == 0 || len(toDelete) == 0 {
+		return src
+	}
+	tdMap := toMap(toDelete)
+	var res []string
+	for _, item := range src {
+		if !tdMap[item] {
+			res = append(res, item)
+		}
+	}
+	return res
+}
+
+func toMap(s []string) map[string]bool {
+	res := make(map[string]bool, len(s))
+	for _, v := range s {
+		res[v] = true
+	}
+	return res
 }
