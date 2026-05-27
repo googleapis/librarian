@@ -431,87 +431,45 @@ func TestGenerateLibrary(t *testing.T) {
 }
 
 func TestGenerateREADME(t *testing.T) {
-	dir := t.TempDir()
-	moduleRoot := filepath.Join(dir, "secretmanager")
-	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:   "secretmanager",
-		Output: dir,
-		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-	}
-	if err := generateREADME(library, "Secret Manager API", "handwritten samples", moduleRoot); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(content)
-	if !strings.Contains(s, "Secret Manager API") {
-		t.Errorf("want title in README, got:\n%s", s)
-	}
-	if !strings.Contains(s, "cloud.google.com/go/secretmanager") {
-		t.Errorf("want module path in README, got:\n%s", s)
-	}
-	if !strings.Contains(s, "handwritten samples") {
-		t.Errorf("want sample uri in README, got:\n%s", s)
-	}
-}
-
-func TestGenerateREADME_TitleOverride(t *testing.T) {
-	dir := t.TempDir()
-	moduleRoot := filepath.Join(dir, "secretmanager")
-	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:          "secretmanager",
-		Output:        dir,
-		APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		TitleOverride: "Custom Title",
-	}
-	if err := generateREADME(library, "Secret Manager API", "", moduleRoot); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(content)
-	if !strings.Contains(s, "Custom Title") {
-		t.Errorf("want overridden title in README, got:\n%s", s)
-	}
-	if strings.Contains(s, "Secret Manager API") {
-		t.Errorf("did not want original title in README, got:\n%s", s)
-	}
-}
-
-func TestGenerateREADME_Skipped(t *testing.T) {
 	for _, test := range []struct {
-		name          string
-		library       *config.Library
-		fallbackTitle string
+		name            string
+		library         *config.Library
+		fallbackTitle   string
+		sampleURI       string
+		wantContains    []string
 	}{
 		{
-			name: "skipped because in keep list",
+			name: "basic README generation",
 			library: &config.Library{
 				Name: "secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				Keep: []string{"README.md"},
 			},
 			fallbackTitle: "Secret Manager API",
+			wantContains: []string{
+				"Secret Manager API",
+				"cloud.google.com/go/secretmanager",
+				"https://cloud.google.com/docs/samples?l=go",
+			},
 		},
 		{
-			name: "skipped because no title",
+			name: "title override",
 			library: &config.Library{
-				Name: "secretmanager",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Name:          "secretmanager",
+				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				TitleOverride: "Custom Title",
 			},
-			fallbackTitle: "",
+			fallbackTitle:   "Secret Manager API",
+			wantContains:    []string{"Custom Title"},
+		},
+		{
+			name: "custom sample uri",
+			library: &config.Library{
+				Name:          "secretmanager",
+				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			fallbackTitle: "Secret Manager API",
+			sampleURI:     "https://handwritten-samples",
+			wantContains:    []string{"https://handwritten-samples"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -520,13 +478,21 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
 				t.Fatal(err)
 			}
-
-			if err := generateREADME(test.library, test.fallbackTitle, "", moduleRoot); err != nil {
+			test.library.Output = dir
+			err := generateREADME(test.library, test.fallbackTitle, test.sampleURI, moduleRoot)
+			if err != nil {
 				t.Fatal(err)
 			}
-			// README doesn't exist because the generation is skipped.
-			if _, err := os.Stat(filepath.Join(moduleRoot, "README.md")); !errors.Is(err, fs.ErrNotExist) {
-				t.Errorf("want README.md to not exist, got: %v", err)
+			readmePath := filepath.Join(moduleRoot, "README.md")
+			content, err := os.ReadFile(readmePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(content)
+			for _, c := range test.wantContains {
+				if !strings.Contains(s, c) {
+					t.Errorf("want README to contain %q, got:\n%s", c, s)
+				}
 			}
 		})
 	}
