@@ -210,6 +210,10 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 	}
 
+	if libraryName == "google-cloud-tasks" {
+		library.Nodejs.ESM = true
+	}
+
 	if libraryName == "google-cloud-compute" {
 		v1smallKeep, err := nodejsV1SmallKeep(pkgDir)
 		if err != nil {
