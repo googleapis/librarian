@@ -66,6 +66,8 @@ ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e
 # Java dependency versions
 ARG JAVA_PROTOC_VERSION=33.2
 ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+ARG JAVA_VERSION=17
+ARG JAVA_PYTHON_VERSION=3.12
 
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
@@ -255,9 +257,11 @@ RUN /app/librarian install nodejs -v
 RUN chmod a+x /root
 
 # ============== Java Stage ==============
-FROM python:3.12-slim AS java
+ARG JAVA_PYTHON_VERSION
+FROM python:${JAVA_PYTHON_VERSION}-slim AS java
 ARG JAVA_PROTOC_VERSION
 ARG JAVA_PROTOC_CHECKSUM
+ARG JAVA_VERSION
 
 # Copy librarian from build stage
 COPY --from=build /go/bin/librarian /app/librarian
@@ -276,11 +280,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null \
     && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo "$VERSION_CODENAME") main" | tee /etc/apt/sources.list.d/adoptium.list \
     && apt-get update && apt-get install -y --no-install-recommends \
-    temurin-17-jdk \
+    temurin-${JAVA_VERSION}-jdk \
     maven \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Java-specific protoc version (33.2)
+# Install Java-specific protoc version
 RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
         https://github.com/protocolbuffers/protobuf/releases/download/v${JAVA_PROTOC_VERSION}/protoc-${JAVA_PROTOC_VERSION}-linux-x86_64.zip && \
     echo "${JAVA_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
