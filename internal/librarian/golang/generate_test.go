@@ -431,6 +431,7 @@ func TestGenerateLibrary(t *testing.T) {
 }
 
 func TestGenerateREADME(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name          string
 		library       *config.Library
@@ -482,6 +483,7 @@ func TestGenerateREADME(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			moduleRoot := filepath.Join(dir, "secretmanager")
 			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
