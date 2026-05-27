@@ -809,9 +809,22 @@ func TestRunOwlBot_Error(t *testing.T) {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	sDir := stagingDir(outDir)
+	if err := os.MkdirAll(sDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a dummy file to ensure the staging directory is non-empty,
+	// verifying that the cleanup logic correctly removes everything.
+	dummyFile := filepath.Join(sDir, "dummy.txt")
+	if err := os.WriteFile(dummyFile, []byte("dummy"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{}
 	if err := runOwlBot(t.Context(), library, outDir, ""); err == nil {
 		t.Error("expected error due to missing templates directory, got nil")
+	}
+	if _, err := os.Stat(sDir); !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("expected staging directory %s to be removed on error, but it still exists (err: %v)", sDir, err)
 	}
 }
 
