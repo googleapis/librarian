@@ -74,6 +74,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	var fallbackTitle string
+	var sample string
 	for i, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
@@ -96,12 +97,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if i == 0 {
 			fallbackTitle = sc.Title
 		}
+		// Use the sample URI from the first API found.
+		if sample == "" {
+			sample = sampleURI(sc)
+		}
 		if err := generateRepoMetadata(sc, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
-
 	}
-	if err := generateREADME(library, fallbackTitle, outDir); err != nil {
+	if err := generateREADME(library, fallbackTitle, sample, outDir); err != nil {
 		return fmt.Errorf("failed to generate README: %w", err)
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
@@ -320,7 +324,7 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 
 // generateREADME generates the top-level README for the library.
 // We only generate one README for the entire library.
-func generateREADME(library *config.Library, fallbackTitle string, moduleRoot string) error {
+func generateREADME(library *config.Library, fallbackTitle, sampleURI, moduleRoot string) error {
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.
@@ -341,6 +345,9 @@ func generateREADME(library *config.Library, fallbackTitle string, moduleRoot st
 		// Skip generating README if no title is available.
 		return nil
 	}
+	if sampleURI == "" {
+		sampleURI = "https://cloud.google.com/docs/samples?l=go"
+	}
 
 	f, err := os.Create(readmePath)
 	if err != nil {
@@ -349,6 +356,7 @@ func generateREADME(library *config.Library, fallbackTitle string, moduleRoot st
 	err = readmeTmplParsed.Execute(f, map[string]string{
 		"Name":       title,
 		"ModulePath": modulePath(library),
+		"SampleURI":  sampleURI,
 	})
 	cerr := f.Close()
 	if err != nil {
@@ -372,4 +380,17 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview/internal")
+}
+
+// sampleURI gets the sample URI from serviceconfig.API for language Go.
+//
+// The default value is the empty string.
+func sampleURI(sc *serviceconfig.API) string {
+	if sc.SampleURIs == nil {
+		return ""
+	}
+	if uri, ok := sc.SampleURIs[config.LanguageGo]; ok {
+		return uri
+	}
+	return ""
 }
