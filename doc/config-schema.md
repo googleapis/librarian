@@ -93,7 +93,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `keep` | list of string | Lists files and directories to preserve during regeneration. |
+| `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
@@ -115,7 +115,7 @@ This document describes the schema for the librarian.yaml.
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
 | `title_override` | string | Overrides the title used in README generation. |
-| `keep` | list of string | Lists files and directories to preserve during regeneration. |
+| `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | Disables code generation for this library. |
