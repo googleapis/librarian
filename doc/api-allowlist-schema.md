@@ -14,7 +14,8 @@ This document describes the schema for the API Allowlist.
 | `new_issue_uri` | string | Overrides the new issue URI from the service config's publishing section. |
 | `skip_rest_numeric_enums` | list of string | Lists languages that should not pass the rest-numeric-enums flag to the generator. The special value "all" skips it for every language. If empty, all languages use numeric enums. |
 | `open_api` | string | Is the file path to an OpenAPI spec, currently in internal/testdata. This is not an official spec yet and exists only for Rust to validate OpenAPI support. |
-| `release_level` | map[string]string | Is the release level per language. Map key is the language name (e.g., "python", "rust"). Optional. If omitted, the generator default is used.<br><br>TODO(https://github.com/googleapis/librarian/issues/4834): Go uses "alpha", "beta", and "ga" instead of "preview" and "stable". We should standardize release level vocabulary across languages. |
+| `release_level` | map[string]string | Is the release level per language. Map key is the language name (e.g., "python", "rust"). Optional. If omitted, the generator default is used. |
+| `sample_uris` | map[string]string | Is the documentation URI for code samples per language. Map key is the language name (e.g., "go", "python"). Optional. If omitted, a default URI for the language is used. |
 | `short_name` | string | Overrides the API short name from the service config's publishing section. |
 | `service_config` | string | Is the service config file path override. If empty, the service config is discovered in the directory specified by Path. |
 | `service_name` | string | Is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`. |
