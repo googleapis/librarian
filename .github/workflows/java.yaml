@@ -76,7 +76,6 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
-
 # TODO: uncomment once Java is migrated to Librarian
 # create-issue-on-failure:
 #   needs: [integration]
