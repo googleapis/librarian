@@ -432,11 +432,11 @@ func TestGenerateLibrary(t *testing.T) {
 
 func TestGenerateREADME(t *testing.T) {
 	for _, test := range []struct {
-		name            string
-		library         *config.Library
-		fallbackTitle   string
-		sampleURI       string
-		wantContains    []string
+		name          string
+		library       *config.Library
+		fallbackTitle string
+		sampleURI     string
+		wantContains  []string
 	}{
 		{
 			name: "basic README generation",
@@ -458,18 +458,25 @@ func TestGenerateREADME(t *testing.T) {
 				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				TitleOverride: "Custom Title",
 			},
-			fallbackTitle:   "Secret Manager API",
-			wantContains:    []string{"Custom Title"},
+			fallbackTitle: "Secret Manager API",
+			wantContains: []string{
+				"Custom Title",
+				"cloud.google.com/go/secretmanager",
+				"https://cloud.google.com/docs/samples?l=go",
+			},
 		},
 		{
 			name: "custom sample uri",
 			library: &config.Library{
-				Name:          "secretmanager",
-				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			fallbackTitle: "Secret Manager API",
 			sampleURI:     "https://handwritten-samples",
-			wantContains:    []string{"https://handwritten-samples"},
+			wantContains: []string{
+				"Secret Manager API",
+				"cloud.google.com/go/secretmanager",
+				"https://handwritten-samples"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
