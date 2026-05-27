@@ -16,6 +16,7 @@ package java
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -77,6 +78,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) *config.Library {
+	library.Keep = tidyKeep(library.Keep)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -118,6 +120,27 @@ func Tidy(library *config.Library) *config.Library {
 		}
 	}
 	return library
+}
+
+// tidyKeep removes default files from the library's keep configuration.
+func tidyKeep(keep []string) []string {
+	if len(keep) == 0 {
+		return nil
+	}
+	var filteredKeepPaths []string
+	for _, keepPath := range keep {
+		keepPathSlash := filepath.ToSlash(keepPath)
+		if isDefaultPreserved(keepPathSlash) {
+			continue
+		}
+		filteredKeepPaths = append(filteredKeepPaths, keepPath)
+	}
+	slices.Sort(filteredKeepPaths)
+	filteredKeepPaths = slices.Compact(filteredKeepPaths)
+	if len(filteredKeepPaths) == 0 {
+		return nil
+	}
+	return filteredKeepPaths
 }
 
 func isEmptyJavaAPI(j *config.JavaAPI) bool {
