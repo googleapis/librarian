@@ -91,7 +91,7 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 		},
 		Default: &config.Default{
 			Output: "packages",
-			Keep:   []string{"package.json", "samples/package.json"},
+			Keep:   []string{"package.json", "samples/package.json", "README.md", "CHANGELOG.md", ".readme-partials.yaml"},
 		},
 		Libraries: libraries,
 	}
@@ -208,6 +208,11 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 				library.Nodejs.Mixins = info.mixins
 			}
 		}
+	}
+
+	// Tasks is the only service with ESM
+	if libraryName == "google-cloud-tasks" {
+		library.Nodejs.ESM = true
 	}
 
 	if libraryName == "google-cloud-compute" {

@@ -263,3 +263,45 @@ nodejs_gapic_library(
 		})
 	}
 }
+
+func TestBuildNodejsLibrary_ESMOverride(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		pkgJSON     string
+		wantESM     bool
+	}{
+		{
+			name:        "tasks library receives ESM true",
+			libraryName: "google-cloud-tasks",
+			pkgJSON:     `{"name": "@google-cloud/tasks", "version": "6.2.2"}`,
+			wantESM:     true,
+		},
+		{
+			name:        "other standard library receives ESM false",
+			libraryName: "google-cloud-other",
+			pkgJSON:     `{"name": "@google-cloud/other", "version": "1.0.0"}`,
+			wantESM:     false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			pkgDir := filepath.Join(tmpDir, "packages", test.libraryName)
+			if err := os.MkdirAll(pkgDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(test.pkgJSON), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := buildNodejsLibrary(t.TempDir(), filepath.Join(tmpDir, "packages"), test.libraryName)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantESM, got.Nodejs.ESM); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
