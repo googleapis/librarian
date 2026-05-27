@@ -24,7 +24,7 @@ are the principles that librarian follows:
 - All APIs that are GA and contain a publishing section
   ([example](https://github.com/googleapis/googleapis/blob/cf027ac51c71290c7357e4c98cf4e6dbb0157346/google/cloud/secretmanager/v1/secretmanager_v1.yaml#L44))
   should have a client library for every language.
-- Any API that does not follow the above principle must be explicitly listed
+- Any API that does not meet the above criteria must be explicitly listed
   in the `sdk.yaml` file to be onboarded.
 
 See the [sdk.yaml documentation](https://github.com/googleapis/librarian/blob/main/doc/api-allowlist-schema.md)
