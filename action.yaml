@@ -17,11 +17,9 @@ inputs:
   protoc-version:
     description: "The version of protoc to install"
     required: false
-    default: "33.2"
   protoc-checksum:
     description: "The SHA512 checksum of the protoc zip file"
     required: false
-    default: "b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf"
 runs:
   using: composite
   steps:

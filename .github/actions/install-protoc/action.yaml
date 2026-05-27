@@ -16,17 +16,17 @@ inputs:
   version:
     description: "The version of protoc to install"
     required: false
-    default: "33.2"
   checksum:
     description: "The SHA512 checksum of the protoc zip file"
     required: false
-    default: "b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf"
 runs:
   using: composite
   steps:
     - name: Install protoc
       run: |
         set -e
+        VERSION="${VERSION:-33.2}"
+        CHECKSUM="${CHECKSUM:-b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf}"
         curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v$VERSION/protoc-$VERSION-linux-x86_64.zip
         sha512sum -c <(echo "$CHECKSUM /tmp/protoc.zip")
         cd /usr/local
