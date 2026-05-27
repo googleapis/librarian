@@ -106,8 +106,8 @@ func TestFromLibrary_Error(t *testing.T) {
 		{
 			name: "non-allowlisted API",
 			library: &config.Library{
-				Name: "google-cloud-secret-manager",
-				APIs: []*config.API{{Path: "android/notallowed/v1"}},
+				Name: "google-cloud-spanner-executor",
+				APIs: []*config.API{{Path: "google/spanner/executor/v1"}},
 			},
 			// Error returned by serviceconfig.Find isn't easily distinguished
 		},

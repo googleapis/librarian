@@ -413,6 +413,13 @@ func TestValidateAPI(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name:     "api not in list, default",
+			path:     "google/ads/newapi/v1",
+			language: config.LanguageGo,
+			api:      &API{Path: "google/ads/newapi/v1"},
+			wantErr:  false,
+		},
+		{
 			name:     "api in allowlist, restricted language not allowed",
 			path:     "google/cloud/aiplatform/v1beta1",
 			language: config.LanguageGo,
@@ -421,20 +428,6 @@ func TestValidateAPI(t *testing.T) {
 				Languages: []string{config.LanguagePython},
 			},
 			wantErr: true,
-		},
-		{
-			name:     "api not in list, google/cloud/ prefix",
-			path:     "google/cloud/newapi/v1",
-			language: config.LanguageGo,
-			api:      nil,
-			wantErr:  false,
-		},
-		{
-			name:     "api not in list, no google/cloud/ prefix",
-			path:     "google/ads/newapi/v1",
-			language: config.LanguageGo,
-			api:      nil,
-			wantErr:  true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
