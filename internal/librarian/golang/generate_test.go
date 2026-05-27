@@ -446,11 +446,11 @@ func TestGenerateREADME(t *testing.T) {
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
 			fallbackTitle: "Secret Manager API",
-			sampleURI:     "https://cloud.google.com/docs/samples?l=go",
+			sampleURI:     defaultSampleURI,
 			wantContains: []string{
 				"Secret Manager API",
 				"cloud.google.com/go/secretmanager",
-				"https://cloud.google.com/docs/samples?l=go",
+				defaultSampleURI,
 			},
 		},
 		{
@@ -461,11 +461,11 @@ func TestGenerateREADME(t *testing.T) {
 				TitleOverride: "Custom Title",
 			},
 			fallbackTitle: "Secret Manager API",
-			sampleURI:     "https://cloud.google.com/docs/samples?l=go",
+			sampleURI:     defaultSampleURI,
 			wantContains: []string{
 				"Custom Title",
 				"cloud.google.com/go/secretmanager",
-				"https://cloud.google.com/docs/samples?l=go",
+				defaultSampleURI,
 			},
 		},
 		{
