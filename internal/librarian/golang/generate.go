@@ -74,7 +74,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	var fallbackTitle string
-	var sample string
+	var customSampleURI string
 	for i, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
@@ -97,15 +97,15 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if i == 0 {
 			fallbackTitle = sc.Title
 		}
-		// Use the sample URI from the first API found.
-		if sample == "" {
-			sample = sampleURI(sc)
+		// Use the sample URI from the first API that has one defined.
+		if customSampleURI == "" {
+			customSampleURI = sampleURI(sc)
 		}
 		if err := generateRepoMetadata(sc, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
 	}
-	if err := generateREADME(library, fallbackTitle, sample, outDir); err != nil {
+	if err := generateREADME(library, fallbackTitle, customSampleURI, outDir); err != nil {
 		return fmt.Errorf("failed to generate README: %w", err)
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
