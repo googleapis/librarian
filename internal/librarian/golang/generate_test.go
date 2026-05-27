@@ -1053,3 +1053,48 @@ func setupSnippets(t *testing.T, repoRoot string) {
 		t.Fatal(err)
 	}
 }
+
+func TestSampleURI(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want string
+	}{
+		{
+			name: "nil serviceconfig",
+			sc:   nil,
+			want: "",
+		},
+		{
+			name: "nil sample URIs",
+			sc:   &serviceconfig.API{SampleURIs: nil},
+			want: "",
+		},
+		{
+			name: "go sample URI not specified",
+			sc: &serviceconfig.API{
+				SampleURIs: map[string]string{
+					"python": "https://python-samples",
+				},
+			},
+			want: "",
+		},
+		{
+			name: "go sample URI specified",
+			sc: &serviceconfig.API{
+				SampleURIs: map[string]string{
+					"go":     "https://go-samples",
+					"python": "https://python-samples",
+				},
+			},
+			want: "https://go-samples",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sampleURI(test.sc)
+			if got != test.want {
+				t.Errorf("sampleURI(%+v) = %q, want %q", test.sc, got, test.want)
+			}
+		})
+	}
+}

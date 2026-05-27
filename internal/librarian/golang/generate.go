@@ -386,7 +386,7 @@ func isPreview(output string) bool {
 //
 // The default value is the empty string.
 func sampleURI(sc *serviceconfig.API) string {
-	if sc.SampleURIs == nil {
+	if sc == nil || sc.SampleURIs == nil {
 		return ""
 	}
 	if uri, ok := sc.SampleURIs[config.LanguageGo]; ok {
