@@ -35,6 +35,8 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+const defaultSampleURI = "https://cloud.google.com/docs/samples?l=go"
+
 var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
@@ -104,6 +106,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if err := generateRepoMetadata(sc, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
+	}
+	if customSampleURI == "" {
+		customSampleURI = defaultSampleURI
 	}
 	if err := generateREADME(library, fallbackTitle, customSampleURI, outDir); err != nil {
 		return fmt.Errorf("failed to generate README: %w", err)
@@ -342,9 +347,6 @@ func generateREADME(library *config.Library, fallbackTitle, sampleURI, moduleRoo
 	if title == "" {
 		// Skip generating README if no title is available.
 		return nil
-	}
-	if sampleURI == "" {
-		sampleURI = "https://cloud.google.com/docs/samples?l=go"
 	}
 
 	f, err := os.Create(readmePath)
