@@ -210,6 +210,7 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 	}
 
+	// Tasks is the only service with ESM
 	if libraryName == "google-cloud-tasks" {
 		library.Nodejs.ESM = true
 	}
