@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Java
-on: [push, pull_request, merge_group, workflow_dispatch]
+on: [push, pull_request, merge_group]
 permissions:
   contents: read
   issues: write
@@ -52,7 +52,7 @@ jobs:
         run: go run ./tool/cmd/coverage ./internal/librarian/java
   integration:
     runs-on: ubuntu-24.04
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: github.event_name == 'push' && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/addPostSubmit')
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
