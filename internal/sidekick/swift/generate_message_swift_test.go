@@ -179,7 +179,7 @@ func TestGenerateMessage_WithNestedEnum(t *testing.T) {
 	contentStr := string(content)
 
 	gotBlock := extractBlock(t, contentStr, "public enum NestedEnum", ", Sendable {")
-	wantBlock := "public enum NestedEnum: Int, Codable, Equatable, Sendable {"
+	wantBlock := "public enum NestedEnum: Codable, Equatable, Sendable {"
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
