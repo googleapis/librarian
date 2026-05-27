@@ -25,8 +25,8 @@ runs:
   steps:
     - uses: actions/setup-go@v6
       with:
-        go-version-file: "${{ github.action_path }}/go.mod"
-    - uses: ${{ github.action_path }}/.github/actions/install-protoc
+        go-version-file: "${GITHUB_ACTION_PATH}/go.mod"
+    - uses: ${GITHUB_ACTION_PATH}/.github/actions/install-protoc
       with:
         version: ${{ inputs.protoc-version }}
         checksum: ${{ inputs.protoc-checksum }}
