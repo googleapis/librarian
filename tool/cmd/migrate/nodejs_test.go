@@ -265,42 +265,46 @@ nodejs_gapic_library(
 }
 
 func TestBuildNodejsLibrary_ESMOverride(t *testing.T) {
-	tmpDir := t.TempDir()
-	pkgJSON := `{"name": "@google-cloud/tasks", "version": "6.2.2"}`
-	pkgDir := filepath.Join(tmpDir, "packages", "google-cloud-tasks")
-	if err := os.MkdirAll(pkgDir, 0755); err != nil {
-		t.Fatal(err)
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		libraryName string
+		pkgJSON     string
+		wantESM     bool
+	}{
+		{
+			name:        "tasks library receives ESM true",
+			libraryName: "google-cloud-tasks",
+			pkgJSON:     `{"name": "@google-cloud/tasks", "version": "6.2.2"}`,
+			wantESM:     true,
+		},
+		{
+			name:        "other standard library receives ESM false",
+			libraryName: "google-cloud-other",
+			pkgJSON:     `{"name": "@google-cloud/other", "version": "1.0.0"}`,
+			wantESM:     false,
+		},
+	} {
+		test := test
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			pkgDir := filepath.Join(tmpDir, "packages", test.libraryName)
+			if err := os.MkdirAll(pkgDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(test.pkgJSON), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := buildNodejsLibrary(t.TempDir(), filepath.Join(tmpDir, "packages"), test.libraryName)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.wantESM, got.Nodejs.ESM); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(pkgJSON), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	t.Run("tasks library receives ESM true", func(t *testing.T) {
-		got, err := buildNodejsLibrary(t.TempDir(), filepath.Join(tmpDir, "packages"), "google-cloud-tasks")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if !got.Nodejs.ESM {
-			t.Errorf("expected ESM: true for google-cloud-tasks, got false")
-		}
-	})
-
-	t.Run("other standard library receives ESM false", func(t *testing.T) {
-		otherPkg := filepath.Join(tmpDir, "packages", "google-cloud-other")
-		if err := os.MkdirAll(otherPkg, 0755); err != nil {
-			t.Fatal(err)
-		}
-		otherJSON := `{"name": "@google-cloud/other", "version": "1.0.0"}`
-		if err := os.WriteFile(filepath.Join(otherPkg, "package.json"), []byte(otherJSON), 0644); err != nil {
-			t.Fatal(err)
-		}
-
-		got, err := buildNodejsLibrary(t.TempDir(), filepath.Join(tmpDir, "packages"), "google-cloud-other")
-		if err != nil {
-			t.Fatal(err)
-		}
-		if got.Nodejs.ESM {
-			t.Errorf("expected ESM: false for standard library, got true")
-		}
-	})
 }
