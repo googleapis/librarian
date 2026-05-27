@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Java
-on: [push, pull_request, merge_group]
+on: [push, pull_request, merge_group, workflow_dispatch]
 permissions:
   contents: read
   issues: write
@@ -30,8 +30,13 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
-      - name: Display Java version
-        run: java -version
+      - name: Verify Java and Maven installation
+        run: |
+          java -version
+          if ! command -v mvn &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y maven
+          fi
+          mvn -version
       - name: Install Java tools
         run: |
           ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
@@ -60,6 +65,13 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
+      - name: Verify Java and Maven installation
+        run: |
+          java -version
+          if ! command -v mvn &> /dev/null; then
+            sudo apt-get update && sudo apt-get install -y maven
+          fi
+          mvn -version
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -68,9 +80,6 @@ jobs:
         run: |
           librarian install
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
-      - name: Install Python dependencies
-        run: |
-          pip install -e ./google-cloud-java/sdk-platform-java/hermetic_build/library_generation
       - name: Run librarian generate
         working-directory: google-cloud-java
         env:
