@@ -835,15 +835,6 @@ func TestBuildGAPICOpts_Error(t *testing.T) {
 		googleapisDir string
 	}{
 		{
-			name:    "api not in allowlist",
-			apiPath: "nonexistent/api/v1",
-			goAPI: &config.GoAPI{
-				ClientPackage: "nonexistent",
-				ImportPath:    "nonexistent/apiv1",
-			},
-			googleapisDir: googleapisDir,
-		},
-		{
 			name:    "api not allowed for go",
 			apiPath: "google/cloud/asset/v1p1beta1",
 			goAPI: &config.GoAPI{

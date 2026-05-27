@@ -1373,10 +1373,10 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "invalid API path",
+			name: "python not allowlisted for path",
 			library: &config.Library{
-				Name:   "android-library",
-				APIs:   []*config.API{{Path: "android/notallowed/v1"}},
+				Name:   "google-spanner-executor",
+				APIs:   []*config.API{{Path: "google/spanner/executor/v1"}},
 				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 		},
