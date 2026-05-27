@@ -285,7 +285,6 @@ func TestBuildNodejsLibrary_ESMOverride(t *testing.T) {
 			wantESM:     false,
 		},
 	} {
-		test := test
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
@@ -296,12 +295,10 @@ func TestBuildNodejsLibrary_ESMOverride(t *testing.T) {
 			if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(test.pkgJSON), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			got, err := buildNodejsLibrary(t.TempDir(), filepath.Join(tmpDir, "packages"), test.libraryName)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			if diff := cmp.Diff(test.wantESM, got.Nodejs.ESM); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
