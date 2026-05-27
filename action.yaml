@@ -18,7 +18,7 @@ inputs:
     description: "The version of protoc to install"
     required: false
   protoc-checksum:
-    description: "The SHA512 checksum of the protoc zip file"
+    description: "The SHA512 checksum of the protoc zip file. Required if version is specified."
     required: false
 runs:
   using: composite
