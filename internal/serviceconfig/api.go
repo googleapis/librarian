@@ -94,6 +94,8 @@ type API struct {
 	// standardize release level vocabulary across languages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
+	SampleURIs map[string]string `yaml:"sample_uris,omitempty"`
+
 	// ShortName overrides the API short name from the service config's
 	// publishing section.
 	ShortName string `yaml:"short_name,omitempty"`
