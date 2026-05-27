@@ -193,7 +193,11 @@ type GoTool struct {
 
 // Default contains default settings for all libraries.
 type Default struct {
-	// Keep lists files and directories to preserve during regeneration.
+	// Keep lists files and directories to preserve during regeneration. These represent
+	// critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests)
+	// and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml)
+	// that are not natively generated from proto schemas but are strictly required by the post-processor's
+	// markdown generation and release tracking passes.
 	Keep []string `yaml:"keep,omitempty"`
 	// Output is the directory where code is written. For example, for Rust
 	// this is src/generated.
@@ -270,7 +274,11 @@ type Library struct {
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
-	// Keep lists files and directories to preserve during regeneration.
+	// Keep lists files and directories to preserve during regeneration. These represent
+	// critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests)
+	// and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml)
+	// that are not natively generated from proto schemas but are strictly required by the post-processor's
+	// markdown generation and release tracking passes.
 	Keep []string `yaml:"keep,omitempty"`
 
 	// Output is the directory where code is written. This overrides
