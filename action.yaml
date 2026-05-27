@@ -1,0 +1,31 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+name: Setup Librarian
+description: Set up Go, install protoc, and Librarian.
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-go@v6
+      with:
+        go-version-file: "${{ github.action_path }}/go.mod"
+    - uses: ${{ github.action_path }}/.github/actions/install-protoc
+    - name: Install librarian
+      run: |
+        VERSION="latest"
+        if [ -f librarian.yaml ]; then
+          VERSION=$(sed -n 's/^version: *//p' librarian.yaml)
+        fi
+        go install tool
+        go install github.com/googleapis/librarian/cmd/librarian@$VERSION
+      shell: bash
