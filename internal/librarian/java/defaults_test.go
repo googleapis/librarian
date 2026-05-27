@@ -463,3 +463,51 @@ func TestValidate_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestTidyKeep(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		keep []string
+		want []string
+	}{
+		{
+			name: "nil keep",
+			keep: nil,
+			want: nil,
+		},
+		{
+			name: "empty keep",
+			keep: []string{},
+			want: nil,
+		},
+		{
+			name: "no redundant files",
+			keep: []string{"foo/bar.java", "baz/qux.java"},
+			want: []string{"baz/qux.java", "foo/bar.java"},
+		},
+		{
+			name: "redundant files and sorting",
+			keep: []string{
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/stub/Version.java",
+				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
+				"google-cloud-vision/src/test/java/com/google/cloud/vision/v1/it/ITSystemTest.java",
+				"google-cloud-vision/src/test/resources/placeholder.txt",
+				"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
+				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+			},
+			want: []string{
+				"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
+				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
+				"google-cloud-vision/src/test/resources/placeholder.txt",
+				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := tidyKeep(test.keep)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

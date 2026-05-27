@@ -78,22 +78,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) *config.Library {
-	if len(library.Keep) > 0 {
-		var kept []string
-		for _, keepPath := range library.Keep {
-			keepPathSlash := filepath.ToSlash(keepPath)
-			// Skip files matching standard test/version regexes since they are preserved globally.
-			if isDefaultPreserved(keepPathSlash) {
-				continue
-			}
-			kept = append(kept, keepPath)
-		}
-		slices.Sort(kept)
-		library.Keep = slices.Compact(kept)
-		if len(library.Keep) == 0 {
-			library.Keep = nil
-		}
-	}
+	library.Keep = tidyKeep(library.Keep)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -135,6 +120,27 @@ func Tidy(library *config.Library) *config.Library {
 		}
 	}
 	return library
+}
+
+// tidyKeep removes default files from the library's keep configuration.
+func tidyKeep(keep []string) []string {
+	if len(keep) == 0 {
+		return nil
+	}
+	var filteredKeepPaths []string
+	for _, keepPath := range keep {
+		keepPathSlash := filepath.ToSlash(keepPath)
+		if isDefaultPreserved(keepPathSlash) {
+			continue
+		}
+		filteredKeepPaths = append(filteredKeepPaths, keepPath)
+	}
+	slices.Sort(filteredKeepPaths)
+	filteredKeepPaths = slices.Compact(filteredKeepPaths)
+	if len(filteredKeepPaths) == 0 {
+		return nil
+	}
+	return filteredKeepPaths
 }
 
 func isEmptyJavaAPI(j *config.JavaAPI) bool {
