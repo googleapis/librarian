@@ -442,7 +442,7 @@ func TestGenerateREADME(t *testing.T) {
 		Output: dir,
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
-	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
+	if err := generateREADME(library, "Secret Manager API", "handwritten samples", moduleRoot); err != nil {
 		t.Fatal(err)
 	}
 	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
@@ -455,6 +455,9 @@ func TestGenerateREADME(t *testing.T) {
 	}
 	if !strings.Contains(s, "cloud.google.com/go/secretmanager") {
 		t.Errorf("want module path in README, got:\n%s", s)
+	}
+	if !strings.Contains(s, "handwritten samples") {
+		t.Errorf("want sample uri in README, got:\n%s", s)
 	}
 }
 
@@ -471,7 +474,7 @@ func TestGenerateREADME_TitleOverride(t *testing.T) {
 		APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		TitleOverride: "Custom Title",
 	}
-	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
+	if err := generateREADME(library, "Secret Manager API", "", moduleRoot); err != nil {
 		t.Fatal(err)
 	}
 	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
@@ -518,7 +521,7 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := generateREADME(test.library, test.fallbackTitle, moduleRoot); err != nil {
+			if err := generateREADME(test.library, test.fallbackTitle, "", moduleRoot); err != nil {
 				t.Fatal(err)
 			}
 			// README doesn't exist because the generation is skipped.
