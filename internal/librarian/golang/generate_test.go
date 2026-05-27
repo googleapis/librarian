@@ -431,59 +431,81 @@ func TestGenerateLibrary(t *testing.T) {
 }
 
 func TestGenerateREADME(t *testing.T) {
-	dir := t.TempDir()
-	moduleRoot := filepath.Join(dir, "secretmanager")
-	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:   "secretmanager",
-		Output: dir,
-		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-	}
-	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(content)
-	if !strings.Contains(s, "Secret Manager API") {
-		t.Errorf("want title in README, got:\n%s", s)
-	}
-	if !strings.Contains(s, "cloud.google.com/go/secretmanager") {
-		t.Errorf("want module path in README, got:\n%s", s)
-	}
-}
-
-func TestGenerateREADME_TitleOverride(t *testing.T) {
-	dir := t.TempDir()
-	moduleRoot := filepath.Join(dir, "secretmanager")
-	if err := os.MkdirAll(moduleRoot, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	library := &config.Library{
-		Name:          "secretmanager",
-		Output:        dir,
-		APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		TitleOverride: "Custom Title",
-	}
-	if err := generateREADME(library, "Secret Manager API", moduleRoot); err != nil {
-		t.Fatal(err)
-	}
-	content, err := os.ReadFile(filepath.Join(moduleRoot, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	s := string(content)
-	if !strings.Contains(s, "Custom Title") {
-		t.Errorf("want overridden title in README, got:\n%s", s)
-	}
-	if strings.Contains(s, "Secret Manager API") {
-		t.Errorf("did not want original title in README, got:\n%s", s)
+	t.Parallel()
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		fallbackTitle string
+		sampleURI     string
+		wantContains  []string
+	}{
+		{
+			name: "basic README generation",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			fallbackTitle: "Secret Manager API",
+			sampleURI:     defaultSampleURI,
+			wantContains: []string{
+				"Secret Manager API",
+				"cloud.google.com/go/secretmanager",
+				defaultSampleURI,
+			},
+		},
+		{
+			name: "title override",
+			library: &config.Library{
+				Name:          "secretmanager",
+				APIs:          []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				TitleOverride: "Custom Title",
+			},
+			fallbackTitle: "Secret Manager API",
+			sampleURI:     defaultSampleURI,
+			wantContains: []string{
+				"Custom Title",
+				"cloud.google.com/go/secretmanager",
+				defaultSampleURI,
+			},
+		},
+		{
+			name: "custom sample uri",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			fallbackTitle: "Secret Manager API",
+			sampleURI:     "https://handwritten-samples",
+			wantContains: []string{
+				"Secret Manager API",
+				"cloud.google.com/go/secretmanager",
+				"https://handwritten-samples"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			moduleRoot := filepath.Join(dir, "secretmanager")
+			if err := os.MkdirAll(moduleRoot, 0755); err != nil {
+				t.Fatal(err)
+			}
+			test.library.Output = dir
+			err := generateREADME(test.library, test.fallbackTitle, test.sampleURI, moduleRoot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			readmePath := filepath.Join(moduleRoot, "README.md")
+			content, err := os.ReadFile(readmePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			s := string(content)
+			for _, c := range test.wantContains {
+				if !strings.Contains(s, c) {
+					t.Errorf("want README to contain %q, got:\n%s", c, s)
+				}
+			}
+		})
 	}
 }
 
@@ -518,7 +540,7 @@ func TestGenerateREADME_Skipped(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			if err := generateREADME(test.library, test.fallbackTitle, moduleRoot); err != nil {
+			if err := generateREADME(test.library, test.fallbackTitle, "", moduleRoot); err != nil {
 				t.Fatal(err)
 			}
 			// README doesn't exist because the generation is skipped.
@@ -1073,5 +1095,50 @@ func setupSnippets(t *testing.T, repoRoot string) {
 	snippetsGoMod := filepath.Join(snippetsDir, "go.mod")
 	if err := os.WriteFile(snippetsGoMod, []byte("module cloud.google.com/go/internal/generated/snippets\n\ngo 1.22\n"), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestSampleURI(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		sc   *serviceconfig.API
+		want string
+	}{
+		{
+			name: "nil serviceconfig",
+			sc:   nil,
+			want: "",
+		},
+		{
+			name: "nil sample URIs",
+			sc:   &serviceconfig.API{SampleURIs: nil},
+			want: "",
+		},
+		{
+			name: "go sample URI not specified",
+			sc: &serviceconfig.API{
+				SampleURIs: map[string]string{
+					"python": "https://python-samples",
+				},
+			},
+			want: "",
+		},
+		{
+			name: "go sample URI specified",
+			sc: &serviceconfig.API{
+				SampleURIs: map[string]string{
+					"go":     "https://go-samples",
+					"python": "https://python-samples",
+				},
+			},
+			want: "https://go-samples",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := sampleURI(test.sc)
+			if got != test.want {
+				t.Errorf("sampleURI(%+v) = %q, want %q", test.sc, got, test.want)
+			}
+		})
 	}
 }

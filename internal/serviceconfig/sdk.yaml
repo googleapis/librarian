@@ -2992,6 +2992,8 @@
     - java
     - nodejs
     - python
+  sample_uris:
+    go: https://developers.google.com/maps/documentation/places/web-service/client-library-examples#go
   release_level:
     go: preview
     java: preview
