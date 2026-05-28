@@ -42,8 +42,8 @@ func TestInstall_Error(t *testing.T) {
 }
 
 func TestInstall_Success(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv(librarianBinEnvVar, binDir)
+	installDir := t.TempDir()
+	t.Setenv(librarianDirEnvVar, installDir)
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -66,7 +66,7 @@ func TestInstall_Success(t *testing.T) {
 		"protoc-gen-go",
 	} {
 		t.Run(tool, func(t *testing.T) {
-			path := filepath.Join(binDir, tool+suffix)
+			path := filepath.Join(installDir, "bin", tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
 			}
@@ -82,18 +82,18 @@ func TestGetInstallDir(t *testing.T) {
 	}{
 		{
 			name: "LIBRARIAN_INSTALL_DIR set",
-			env:  map[string]string{librarianBinEnvVar: "/custom/install/dir"},
+			env:  map[string]string{librarianDirEnvVar: "/custom/install/dir"},
 			want: "/custom/install/dir",
 		},
 		{
 			name: "LIBRARIAN_INSTALL_DIR empty, home set",
 			env: map[string]string{
-				librarianBinEnvVar: "",
+				librarianDirEnvVar: "",
 				"HOME":             "/my/home",
 				// USERPROFILE is set on Windows, and is checked before HOME.
 				"USERPROFILE": "/my/home",
 			},
-			want: "/my/home/go_tools/bin",
+			want: "/my/home/go_tools",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
