@@ -205,7 +205,7 @@ var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
 	config.LanguageNodejs: nodejs.Tidy,
 	config.LanguagePython: python.Tidy,
-	config.LanguageRust:   tidyRustConfig,
+	config.LanguageRust:   rust.Tidy,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
@@ -221,28 +221,6 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Librar
 	if tidier, ok := languageTidiers[cfg.Language]; ok {
 		return tidier(lib)
 	}
-	return lib, nil
-}
-
-// isEmptyRustModule returns true if the module is a placeholder that can be removed.
-func isEmptyRustModule(module *config.RustModule) bool {
-	if module.Template == "storage" {
-		// The Rust storage module has hardcoded API paths and templates, so it is never empty.
-		return false
-	}
-	return module.APIPath == "" && module.Template == ""
-}
-
-// deleteEmptyRustModules returns a new slice of modules with empty modules removed.
-func deleteEmptyRustModules(modules []*config.RustModule) []*config.RustModule {
-	return slices.DeleteFunc(modules, isEmptyRustModule)
-}
-
-func tidyRustConfig(lib *config.Library) (*config.Library, error) {
-	if lib.Rust != nil && lib.Rust.Modules != nil {
-		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
-	}
-
 	return lib, nil
 }
 
