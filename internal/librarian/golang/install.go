@@ -30,11 +30,12 @@ const (
 	librarianBinEnvVar = "LIBRARIAN_INSTALL_DIR"
 )
 
-// errMissingToolVersion indicates a go tool entry is missing its version.
-var errMissingToolVersion = errors.New("go tool missing version")
-
-// errNoToolsSpecified indicates no Go tools were provided in the configuration.
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var (
+	// errMissingToolVersion indicates a go tool entry is missing its version.
+	errMissingToolVersion = errors.New("go tool missing version")
+	// errNoToolsSpecified indicates no Go tools were provided in the configuration.
+	errNoToolsSpecified = errors.New("no tools specified in configuration")
+)
 
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
