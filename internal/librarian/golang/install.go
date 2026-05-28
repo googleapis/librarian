@@ -68,6 +68,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	return nil
 }
 
+// getInstallDir gets the directory where tools should be installed.
 func getInstallDir() (string, error) {
 	dir := os.Getenv(librarianBinEnvVar)
 	if dir == "" {
