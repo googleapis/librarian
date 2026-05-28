@@ -42,11 +42,8 @@ func TestInstall_Error(t *testing.T) {
 }
 
 func TestInstall_Success(t *testing.T) {
-	gobin := t.TempDir()
-	t.Setenv("GOBIN", gobin)
-	// Although these are used in tests, they do not need to be updated since they are only testing
-	// that the tools can be read and installed, but not necessarily whether their version is compatible
-	// with librarian
+	binDir := t.TempDir()
+	t.Setenv(librarianBinEnvVar, binDir)
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -69,7 +66,7 @@ func TestInstall_Success(t *testing.T) {
 		"protoc-gen-go",
 	} {
 		t.Run(tool, func(t *testing.T) {
-			path := filepath.Join(gobin, tool+suffix)
+			path := filepath.Join(binDir, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
 			}
