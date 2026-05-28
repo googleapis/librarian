@@ -22,7 +22,7 @@ limitations under the License.
   Conceptually there is a `list response = try await client.<<MethodName>>( ... )` around this
   partial.
 }}
-request: {{InputType.Codec.Name}}(
+{{InputType.Codec.Name}}(
   {{#SampleInfo}}
   {{#IsRequestResourceName}}
   {{Codec.Name}}: "{{Codec.FormatString}}",

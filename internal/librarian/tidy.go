@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -83,19 +84,25 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if cfg.Sources == nil || cfg.Sources.Googleapis == nil {
 		return errNoGoogleapiSourceInfo
 	}
-	cfg.Libraries = tidyLibraries(cfg)
+	var err error
+	if cfg.Libraries, err = tidyLibraries(cfg); err != nil {
+		return err
+	}
 	cfg = tidyConfig(cfg)
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
-func tidyLibraries(cfg *config.Config) []*config.Library {
+func tidyLibraries(cfg *config.Config) ([]*config.Library, error) {
 	for i, lib := range cfg.Libraries {
-		cfg.Libraries[i] = tidyLibrary(cfg, lib)
+		var err error
+		if cfg.Libraries[i], err = tidyLibrary(cfg, lib); err != nil {
+			return nil, err
+		}
 	}
-	return cfg.Libraries
+	return cfg.Libraries, nil
 }
 
-func tidyLibrary(cfg *config.Config, lib *config.Library) *config.Library {
+func tidyLibrary(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
@@ -194,48 +201,27 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
-var languageTidiers = map[string]func(*config.Library) *config.Library{
+var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
+	config.LanguageNodejs: nodejs.Tidy,
 	config.LanguagePython: python.Tidy,
-	config.LanguageRust:   tidyRustConfig,
+	config.LanguageRust:   rust.Tidy,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
-func tidyLanguageConfig(lib *config.Library, cfg *config.Config) *config.Library {
+func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Library, error) {
 	if cfg.Language == config.LanguageGo {
 		var defOut string
 		if cfg.Default != nil {
 			defOut = cfg.Default.Output
 		}
-		return golang.Tidy(lib, defOut)
+		return golang.Tidy(lib, defOut), nil
 	}
 
 	if tidier, ok := languageTidiers[cfg.Language]; ok {
 		return tidier(lib)
 	}
-	return lib
-}
-
-// isEmptyRustModule returns true if the module is a placeholder that can be removed.
-func isEmptyRustModule(module *config.RustModule) bool {
-	if module.Template == "storage" {
-		// The Rust storage module has hardcoded API paths and templates, so it is never empty.
-		return false
-	}
-	return module.APIPath == "" && module.Template == ""
-}
-
-// deleteEmptyRustModules returns a new slice of modules with empty modules removed.
-func deleteEmptyRustModules(modules []*config.RustModule) []*config.RustModule {
-	return slices.DeleteFunc(modules, isEmptyRustModule)
-}
-
-func tidyRustConfig(lib *config.Library) *config.Library {
-	if lib.Rust != nil && lib.Rust.Modules != nil {
-		lib.Rust.Modules = deleteEmptyRustModules(lib.Rust.Modules)
-	}
-
-	return lib
+	return lib, nil
 }
 
 // isToolsEmpty returns true if the tools configuration is empty.

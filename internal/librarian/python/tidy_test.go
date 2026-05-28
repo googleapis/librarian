@@ -78,7 +78,10 @@ func TestTidy(t *testing.T) {
 			},
 		},
 	}
-	got := Tidy(lib)
+	got, err := Tidy(lib)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

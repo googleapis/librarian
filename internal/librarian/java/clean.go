@@ -166,7 +166,11 @@ func isDirNotEmpty(err error) bool {
 // shouldPreserve returns true if the given slash-separated path should be preserved
 // based on the keepSet or standard preservation patterns.
 func shouldPreserve(path string, keepSet map[string]bool) bool {
-	return keepSet[path] || itTestRegexp.MatchString(path) || versionRegexp.MatchString(path)
+	return keepSet[path] || isDefaultPreserved(path)
+}
+
+func isDefaultPreserved(path string) bool {
+	return itTestRegexp.MatchString(path) || versionRegexp.MatchString(path)
 }
 
 // shouldCleanMarkerPath returns true if the file at path should be cleaned based on

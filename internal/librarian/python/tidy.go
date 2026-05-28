@@ -22,11 +22,11 @@ import (
 )
 
 // Tidy tidies configuration for a library.
-func Tidy(lib *config.Library) *config.Library {
+func Tidy(lib *config.Library) (*config.Library, error) {
 	for _, api := range lib.APIs {
 		lib = tidyAPI(lib, api)
 	}
-	return lib
+	return lib, nil
 }
 
 // tidyAPI removes redundant OptArgsByAPI values for a single API.
