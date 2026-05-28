@@ -127,15 +127,20 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 // applying default values if no explicit configuration is found in the library.
 func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
 	res := &config.NodejsAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
-	}
-	if library.Nodejs == nil {
-		return res
+		Path: api.Path,
 	}
 
-	// Always include commonProtos as a base.
-	protos := []string{commonProtos}
+	omitCommon := library.Nodejs != nil && library.Nodejs.OmitCommonResources
+
+	var protos []string
+	if !omitCommon {
+		protos = append(protos, commonProtos)
+	}
+
+	if library.Nodejs == nil {
+		res.AdditionalProtos = protos
+		return res
+	}
 
 	// Add package-level additional protos.
 	protos = append(protos, library.Nodejs.AdditionalProtos...)

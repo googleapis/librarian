@@ -361,6 +361,7 @@ This document describes the schema for the librarian.yaml.
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
+| `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 
 ## PythonDefault Configuration

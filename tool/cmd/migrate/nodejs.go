@@ -27,6 +27,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -60,6 +61,7 @@ type nodejsGapicInfo struct {
 	handwrittenLayer      bool
 	mainService           string
 	mixins                string
+	omitCommonResources   bool
 }
 
 // owlBotSourceRegex extracts the base API path from an .OwlBot.yaml
@@ -206,6 +208,9 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 			}
 			if info.mixins != "" {
 				library.Nodejs.Mixins = info.mixins
+			}
+			if info.omitCommonResources {
+				library.Nodejs.OmitCommonResources = true
 			}
 		}
 	}
@@ -369,12 +374,39 @@ func parseBazelNodejsInfo(googleapisDir, apiDir string) (*nodejsGapicInfo, error
 	if len(extraProtocParameters) == 0 {
 		extraProtocParameters = nil
 	}
+
+	src := rule.AttrString("src")
+	omitCommon := false
+	if src != "" {
+		srcName := strings.TrimPrefix(src, ":")
+		protoRules := file.Rules("proto_library_with_info")
+		var protoRule *build.Rule
+		for _, r := range protoRules {
+			if r.AttrString("name") == srcName {
+				protoRule = r
+				break
+			}
+		}
+		if protoRule != nil {
+			if attr := protoRule.Attr("deps"); attr != nil {
+				omitCommon = true
+				for _, dep := range extractStrings(attr) {
+					if strings.HasSuffix(dep, "google/cloud:common_resources_proto") {
+						omitCommon = false
+						break
+					}
+				}
+			}
+		}
+	}
+
 	info := &nodejsGapicInfo{
 		packageName:           rule.AttrString("package_name"),
 		bundleConfig:          rule.AttrString("bundle_config"),
 		extraProtocParameters: extraProtocParameters,
 		mainService:           rule.AttrString("main_service"),
 		mixins:                rule.AttrString("mixins"),
+		omitCommonResources:   omitCommon,
 	}
 	if rule.AttrLiteral("diregapic") == "True" {
 		info.diregapic = true
