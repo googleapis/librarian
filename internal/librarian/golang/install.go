@@ -50,11 +50,6 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	if err != nil {
 		return err
 	}
-	// Go uses the GOBIN environment variable to determine where to install tools,
-	// and it does not allow to specify the installation directory as a command-line argument.
-	// We set it for the duration of the installation.
-	originalGOBIN := os.Getenv(goBinEnvVar)
-	defer os.Setenv(goBinEnvVar, originalGOBIN)
 	env := map[string]string{goBinEnvVar: installDir}
 	for _, tool := range goTools {
 		if tool.Version == "" {
