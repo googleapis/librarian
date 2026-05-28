@@ -407,7 +407,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("secret", "name"),
-			wantBlock: `let path = try { () throws -> String in
+			wantBlock: `let path = try { () throws -> Swift.String in
         guard let pathVariable0 = request.secret.map({ $0.name }), !pathVariable0.isEmpty else {
           throw GoogleCloudGax.RequestError.binding("'request.secret.name' is not set or is empty")
         }
@@ -419,8 +419,8 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			path: (&api.PathTemplate{}).
 				WithLiteral("v1").
 				WithVariableNamed("name"),
-			wantBlock: `let path = try { () throws -> String in
-        guard let pathVariable0 = request.name as String?, !pathVariable0.isEmpty else {
+			wantBlock: `let path = try { () throws -> Swift.String in
+        guard let pathVariable0 = request.name as Swift.String?, !pathVariable0.isEmpty else {
           throw GoogleCloudGax.RequestError.binding("'request.name' is not set or is empty")
         }
         return "/v1/\(pathVariable0)"
@@ -434,8 +434,8 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				WithVariableNamed("project").
 				WithLiteral("locations").
 				WithVariableNamed("location"),
-			wantBlock: `let path = try { () throws -> String in
-        guard let pathVariable0 = request.project as String?, !pathVariable0.isEmpty else {
+			wantBlock: `let path = try { () throws -> Swift.String in
+        guard let pathVariable0 = request.project as Swift.String?, !pathVariable0.isEmpty else {
           throw GoogleCloudGax.RequestError.binding("'request.project' is not set or is empty")
         }
         guard let pathVariable1 = request.location, !pathVariable1.isEmpty else {
@@ -524,7 +524,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			gotBlock := extractBlock(t, contentStr, "let path = try { () throws -> String in", "    }()")
+			gotBlock := extractBlock(t, contentStr, "let path = try { () throws -> Swift.String in", "    }()")
 			if diff := cmp.Diff(test.wantBlock, gotBlock); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

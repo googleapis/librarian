@@ -29,21 +29,21 @@ func TestScalarFieldTypeName(t *testing.T) {
 		want    string
 		wantErr bool
 	}{
-		{"double", api.TypezDouble, "Double", false},
-		{"float", api.TypezFloat, "Float", false},
-		{"int64", api.TypezInt64, "Int64", false},
-		{"uint64", api.TypezUint64, "UInt64", false},
-		{"int32", api.TypezInt32, "Int32", false},
-		{"fixed64", api.TypezFixed64, "UInt64", false},
-		{"fixed32", api.TypezFixed32, "UInt32", false},
-		{"bool", api.TypezBool, "Bool", false},
-		{"string", api.TypezString, "String", false},
-		{"bytes", api.TypezBytes, "Data", false},
-		{"uint32", api.TypezUint32, "UInt32", false},
-		{"sfixed32", api.TypezSfixed32, "Int32", false},
-		{"sfixed64", api.TypezSfixed64, "Int64", false},
-		{"sint32", api.TypezSint32, "Int32", false},
-		{"sint64", api.TypezSint64, "Int64", false},
+		{"double", api.TypezDouble, "Swift.Double", false},
+		{"float", api.TypezFloat, "Swift.Float", false},
+		{"int64", api.TypezInt64, "Swift.Int64", false},
+		{"uint64", api.TypezUint64, "Swift.UInt64", false},
+		{"int32", api.TypezInt32, "Swift.Int32", false},
+		{"fixed64", api.TypezFixed64, "Swift.UInt64", false},
+		{"fixed32", api.TypezFixed32, "Swift.UInt32", false},
+		{"bool", api.TypezBool, "Swift.Bool", false},
+		{"string", api.TypezString, "Swift.String", false},
+		{"bytes", api.TypezBytes, "Foundation.Data", false},
+		{"uint32", api.TypezUint32, "Swift.UInt32", false},
+		{"sfixed32", api.TypezSfixed32, "Swift.Int32", false},
+		{"sfixed64", api.TypezSfixed64, "Swift.Int64", false},
+		{"sint32", api.TypezSint32, "Swift.Int32", false},
+		{"sint64", api.TypezSint64, "Swift.Int64", false},
 		{"default undefined", api.TypezUndefined, "", true},
 		{"default message", api.TypezMessage, "", true},
 		{"default enum", api.TypezEnum, "", true},
@@ -218,7 +218,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field5",
 				Optional: true,
 			},
-			want: "String?",
+			want: "Swift.String?",
 		},
 		{
 			name: "optional bytes",
@@ -227,7 +227,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field7",
 				Optional: true,
 			},
-			want: "Data?",
+			want: "Foundation.Data?",
 		},
 		{
 			name: "optional int32",
@@ -236,7 +236,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field9",
 				Optional: true,
 			},
-			want: "Int32?",
+			want: "Swift.Int32?",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -284,7 +284,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field6",
 				Repeated: true,
 			},
-			want: "[String]",
+			want: "[Swift.String]",
 		},
 		{
 			name: "repeated bytes",
@@ -293,7 +293,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field8",
 				Repeated: true,
 			},
-			want: "[Data]",
+			want: "[Foundation.Data]",
 		},
 		{
 			name: "repeated int32",
@@ -302,7 +302,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field10",
 				Repeated: true,
 			},
-			want: "[Int32]",
+			want: "[Swift.Int32]",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -344,7 +344,7 @@ func TestFieldTypeName_Map(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "[String: Int32]"
+	want := "[Swift.String: Swift.Int32]"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

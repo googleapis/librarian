@@ -115,18 +115,18 @@ func TestGenerateOneOf(t *testing.T) {
   Sendable {
 
   /// A regular field.
-  public var regularInt32: Int32
+  public var regularInt32: Swift.Int32
 
   /// Another regular field.
-  public var regularString: String
+  public var regularString: Swift.String
 
   /// A group of fields where only one is set.
   public var choice: OneOf_Choice?
 
   /// Initialize a new instance of ` + "`Outer`" + `.
   public init(
-    regularInt32: Int32 = Int32(),
-    regularString: String = String(),
+    regularInt32: Swift.Int32 = Swift.Int32(),
+    regularString: Swift.String = Swift.String(),
     choice: OneOf_Choice? = nil,
   ) {
     self.regularInt32 = regularInt32
@@ -143,8 +143,8 @@ func TestGenerateOneOf(t *testing.T) {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.regularInt32 = try container.decode(Int32.self, forKey: .regularInt32)
-    self.regularString = try container.decode(String.self, forKey: .regularString)
+    self.regularInt32 = try container.decode(Swift.Int32.self, forKey: .regularInt32)
+    self.regularString = try container.decode(Swift.String.self, forKey: .regularString)
 
     var choice: OneOf_Choice? = nil
     let choiceCheckAndSet = { (value: OneOf_Choice) throws in
@@ -153,7 +153,7 @@ func TestGenerateOneOf(t *testing.T) {
       }
       choice = value
     }
-    if let stringField = try container.decodeIfPresent(String.self, forKey: .stringField) {
+    if let stringField = try container.decodeIfPresent(Swift.String.self, forKey: .stringField) {
       try choiceCheckAndSet(.stringField(stringField))
     }
     if let messageField = try container.decodeIfPresent(Inner.self, forKey: .messageField) {
@@ -181,7 +181,7 @@ func TestGenerateOneOf(t *testing.T) {
   /// A group of fields where only one is set.
   public enum OneOf_Choice: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
-    case stringField(String)
+    case stringField(Swift.String)
     /// A message field that is part of the oneof.
     indirect case messageField(Inner)
   }

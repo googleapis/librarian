@@ -34,22 +34,22 @@ func TestAnnotateField(t *testing.T) {
 			name:         "regular",
 			optional:     false,
 			repeated:     false,
-			wantType:     "String",
-			wantBaseType: "String",
+			wantType:     "Swift.String",
+			wantBaseType: "Swift.String",
 		},
 		{
 			name:         "optional",
 			optional:     true,
 			repeated:     false,
-			wantType:     "String?",
-			wantBaseType: "String",
+			wantType:     "Swift.String?",
+			wantBaseType: "Swift.String",
 		},
 		{
 			name:         "repeated",
 			optional:     false,
 			repeated:     true,
-			wantType:     "[String]",
-			wantBaseType: "String",
+			wantType:     "[Swift.String]",
+			wantBaseType: "Swift.String",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -94,9 +94,9 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 		typez    api.Typez
 		wantType string
 	}{
-		{"string", api.TypezString, "String"},
-		{"int32", api.TypezInt32, "Int32"},
-		{"bytes", api.TypezBytes, "Data"},
+		{"string", api.TypezString, "Swift.String"},
+		{"int32", api.TypezInt32, "Swift.Int32"},
+		{"bytes", api.TypezBytes, "Foundation.Data"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			field := &api.Field{
