@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -71,6 +72,51 @@ func TestInstall_Success(t *testing.T) {
 			path := filepath.Join(gobin, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestGetInstallDir(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		dir   string
+		setup func(string) error
+		want  string
+	}{
+		{
+			name: "LIBRARIAN_INSTALL_DIR set",
+			dir:  "/custom/install/dir",
+			setup: func(dir string) error {
+				return os.Setenv(librarianBinEnvVar, dir)
+			},
+			want: "/custom/install/dir",
+		},
+		{
+			name: "LIBRARIAN_INSTALL_DIR empty, home set",
+			dir:  "/my/home",
+			setup: func(dir string) error {
+				return os.Setenv("HOME", dir)
+			},
+			want: "/my/home/go_tools/bin",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			oldInstallDir := os.Getenv(librarianBinEnvVar)
+			oldHome := os.Getenv("HOME")
+			t.Cleanup(func() {
+				os.Setenv(librarianBinEnvVar, oldInstallDir)
+				os.Setenv("HOME", oldHome)
+			})
+			if err := test.setup(test.dir); err != nil {
+				t.Fatal(err)
+			}
+			got, err := getInstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	goBinEnvVar = "GOBIN"
+	goBinEnvVar        = "GOBIN"
 	librarianBinEnvVar = "LIBRARIAN_INSTALL_DIR"
 )
 
