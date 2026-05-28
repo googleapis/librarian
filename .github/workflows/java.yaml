@@ -66,6 +66,7 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "maven"
+     # Explicitly install Maven on this runner (it is a requirement for the workflow).
       - name: Verify Java and Maven installation
         run: |
           java -version
