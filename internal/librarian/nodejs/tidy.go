@@ -20,7 +20,7 @@ import (
 )
 
 // Tidy tidies configuration for a library.
-func Tidy(lib *config.Library) (*config.Library, error) {
+func Tidy(repoDir string, lib *config.Library) (*config.Library, error) {
 	if lib.Nodejs == nil {
 		return lib, nil
 	}

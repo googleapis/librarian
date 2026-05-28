@@ -22,7 +22,7 @@ import (
 )
 
 // Tidy tidies configuration for a library.
-func Tidy(lib *config.Library) (*config.Library, error) {
+func Tidy(repoDir string, lib *config.Library) (*config.Library, error) {
 	for _, api := range lib.APIs {
 		lib = tidyAPI(lib, api)
 	}

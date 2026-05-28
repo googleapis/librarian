@@ -21,7 +21,7 @@ import (
 )
 
 // Tidy tidies the Rust-specific configuration for a library.
-func Tidy(lib *config.Library) (*config.Library, error) {
+func Tidy(repoDir string, lib *config.Library) (*config.Library, error) {
 	if lib.Rust != nil && lib.Rust.Modules != nil {
 		lib.Rust.Modules = slices.DeleteFunc(lib.Rust.Modules, isEmptyModule)
 	}

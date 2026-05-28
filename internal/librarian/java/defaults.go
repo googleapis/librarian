@@ -16,8 +16,10 @@ package java
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -78,8 +80,12 @@ func Fill(library *config.Library) (*config.Library, error) {
 
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
-func Tidy(library *config.Library) (*config.Library, error) {
-	library.Keep = tidyKeep(library.Keep)
+func Tidy(repoDir string, library *config.Library) (*config.Library, error) {
+	var err error
+	library.Keep, err = tidyKeep(repoDir, library)
+	if err != nil {
+		return nil, err
+	}
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -132,14 +138,21 @@ func Tidy(library *config.Library) (*config.Library, error) {
 }
 
 // tidyKeep removes default files from the library's keep configuration.
-func tidyKeep(keep []string) []string {
-	if len(keep) == 0 {
-		return nil
+func tidyKeep(repoDir string, library *config.Library) ([]string, error) {
+	if len(library.Keep) == 0 {
+		return nil, nil
 	}
 	var filteredKeepPaths []string
-	for _, keepPath := range keep {
+	for _, keepPath := range library.Keep {
 		keepPathSlash := filepath.ToSlash(keepPath)
 		if isDefaultPreserved(keepPathSlash) {
+			continue
+		}
+		isManualGapic, err := isManualFileInGAPICModule(repoDir, library, keepPath)
+		if err != nil {
+			return nil, err
+		}
+		if isManualGapic {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -147,9 +160,83 @@ func tidyKeep(keep []string) []string {
 	slices.Sort(filteredKeepPaths)
 	filteredKeepPaths = slices.Compact(filteredKeepPaths)
 	if len(filteredKeepPaths) == 0 {
-		return nil
+		return nil, nil
 	}
-	return filteredKeepPaths
+	return filteredKeepPaths, nil
+}
+
+func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) (bool, error) {
+	var groupID, artifactID string
+	if library.Java != nil {
+		groupID = library.Java.GroupID
+		artifactID = library.Java.ArtifactID
+	}
+	if groupID == "" {
+		groupID = defaultGroupID
+	}
+	if artifactID == "" {
+		artifactID = deriveArtifactID(library.Name)
+	}
+	libraryCoordinates := LibraryCoordinate{
+		GAPIC: Coordinate{
+			GroupID:    groupID,
+			ArtifactID: artifactID,
+			Version:    library.Version,
+		},
+		Parent: Coordinate{
+			GroupID:    groupID,
+			ArtifactID: fmt.Sprintf("%s-parent", artifactID),
+			Version:    library.Version,
+		},
+		BOM: Coordinate{
+			GroupID:    groupID,
+			ArtifactID: fmt.Sprintf("%s-bom", artifactID),
+			Version:    library.Version,
+		},
+	}
+	var gapicArtifactID string
+	for _, api := range library.APIs {
+		javaAPI := api.Java
+		if javaAPI == nil {
+			javaAPI = &config.JavaAPI{}
+		}
+		version := filepath.Base(api.Path)
+		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
+		if apiCoordinates.GAPIC.ArtifactID != "" && shouldGenerateGAPIC(javaAPI) {
+			prefix := filepath.ToSlash(apiCoordinates.GAPIC.ArtifactID) + "/"
+			keepPathSlash := filepath.ToSlash(keepPath)
+			if strings.HasPrefix(keepPathSlash, prefix) {
+				gapicArtifactID = apiCoordinates.GAPIC.ArtifactID
+				break
+			}
+		}
+	}
+	if gapicArtifactID == "" {
+		return false, nil
+	}
+	outputDir := library.Output
+	if outputDir == "" {
+		outputDir = deriveOutput(library.Name)
+	}
+	absPath := filepath.Join(repoDir, outputDir, keepPath)
+	fi, err := os.Stat(absPath)
+	if err != nil {
+		return false, nil
+	}
+	if fi.IsDir() {
+		return false, nil
+	}
+	if slices.Contains(generatedNonJavaFiles, fi.Name()) {
+		return false, nil
+	}
+	if filepath.Ext(absPath) != ".java" {
+		return true, nil
+	}
+	hasGenMarker, err := hasMarker(absPath)
+	if err != nil {
+		return false, nil
+	}
+	return !hasGenMarker, nil
 }
 
 var (

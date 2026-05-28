@@ -78,7 +78,7 @@ func TestTidy(t *testing.T) {
 			},
 		},
 	}
-	got, err := Tidy(lib)
+	got, err := Tidy("", lib)
 	if err != nil {
 		t.Fatal(err)
 	}
