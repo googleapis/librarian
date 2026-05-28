@@ -76,30 +76,30 @@ func TestInstall_Success(t *testing.T) {
 
 func TestGetInstallDir(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		dir   string
-		setup func(*testing.T, string)
-		want  string
+		name string
+		env  map[string]string
+		want string
 	}{
 		{
 			name: "LIBRARIAN_INSTALL_DIR set",
-			dir:  "/custom/install/dir",
-			setup: func(t *testing.T, dir string) {
-				t.Setenv(librarianBinEnvVar, dir)
-			},
+			env:  map[string]string{librarianBinEnvVar: "/custom/install/dir"},
 			want: "/custom/install/dir",
 		},
 		{
 			name: "LIBRARIAN_INSTALL_DIR empty, home set",
-			dir:  "/my/home",
-			setup: func(t *testing.T, dir string) {
-				t.Setenv("HOME", dir)
+			env: map[string]string{
+				librarianBinEnvVar: "",
+				"HOME":             "/my/home",
+				// USERPROFILE is set on Windows, and is checked before HOME.
+				"USERPROFILE":      "/my/home",
 			},
 			want: "/my/home/go_tools/bin",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			test.setup(t, test.dir)
+			for k, v := range test.env {
+				t.Setenv(k, v)
+			}
 			got, err := getInstallDir()
 			if err != nil {
 				t.Fatal(err)
