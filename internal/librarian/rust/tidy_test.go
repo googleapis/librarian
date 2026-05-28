@@ -1,0 +1,76 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package rust
+
+import (
+	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
+)
+
+func TestTidyLanguageConfig_Rust(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		lib         *config.Library
+		wantNumMods int
+	}{
+		{
+			name: "empty_module_removed",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Output:   "src/storage/src/generated/protos/storage",
+							APIPath:  "google/storage/v2",
+							Template: "prost",
+						},
+						{
+							Output: "src/storage/control",
+						},
+					},
+				},
+			},
+			wantNumMods: 1, // Modules should be removed
+		},
+		{
+			name: "storage_module_not_removed",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{
+						{
+							Output:   "src/storage/src/generated/protos/storage",
+							Template: "storage",
+						},
+					},
+				},
+			},
+			wantNumMods: 1, // Rust storage module should NOT be removed
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := Tidy(test.lib)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(got.Rust.Modules) != test.wantNumMods {
+				t.Fatalf("wrong number of modules")
+			}
+		})
+	}
+}

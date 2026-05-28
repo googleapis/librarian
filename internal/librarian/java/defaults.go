@@ -20,6 +20,7 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -77,7 +78,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
-func Tidy(library *config.Library) *config.Library {
+func Tidy(library *config.Library) (*config.Library, error) {
 	library.Keep = tidyKeep(library.Keep)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
@@ -89,7 +90,11 @@ func Tidy(library *config.Library) *config.Library {
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
-		if isEmptyJavaModule(library.Java) {
+		empty, err := yaml.Empty(library.Java)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
 			library.Java = nil
 		}
 	}
@@ -115,11 +120,15 @@ func Tidy(library *config.Library) *config.Library {
 		api.Java.AdditionalProtos = slices.DeleteFunc(api.Java.AdditionalProtos, func(p *config.AdditionalProto) bool {
 			return p == nil || p.Path == ""
 		})
-		if isEmptyJavaAPI(api.Java) {
+		empty, err := yaml.Empty(api.Java)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
 			api.Java = nil
 		}
 	}
-	return library
+	return library, nil
 }
 
 // tidyKeep removes default files from the library's keep configuration.
@@ -141,56 +150,6 @@ func tidyKeep(keep []string) []string {
 		return nil
 	}
 	return filteredKeepPaths
-}
-
-func isEmptyJavaAPI(j *config.JavaAPI) bool {
-	if j == nil {
-		return true
-	}
-	return !j.Monolithic &&
-		len(j.AdditionalProtos) == 0 &&
-		!j.OmitCommonResources &&
-		len(j.ExcludedProtos) == 0 &&
-		len(j.SkipProtoClassGeneration) == 0 &&
-		j.GAPICArtifactIDOverride == "" &&
-		j.GRPCArtifactIDOverride == "" &&
-		j.ProtoArtifactIDOverride == "" &&
-		j.GenerateGAPIC == nil &&
-		j.GenerateProto == nil &&
-		j.GenerateGRPC == nil &&
-		j.GenerateResourceNames == nil &&
-		len(j.CopyFiles) == 0 &&
-		j.Samples == nil
-}
-
-func isEmptyJavaModule(j *config.JavaModule) bool {
-	if j == nil {
-		return true
-	}
-	return j.APIIDOverride == "" &&
-		j.APIReference == "" &&
-		j.APIDescriptionOverride == "" &&
-		j.APIShortnameOverride == "" &&
-		j.ArtifactID == "" &&
-		j.ClientDocumentationOverride == "" &&
-		j.CodeownerTeam == "" &&
-		j.ExcludedDependencies == "" &&
-		len(j.ExcludedPOMs) == 0 &&
-		j.ExtraVersionedModules == "" &&
-		j.GroupID == "" &&
-		j.IssueTrackerOverride == "" &&
-		j.LibrariesBOMVersion == "" &&
-		j.LibraryTypeOverride == "" &&
-		j.MinJavaVersion == 0 &&
-		j.NamePrettyOverride == "" &&
-		j.ProductDocumentationOverride == "" &&
-		j.RecommendedPackage == "" &&
-		!j.BillingNotRequired &&
-		j.RestDocumentation == "" &&
-		j.RpcDocumentation == "" &&
-		j.TransportOverride == "" &&
-		!j.SkipPOMUpdates &&
-		!j.SkipAPIID
 }
 
 var (
