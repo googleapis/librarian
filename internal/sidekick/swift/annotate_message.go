@@ -76,7 +76,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if err != nil {
 		return err
 	}
-	if wktDep.ApiPackage != c.Model.PackageName {
+	if wktDep != nil && wktDep.ApiPackage != c.Model.PackageName {
 		// Messages generated in the library for WKT library (we have a few)
 		// should not import the library.
 		annotations.DependsOn[wktDep.Name] = wktDep
