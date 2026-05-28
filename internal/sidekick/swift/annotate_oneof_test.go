@@ -43,6 +43,7 @@ func TestAnnotateOneOf(t *testing.T) {
 		Name:         "OneOf_TestAlternatives",
 		PropertyName: "testAlternatives",
 		DocLines:     []string{"A test oneof."},
+		Checker:      "testAlternativesCheckAndSet",
 	}
 
 	if diff := cmp.Diff(want, oneof.Codec); diff != "" {

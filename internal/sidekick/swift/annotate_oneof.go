@@ -21,6 +21,7 @@ import (
 type oneOfAnnotations struct {
 	Name         string
 	PropertyName string
+	Checker      string
 	DocLines     []string
 }
 
@@ -32,6 +33,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf) error {
 	annotations := &oneOfAnnotations{
 		Name:         "OneOf_" + pascalCase(oneof.Name),
 		PropertyName: camelCase(oneof.Name),
+		Checker:      camelCase(oneof.Name + "CheckAndSet"),
 		DocLines:     docLines,
 	}
 	oneof.Codec = annotations

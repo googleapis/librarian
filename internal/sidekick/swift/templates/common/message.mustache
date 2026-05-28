@@ -111,7 +111,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#OneOfs}}
 
     var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.PropertyName}}CheckAndSet = { (value: {{Codec.Name}}) throws in
+    let {{Codec.Checker}} = { (value: {{Codec.Name}}) throws in
       if {{Codec.PropertyName}} != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
       }
@@ -119,7 +119,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     }
     {{#Fields}}
     if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
-      try {{Codec.OneOfPropertyName}}CheckAndSet(.{{Codec.Name}}({{Codec.Name}}))
+      try {{Codec.OneOfChecker}}(.{{Codec.Name}}({{Codec.Name}}))
     }
     {{/Fields}}
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
