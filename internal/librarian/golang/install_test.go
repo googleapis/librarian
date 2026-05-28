@@ -91,7 +91,7 @@ func TestGetInstallDir(t *testing.T) {
 				librarianBinEnvVar: "",
 				"HOME":             "/my/home",
 				// USERPROFILE is set on Windows, and is checked before HOME.
-				"USERPROFILE":      "/my/home",
+				"USERPROFILE": "/my/home",
 			},
 			want: "/my/home/go_tools/bin",
 		},
