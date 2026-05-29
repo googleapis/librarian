@@ -16,9 +16,9 @@
 package golang
 
 import (
-	"maps"
 	"context"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 
@@ -52,4 +52,3 @@ func mergeEnv(env map[string]string) (map[string]string, error) {
 	maps.Copy(res, env)
 	return res, nil
 }
-	
