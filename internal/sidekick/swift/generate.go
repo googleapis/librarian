@@ -126,6 +126,7 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 		}{
 			{suffix: "Stub.swift", template: "templates/common/stub.swift.mustache"},
 			{suffix: "Logging.swift", template: "templates/common/logging.swift.mustache"},
+			{suffix: "Retry.swift", template: "templates/common/retry.swift.mustache"},
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,

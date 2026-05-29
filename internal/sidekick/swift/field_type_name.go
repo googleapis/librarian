@@ -88,35 +88,35 @@ func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
 func scalarFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
 	case api.TypezDouble:
-		return "Double", nil
+		return "Swift.Double", nil
 	case api.TypezFloat:
-		return "Float", nil
+		return "Swift.Float", nil
 	case api.TypezInt64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezUint64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezInt32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezFixed64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezFixed32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezBool:
-		return "Bool", nil
+		return "Swift.Bool", nil
 	case api.TypezString:
-		return "String", nil
+		return "Swift.String", nil
 	case api.TypezBytes:
-		return "Data", nil
+		return "Foundation.Data", nil
 	case api.TypezUint32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezSfixed32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSfixed64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezSint32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSint64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
 	}
