@@ -1273,6 +1273,69 @@ func TestResolveNodejsAPI(t *testing.T) {
 				AdditionalProtos:    []string{"api.proto"},
 			},
 		},
+		{
+			name: "omit common resources is true, package-level and api-level protos combined",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "api.proto"},
+			},
+		},
+		{
+			name: "omit common resources is false, all preserved",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: false,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: false,
+				AdditionalProtos:    []string{commonProtos, "pkg.proto", "api.proto"},
+			},
+		},
+		{
+			name: "duplicated protos",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto", "dup.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"dup.proto", "api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "dup.proto", "api.proto"},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := resolveNodejsAPI(test.library, test.api)
