@@ -83,12 +83,12 @@ extension Clients {
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}
       {{^ReturnsEmpty}}
-      let (data, _) = try (await self.inner.rpc(for: req)).get()
+      let (data, _) = try await self.inner.rpc(for: req).get()
       return try {{InputType.Codec.Model.WktPackage}}._ProtoJSONDecoder().decode(
         {{Codec.ReturnType}}.self, from: data)
       {{/ReturnsEmpty}}
       {{#ReturnsEmpty}}
-      let _ = try (await self.inner.rpc(for: req)).get()
+      _ = try await self.inner.rpc(for: req).get()
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}
