@@ -43,10 +43,10 @@ type fieldAnnotations struct {
 	// DocLines is the field documentation broken by lines with any filtering / corrections for Swift.
 	DocLines []string
 
-	// OneOfPropertyName is the name of the oneof property containing this field.
+	// OneOfChecker is the name of a function to set the oneof containing this field.
 	//
 	// This is empty for fields that are not part of a oneof group.
-	OneOfPropertyName string
+	OneOfChecker string
 
 	// Recursive is true if the field is a recursive reference to another message.
 	Recursive bool
@@ -124,7 +124,7 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
-			annotations.OneOfPropertyName = oneofAnn.PropertyName
+			annotations.OneOfChecker = oneofAnn.Checker
 		}
 	}
 	field.Codec = annotations

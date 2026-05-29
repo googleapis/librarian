@@ -12,30 +12,24 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package swift
+package nodejs
 
 import (
-	"github.com/googleapis/librarian/internal/sidekick/api"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
-type oneOfAnnotations struct {
-	Name         string
-	PropertyName string
-	Checker      string
-	DocLines     []string
-}
-
-func (c *codec) annotateOneOf(oneof *api.OneOf) error {
-	docLines, err := c.formatDocumentation(oneof.Documentation, oneof.Scopes())
+// Tidy tidies configuration for a library.
+func Tidy(lib *config.Library) (*config.Library, error) {
+	if lib.Nodejs == nil {
+		return lib, nil
+	}
+	empty, err := yaml.Empty(lib.Nodejs)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	annotations := &oneOfAnnotations{
-		Name:         "OneOf_" + pascalCase(oneof.Name),
-		PropertyName: camelCase(oneof.Name),
-		Checker:      camelCase(oneof.Name + "CheckAndSet"),
-		DocLines:     docLines,
+	if empty {
+		lib.Nodejs = nil
 	}
-	oneof.Codec = annotations
-	return nil
+	return lib, nil
 }

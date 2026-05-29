@@ -13,13 +13,23 @@
 # limitations under the License.
 name: Setup Librarian
 description: Set up Go, install protoc, and Librarian.
+inputs:
+  protoc-version:
+    description: "The version of protoc to install"
+    required: false
+  protoc-checksum:
+    description: "The SHA512 checksum of the protoc zip file. Required if version is specified."
+    required: false
 runs:
   using: composite
   steps:
     - uses: actions/setup-go@v6
       with:
         go-version-file: "${{ github.action_path }}/go.mod"
-    - uses: ${{ github.action_path }}/.github/actions/install-protoc
+    - uses: googleapis/librarian/.github/actions/install-protoc@main
+      with:
+        version: ${{ inputs.protoc-version }}
+        checksum: ${{ inputs.protoc-checksum }}
     - name: Install librarian
       run: |
         VERSION="latest"
