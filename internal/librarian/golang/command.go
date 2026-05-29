@@ -46,8 +46,8 @@ func mergeEnv(env map[string]string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	binDir := filepath.Join(installDir, binDir)
-	res := map[string]string{envPath: fmt.Sprintf("%s:%s", binDir, os.Getenv(envPath))}
+	toolsBinDir := filepath.Join(installDir, binDir)
+	res := map[string]string{envPath: fmt.Sprintf("%s:%s", toolsBinDir, os.Getenv(envPath))}
 	maps.Copy(res, env)
 	return res, nil
 }
