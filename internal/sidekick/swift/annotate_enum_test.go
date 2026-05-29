@@ -28,9 +28,7 @@ func TestAnnotateEnum(t *testing.T) {
 		enumName      string
 		documentation string
 		values        []*api.EnumValue
-		wantName      string
-		wantDocs      []string
-		wantDefault   string
+		want          *enumAnnotations
 	}{
 		{
 			name:          "basic enum",
@@ -40,9 +38,13 @@ func TestAnnotateEnum(t *testing.T) {
 				{Name: "COLOR_UNSPECIFIED", Number: 0},
 				{Name: "COLOR_RED", Number: 1},
 			},
-			wantName:    "Color",
-			wantDocs:    []string{"A color enum.", "With two lines."},
-			wantDefault: "unspecified",
+			want: &enumAnnotations{
+				Name:              "Color",
+				DocLines:          []string{"A color enum.", "With two lines."},
+				DefaultCaseName:   "unspecified",
+				UnknownIntName:    "unknownIntValue",
+				UnknownStringName: "unknownStringValue",
+			},
 		},
 		{
 			name:          "escaped name",
@@ -51,9 +53,30 @@ func TestAnnotateEnum(t *testing.T) {
 			values: []*api.EnumValue{
 				{Name: "PROTOCOL_UNSPECIFIED", Number: 0},
 			},
-			wantName:    "Protocol_",
-			wantDocs:    []string{"An enum named Protocol."},
-			wantDefault: "unspecified",
+			want: &enumAnnotations{
+				Name:              "Protocol_",
+				DocLines:          []string{"An enum named Protocol."},
+				DefaultCaseName:   "unspecified",
+				UnknownIntName:    "unknownIntValue",
+				UnknownStringName: "unknownStringValue",
+			},
+		},
+		{
+			name:          "duplicate unknown",
+			enumName:      "Weird",
+			documentation: "An enum named Weird.",
+			values: []*api.EnumValue{
+				{Name: "WEIRD_UNSPECIFIED", Number: 0},
+				{Name: "UNKNOWN_INT_VALUE", Number: 1},
+				{Name: "UNKNOWN_STRING_VALUE", Number: 2},
+			},
+			want: &enumAnnotations{
+				Name:              "Weird",
+				DocLines:          []string{"An enum named Weird."},
+				DefaultCaseName:   "unspecified",
+				UnknownIntName:    "unknownIntValue_",
+				UnknownStringName: "unknownStringValue_",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -73,13 +96,8 @@ func TestAnnotateEnum(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			want := &enumAnnotations{
-				Name:            test.wantName,
-				DocLines:        test.wantDocs,
-				DefaultCaseName: test.wantDefault,
-			}
 
-			if diff := cmp.Diff(want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
+			if diff := cmp.Diff(test.want, enum.Codec, cmpopts.IgnoreFields(enumAnnotations{}, "BoilerPlate", "CopyrightYear")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
