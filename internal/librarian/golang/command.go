@@ -12,7 +12,6 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package golang provides functionality for generating Go client libraries.
 package golang
 
 import (
