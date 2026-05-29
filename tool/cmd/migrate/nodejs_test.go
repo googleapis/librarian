@@ -305,3 +305,124 @@ func TestBuildNodejsLibrary_ESMOverride(t *testing.T) {
 		})
 	}
 }
+
+// TestParseBazelNodejsInfo_OmitCommonResources validates the Bazel target dependency graph parser
+// and verifies that the omit_common_resources flag is correctly auto-detected across different AST configurations.
+func TestParseBazelNodejsInfo_OmitCommonResources(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		bazelContent string
+		wantOmit     bool
+	}{
+		{
+			name: "case 1: relative path dependency present",
+			bazelContent: `
+nodejs_gapic_library(
+    name = "secretmanager_nodejs_gapic",
+    src = ":secretmanager_proto_with_info",
+    package_name = "@google-cloud/secret-manager",
+)
+proto_library_with_info(
+    name = "secretmanager_proto_with_info",
+    deps = [
+        "//google/cloud:common_resources_proto",
+    ],
+)
+`,
+			wantOmit: false,
+		},
+		{
+			name: "case 2: dependency absent",
+			bazelContent: `
+nodejs_gapic_library(
+    name = "billing_nodejs_gapic",
+    src = ":billing_proto_with_info",
+    package_name = "@google-cloud/billing",
+)
+proto_library_with_info(
+    name = "billing_proto_with_info",
+    deps = [
+        ":billing_proto",
+    ],
+)
+`,
+			wantOmit: true,
+		},
+		{
+			name: "case 3: external repository absolute namespace prefix",
+			bazelContent: `
+nodejs_gapic_library(
+    name = "compute_nodejs_gapic",
+    src = ":compute_proto_with_info",
+    package_name = "@google-cloud/compute",
+)
+proto_library_with_info(
+    name = "compute_proto_with_info",
+    deps = [
+        "@com_google_googleapis//google/cloud:common_resources_proto",
+    ],
+)
+`,
+			wantOmit: false,
+		},
+		{
+			name: "case 4: list concatenation addition present",
+			bazelContent: `
+nodejs_gapic_library(
+    name = "aiplatform_nodejs_gapic",
+    src = ":aiplatform_proto_with_info",
+    package_name = "@google-cloud/aiplatform",
+)
+proto_library_with_info(
+    name = "aiplatform_proto_with_info",
+    deps = [
+        ":aiplatform_proto",
+        "//google/cloud:common_resources_proto",
+    ] + _PROTO_SUBPACKAGE_DEPS,
+)
+`,
+			wantOmit: false,
+		},
+		{
+			name: "case 5: list concatenation addition absent",
+			bazelContent: `
+nodejs_gapic_library(
+    name = "quotas_nodejs_gapic",
+    src = ":quotas_proto_with_info",
+    package_name = "@google-cloud/quotas",
+)
+proto_library_with_info(
+    name = "quotas_proto_with_info",
+    deps = [
+        ":quotas_proto",
+    ] + _PROTO_SUBPACKAGE_DEPS,
+)
+`,
+			wantOmit: true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			apiPath := "google/cloud/test/v1"
+			fullPath := filepath.Join(tmpDir, apiPath)
+			if err := os.MkdirAll(fullPath, 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(filepath.Join(fullPath, "BUILD.bazel"), []byte(test.bazelContent), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := parseBazelNodejsInfo(tmpDir, apiPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got == nil {
+				t.Fatal("expected non-nil nodejsGapicInfo")
+			}
+			if got.omitCommonResources != test.wantOmit {
+				t.Errorf("parseBazelNodejsInfo() omitCommonResources = %v, want %v", got.omitCommonResources, test.wantOmit)
+			}
+		})
+	}
+}
