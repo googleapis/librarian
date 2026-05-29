@@ -76,7 +76,7 @@ func (c *codec) outputPath(elem ...string) string {
 	if c.Module {
 		return filepath.Join(elem...)
 	}
-	full := make([]string, len(elem)+2)
+	full := make([]string, 0, len(elem)+2)
 	full = append(full, "Sources", c.PackageName)
 	full = append(full, elem...)
 	return filepath.Join(full...)
