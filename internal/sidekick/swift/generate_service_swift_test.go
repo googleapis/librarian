@@ -52,6 +52,7 @@ func TestGenerateService_Files(t *testing.T) {
 		"Clients.swift",
 		"SecretManagerServiceStub.swift",
 		"SecretManagerServiceLogging.swift",
+		"SecretManagerServiceRetry.swift",
 	}
 	for _, expected := range wantFiles {
 		filename := filepath.Join(expectedDir, expected)
