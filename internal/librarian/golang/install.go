@@ -26,8 +26,9 @@ import (
 )
 
 const (
-	goBinEnvVar        = "GOBIN"
-	librarianDirEnvVar = "LIBRARIAN_INSTALL_DIR"
+	envGoBin        = "GOBIN"
+	envLibrarianDir = "LIBRARIAN_INSTALL_DIR"
+	toolsDir        = "go_tools"
 )
 
 var (
@@ -50,7 +51,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	if err != nil {
 		return err
 	}
-	env := map[string]string{goBinEnvVar: filepath.Join(installDir, "bin")}
+	env := map[string]string{envGoBin: filepath.Join(installDir, "bin")}
 	for _, tool := range goTools {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
@@ -65,13 +66,13 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 
 // getInstallDir gets the directory where tools should be installed.
 func getInstallDir() (string, error) {
-	dir := os.Getenv(librarianDirEnvVar)
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get user home directory: %w", err)
-		}
-		dir = filepath.Join(home, "go_tools")
+	installDir := os.Getenv(envLibrarianDir)
+	if installDir != "" {
+		return filepath.Abs(installDir)
 	}
-	return filepath.Abs(dir)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	return filepath.Abs(filepath.Join(homeDir, toolsDir))
 }

@@ -17,6 +17,7 @@ package golang
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -33,7 +34,12 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 	if err != nil {
 		return err
 	}
-	return command.Run(ctx, "goimports", args...)
+	installDir, err := getInstallDir()
+	if err != nil {
+		return err
+	}
+	formatter := filepath.Join(installDir, "bin", "goimports")
+	return command.Run(ctx, formatter, args...)
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {

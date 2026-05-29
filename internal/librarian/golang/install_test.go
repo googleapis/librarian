@@ -43,7 +43,7 @@ func TestInstall_Error(t *testing.T) {
 
 func TestInstall_Success(t *testing.T) {
 	installDir := t.TempDir()
-	t.Setenv(librarianDirEnvVar, installDir)
+	t.Setenv(envLibrarianDir, installDir)
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -82,16 +82,13 @@ func TestGetInstallDir(t *testing.T) {
 	}{
 		{
 			name: "LIBRARIAN_INSTALL_DIR set",
-			env:  map[string]string{librarianDirEnvVar: "/custom/install/dir"},
+			env:  map[string]string{envLibrarianDir: "/custom/install/dir"},
 			want: "/custom/install/dir",
 		},
 		{
-			name: "LIBRARIAN_INSTALL_DIR empty, home set",
+			name: "LIBRARIAN_INSTALL_DIR empty",
 			env: map[string]string{
-				librarianDirEnvVar: "",
-				"HOME":             "/my/home",
-				// USERPROFILE is set on Windows, and is checked before HOME.
-				"USERPROFILE": "/my/home",
+				"HOME": "/my/home",
 			},
 			want: "/my/home/go_tools",
 		},

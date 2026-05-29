@@ -194,7 +194,14 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googl
 		return err
 	}
 	args = append(args, protoFiles...)
-	return command.Run(ctx, args[0], args[1:]...)
+	installDir, err := getInstallDir()
+	if err != nil {
+		return err
+	}
+	binDir := filepath.Join(installDir, "bin")
+	// Set PATH to include binDir so that tools can be found.
+	env := map[string]string{"PATH": binDir + ":" + os.Getenv("PATH")}
+	return command.RunWithEnv(ctx, env, args[0], args[1:]...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {

@@ -17,6 +17,7 @@ package golang
 import (
 	"errors"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"testing"
 
@@ -27,6 +28,19 @@ import (
 
 func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "goimports")
+	goimportsPath, err := exec.LookPath("goimports")
+	if err != nil {
+		t.Fatal(err)
+	}
+	installDir := t.TempDir()
+	binDir := filepath.Join(installDir, "bin")
+	if err := os.MkdirAll(binDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Symlink(goimportsPath, filepath.Join(binDir, "goimports")); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("LIBRARIAN_BIN", installDir)
 	for _, test := range []struct {
 		name       string
 		library    *config.Library
