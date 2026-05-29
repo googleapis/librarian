@@ -293,13 +293,13 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
       }
       ` + "`in`" + ` = value
     }
-    if let header = try container.decodeIfPresent(String.self, forKey: .header) {
+    if let header = try container.decodeIfPresent(Swift.String.self, forKey: .header) {
       try inCheckAndSet(.header(header))
     }
-    if let query = try container.decodeIfPresent(String.self, forKey: .query) {
+    if let query = try container.decodeIfPresent(Swift.String.self, forKey: .query) {
       try inCheckAndSet(.query(query))
     }
-    if let cookie = try container.decodeIfPresent(String.self, forKey: .cookie) {
+    if let cookie = try container.decodeIfPresent(Swift.String.self, forKey: .cookie) {
       try inCheckAndSet(.cookie(cookie))
     }
     self.` + "`in` = `in`" + `
