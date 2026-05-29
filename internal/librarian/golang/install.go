@@ -31,6 +31,7 @@ const (
 	// for tool binaries.
 	envLibrarianDir = "LIBRARIAN_INSTALL_DIR"
 	toolsDir        = "go_tools"
+	binDir          = "bin"
 )
 
 var (
@@ -53,7 +54,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	if err != nil {
 		return err
 	}
-	env := map[string]string{envGoBin: filepath.Join(installDir, "bin")}
+	env := map[string]string{envGoBin: filepath.Join(installDir, binDir)}
 	for _, tool := range goTools {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)

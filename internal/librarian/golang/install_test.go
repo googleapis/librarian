@@ -66,7 +66,7 @@ func TestInstall_Success(t *testing.T) {
 		"protoc-gen-go",
 	} {
 		t.Run(tool, func(t *testing.T) {
-			path := filepath.Join(installDir, "bin", tool+suffix)
+			path := filepath.Join(installDir, binDir, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
 			}
