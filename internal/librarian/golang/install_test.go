@@ -87,9 +87,7 @@ func TestGetInstallDir(t *testing.T) {
 		},
 		{
 			name: "LIBRARIAN_INSTALL_DIR empty",
-			env: map[string]string{
-				"HOME": "/my/home",
-			},
+			env:  map[string]string{"HOME": "/my/home"},
 			want: "/my/home/go_tools",
 		},
 	} {
