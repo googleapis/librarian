@@ -139,7 +139,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if toolchain != "" {
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
-	return command.RunInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
+	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
@@ -163,7 +163,7 @@ func updateSnippetsModule(ctx context.Context, library *config.Library, outDir s
 	if toolchain != "" {
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
-	return command.RunInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
+	return runInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
 		"-require="+modPath+"@v0.0.0",
 		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }
@@ -194,7 +194,7 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googl
 		return err
 	}
 	args = append(args, protoFiles...)
-	return command.Run(ctx, args[0], args[1:]...)
+	return runWithEnv(ctx, nil, args[0], args[1:]...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {

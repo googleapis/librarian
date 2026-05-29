@@ -18,16 +18,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// errMissingToolVersion indicates a go tool entry is missing its version.
-var errMissingToolVersion = errors.New("go tool missing version")
+const (
+	envGoBin = "GOBIN"
+	// TODO(https://github.com/googleapis/librarian/issues/5850): Use LIBRARIAN_BIN
+	// for tool binaries.
+	envLibrarianDir = "LIBRARIAN_INSTALL_DIR"
+	toolsDir        = "go_tools"
+	binDir          = "bin"
+)
 
-// errNoToolsSpecified indicates no Go tools were provided in the configuration.
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var (
+	// errMissingToolVersion indicates a go tool entry is missing its version.
+	errMissingToolVersion = errors.New("go tool missing version")
+	// errNoToolsSpecified indicates no Go tools were provided in the configuration.
+	errNoToolsSpecified = errors.New("no tools specified in configuration")
+)
 
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
@@ -38,14 +50,32 @@ func Install(ctx context.Context, tools *config.Tools) error {
 }
 
 func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
+	installDir, err := getInstallDir()
+	if err != nil {
+		return err
+	}
+	env := map[string]string{envGoBin: filepath.Join(installDir, binDir)}
 	for _, tool := range goTools {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
 		}
 		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.Run(ctx, command.Go, "install", toolStr); err != nil {
+		if err := runWithEnv(ctx, env, command.Go, "install", toolStr); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+// getInstallDir gets the directory where tools should be installed.
+func getInstallDir() (string, error) {
+	installDir := os.Getenv(envLibrarianDir)
+	if installDir != "" {
+		return filepath.Abs(installDir)
+	}
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return "", fmt.Errorf("failed to get user home directory: %w", err)
+	}
+	return filepath.Abs(filepath.Join(homeDir, toolsDir))
 }
