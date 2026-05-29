@@ -59,7 +59,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
 		}
 		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.RunWithEnv(ctx, env, command.Go, "install", toolStr); err != nil {
+		if err := runWithEnv(ctx, env, command.Go, "install", toolStr); err != nil {
 			return err
 		}
 	}
