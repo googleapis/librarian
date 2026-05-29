@@ -258,14 +258,16 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			}
 
 			want := &fieldAnnotations{
-				Name:              "childNode",
-				DocLines:          []string{"Recursive link."},
-				FieldType:         test.wantType,
-				BaseFieldType:     test.wantBaseType,
-				PackageName:       "test",
-				Recursive:         test.wantRecursive,
-				InitializerType:   test.wantInitType,
-				OneOfPropertyName: test.oneofProperty,
+				Name:            "childNode",
+				DocLines:        []string{"Recursive link."},
+				FieldType:       test.wantType,
+				BaseFieldType:   test.wantBaseType,
+				PackageName:     "test",
+				Recursive:       test.wantRecursive,
+				InitializerType: test.wantInitType,
+			}
+			if test.isOneOf {
+				want.OneOfChecker = test.oneofProperty + "CheckAndSet"
 			}
 
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
