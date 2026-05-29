@@ -1218,46 +1218,59 @@ func TestResolveNodejsAPI(t *testing.T) {
 			name: "omit common resources is true",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
-					OmitCommonResources: true,
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/api/cloudquotas/v1",
+							OmitCommonResources: true,
+						},
+					},
 				},
 			},
 			api: &config.API{Path: "google/api/cloudquotas/v1"},
 			want: &config.NodejsAPI{
-				Path:             "google/api/cloudquotas/v1",
-				AdditionalProtos: nil,
+				Path:                "google/api/cloudquotas/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    nil,
 			},
 		},
 		{
 			name: "omit common resources is true, package-level additional protos preserved",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
-					OmitCommonResources: true,
-					AdditionalProtos:    []string{"pkg.proto"},
-				},
-			},
-			api: &config.API{Path: "google/cloud/secretmanager/v1"},
-			want: &config.NodejsAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{"pkg.proto"},
-			},
-		},
-		{
-			name: "omit common resources is true, api-level additional protos preserved",
-			library: &config.Library{
-				Nodejs: &config.NodejsPackage{
-					OmitCommonResources: true,
+					AdditionalProtos: []string{"pkg.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
-							Path:             "google/cloud/secretmanager/v1",
-							AdditionalProtos: []string{"api.proto"},
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
 						},
 					},
 				},
 			},
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
-				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{"api.proto"},
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto"},
+			},
+		},
+		{
+			name: "omit common resources is true, api-level additional protos preserved",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"api.proto"},
 			},
 		},
 	} {

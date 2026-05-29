@@ -766,10 +766,6 @@ type NodejsPackage struct {
 	// NodejsAPIs is a list of Node.js-specific API configurations.
 	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
 
-	// OmitCommonResources indicates whether to omit the default inclusion of
-	// google/cloud/common_resources.proto.
-	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
-
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
 }
@@ -782,6 +778,10 @@ type NodejsAPI struct {
 	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+
+	// OmitCommonResources indicates whether to omit the default inclusion of
+	// google/cloud/common_resources.proto.
+	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`

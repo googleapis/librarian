@@ -130,7 +130,22 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		Path: api.Path,
 	}
 
-	omitCommon := library.Nodejs != nil && library.Nodejs.OmitCommonResources
+	var apiConfig *config.NodejsAPI
+	if library.Nodejs != nil {
+		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
+			if nodejsAPI.Path == api.Path {
+				apiConfig = nodejsAPI
+				break
+			}
+		}
+	}
+
+	omitCommon := false
+	if apiConfig != nil {
+		omitCommon = apiConfig.OmitCommonResources
+		res.DIREGAPIC = apiConfig.DIREGAPIC
+		res.OmitCommonResources = apiConfig.OmitCommonResources
+	}
 
 	var protos []string
 	if !omitCommon {
@@ -145,15 +160,11 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	// Add package-level additional protos.
 	protos = append(protos, library.Nodejs.AdditionalProtos...)
 
-	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
-		if nodejsAPI.Path != api.Path {
-			continue
-		}
-		// Add API-level additional protos.
-		protos = append(protos, nodejsAPI.AdditionalProtos...)
-		res.DIREGAPIC = nodejsAPI.DIREGAPIC
-		break
+	// Add API-level additional protos.
+	if apiConfig != nil {
+		protos = append(protos, apiConfig.AdditionalProtos...)
 	}
+
 	res.AdditionalProtos = unique(protos)
 	return res
 }

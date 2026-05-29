@@ -209,9 +209,6 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 			if info.mixins != "" {
 				library.Nodejs.Mixins = info.mixins
 			}
-			if info.omitCommonResources {
-				library.Nodejs.OmitCommonResources = true
-			}
 		}
 	}
 
@@ -270,11 +267,20 @@ func buildNodejsLibraryAPIs(googleapisDir string, apis []*config.API) []*config.
 	var nodejsAPIs []*config.NodejsAPI
 	for _, api := range apis {
 		info, err := parseBazelNodejsInfo(googleapisDir, api.Path)
-		if err == nil && info != nil && info.diregapic {
-			nodejsAPIs = append(nodejsAPIs, &config.NodejsAPI{
-				Path:      api.Path,
-				DIREGAPIC: true,
-			})
+		if err != nil || info == nil {
+			continue
+		}
+		if info.diregapic || info.omitCommonResources {
+			apiConfig := &config.NodejsAPI{
+				Path: api.Path,
+			}
+			if info.diregapic {
+				apiConfig.DIREGAPIC = true
+			}
+			if info.omitCommonResources {
+				apiConfig.OmitCommonResources = true
+			}
+			nodejsAPIs = append(nodejsAPIs, apiConfig)
 		}
 	}
 	return nodejsAPIs
