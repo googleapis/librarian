@@ -1390,4 +1390,3 @@ func TestRemoveRedundantLinterFiles(t *testing.T) {
 		})
 	}
 }
-
