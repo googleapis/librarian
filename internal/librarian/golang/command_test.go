@@ -23,18 +23,18 @@ import (
 
 func TestMergeEnv(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		env     map[string]string
-		envPath string
-		want    func(base string) map[string]string
+		name string
+		env  map[string]string
+		path string
+		want func(base string) map[string]string
 	}{
 		{
-			name:    "nil env",
-			env:     nil,
-			envPath: "/original/path",
+			name: "nil env",
+			env:  nil,
+			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					"PATH": filepath.Join(base, "bin") + ":/original/path",
+					envPath: filepath.Join(base, binDir) + ":/original/path",
 				}
 			},
 		},
@@ -43,23 +43,23 @@ func TestMergeEnv(t *testing.T) {
 			env: map[string]string{
 				"FOO": "bar",
 			},
-			envPath: "/original/path",
+			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					"PATH": filepath.Join(base, "bin") + ":/original/path",
-					"FOO":  "bar",
+					envPath: filepath.Join(base, binDir) + ":/original/path",
+					"FOO":   "bar",
 				}
 			},
 		},
 		{
 			name: "env overrides PATH",
 			env: map[string]string{
-				"PATH": "/env/custom/path",
+				envPath: "/env/custom/path",
 			},
-			envPath: "/original/path",
+			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					"PATH": "/env/custom/path",
+					envPath: "/env/custom/path",
 				}
 			},
 		},
@@ -67,7 +67,7 @@ func TestMergeEnv(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			baseDir := t.TempDir()
 			t.Setenv(envLibrarianDir, baseDir)
-			t.Setenv("PATH", test.envPath)
+			t.Setenv(envPath, test.path)
 			got, err := mergeEnv(test.env)
 			if err != nil {
 				t.Fatal(err)
