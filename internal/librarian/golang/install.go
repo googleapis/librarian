@@ -26,7 +26,9 @@ import (
 )
 
 const (
-	envGoBin        = "GOBIN"
+	envGoBin = "GOBIN"
+	// TODO(https://github.com/googleapis/librarian/issues/5850): Use LIBRARIAN_BIN
+	// for tool binaries.
 	envLibrarianDir = "LIBRARIAN_INSTALL_DIR"
 	toolsDir        = "go_tools"
 )
