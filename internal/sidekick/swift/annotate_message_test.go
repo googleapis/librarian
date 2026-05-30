@@ -286,3 +286,51 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateMessage_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name           string
+		msgName        string
+		wantExpression string
+	}{
+		{"Shared message used by both services", "SharedMessage", "Service1 || Service2"},
+		{"Message used by Service1 only", "Service1Message", "Service1"},
+		{"Message used by Service2 only", "Service2Message", "Service2"},
+		{"Message used by neither service", "UnusedMessage", "Service1 && Service2"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var msg *api.Message
+			for m := range model.AllMessages() {
+				if m.Name == test.msgName {
+					msg = m
+					break
+				}
+			}
+			if msg == nil {
+				t.Fatalf("message %s not found", test.msgName)
+			}
+			ann, ok := msg.Codec.(*messageAnnotations)
+			if !ok {
+				t.Fatalf("expected msg.Codec to be *messageAnnotations, got %T", msg.Codec)
+			}
+
+			if diff := cmp.Diff(test.wantExpression, ann.GateExpression()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			if !ann.IsGated() {
+				t.Error("expected IsGated() to be true")
+			}
+		})
+	}
+}

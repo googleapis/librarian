@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -28,6 +29,39 @@ type enumAnnotations struct {
 	DefaultCaseName   string
 	UnknownIntName    string
 	UnknownStringName string
+
+	// GatedBy is the list of package traits that enables this enum.
+	//
+	// Empty unless the package is configured with `per_service_traits` enabled.
+	GatedBy []string
+
+	// GatedOp is the operation (&& or ||) to combine all the `GatedBy` traits.
+	//
+	// For most enums, this is " || ", as enums are enabled when any service
+	// that needs them is enabled. Messages that do not map to any service use
+	// " && ".
+	GatedOp string
+}
+
+// IsGated returns true if this message is gated by some package traits.
+func (ann *enumAnnotations) IsGated() bool {
+	return len(ann.GatedBy) != 0
+}
+
+// GateExpression returns the expression for the `#if` directive.
+//
+// In the generated code this is used as:
+//
+// ```
+// #if {{GateExpression}}
+// ... all the normal code ...
+// #endif
+// ```
+//
+// Directing the compiler to enable the code only if GateExpression evaluates to
+// `true` at compile time.
+func (ann *enumAnnotations) GateExpression() string {
+	return strings.Join(ann.GatedBy, ann.GatedOp)
 }
 
 func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {

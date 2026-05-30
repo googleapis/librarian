@@ -271,3 +271,32 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 		t.Errorf("expected GoogleCloudGax dependency to be present in DependsOn")
 	}
 }
+
+func TestModelAnnotations_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+	codec.DefaultTraits = []string{"Service1"}
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := model.Codec.(*modelAnnotations)
+	if !ok {
+		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
+	}
+
+	wantAllTraits := []string{"Service1", "Service2"}
+	if diff := cmp.Diff(wantAllTraits, ann.AllTraits); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	if !ann.HasTraits() {
+		t.Error("expected HasTraits() to be true")
+	}
+
+	if diff := cmp.Diff([]string{"Service1"}, ann.DefaultTraits); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

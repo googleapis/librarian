@@ -21,6 +21,9 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.Name}}
+{{/Codec.IsGated}}
 // snippet.show
 import Foundation
 import {{Codec.PackageName}}
@@ -49,3 +52,6 @@ struct SnippetRunner {
         }
     }
 }
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

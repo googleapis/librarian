@@ -16,6 +16,7 @@ package swift
 
 import (
 	"cmp"
+	"log/slog"
 	"maps"
 	"slices"
 
@@ -23,12 +24,15 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear string
-	BoilerPlate   []string
-	PackageName   string
-	MonorepoRoot  string
-	DependsOn     map[string]*Dependency
-	WktPackage    string
+	CopyrightYear    string
+	BoilerPlate      []string
+	PackageName      string
+	MonorepoRoot     string
+	DependsOn        map[string]*Dependency
+	WktPackage       string
+	PerServiceTraits bool
+	DefaultTraits    []string
+	AllTraits        []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -46,6 +50,10 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	return deps
 }
 
+func (ann *modelAnnotations) HasTraits() bool {
+	return len(ann.AllTraits) != 0
+}
+
 func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
 		CopyrightYear: c.GenerationYear,
@@ -54,6 +62,7 @@ func (c *codec) annotateModel() error {
 		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
 		WktPackage:    wellKnownSwiftPackage,
+		DefaultTraits: c.DefaultTraits,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
@@ -69,10 +78,49 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
+	// The services are annotated last because the annotation assumes messages
+	// and enums are already annotated.
+	allTraits := make([]string, 0, len(c.Model.Services))
 	for _, service := range c.Model.Services {
 		if err := c.annotateService(service, annotations); err != nil {
 			return err
 		}
+		allTraits = append(allTraits, c.traitName(service))
+	}
+	if !c.PerServiceTraits {
+		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
+		// the time, only a handful of packages exceeded this number of services.
+		if len(c.Model.Services) > 15 {
+			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.PackageName, "count", len(c.Model.Services))
+		}
+		return nil
+	}
+	// Rarely, some messages and enums are not used by any service. These
+	// will lack any feature gates, but may depend on messages that do.
+	// Change them to work only if all features are enabled.
+	slices.Sort(allTraits)
+	annotations.AllTraits = allTraits
+	for msg := range c.Model.AllMessages() {
+		if msg.Codec == nil {
+			continue
+		}
+		annotation := msg.Codec.(*messageAnnotations)
+		if len(annotation.GatedBy) > 0 {
+			continue
+		}
+		annotation.GatedOp = " && "
+		annotation.GatedBy = allTraits
+	}
+	for enum := range c.Model.AllEnums() {
+		if enum.Codec == nil {
+			continue
+		}
+		annotation := enum.Codec.(*enumAnnotations)
+		if len(annotation.GatedBy) > 0 {
+			continue
+		}
+		annotation.GatedOp = " && "
+		annotation.GatedBy = allTraits
 	}
 	return nil
 }
