@@ -203,8 +203,8 @@ func TestGenerateService_QueryParameters(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
-	got = extractBlock(t, contentStr, `request.expiration.map {`, `prefix: "ttlDays")`)
-	want = `request.expiration.map { (oneof) -> Swift.String? in
+	got = extractBlock(t, contentStr, `request.expiration.flatMap {`, `prefix: "ttlDays")`)
+	want = `request.expiration.flatMap { (oneof) -> Swift.String? in
             if case let .ttlDays(v) = oneof { v } else { nil }
           }, prefix: "ttlDays")`
 	if diff := cmp.Diff(want, got); diff != "" {

@@ -69,7 +69,7 @@ extension Clients {
       {{#IsOneOf}}
       query.append(
         contentsOf: try encoder.encode(
-          request.{{Group.Codec.PropertyName}}.map { (oneof) -> {{Codec.BaseFieldType}}? in
+          request.{{Group.Codec.PropertyName}}.flatMap { (oneof) -> {{Codec.BaseFieldType}}? in
             if case let .{{Codec.Name}}(v) = oneof { v } else { nil }
           }, prefix: "{{JSONName}}"))
       {{/IsOneOf}}
