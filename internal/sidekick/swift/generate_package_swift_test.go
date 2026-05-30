@@ -91,11 +91,11 @@ func extractBlock(t *testing.T, content, startStr, endStr string) string {
 	t.Helper()
 	startIdx := strings.Index(content, startStr)
 	if startIdx == -1 {
-		t.Fatalf("Package.swift missing expected block start %q\n\n%s", startStr, content)
+		t.Fatalf("missing expected block start %q\n\n%s", startStr, content)
 	}
 	endIdx := strings.Index(content[startIdx:], endStr)
 	if endIdx == -1 {
-		t.Fatalf("Package.swift missing expected block end %q\n\n%s", endStr, content)
+		t.Fatalf("missing expected block end %q\n\n%s", endStr, content)
 	}
 	return content[startIdx : startIdx+endIdx+len(endStr)]
 }
