@@ -34,7 +34,7 @@ func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: St
     {{> /templates/snippet/generic}}
     {{/Codec.QuickstartMethod}}
     {{^Codec.QuickstartMethod}}
-    // Use `client` to make requests to the {{Codec.Name}}.
+    print("use `client` to make requests: \(client)")
     {{/Codec.QuickstartMethod}}
 }
 // snippet.hide
