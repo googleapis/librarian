@@ -171,8 +171,7 @@ func (c *codec) addFeatureAnnotations(
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		index, _ := slices.BinarySearch(annotation.GatedBy, traitName)
-		annotation.GatedBy = slices.Insert(annotation.GatedBy, index, traitName)
+		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
 		annotation.GatedOp = " || "
 	}
 	for _, id := range deps.Messages {
@@ -185,8 +184,7 @@ func (c *codec) addFeatureAnnotations(
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		index, _ := slices.BinarySearch(annotation.GatedBy, traitName)
-		annotation.GatedBy = slices.Insert(annotation.GatedBy, index, traitName)
+		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
 		annotation.GatedOp = " || "
 	}
 	return nil
@@ -194,4 +192,11 @@ func (c *codec) addFeatureAnnotations(
 
 func (c *codec) traitName(service *api.Service) string {
 	return pascalCase(service.Name)
+}
+
+func insertGatingTrait(gatedBy []string, traitName string) []string {
+	if index, found := slices.BinarySearch(gatedBy, traitName); !found {
+		gatedBy = slices.Insert(gatedBy, index, traitName)
+	}
+	return gatedBy
 }
