@@ -29,6 +29,7 @@ import (
 
 var supportedLanguages = []string{
 	"go",
+	"java",
 	"python",
 	"rust",
 }

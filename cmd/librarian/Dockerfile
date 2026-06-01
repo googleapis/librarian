@@ -62,6 +62,12 @@ ARG GO_GOIMPORTS_VERSION=latest
 # NodeJS dependency versions
 ARG NODEJS_PROTOC_VERSION=33.2
 ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+
+# Java dependency versions
+ARG JAVA_PROTOC_VERSION=33.2
+ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+ARG JAVA_VERSION=17
+ARG JAVA_PYTHON_VERSION=3.12
 ARG NODEJS_NVM_VERSION=0.40.4
 ARG NODEJS_NVM_CHECKSUM=a8e082d8d1a9b61a09e5d3e1902d2930e5b1b84a86f9777c7d2eb50ea204c0141f6a97c54a860bc3282e7b000f1c669c755f5e0db7bd6d492072744c302c0a21
 ARG NODEJS_NODE_VERSION=18
@@ -296,3 +302,62 @@ RUN chmod a+x /root
 # nvm from Librarian. We're only using it to set up the right version of Node.
 RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
 ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
+
+# ============== Java Stage ==============
+ARG JAVA_PYTHON_VERSION
+FROM python:${JAVA_PYTHON_VERSION}-slim AS java
+ARG JAVA_PROTOC_VERSION
+ARG JAVA_PROTOC_CHECKSUM
+ARG JAVA_VERSION
+
+# Copy librarian from build stage
+COPY --from=build /go/bin/librarian /app/librarian
+
+WORKDIR /app
+ENTRYPOINT ["/app/librarian"]
+
+# Configure Adoptium APT repository and install Temurin 17 JDK, Maven, and runtime tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip \
+    curl \
+    git \
+    ca-certificates \
+    gnupg \
+    apt-transport-https \
+    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null \
+    && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo "$VERSION_CODENAME") main" | tee /etc/apt/sources.list.d/adoptium.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    temurin-${JAVA_VERSION}-jdk \
+    maven \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Java-specific protoc version
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${JAVA_PROTOC_VERSION}/protoc-${JAVA_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${JAVA_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
+# Configure pip for external sources (PyPI) globally
+RUN pip config set global.extra-index-url https://pypi.org/simple
+
+# Setup dynamic target directories inside the persistent volume.
+# This ensures that Python packages are persisted alongside Java tools,
+# while completely bypassing dynamic caller permissions.
+ENV LIBRARIAN_INSTALL_DIR=/usr/local/java_tools/bin
+ENV PATH=${LIBRARIAN_INSTALL_DIR}:${PATH}
+
+# Redirect all pip installations to be stored directly inside the volume
+ENV PYTHONPATH=/usr/local/java_tools/python-packages
+ENV PATH=${PYTHONPATH}/bin:${PATH}
+ENV PIP_TARGET=${PYTHONPATH}
+ENV PIP_NO_CACHE_DIR=1
+
+# Persist repository downloads inside the volume cache to save bandwidth and build time
+ENV LIBRARIAN_CACHE=/usr/local/java_tools/cache
+
+# Create java_tools directory and grant broad write permissions.
+# This allows any arbitrary UID running the container (like librarianops) to
+# execute `librarian install java` and write tools and packages to the global path.
+RUN mkdir -p /usr/local/java_tools && \
+    chmod -R a+rwx /usr/local/java_tools
+
