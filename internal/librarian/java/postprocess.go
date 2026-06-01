@@ -355,7 +355,15 @@ func restructureModules(p postProcessParams, destRoot string) error {
 //     directory in google-cloud-java/sdk-platform-java.
 //  4. python3 is available on the system PATH and has the synthtool package
 //     installed (from google-cloud-java/sdk-platform-java).
-func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) error {
+func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) (retErr error) {
+	// Clean up the staging directory on failure to avoid leaving dirty leftovers.
+	// If owlbot.py completes successfully, it is expected to clean it up.
+	defer func() {
+		if retErr != nil {
+			_ = os.RemoveAll(stagingDir(outDir))
+		}
+	}()
+
 	releasedVersion, err := deriveLastReleasedVersion(library.Version)
 	if err != nil {
 		return fmt.Errorf("%w %q: %w", errInvalidVersion, library.Version, err)

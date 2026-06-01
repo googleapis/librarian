@@ -75,6 +75,7 @@ extension Clients {
     /// Creates a new `{{Codec.ClientName}}` instance.
     public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
       var inner: any {{Codec.StubPrefix}}Stub = try {{Codec.StubPrefix}}Transport(options)
+      inner = {{Codec.StubPrefix}}Retry(inner, options: options)
       if let logger = options.logger {
         inner = {{Codec.StubPrefix}}Logging(inner, logger: logger)
       }

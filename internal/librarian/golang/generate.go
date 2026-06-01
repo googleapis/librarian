@@ -35,6 +35,8 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
+const defaultSampleURI = "https://cloud.google.com/docs/samples?l=go"
+
 var (
 	//go:embed template/_README.md.txt
 	readmeTmpl       string
@@ -74,6 +76,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	var fallbackTitle string
+	var customSampleURI string
 	for i, api := range library.APIs {
 		goAPI := findGoAPI(library, api.Path)
 		if goAPI == nil {
@@ -96,12 +99,18 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		if i == 0 {
 			fallbackTitle = sc.Title
 		}
+		// Use the sample URI from the first API that has one defined.
+		if customSampleURI == "" {
+			customSampleURI = sampleURI(sc)
+		}
 		if err := generateRepoMetadata(sc, library, goAPI); err != nil {
 			return fmt.Errorf("failed to generate repo metadata: %w", err)
 		}
-
 	}
-	if err := generateREADME(library, fallbackTitle, outDir); err != nil {
+	if customSampleURI == "" {
+		customSampleURI = defaultSampleURI
+	}
+	if err := generateREADME(library, fallbackTitle, customSampleURI, outDir); err != nil {
 		return fmt.Errorf("failed to generate README: %w", err)
 	}
 	if err := generateInternalVersionFile(outDir, library.CopyrightYear, library.Version); err != nil {
@@ -130,7 +139,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if toolchain != "" {
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
-	return command.RunInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
+	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
 // updateSnippetsModule updates the snippets module's go.mod file with a requirement
@@ -154,7 +163,7 @@ func updateSnippetsModule(ctx context.Context, library *config.Library, outDir s
 	if toolchain != "" {
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
-	return command.RunInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
+	return runInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
 		"-require="+modPath+"@v0.0.0",
 		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }
@@ -185,7 +194,7 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googl
 		return err
 	}
 	args = append(args, protoFiles...)
-	return command.Run(ctx, args[0], args[1:]...)
+	return runWithEnv(ctx, nil, args[0], args[1:]...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {
@@ -320,12 +329,10 @@ func collectProtoFiles(googleapisDir, apiPath string, nestedProtos []string) ([]
 
 // generateREADME generates the top-level README for the library.
 // We only generate one README for the entire library.
-func generateREADME(library *config.Library, fallbackTitle string, moduleRoot string) error {
+func generateREADME(library *config.Library, fallbackTitle, sampleURI, moduleRoot string) error {
 	readmePath := filepath.Join(moduleRoot, "README.md")
 	// Skip generating README if it's in the keep list.
 	// Handwritten/veneer libraries should have the top-level README in the keep list.
-	// TODO(https://github.com/googleapis/librarian/issues/4113): investigate the difference between
-	// GAPIC and handwritten libraries.
 	for _, k := range library.Keep {
 		path := filepath.Join(moduleRoot, k)
 		if path == readmePath {
@@ -349,6 +356,7 @@ func generateREADME(library *config.Library, fallbackTitle string, moduleRoot st
 	err = readmeTmplParsed.Execute(f, map[string]string{
 		"Name":       title,
 		"ModulePath": modulePath(library),
+		"SampleURI":  sampleURI,
 	})
 	cerr := f.Close()
 	if err != nil {
@@ -372,4 +380,17 @@ func transport(sc *serviceconfig.API) serviceconfig.Transport {
 // preview library.
 func isPreview(output string) bool {
 	return strings.Contains(output, "preview/internal")
+}
+
+// sampleURI gets the sample URI from serviceconfig.API for language Go.
+//
+// The default value is the empty string.
+func sampleURI(sc *serviceconfig.API) string {
+	if sc == nil || sc.SampleURIs == nil {
+		return ""
+	}
+	if uri, ok := sc.SampleURIs[config.LanguageGo]; ok {
+		return uri
+	}
+	return ""
 }

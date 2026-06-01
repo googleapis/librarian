@@ -21,6 +21,7 @@ import (
 	"runtime"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -41,11 +42,8 @@ func TestInstall_Error(t *testing.T) {
 }
 
 func TestInstall_Success(t *testing.T) {
-	gobin := t.TempDir()
-	t.Setenv("GOBIN", gobin)
-	// Although these are used in tests, they do not need to be updated since they are only testing
-	// that the tools can be read and installed, but not necessarily whether their version is compatible
-	// with librarian
+	installDir := t.TempDir()
+	t.Setenv(envLibrarianDir, installDir)
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -68,9 +66,41 @@ func TestInstall_Success(t *testing.T) {
 		"protoc-gen-go",
 	} {
 		t.Run(tool, func(t *testing.T) {
-			path := filepath.Join(gobin, tool+suffix)
+			path := filepath.Join(installDir, binDir, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
+			}
+		})
+	}
+}
+
+func TestGetInstallDir(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		env  map[string]string
+		want string
+	}{
+		{
+			name: "LIBRARIAN_INSTALL_DIR set",
+			env:  map[string]string{envLibrarianDir: "/custom/install/dir"},
+			want: "/custom/install/dir",
+		},
+		{
+			name: "LIBRARIAN_INSTALL_DIR empty",
+			env:  map[string]string{"HOME": "/my/home"},
+			want: "/my/home/go_tools",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for k, v := range test.env {
+				t.Setenv(k, v)
+			}
+			got, err := getInstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

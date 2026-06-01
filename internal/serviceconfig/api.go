@@ -88,11 +88,12 @@ type API struct {
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, the generator default is used.
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
-	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
-	// standardize release level vocabulary across languages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
+
+	// SampleURIs is the documentation URI for code samples per language.
+	// Map key is the language name (e.g., "go", "python").
+	// Optional. If omitted, a default URI for the language is used.
+	SampleURIs map[string]string `yaml:"sample_uris,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
 	// publishing section.

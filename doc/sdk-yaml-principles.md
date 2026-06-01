@@ -21,11 +21,11 @@ Librarian relies on conventions and discovery logic to determine how to
 generate and release clients for Google Cloud and other APIs. By default, these
 are the principles that librarian follows:
 
-- All APIs under `google/cloud` that are GA and contain a publishing section
+- All APIs that are GA and contain a publishing section
   ([example](https://github.com/googleapis/googleapis/blob/cf027ac51c71290c7357e4c98cf4e6dbb0157346/google/cloud/secretmanager/v1/secretmanager_v1.yaml#L44))
   should have a client library for every language.
-- Any API that falls outside of that range must be explicitly listed in
-  `sdk.yaml`.
+- Any API that does not meet the above criteria must be explicitly listed
+  in the `sdk.yaml` file to be onboarded.
 
 See the [sdk.yaml documentation](https://github.com/googleapis/librarian/blob/main/doc/api-allowlist-schema.md)
 for additional information.
@@ -48,12 +48,11 @@ library construction, it should be a configuration property in the
 language-specific library settings. For example, the Python library property
 `default_version` is unique to how Python libraries are packaged and consumed.
 
-### 2. Restricting Languages for Non-Cloud APIs
+### 2. Restricting Languages for an API
 
 By default, Librarian will allow client generation in all supported languages
-for APIs under `google/cloud`. For APIs that live outside the `google/cloud`
-path but still use Librarian's infrastructure, it is often desirable to
-restrict client generation to a specific set of languages.
+for all APIs. For some APIs, it is desirable to restrict client generation to
+a specific set of languages.
 
 **Example:**
 ```yaml

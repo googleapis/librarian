@@ -21,29 +21,55 @@ import (
 )
 
 type enumAnnotations struct {
-	CopyrightYear   string
-	BoilerPlate     []string
-	Name            string
-	DocLines        []string
-	DefaultCaseName string
+	CopyrightYear     string
+	BoilerPlate       []string
+	Name              string
+	DocLines          []string
+	DefaultCaseName   string
+	UnknownIntName    string
+	UnknownStringName string
 }
 
 func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+	// We need to find non-clashing names for the `unknownIntValue` and
+	// `unknownStringvalue` cases. In practice, no enum uses those names, but
+	// if one ever this, this will add enough trailing `_` to make the name
+	// unique.
+	type u struct{}
+	caseNames := make(map[string]u)
+	uniqueCaseName := func(seed string) string {
+		_, ok := caseNames[seed]
+		for ok {
+			seed = seed + "_"
+			_, ok = caseNames[seed]
+		}
+		return seed
+	}
+
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
 		if err := c.annotateUniqueEnumValue(ev); err != nil {
 			return err
 		}
-		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+		ann := ev.Codec.(*enumValueAnnotations)
+		if ann == nil {
+			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID)
+		}
+		caseNames[ann.CaseName] = u{}
+		existing[ev.Number] = ann
 		if ev.Number == 0 {
-			defaultCaseName = ev.Codec.(*enumValueAnnotations).CaseName
+			defaultCaseName = ann.CaseName
 		}
 	}
 	// Fallback to first case if no 0 value found (should not happen in proto3)
 	if defaultCaseName == "" {
 		if len(enum.UniqueNumberValues) != 0 {
-			defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
+			ann := enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations)
+			if ann == nil {
+				panic("mismatched annotation, previously checked, must be a bug")
+			}
+			defaultCaseName = ann.CaseName
 		} else {
 			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
 		}
@@ -60,11 +86,13 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		return err
 	}
 	annotations := &enumAnnotations{
-		CopyrightYear:   model.CopyrightYear,
-		BoilerPlate:     model.BoilerPlate,
-		Name:            pascalCase(enum.Name),
-		DocLines:        docLines,
-		DefaultCaseName: defaultCaseName,
+		CopyrightYear:     model.CopyrightYear,
+		BoilerPlate:       model.BoilerPlate,
+		Name:              pascalCase(enum.Name),
+		DocLines:          docLines,
+		DefaultCaseName:   defaultCaseName,
+		UnknownIntName:    uniqueCaseName("unknownIntValue"),
+		UnknownStringName: uniqueCaseName("unknownStringValue"),
 	}
 
 	enum.Codec = annotations

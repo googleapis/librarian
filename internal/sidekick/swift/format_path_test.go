@@ -110,7 +110,7 @@ func TestPathVariables(t *testing.T) {
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
-					Expression: ".name as String?",
+					Expression: ".name as Swift.String?",
 					Test:       "!pathVariable0.isEmpty",
 					FieldPath:  "name",
 				},
@@ -126,13 +126,13 @@ func TestPathVariables(t *testing.T) {
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
-					Expression: ".name as String?",
+					Expression: ".name as Swift.String?",
 					Test:       "!pathVariable0.isEmpty",
 					FieldPath:  "name",
 				},
 				{
 					Name:       "pathVariable1",
-					Expression: ".second as String?",
+					Expression: ".second as Swift.String?",
 					Test:       "!pathVariable1.isEmpty",
 					FieldPath:  "second",
 				},
@@ -237,7 +237,7 @@ func TestNewPathVariable(t *testing.T) {
 			count: 0,
 			want: &pathVariable{
 				Name:       "pathVariable0",
-				Expression: ".parent as String?",
+				Expression: ".parent as Swift.String?",
 				Test:       "!pathVariable0.isEmpty",
 				FieldPath:  "parent",
 			},
