@@ -394,3 +394,75 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
+
+func TestAnnotateMethod_LRO(t *testing.T) {
+	inputType := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		Package: "test",
+		ID:      ".test.Operation",
+	}
+	lroResponseType := &api.Message{
+		Name:    "LroResponse",
+		Package: "test",
+		ID:      ".test.LroResponse",
+	}
+	lroMetadataType := &api.Message{
+		Name:    "LroMetadata",
+		Package: "test",
+		ID:      ".test.LroMetadata",
+	}
+
+	method := &api.Method{
+		Name:         "LroMethod",
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+		},
+		IsLRO: true,
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: lroResponseType.ID,
+			MetadataTypeID: lroMetadataType.ID,
+		},
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+	codec := newTestCodec(t, model, nil)
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	gotMethod := method.Codec.(*methodAnnotations)
+	wantMethod := &methodAnnotations{
+		Name:           "lroMethod",
+		PathExpression: "/",
+		HTTPMethod:     "POST",
+		LRO: &lroAnnotations{
+			ReturnType:   "LroResponse",
+			MetadataType: "LroMetadata",
+		},
+		ReturnType: "GoogleTest.Operation",
+	}
+	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
+		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+}

@@ -144,6 +144,53 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 				}
 			}
 		}
+		if method.IsLRO && method.OperationInfo != nil {
+			// LROs depend on PollableOperation package
+			lroDep, err := c.addPackageDependency(lroSwiftPackage)
+			if err != nil {
+				return err
+			}
+			if lroDep != nil {
+				annotations.DependsOn[lroDep.Name] = lroDep
+			}
+
+			// LRO error mapping relies on GoogleRpc.Code, so we depend on GoogleRpc package
+			rpcDep, err := c.addApiPackageDependency("google.rpc")
+			if err != nil {
+				return err
+			}
+			if rpcDep != nil {
+				annotations.DependsOn[rpcDep.Name] = rpcDep
+			}
+
+			// Ensure we have the necessary dependencies for the LRO response and metadata types.
+			respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+			if err != nil {
+				return err
+			}
+			if respMsg.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(respMsg.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+			metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+			if err != nil {
+				return err
+			}
+			if metaMsg.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(metaMsg.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
 	}
 
 	service.Codec = annotations

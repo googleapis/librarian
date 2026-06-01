@@ -33,6 +33,8 @@ const (
 	wellKnownSwiftPackage = "GoogleCloudWkt"
 	// The name of the Swift package that contains the pagination helper types.
 	paginationSwiftPackage = "GoogleCloudGax"
+	// The name of the Swift package that contains the long-running operation helper types.
+	lroSwiftPackage = "GoogleCloudGax"
 )
 
 // codec represents the configuration for a Swift sidekick Codec.
