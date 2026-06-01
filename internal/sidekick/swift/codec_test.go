@@ -119,3 +119,57 @@ func (c *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependenc
 		c.Dependencies = append(c.Dependencies, dep)
 	}
 }
+
+func makeGatedTestModel() *api.API {
+	makeEnum := func(name string) *api.Enum {
+		e := &api.Enum{
+			Name: name, ID: ".google.cloud.test.v1." + name, Package: "google.cloud.test.v1",
+			Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
+		}
+		e.UniqueNumberValues = e.Values
+		return e
+	}
+	sharedEnum := makeEnum("SharedEnum")
+	s1Enum := makeEnum("Service1Enum")
+	s2Enum := makeEnum("Service2Enum")
+	unusedEnum := makeEnum("UnusedEnum")
+
+	sharedMessage := &api.Message{
+		Name: "SharedMessage", ID: ".google.cloud.test.v1.SharedMessage", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: sharedEnum.ID}},
+	}
+	s1Message := &api.Message{
+		Name: "Service1Message", ID: ".google.cloud.test.v1.Service1Message", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s1Enum.ID}},
+	}
+	s2Message := &api.Message{
+		Name: "Service2Message", ID: ".google.cloud.test.v1.Service2Message", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s2Enum.ID}},
+	}
+	unusedMessage := &api.Message{
+		Name: "UnusedMessage", ID: ".google.cloud.test.v1.UnusedMessage", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: unusedEnum.ID}},
+	}
+
+	s1 := &api.Service{
+		Name: "Service1", ID: ".google.cloud.test.v1.Service1", Package: "google.cloud.test.v1",
+		Methods: []*api.Method{
+			{Name: "M1", ID: ".google.cloud.test.v1.Service1.M1", InputTypeID: sharedMessage.ID, OutputTypeID: s1Message.ID},
+		},
+	}
+	s2 := &api.Service{
+		Name: "Service2", ID: ".google.cloud.test.v1.Service2", Package: "google.cloud.test.v1",
+		Methods: []*api.Method{
+			{Name: "M2", ID: ".google.cloud.test.v1.Service2.M2", InputTypeID: sharedMessage.ID, OutputTypeID: s2Message.ID},
+		},
+	}
+
+	model := api.NewTestAPI(
+		[]*api.Message{sharedMessage, s1Message, s2Message, unusedMessage},
+		[]*api.Enum{sharedEnum, s1Enum, s2Enum, unusedEnum},
+		[]*api.Service{s1, s2},
+	)
+	model.PackageName = "google.cloud.test.v1"
+	api.CrossReference(model)
+	return model
+}

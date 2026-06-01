@@ -20,6 +20,9 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.Name}}
+{{/Codec.IsGated}}
 import Foundation
 {{! On Linux we need this additional import for `URLSession`. }}
 #if canImport(FoundationNetworking)
@@ -72,3 +75,6 @@ extension Clients {
     {{/Codec.RestMethods}}
   }
 }
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

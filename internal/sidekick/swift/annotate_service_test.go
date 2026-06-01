@@ -223,3 +223,25 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateService_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, service := range model.Services {
+		t.Run(service.Name, func(t *testing.T) {
+			ann, ok := service.Codec.(*serviceAnnotations)
+			if !ok {
+				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec)
+			}
+			if !ann.IsGated {
+				t.Error("expected IsGated to be true when PerServiceTraits is true")
+			}
+		})
+	}
+}
