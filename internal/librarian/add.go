@@ -251,7 +251,7 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 		lib = java.Add(lib)
 	case config.LanguagePython:
 		var err error
-		lib, err = python.Add(lib)
+		lib, err = python.Add(cfg, lib)
 		if err != nil {
 			return "", nil, err
 		}
