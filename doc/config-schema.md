@@ -368,6 +368,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `allowed_namespaces` | list of string | Contains the list of allowed GAPIC namespaces. If empty, all namespaces are allowed. |
 | `common_gapic_paths` | list of string | Contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). If a library defines its own common_gapic_paths, they will be appended to the defaults. |
 | `library_type` | string | Is the type to emit in .repo-metadata.json. |
 
