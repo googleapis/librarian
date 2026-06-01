@@ -97,6 +97,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                 match &result {
                     Ok(response) => {
                         let op = response.body();
+                        {{^Codec.IsDiscoveryLro}}
                         _span.record("gcp.longrunning.done", op.done);
                         if op.done {
                             let code = match &op.result {
@@ -111,6 +112,11 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                                 _span.record("error.type", google_cloud_gax::error::rpc::Code::from(status.code).to_string());
                             }
                         }
+                        {{/Codec.IsDiscoveryLro}}
+                        {{#Codec.IsDiscoveryLro}}
+                        let done = google_cloud_lro::internal::DiscoveryOperation::done(op);
+                        _span.record("gcp.longrunning.done", done);
+                        {{/Codec.IsDiscoveryLro}}
                     }
                     Err(e) => {
                         _span.record("otel.status_code", "ERROR");
