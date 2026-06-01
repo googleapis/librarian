@@ -30,21 +30,16 @@ jobs:
         run: |
           corepack enable pnpm
           corepack prepare pnpm@7.32.2 --activate
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.14"
       - name: "Install Node.js dependencies (resolve cache paths)"
         id: tool-paths
         run: |
           echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
-          echo "pip=$(python3 -c 'import site; print(site.getsitepackages()[0])')" >> "$GITHUB_OUTPUT"
       - name: "Install Node.js dependencies (restore cache)"
         uses: actions/cache@v5
         id: tools-cache
         with:
           path: |
             ${{ steps.tool-paths.outputs.npm }}
-            ${{ steps.tool-paths.outputs.pip }}
           key: nodejs-tools-v2-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'

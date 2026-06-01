@@ -28,7 +28,10 @@ tools:
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
         - "cp -r templates protos build/"
-        - "pnpm add -g ."
+        # Pass the full directory name into "pnpm add" so that the generator
+        # is registered with the name "gapic-generator-typescript" rather than
+        # an arbitrary name such as "5".
+        - "pnpm add -g \"$PWD\""
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
