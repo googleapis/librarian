@@ -102,10 +102,7 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 	}
 
 	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
-	versions, err := deriveVersionLines(missingArtifacts)
-	if err != nil {
-		return err
-	}
+	versions := deriveVersionLines(missingArtifacts)
 	if err := appendVersions(repoPath, versions); err != nil {
 		return err
 	}
@@ -127,16 +124,13 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 	return nil
 }
 
-func deriveVersionLines(missingArtifacts []MissingArtifact) ([]string, error) {
+func deriveVersionLines(missingArtifacts []MissingArtifact) []string {
 	var lines []string
 	for _, ma := range missingArtifacts {
-		releasedVersion, err := deriveLastReleasedVersion(ma.Library.Version)
-		if err != nil {
-			return nil, fmt.Errorf("failed to derive released version for %s (%s): %w", ma.ID, ma.Library.Version, err)
-		}
+		releasedVersion := ma.Library.Java.ReleasedVersion
 		lines = append(lines, fmt.Sprintf("%s:%s:%s", ma.ID, releasedVersion, ma.Library.Version))
 	}
-	return lines, nil
+	return lines
 }
 
 func appendVersions(repoPath string, versions []string) error {

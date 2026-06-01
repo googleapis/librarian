@@ -221,14 +221,19 @@ func readGenerationConfig(path string) (*GenerationConfig, error) {
 	return yaml.Read[GenerationConfig](filepath.Join(path, generationConfigFileName))
 }
 
-// readVersions parses versions.txt and returns a map of module names to snapshot versions.
+type versionInfo struct {
+	Released string
+	Current  string
+}
+
+// readVersions parses versions.txt and returns a map of module names to version info.
 // It expects the "module:released-version:current-version" format.
-func readVersions(path string) (map[string]string, error) {
+func readVersions(path string) (map[string]versionInfo, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read %s: %w", path, err)
 	}
-	versions := make(map[string]string)
+	versions := make(map[string]versionInfo)
 	lines := strings.Split(string(content), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
@@ -239,18 +244,21 @@ func readVersions(path string) (map[string]string, error) {
 		if len(parts) != 3 {
 			return nil, fmt.Errorf("read versions in %s: line %q has %d parts, want 3", path, line, len(parts))
 		}
-		versions[parts[0]] = parts[2] // snapshot-version
+		versions[parts[0]] = versionInfo{
+			Released: parts[1],
+			Current:  parts[2],
+		}
 	}
 	return versions, nil
 }
 
 // buildConfig converts a GenerationConfig to a Librarian Config.
-func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *config.Source, versions map[string]string) (*config.Config, error) {
+func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *config.Source, versions map[string]versionInfo) (*config.Config, error) {
 	var libs []*config.Library
-	if v, ok := versions["google-cloud-java"]; ok {
+	if vInfo, ok := versions["google-cloud-java"]; ok {
 		libs = append(libs, &config.Library{
 			Name:         "google-cloud-java",
-			Version:      v,
+			Version:      vInfo.Current,
 			SkipGenerate: true,
 		})
 	}
@@ -261,12 +269,15 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 		}
 		output := "java-" + name
 		groupID, artifactID := parseGroupAndArtifactID(l.DistributionName, name)
-		version := versions[artifactID]
+		vInfo := versions[artifactID]
+		version := vInfo.Current
+		releasedVersion := vInfo.Released
 		var apis []*config.API
 		var roots []string
 		if name == showcaseLibraryName {
 			roots = []string{showcaseLibraryName, "googleapis"}
 			version = "0.0.1-SNAPSHOT"
+			releasedVersion = "0.0.0"
 		}
 		for _, g := range l.GAPICs {
 			if g.ProtoPath == "" {
@@ -337,6 +348,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 			Roots:   roots,
 			APIs:    apis,
 			Java: &config.JavaModule{
+				ReleasedVersion:              releasedVersion,
 				APIIDOverride:                l.APIID,
 				APIReference:                 l.APIReference,
 				APIDescriptionOverride:       l.APIDescription,

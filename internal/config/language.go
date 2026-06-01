@@ -518,6 +518,10 @@ type JavaModule struct {
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
+	// ReleasedVersion is the last released version of the library.
+	// Needs to be explicitly listed for README generation.
+	ReleasedVersion string `yaml:"released_version,omitempty"`
+
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.
 	LibraryTypeOverride string `yaml:"library_type_override,omitempty"`
