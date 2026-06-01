@@ -111,11 +111,11 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#OneOfs}}
 
     var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.Checker}} = { (value: {{Codec.Name}}) throws in
+    let {{Codec.Checker}} = {
       if {{Codec.PropertyName}} != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
       }
-      {{Codec.PropertyName}} = value
+      {{Codec.PropertyName}} = $0
     }
     {{#Fields}}
     if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {

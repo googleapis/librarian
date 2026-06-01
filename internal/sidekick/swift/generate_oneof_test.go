@@ -147,11 +147,11 @@ func TestGenerateOneOf(t *testing.T) {
     self.regularString = try container.decode(Swift.String.self, forKey: .regularString)
 
     var choice: OneOf_Choice? = nil
-    let choiceCheckAndSet = { (value: OneOf_Choice) throws in
+    let choiceCheckAndSet = {
       if choice != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
       }
-      choice = value
+      choice = $0
     }
     if let stringField = try container.decodeIfPresent(Swift.String.self, forKey: .stringField) {
       try choiceCheckAndSet(.stringField(stringField))
@@ -287,11 +287,11 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
     let container = try decoder.container(keyedBy: CodingKeys.self)
 
     var ` + "`in`" + `: OneOf_In? = nil
-    let inCheckAndSet = { (value: OneOf_In) throws in
+    let inCheckAndSet = {
       if ` + "`in`" + ` != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '` + "`in`" + `'"))
       }
-      ` + "`in`" + ` = value
+      ` + "`in`" + ` = $0
     }
     if let header = try container.decodeIfPresent(Swift.String.self, forKey: .header) {
       try inCheckAndSet(.header(header))
