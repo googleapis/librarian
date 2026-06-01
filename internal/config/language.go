@@ -785,6 +785,10 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+
+	// CompatibilityResources is the list of resource names for which legacy
+	// single-pattern functions should be generated for compatibility reasons.
+	CompatibilityResources []string `yaml:"compatibility_resources,omitempty"`
 }
 
 // GcloudCommand contains gcloud-specific library configuration.
