@@ -69,7 +69,16 @@ extension Clients {
         Note that `Codec.Name` includes mangling and escaping, while `JSONName` does not. We want the latter
         for the query parameter name, and the former to access the field in the Swift struct.
       }}
+      {{#IsOneOf}}
+      query.append(
+        contentsOf: try encoder.encode(
+          request.{{Group.Codec.PropertyName}}.flatMap { (oneof) -> {{Codec.BaseFieldType}}? in
+            if case let .{{Codec.Name}}(v) = oneof { v } else { nil }
+          }, prefix: "{{JSONName}}"))
+      {{/IsOneOf}}
+      {{^IsOneOf}}
       query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
+      {{/IsOneOf}}
       {{/Codec.QueryParams}}
       var req = try await self.inner.Request(path: path, query: query)
       req.httpMethod = "{{Codec.HTTPMethod}}"
