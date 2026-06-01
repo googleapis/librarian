@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"slices"
 	"strings"
 
@@ -32,6 +33,7 @@ type serviceAnnotations struct {
 	QuickstartMethod *api.Method
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
+	IsGated          bool
 }
 
 // ServiceImports returns the list of dependencies for this service.
@@ -94,6 +96,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 		DependsOn:        map[string]*Dependency{},
+		IsGated:          c.PerServiceTraits,
 	}
 
 	// Iterate through the list of all dependencies declared in librarian.yaml
@@ -141,12 +144,106 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 				}
 			}
 		}
+		if method.IsLRO && method.OperationInfo != nil {
+			// LROs depend on PollableOperation package
+			lroDep, err := c.addPackageDependency(lroSwiftPackage)
+			if err != nil {
+				return err
+			}
+			if lroDep != nil {
+				annotations.DependsOn[lroDep.Name] = lroDep
+			}
+
+			// LRO error mapping relies on GoogleRpc.Code, so we depend on GoogleRpc package
+			rpcDep, err := c.addApiPackageDependency("google.rpc")
+			if err != nil {
+				return err
+			}
+			if rpcDep != nil {
+				annotations.DependsOn[rpcDep.Name] = rpcDep
+			}
+
+			// Ensure we have the necessary dependencies for the LRO response and metadata types.
+			respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+			if err != nil {
+				return err
+			}
+			if respMsg.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(respMsg.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+			metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+			if err != nil {
+				return err
+			}
+			if metaMsg.Package != c.Model.PackageName {
+				dep, err := c.addApiPackageDependency(metaMsg.Package)
+				if err != nil {
+					return err
+				}
+				if dep != nil {
+					annotations.DependsOn[dep.Name] = dep
+				}
+			}
+		}
 	}
 
 	service.Codec = annotations
-	return nil
+	return c.addFeatureAnnotations(service)
 }
 
 func isGeneratedMethod(method *api.Method) bool {
 	return method.PathInfo != nil && len(method.PathInfo.Bindings) != 0
+}
+
+func (c *codec) addFeatureAnnotations(
+	service *api.Service) error {
+	if !c.PerServiceTraits {
+		return nil
+	}
+	traitName := c.traitName(service)
+	deps := api.FindServiceDependencies(c.Model, service.ID)
+	for _, id := range deps.Enums {
+		enum := c.Model.Enum(id)
+		// Some messages are not annotated (e.g. external messages).
+		if enum == nil || enum.Codec == nil {
+			continue
+		}
+		annotation, ok := enum.Codec.(*enumAnnotations)
+		if !ok {
+			return fmt.Errorf("bad annotation type for %s", id)
+		}
+		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
+		annotation.GatedOp = " || "
+	}
+	for _, id := range deps.Messages {
+		msg := c.Model.Message(id)
+		// Some messages are not annotated (e.g. external messages).
+		if msg == nil || msg.Codec == nil {
+			continue
+		}
+		annotation, ok := msg.Codec.(*messageAnnotations)
+		if !ok {
+			return fmt.Errorf("bad annotation type for %s", id)
+		}
+		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
+		annotation.GatedOp = " || "
+	}
+	return nil
+}
+
+func (c *codec) traitName(service *api.Service) string {
+	return pascalCase(service.Name)
+}
+
+func insertGatingTrait(gatedBy []string, traitName string) []string {
+	if index, found := slices.BinarySearch(gatedBy, traitName); !found {
+		gatedBy = slices.Insert(gatedBy, index, traitName)
+	}
+	return gatedBy
 }

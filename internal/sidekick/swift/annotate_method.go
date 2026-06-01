@@ -32,11 +32,17 @@ type methodAnnotations struct {
 	BodyField      string
 	QueryParams    []*api.Field
 	Pagination     *paginationAnnotations
+	LRO            *lroAnnotations
 	ReturnType     string
 }
 
 type paginationAnnotations struct {
 	ItemType string
+}
+
+type lroAnnotations struct {
+	ReturnType   string
+	MetadataType string
 }
 
 // pathVariable describes a variable used to build a request URL path.
@@ -112,6 +118,35 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			ItemType: itemFieldCodec.BaseFieldType,
 		}
 	}
+	var lro *lroAnnotations
+	if method.IsLRO && method.OperationInfo != nil {
+		respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
+		if err != nil {
+			return err
+		}
+		if err := c.annotateMessage(respMsg, modelAnn); err != nil {
+			return err
+		}
+		respTypeName, err := c.messageTypeName(respMsg)
+		if err != nil {
+			return err
+		}
+		metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
+		if err != nil {
+			return err
+		}
+		if err := c.annotateMessage(metaMsg, modelAnn); err != nil {
+			return err
+		}
+		metaTypeName, err := c.messageTypeName(metaMsg)
+		if err != nil {
+			return err
+		}
+		lro = &lroAnnotations{
+			ReturnType:   respTypeName,
+			MetadataType: metaTypeName,
+		}
+	}
 	method.Codec = &methodAnnotations{
 		Name:           camelCase(method.Name),
 		DocLines:       docLines,
@@ -123,6 +158,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		BodyField:      bodyField,
 		QueryParams:    language.QueryParams(method, binding),
 		Pagination:     pagination,
+		LRO:            lro,
 		ReturnType:     returnType,
 	}
 	if method.SampleInfo != nil {

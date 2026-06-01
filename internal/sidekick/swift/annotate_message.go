@@ -37,6 +37,17 @@ type messageAnnotations struct {
 	PageableItemField   string
 	PageableItemType    string
 	DependsOn           map[string]*Dependency
+
+	// GatedBy is the list of package traits that enables this message.
+	//
+	// Empty unless the package is configured with `per_service_traits` enabled.
+	GatedBy []string
+	// GatedOp is the operation (&& or ||) to combine all the `GatedBy` traits.
+	//
+	// For most messages, this is " || ", as messages are enabled when any
+	// service that needs them is enabled. Messages that do not map to any
+	// service use " && ".
+	GatedOp string
 }
 
 // MessageImports returns the list of dependencies for this message.
@@ -47,6 +58,27 @@ func (ann *messageAnnotations) MessageImports() []string {
 	}
 	slices.Sort(result)
 	return result
+}
+
+// IsGated returns true if this message is gated by some package traits.
+func (ann *messageAnnotations) IsGated() bool {
+	return len(ann.GatedBy) != 0
+}
+
+// GateExpression returns the expression for the `#if` directive.
+//
+// In the generated code this is used as:
+//
+// ```
+// #if {{GateExpression}}
+// ... all the normal code ...
+// #endif
+// ```
+//
+// Directing the compiler to enable the code only if GateExpression evaluates to
+// `true` at compile time.
+func (ann *messageAnnotations) GateExpression() string {
+	return strings.Join(ann.GatedBy, ann.GatedOp)
 }
 
 func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) error {

@@ -26,13 +26,20 @@ type SwiftDefault struct {
 type SwiftPackage struct {
 	SwiftDefault `yaml:",inline"`
 
-	// IncludeList is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]).
+	// IncludeList is a subset of proto files under the target API path to
+	// include (e.g., ["date.proto", "expr.proto"]).
 	IncludeList []string `yaml:"include_list,omitempty"`
 
 	// Modules specifies generation targets for veneers and test packages.
 	//
 	// Each module defines a source proto path, and output location.
 	Modules []*SwiftModule `yaml:"modules,omitempty"`
+
+	// PerServiceTraits enables per-service compile-time flags.
+	PerServiceTraits bool `yaml:"per_service_traits,omitempty"`
+
+	// DefaultTraits is a list of compile-time traits enabled by default.
+	DefaultTraits []string `yaml:"default_traits,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.

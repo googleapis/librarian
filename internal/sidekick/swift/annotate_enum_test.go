@@ -118,3 +118,51 @@ func TestAnnotateEnum_Error(t *testing.T) {
 		t.Errorf("annotateModel() expected error for enum with no values, got nil")
 	}
 }
+
+func TestAnnotateEnum_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name           string
+		enumName       string
+		wantExpression string
+	}{
+		{"Shared enum used by both services", "SharedEnum", "Service1 || Service2"},
+		{"Enum used by Service1 only", "Service1Enum", "Service1"},
+		{"Enum used by Service2 only", "Service2Enum", "Service2"},
+		{"Enum used by neither service", "UnusedEnum", "Service1 && Service2"},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			var enum *api.Enum
+			for e := range model.AllEnums() {
+				if e.Name == test.enumName {
+					enum = e
+					break
+				}
+			}
+			if enum == nil {
+				t.Fatalf("enum %s not found", test.enumName)
+			}
+			ann, ok := enum.Codec.(*enumAnnotations)
+			if !ok {
+				t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+			}
+
+			if diff := cmp.Diff(test.wantExpression, ann.GateExpression()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			if !ann.IsGated() {
+				t.Error("expected IsGated() to be true")
+			}
+		})
+	}
+}

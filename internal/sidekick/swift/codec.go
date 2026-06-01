@@ -33,6 +33,8 @@ const (
 	wellKnownSwiftPackage = "GoogleCloudWkt"
 	// The name of the Swift package that contains the pagination helper types.
 	paginationSwiftPackage = "GoogleCloudGax"
+	// The name of the Swift package that contains the long-running operation helper types.
+	lroSwiftPackage = "GoogleCloudGax"
 )
 
 // codec represents the configuration for a Swift sidekick Codec.
@@ -43,21 +45,46 @@ const (
 // generated. That lends naturally into a single object that carries all the
 // information needed to generate the library.
 type codec struct {
+	// The API this codec is bound to.
+	Model *api.API
+
+	// When was the library originally generated.
+	//
+	// This preserves the copyright year and avoids churn when regenerating the
+	// library.
 	GenerationYear string
+
 	// The name of the swift package (e.g. "GoogleCloudSecretManagerV1")
-	PackageName  string
+	PackageName string
+
+	// The location of the monorepo, relative to the current directory.
+	//
+	// Recall that sidekick only generates clients within a monorepo, so this
+	// always makes sense.
 	MonorepoRoot string
+
 	// Most libraries are generated from `googleapis`. Rarely, we use protobuf,
 	// gapic-showcase, or a different root.
 	RootName string
+
 	// Modules have a different directory structure.
-	Module       bool
-	Model        *api.API
+	Module bool
+
+	// The set of dependencies configured for this codec.
 	Dependencies []*Dependency
+
 	// Map of proto package to dependency (e.g. "google.protobuf" -> <dependency>)
 	ApiPackages map[string]*Dependency
+
 	// Map of dependency name to dependency (e.g. GoogleCloudGax -> <dependency>)
 	DependenciesByName map[string]*Dependency
+
+	// If true, the generated code uses a trait (Swift #ifdef-analogs) for each
+	// service.
+	PerServiceTraits bool
+
+	// If true, these traits are enabled by default.
+	DefaultTraits []string
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -78,11 +105,11 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		return nil, err
 	}
 	result := &codec{
+		Model:              model,
 		GenerationYear:     fmt.Sprintf("%04d", year),
 		PackageName:        PackageName(model),
 		MonorepoRoot:       rel,
 		RootName:           "googleapis",
-		Model:              model,
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
 	}
@@ -95,6 +122,8 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 			}
 			result.DependenciesByName[d.Name] = &dependency
 		}
+		result.PerServiceTraits = swiftCfg.PerServiceTraits
+		result.DefaultTraits = swiftCfg.DefaultTraits
 	}
 	for key, definition := range cfg.Codec {
 		switch key {

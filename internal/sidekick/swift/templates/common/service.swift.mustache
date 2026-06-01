@@ -20,6 +20,9 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.Name}}
+{{/Codec.IsGated}}
 import Foundation
 {{! On Linux we need this additional import for `URLSession`. }}
 #if canImport(FoundationNetworking)
@@ -49,6 +52,12 @@ public protocol {{Codec.Name}} {
   {{/Codec.DocLines}}
   func {{> /templates/common/method_signature/pagination}}
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/lro}}
+  {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 
   {{#Codec.RestMethods}}
@@ -64,6 +73,12 @@ public protocol {{Codec.Name}} {
   {{/Codec.DocLines}}
   func {{> /templates/common/method_signature/pagination_options}}
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/lro_options}}
+  {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 }
 
@@ -101,6 +116,47 @@ extension Clients {
       return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
     }
     {{/Codec.Pagination}}
+    {{#Codec.LRO}}
+
+    {{#Codec.DocLines}}
+    /// {{{.}}}
+    {{/Codec.DocLines}}
+    public func {{> /templates/common/method_signature/lro_options}} {
+      let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+        guard op.done else {
+          return .init(done: false, result: nil)
+        }
+
+        switch op.result {
+        case .response(let anyValue):
+          guard let anyValueUnwrapped = anyValue else {
+            return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but response value was missing")))
+          }
+          let response = try {{Codec.LRO.ReturnType}}(fromAny: anyValueUnwrapped)
+          return .init(done: true, result: .success(response))
+        case .error(let status):
+          guard let statusUnwrapped = status else {
+            return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but error value was missing")))
+          }
+          let error = GoogleCloudGax.RequestError.service(
+            GoogleCloudGax.ServiceError(code: GoogleRpc.Code(intValue: Int(statusUnwrapped.code)), message: statusUnwrapped.message))
+          return .init(done: true, result: .failure(error))
+        case .none:
+          return .init(
+            done: true,
+            result: .failure(
+              GoogleCloudGax.RequestError.binding("Operation completed but result was missing")))
+        }
+      }
+      let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+      let initialState = try extractStatus(rawOp)
+      let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+        let op = try await self.getOperation(request: .init(name: rawOp.name), options: options)
+        return try extractStatus(op)
+      }
+      return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)
+    }
+    {{/Codec.LRO}}
     {{/Codec.RestMethods}}
   }
 }
@@ -129,5 +185,21 @@ extension {{Codec.Name}} {
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
   }
   {{/Codec.Pagination}}
+  {{#Codec.LRO}}
+
+  public func {{> /templates/common/method_signature/lro}} {
+    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+  }
+
+  public func {{> /templates/common/method_signature/lro_options}} {
+    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+  }
+  {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 }
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

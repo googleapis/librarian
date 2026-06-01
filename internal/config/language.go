@@ -391,6 +391,10 @@ type PythonPackage struct {
 
 // PythonDefault contains Python-specific default configuration.
 type PythonDefault struct {
+	// AllowedNamespaces contains the list of allowed GAPIC namespaces.
+	// If empty, all namespaces are allowed.
+	AllowedNamespaces []string `yaml:"allowed_namespaces,omitempty"`
+
 	// CommonGAPICPaths contains paths which are generated for any package
 	// containing a GAPIC API. These are relative to the package's output
 	// directory, and the string "{neutral-source}" is replaced with the path

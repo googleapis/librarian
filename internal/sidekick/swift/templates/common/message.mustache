@@ -111,11 +111,11 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#OneOfs}}
 
     var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.Checker}} = { (value: {{Codec.Name}}) throws in
+    let {{Codec.Checker}} = {
       if {{Codec.PropertyName}} != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
       }
-      {{Codec.PropertyName}} = value
+      {{Codec.PropertyName}} = $0
     }
     {{#Fields}}
     if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
@@ -171,6 +171,15 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
 
   public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
     return self.{{Codec.PageableItemField}}
+  }
+
+  public func _nextPageToken() -> Swift.String {
+    {{#Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}} ?? ""
+    {{/Pagination.NextPageToken.Optional}}
+    {{^Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}}
+    {{/Pagination.NextPageToken.Optional}}
   }
   {{/Codec.IsPaginatedResponse}}
 }
