@@ -40,6 +40,7 @@ jobs:
         with:
           path: |
             ${{ steps.tool-paths.outputs.npm }}
+            ~/.cache/librarian
           key: nodejs-tools-v2-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'
