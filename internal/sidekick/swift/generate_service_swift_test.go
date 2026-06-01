@@ -649,3 +649,126 @@ func verifyGeneratedMessage(t *testing.T, outDir string) {
 		t.Errorf("expected Secret.swift to NOT import GoogleCloudGax, got:\n%s", secretContentStr)
 	}
 }
+
+func TestGenerateService_LRO(t *testing.T) {
+	outDir := t.TempDir()
+
+	operationType := &api.Message{
+		Name:    "Operation",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.Operation",
+	}
+
+	workflowType := &api.Message{
+		Name:    "Workflow",
+		Package: "google.cloud.workflows.v1",
+		ID:      ".google.cloud.workflows.v1.Workflow",
+	}
+
+	metadataType := &api.Message{
+		Name:    "OperationMetadata",
+		Package: "google.cloud.workflows.v1",
+		ID:      ".google.cloud.workflows.v1.OperationMetadata",
+	}
+
+	inputType := &api.Message{
+		Name:    "CreateWorkflowRequest",
+		Package: "google.cloud.workflows.v1",
+		ID:      ".google.cloud.workflows.v1.CreateWorkflowRequest",
+	}
+
+	getOperationInputType := &api.Message{
+		Name:    "GetOperationRequest",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.GetOperationRequest",
+	}
+
+	workflows := &api.Service{
+		Name: "WorkflowsService",
+		Methods: []*api.Method{
+			{
+				Name:          "CreateWorkflow",
+				Documentation: "Creates a workflow.",
+				InputTypeID:   inputType.ID,
+				InputType:     inputType,
+				OutputTypeID:  operationType.ID,
+				OutputType:    operationType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "POST",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows"),
+					}},
+				},
+				IsLRO: true,
+				OperationInfo: &api.OperationInfo{
+					ResponseTypeID: workflowType.ID,
+					MetadataTypeID: metadataType.ID,
+				},
+			},
+			{
+				Name:         "GetOperation",
+				InputTypeID:  getOperationInputType.ID,
+				InputType:    getOperationInputType,
+				OutputTypeID: operationType.ID,
+				OutputType:   operationType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "GET",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
+					}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, workflowType, metadataType, operationType, getOperationInputType}, nil, []*api.Service{workflows})
+	model.PackageName = "google.cloud.workflows.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
+		},
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+		{
+			ApiPackage: "google.longrunning",
+			Name:       "GoogleCloudLongrunningV1",
+		},
+		{
+			ApiPackage: "google.rpc",
+			Name:       "GoogleRpc",
+		},
+	})
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudWorkflowsV1", "WorkflowsService.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantContains := []string{
+		"import GoogleRpc",
+		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Workflow>",
+		"GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)",
+		"self.getOperation(request: .init(name: rawOp.name), options: options)",
+	}
+	for _, want := range wantContains {
+		if !strings.Contains(contentStr, want) {
+			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
+		}
+	}
+}
