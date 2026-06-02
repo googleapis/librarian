@@ -22,6 +22,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -113,7 +115,15 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 }
 
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, command, arg...)
+	pathEnv := os.Getenv("PATH")
+	if env != nil && env["PATH"] != "" {
+		pathEnv = env["PATH"]
+	}
+	resolvedCommand, err := lookPath(command, pathEnv)
+	if err != nil {
+		resolvedCommand = command
+	}
+	cmd := exec.CommandContext(ctx, resolvedCommand, arg...)
 	if dir != "" {
 		cmd.Dir = dir
 	}
@@ -127,6 +137,23 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 		fmt.Fprintf(stdout, "%s\n", cmd.String())
 	}
 	return cmd
+}
+
+// lookPath searches for cmdName in the directories of the provided pathEnv.
+func lookPath(cmdName string, pathEnv string) (string, error) {
+	if filepath.IsAbs(cmdName) || strings.HasPrefix(cmdName, "./") || strings.HasPrefix(cmdName, "../") {
+		return cmdName, nil
+	}
+	for _, dir := range filepath.SplitList(pathEnv) {
+		if dir == "" {
+			dir = "."
+		}
+		commandPath := filepath.Join(dir, cmdName)
+		if fileInfo, err := os.Stat(commandPath); err == nil && !fileInfo.IsDir() {
+			return filepath.Abs(commandPath)
+		}
+	}
+	return "", &exec.Error{Name: cmdName, Err: exec.ErrNotFound}
 }
 
 func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
