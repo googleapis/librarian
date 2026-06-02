@@ -253,3 +253,73 @@ func TestRunStreaming_Error(t *testing.T) {
 		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
 	}
 }
+
+func TestLookPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	exeName := "test-exe"
+	exePath := filepath.Join(tmpDir, exeName)
+	if err := os.WriteFile(exePath, []byte("dummy binary content"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+		want    string
+	}{
+		{
+			name:    "absolute path bypasses search",
+			cmdName: exePath,
+			pathEnv: "/dummy/path",
+			want:    exePath,
+		},
+		{
+			name:    "relative path bypasses search",
+			cmdName: "./" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "./" + exeName,
+		},
+		{
+			name:    "found in custom pathEnv",
+			cmdName: exeName,
+			pathEnv: "/another/path:" + tmpDir + ":/yet/another/path",
+			want:    exePath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := lookPath(test.cmdName, test.pathEnv)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("lookPath() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestLookPath_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+	}{
+		{
+			name:    "not found in custom pathEnv",
+			cmdName: "test-exe",
+			pathEnv: "/another/path:/yet/another/path",
+		},
+		{
+			name:    "empty pathEnv item defaults to current dir",
+			cmdName: "test-exe",
+			pathEnv: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := lookPath(test.cmdName, test.pathEnv)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
