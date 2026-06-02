@@ -118,8 +118,10 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
 	pathEnv := os.Getenv(envPath)
-	if env != nil && env[envPath] != "" {
-		pathEnv = env[envPath]
+	if env != nil {
+		if val, ok := env[envPath]; ok {
+			pathEnv = val
+		}
 	}
 	resolvedCommand, err := lookPath(command, pathEnv)
 	if err != nil {
@@ -152,6 +154,9 @@ func lookPath(cmdName string, pathEnv string) (string, error) {
 		}
 		commandPath := filepath.Join(dir, cmdName)
 		if fileInfo, err := os.Stat(commandPath); err == nil && !fileInfo.IsDir() {
+			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0111 == 0 {
+				continue
+			}
 			return filepath.Abs(commandPath)
 		}
 	}
