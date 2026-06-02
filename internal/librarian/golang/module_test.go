@@ -471,7 +471,7 @@ func TestSnippetDirectory(t *testing.T) {
 			want: "examples/apiv2",
 		},
 		{
-			name: "module path v2",
+			name: "library has a versioned module path",
 			library: &config.Library{
 				Name: "vision",
 				Go: &config.GoModule{

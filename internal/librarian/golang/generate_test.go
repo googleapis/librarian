@@ -890,7 +890,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 						Go:   &config.GoAPI{ImportPath: "lib/apiv1"},
 					}},
 				}
-				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, snippetDirSuffix), lib
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, "lib", "examples", "apiv1"), lib
 			},
 		},
 		{
@@ -920,7 +920,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 						Go:   &config.GoAPI{ImportPath: "lib/v2/apiv2"},
 					}},
 				}
-				return outDir, filepath.Join(outDir, "apiv2"), filepath.Join(repoRoot, snippetDirSuffix), lib
+				return outDir, filepath.Join(outDir, "apiv2"), filepath.Join(repoRoot, "lib", "v2", "examples", "apiv2"), lib
 			},
 		},
 		{
@@ -953,7 +953,7 @@ func TestMoveGeneratedFiles(t *testing.T) {
 						ModulePathVersion: "v2",
 					},
 				}
-				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, "internal", "generated", "snippets", "lib", "apiv1"), lib
+				return outDir, filepath.Join(outDir, "apiv1"), filepath.Join(repoRoot, "lib", "examples", "apiv1"), lib
 			},
 		},
 		{
