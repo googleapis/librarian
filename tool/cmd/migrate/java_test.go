@@ -740,7 +740,7 @@ func TestBuildConfig(t *testing.T) {
 				},
 			},
 			versions: map[string]versionInfo{
-				"google-cloud-java":           {Current: "1.79.0"},
+				"google-cloud-java":           {Released: "1.78.0", Current: "1.79.0"},
 				"google-cloud-accessapproval": {Released: "2.85.0", Current: "2.86.0"},
 			},
 			src: &config.Source{},
@@ -758,6 +758,9 @@ func TestBuildConfig(t *testing.T) {
 						Name:         "google-cloud-java",
 						Version:      "1.79.0",
 						SkipGenerate: true,
+						Java: &config.JavaModule{
+							ReleasedVersion: "1.78.0",
+						},
 					},
 					{
 						Name:    "accessapproval",

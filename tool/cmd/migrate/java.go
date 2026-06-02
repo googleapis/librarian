@@ -256,11 +256,17 @@ func readVersions(path string) (map[string]versionInfo, error) {
 func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *config.Source, versions map[string]versionInfo) (*config.Config, error) {
 	var libs []*config.Library
 	if vInfo, ok := versions["google-cloud-java"]; ok {
-		libs = append(libs, &config.Library{
+		lib := &config.Library{
 			Name:         "google-cloud-java",
 			Version:      vInfo.Current,
 			SkipGenerate: true,
-		})
+		}
+		if vInfo.Released != "" {
+			lib.Java = &config.JavaModule{
+				ReleasedVersion: vInfo.Released,
+			}
+		}
+		libs = append(libs, lib)
 	}
 	for _, l := range gen.Libraries {
 		name := l.LibraryName
