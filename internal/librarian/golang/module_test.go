@@ -461,7 +461,17 @@ func TestSnippetDirectory(t *testing.T) {
 			want: "examples/merchant/promotions/apiv1",
 		},
 		{
-			name: "nested API path with v2",
+			name: "nested major version",
+			library: &config.Library{
+				Name: "bigquery/v2",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "bigquery/v2/apiv2",
+			},
+			want: "examples/apiv2",
+		},
+		{
+			name: "module path v2",
 			library: &config.Library{
 				Name: "vision",
 				Go: &config.GoModule{
