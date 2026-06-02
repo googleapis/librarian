@@ -145,7 +145,9 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 
 // lookPath searches for cmdName in the directories of the provided pathEnv.
 func lookPath(cmdName string, pathEnv string) (string, error) {
-	if filepath.IsAbs(cmdName) || strings.HasPrefix(cmdName, "./") || strings.HasPrefix(cmdName, "../") {
+	if filepath.IsAbs(cmdName) ||
+		strings.Contains(cmdName, string(filepath.Separator)) ||
+		filepath.VolumeName(cmdName) != "" {
 		return cmdName, nil
 	}
 	for _, dir := range filepath.SplitList(pathEnv) {
