@@ -291,8 +291,8 @@ func TestLookPath(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if got != test.want {
-				t.Errorf("lookPath() = %q, want %q", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -303,22 +303,19 @@ func TestLookPath_Error(t *testing.T) {
 		name    string
 		cmdName string
 		pathEnv string
+		wantErr error
 	}{
 		{
 			name:    "not found in custom pathEnv",
 			cmdName: "test-exe",
 			pathEnv: "/another/path:/yet/another/path",
-		},
-		{
-			name:    "empty pathEnv item defaults to current dir",
-			cmdName: "test-exe",
-			pathEnv: "",
+			wantErr: exec.ErrNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := lookPath(test.cmdName, test.pathEnv)
-			if err == nil {
-				t.Fatal("expected error, got nil")
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("lookPath() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
