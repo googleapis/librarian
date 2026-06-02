@@ -252,7 +252,8 @@ func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output s
 	if goAPI.ProtoOnly || goAPI.NoSnippets {
 		return ""
 	}
-	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+	clientPath := clientPathFromRepoRoot(library, goAPI)
+	snippetDir := filepath.Join(output, "examples", strings.TrimPrefix(clientPath, library.Name))
 	// No need to format the snippet directory if the directory is within one of
 	// paths to delete after generation. The snippet directory does not exist.
 	if library.Go != nil {
