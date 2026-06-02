@@ -28,11 +28,11 @@ import (
 func TestClean(t *testing.T) {
 	libraryName := "lib"
 	for _, test := range []struct {
-		name         string
-		outputFiles  []string
-		keep         []string
-		setup        func(dir string)
-		wantOutput   []string
+		name        string
+		outputFiles []string
+		keep        []string
+		setup       func(dir string)
+		wantOutput  []string
 	}{
 		{
 			name: "removes all generated files",
@@ -135,11 +135,11 @@ func TestClean(t *testing.T) {
 func TestClean_Error(t *testing.T) {
 	libraryName := "testlib"
 	for _, test := range []struct {
-		name         string
-		library      *config.Library
-		outputFiles  []string
-		setup        func(t *testing.T, base string)
-		wantErr      error
+		name        string
+		library     *config.Library
+		outputFiles []string
+		setup       func(t *testing.T, base string)
+		wantErr     error
 	}{
 		{
 			name: "keep file not found in output directory",
@@ -160,7 +160,7 @@ func TestClean_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr:     errGoAPINotFound,
+			wantErr: errGoAPINotFound,
 		},
 		{
 			name: "no permission to remove root files",
