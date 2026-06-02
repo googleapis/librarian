@@ -33,6 +33,8 @@ const (
 	Git = "git"
 	// Go is the command name for the go executable.
 	Go = "go"
+	// envPath is the environment variable for the executable path.
+	envPath = "PATH"
 )
 
 var (
@@ -115,9 +117,9 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 }
 
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
-	pathEnv := os.Getenv("PATH")
-	if env != nil && env["PATH"] != "" {
-		pathEnv = env["PATH"]
+	pathEnv := os.Getenv(envPath)
+	if env != nil && env[envPath] != "" {
+		pathEnv = env[envPath]
 	}
 	resolvedCommand, err := lookPath(command, pathEnv)
 	if err != nil {
