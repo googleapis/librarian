@@ -362,8 +362,7 @@ func TestDeriveVersionLines(t *testing.T) {
 			ReleasedVersion: "1.2.3",
 		},
 	}
-
-	tests := []struct {
+	for _, test := range []struct {
 		name             string
 		missingArtifacts []MissingArtifact
 		want             []string
@@ -384,13 +383,11 @@ func TestDeriveVersionLines(t *testing.T) {
 				"google-cloud-secretmanager:1.2.3:1.2.3",
 			},
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := deriveVersionLines(test.missingArtifacts)
+			got := constructVersionLines(test.missingArtifacts)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("deriveVersionLines() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

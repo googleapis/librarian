@@ -32,8 +32,9 @@ var knownPrefixes = []string{
 }
 
 const (
-	defaultVersion = "0.1.0-SNAPSHOT"
-	fakeGroupID    = "please-configure-java-group-id"
+	defaultVersion         = "0.1.0-SNAPSHOT"
+	defaultReleasedVersion = "0.0.0"
+	fakeGroupID            = "please-configure-java-group-id"
 )
 
 // Add initializes a new Java library with default values.
@@ -46,7 +47,7 @@ func Add(lib *config.Library) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
-	lib.Java.ReleasedVersion = "0.0.0"
+	lib.Java.ReleasedVersion = defaultReleasedVersion
 
 	// We use the first API to infer the group ID.
 	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
