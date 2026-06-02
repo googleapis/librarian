@@ -448,7 +448,7 @@ func TestSnippetDirectory(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ImportPath: "secretmanager/apiv1",
 			},
-			want: "secretmanager/examples/apiv1",
+			want: "examples/apiv1",
 		},
 		{
 			name: "nested API path",
@@ -458,7 +458,7 @@ func TestSnippetDirectory(t *testing.T) {
 			goAPI: &config.GoAPI{
 				ImportPath: "shopping/merchant/promotions/apiv1",
 			},
-			want: "shopping/examples/merchant/promotions/apiv1",
+			want: "examples/merchant/promotions/apiv1",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
