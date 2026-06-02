@@ -435,7 +435,7 @@ func TestClientPathFromRepoRoot(t *testing.T) {
 
 func TestSnippetDirectory(t *testing.T) {
 	for _, test := range []struct {
-		name string
+		name    string
 		library *config.Library
 		goAPI   *config.GoAPI
 		want    string
