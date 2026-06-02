@@ -472,6 +472,7 @@ func TestRunPostProcessor(t *testing.T) {
 	}
 }
 
+<<<<<<< HEAD
 func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
@@ -558,6 +559,8 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 	}
 }
 
+=======
+>>>>>>> 910f80a4 (fix(nodejs): run combine-library with a temporary destination)
 func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
