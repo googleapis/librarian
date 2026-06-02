@@ -772,3 +772,118 @@ func TestGenerateService_LRO(t *testing.T) {
 		}
 	}
 }
+
+func TestGenerateService_LRO_Empty(t *testing.T) {
+	outDir := t.TempDir()
+
+	operationType := &api.Message{
+		Name:    "Operation",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.Operation",
+	}
+
+	metadataType := &api.Message{
+		Name:    "OperationMetadata",
+		Package: "google.cloud.workflows.v1",
+		ID:      ".google.cloud.workflows.v1.OperationMetadata",
+	}
+
+	inputType := &api.Message{
+		Name:    "DeleteWorkflowRequest",
+		Package: "google.cloud.workflows.v1",
+		ID:      ".google.cloud.workflows.v1.DeleteWorkflowRequest",
+	}
+
+	getOperationInputType := &api.Message{
+		Name:    "GetOperationRequest",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.GetOperationRequest",
+	}
+
+	workflows := &api.Service{
+		Name: "WorkflowsService",
+		Methods: []*api.Method{
+			{
+				Name:          "DeleteWorkflow",
+				Documentation: "Deletes a workflow.",
+				InputTypeID:   inputType.ID,
+				InputType:     inputType,
+				OutputTypeID:  operationType.ID,
+				OutputType:    operationType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "DELETE",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("workflows"),
+					}},
+				},
+				IsLRO: true,
+				OperationInfo: &api.OperationInfo{
+					ResponseTypeID: ".google.protobuf.Empty",
+					MetadataTypeID: metadataType.ID,
+				},
+			},
+			{
+				Name:         "GetOperation",
+				InputTypeID:  getOperationInputType.ID,
+				InputType:    getOperationInputType,
+				OutputTypeID: operationType.ID,
+				OutputType:   operationType,
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{{
+						Verb:         "GET",
+						PathTemplate: (&api.PathTemplate{}).WithLiteral("v1").WithLiteral("operations"),
+					}},
+				},
+			},
+		},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, metadataType, operationType, getOperationInputType}, nil, []*api.Service{workflows})
+	model.PackageName = "google.cloud.workflows.v1"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+
+	swiftCfg := swiftConfig(t, []config.SwiftDependency{
+		{
+			Name:               "GoogleCloudGax",
+			RequiredByServices: true,
+		},
+		{
+			Name:               "GoogleCloudAuth",
+			RequiredByServices: true,
+		},
+		{
+			ApiPackage: "google.longrunning",
+			Name:       "GoogleCloudLongrunningV1",
+		},
+		{
+			ApiPackage: "google.rpc",
+			Name:       "GoogleRpc",
+		},
+	})
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftCfg); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudWorkflowsV1", "WorkflowsService.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	wantContains := []string{
+		"public func deleteWorkflow(withPolling: DeleteWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Void>",
+		"GoogleCloudGax._PollableOperationImpl<Void>",
+	}
+	for _, want := range wantContains {
+		if !strings.Contains(contentStr, want) {
+			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
+		}
+	}
+}
