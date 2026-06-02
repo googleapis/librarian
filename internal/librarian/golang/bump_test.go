@@ -98,7 +98,7 @@ func TestBump(t *testing.T) {
 		{
 			name: "ignore nested module snippets",
 			initialFiles: map[string]string{
-				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json":        "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 				"test-lib/nested/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 			},
 			library: &config.Library{
@@ -114,7 +114,7 @@ func TestBump(t *testing.T) {
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json":        "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
 				"test-lib/nested/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 			},
 		},
@@ -146,7 +146,7 @@ func TestBump(t *testing.T) {
 			name: "library without Library.Go field for overrides",
 			initialFiles: map[string]string{
 				"secretmanager/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
-				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.1.0\"\n",
+				"secretmanager/internal/version.go":                      "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
 			library: &config.Library{
 				Name: "secretmanager",
@@ -159,7 +159,7 @@ func TestBump(t *testing.T) {
 			version: "0.2.0",
 			wantFiles: map[string]string{
 				"secretmanager/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
-				"secretmanager/internal/version.go":                        "package internal\n\nconst Version = \"0.2.0\"\n",
+				"secretmanager/internal/version.go":                      "package internal\n\nconst Version = \"0.2.0\"\n",
 			},
 		},
 		{
