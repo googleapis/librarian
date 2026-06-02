@@ -305,6 +305,12 @@ func TestLookPath(t *testing.T) {
 }
 
 func TestLookPath_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	dirName := "test-dir"
+	if err := os.MkdirAll(filepath.Join(tmpDir, dirName), 0755); err != nil {
+		t.Fatal(err)
+	}
+
 	for _, test := range []struct {
 		name    string
 		cmdName string
@@ -315,6 +321,12 @@ func TestLookPath_Error(t *testing.T) {
 			name:    "not found in custom pathEnv",
 			cmdName: "test-exe",
 			pathEnv: "/another/path:/yet/another/path",
+			wantErr: exec.ErrNotFound,
+		},
+		{
+			name:    "matching path is a directory (non-executable)",
+			cmdName: dirName,
+			pathEnv: tmpDir,
 			wantErr: exec.ErrNotFound,
 		},
 	} {
