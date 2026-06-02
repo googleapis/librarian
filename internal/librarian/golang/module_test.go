@@ -460,6 +460,19 @@ func TestSnippetDirectory(t *testing.T) {
 			},
 			want: "examples/merchant/promotions/apiv1",
 		},
+		{
+			name: "nested API path with v2",
+			library: &config.Library{
+				Name: "vision",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "vision/v2/apiv1",
+			},
+			want: "examples/apiv1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			output := t.TempDir()
