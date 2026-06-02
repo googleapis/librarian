@@ -19,6 +19,7 @@ import (
 	"fmt"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/semver"
@@ -30,6 +31,8 @@ const (
 	defaultArtifactIDPrefix = "google-cloud-"
 	defaultGroupID          = "com.google.cloud"
 )
+
+var errInvalidVersion = errors.New("invalid java library version")
 
 func deriveArtifactID(name string) string {
 	return defaultArtifactIDPrefix + name
@@ -53,6 +56,13 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	if library.Java.GroupID == "" {
 		library.Java.GroupID = defaultGroupID
+	}
+	if library.Java.ReleasedVersion == "" && !library.SkipGenerate && library.Version != "" {
+		derived, err := deriveLastReleasedVersion(library.Version)
+		if err != nil {
+			return nil, fmt.Errorf("library %q: %w", library.Name, err)
+		}
+		library.Java.ReleasedVersion = derived
 	}
 	for _, api := range library.APIs {
 		if api.Java == nil {
@@ -91,6 +101,12 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		}
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
+		}
+		if library.Java.ReleasedVersion != "" {
+			derived, err := deriveLastReleasedVersion(library.Version)
+			if err == nil && library.Java.ReleasedVersion == derived {
+				library.Java.ReleasedVersion = ""
+			}
 		}
 		empty, err := yaml.Empty(library.Java)
 		if err != nil {
@@ -162,6 +178,8 @@ var (
 	ErrReleasedVersionRequired = errors.New("released_version is required under java section")
 	// ErrInvalidReleasedVersion is returned when released_version is not a valid semver.
 	ErrInvalidReleasedVersion = errors.New("invalid released_version")
+	// ErrCannotDeriveReleasedVersion is returned when released_version cannot be derived.
+	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
 )
 
 // Validate checks that the Java-specific configuration for a library is
@@ -169,10 +187,18 @@ var (
 // resources configuration.
 func Validate(library *config.Library) error {
 	if !library.SkipGenerate {
-		if library.Java == nil || library.Java.ReleasedVersion == "" {
-			return fmt.Errorf("library %q: %w", library.Name, ErrReleasedVersionRequired)
+		releasedVersion := ""
+		if library.Java != nil {
+			releasedVersion = library.Java.ReleasedVersion
 		}
-		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+		if releasedVersion == "" {
+			derived, err := deriveLastReleasedVersion(library.Version)
+			if err != nil {
+				return fmt.Errorf("library %q: %w: %w", library.Name, ErrReleasedVersionRequired, err)
+			}
+			releasedVersion = derived
+		}
+		if _, err := semver.Parse(releasedVersion); err != nil {
 			return fmt.Errorf("library %q: %w: %w", library.Name, ErrInvalidReleasedVersion, err)
 		}
 	}
@@ -188,4 +214,32 @@ func Validate(library *config.Library) error {
 
 	}
 	return nil
+}
+
+// deriveLastReleasedVersion derives the last released version from a snapshot version
+// (e.g., x.y.z-SNAPSHOT or x.y.z-beta-SNAPSHOT) by decrementing the patch or minor version.
+// If the version has a prerelease tag (like "beta") before "SNAPSHOT", that tag is preserved
+// in the derived version (e.g., x.y.z-beta-SNAPSHOT becomes x.y.(z-1)-beta).
+//
+// It returns an error if both minor and patch versions are zero, as it's
+// ambiguous what the last released version was in that case.
+func deriveLastReleasedVersion(v string) (string, error) {
+	sv, err := semver.Parse(v)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(sv.Prerelease, "SNAPSHOT") {
+		return sv.String(), nil
+	}
+	if sv.Patch > 0 {
+		sv.Patch--
+	} else if sv.Minor > 0 {
+		sv.Minor--
+		sv.Patch = 0
+	} else {
+		return "", errInvalidVersion
+	}
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
+	return sv.String(), nil
 }
