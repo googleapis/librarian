@@ -256,7 +256,7 @@ func TestBump_Error(t *testing.T) {
 		{
 			name: "snippet metadata is read-only",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
 			},
 			library: &config.Library{
 				Name: "test-lib",
@@ -271,7 +271,7 @@ func TestBump_Error(t *testing.T) {
 			},
 			version: "0.2.0",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Chmod(filepath.Join(dir, "internal", "generated", "snippets", "test-lib", "apiv1", "snippet_metadata_foo.json"), 0444); err != nil {
+				if err := os.Chmod(filepath.Join(dir, "test-lib", "examples", "apiv1", "snippet_metadata_foo.json"), 0444); err != nil {
 					t.Fatal(err)
 				}
 			},
