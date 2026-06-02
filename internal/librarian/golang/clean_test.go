@@ -160,7 +160,6 @@ func TestClean_Error(t *testing.T) {
 					},
 				},
 			},
-			outputFiles: []string{"apiv1/file2.go", "examples/apiv1/main.go"},
 			wantErr:     errGoAPINotFound,
 		},
 		{
