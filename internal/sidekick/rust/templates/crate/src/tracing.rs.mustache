@@ -85,9 +85,11 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
         {
             if let Some(recorder) = google_cloud_lro::LroRecorder::current() {
                 if let Some(attempt) = recorder.attempt_count() {
-                    _span.record("gcp.longrunning.poll_attempt_count", attempt);
+                    _span.record("gcp.longrunning.poll_attempt_count", attempt as i64);
                 }
-                _span.record("gcp.longrunning.done", false);
+                if let Some(dest_id) = recorder.resource_destination_id() {
+                    _span.record("gcp.resource.destination.id", dest_id);
+                }
             }
         }
         {{/Codec.IsLroPoller}}
