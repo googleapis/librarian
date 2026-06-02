@@ -26,16 +26,13 @@ import (
 )
 
 func TestClean(t *testing.T) {
-	libraryName := "example"
+	libraryName := "lib"
 	for _, test := range []struct {
 		name         string
 		outputFiles  []string
-		snippetFiles []string
 		keep         []string
-		nestedModule string
 		setup        func(dir string)
 		wantOutput   []string
-		wantSnippets []string
 	}{
 		{
 			name: "removes all generated files",
@@ -52,11 +49,9 @@ func TestClean(t *testing.T) {
 				"apiv1/helpers.go",
 				"apiv1/librarypb/content.pb.go",
 				"apiv1/non-generated.go",
+				"examples/apiv1/main.go",
 				"internal/version.go",
 				"README.md",
-			},
-			snippetFiles: []string{
-				"apiv1/main.go",
 			},
 			wantOutput: []string{
 				"apiv1/non-generated.go",
@@ -68,9 +63,9 @@ func TestClean(t *testing.T) {
 				"apiv1/auxiliary.go",
 				"apiv1/auxiliary_go123.go",
 				"apiv1/iam_policy_client.go",
+				"examples/apiv1/snippet1.go",
 				"README.md",
 			},
-			snippetFiles: []string{"apiv1/snippet1.go"},
 			keep: []string{
 				"apiv1/iam_policy_client.go",
 				"README.md",
@@ -85,16 +80,14 @@ func TestClean(t *testing.T) {
 			outputFiles: []string{
 				"nested/apiv1/auxiliary.go",
 				"nested/apiv1/auxiliary_go123.go",
+				"nested/examples/apiv1/snippet1.go",
 			},
-			snippetFiles: []string{"nested/apiv1/snippet1.go"},
 			// They are not cleaned because these files are not within
 			// import path of the GoAPI.
 			wantOutput: []string{
 				"nested/apiv1/auxiliary.go",
 				"nested/apiv1/auxiliary_go123.go",
-			},
-			wantSnippets: []string{
-				"internal/generated/snippets/example/nested/apiv1/snippet1.go",
+				"nested/examples/apiv1/snippet1.go",
 			},
 		},
 		{
@@ -108,46 +101,32 @@ func TestClean(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
-			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			lib := &config.Library{
 				Name: libraryName,
 				APIs: []*config.API{
 					{
-						Path: "google/example/v1",
+						Path: "google/lib/v1",
 						Go: &config.GoAPI{
 							ClientPackage: libraryName,
-							ImportPath:    "example/apiv1",
+							ImportPath:    "lib/apiv1",
 						},
 					},
 				},
 				Output: outputPath,
 				Keep:   test.keep,
-				Go: &config.GoModule{
-					NestedModule: test.nestedModule,
-				},
 			}
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
 			}
-			if test.snippetFiles != nil {
-				createFiles(t, snippetPath, test.snippetFiles)
-			}
-
 			err := Clean(lib)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			gotOutputFiles := getFilesInDir(t, outputPath, filepath.Join(root, libraryName))
 			slices.Sort(gotOutputFiles)
 			slices.Sort(test.wantOutput)
 			if !slices.Equal(gotOutputFiles, test.wantOutput) {
 				t.Errorf("output directory: got %v, want %v", gotOutputFiles, test.wantOutput)
-			}
-
-			gotSnippetFiles := getFilesInDir(t, snippetPath, root)
-			if !slices.Equal(gotSnippetFiles, test.wantSnippets) {
-				t.Errorf("snippet directory: got %v, want %v", gotSnippetFiles, test.wantSnippets)
 			}
 		})
 	}
@@ -159,7 +138,6 @@ func TestClean_Error(t *testing.T) {
 		name         string
 		library      *config.Library
 		outputFiles  []string
-		snippetFiles []string
 		setup        func(t *testing.T, base string)
 		wantErr      error
 	}{
@@ -169,9 +147,8 @@ func TestClean_Error(t *testing.T) {
 				Name: "testlib",
 				Keep: []string{"file1.go"},
 			},
-			outputFiles:  []string{"file2.go"},
-			snippetFiles: []string{"snippet1.go"},
-			wantErr:      fs.ErrNotExist,
+			outputFiles: []string{"file2.go", "examples/apiv1/main.go"},
+			wantErr:     fs.ErrNotExist,
 		},
 		{
 			name: "no go api",
@@ -183,9 +160,8 @@ func TestClean_Error(t *testing.T) {
 					},
 				},
 			},
-			outputFiles:  []string{"testlib/apiv1/file2.go"},
-			snippetFiles: []string{"internal/generated/snippets/testlib/apiv1/snippet1.go"},
-			wantErr:      errGoAPINotFound,
+			outputFiles: []string{"apiv1/file2.go", "examples/apiv1/main.go"},
+			wantErr:     errGoAPINotFound,
 		},
 		{
 			name: "no permission to remove root files",
@@ -253,9 +229,9 @@ func TestClean_Error(t *testing.T) {
 					},
 				},
 			},
-			snippetFiles: []string{"apiv1/snippet1.go"},
+			outputFiles: []string{"examples/apiv1/snippet1.go"},
 			setup: func(t *testing.T, base string) {
-				base = filepath.Join(base, "..", "internal/generated/snippets/testlib/apiv1")
+				base = filepath.Join(base, "examples/apiv1")
 				if err := os.Chmod(base, 0555); err != nil {
 					t.Fatal(err)
 				}
@@ -271,13 +247,9 @@ func TestClean_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			outputPath := filepath.Join(root, libraryName)
-			snippetPath := filepath.Join(root, "internal", "generated", "snippets", libraryName)
 			test.library.Output = outputPath
 			if test.outputFiles != nil {
 				createFiles(t, outputPath, test.outputFiles)
-			}
-			if test.snippetFiles != nil {
-				createFiles(t, snippetPath, test.snippetFiles)
 			}
 			if test.setup != nil {
 				test.setup(t, outputPath)
