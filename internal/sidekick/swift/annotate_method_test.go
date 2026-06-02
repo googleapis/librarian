@@ -464,7 +464,7 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 		ReturnType: "GoogleTest.Operation",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
