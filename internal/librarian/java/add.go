@@ -54,11 +54,11 @@ func Add(lib *config.Library) *config.Library {
 	apiPath := lib.APIs[0].Path
 	switch {
 	case strings.HasPrefix(apiPath, "google/shopping/"):
-		return setJavaConfig(lib, "com.google.shopping")
+		return setNonCloudMavenDefaults(lib, "com.google.shopping")
 	case strings.HasPrefix(apiPath, "google/maps/"):
-		return setJavaConfig(lib, "com.google.maps")
+		return setNonCloudMavenDefaults(lib, "com.google.maps")
 	case strings.HasPrefix(apiPath, "google/ads/"):
-		return setJavaConfig(lib, "com.google.api-ads")
+		return setNonCloudMavenDefaults(lib, "com.google.api-ads")
 	}
 	if !strings.HasPrefix(apiPath, "google/cloud/") {
 		log.Printf(
@@ -66,12 +66,12 @@ func Add(lib *config.Library) *config.Library {
 				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
 			apiPath, fakeGroupID,
 		)
-		setJavaConfig(lib, fakeGroupID)
+		setNonCloudMavenDefaults(lib, fakeGroupID)
 	}
 	return lib
 }
 
-func setJavaConfig(lib *config.Library, groupID string) *config.Library {
+func setNonCloudMavenDefaults(lib *config.Library, groupID string) *config.Library {
 	lib.Java.ArtifactID = "google-" + lib.Name
 	lib.Java.GroupID = groupID
 	return lib
