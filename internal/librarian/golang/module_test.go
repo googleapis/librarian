@@ -434,12 +434,41 @@ func TestClientPathFromRepoRoot(t *testing.T) {
 }
 
 func TestSnippetDirectory(t *testing.T) {
-	output := t.TempDir()
-	importPath := "example/apiv1"
-	got := snippetDirectory(output, importPath)
-	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name string
+		library *config.Library
+		goAPI   *config.GoAPI
+		want    string
+	}{
+		{
+			name: "basic example",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "secretmanager/examples/apiv1",
+		},
+		{
+			name: "nested API path",
+			library: &config.Library{
+				Name: "shopping",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "shopping/merchant/promotions/apiv1",
+			},
+			want: "shopping/examples/merchant/promotions/apiv1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			want := filepath.Join(output, test.want)
+			got := snippetDirectory(output, test.library, test.goAPI)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
