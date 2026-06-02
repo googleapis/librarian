@@ -186,7 +186,7 @@ func TestBump(t *testing.T) {
 					},
 				},
 				Go: &config.GoModule{
-					DeleteGenerationOutputPaths: []string{"secretmanager/examples/apiv1"},
+					DeleteGenerationOutputPaths: []string{"examples/apiv1"},
 				},
 			},
 			version: "0.2.0",
