@@ -673,7 +673,7 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 		{
 			name:    "v1.0.0 snapshot",
 			input:   "1.0.0-SNAPSHOT",
-			wantErr: errInvalidVersion,
+			wantErr: ErrCannotDeriveReleasedVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

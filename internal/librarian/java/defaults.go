@@ -32,8 +32,6 @@ const (
 	defaultGroupID          = "com.google.cloud"
 )
 
-var errInvalidVersion = errors.New("invalid java library version")
-
 func deriveArtifactID(name string) string {
 	return defaultArtifactIDPrefix + name
 }
@@ -237,7 +235,7 @@ func deriveLastReleasedVersion(v string) (string, error) {
 		sv.Minor--
 		sv.Patch = 0
 	} else {
-		return "", errInvalidVersion
+		return "", ErrCannotDeriveReleasedVersion
 	}
 	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
 	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
