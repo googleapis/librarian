@@ -416,13 +416,19 @@ func TestValidate(t *testing.T) {
 		lib  *config.Library
 	}{
 		{
-			name: "empty java config",
-			lib:  &config.Library{},
+			name: "valid java config",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.2.3",
+				},
+			},
 		},
 		{
-			name: "empty distribution name override",
+			name: "skipped library does not require released_version",
 			lib: &config.Library{
-				Java: &config.JavaModule{},
+				Name:         "google-cloud-java",
+				SkipGenerate: true,
 			},
 		},
 	} {
@@ -441,8 +447,37 @@ func TestValidate_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
+			name: "missing java section",
+			lib: &config.Library{
+				Name: "secretmanager",
+			},
+			wantErr: ErrReleasedVersionRequired,
+		},
+		{
+			name: "missing released version",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{},
+			},
+			wantErr: ErrReleasedVersionRequired,
+		},
+		{
+			name: "invalid released version",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ReleasedVersion: "invalid-semver",
+				},
+			},
+			wantErr: ErrInvalidReleasedVersion,
+		},
+		{
 			name: "omit common resources conflict",
 			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.2.3",
+				},
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/conflict/v1",
