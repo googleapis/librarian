@@ -128,12 +128,18 @@ extension Clients {
         }
 
         switch op.result {
+        {{#Codec.LRO.ResponseIsEmpty}}
+        case .response:
+          return .init(done: true, result: .success(()))
+        {{/Codec.LRO.ResponseIsEmpty}}
+        {{^Codec.LRO.ResponseIsEmpty}}
         case .response(let anyValue):
           guard let anyValueUnwrapped = anyValue else {
             return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but response value was missing")))
           }
           let response = try {{Codec.LRO.ReturnType}}(fromAny: anyValueUnwrapped)
           return .init(done: true, result: .success(response))
+        {{/Codec.LRO.ResponseIsEmpty}}
         case .error(let status):
           guard let statusUnwrapped = status else {
             return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but error value was missing")))

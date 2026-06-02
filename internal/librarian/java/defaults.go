@@ -15,11 +15,13 @@
 package java
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -155,13 +157,25 @@ func tidyKeep(keep []string) []string {
 var (
 	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
 	// but common_resources.proto is also explicitly listed in AdditionalProtos.
-	ErrOmitCommonResourcesConflict = fmt.Errorf("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
+	ErrOmitCommonResourcesConflict = errors.New("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
+	// ErrReleasedVersionRequired is returned when released_version is missing.
+	ErrReleasedVersionRequired = errors.New("released_version is required under java section")
+	// ErrInvalidReleasedVersion is returned when released_version is not a valid semver.
+	ErrInvalidReleasedVersion = errors.New("invalid released_version")
 )
 
 // Validate checks that the Java-specific configuration for a library is
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
 func Validate(library *config.Library) error {
+	if !library.SkipGenerate {
+		if library.Java == nil || library.Java.ReleasedVersion == "" {
+			return fmt.Errorf("library %q: %w", library.Name, ErrReleasedVersionRequired)
+		}
+		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+			return fmt.Errorf("library %q: %w: %w", library.Name, ErrInvalidReleasedVersion, err)
+		}
+	}
 	for _, api := range library.APIs {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue

@@ -41,8 +41,9 @@ type paginationAnnotations struct {
 }
 
 type lroAnnotations struct {
-	ReturnType   string
-	MetadataType string
+	ReturnType      string
+	MetadataType    string
+	ResponseIsEmpty bool
 }
 
 // pathVariable describes a variable used to build a request URL path.
@@ -142,9 +143,14 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		if err != nil {
 			return err
 		}
+		responseIsEmpty := respMsg.ID == ".google.protobuf.Empty"
+		if responseIsEmpty {
+			respTypeName = "Void"
+		}
 		lro = &lroAnnotations{
-			ReturnType:   respTypeName,
-			MetadataType: metaTypeName,
+			ReturnType:      respTypeName,
+			MetadataType:    metaTypeName,
+			ResponseIsEmpty: responseIsEmpty,
 		}
 	}
 	method.Codec = &methodAnnotations{

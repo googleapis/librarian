@@ -358,23 +358,19 @@ func TestDeriveVersionLines(t *testing.T) {
 	library := &config.Library{
 		Name:    "secretmanager",
 		Version: "1.2.3",
+		Java: &config.JavaModule{
+			ReleasedVersion: "1.2.3",
+		},
 	}
-	invalidLibrary := &config.Library{
-		Name:    "invalid",
-		Version: "1.0.0-SNAPSHOT",
-	}
-
-	tests := []struct {
+	for _, test := range []struct {
 		name             string
 		missingArtifacts []MissingArtifact
 		want             []string
-		wantErr          bool
 	}{
 		{
 			name:             "empty input",
 			missingArtifacts: nil,
 			want:             nil,
-			wantErr:          false,
 		},
 		{
 			name: "valid artifact IDs",
@@ -386,27 +382,12 @@ func TestDeriveVersionLines(t *testing.T) {
 				"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
 				"google-cloud-secretmanager:1.2.3:1.2.3",
 			},
-			wantErr: false,
 		},
-		{
-			name: "invalid library version",
-			missingArtifacts: []MissingArtifact{
-				{ID: "proto-google-cloud-invalid-v1", Library: invalidLibrary},
-			},
-			want:    nil,
-			wantErr: true,
-		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := deriveVersionLines(test.missingArtifacts)
-			if (err != nil) != test.wantErr {
-				t.Errorf("deriveVersionLines() error = %v, wantErr %v", err, test.wantErr)
-				return
-			}
+			got := constructVersionLines(test.missingArtifacts)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("deriveVersionLines() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
