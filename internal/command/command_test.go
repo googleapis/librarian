@@ -280,6 +280,12 @@ func TestLookPath(t *testing.T) {
 			want:    "./" + exeName,
 		},
 		{
+			name:    "parent path bypasses search",
+			cmdName: "../" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "../" + exeName,
+		},
+		{
 			name:    "found in custom pathEnv",
 			cmdName: exeName,
 			pathEnv: "/another/path:" + tmpDir + ":/yet/another/path",
