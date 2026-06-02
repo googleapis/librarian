@@ -258,34 +258,22 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-
-	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the keep files it would delete, then restore
-	// them afterward.
-	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
+	// Run combine-library into an empty directory, which we'll then copy into
+	// place with os.CopyFS. This ensures that:
+	// - Nothing is removed by combine-library.
+	// - Anything that is generated and copied must have been cleaned beforehand
+	//   (as os.CopyFS fails rather than overwriting an existing file).
+	combineDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-combine-*")
 	if err != nil {
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}
-	defer os.RemoveAll(backupDir)
-	for _, name := range library.Keep {
-		src := filepath.Join(outDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue // file doesn't exist, nothing to save
-		}
-		dst := filepath.Join(backupDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create backup subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
-		}
-	}
+	defer os.RemoveAll(combineDir)
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
 	combineArgs := []string{
 		"combine-library",
 		"--source-path", stagingDir,
-		"--destination-path", outDir,
+		"--destination-path", combineDir,
 	}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		combineArgs = append(combineArgs, "--is-esm")
@@ -293,20 +281,9 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
-
-	// Restore keep files.
-	for _, name := range library.Keep {
-		src := filepath.Join(backupDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		dst := filepath.Join(outDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create output subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to restore %s: %w", name, err)
-		}
+	// Now copy from the resulting combined directory into the package root.
+	if err := os.CopyFS(outDir, os.DirFS(combineDir)); err != nil {
+		return fmt.Errorf("failed to copy generated files: %w", err)
 	}
 
 	// Copy generated samples from staging into the output directory.
@@ -314,12 +291,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// by gapic-generator-typescript but left in staging.
 	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy samples from staging: %w", err)
-	}
-
-	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
-	// OwlBot so this file is no longer needed.
-	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove .OwlBot.yaml: %w", err)
 	}
 
 	if err := restoreCopyrightYear(outDir, library.CopyrightYear); err != nil {
@@ -359,6 +330,24 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		}
 	}
 
+	// Unconditionally perform replacements in the README for samples and release-level.
+	releaseLevel := "stable"
+	if strings.HasPrefix(library.Version, "0.") {
+		releaseLevel = "preview"
+	}
+	if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
+		// No, this isn't initial-generation... but that's what we need to pass
+		// in order to get the list of samples regenerated. This matches what
+		// the combine_script.sh called by Bazel did.
+		"--initial-generation", "true",
+		"--release-level", releaseLevel,
+		fmt.Sprintf("--source-path=%s", outDir),
+		"--replacement-string-samples", "[//]: # \"samples\"",
+		"--replacement-string-release-level", "[//]: # \"releaseLevel\"",
+	); err != nil {
+		return fmt.Errorf("generate-readme for samples/release-level failed: %w", err)
+	}
+	// Perform replacements in the README for any partials.
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
 	if _, err := os.Stat(readmePartials); err == nil {
 		type partials struct {

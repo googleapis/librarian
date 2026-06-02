@@ -93,7 +93,6 @@ func runNodejsMigration(ctx context.Context, repoPath string) error {
 		},
 		Default: &config.Default{
 			Output: "packages",
-			Keep:   []string{"package.json", "samples/package.json", "README.md", "CHANGELOG.md", ".readme-partials.yaml"},
 		},
 		Libraries: libraries,
 	}

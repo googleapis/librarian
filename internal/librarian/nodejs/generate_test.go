@@ -468,46 +468,6 @@ func TestRunPostProcessor(t *testing.T) {
 	}
 }
 
-func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
-	testhelper.RequireCommand(t, "gapic-node-processing")
-	testhelper.RequireCommand(t, "compileProtos")
-
-	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
-	outDir := filepath.Join(repoRoot, "packages", library.Name)
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-
-	// Create staging structure with a .OwlBot.yaml file.
-	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
-	srcDir := filepath.Join(stagingBase, "src", "v1")
-	if err := os.MkdirAll(srcDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
-	if err := os.MkdirAll(protoDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(stagingBase, ".OwlBot.yaml"), []byte("deep-copy-regex:\n  - source: /owl-bot-staging\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	cfg := &config.Config{Language: config.LanguageNodejs}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(filepath.Join(outDir, ".OwlBot.yaml")); !errors.Is(err, fs.ErrNotExist) {
-		t.Error("expected .OwlBot.yaml to be removed after post-processing")
-	}
-}
-
 func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
