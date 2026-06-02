@@ -307,7 +307,7 @@ func TestLookPath(t *testing.T) {
 func TestLookPath_Error(t *testing.T) {
 	tmpDir := t.TempDir()
 	dirName := "test-dir"
-	if err := os.MkdirAll(filepath.Join(tmpDir, dirName), 0755); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpDir, dirName), []byte("non-executable file"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
