@@ -129,48 +129,6 @@ func TestInstall(t *testing.T) {
 	})
 }
 
-func TestInstall_Fallback(t *testing.T) {
-	tmpDir := t.TempDir()
-	t.Chdir(tmpDir)
-	tempHome := t.TempDir()
-	t.Setenv("HOME", tempHome)
-	m2Repo := filepath.Join(tempHome, ".m2", "repository")
-	writeTestFile(t, filepath.Join(m2Repo, "com/google/googlejavaformat/google-java-format/1.25.2/google-java-format-1.25.2-all-deps.jar"), "gjf jar content", 0644)
-	writeTestFile(t, filepath.Join(m2Repo, "io/grpc/protoc-gen-grpc-java/1.76.2/protoc-gen-grpc-java-1.76.2-linux-x86_64.exe"), "grpc exe content", 0755)
-	writeTestFile(t, filepath.Join(m2Repo, "com/google/api/gapic-generator-java/2.66.1/gapic-generator-java-2.66.1.jar"), "gapic jar content", 0644)
-	stubDir := filepath.Join(tmpDir, "bin")
-	mvnLog := filepath.Join(tmpDir, "mvn_invocations.log")
-	writeStub(t, stubDir, "mvn", mvnLog)
-	writeStub(t, stubDir, "java", "")
-	writeStub(t, stubDir, "pip", "")
-	t.Setenv("PATH", stubDir)
-	installDir := filepath.Join(tmpDir, "java_tools", "bin")
-	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
-	if err := Install(t.Context(), nil); err != nil {
-		t.Fatal(err)
-	}
-	data, err := os.ReadFile(mvnLog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantMvn := "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
-		"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.76.2:exe:linux-x86_64\n" +
-		"mvn dependency:get -Dartifact=com.google.api:gapic-generator-java:2.66.1:jar"
-	if diff := cmp.Diff(wantMvn, strings.TrimSpace(string(data))); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	libDir := filepath.Join(tmpDir, "java_tools", "lib")
-	t.Run("google-java-format", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "google-java-format-1.25.2-all-deps.jar", "gjf jar content", "google-java-format", "#!/bin/sh\nexec java -jar %q \"$@\"\n")
-	})
-	t.Run("protoc-gen-java_grpc", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "protoc-gen-grpc-java-1.76.2-linux-x86_64.exe", "grpc exe content", "protoc-gen-java_grpc", "#!/bin/sh\nexec %q \"$@\"\n")
-	})
-	t.Run("protoc-gen-java_gapic", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "gapic-generator-java-2.66.1.jar", "gapic jar content", "protoc-gen-java_gapic", "#!/bin/sh\nexec java -cp %q \"com.google.api.generator.Main\" \"$@\"\n")
-	})
-}
-
 func writeTestFile(t *testing.T, path, content string, perm os.FileMode) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {

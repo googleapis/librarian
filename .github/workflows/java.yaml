@@ -39,6 +39,7 @@ jobs:
           mvn -version
       - name: Install Java tools
         run: |
+          cd internal/librarian/java/testdata
           librarian -v install java
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
