@@ -35,17 +35,17 @@ func TestFormat(t *testing.T) {
 		{
 			name: "library path and snippet directory exist",
 			library: &config.Library{
-				Name: "example",
+				Name: "lib",
 				APIs: []*config.API{
 					{
-						Path: "example/v1",
-						Go:   &config.GoAPI{ImportPath: "example/apiv1"},
+						Path: "lib/v1",
+						Go:   &config.GoAPI{ImportPath: "lib/apiv1"},
 					},
 				},
 			},
 			goFilePath: []string{
-				"example",
-				"internal/generated/snippets/example/apiv1",
+				"lib",
+				"lib/examples/apiv1",
 			},
 		},
 		{
