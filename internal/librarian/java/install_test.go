@@ -30,7 +30,6 @@ func TestInstall(t *testing.T) {
 	t.Chdir(tmpDir)
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
-
 	localPkgDir := filepath.Join(tmpDir, "sdk-platform-java", "hermetic_build", "library_generation")
 	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
 		t.Fatal(err)
@@ -53,7 +52,6 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(mockJarPath, []byte("local gapic jar content"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
 	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
 	if err := os.MkdirAll(gjfDir, 0755); err != nil {
@@ -71,7 +69,6 @@ func TestInstall(t *testing.T) {
 	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
 		t.Fatal(err)
 	}
-
 	stubs := []struct {
 		name        string
 		logFilename string
@@ -106,7 +103,6 @@ func TestInstall(t *testing.T) {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
-
 	tools := &config.Tools{
 		Maven: []*config.MavenTool{
 			{
@@ -147,13 +143,11 @@ func TestInstall(t *testing.T) {
 			},
 		},
 	}
-
 	installDir := filepath.Join(tmpDir, "java_tools", "bin")
 	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
 	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
-
 	for _, s := range stubs {
 		logPath := filepath.Join(tmpDir, s.logFilename)
 		data, err := os.ReadFile(logPath)
@@ -165,7 +159,6 @@ func TestInstall(t *testing.T) {
 			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
-
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
 	for _, test := range []struct {
 		name        string
@@ -205,7 +198,6 @@ func TestInstall(t *testing.T) {
 			if diff := cmp.Diff(test.wantContent, string(data)); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-
 			wrapperPath := filepath.Join(installDir, test.wrapperName)
 			wrapper, err := os.ReadFile(wrapperPath)
 			if err != nil {
