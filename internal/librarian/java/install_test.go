@@ -30,11 +30,15 @@ func TestInstall(t *testing.T) {
 	t.Chdir(tmpDir)
 	tempHome := t.TempDir()
 	t.Setenv("HOME", tempHome)
+
 	localPkgDir := filepath.Join(tmpDir, "sdk-platform-java", "hermetic_build", "library_generation")
 	if err := os.MkdirAll(localPkgDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	localMvnDir := filepath.Join(tmpDir, "sdk-platform-java", "gapic-generator-java")
+	if err := os.MkdirAll(filepath.Join(localMvnDir, "target"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	mockPOM := `<project xmlns="http://maven.apache.org/POM/4.0.0">
   <parent>
     <groupId>com.google.api.generator</groupId>
@@ -42,18 +46,67 @@ func TestInstall(t *testing.T) {
   </parent>
   <artifactId>gapic-generator-java</artifactId>
 </project>`
-	writeTestFile(t, filepath.Join(localMvnDir, "pom.xml"), mockPOM, 0644)
-	writeTestFile(t, filepath.Join(localMvnDir, "target", "gapic-generator-java-2.28.0-SNAPSHOT.jar"), "local gapic jar content", 0644)
+	if err := os.WriteFile(filepath.Join(localMvnDir, "pom.xml"), []byte(mockPOM), 0644); err != nil {
+		t.Fatal(err)
+	}
+	mockJarPath := filepath.Join(localMvnDir, "target", "gapic-generator-java-2.28.0-SNAPSHOT.jar")
+	if err := os.WriteFile(mockJarPath, []byte("local gapic jar content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
 	m2Repo := filepath.Join(tempHome, ".m2", "repository")
-	writeTestFile(t, filepath.Join(m2Repo, "com/google/googlejavaformat/google-java-format/1.25.2/google-java-format-1.25.2-all-deps.jar"), "gjf jar content", 0644)
-	writeTestFile(t, filepath.Join(m2Repo, "io/grpc/protoc-gen-grpc-java/1.81.0/protoc-gen-grpc-java-1.81.0-linux-x86_64.exe"), "grpc exe content", 0755)
+	gjfDir := filepath.Join(m2Repo, "com", "google", "googlejavaformat", "google-java-format", "1.25.2")
+	if err := os.MkdirAll(gjfDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	gjfJarPath := filepath.Join(gjfDir, "google-java-format-1.25.2-all-deps.jar")
+	if err := os.WriteFile(gjfJarPath, []byte("gjf jar content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	grpcDir := filepath.Join(m2Repo, "io", "grpc", "protoc-gen-grpc-java", "1.81.0")
+	if err := os.MkdirAll(grpcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	grpcExePath := filepath.Join(grpcDir, "protoc-gen-grpc-java-1.81.0-linux-x86_64.exe")
+	if err := os.WriteFile(grpcExePath, []byte("grpc exe content"), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	stubs := []struct {
+		name        string
+		logFilename string
+		wantArgs    string
+	}{
+		{
+			name:        "pip",
+			logFilename: "pip_invocations.log",
+			wantArgs:    "pip install PyYAML==6.0.2 jinja2==3.1.6 " + localPkgDir,
+		},
+		{
+			name:        "mvn",
+			logFilename: "mvn_invocations.log",
+			wantArgs: "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
+				"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
+				"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip " +
+				"-pl sdk-platform-java/gapic-generator-java --also-make",
+		},
+	}
 	stubDir := filepath.Join(tmpDir, "bin")
-	pipLog := filepath.Join(tmpDir, "pip_invocations.log")
-	mvnLog := filepath.Join(tmpDir, "mvn_invocations.log")
-	writeStub(t, stubDir, "pip", pipLog)
-	writeStub(t, stubDir, "mvn", mvnLog)
-	writeStub(t, stubDir, "java", "")
+	if err := os.MkdirAll(stubDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, s := range stubs {
+		logPath := filepath.Join(tmpDir, s.logFilename)
+		content := fmt.Sprintf("#!/bin/sh\necho %q \"$@\" >> %q\n", s.name, logPath)
+		if err := os.WriteFile(filepath.Join(stubDir, s.name), []byte(content), 0755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := os.WriteFile(filepath.Join(stubDir, "java"), []byte("#!/bin/sh\nexit 0\n"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("PATH", stubDir)
+
 	tools := &config.Tools{
 		Maven: []*config.MavenTool{
 			{
@@ -94,77 +147,74 @@ func TestInstall(t *testing.T) {
 			},
 		},
 	}
+
 	installDir := filepath.Join(tmpDir, "java_tools", "bin")
 	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
 	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
-	data, err := os.ReadFile(pipLog)
-	if err != nil {
-		t.Fatal(err)
+
+	for _, s := range stubs {
+		logPath := filepath.Join(tmpDir, s.logFilename)
+		data, err := os.ReadFile(logPath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := strings.TrimSpace(string(data))
+		if diff := cmp.Diff(s.wantArgs, got); diff != "" {
+			t.Errorf("mismatch (-want +got):\n%s", diff)
+		}
 	}
-	wantPip := "pip install PyYAML==6.0.2 jinja2==3.1.6 " + localPkgDir
-	if diff := cmp.Diff(wantPip, strings.TrimSpace(string(data))); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	data, err = os.ReadFile(mvnLog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantMvn := "mvn dependency:get -Dartifact=com.google.googlejavaformat:google-java-format:1.25.2:jar:all-deps\n" +
-		"mvn dependency:get -Dartifact=io.grpc:protoc-gen-grpc-java:1.81.0:exe:linux-x86_64\n" +
-		"mvn package -B -ntp -T 1.5C -DskipTests -Dcheckstyle.skip -Dclirr.skip -Denforcer.skip -Dfmt.skip -pl sdk-platform-java/gapic-generator-java --also-make"
-	if diff := cmp.Diff(wantMvn, strings.TrimSpace(string(data))); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
+
 	libDir := filepath.Join(tmpDir, "java_tools", "lib")
-	t.Run("google-java-format", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "google-java-format-1.25.2-all-deps.jar", "gjf jar content", "google-java-format", "#!/bin/sh\nexec java -jar %q \"$@\"\n")
-	})
-	t.Run("protoc-gen-java_grpc", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "protoc-gen-grpc-java-1.81.0-linux-x86_64.exe", "grpc exe content", "protoc-gen-java_grpc", "#!/bin/sh\nexec %q \"$@\"\n")
-	})
-	t.Run("protoc-gen-java_gapic", func(t *testing.T) {
-		verifyInstalledTool(t, libDir, installDir, "gapic-generator-java-2.28.0-SNAPSHOT.jar", "local gapic jar content", "protoc-gen-java_gapic", "#!/bin/sh\nexec java -cp %q \"com.google.api.generator.Main\" \"$@\"\n")
-	})
-}
+	for _, test := range []struct {
+		name        string
+		filename    string
+		wantContent string
+		wrapperName string
+		wantFormat  string
+	}{
+		{
+			name:        "google-java-format",
+			filename:    "google-java-format-1.25.2-all-deps.jar",
+			wantContent: "gjf jar content",
+			wrapperName: "google-java-format",
+			wantFormat:  "#!/bin/sh\nexec java -jar %q \"$@\"\n",
+		},
+		{
+			name:        "protoc-gen-java_grpc",
+			filename:    "protoc-gen-grpc-java-1.81.0-linux-x86_64.exe",
+			wantContent: "grpc exe content",
+			wrapperName: "protoc-gen-java_grpc",
+			wantFormat:  "#!/bin/sh\nexec %q \"$@\"\n",
+		},
+		{
+			name:        "protoc-gen-java_gapic",
+			filename:    "gapic-generator-java-2.28.0-SNAPSHOT.jar",
+			wantContent: "local gapic jar content",
+			wrapperName: "protoc-gen-java_gapic",
+			wantFormat:  "#!/bin/sh\nexec java -cp %q \"com.google.api.generator.Main\" \"$@\"\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			copiedPath := filepath.Join(libDir, test.filename)
+			data, err := os.ReadFile(copiedPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantContent, string(data)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
 
-func writeTestFile(t *testing.T, path, content string, perm os.FileMode) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(path, []byte(content), perm); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func writeStub(t *testing.T, dir, name, logFile string) {
-	t.Helper()
-	content := "#!/bin/sh\nexit 0\n"
-	if logFile != "" {
-		content = fmt.Sprintf("#!/bin/sh\necho %q \"$@\" >> %q\n", name, logFile)
-	}
-	writeTestFile(t, filepath.Join(dir, name), content, 0755)
-}
-
-func verifyInstalledTool(t *testing.T, libDir, installDir, filename, wantContent, wrapperName, wantFormat string) {
-	t.Helper()
-	copiedPath := filepath.Join(libDir, filename)
-	data, err := os.ReadFile(copiedPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(wantContent, string(data)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-	wrapperPath := filepath.Join(installDir, wrapperName)
-	wrapper, err := os.ReadFile(wrapperPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantWrapper := fmt.Sprintf(wantFormat, copiedPath)
-	if diff := cmp.Diff(wantWrapper, string(wrapper)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+			wrapperPath := filepath.Join(installDir, test.wrapperName)
+			wrapper, err := os.ReadFile(wrapperPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantWrapper := fmt.Sprintf(test.wantFormat, copiedPath)
+			if diff := cmp.Diff(wantWrapper, string(wrapper)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
