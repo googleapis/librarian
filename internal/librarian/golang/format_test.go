@@ -103,7 +103,7 @@ func main() {
 					t.Fatal(err)
 				}
 			}
-			if err := Format(t.Context(), test.library, nil); err != nil {
+			if err := Format(t.Context(), test.library); err != nil {
 				t.Fatal(err)
 			}
 			for _, aPath := range test.goFilePath {
