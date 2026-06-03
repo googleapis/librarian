@@ -243,7 +243,7 @@ func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string
 // for the given library output directory, library name, and Go import path.
 func snippetDirectory(output string, library *config.Library, goAPI *config.GoAPI) string {
 	clientPath := clientPathFromRepoRoot(library, goAPI)
-	return filepath.Join(output, "examples", strings.TrimPrefix(clientPath, library.Name))
+	return filepath.Join(output, "examples", strings.TrimPrefix(clientPath, library.Name+"/"))
 }
 
 // findSnippetDirectory returns the path to the snippet directory for the given API path and library output directory.
