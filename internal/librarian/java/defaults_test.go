@@ -442,6 +442,10 @@ func TestTidy_ManualFiles(t *testing.T) {
 			path:    "proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 			content: "package com.google.cloud.vision.v1;\npublic class ImageName {}",
 		},
+		{
+			path:    "proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ManualOutsideGAPIC.java",
+			content: "package com.google.cloud.vision.v1;\npublic class ManualOutsideGAPIC {}",
+		},
 	}
 	for _, file := range files {
 		absPath := filepath.Join(outputDir, file.path)
@@ -465,12 +469,14 @@ func TestTidy_ManualFiles(t *testing.T) {
 			"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Generated.java",
 			"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/GeneratedAnnotation.java",
 			"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+			"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ManualOutsideGAPIC.java",
 		},
 	}
 	want := []string{
 		"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Generated.java",
 		"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/GeneratedAnnotation.java",
 		"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+		"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ManualOutsideGAPIC.java",
 	}
 	gotLib, err := Tidy(tempDir, lib)
 	if err != nil {
