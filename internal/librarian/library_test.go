@@ -746,6 +746,10 @@ func TestCanDeriveAPIPath(t *testing.T) {
 			language: config.LanguageGo,
 		},
 		{
+			name:     "java",
+			language: config.LanguagePython,
+		},
+		{
 			name:     "python",
 			language: config.LanguagePython,
 		},
