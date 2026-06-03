@@ -240,9 +240,10 @@ func clientPathFromRepoRoot(library *config.Library, goAPI *config.GoAPI) string
 }
 
 // snippetDirectory returns the path to the directory where Go snippets are generated
-// for the given library output directory and Go import path.
-func snippetDirectory(output, importPath string) string {
-	return filepath.Join(output, "internal", "generated", "snippets", importPath)
+// for the given library output directory, library name, and Go import path.
+func snippetDirectory(output string, library *config.Library, goAPI *config.GoAPI) string {
+	clientPath := clientPathFromRepoRoot(library, goAPI)
+	return filepath.Join(output, "examples", strings.TrimPrefix(clientPath, library.Name+"/"))
 }
 
 // findSnippetDirectory returns the path to the snippet directory for the given API path and library output directory.
@@ -252,7 +253,7 @@ func findSnippetDirectory(library *config.Library, goAPI *config.GoAPI, output s
 	if goAPI.ProtoOnly || goAPI.NoSnippets {
 		return ""
 	}
-	snippetDir := snippetDirectory(repoRootPath(output, library.Name), clientPathFromRepoRoot(library, goAPI))
+	snippetDir := snippetDirectory(output, library, goAPI)
 	// No need to format the snippet directory if the directory is within one of
 	// paths to delete after generation. The snippet directory does not exist.
 	if library.Go != nil {

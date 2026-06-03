@@ -125,10 +125,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "go.mod")); errors.Is(err, fs.ErrNotExist) {
 		// New client, init the module.
-		if err := initModule(ctx, outDir, modulePath(library), toolchain); err != nil {
-			return err
-		}
-		return updateSnippetsModule(ctx, library, outDir, toolchain)
+		return initModule(ctx, outDir, modulePath(library), toolchain)
 	} else if err != nil {
 		return fmt.Errorf("failed to stat go.mod: %w", err)
 	}
@@ -140,32 +137,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		env = map[string]string{"GOTOOLCHAIN": toolchain}
 	}
 	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
-}
-
-// updateSnippetsModule updates the snippets module's go.mod file with a requirement
-// and a local replacement for the newly generated library.
-func updateSnippetsModule(ctx context.Context, library *config.Library, outDir string, toolchain string) error {
-	hasSnippets := slices.ContainsFunc(library.APIs, func(api *config.API) bool {
-		return api.Go != nil && !api.Go.NoSnippets
-	})
-	if !hasSnippets {
-		return nil
-	}
-	// Note: Previews won't have snippets, so no need to handle preview clients.
-	repoRoot := repoRootPath(outDir, library.Name)
-	snippetsDir := filepath.Join(repoRoot, "internal", "generated", "snippets")
-	modDir, err := filepath.Rel(repoRoot, outDir)
-	if err != nil {
-		return fmt.Errorf("failed to get relative path of module: %w", err)
-	}
-	modPath := modulePath(library)
-	var env map[string]string
-	if toolchain != "" {
-		env = map[string]string{"GOTOOLCHAIN": toolchain}
-	}
-	return runInDirWithEnv(ctx, snippetsDir, env, command.Go, "mod", "edit",
-		"-require="+modPath+"@v0.0.0",
-		"-replace="+modPath+"="+filepath.Join("../../..", modDir))
 }
 
 func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {
