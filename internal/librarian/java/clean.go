@@ -173,16 +173,32 @@ func isDefaultPreserved(path string) bool {
 	return itTestRegexp.MatchString(path) || versionRegexp.MatchString(path)
 }
 
+// isManualFile checks if the file at the given path is manually maintained.
+func isManualFile(path string, isDir bool, name string) (bool, error) {
+	if isDir {
+		return false, nil
+	}
+	if slices.Contains(generatedNonJavaFiles, name) {
+		return false, nil
+	}
+	if filepath.Ext(path) != ".java" {
+		return true, nil
+	}
+	hasGenMarker, err := hasMarker(path)
+	if err != nil {
+		return false, err
+	}
+	return !hasGenMarker, nil
+}
+
 // shouldCleanMarkerPath returns true if the file at path should be cleaned based on
 // its name or whether it contains the auto-generated marker.
 func shouldCleanMarkerPath(path string, d os.DirEntry) (bool, error) {
-	if slices.Contains(generatedNonJavaFiles, d.Name()) {
-		return true, nil
+	isManual, err := isManualFile(path, d.IsDir(), d.Name())
+	if err != nil {
+		return false, err
 	}
-	if filepath.Ext(path) != ".java" {
-		return false, nil
-	}
-	return hasMarker(path)
+	return !isManual, nil
 }
 
 // hasMarker checks if the file at path contains the auto-generated marker.

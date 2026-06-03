@@ -148,11 +148,7 @@ func tidyKeep(repoDir string, library *config.Library) ([]string, error) {
 		if isDefaultPreserved(keepPathSlash) {
 			continue
 		}
-		isManualGapic, err := isManualFileInGAPICModule(repoDir, library, keepPath)
-		if err != nil {
-			return nil, err
-		}
-		if isManualGapic {
+		if isManualFileInGAPICModule(repoDir, library, keepPath) {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -165,7 +161,7 @@ func tidyKeep(repoDir string, library *config.Library) ([]string, error) {
 	return filteredKeepPaths, nil
 }
 
-func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) (bool, error) {
+func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) bool {
 	var groupID, artifactID string
 	if library.Java != nil {
 		groupID = library.Java.GroupID
@@ -212,7 +208,7 @@ func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath
 		}
 	}
 	if gapicArtifactID == "" {
-		return false, nil
+		return false
 	}
 	outputDir := library.Output
 	if outputDir == "" {
@@ -221,22 +217,10 @@ func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath
 	absPath := filepath.Join(repoDir, outputDir, keepPath)
 	fi, err := os.Stat(absPath)
 	if err != nil {
-		return false, nil
+		return false
 	}
-	if fi.IsDir() {
-		return false, nil
-	}
-	if slices.Contains(generatedNonJavaFiles, fi.Name()) {
-		return false, nil
-	}
-	if filepath.Ext(absPath) != ".java" {
-		return true, nil
-	}
-	hasGenMarker, err := hasMarker(absPath)
-	if err != nil {
-		return false, nil
-	}
-	return !hasGenMarker, nil
+	isManual, _ := isManualFile(absPath, fi.IsDir(), fi.Name())
+	return isManual
 }
 
 var (
