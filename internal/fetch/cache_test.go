@@ -63,7 +63,7 @@ func TestCacheDir(t *testing.T) {
 			if test.env != "" {
 				t.Setenv("LIBRARIAN_CACHE", test.env)
 			}
-			got, err := cacheDir()
+			got, err := CacheDir()
 			if err != nil {
 				t.Fatal(err)
 			}

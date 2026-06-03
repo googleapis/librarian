@@ -61,7 +61,7 @@ const envLibrarianCache = "LIBRARIAN_CACHE"
 //  3. Download tarball, compute SHA256, verify it matches expectedSHA256 from
 //     librarian.yaml, extract, and return the path.
 func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
-	cacheDir, err := cacheDir()
+	cacheDir, err := CacheDir()
 	if err != nil {
 		return "", err
 	}
@@ -111,10 +111,10 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	return outDir, nil
 }
 
-// cacheDir returns the root cache directory for librarian operations. It
+// CacheDir returns the root cache directory for librarian operations. It
 // checks the $LIBRARIAN_CACHE environment variable, falling back to
 // $HOME/.cache/librarian if not set.
-func cacheDir() (string, error) {
+func CacheDir() (string, error) {
 	if cache := os.Getenv(envLibrarianCache); cache != "" {
 		return cache, nil
 	}
