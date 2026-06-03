@@ -117,17 +117,24 @@ func tidyLibrary(cfg *config.Config, lib *config.Library) (*config.Library, erro
 	if lib.SpecificationFormat == config.SpecProtobuf {
 		lib.SpecificationFormat = ""
 	}
+	// Tidy language config first so that empty language-specific API configs are cleared.
+	lib, err := tidyLanguageConfig(lib, cfg)
+	if err != nil {
+		return nil, err
+	}
 	// Only remove derivable API paths when there's exactly one API.
 	// When there are multiple APIs, preserve all of them.
 	if len(lib.APIs) == 1 && canDeriveAPIPath(cfg.Language) {
 		if lib.APIs[0].Path == deriveAPIPath(cfg.Language, lib.Name) {
-			lib.APIs[0].Path = ""
+			if lib.APIs[0].Go == nil && lib.APIs[0].Java == nil {
+				lib.APIs[0].Path = ""
+			}
 		}
 	}
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
-	return tidyLanguageConfig(lib, cfg)
+	return lib, nil
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {

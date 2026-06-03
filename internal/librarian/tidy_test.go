@@ -681,6 +681,77 @@ func TestTidy_DerivableAPIPath(t *testing.T) {
 	}
 }
 
+func TestTidy_DerivableAPIPathWithCustomConfig(t *testing.T) {
+	tempDir := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguageJava,
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name:  "backstory",
+				Roots: []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "backstory",
+						Java: &config.JavaAPI{
+							GenerateGAPIC: new(bool), // false
+						},
+					},
+				},
+				Java: &config.JavaModule{
+					ReleasedVersion: "0.0.0",
+				},
+			},
+		},
+	}
+	if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	got, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := &config.Config{
+		Language: config.LanguageJava,
+		Default: &config.Default{
+			Output: "generated/",
+		},
+		Sources: &config.Sources{
+			Googleapis: &config.Source{
+				Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
+				SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
+			},
+		},
+		Libraries: []*config.Library{
+			{
+				Name: "backstory",
+				APIs: []*config.API{
+					{
+						Path: "backstory",
+						Java: &config.JavaAPI{
+							GenerateGAPIC: new(bool), // false
+						},
+					},
+				},
+				Java: &config.JavaModule{
+					ReleasedVersion: "0.0.0",
+				},
+			},
+		},
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestTidy_DerivableRoots(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := &config.Config{
