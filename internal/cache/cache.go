@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 )
 
+// EnvLibrarianCache is the environment variable used to override the default cache directory.
 const EnvLibrarianCache = "LIBRARIAN_CACHE"
 
 // Directory returns the root cache directory for librarian operations. It
