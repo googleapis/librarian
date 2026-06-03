@@ -22,6 +22,8 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 )
 
 const (
@@ -31,6 +33,8 @@ const (
 	Git = "git"
 	// Go is the command name for the go executable.
 	Go = "go"
+	// envPath is the environment variable for the executable path.
+	envPath = "PATH"
 )
 
 var (
@@ -113,7 +117,17 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 }
 
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
-	cmd := exec.CommandContext(ctx, command, arg...)
+	pathEnv := os.Getenv(envPath)
+	if env != nil {
+		if val, ok := env[envPath]; ok {
+			pathEnv = val
+		}
+	}
+	resolvedCommand, err := lookPath(command, pathEnv)
+	if err != nil {
+		resolvedCommand = command
+	}
+	cmd := exec.CommandContext(ctx, resolvedCommand, arg...)
 	if dir != "" {
 		cmd.Dir = dir
 	}
@@ -127,6 +141,28 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 		fmt.Fprintf(stdout, "%s\n", cmd.String())
 	}
 	return cmd
+}
+
+// lookPath searches for cmdName in the directories of the provided pathEnv.
+func lookPath(cmdName string, pathEnv string) (string, error) {
+	if filepath.IsAbs(cmdName) ||
+		strings.Contains(cmdName, string(filepath.Separator)) ||
+		filepath.VolumeName(cmdName) != "" {
+		return cmdName, nil
+	}
+	for _, dir := range filepath.SplitList(pathEnv) {
+		if dir == "" {
+			dir = "."
+		}
+		commandPath := filepath.Join(dir, cmdName)
+		if fileInfo, err := os.Stat(commandPath); err == nil && !fileInfo.IsDir() {
+			if filepath.Separator != '\\' && fileInfo.Mode().Perm()&0111 == 0 {
+				continue
+			}
+			return filepath.Abs(commandPath)
+		}
+	}
+	return "", &exec.Error{Name: cmdName, Err: exec.ErrNotFound}
 }
 
 func runCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) (string, error) {
