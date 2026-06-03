@@ -81,11 +81,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(repoDir string, library *config.Library) (*config.Library, error) {
-	var err error
-	library.Keep, err = tidyKeep(repoDir, library)
-	if err != nil {
-		return nil, err
-	}
+	library.Keep = tidyKeep(repoDir, library)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -138,9 +134,9 @@ func Tidy(repoDir string, library *config.Library) (*config.Library, error) {
 }
 
 // tidyKeep removes default files from the library's keep configuration.
-func tidyKeep(repoDir string, library *config.Library) ([]string, error) {
+func tidyKeep(repoDir string, library *config.Library) []string {
 	if len(library.Keep) == 0 {
-		return nil, nil
+		return nil
 	}
 	var filteredKeepPaths []string
 	for _, keepPath := range library.Keep {
@@ -156,41 +152,15 @@ func tidyKeep(repoDir string, library *config.Library) ([]string, error) {
 	slices.Sort(filteredKeepPaths)
 	filteredKeepPaths = slices.Compact(filteredKeepPaths)
 	if len(filteredKeepPaths) == 0 {
-		return nil, nil
+		return nil
 	}
-	return filteredKeepPaths, nil
+	return filteredKeepPaths
 }
 
-func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) bool {
-	var groupID, artifactID string
-	if library.Java != nil {
-		groupID = library.Java.GroupID
-		artifactID = library.Java.ArtifactID
-	}
-	if groupID == "" {
-		groupID = defaultGroupID
-	}
-	if artifactID == "" {
-		artifactID = deriveArtifactID(library.Name)
-	}
-	libraryCoordinates := LibraryCoordinate{
-		GAPIC: Coordinate{
-			GroupID:    groupID,
-			ArtifactID: artifactID,
-			Version:    library.Version,
-		},
-		Parent: Coordinate{
-			GroupID:    groupID,
-			ArtifactID: fmt.Sprintf("%s-parent", artifactID),
-			Version:    library.Version,
-		},
-		BOM: Coordinate{
-			GroupID:    groupID,
-			ArtifactID: fmt.Sprintf("%s-bom", artifactID),
-			Version:    library.Version,
-		},
-	}
-	var gapicArtifactID string
+// isInGAPICModule checks if the given keepPath belongs to a generated GAPIC module of the library.
+func isInGAPICModule(library *config.Library, keepPath string) bool {
+	libraryCoordinates := DeriveLibraryCoordinates(library)
+	keepPathSlash := filepath.ToSlash(keepPath)
 	for _, api := range library.APIs {
 		javaAPI := api.Java
 		if javaAPI == nil {
@@ -200,14 +170,16 @@ func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
 		if apiCoordinates.GAPIC.ArtifactID != "" && shouldGenerateGAPIC(javaAPI) {
 			prefix := filepath.ToSlash(apiCoordinates.GAPIC.ArtifactID) + "/"
-			keepPathSlash := filepath.ToSlash(keepPath)
 			if strings.HasPrefix(keepPathSlash, prefix) {
-				gapicArtifactID = apiCoordinates.GAPIC.ArtifactID
-				break
+				return true
 			}
 		}
 	}
-	if gapicArtifactID == "" {
+	return false
+}
+
+func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) bool {
+	if !isInGAPICModule(library, keepPath) {
 		return false
 	}
 	outputDir := library.Output

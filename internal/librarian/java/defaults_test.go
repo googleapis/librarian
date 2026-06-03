@@ -591,10 +591,7 @@ func TestTidyKeep(t *testing.T) {
 				},
 				Keep: test.keep,
 			}
-			got, err := tidyKeep("", lib)
-			if err != nil {
-				t.Fatal(err)
-			}
+			got := tidyKeep("", lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
