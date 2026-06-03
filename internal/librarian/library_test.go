@@ -747,7 +747,7 @@ func TestCanDeriveAPIPath(t *testing.T) {
 		},
 		{
 			name:     "java",
-			language: config.LanguagePython,
+			language: config.LanguageJava,
 		},
 		{
 			name:     "python",
