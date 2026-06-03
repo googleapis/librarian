@@ -114,6 +114,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
                         }
                         {{/Codec.IsDiscoveryLro}}
                         {{#Codec.IsDiscoveryLro}}
+                        // TODO(https://github.com/googleapis/librarian/issues/6286): Track recording error info for Discovery LROs
                         let done = google_cloud_lro::internal::DiscoveryOperation::done(op);
                         _span.record("gcp.longrunning.done", done);
                         {{/Codec.IsDiscoveryLro}}
