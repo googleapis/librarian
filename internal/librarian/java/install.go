@@ -16,6 +16,7 @@ package java
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"os"
@@ -27,18 +28,29 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/pip"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // errNoToolsSpecified indicates no Java tools were provided in the configuration.
 var errNoToolsSpecified = errors.New("no tools specified in configuration")
+
+//go:embed testdata/librarian.yaml
+var librarianYAML []byte
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
 // - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
 // - lib/ ($HOME/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || (len(tools.Maven) == 0 && len(tools.Pip) == 0) {
-		return errNoToolsSpecified
+	if tools == nil {
+		tools = &config.Tools{}
+	}
+	if len(tools.Maven) == 0 && len(tools.Pip) == 0 {
+		cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+		if err != nil {
+			return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
+		}
+		tools = cfg.Tools
 	}
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {

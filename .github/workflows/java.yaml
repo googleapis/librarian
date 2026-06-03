@@ -39,7 +39,7 @@ jobs:
           mvn -version
       - name: Install Java tools
         run: |
-          ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
+          librarian -v install java
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |

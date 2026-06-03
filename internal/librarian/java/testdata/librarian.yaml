@@ -1,0 +1,34 @@
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+language: java
+tools:
+  maven:
+    - name: google-java-format
+      group_id: com.google.googlejavaformat
+      artifact_id: google-java-format
+      version: "1.25.2"
+      classifier: all-deps
+      packaging: jar
+    - name: protoc-gen-java_grpc
+      group_id: io.grpc
+      artifact_id: protoc-gen-grpc-java
+      version: "1.76.2"
+      packaging: exe
+      classifier: linux-x86_64
+    - name: protoc-gen-java_gapic
+      group_id: com.google.api
+      artifact_id: gapic-generator-java
+      version: "2.66.1"
+      packaging: jar
+      main_class: com.google.api.generator.Main
