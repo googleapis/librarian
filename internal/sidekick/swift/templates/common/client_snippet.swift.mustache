@@ -55,6 +55,8 @@ struct SnippetRunner {
 {{#Codec.IsGated}}
 #else
 @main
-struct SnippetRunner { static func main() {} }
+struct SnippetRunner {
+  static func main() {}
+}
 #endif
 {{/Codec.IsGated}}
