@@ -153,7 +153,18 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			return fmt.Errorf("internal error: pageable item field %q is not annotated", itemField.Name)
 		}
 		annotations.PageableItemField = itemFieldCodec.Name
-		annotations.PageableItemType = itemFieldCodec.BaseFieldType
+		switch {
+		case itemField.Repeated:
+			annotations.PageableItemType = itemFieldCodec.BaseFieldType
+		case itemField.Map:
+			keyType, valueType, err := c.mapFieldTypeComponents(itemField.MessageType)
+			if err != nil {
+				return err
+			}
+			annotations.PageableItemType = fmt.Sprintf("(%s, %s)", keyType, valueType)
+		default:
+			return fmt.Errorf("pageable item field should be a map or a repeated field: %s", message.ID)
+		}
 	}
 
 	for _, nested := range message.Messages {
