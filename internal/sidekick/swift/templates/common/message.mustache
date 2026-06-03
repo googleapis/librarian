@@ -170,7 +170,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.IsPaginatedResponse}}
 
   public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
+    {{^Pagination.PageableItem.Map}}
     return self.{{Codec.PageableItemField}}
+    {{/Pagination.PageableItem.Map}}
+    {{#Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}.map { ($0, $1) }
+    {{/Pagination.PageableItem.Map}}
   }
 
   public func _nextPageToken() -> Swift.String {
