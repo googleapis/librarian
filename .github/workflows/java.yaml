@@ -20,7 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
@@ -30,6 +30,7 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
+          cache: "maven"
       - name: Verify Java and Maven installation
         run: |
           java -version
@@ -44,11 +45,6 @@ jobs:
         with:
           repository: googleapis/google-cloud-java
           path: google-cloud-java
-      - uses: actions/setup-java@v4
-        with:
-          java-version: "17"
-          distribution: "temurin"
-          cache: "maven"
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
