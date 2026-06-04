@@ -328,7 +328,7 @@ This document describes the schema for the librarian.yaml.
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
 | `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
-| `released_version` | string | Is the last released version of the library. Needs to be explicitly listed for README generation. |
+| `released_version` | string | Is the last released version of the library. If omitted, it will be derived from the library version. Note: It assumes a minor bump from the previous '.0' version (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support deriving previous patch releases (e.g., '1.1.1'). |
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
