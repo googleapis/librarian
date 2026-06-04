@@ -49,6 +49,14 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "maven"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Run librarian install
+        working-directory: google-cloud-java
+        run: |
+          librarian install
+          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
