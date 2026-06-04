@@ -176,7 +176,7 @@ func addMissingHeaders(p postProcessParams, dir string) error {
 		if license.HasHeader(content) {
 			return nil
 		}
-		return os.WriteFile(path, append([]byte(headerText), content...), 0644)
+		return os.WriteFile(path, append(headerText, content...), 0644)
 	})
 }
 
