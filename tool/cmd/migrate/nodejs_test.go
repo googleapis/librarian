@@ -426,3 +426,53 @@ proto_library_with_info(
 		})
 	}
 }
+
+func TestBuildNodejsLibrary_MetadataOverrides(t *testing.T) {
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "packages", "google-cloud-secretmanager")
+	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	pkgJSON := `{"name": "@google-cloud/secret-manager", "version": "6.1.0"}`
+	if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(pkgJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	owlBot := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(.*)/.*-nodejs
+`
+	if err := os.WriteFile(filepath.Join(pkgDir, ".OwlBot.yaml"), []byte(owlBot), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write custom .repo-metadata.json overrides
+	repoMeta := `
+{
+  "client_documentation": "https://custom.docs.com/client-ref",
+  "issue_tracker": "https://custom.tracker.com/issues",
+  "product_documentation": "https://custom.prod.com/docs"
+}
+`
+	if err := os.WriteFile(filepath.Join(pkgDir, ".repo-metadata.json"), []byte(repoMeta), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Running buildNodejsLibrary using testdata/googleapis (which contains secretmanager_v1.yaml)
+	got, err := buildNodejsLibrary("testdata/googleapis", filepath.Join(tmpDir, "packages"), "google-cloud-secretmanager")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &config.NodejsPackage{
+		PackageName:                  "@google-cloud/secret-manager",
+		ClientDocumentationOverride:  "https://custom.docs.com/client-ref",
+		IssueTrackerOverride:         "https://custom.tracker.com/issues",
+		ProductDocumentationOverride: "https://custom.prod.com/docs",
+	}
+
+	if diff := cmp.Diff(want, got.Nodejs); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

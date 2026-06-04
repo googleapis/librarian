@@ -30,6 +30,8 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -224,6 +226,28 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 		library.Keep = append(library.Keep, v1smallKeep...)
 	}
+
+	// Read existing .repo-metadata.json if it exists to preserve custom metadata overrides.
+	if meta, err := repometadata.Read(pkgDir); err == nil && meta != nil {
+		pkgSuffix := strings.TrimPrefix(pkgJSON.Name, "@google-cloud/")
+		defaultClientDoc := fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
+		if meta.ClientDocumentation != "" && meta.ClientDocumentation != defaultClientDoc {
+			library.Nodejs.ClientDocumentationOverride = meta.ClientDocumentation
+		}
+
+		if len(library.APIs) > 0 {
+			if api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, config.LanguageNodejs); err == nil && api != nil {
+				if meta.IssueTracker != "" && meta.IssueTracker != api.NewIssueURI {
+					library.Nodejs.IssueTrackerOverride = meta.IssueTracker
+				}
+				defaultProductDoc := extractBaseProductURL(api.DocumentationURI)
+				if meta.ProductDocumentation != "" && meta.ProductDocumentation != defaultProductDoc {
+					library.Nodejs.ProductDocumentationOverride = meta.ProductDocumentation
+				}
+			}
+		}
+	}
+
 	return library, nil
 }
 
@@ -479,4 +503,13 @@ func deriveNpmPackageName(libraryName string) string {
 	scope := libraryName[:idx2]
 	name := libraryName[idx2+1:]
 	return fmt.Sprintf("@%s/%s", scope, name)
+}
+
+func extractBaseProductURL(docURI string) string {
+	// Strip off /docs/* suffix to get base product URL
+	if base, _, found := strings.Cut(docURI, "/docs/"); found {
+		return base + "/"
+	}
+	// If no /docs/ found, return as-is
+	return docURI
 }
