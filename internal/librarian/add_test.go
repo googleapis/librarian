@@ -1064,9 +1064,6 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 					},
 				},
 			},
-			Java: &config.JavaModule{
-				ReleasedVersion: "0.0.0",
-			},
 		},
 	}
 	if diff := cmp.Diff(wantLibraries, gotCfg.Libraries); diff != "" {

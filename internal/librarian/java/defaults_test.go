@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 )
 
 func TestFill(t *testing.T) {
@@ -165,6 +166,61 @@ func TestFill(t *testing.T) {
 				Java: &config.JavaModule{
 					ArtifactID: "custom-secretmanager",
 					GroupID:    "com.google.cloud",
+				},
+			},
+		},
+		{
+			name: "fill released version from version",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Output:  "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID:      "google-cloud-secretmanager",
+					GroupID:         "com.google.cloud",
+					ReleasedVersion: "1.1.0",
+				},
+			},
+		},
+		{
+			name: "do not fill released version if skip generate",
+			lib: &config.Library{
+				Name:         "secretmanager",
+				Version:      "1.2.0-SNAPSHOT",
+				SkipGenerate: true,
+			},
+			want: &config.Library{
+				Name:         "secretmanager",
+				Version:      "1.2.0-SNAPSHOT",
+				SkipGenerate: true,
+				Output:       "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID: "google-cloud-secretmanager",
+					GroupID:    "com.google.cloud",
+				},
+			},
+		},
+		{
+			name: "do not overwrite released version",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.1.5",
+				},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Output:  "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID:      "google-cloud-secretmanager",
+					GroupID:         "com.google.cloud",
+					ReleasedVersion: "1.1.5",
 				},
 			},
 		},
@@ -397,6 +453,37 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "tidy released version if same as derived",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.1.0",
+				},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+			},
+		},
+		{
+			name: "do not tidy released version if different from derived",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.1.2",
+				},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.1.2",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Tidy(test.lib)
@@ -431,6 +518,13 @@ func TestValidate(t *testing.T) {
 				SkipGenerate: true,
 			},
 		},
+		{
+			name: "valid java config with derivable released version",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if err := Validate(test.lib); err != nil {
@@ -447,19 +541,21 @@ func TestValidate_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "missing java section",
+			name: "invalid version",
 			lib: &config.Library{
-				Name: "secretmanager",
+				Name:    "secretmanager",
+				Version: "invalid-semver",
 			},
-			wantErr: ErrReleasedVersionRequired,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
-			name: "missing released version",
+			name: "invalid version with skip generate",
 			lib: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{},
+				Name:         "secretmanager",
+				Version:      "invalid-semver",
+				SkipGenerate: true,
 			},
-			wantErr: ErrReleasedVersionRequired,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "invalid released version",
@@ -469,7 +565,7 @@ func TestValidate_Error(t *testing.T) {
 					ReleasedVersion: "invalid-semver",
 				},
 			},
-			wantErr: ErrInvalidReleasedVersion,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "omit common resources conflict",
@@ -545,6 +641,58 @@ func TestTidyKeep(t *testing.T) {
 			got := tidyKeep(test.keep)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveLastReleasedVersion(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
+		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
+		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
+		{input: "0.0.1-SNAPSHOT", want: "0.0.0"},
+		{input: "1.10.1-SNAPSHOT", want: "1.10.0"},
+		{input: "0.214.0-beta-SNAPSHOT", want: "0.213.0-beta"},
+		{input: "0.214.0-beta", want: "0.214.0-beta"},
+		{input: "1.2.3", want: "1.2.3"},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got, err := deriveLastReleasedVersion(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestDeriveLastReleasedVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		input   string
+		wantErr error
+	}{
+		{
+			name:    "invalid version",
+			input:   "1.invalid.0-SNAPSHOT",
+			wantErr: semver.ErrInvalidVersion,
+		},
+		{
+			name:    "v1.0.0 snapshot",
+			input:   "1.0.0-SNAPSHOT",
+			wantErr: ErrCannotDeriveReleasedVersion,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := deriveLastReleasedVersion(test.input)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
