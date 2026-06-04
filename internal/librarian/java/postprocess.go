@@ -180,17 +180,20 @@ func addMissingHeaders(p postProcessParams, dir string) error {
 	})
 }
 
-func getLicenseText(p postProcessParams) (string, error) {
-	if p.library != nil && p.library.Java != nil && p.library.Java.AlternateHeaders != "" {
+func getLicenseText(p postProcessParams) ([]byte, error) {
+	if p.library != nil && p.library.Java.AlternateHeaders != "" {
 		headerPath := filepath.Join(p.outDir, p.library.Java.AlternateHeaders)
 		b, err := os.ReadFile(headerPath)
 		if err != nil {
-			return "", err
+			return nil, fmt.Errorf("failed to read alternate header file %s: %w", headerPath, err)
 		}
-		return string(b), nil
+		if len(b) > 0 && b[len(b)-1] != '\n' {
+			b = append(b, '\n')
+		}
+		return b, nil
 	}
 	year := time.Now().Year()
-	return buildLicenseText(year), nil
+	return []byte(buildLicenseText(year)), nil
 }
 
 func copyFiles(p postProcessParams) error {
