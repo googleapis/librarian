@@ -204,6 +204,26 @@ func TestFill(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "do not overwrite released version",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.1.5",
+				},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0-SNAPSHOT",
+				Output:  "java-secretmanager",
+				Java: &config.JavaModule{
+					ArtifactID:      "google-cloud-secretmanager",
+					GroupID:         "com.google.cloud",
+					ReleasedVersion: "1.1.5",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Fill(test.lib)
