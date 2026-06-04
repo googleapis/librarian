@@ -37,11 +37,18 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - name: Run librarian install
-        working-directory: google-cloud-java
-        run: |
-          librarian install
-          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+      - uses: actions/checkout@v6
+      - uses: ./.github/actions/setup-librarian
+      - name: Checkout google-cloud-java
+        uses: actions/checkout@v6
+        with:
+          repository: googleapis/google-cloud-java
+          path: google-cloud-java
+      - uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+          cache: "maven"
       - name: Verify tools
         run: |
           protoc --version
