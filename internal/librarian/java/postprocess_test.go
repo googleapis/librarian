@@ -435,9 +435,9 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 		altHeader  string
 		wantHeader string
 	}{
-		{"default adds header", false, "", "Copyright"},
+		{"default adds header", false, "", "/*\n * Copyright"},
 		{"monolithic skips header", true, "", "package"},
-		{"alternate adds alt header", false, "/* Alternate */\n", "Alternate"},
+		{"alternate adds alt header", false, "/* Alternate */\n", "/* Alternate */"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
