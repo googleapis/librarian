@@ -976,6 +976,45 @@ func TestWriteRepoMetadata(t *testing.T) {
 	want.DistributionName = "@google-cloud/secretmanager"
 	want.Language = cfg.Language
 	want.Repo = cfg.Repo
+	want.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestWriteRepoMetadata_Override(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Nodejs: &config.NodejsPackage{
+			ClientDocumentationOverride:  "https://custom.docs.com/ref",
+			IssueTrackerOverride:         "https://custom.tracker.com",
+			ProductDocumentationOverride: "https://custom.prod.com/docs",
+		},
+	}
+	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
+		t.Fatal(err)
+	}
+	got, err := repometadata.Read(outDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := sample.RepoMetadata()
+	want.DistributionName = "@google-cloud/secretmanager"
+	want.Language = cfg.Language
+	want.Repo = cfg.Repo
+	want.ClientDocumentation = "https://custom.docs.com/ref"
+	want.IssueTracker = "https://custom.tracker.com"
+	want.ProductDocumentation = "https://custom.prod.com/docs"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
