@@ -93,11 +93,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Run librarian install
-        working-directory: google-cloud-java
-        run: |
-          librarian install
-          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian generate
         working-directory: google-cloud-java
         env:
