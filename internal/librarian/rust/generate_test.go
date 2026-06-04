@@ -697,9 +697,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 			want: &repometadata.RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/docs",
 				ClientDocumentation:  "https://docs.rs/google-cloud-secretmanager-v1/latest",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854",
 				Language:             config.LanguageRust,
 				Repo:                 "googleapis/google-cloud-rust",
 				DistributionName:     "google-cloud-secretmanager-v1",

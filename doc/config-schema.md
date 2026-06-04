@@ -364,8 +364,6 @@ This document describes the schema for the librarian.yaml.
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
-| `issue_tracker_override` | string | Allows the issue_tracker field in .repo-metadata.json to be overridden. |
-| `product_documentation_override` | string | Allows the product_documentation field in .repo-metadata.json to be overridden. |
 
 ## PythonDefault Configuration
 

@@ -977,6 +977,8 @@ func TestWriteRepoMetadata(t *testing.T) {
 	want.Language = cfg.Language
 	want.Repo = cfg.Repo
 	want.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+	want.IssueTracker = "https://issuetracker.google.com/issues/new?component=784854"
+	want.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -996,9 +998,7 @@ func TestWriteRepoMetadata_Override(t *testing.T) {
 		Name: "google-cloud-secretmanager",
 		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Nodejs: &config.NodejsPackage{
-			ClientDocumentationOverride:  "https://custom.docs.com/ref",
-			IssueTrackerOverride:         "https://custom.tracker.com",
-			ProductDocumentationOverride: "https://custom.prod.com/docs",
+			ClientDocumentationOverride: "https://custom.docs.com/ref",
 		},
 	}
 	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
@@ -1013,8 +1013,8 @@ func TestWriteRepoMetadata_Override(t *testing.T) {
 	want.Language = cfg.Language
 	want.Repo = cfg.Repo
 	want.ClientDocumentation = "https://custom.docs.com/ref"
-	want.IssueTracker = "https://custom.tracker.com"
-	want.ProductDocumentation = "https://custom.prod.com/docs"
+	want.IssueTracker = "https://issuetracker.google.com/issues/new?component=784854"
+	want.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

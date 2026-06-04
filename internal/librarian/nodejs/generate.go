@@ -501,14 +501,6 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
 	}
 
-	if library.Nodejs != nil && library.Nodejs.IssueTrackerOverride != "" {
-		metadata.IssueTracker = library.Nodejs.IssueTrackerOverride
-	}
-
-	if library.Nodejs != nil && library.Nodejs.ProductDocumentationOverride != "" {
-		metadata.ProductDocumentation = library.Nodejs.ProductDocumentationOverride
-	}
-
 	return metadata.Write(outDir)
 }
 

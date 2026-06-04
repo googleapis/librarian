@@ -40,8 +40,8 @@ func TestFromLibrary(t *testing.T) {
 			want: &RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/docs",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguageNodejs,
 				Repo:                 "googleapis/google-cloud-node",
