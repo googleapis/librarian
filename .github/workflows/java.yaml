@@ -37,10 +37,10 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - name: Install Java tools
+      - name: Run librarian install
+        working-directory: google-cloud-java
         run: |
-          cd internal/librarian/java/testdata
-          librarian -v install java
+          librarian install
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
