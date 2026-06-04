@@ -22,20 +22,21 @@ limitations under the License.
   Conceptually there is a `list response = try await client.<<MethodName>>( ... )` around this
   partial.
 }}
-{{InputType.Codec.Name}}(
+{{InputType.Codec.Name}}().with {
   {{#SampleInfo}}
   {{#IsRequestResourceName}}
-  {{Codec.Name}}: "{{Codec.FormatString}}",
+  $0.{{Codec.Name}} = "{{Codec.FormatString}}"
   {{/IsRequestResourceName}}
   {{#IsMessageResourceName}}
-  {{MessageField.Codec.Name}}: {{MessageField.Codec.BaseFieldType}}(
-    {{Codec.Name}}: "{{Codec.FormatString}}",
-  ),
+  $0.{{MessageField.Codec.Name}} = {{MessageField.Codec.BaseFieldType}}().with {
+    $0.{{Codec.Name}} = "{{Codec.FormatString}}"
+  }
   {{/IsMessageResourceName}}
   {{#UpdateMaskField}}
-  {{Codec.Name}}: {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"]),
+  $0.{{Codec.Name}} = {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"])
   {{/UpdateMaskField}}
   {{/SampleInfo}}
   {{^SampleInfo}}
   /* set fields */
-  {{/SampleInfo}})
+  {{/SampleInfo}}
+}
