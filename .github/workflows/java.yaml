@@ -20,7 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
@@ -29,12 +29,12 @@ jobs:
         with:
           repository: googleapis/google-cloud-java
           path: google-cloud-java
+      - name: Display Go version
+        run: go version
       - uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
-          cache: "maven"
-          # Explicitly install Maven on this runner (it is a requirement for the workflow).
       - name: Verify Java and Maven installation
         run: |
           java -version
@@ -42,9 +42,6 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
       - name: Run librarian install
         working-directory: google-cloud-java
         run: |
@@ -75,6 +72,7 @@ jobs:
           java-version: "17"
           distribution: "temurin"
           cache: "maven"
+          # Explicitly install Maven on this runner (it is a requirement for the workflow).
       - name: Verify Java and Maven installation
         run: |
           java -version
@@ -85,17 +83,22 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Run librarian install
+        working-directory: google-cloud-java
+        run: |
+          librarian install
+          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian generate
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
-        # TODO: uncomment once Java is migrated to Librarian
-        # https://github.com/googleapis/librarian/issues/6176
-        # create-issue-on-failure:
-        #   needs: [integration]
-        #   if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-        #   uses: ./.github/workflows/create-issue-on-failure.yaml
-        #   with:
-        #     language: Java
-        #     repository: google-cloud-java
+# TODO: uncomment once Java is migrated to Librarian
+# https://github.com/googleapis/librarian/issues/6176
+# create-issue-on-failure:
+#   needs: [integration]
+#   if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+#   uses: ./.github/workflows/create-issue-on-failure.yaml
+#   with:
+#     language: Java
+#     repository: google-cloud-java
