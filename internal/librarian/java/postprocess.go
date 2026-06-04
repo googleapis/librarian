@@ -113,7 +113,7 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 			return fmt.Errorf("failed to unzip %s: %w", srcjarPath, err)
 		}
 	}
-	if err := addHeadersIfRequired(p, []string{gRPCDir, protoDir}); err != nil {
+	if err := addHeaders(p, []string{gRPCDir, protoDir}); err != nil {
 		return err
 	}
 	if err := copyFiles(p); err != nil {
@@ -146,12 +146,9 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 	return nil
 }
 
-func addHeadersIfRequired(p postProcessParams, dirs []string) error {
-	if p.javaAPI.Monolithic {
-		return nil
-	}
+func addHeaders(p postProcessParams, dirs []string) error {
 	for _, dir := range dirs {
-		if err := addMissingHeaders(dir); err != nil {
+		if err := addMissingHeaders(p, dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
 		}
 	}
@@ -160,9 +157,11 @@ func addHeadersIfRequired(p postProcessParams, dirs []string) error {
 
 // addMissingHeaders prepends the license header to all Java files in the given directory
 // if they don't already have one.
-func addMissingHeaders(dir string) error {
-	year := time.Now().Year()
-	licenseText := buildLicenseText(year)
+func addMissingHeaders(p postProcessParams, dir string) error {
+	headerText, err := getLicenseText(p)
+	if err != nil {
+		return err
+	}
 	return filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
 		if err != nil || !d.Type().IsRegular() || filepath.Ext(path) != ".java" {
 			return err
@@ -174,8 +173,21 @@ func addMissingHeaders(dir string) error {
 		if license.HasHeader(content) {
 			return nil
 		}
-		return os.WriteFile(path, append([]byte(licenseText), content...), 0644)
+		return os.WriteFile(path, append([]byte(headerText), content...), 0644)
 	})
+}
+
+func getLicenseText(p postProcessParams) (string, error) {
+	if p.library != nil && p.library.Java != nil && p.library.Java.AlternateHeaders != "" {
+		headerPath := filepath.Join(p.outDir, p.library.Java.AlternateHeaders)
+		b, err := os.ReadFile(headerPath)
+		if err != nil {
+			return "", err
+		}
+		return string(b), nil
+	}
+	year := time.Now().Year()
+	return buildLicenseText(year), nil
 }
 
 func copyFiles(p postProcessParams) error {

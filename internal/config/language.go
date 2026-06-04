@@ -476,6 +476,9 @@ type DartPackage struct {
 // TODO(https://github.com/googleapis/librarian/issues/4130):
 // add fill defaults for fields with default.
 type JavaModule struct {
+	// AlternateHeaders is the path to a file containing alternate license header text.
+	AlternateHeaders string `yaml:"alternate_headers,omitempty"`
+
 	// APIIDOverride is the ID of the API (e.g., "pubsub.googleapis.com"),
 	// allows the "api_id" field in .repo-metadata.json to be overridden.
 	// Defaults to "{library.api_shortname}.googleapis.com".

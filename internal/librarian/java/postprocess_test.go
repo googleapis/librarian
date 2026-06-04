@@ -427,15 +427,15 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 	}
 }
 
-func TestPostProcessAPI_SkipHeaders(t *testing.T) {
+func TestPostProcessAPI_AddHeaders(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name       string
-		monolithic bool
-		wantHeader bool
+		altHeader  string
+		wantHeader string
 	}{
-		{"default - adds header", false, true},
-		{"monolithic - skips header", true, false},
+		{"default", "", "Copyright"},
+		{"alternate", "/* Alternate Copyright */\n", "Alternate"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
@@ -453,10 +453,17 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 				outDir:  outdir,
 				apiBase: apiBase,
 				library: &config.Library{Java: &config.JavaModule{}},
-				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
+				javaAPI: &config.JavaAPI{},
 			}
-			// We only care about the skip logic before restructure/cleanup.
-			if err := addHeadersIfRequired(p, []string{gRPCDir}); err != nil {
+			if test.altHeader != "" {
+				headerFile := filepath.Join(outdir, "header.txt")
+				if err := os.WriteFile(headerFile, []byte(test.altHeader), 0644); err != nil {
+					t.Fatal(err)
+				}
+				p.library.Java.AlternateHeaders = "header.txt"
+			}
+
+			if err := addHeaders(p, []string{gRPCDir}); err != nil {
 				t.Fatal(err)
 			}
 
@@ -464,9 +471,8 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			hasHeader := bytes.Contains(got, []byte("Copyright"))
-			if hasHeader != test.wantHeader {
-				t.Errorf("hasHeader = %v, want %v", hasHeader, test.wantHeader)
+			if !bytes.Contains(got, []byte(test.wantHeader)) {
+				t.Errorf("got = %s, want to contain %s", got, test.wantHeader)
 			}
 		})
 	}
@@ -790,6 +796,7 @@ func TestRunOwlBot_Error(t *testing.T) {
 func TestAddMissingHeaders(t *testing.T) {
 	for _, test := range []struct {
 		name         string
+		p            postProcessParams
 		filename     string
 		content      string
 		wantModified bool
@@ -816,6 +823,19 @@ func TestAddMissingHeaders(t *testing.T) {
 			filename: "test.txt",
 			content:  "some text",
 		},
+		{
+			name: "alternate header",
+			p: postProcessParams{
+				library: &config.Library{
+					Java: &config.JavaModule{
+						AlternateHeaders: "header.txt",
+					},
+				},
+			},
+			filename:     "AlternateHeader.java",
+			content:      "package com.example;",
+			wantModified: true,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -825,7 +845,20 @@ func TestAddMissingHeaders(t *testing.T) {
 			if err := os.WriteFile(path, originalContent, 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := addMissingHeaders(tmpDir); err != nil {
+
+			p := test.p
+			p.outDir = tmpDir
+			if p.library != nil && p.library.Java != nil && p.library.Java.AlternateHeaders != "" {
+				headerPath := filepath.Join(tmpDir, p.library.Java.AlternateHeaders)
+				if err := os.MkdirAll(filepath.Dir(headerPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(headerPath, []byte("/* Alternate Header */\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := addMissingHeaders(p, tmpDir); err != nil {
 				t.Fatal(err)
 			}
 
@@ -838,6 +871,22 @@ func TestAddMissingHeaders(t *testing.T) {
 				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
 			}
 		})
+	}
+}
+
+func TestAddMissingHeaders_AlternateHeadersError(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	p := postProcessParams{
+		outDir: tmpDir,
+		library: &config.Library{
+			Java: &config.JavaModule{
+				AlternateHeaders: "missing-header.txt",
+			},
+		},
+	}
+	if err := addMissingHeaders(p, tmpDir); err == nil {
+		t.Error("expected error for missing alternate headers file, got nil")
 	}
 }
 
