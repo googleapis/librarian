@@ -427,15 +427,17 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 	}
 }
 
-func TestPostProcessAPI_AddHeaders(t *testing.T) {
+func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name       string
+		monolithic bool
 		altHeader  string
 		wantHeader string
 	}{
-		{"default", "", "Copyright"},
-		{"alternate", "/* Alternate Copyright */\n", "Alternate"},
+		{"default adds header", false, "", "Copyright"},
+		{"monolithic skips header", true, "", "package"},
+		{"alternate adds alt header", false, "/* Alternate */\n", "Alternate"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
@@ -453,7 +455,7 @@ func TestPostProcessAPI_AddHeaders(t *testing.T) {
 				outDir:  outdir,
 				apiBase: apiBase,
 				library: &config.Library{Java: &config.JavaModule{}},
-				javaAPI: &config.JavaAPI{},
+				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
 			}
 			if test.altHeader != "" {
 				headerFile := filepath.Join(outdir, "header.txt")

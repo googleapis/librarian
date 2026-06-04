@@ -147,6 +147,9 @@ func postProcessAPI(ctx context.Context, p postProcessParams) error {
 }
 
 func addHeaders(p postProcessParams, dirs []string) error {
+	if p.javaAPI.Monolithic {
+		return nil
+	}
 	for _, dir := range dirs {
 		if err := addMissingHeaders(p, dir); err != nil {
 			return fmt.Errorf("failed to fix headers in %s: %w", dir, err)
