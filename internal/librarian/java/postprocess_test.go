@@ -473,8 +473,8 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if !bytes.Contains(got, []byte(test.wantHeader)) {
-				t.Errorf("got = %s, want to contain %s", got, test.wantHeader)
+			if !bytes.HasPrefix(got, []byte(test.wantHeader)) {
+				t.Errorf("mismatch got = %q, want %q", got, test.wantHeader)
 			}
 		})
 	}
