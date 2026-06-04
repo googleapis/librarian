@@ -172,10 +172,6 @@ var (
 	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
 	// but common_resources.proto is also explicitly listed in AdditionalProtos.
 	ErrOmitCommonResourcesConflict = errors.New("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
-	// ErrReleasedVersionRequired is returned when released_version is missing.
-	ErrReleasedVersionRequired = errors.New("released_version is required under java section")
-	// ErrInvalidReleasedVersion is returned when released_version is not a valid semver.
-	ErrInvalidReleasedVersion = errors.New("invalid released_version")
 	// ErrCannotDeriveReleasedVersion is returned when released_version cannot be derived.
 	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
 )
@@ -184,20 +180,14 @@ var (
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
 func Validate(library *config.Library) error {
-	if !library.SkipGenerate {
-		releasedVersion := ""
-		if library.Java != nil {
-			releasedVersion = library.Java.ReleasedVersion
+	if library.Version != "" {
+		if _, err := semver.Parse(library.Version); err != nil {
+			return fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err)
 		}
-		if releasedVersion == "" {
-			derived, err := deriveLastReleasedVersion(library.Version)
-			if err != nil {
-				return fmt.Errorf("library %q: %w: %w", library.Name, ErrReleasedVersionRequired, err)
-			}
-			releasedVersion = derived
-		}
-		if _, err := semver.Parse(releasedVersion); err != nil {
-			return fmt.Errorf("library %q: %w: %w", library.Name, ErrInvalidReleasedVersion, err)
+	}
+	if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
+		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+			return fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err)
 		}
 	}
 	for _, api := range library.APIs {

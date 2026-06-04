@@ -521,19 +521,21 @@ func TestValidate_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "missing java section",
+			name: "invalid version",
 			lib: &config.Library{
-				Name: "secretmanager",
+				Name:    "secretmanager",
+				Version: "invalid-semver",
 			},
-			wantErr: ErrReleasedVersionRequired,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
-			name: "missing released version",
+			name: "invalid version with skip generate",
 			lib: &config.Library{
-				Name: "secretmanager",
-				Java: &config.JavaModule{},
+				Name:         "secretmanager",
+				Version:      "invalid-semver",
+				SkipGenerate: true,
 			},
-			wantErr: ErrReleasedVersionRequired,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "invalid released version",
@@ -543,7 +545,7 @@ func TestValidate_Error(t *testing.T) {
 					ReleasedVersion: "invalid-semver",
 				},
 			},
-			wantErr: ErrInvalidReleasedVersion,
+			wantErr: semver.ErrInvalidVersion,
 		},
 		{
 			name: "omit common resources conflict",
@@ -565,15 +567,6 @@ func TestValidate_Error(t *testing.T) {
 				},
 			},
 			wantErr: ErrOmitCommonResourcesConflict,
-		},
-		{
-			name: "missing released version and underivable version",
-			lib: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.0.0-SNAPSHOT",
-				Java:    &config.JavaModule{},
-			},
-			wantErr: ErrReleasedVersionRequired,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
