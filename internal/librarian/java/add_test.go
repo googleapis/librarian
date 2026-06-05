@@ -135,9 +135,29 @@ func TestAdd(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "cloud API outside google/cloud/",
+			lib: &config.Library{
+				Name: "iam",
+				APIs: []*config.API{
+					{Path: "google/iam/v3"},
+				},
+			},
+			want: &config.Library{
+				Name: "iam",
+				APIs: []*config.API{
+					{Path: "google/iam/v3"},
+				},
+				Version:       defaultVersion,
+				CopyrightYear: "",
+				Java: &config.JavaModule{
+					ReleasedVersion: defaultReleasedVersion,
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Add(test.lib)
+			got := Add(test.lib, googleapisDir)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

@@ -29,6 +29,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
+	"google.golang.org/genproto/googleapis/api/annotations"
 	"google.golang.org/genproto/googleapis/api/serviceconfig"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -194,6 +195,9 @@ func populateFromServiceConfig(api *API, cfg *Service) *API {
 		}
 		if api.ShortName == "" {
 			api.ShortName = publishing.GetApiShortName()
+		}
+		if api.Organization == "" && publishing.GetOrganization() != annotations.ClientLibraryOrganization_CLIENT_LIBRARY_ORGANIZATION_UNSPECIFIED {
+			api.Organization = publishing.GetOrganization().String()
 		}
 	}
 	if api.ShortName == "" {

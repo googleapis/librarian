@@ -91,11 +91,15 @@ A typical librarian workflow for adding a new client library is:
 }
 
 func runAdd(ctx context.Context, cfg *config.Config, api string) error {
-	name, cfg, err := addLibrary(cfg, api)
+	sources, err := LoadSources(ctx, cfg.Sources)
 	if err != nil {
 		return err
 	}
-	cfg, err = resolveDependencies(ctx, cfg, name)
+	name, cfg, err := addLibrary(cfg, api, sources.Googleapis)
+	if err != nil {
+		return err
+	}
+	cfg, err = resolveDependencies(ctx, cfg, name, sources)
 	if err != nil {
 		return err
 	}
@@ -109,16 +113,16 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 	return RunTidyOnConfig(ctx, ".", cfg)
 }
 
-func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
+func resolveDependencies(ctx context.Context, cfg *config.Config, name string, sources *sources.Sources) (*config.Config, error) {
 	switch cfg.Language {
 	case config.LanguageJava:
-		lib, sources, err := setupResolve(ctx, cfg, name)
+		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
 		}
 		return java.ResolveMixinDependencies(cfg, lib, sources)
 	case config.LanguageRust:
-		lib, sources, err := setupResolve(ctx, cfg, name)
+		lib, err := FindLibrary(cfg, name)
 		if err != nil {
 			return nil, err
 		}
@@ -126,18 +130,6 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 	default:
 		return cfg, nil
 	}
-}
-
-func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config.Library, *sources.Sources, error) {
-	lib, err := FindLibrary(cfg, name)
-	if err != nil {
-		return nil, nil, err
-	}
-	sources, err := LoadSources(ctx, cfg.Sources)
-	if err != nil {
-		return nil, nil, err
-	}
-	return lib, sources, nil
 }
 
 // deriveLibraryName derives a library name from an API path.
@@ -171,7 +163,7 @@ func deriveLibraryName(language string, api string) string {
 // It returns the name of the new or updated library, the updated config, and an
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
-func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
+func addLibrary(cfg *config.Config, apiPath string, googleapisDir string) (string, *config.Config, error) {
 	isPreview := strings.HasPrefix(apiPath, "preview/")
 	stablePath := apiPath
 	if isPreview {
@@ -188,7 +180,7 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 	if existingLib != nil {
 		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, api)
+	return addNewLibrary(cfg, api, googleapisDir)
 }
 
 // findExistingLibraryForNewAPI determines if an existing library in cfg is
@@ -237,7 +229,7 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API)
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config, error) {
+func addNewLibrary(cfg *config.Config, api *config.API, googleapisDir string) (string, *config.Config, error) {
 	name := deriveLibraryName(cfg.Language, api.Path)
 	lib := &config.Library{
 		Name:          name,
@@ -248,7 +240,7 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 	case config.LanguageGo:
 		lib = golang.Add(lib)
 	case config.LanguageJava:
-		lib = java.Add(lib)
+		lib = java.Add(lib, googleapisDir)
 	case config.LanguagePython:
 		var err error
 		lib, err = python.Add(cfg, lib)

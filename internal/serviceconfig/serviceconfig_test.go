@@ -103,6 +103,7 @@ func TestFind(t *testing.T) {
 				ShortName:        "secretmanager",
 				Languages:        []string{config.LanguageAll},
 				Title:            "Secret Manager API",
+				Organization:     "CLOUD",
 			},
 		},
 		{
@@ -151,6 +152,7 @@ func TestFind(t *testing.T) {
 				DocumentationURI: "https://cloud.google.com/secret-manager/docs/overview",
 				ServiceName:      "secretmanager.googleapis.com",
 				ShortName:        "secretmanager",
+				Organization:     "CLOUD",
 			},
 		},
 		{

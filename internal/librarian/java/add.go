@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
 // knownPrefixes contains API path prefixes to be stripped when deriving a
@@ -38,17 +39,15 @@ const (
 )
 
 // Add initializes a new Java library with default values.
-func Add(lib *config.Library) *config.Library {
+func Add(lib *config.Library, googleapisDir string) *config.Library {
 	lib.Version = defaultVersion
 	// Java generation defaults to the system year for license headers,
 	// so we reset it here to avoid redundancy in librarian.yaml.
 	lib.CopyrightYear = ""
-
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
 	lib.Java.ReleasedVersion = defaultReleasedVersion
-
 	// We use the first API to infer the group ID.
 	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
 	apiPath := lib.APIs[0].Path
@@ -60,14 +59,20 @@ func Add(lib *config.Library) *config.Library {
 	case strings.HasPrefix(apiPath, "google/ads/"):
 		return setNonCloudMavenDefaults(lib, "com.google.api-ads")
 	}
-	if !strings.HasPrefix(apiPath, "google/cloud/") {
-		log.Printf(
-			"WARNING: unrecognized non-cloud API path %q. Setting fake GroupID %q. "+
-				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
-			apiPath, fakeGroupID,
-		)
-		setNonCloudMavenDefaults(lib, fakeGroupID)
+	if strings.HasPrefix(apiPath, "google/cloud/") {
+		return lib
 	}
+	if googleapisDir != "" {
+		if apiCfg, err := serviceconfig.Find(googleapisDir, apiPath, config.LanguageJava); err == nil && apiCfg.Organization == "CLOUD" {
+			return lib
+		}
+	}
+	log.Printf(
+		"WARNING: unrecognized non-cloud API path %q. Setting fake GroupID %q. "+
+			"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
+		apiPath, fakeGroupID,
+	)
+	setNonCloudMavenDefaults(lib, fakeGroupID)
 	return lib
 }
 

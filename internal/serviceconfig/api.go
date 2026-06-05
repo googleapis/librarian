@@ -103,6 +103,10 @@ type API struct {
 	// If empty, the service config is discovered in the directory specified by Path.
 	ServiceConfig string `yaml:"service_config,omitempty"`
 
+	// Organization is the organization from the service config's publishing section.
+	// This is populated from the service config during Find.
+	Organization string `yaml:"organization,omitempty"`
+
 	// ServiceName is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`.
 	ServiceName string `yaml:"service_name,omitempty"`
 
