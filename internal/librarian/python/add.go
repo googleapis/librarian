@@ -27,6 +27,9 @@ import (
 // defaultVersion is the first version used for a new library.
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
+// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
+// the entry is a core library, not an individual API client library.
+const libraryTypeCore = "CORE"
 
 var (
 	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
@@ -102,6 +105,12 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 		}
 	}
 	for _, lib := range libraries {
+		// In order to avoid a CORE library like googleapis-common-proto from
+		// matching on all API paths starting with google/cloud, we do not
+		// automatically add to existing libraries with the CORE library type.
+		if lib.Python != nil && lib.Python.LibraryType == libraryTypeCore {
+			continue
+		}
 		set := make(map[string]struct{})
 		for _, api := range lib.APIs {
 			set[versionless(api.Path)] = struct{}{}
