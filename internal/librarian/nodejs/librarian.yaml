@@ -27,6 +27,12 @@ tools:
         # tsc only compiles TypeScript; the generator also needs templates/
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
+        # Recreate the symlinks that are in the tarball, as fetch doesn't handle them
+        # at the moment.
+        # TODO(https://github.com/googleapis/librarian/issues/6313):
+        # remove this workaround when the issue is fixed.
+        - "ln -sf package.json templates/cjs/typescript_gapic/package.json.njk"
+        - "ln -sf package.json templates/esm/typescript_gapic/package.json.njk"
         - "cp -r templates protos build/"
         # Pass the full directory name into "pnpm add" so that the generator
         # is registered with the name "gapic-generator-typescript" rather than
