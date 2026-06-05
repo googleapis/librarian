@@ -33,11 +33,11 @@ tools:
         # remove this workaround when the issue is fixed.
         - "ln -sf package.json templates/cjs/typescript_gapic/package.json.njk"
         - "ln -sf package.json templates/esm/typescript_gapic/package.json.njk"
-        - "cp -r templates protos build/"
+        - "cp -a templates protos build/"
         # Pass the full directory name into "pnpm add" so that the generator
         # is registered with the name "gapic-generator-typescript" rather than
         # an arbitrary name such as "5".
-        - "pnpm add -g \"$PWD\""
+        - 'pnpm add -g "$PWD"'
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
