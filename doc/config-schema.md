@@ -155,6 +155,20 @@ This document describes the schema for the librarian.yaml.
 | `generate_proto_classes` | bool | Indicates whether to include this proto in standard Protocol Buffer Java classes generation. |
 | `copy_to_output` | bool | Indicates whether to copy this proto to the output directory. |
 
+## CommonDiscovery Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
+| `pollers` | list of [CommonPoller](#commonpoller-configuration) | Is a list of LRO polling configurations. |
+
+## CommonPoller Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
+| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
+
 ## DartPackage Configuration
 
 | Field | Type | Description |
@@ -409,7 +423,7 @@ This document describes the schema for the librarian.yaml.
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
-| `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Contains discovery-specific configuration for LRO polling. |
+| `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
 
 ## RustDefault Configuration
@@ -423,13 +437,6 @@ This document describes the schema for the librarian.yaml.
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
-
-## RustDiscovery Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
-| `pollers` | list of [RustPoller](#rustpoller-configuration) | Is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
 
@@ -489,13 +496,6 @@ This document describes the schema for the librarian.yaml.
 | `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | Is the name of the field used for items. |
 
-## RustPoller Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
-| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
-
 ## Surfer Configuration
 
 | Field | Type | Description |
@@ -535,3 +535,4 @@ This document describes the schema for the librarian.yaml.
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
+| `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |

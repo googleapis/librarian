@@ -40,6 +40,9 @@ type SwiftPackage struct {
 
 	// DefaultTraits is a list of compile-time traits enabled by default.
 	DefaultTraits []string `yaml:"default_traits,omitempty"`
+
+	// Discovery contains discovery-specific configuration for LRO polling.
+	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.
@@ -106,3 +109,9 @@ type SwiftModule struct {
 	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
 	APIPath string `yaml:"api_path"`
 }
+
+// SwiftDiscovery contains discovery-specific configuration for LRO polling.
+type SwiftDiscovery = CommonDiscovery
+
+// SwiftPoller defines how to find a suitable poller RPC for discovery APIs.
+type SwiftPoller = CommonPoller
