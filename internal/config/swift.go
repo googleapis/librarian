@@ -40,6 +40,9 @@ type SwiftPackage struct {
 
 	// DefaultTraits is a list of compile-time traits enabled by default.
 	DefaultTraits []string `yaml:"default_traits,omitempty"`
+
+	// Discovery contains discovery-specific configuration for LRO polling.
+	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
 }
 
 // SwiftDependency represents a dependency in Swift Package Manager.
@@ -94,9 +97,6 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
-
-	// Discovery contains discovery-specific configuration for LRO polling.
-	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
 }
 
 // SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.
