@@ -136,14 +136,34 @@ func TestFormat(t *testing.T) {
 
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
-		name             string
-		library          *config.Library
-		api              *config.API
-		wantReleaseLevel string
-		want             *parser.ModelConfig
+		name    string
+		library *config.Library
+		api     *config.API
+		want    *parser.ModelConfig
 	}{
 		{
 			name: "minimal config",
+			library: &config.Library{
+				Name:          "google-cloud-secretmanager",
+				CopyrightYear: "2038",
+				Version:       "1.2.3",
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
+		{
+			name: "explicit specification format",
 			library: &config.Library{
 				Name:                "google-cloud-secretmanager",
 				CopyrightYear:       "2038",
