@@ -458,7 +458,7 @@ func extractTarball(tarballPath, destDir string) error {
 			var resolvedTarget string
 			resolvedTarget = filepath.Join(filepath.Dir(target), linkTarget)
 			relLink, err := filepath.Rel(destDir, resolvedTarget)
-			if err != nil || strings.HasPrefix(relLink, "..") {
+			if err != nil || strings.Contains(relLink, "..") {
 				return fmt.Errorf("%w: symlink target %q escapes destination directory %q", errSymlinkEscape, linkTarget, destDir)
 			}
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
