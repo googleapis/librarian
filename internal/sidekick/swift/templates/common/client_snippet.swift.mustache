@@ -21,6 +21,9 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.Name}}
+{{/Codec.IsGated}}
 // snippet.show
 import Foundation
 import {{Codec.PackageName}}
@@ -29,23 +32,31 @@ import {{.}}
 {{/Codec.SnippetImports}}
 
 func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: String, {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}}) async throws {
-    let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
-    {{#Codec.QuickstartMethod}}
-    {{> /templates/snippet/generic}}
-    {{/Codec.QuickstartMethod}}
-    {{^Codec.QuickstartMethod}}
-    // Use `client` to make requests to the {{Codec.Name}}.
-    {{/Codec.QuickstartMethod}}
+  let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
+  {{#Codec.QuickstartMethod}}
+  {{> /templates/snippet/generic}}
+  {{/Codec.QuickstartMethod}}
+  {{^Codec.QuickstartMethod}}
+  print("use `client` to make requests: \(client)")
+  {{/Codec.QuickstartMethod}}
 }
 // snippet.hide
 
 @main
 struct SnippetRunner {
-    static func main() async throws {
-        do {
-            try await sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: "[placeholder]", {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}})
-        } catch {
-            print("Error: \(error)")
-        }
+  static func main() async throws {
+    do {
+      try await sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: "[placeholder]", {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}})
+    } catch {
+      print("Error: \(error)")
     }
+  }
 }
+{{#Codec.IsGated}}
+#else
+@main
+struct SnippetRunner {
+  static func main() {}
+}
+#endif
+{{/Codec.IsGated}}

@@ -127,28 +127,44 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 // applying default values if no explicit configuration is found in the library.
 func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
 	res := &config.NodejsAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
-	}
-	if library.Nodejs == nil {
-		return res
+		Path: api.Path,
 	}
 
-	// Always include commonProtos as a base.
-	protos := []string{commonProtos}
+	var apiConfig *config.NodejsAPI
+	if library.Nodejs != nil {
+		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
+			if nodejsAPI.Path == api.Path {
+				apiConfig = nodejsAPI
+				break
+			}
+		}
+	}
+
+	omitCommon := false
+	if apiConfig != nil {
+		omitCommon = apiConfig.OmitCommonResources
+		res.DIREGAPIC = apiConfig.DIREGAPIC
+		res.OmitCommonResources = apiConfig.OmitCommonResources
+	}
+
+	var protos []string
+	if !omitCommon {
+		protos = append(protos, commonProtos)
+	}
+
+	if library.Nodejs == nil {
+		res.AdditionalProtos = protos
+		return res
+	}
 
 	// Add package-level additional protos.
 	protos = append(protos, library.Nodejs.AdditionalProtos...)
 
-	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
-		if nodejsAPI.Path != api.Path {
-			continue
-		}
-		// Add API-level additional protos.
-		protos = append(protos, nodejsAPI.AdditionalProtos...)
-		res.DIREGAPIC = nodejsAPI.DIREGAPIC
-		break
+	// Add API-level additional protos.
+	if apiConfig != nil {
+		protos = append(protos, apiConfig.AdditionalProtos...)
 	}
+
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -298,10 +314,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// by gapic-generator-typescript but left in staging.
 	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy samples from staging: %w", err)
-	}
-
-	if err := updateSnippetMetadataVersion(outDir, library.Version); err != nil {
-		return fmt.Errorf("failed to update snippet metadata version: %w", err)
 	}
 
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
@@ -587,70 +599,6 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 		}
 	}
 	return nil
-}
-
-// updateSnippetMetadataVersion updates the clientLibrary.version field in
-// snippet metadata JSON files under outDir/samples/generated/. The
-// gapic-generator-typescript hardcodes version "0.1.0"; this function replaces
-// it with the library's actual version.
-func updateSnippetMetadataVersion(outDir, version string) error {
-	if version == "" {
-		return nil
-	}
-	pattern := filepath.Join(outDir, "samples", "generated", "*", "snippet_metadata*.json")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return fmt.Errorf("failed to glob snippet metadata files: %w", err)
-	}
-	for _, path := range matches {
-		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
-		// update v1small. This package is not meant to be used and will be
-		// deprecated and removed in a future major release. Remove this workaround once resolved.
-		if filepath.Base(filepath.Dir(path)) == "v1small" {
-			continue
-		}
-		if err := updateVersionInFile(path, version); err != nil {
-			return fmt.Errorf("failed to update %s: %w", path, err)
-		}
-	}
-	return nil
-}
-
-// snippetMetadata is a minimal representation of a snippet metadata JSON file.
-// The Snippets field uses [json.RawMessage] to avoid reformatting the array.
-type snippetMetadata struct {
-	ClientLibrary snippetClientLibrary `json:"clientLibrary"`
-	Snippets      json.RawMessage      `json:"snippets"`
-}
-
-type snippetClientLibrary struct {
-	Name     string          `json:"name"`
-	Version  string          `json:"version"`
-	Language string          `json:"language"`
-	APIs     json.RawMessage `json:"apis"`
-}
-
-// updateVersionInFile reads a snippet metadata JSON file, sets the
-// clientLibrary.version field to version, and writes it back.
-func updateVersionInFile(path, version string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	var metadata snippetMetadata
-	if err := json.Unmarshal(data, &metadata); err != nil {
-		return err
-	}
-	metadata.ClientLibrary.Version = version
-
-	// Re-marshal with 2-space indent to match generator output.
-	out, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil {
-		return err
-	}
-	// Append trailing newline to match convention.
-	out = append(out, '\n')
-	return os.WriteFile(path, out, 0644)
 }
 
 // DerivePackageName returns the npm package name for a library. It uses

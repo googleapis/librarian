@@ -141,7 +141,7 @@ func cleanClientDirectory(library *config.Library, libraryDir string, keepSet ma
 		if err := cleanGeneratedClientFiles(clientPath, libraryDir, keepSet); err != nil {
 			return err
 		}
-		snippetDir := snippetDirectory(repoRoot, relClientPath)
+		snippetDir := snippetDirectory(libraryDir, library, goAPI)
 		if err := os.RemoveAll(snippetDir); err != nil {
 			return err
 		}

@@ -18,12 +18,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 // Format formats a generated Go library.
-func Format(ctx context.Context, library *config.Library, tools *config.Tools) error {
+func Format(ctx context.Context, library *config.Library) error {
 	// No need to format the root module because it does not
 	// have generated code.
 	if library.Name == rootModule {
@@ -33,7 +32,7 @@ func Format(ctx context.Context, library *config.Library, tools *config.Tools) e
 	if err != nil {
 		return err
 	}
-	return command.Run(ctx, "goimports", args...)
+	return runWithEnv(ctx, nil, "goimports", args...)
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {

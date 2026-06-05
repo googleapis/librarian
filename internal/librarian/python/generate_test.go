@@ -1264,7 +1264,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 					ClientDocumentationOverride: "overridden client_documentation",
 					IssueTrackerOverride:        "overridden issue_tracker",
 					PythonDefault: config.PythonDefault{
-						LibraryType: "CORE",
+						LibraryType: libraryTypeCore,
 					},
 				},
 			},
@@ -1280,7 +1280,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				LibraryType:          "CORE",
+				LibraryType:          libraryTypeCore,
 				ClientDocumentation:  "overridden client_documentation",
 				DefaultVersion:       "v1beta1",
 			},

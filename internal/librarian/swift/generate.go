@@ -56,11 +56,11 @@ func Format(ctx context.Context, library *config.Library) error {
 // DefaultLibraryName derives a library name from an API path.
 // For example: google/cloud/secretmanager/v1 -> GoogleCloudSecretmanagerV1.
 func DefaultLibraryName(api string) string {
-	if strings.HasPrefix(api, "google/cloud/") {
-		return "GoogleCloud" + camelLibraryName(strings.TrimPrefix(api, "google/cloud/"))
+	if clean, ok := strings.CutPrefix(api, "google/cloud/"); ok {
+		return "GoogleCloud" + camelLibraryName(clean)
 	}
-	if strings.HasPrefix(api, "google/") {
-		return "Google" + camelLibraryName(strings.TrimPrefix(api, "google/"))
+	if clean, ok := strings.CutPrefix(api, "google/"); ok {
+		return "Google" + camelLibraryName(clean)
 	}
 	return "Google" + camelLibraryName(api)
 }

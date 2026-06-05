@@ -15,12 +15,14 @@
 package java
 
 import (
+	"errors"
 	"fmt"
 	"path/filepath"
 	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -52,6 +54,13 @@ func Fill(library *config.Library) (*config.Library, error) {
 	}
 	if library.Java.GroupID == "" {
 		library.Java.GroupID = defaultGroupID
+	}
+	if library.Java.ReleasedVersion == "" && !library.SkipGenerate && library.Version != "" {
+		derived, err := deriveLastReleasedVersion(library.Version)
+		if err != nil {
+			return nil, fmt.Errorf("library %q: %w", library.Name, err)
+		}
+		library.Java.ReleasedVersion = derived
 	}
 	for _, api := range library.APIs {
 		if api.Java == nil {
@@ -90,6 +99,12 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		}
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
+		}
+		if library.Java.ReleasedVersion != "" {
+			derived, err := deriveLastReleasedVersion(library.Version)
+			if err == nil && library.Java.ReleasedVersion == derived {
+				library.Java.ReleasedVersion = ""
+			}
 		}
 		empty, err := yaml.Empty(library.Java)
 		if err != nil {
@@ -173,13 +188,25 @@ func isInGAPICModule(library *config.Library, keepPath string) bool {
 var (
 	// ErrOmitCommonResourcesConflict is returned when OmitCommonResources is true
 	// but common_resources.proto is also explicitly listed in AdditionalProtos.
-	ErrOmitCommonResourcesConflict = fmt.Errorf("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
+	ErrOmitCommonResourcesConflict = errors.New("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
+	// ErrCannotDeriveReleasedVersion is returned when released_version cannot be derived.
+	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
 )
 
 // Validate checks that the Java-specific configuration for a library is
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
 func Validate(library *config.Library) error {
+	if library.Version != "" {
+		if _, err := semver.Parse(library.Version); err != nil {
+			return fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err)
+		}
+	}
+	if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
+		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+			return fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err)
+		}
+	}
 	for _, api := range library.APIs {
 		if api.Java == nil || !api.Java.OmitCommonResources {
 			continue
@@ -192,4 +219,32 @@ func Validate(library *config.Library) error {
 
 	}
 	return nil
+}
+
+// deriveLastReleasedVersion derives the last released version from a snapshot version
+// (e.g., x.y.z-SNAPSHOT or x.y.z-beta-SNAPSHOT) by decrementing the patch or minor version.
+// If the version has a prerelease tag (like "beta") before "SNAPSHOT", that tag is preserved
+// in the derived version (e.g., x.y.z-beta-SNAPSHOT becomes x.y.(z-1)-beta).
+//
+// It returns an error if both minor and patch versions are zero, as it's
+// ambiguous what the last released version was in that case.
+func deriveLastReleasedVersion(v string) (string, error) {
+	sv, err := semver.Parse(v)
+	if err != nil {
+		return "", err
+	}
+	if !strings.HasSuffix(sv.Prerelease, "SNAPSHOT") {
+		return sv.String(), nil
+	}
+	if sv.Patch > 0 {
+		sv.Patch--
+	} else if sv.Minor > 0 {
+		sv.Minor--
+		sv.Patch = 0
+	} else {
+		return "", ErrCannotDeriveReleasedVersion
+	}
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
+	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
+	return sv.String(), nil
 }

@@ -20,6 +20,12 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.GateExpression}}
+{{/Codec.IsGated}}
 import Foundation
 
 {{> /templates/common/enum}}
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

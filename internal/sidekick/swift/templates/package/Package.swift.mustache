@@ -30,6 +30,18 @@ let package = Package(
   products: [
     .library(name: "{{Codec.PackageName}}", targets: ["{{Codec.PackageName}}"])
   ],
+  {{#Codec.HasTraits}}
+  traits: [
+    {{#Codec.AllTraits}}
+    .trait(name: "{{{.}}}"),
+    {{/Codec.AllTraits}}
+    .default(enabledTraits: [
+        {{#Codec.DefaultTraits}}
+        "{{{.}}}",
+        {{/Codec.DefaultTraits}}
+    ]),
+  ],
+  {{/Codec.HasTraits}}
   {{#Codec.HasDependencies}}
   dependencies: [
     {{#Codec.Dependencies}}

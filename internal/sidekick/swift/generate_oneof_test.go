@@ -115,18 +115,18 @@ func TestGenerateOneOf(t *testing.T) {
   Sendable {
 
   /// A regular field.
-  public var regularInt32: Int32
+  public var regularInt32: Swift.Int32
 
   /// Another regular field.
-  public var regularString: String
+  public var regularString: Swift.String
 
   /// A group of fields where only one is set.
   public var choice: OneOf_Choice?
 
   /// Initialize a new instance of ` + "`Outer`" + `.
   public init(
-    regularInt32: Int32 = Int32(),
-    regularString: String = String(),
+    regularInt32: Swift.Int32 = Swift.Int32(),
+    regularString: Swift.String = Swift.String(),
     choice: OneOf_Choice? = nil,
   ) {
     self.regularInt32 = regularInt32
@@ -143,17 +143,17 @@ func TestGenerateOneOf(t *testing.T) {
 
   public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.regularInt32 = try container.decode(Int32.self, forKey: .regularInt32)
-    self.regularString = try container.decode(String.self, forKey: .regularString)
+    self.regularInt32 = try container.decode(Swift.Int32.self, forKey: .regularInt32)
+    self.regularString = try container.decode(Swift.String.self, forKey: .regularString)
 
     var choice: OneOf_Choice? = nil
-    let choiceCheckAndSet = { (value: OneOf_Choice) throws in
+    let choiceCheckAndSet = {
       if choice != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof 'choice'"))
       }
-      choice = value
+      choice = $0
     }
-    if let stringField = try container.decodeIfPresent(String.self, forKey: .stringField) {
+    if let stringField = try container.decodeIfPresent(Swift.String.self, forKey: .stringField) {
       try choiceCheckAndSet(.stringField(stringField))
     }
     if let messageField = try container.decodeIfPresent(Inner.self, forKey: .messageField) {
@@ -181,7 +181,7 @@ func TestGenerateOneOf(t *testing.T) {
   /// A group of fields where only one is set.
   public enum OneOf_Choice: Codable, Equatable, Sendable {
     /// A string field that is part of the oneof.
-    case stringField(String)
+    case stringField(Swift.String)
     /// A message field that is part of the oneof.
     indirect case messageField(Inner)
   }
@@ -195,6 +195,133 @@ func TestGenerateOneOf(t *testing.T) {
   }
 }
 `
+
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateOneOfWithKeyword(t *testing.T) {
+	outDir := t.TempDir()
+
+	oneof := &api.OneOf{Name: "in"}
+	jwtLocation := &api.Message{
+		Name:    "JwtLocation",
+		Package: "google.api",
+		ID:      ".google.api",
+		Fields: []*api.Field{
+			{
+				Name:          "header",
+				JSONName:      "header",
+				ID:            ".google.api.JwtLocation.header",
+				Documentation: "Specifies HTTP header name to extract JWT token.",
+				Typez:         api.TypezString,
+				IsOneOf:       true,
+				Group:         oneof,
+			},
+			{
+				Name:          "query",
+				JSONName:      "query",
+				ID:            ".google.api.JwtLocation.query",
+				Documentation: "Specifies URL query parameter name to extract JWT token.",
+				Typez:         api.TypezString,
+				IsOneOf:       true,
+				Group:         oneof,
+			},
+			{
+				Name:          "cookie",
+				JSONName:      "cookie",
+				ID:            ".google.api.JwtLocation.cookie",
+				Documentation: "Specifies cookie name to extract JWT token.",
+				Typez:         api.TypezString,
+				IsOneOf:       true,
+				Group:         oneof,
+			},
+		},
+		OneOfs: []*api.OneOf{oneof},
+	}
+	oneof.Fields = jwtLocation.Fields
+
+	model := api.NewTestAPI([]*api.Message{jwtLocation}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.api"
+	cfg := &parser.ModelConfig{}
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleApi")
+	filename := filepath.Join(expectedDir, "JwtLocation.swift")
+
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+	got := extractBlock(t, contentStr, "public struct JwtLocation", "public enum OneOf_In")
+
+	// I (coryan@) don't particularly like testing a big string like this. It is a bit of a change
+	// detector test. On the other hand, checking that the oneof fields are defined properly, and
+	// that the constructor has the right arguments is more tedious and also becomes a change detector
+	// test.
+	//
+	// To verify the code compile, use something like: https://godbolt.org/z/EE9G7KTr8
+	want := `public struct JwtLocation: Codable, Equatable, GoogleCloudWkt._AnyPackable,
+  Sendable {
+
+  public var ` + "`in`" + `: OneOf_In?
+
+  /// Initialize a new instance of ` + "`JwtLocation`" + `.
+  public init(
+    ` + "`in`" + `: OneOf_In? = nil,
+  ) {
+    self.` + "`in`" + ` = ` + "`in`" + `
+  }
+
+  private enum CodingKeys: String, CodingKey {
+    case header = "header"
+    case query = "query"
+    case cookie = "cookie"
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.container(keyedBy: CodingKeys.self)
+
+    var ` + "`in`" + `: OneOf_In? = nil
+    let inCheckAndSet = {
+      if ` + "`in`" + ` != nil {
+        throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '` + "`in`" + `'"))
+      }
+      ` + "`in`" + ` = $0
+    }
+    if let header = try container.decodeIfPresent(Swift.String.self, forKey: .header) {
+      try inCheckAndSet(.header(header))
+    }
+    if let query = try container.decodeIfPresent(Swift.String.self, forKey: .query) {
+      try inCheckAndSet(.query(query))
+    }
+    if let cookie = try container.decodeIfPresent(Swift.String.self, forKey: .cookie) {
+      try inCheckAndSet(.cookie(cookie))
+    }
+    self.` + "`in` = `in`" + `
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.container(keyedBy: CodingKeys.self)
+
+    if let choice = self.` + "`in`" + ` {
+      switch choice {
+      case .header(let value):
+        try container.encode(value, forKey: .header)
+      case .query(let value):
+        try container.encode(value, forKey: .query)
+      case .cookie(let value):
+        try container.encode(value, forKey: .cookie)
+      }
+    }
+  }
+
+
+  public enum OneOf_In`
 
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

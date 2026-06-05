@@ -72,11 +72,14 @@ func Generate(ctx context.Context, model *api.API, outdir string, cfg *parser.Mo
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
-func (c *codec) outputPath(name string) string {
+func (c *codec) outputPath(elem ...string) string {
 	if c.Module {
-		return name
+		return filepath.Join(elem...)
 	}
-	return filepath.Join("Sources", c.PackageName, name)
+	full := make([]string, 0, len(elem)+2)
+	full = append(full, "Sources", c.PackageName)
+	full = append(full, elem...)
+	return filepath.Join(full...)
 }
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
@@ -126,10 +129,11 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 		}{
 			{suffix: "Stub.swift", template: "templates/common/stub.swift.mustache"},
 			{suffix: "Logging.swift", template: "templates/common/logging.swift.mustache"},
+			{suffix: "Retry.swift", template: "templates/common/retry.swift.mustache"},
 		} {
 			generated := language.GeneratedFile{
 				TemplatePath: stub.template,
-				OutputPath:   c.outputPath(s.Name + stub.suffix),
+				OutputPath:   c.outputPath("Clients", s.Name+stub.suffix),
 			}
 			if err := language.GenerateService(outdir, s, provider, generated); err != nil {
 				return err

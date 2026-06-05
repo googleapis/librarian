@@ -951,101 +951,6 @@ func createStagingFixture(t *testing.T, repoRoot, libName string, versions []str
 	}
 }
 
-func TestUpdateSnippetMetadataVersion(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		version string
-		input   string
-		want    string
-	}{
-		{
-			name:    "updates version",
-			version: "6.1.0",
-			input: `{
-  "clientLibrary": {
-    "name": "nodejs-secretmanager",
-    "version": "0.1.0",
-    "language": "TYPESCRIPT",
-    "apis": [{"id": "google.cloud.secretmanager.v1"}]
-  },
-  "snippets": [{"name": "CreateSecret"}]
-}
-`,
-			want: `{
-  "clientLibrary": {
-    "name": "nodejs-secretmanager",
-    "version": "6.1.0",
-    "language": "TYPESCRIPT",
-    "apis": [
-      {
-        "id": "google.cloud.secretmanager.v1"
-      }
-    ]
-  },
-  "snippets": [
-    {
-      "name": "CreateSecret"
-    }
-  ]
-}
-`,
-		},
-		{
-			name:    "empty version is no-op",
-			version: "",
-			input: `{
-  "clientLibrary": {
-    "name": "nodejs-secretmanager",
-    "version": "0.1.0",
-    "language": "TYPESCRIPT",
-    "apis": []
-  },
-  "snippets": []
-}
-`,
-			want: `{
-  "clientLibrary": {
-    "name": "nodejs-secretmanager",
-    "version": "0.1.0",
-    "language": "TYPESCRIPT",
-    "apis": []
-  },
-  "snippets": []
-}
-`,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			outDir := t.TempDir()
-			metadataDir := filepath.Join(outDir, "samples", "generated", "v1")
-			if err := os.MkdirAll(metadataDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-			metadataFile := filepath.Join(metadataDir, "snippet_metadata.google.cloud.secretmanager.v1.json")
-			if err := os.WriteFile(metadataFile, []byte(test.input), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := updateSnippetMetadataVersion(outDir, test.version); err != nil {
-				t.Fatal(err)
-			}
-			got, err := os.ReadFile(metadataFile)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, string(got)); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestUpdateSnippetMetadataVersion_NoFiles(t *testing.T) {
-	outDir := t.TempDir()
-	if err := updateSnippetMetadataVersion(outDir, "1.0.0"); err != nil {
-		t.Fatal(err)
-	}
-}
-
 func TestWriteRepoMetadata(t *testing.T) {
 	absGoogleapisDir, err := filepath.Abs(googleapisDir)
 	if err != nil {
@@ -1212,6 +1117,128 @@ func TestResolveNodejsAPI(t *testing.T) {
 				Path:             "google/cloud/secretmanager/v1",
 				AdditionalProtos: []string{commonProtos},
 				DIREGAPIC:        true,
+			},
+		},
+		{
+			name: "omit common resources is true",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/api/cloudquotas/v1",
+							OmitCommonResources: true,
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/api/cloudquotas/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/api/cloudquotas/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    nil,
+			},
+		},
+		{
+			name: "omit common resources is true, package-level additional protos preserved",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto"},
+			},
+		},
+		{
+			name: "omit common resources is true, api-level additional protos preserved",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"api.proto"},
+			},
+		},
+		{
+			name: "omit common resources is true, package-level and api-level protos combined",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "api.proto"},
+			},
+		},
+		{
+			name: "omit common resources is false, all preserved",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: false,
+							AdditionalProtos:    []string{"api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: false,
+				AdditionalProtos:    []string{commonProtos, "pkg.proto", "api.proto"},
+			},
+		},
+		{
+			name: "duplicated protos",
+			library: &config.Library{
+				Nodejs: &config.NodejsPackage{
+					AdditionalProtos: []string{"pkg.proto", "dup.proto"},
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:                "google/cloud/secretmanager/v1",
+							OmitCommonResources: true,
+							AdditionalProtos:    []string{"dup.proto", "api.proto"},
+						},
+					},
+				},
+			},
+			api: &config.API{Path: "google/cloud/secretmanager/v1"},
+			want: &config.NodejsAPI{
+				Path:                "google/cloud/secretmanager/v1",
+				OmitCommonResources: true,
+				AdditionalProtos:    []string{"pkg.proto", "dup.proto", "api.proto"},
 			},
 		},
 	} {

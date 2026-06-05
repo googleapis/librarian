@@ -28,14 +28,11 @@ import (
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
 
+// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
+// the entry is a core library, not an individual API client library.
+const libraryTypeCore = "CORE"
+
 var (
-	approvedGAPICNamespaces = []string{
-		"google.ads",
-		"google.apps",
-		"google.cloud",
-		"google.maps",
-		"google.shopping",
-	}
 	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
 	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
 	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
@@ -43,7 +40,7 @@ var (
 )
 
 // Add initializes a new Python library with default values.
-func Add(lib *config.Library) (*config.Library, error) {
+func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion
 	if len(lib.APIs) != 1 {
 		return nil, errNewLibraryMustHaveOneAPI
@@ -54,11 +51,21 @@ func Add(lib *config.Library) (*config.Library, error) {
 			DefaultVersion: packageDefaultVersion,
 		}
 	}
-	namespace := deriveGAPICNamespace(apiPath)
-	if !slices.Contains(approvedGAPICNamespaces, namespace) {
-		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	if err := validateNamespace(cfg, apiPath); err != nil {
+		return nil, err
 	}
 	return lib, nil
+}
+
+func validateNamespace(cfg *config.Config, apiPath string) error {
+	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
+		return nil
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
+		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	}
+	return nil
 }
 
 // ValidateNewAPIs validates that new APIs can be added to an existing library.
@@ -99,6 +106,12 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 		}
 	}
 	for _, lib := range libraries {
+		// In order to avoid a CORE library like googleapis-common-proto from
+		// matching on all API paths starting with google/cloud, we do not
+		// automatically add to existing libraries with the CORE library type.
+		if lib.Python != nil && lib.Python.LibraryType == libraryTypeCore {
+			continue
+		}
 		set := make(map[string]struct{})
 		for _, api := range lib.APIs {
 			set[versionless(api.Path)] = struct{}{}

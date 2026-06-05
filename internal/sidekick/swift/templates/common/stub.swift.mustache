@@ -20,6 +20,9 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.Name}}
+{{/Codec.IsGated}}
 import Foundation
 {{! On Linux we need this additional import for `URLSession`. }}
 #if canImport(FoundationNetworking)
@@ -46,7 +49,7 @@ extension Clients {
     {{#Codec.RestMethods}}
 
     public func {{> /templates/common/method_signature/request_options}} {
-      let path = try { () throws -> String in
+      let path = try { () throws -> Swift.String in
         {{#Codec.PathVariables}}
         guard let {{Name}} = request{{Expression}}{{#Test}}, {{{.}}}{{/Test}} else {
           throw GoogleCloudGax.RequestError.binding("'request.{{FieldPath}}' is not set or is empty")
@@ -66,7 +69,16 @@ extension Clients {
         Note that `Codec.Name` includes mangling and escaping, while `JSONName` does not. We want the latter
         for the query parameter name, and the former to access the field in the Swift struct.
       }}
+      {{#IsOneOf}}
+      query.append(
+        contentsOf: try encoder.encode(
+          request.{{Group.Codec.PropertyName}}.flatMap { (oneof) -> {{Codec.BaseFieldType}}? in
+            if case let .{{Codec.Name}}(v) = oneof { v } else { nil }
+          }, prefix: "{{JSONName}}"))
+      {{/IsOneOf}}
+      {{^IsOneOf}}
       query.append(contentsOf: try encoder.encode(request.{{Codec.Name}}, prefix: "{{JSONName}}"))
+      {{/IsOneOf}}
       {{/Codec.QueryParams}}
       var req = try await self.inner.Request(path: path, query: query)
       req.httpMethod = "{{Codec.HTTPMethod}}"
@@ -82,19 +94,18 @@ extension Clients {
       }
       {{/Codec.IsBodyWildcard}}
       {{/Codec.HasBody}}
-      let (data, response) = try await self.inner.data(for: req)
-      if !(200..<300).contains(response.statusCode) {
-        throw GoogleCloudGax.RequestError.http(GoogleCloudGax.HTTPDetails(
-          http_status_code: response.statusCode,
-          headers: [:],
-          payload: data,
-        ))
-      }
       {{^ReturnsEmpty}}
+      let (data, _) = try await self.inner.rpc(for: req).get()
       return try {{InputType.Codec.Model.WktPackage}}._ProtoJSONDecoder().decode(
         {{Codec.ReturnType}}.self, from: data)
+      {{/ReturnsEmpty}}
+      {{#ReturnsEmpty}}
+      _ = try await self.inner.rpc(for: req).get()
       {{/ReturnsEmpty}}
     }
     {{/Codec.RestMethods}}
   }
 }
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

@@ -111,15 +111,15 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     {{#OneOfs}}
 
     var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.PropertyName}}CheckAndSet = { (value: {{Codec.Name}}) throws in
+    let {{Codec.Checker}} = {
       if {{Codec.PropertyName}} != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
       }
-      {{Codec.PropertyName}} = value
+      {{Codec.PropertyName}} = $0
     }
     {{#Fields}}
     if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
-      try {{Codec.OneOfPropertyName}}CheckAndSet(.{{Codec.Name}}({{Codec.Name}}))
+      try {{Codec.OneOfChecker}}(.{{Codec.Name}}({{Codec.Name}}))
     }
     {{/Fields}}
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
@@ -170,7 +170,21 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.IsPaginatedResponse}}
 
   public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
+    {{^Pagination.PageableItem.Map}}
     return self.{{Codec.PageableItemField}}
+    {{/Pagination.PageableItem.Map}}
+    {{#Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}.map { ($0, $1) }
+    {{/Pagination.PageableItem.Map}}
+  }
+
+  public func _nextPageToken() -> Swift.String {
+    {{#Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}} ?? ""
+    {{/Pagination.NextPageToken.Optional}}
+    {{^Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}}
+    {{/Pagination.NextPageToken.Optional}}
   }
   {{/Codec.IsPaginatedResponse}}
 }

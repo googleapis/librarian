@@ -19,6 +19,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
@@ -221,5 +222,105 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAnnotateService_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, service := range model.Services {
+		t.Run(service.Name, func(t *testing.T) {
+			ann, ok := service.Codec.(*serviceAnnotations)
+			if !ok {
+				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec)
+			}
+			if !ann.IsGated {
+				t.Error("expected IsGated to be true when PerServiceTraits is true")
+			}
+		})
+	}
+}
+
+func TestAnnotateService_LRO(t *testing.T) {
+	inputType := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.Operation",
+	}
+	lroResponseType := &api.Message{
+		Name:    "LroResponse",
+		Package: "external",
+		ID:      ".external.LroResponse",
+	}
+	lroMetadataType := &api.Message{
+		Name:    "LroMetadata",
+		Package: "external",
+		ID:      ".external.LroMetadata",
+	}
+
+	method := &api.Method{
+		Name:         "LroMethod",
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+		},
+		IsLRO: true,
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: lroResponseType.ID,
+			MetadataTypeID: lroMetadataType.ID,
+		},
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.rpc",
+			Name:       "GoogleRpc",
+		},
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+		{
+			ApiPackage: "google.longrunning",
+			Name:       "GoogleLongrunning",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudGax", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

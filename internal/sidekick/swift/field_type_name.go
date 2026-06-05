@@ -62,6 +62,14 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+	keyType, valueType, err := c.mapFieldTypeComponents(m)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+}
+
+func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	var keyField, valueField *api.Field
 	for _, f := range m.Fields {
 		switch f.Name {
@@ -72,51 +80,51 @@ func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
 		}
 	}
 	if keyField == nil || valueField == nil {
-		return "", fmt.Errorf("map message %q missing key or value field", m.ID)
+		return "", "", fmt.Errorf("map message %q missing key or value field", m.ID)
 	}
 	keyType, err := c.baseFieldTypeName(keyField)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	valueType, err := c.baseFieldTypeName(valueField)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+	return keyType, valueType, nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
 	case api.TypezDouble:
-		return "Double", nil
+		return "Swift.Double", nil
 	case api.TypezFloat:
-		return "Float", nil
+		return "Swift.Float", nil
 	case api.TypezInt64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezUint64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezInt32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezFixed64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezFixed32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezBool:
-		return "Bool", nil
+		return "Swift.Bool", nil
 	case api.TypezString:
-		return "String", nil
+		return "Swift.String", nil
 	case api.TypezBytes:
-		return "Data", nil
+		return "Foundation.Data", nil
 	case api.TypezUint32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezSfixed32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSfixed64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezSint32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSint64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
 	}

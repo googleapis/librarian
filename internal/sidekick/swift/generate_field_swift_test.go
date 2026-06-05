@@ -79,8 +79,8 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 	gotBlock := extractBlock(t, contentStr, "  public init(from decoder: Decoder) throws {", "\n  }")
 	wantBlock := `  public init(from decoder: Decoder) throws {
     let container = try decoder.container(keyedBy: CodingKeys.self)
-    self.normalField = try container.decode(String.self, forKey: .normalField)
-    self.optionalField = try container.decodeIfPresent(String.self, forKey: .optionalField)
+    self.normalField = try container.decode(Swift.String.self, forKey: .normalField)
+    self.optionalField = try container.decodeIfPresent(Swift.String.self, forKey: .optionalField)
   }`
 
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
