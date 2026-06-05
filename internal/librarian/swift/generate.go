@@ -86,7 +86,8 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 	}
 
 	return &parser.ModelConfig{
-		SpecificationFormat: config.SpecProtobuf,
+		Language:            config.LanguageSwift,
+		SpecificationFormat: library.SpecificationFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: api.Path,
 		Source:              sourceConfig,
