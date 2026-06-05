@@ -448,6 +448,10 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	readmeContent := "# Test README"
+	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	createStagingFixture(t, repoRoot, library.Name, []string{"v1", "v1beta1"})
 
@@ -484,7 +488,20 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	readmeContent := "# Test README"
+	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
+		t.Fatal(err)
+	}
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	// We don't need to have any actual samples, but the directory needs to be present
+	// for readme post-processing to succeed.
+	samplesDir := filepath.Join(stagingBase, "samples", "generated", "v1")
+	if err := os.MkdirAll(samplesDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(samplesDir, "placeholder"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
 		t.Fatal(err)
@@ -908,6 +925,15 @@ func createStagingFixture(t *testing.T, repoRoot, libName string, versions []str
 		if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
 			t.Fatal(err)
 		}
+		// We don't need to have any actual samples, but the directory needs to be present
+		// for readme post-processing to succeed.
+		samplesDir := filepath.Join(stagingBase, "samples", "generated", v)
+		if err := os.MkdirAll(samplesDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(samplesDir, "placeholder"), nil, 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 }
 
@@ -962,6 +988,10 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	readmeContent := "# Test README"
+	if err := os.WriteFile(filepath.Join(outDir, "README.md"), []byte(readmeContent), 0644); err != nil {
 		t.Fatal(err)
 	}
 	// This script uses a path relative to the repository root.
