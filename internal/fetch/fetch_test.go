@@ -22,6 +22,7 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"net/http/httptest"
@@ -617,23 +618,13 @@ func createTestTarball(t *testing.T, topLevelDir string, files map[string]string
 	return buf.Bytes()
 }
 
-func TestExtractTarball_Errors(t *testing.T) {
+func TestExtractTarball_Error(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		tarballPath func(t *testing.T) string // Function to create the test file
 		dest        func(t *testing.T) string
-		wantErr     bool
+		wantErr     error
 	}{
-		{
-			name: "tarball does not exist",
-			tarballPath: func(t *testing.T) string {
-				return "non-existent-file.tar.gz"
-			},
-			dest: func(t *testing.T) string {
-				return t.TempDir()
-			},
-			wantErr: true,
-		},
 		{
 			name: "not a gzip file",
 			tarballPath: func(t *testing.T) string {
@@ -646,7 +637,7 @@ func TestExtractTarball_Errors(t *testing.T) {
 			dest: func(t *testing.T) string {
 				return t.TempDir()
 			},
-			wantErr: true,
+			wantErr: gzip.ErrHeader,
 		},
 		{
 			name: "gzipped but not a tar file",
@@ -668,7 +659,63 @@ func TestExtractTarball_Errors(t *testing.T) {
 			dest: func(t *testing.T) string {
 				return t.TempDir()
 			},
-			wantErr: true,
+			wantErr: io.ErrUnexpectedEOF,
+		},
+		{
+			name: "unsupported file type",
+			tarballPath: func(t *testing.T) string {
+				var buf bytes.Buffer
+				gw := gzip.NewWriter(&buf)
+				tw := tar.NewWriter(gw)
+				hdr := &tar.Header{
+					Typeflag: tar.TypeBlock,
+					Name:     "repo-abc123/src/block.dev",
+					Mode:     0644,
+				}
+				if err := tw.WriteHeader(hdr); err != nil {
+					t.Fatal(err)
+				}
+				if err := tw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if err := gw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				p := path.Join(t.TempDir(), "unsupported.tar.gz")
+				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: errUnsupportedFileType,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := extractTarball(test.tarballPath(t), test.dest(t))
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("got error %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestExtractTarball_PathError(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		tarballPath func(t *testing.T) string // Function to create the test file
+		dest        func(t *testing.T) string
+	}{
+		{
+			name: "tarball does not exist",
+			tarballPath: func(t *testing.T) string {
+				return "non-existent-file.tar.gz"
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
 		},
 		{
 			name: "destination is a file",
@@ -687,13 +734,13 @@ func TestExtractTarball_Errors(t *testing.T) {
 				}
 				return p
 			},
-			wantErr: true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := extractTarball(test.tarballPath(t), test.dest(t))
-			if (err != nil) != test.wantErr {
-				t.Errorf("extractTarball() error = %v, wantErr %v", err, test.wantErr)
+			var pathErr *fs.PathError
+			if !errors.As(err, &pathErr) {
+				t.Fatalf("got error %v, want *fs.PathError", err)
 			}
 		})
 	}
