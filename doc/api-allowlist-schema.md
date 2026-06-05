@@ -18,6 +18,7 @@ This document describes the schema for the API Allowlist.
 | `sample_uris` | map[string]string | Is the documentation URI for code samples per language. Map key is the language name (e.g., "go", "python"). Optional. If omitted, a default URI for the language is used. |
 | `short_name` | string | Overrides the API short name from the service config's publishing section. |
 | `service_config` | string | Is the service config file path override. If empty, the service config is discovered in the directory specified by Path. |
+| `organization` | string | Is the organization from the service config's publishing section. This is populated from the service config during Find. |
 | `service_name` | string | Is a DNS-like logical identifier for the service, such as `calendar.googleapis.com`. |
 | `title` | string | Overrides the API title from the service config. |
 | `transports` | map[string]Transport | Defines the supported transports per language. Map key is the language name (e.g., "python", "rust"). Optional. If omitted, all languages use GRPCRest by default. |
