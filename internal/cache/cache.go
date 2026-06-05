@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	// EnvLibrarianBin is the environment variable used to override the default bin directory.
 	EnvLibrarianBin = "LIBRARIAN_BIN"
 	// EnvLibrarianCache is the environment variable used to override the default cache directory.
 	EnvLibrarianCache = "LIBRARIAN_CACHE"
