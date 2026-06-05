@@ -157,7 +157,7 @@ func TestAdd(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := Add(test.lib, googleapisDir)
+			got := Add(test.lib, "../../testdata/googleapis")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
