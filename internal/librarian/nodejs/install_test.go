@@ -41,14 +41,7 @@ func TestInstall(t *testing.T) {
 	genDir := filepath.Join(cache,
 		repo+"@"+tool.Version,
 		gapicGeneratorSubdir)
-	// TODO(https://github.com/googleapis/librarian/issues/6313):
-	// this can be just "templates", "protos" once the workaround in
-	// librarian.yaml is removed.
-	for _, sub := range []string{
-		"templates/cjs/typescript_gapic",
-		"templates/esm/typescript_gapic",
-		"protos",
-	} {
+	for _, sub := range []string{"templates", "protos"} {
 		if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
 			t.Fatal(err)
 		}
