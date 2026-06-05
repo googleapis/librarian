@@ -36,15 +36,15 @@ import (
 const (
 	// DefaultBranchMaster represents the default git branch "master".
 	DefaultBranchMaster = "master"
+	maxDownloadRetries  = 3
 )
 
 var (
-	errChecksumMismatch = errors.New("checksum mismatch")
-	errMissingSHA256    = errors.New("must provide expected SHA256")
-	defaultBackoff      = 10 * time.Second
+	errChecksumMismatch    = errors.New("checksum mismatch")
+	errMissingSHA256       = errors.New("must provide expected SHA256")
+	errUnsupportedFileType = errors.New("unsupported file type")
+	defaultBackoff         = 10 * time.Second
 )
-
-const maxDownloadRetries = 3
 
 // Endpoints defines the endpoints used to access GitHub.
 type Endpoints struct {
@@ -454,6 +454,8 @@ func extractTarball(tarballPath, destDir string) error {
 			if err := os.Symlink(hdr.Linkname, target); err != nil {
 				return err
 			}
+		default:
+			return fmt.Errorf("%w: %v", errUnsupportedFileType, hdr.Typeflag)
 		}
 	}
 }
