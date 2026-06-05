@@ -348,7 +348,7 @@ func TestFindExistingLibraryForNewAPI(t *testing.T) {
 					},
 					Python: &config.PythonPackage{
 						PythonDefault: config.PythonDefault{
-							LibraryType: "CORE",
+							LibraryType: libraryTypeCore,
 						},
 					},
 				},
