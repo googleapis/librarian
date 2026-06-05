@@ -447,6 +447,13 @@ func extractTarball(tarballPath, destDir string) error {
 				return err
 			}
 			out.Close()
+		case tar.TypeSymlink:
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			if err := os.Symlink(hdr.Linkname, target); err != nil {
+				return err
+			}
 		}
 	}
 }
