@@ -959,3 +959,58 @@ func TestLatestCommitAndChecksumFailure(t *testing.T) {
 		}
 	})
 }
+
+func TestExtractTarball_Symlink(t *testing.T) {
+	var buf bytes.Buffer
+	gw := gzip.NewWriter(&buf)
+	tw := tar.NewWriter(gw)
+
+	fileHdr := &tar.Header{
+		Typeflag: tar.TypeReg,
+		Name:     "repo-abc123/src/file.txt",
+		Mode:     0644,
+		Size:     4,
+	}
+	if err := tw.WriteHeader(fileHdr); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := tw.Write([]byte("data")); err != nil {
+		t.Fatal(err)
+	}
+
+	linkHdr := &tar.Header{
+		Typeflag: tar.TypeSymlink,
+		Name:     "repo-abc123/src/link.txt",
+		Linkname: "file.txt",
+		Mode:     0777,
+	}
+	if err := tw.WriteHeader(linkHdr); err != nil {
+		t.Fatal(err)
+	}
+
+	if err := tw.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := gw.Close(); err != nil {
+		t.Fatal(err)
+	}
+
+	tarballPath := filepath.Join(t.TempDir(), "test-symlink.tar.gz")
+	if err := os.WriteFile(tarballPath, buf.Bytes(), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	destDir := t.TempDir()
+	if err := extractTarball(tarballPath, destDir); err != nil {
+		t.Fatal(err)
+	}
+
+	linkPath := filepath.Join(destDir, "src/link.txt")
+	gotTarget, err := os.Readlink(linkPath)
+	if err != nil {
+		t.Fatalf("failed to read symlink: %v", err)
+	}
+	if gotTarget != "file.txt" {
+		t.Errorf("symlink target = %q, want %q", gotTarget, "file.txt")
+	}
+}
