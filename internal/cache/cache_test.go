@@ -57,3 +57,42 @@ func TestDirectory(t *testing.T) {
 		})
 	}
 }
+
+func TestBinDirectory(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		binEnv   string
+		cacheEnv string
+		wantDir  string
+	}{
+		{
+			name:    "uses LIBRARIAN_BIN when set",
+			binEnv:  "/custom/bin",
+			wantDir: "/custom/bin",
+		},
+		{
+			name:     "uses LIBRARIAN_CACHE/bin when LIBRARIAN_BIN not set",
+			cacheEnv: "/custom/cache",
+			wantDir:  "/custom/cache/bin",
+		},
+		{
+			name: "uses UserCacheDir/librarian/bin when neither set",
+			wantDir: func() string {
+				cache, _ := os.UserCacheDir()
+				return filepath.Join(cache, "librarian", "bin")
+			}(),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv(EnvLibrarianBin, test.binEnv)
+			t.Setenv(EnvLibrarianCache, test.cacheEnv)
+			got, err := BinDirectory()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantDir, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
