@@ -24,6 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+      - name: Checkout google-cloud-java
+        uses: actions/checkout@v6
+        with:
+          repository: googleapis/google-cloud-java
+          path: google-cloud-java
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4
@@ -37,9 +42,10 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - name: Install Java tools
+      - name: Run librarian install
+        working-directory: google-cloud-java
         run: |
-          ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
+          librarian install
           echo "$HOME/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
