@@ -160,7 +160,7 @@ func addHeaders(p postProcessParams, dirs []string) error {
 
 // addMissingHeaders prepends the license header to all Java files in the given directory
 // if they don't already have one.
-func addMissingHeaders(p postProcessParams, dir string) error {
+func addMissingHeaders(params postProcessParams, dir string) error {
 	headerText, err := getLicenseText(p)
 	if err != nil {
 		return err
