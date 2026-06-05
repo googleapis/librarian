@@ -16,7 +16,6 @@ package java
 
 import (
 	"fmt"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -80,8 +79,8 @@ func Fill(library *config.Library) (*config.Library, error) {
 
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
-func Tidy(repoDir string, library *config.Library) (*config.Library, error) {
-	library.Keep = tidyKeep(repoDir, library)
+func Tidy(library *config.Library) (*config.Library, error) {
+	library.Keep = tidyKeep(library)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -134,7 +133,7 @@ func Tidy(repoDir string, library *config.Library) (*config.Library, error) {
 }
 
 // tidyKeep removes default files from the library's keep configuration.
-func tidyKeep(repoDir string, library *config.Library) []string {
+func tidyKeep(library *config.Library) []string {
 	if len(library.Keep) == 0 {
 		return nil
 	}
@@ -144,7 +143,7 @@ func tidyKeep(repoDir string, library *config.Library) []string {
 		if isDefaultPreserved(keepPathSlash) {
 			continue
 		}
-		if isManualFileInGAPICModule(repoDir, library, keepPath) {
+		if isInGAPICModule(library, keepPath) {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -159,40 +158,16 @@ func tidyKeep(repoDir string, library *config.Library) []string {
 
 // isInGAPICModule checks if the given keepPath belongs to a generated GAPIC module of the library.
 func isInGAPICModule(library *config.Library, keepPath string) bool {
-	libraryCoordinates := DeriveLibraryCoordinates(library)
 	keepPathSlash := filepath.ToSlash(keepPath)
-	for _, api := range library.APIs {
-		javaAPI := api.Java
-		if javaAPI == nil {
-			javaAPI = &config.JavaAPI{}
-		}
-		version := filepath.Base(api.Path)
-		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
-		if apiCoordinates.GAPIC.ArtifactID != "" && shouldGenerateGAPIC(javaAPI) {
-			prefix := filepath.ToSlash(apiCoordinates.GAPIC.ArtifactID) + "/"
-			if strings.HasPrefix(keepPathSlash, prefix) {
+	for pattern, isGAPIC := range cleanPatterns(library) {
+		if isGAPIC {
+			moduleName, _, _ := strings.Cut(filepath.ToSlash(pattern), "/")
+			if strings.HasPrefix(keepPathSlash, moduleName+"/") {
 				return true
 			}
 		}
 	}
 	return false
-}
-
-func isManualFileInGAPICModule(repoDir string, library *config.Library, keepPath string) bool {
-	if !isInGAPICModule(library, keepPath) {
-		return false
-	}
-	outputDir := library.Output
-	if outputDir == "" {
-		outputDir = deriveOutput(library.Name)
-	}
-	absPath := filepath.Join(repoDir, outputDir, keepPath)
-	fi, err := os.Stat(absPath)
-	if err != nil {
-		return false
-	}
-	isManual, _ := isManualFile(absPath, fi.IsDir(), fi.Name())
-	return isManual
 }
 
 var (

@@ -85,24 +85,24 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 		return errNoGoogleapiSourceInfo
 	}
 	var err error
-	if cfg.Libraries, err = tidyLibraries(repoDir, cfg); err != nil {
+	if cfg.Libraries, err = tidyLibraries(cfg); err != nil {
 		return err
 	}
 	cfg = tidyConfig(cfg)
 	return yaml.Write(filepath.Join(repoDir, config.LibrarianYAML), formatConfig(cfg))
 }
 
-func tidyLibraries(repoDir string, cfg *config.Config) ([]*config.Library, error) {
+func tidyLibraries(cfg *config.Config) ([]*config.Library, error) {
 	for i, lib := range cfg.Libraries {
 		var err error
-		if cfg.Libraries[i], err = tidyLibrary(repoDir, cfg, lib); err != nil {
+		if cfg.Libraries[i], err = tidyLibrary(cfg, lib); err != nil {
 			return nil, err
 		}
 	}
 	return cfg.Libraries, nil
 }
 
-func tidyLibrary(repoDir string, cfg *config.Config, lib *config.Library) (*config.Library, error) {
+func tidyLibrary(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	if lib.Output != "" && len(lib.APIs) == 1 && isDerivableOutput(cfg, lib) {
 		lib.Output = ""
 	}
@@ -127,7 +127,7 @@ func tidyLibrary(repoDir string, cfg *config.Config, lib *config.Library) (*conf
 	lib.APIs = slices.DeleteFunc(lib.APIs, func(ch *config.API) bool {
 		return ch.Path == ""
 	})
-	return tidyLanguageConfig(repoDir, lib, cfg)
+	return tidyLanguageConfig(lib, cfg)
 }
 
 func isDerivableOutput(cfg *config.Config, lib *config.Library) bool {
@@ -201,7 +201,7 @@ func validateLanguageConfig(lib *config.Library, language string) error {
 
 // languageTidiers maps a language to a function that tidies the language-specific
 // configuration.
-var languageTidiers = map[string]func(string, *config.Library) (*config.Library, error){
+var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
 	config.LanguageNodejs: nodejs.Tidy,
 	config.LanguagePython: python.Tidy,
@@ -209,7 +209,7 @@ var languageTidiers = map[string]func(string, *config.Library) (*config.Library,
 }
 
 // tidyLanguageConfig finds and executes the language-specific tidier for a library.
-func tidyLanguageConfig(repoDir string, lib *config.Library, cfg *config.Config) (*config.Library, error) {
+func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Library, error) {
 	if cfg.Language == config.LanguageGo {
 		var defOut string
 		if cfg.Default != nil {
@@ -219,7 +219,7 @@ func tidyLanguageConfig(repoDir string, lib *config.Library, cfg *config.Config)
 	}
 
 	if tidier, ok := languageTidiers[cfg.Language]; ok {
-		return tidier(repoDir, lib)
+		return tidier(lib)
 	}
 	return lib, nil
 }

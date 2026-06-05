@@ -85,6 +85,9 @@ func cleanPatterns(library *config.Library) map[string]bool {
 	}
 	for _, api := range library.APIs {
 		javaAPI := api.Java
+		if javaAPI == nil {
+			javaAPI = &config.JavaAPI{}
+		}
 		version := filepath.Base(api.Path)
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
 		if apiCoordinates.Proto.ArtifactID != "" && shouldGenerateProto(javaAPI) {
