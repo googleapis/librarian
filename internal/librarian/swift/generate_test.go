@@ -213,10 +213,12 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Discovery:  absPath(t, discoveryRoot),
 				Googleapis: absPath(t, googleapisRoot),
 			}
-
-			if test.want.Source.Sources == nil {
-				test.want.Source.Sources = srcs
+			if test.want.Source == nil {
+				t.Fatal("bad test expectation: test.want.Sources should not be nil")
 			}
+			// Avoid typing this in every input
+			test.want.Source.Sources = srcs
+
 			got, err := libraryToModelConfig(test.library, test.api, srcs)
 			if err != nil {
 				t.Fatal(err)
