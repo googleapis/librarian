@@ -94,6 +94,9 @@ type SwiftDependency struct {
 	// - The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.
 	// - The `GoogleCloudLocation` package will set this to `google.cloud.location`.
 	ApiPackage string `yaml:"api_package,omitempty"`
+
+	// Discovery contains discovery-specific configuration for LRO polling.
+	Discovery *SwiftDiscovery `yaml:"discovery,omitempty"`
 }
 
 // SwiftModule defines a generation target within a larger crate. Typically a veneer, but sometimes also test targets.
@@ -106,3 +109,9 @@ type SwiftModule struct {
 	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
 	APIPath string `yaml:"api_path"`
 }
+
+// SwiftDiscovery contains discovery-specific configuration for LRO polling.
+type SwiftDiscovery = CommonDiscovery
+
+// SwiftPoller defines how to find a suitable poller RPC for discovery APIs.
+type SwiftPoller = CommonPoller

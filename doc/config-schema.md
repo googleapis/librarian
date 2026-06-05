@@ -155,6 +155,20 @@ This document describes the schema for the librarian.yaml.
 | `generate_proto_classes` | bool | Indicates whether to include this proto in standard Protocol Buffer Java classes generation. |
 | `copy_to_output` | bool | Indicates whether to copy this proto to the output directory. |
 
+## CommonDiscovery Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
+| `pollers` | list of RustPoller | Is a list of LRO polling configurations. |
+
+## CommonPoller Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
+| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
+
 ## DartPackage Configuration
 
 | Field | Type | Description |
@@ -409,7 +423,7 @@ This document describes the schema for the librarian.yaml.
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
-| `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Contains discovery-specific configuration for LRO polling. |
+| `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
 
 ## RustDefault Configuration
@@ -423,13 +437,6 @@ This document describes the schema for the librarian.yaml.
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
 | `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
-
-## RustDiscovery Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
-| `pollers` | list of [RustPoller](#rustpoller-configuration) | Is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
 
@@ -489,13 +496,6 @@ This document describes the schema for the librarian.yaml.
 | `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | Is the name of the field used for items. |
 
-## RustPoller Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
-| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
-
 ## Surfer Configuration
 
 | Field | Type | Description |
@@ -518,6 +518,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Configures the minimum version for exaternal package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
+| `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 
 ## SwiftModule Configuration
 
