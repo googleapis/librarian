@@ -160,7 +160,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
-| `pollers` | list of RustPoller | Is a list of LRO polling configurations. |
+| `pollers` | list of [CommonPoller](#commonpoller-configuration) | Is a list of LRO polling configurations. |
 
 ## CommonPoller Configuration
 
@@ -518,7 +518,6 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Configures the minimum version for exaternal package definitions.<br><br>For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the following snippet in the `Package.swift` files:<br><br>``` .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1") ``` |
 | `required_by_services` | bool | Is true if this dependency is required by packages with services.<br><br>This will be set for the `gax` library and the `auth` library. Maybe more if we split the HTTP and gRPC clients into separate libraries. |
 | `api_package` | string | Is the name of the API package provided by this library.<br><br>In Swift a package contains at most one channel for one API. For packages that implement an API, this field contains the name of the package in the specification language of that API. At the moment this is only used by Protobuf-based APIs, as OpenAPI and discovery doc APIs are self-contained.<br><br>Note that some packages, for example `auth` and `gax`, do not implement APIs. This field is empty for such libraries.<br><br>Examples:<br>- The `GoogleCloudWkt` package will set this to `google.cloud.protobuf`.<br>- The `GoogleCloudLocation` package will set this to `google.cloud.location`. |
-| `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 
 ## SwiftModule Configuration
 
@@ -536,3 +535,4 @@ This document describes the schema for the librarian.yaml.
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
 | `per_service_traits` | bool | Enables per-service compile-time flags. |
 | `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
+| `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
