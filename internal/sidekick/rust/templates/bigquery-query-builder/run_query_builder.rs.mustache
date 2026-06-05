@@ -1,0 +1,161 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+// Copyright {{Codec.Model.Codec.CopyrightYear}} Google LLC
+{{#Codec.Model.Codec.BoilerPlate}}
+//{{{.}}}
+{{/Codec.Model.Codec.BoilerPlate}}
+
+impl RunQuery {
+{{#Codec.RunQueryFields}}
+    /// {{{Documentation}}}
+    {{#Map}}
+    pub fn {{Name}}<T, K, V>(mut self, v: T) -> Self
+    where
+        T: std::iter::IntoIterator<Item = (K, V)>,
+        K: std::convert::Into<{{{Codec.KeyType}}}>,
+        V: std::convert::Into<{{{Codec.ValueType}}}>,
+    {
+    {{/Map}}
+    {{#Repeated}}
+    pub fn {{Name}}<T, V>(mut self, v: T) -> Self
+    where
+        T: std::iter::IntoIterator<Item = V>,
+        V: std::convert::Into<{{{Codec.PrimType}}}>,
+    {
+    {{/Repeated}}
+    {{#Codec.IsOrClear}}
+    pub fn {{Name}}<T>(mut self, v: std::option::Option<T>) -> Self
+    where
+        T: std::convert::Into<{{{Codec.PrimType}}}>,
+    {
+    {{/Codec.IsOrClear}}
+    {{^Map}}
+    {{^Repeated}}
+    {{^Codec.IsOrClear}}
+    pub fn {{Name}}<T: std::convert::Into<{{{Codec.PrimType}}}>>(mut self, v: T) -> Self {
+    {{/Codec.IsOrClear}}
+    {{/Repeated}}
+    {{/Map}}
+    {{#Codec.HasQueryRequest}}
+    {{#Codec.HasJobConfiguration}}
+        {{#Map}}
+        let val: std::collections::HashMap<{{{Codec.KeyType}}}, {{{Codec.ValueType}}}> =
+            v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        self.job_config = self.job_config.{{Name}}(val);
+        {{/Map}}
+        {{#Repeated}}
+        let val: Vec<{{{Codec.PrimType}}}> = v.into_iter().map(|i| i.into()).collect();
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        self.job_config = self.job_config.{{Name}}(val);
+        {{/Repeated}}
+        {{#Codec.IsOrClear}}
+        let val: Option<{{{Codec.PrimType}}}> = v.map(|x| x.into());
+        {{#Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val);
+        {{/Codec.IsCopy}}
+        {{^Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        {{/Codec.IsCopy}}
+        self.job_config = self.job_config.{{Name}}(val);
+        {{/Codec.IsOrClear}}
+        {{^Map}}
+        {{^Repeated}}
+        {{^Codec.IsOrClear}}
+        let val: {{{Codec.PrimType}}} = v.into();
+        {{#Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val);
+        {{/Codec.IsCopy}}
+        {{^Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        {{/Codec.IsCopy}}
+        self.job_config = self.job_config.{{Name}}(val);
+        {{/Codec.IsOrClear}}
+        {{/Repeated}}
+        {{/Map}}
+        self
+    {{/Codec.HasJobConfiguration}}
+    {{#Codec.HasJobConfigurationQuery}}
+        {{#Map}}
+        let val: std::collections::HashMap<{{{Codec.KeyType}}}, {{{Codec.ValueType}}}> =
+            v.into_iter().map(|(k, v)| (k.into(), v.into())).collect();
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        self.job_config.query = Some(
+            self.job_config.query.take().unwrap_or_default().{{Name}}(val)
+        );
+        {{/Map}}
+        {{#Repeated}}
+        let val: Vec<{{{Codec.PrimType}}}> = v.into_iter().map(|i| i.into()).collect();
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        self.job_config.query = Some(
+            self.job_config.query.take().unwrap_or_default().{{Name}}(val)
+        );
+        {{/Repeated}}
+        {{#Codec.IsOrClear}}
+        let val: Option<{{{Codec.PrimType}}}> = v.map(|x| x.into());
+        {{#Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val);
+        {{/Codec.IsCopy}}
+        {{^Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        {{/Codec.IsCopy}}
+        self.job_config.query = Some(
+            self.job_config.query.take().unwrap_or_default().{{Name}}(val)
+        );
+        {{/Codec.IsOrClear}}
+        {{^Map}}
+        {{^Repeated}}
+        {{^Codec.IsOrClear}}
+        let val: {{{Codec.PrimType}}} = v.into();
+        {{#Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val);
+        {{/Codec.IsCopy}}
+        {{^Codec.IsCopy}}
+        self.query_request = self.query_request.{{Name}}(val.clone());
+        {{/Codec.IsCopy}}
+        self.job_config.query = Some(
+            self.job_config.query.take().unwrap_or_default().{{Name}}(val)
+        );
+        {{/Codec.IsOrClear}}
+        {{/Repeated}}
+        {{/Map}}
+        self
+    {{/Codec.HasJobConfigurationQuery}}
+    {{^Codec.HasJobConfiguration}}
+    {{^Codec.HasJobConfigurationQuery}}
+        self.query_request = self.query_request.{{Name}}(v);
+        self
+    {{/Codec.HasJobConfigurationQuery}}
+    {{/Codec.HasJobConfiguration}}
+    {{/Codec.HasQueryRequest}}
+    {{^Codec.HasQueryRequest}}
+    {{#Codec.HasJobConfigurationQuery}}
+        self.job_config.query = Some(
+            self.job_config.query.take().unwrap_or_default().{{Name}}(v)
+        );
+        self.force_job_path = true;
+        self
+    {{/Codec.HasJobConfigurationQuery}}
+    {{#Codec.HasJobConfiguration}}
+        self.job_config = self.job_config.{{Name}}(v);
+        self.force_job_path = true;
+        self
+    {{/Codec.HasJobConfiguration}}
+    {{/Codec.HasQueryRequest}}
+    }
+
+{{/Codec.RunQueryFields}}
+}

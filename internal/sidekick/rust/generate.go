@@ -75,6 +75,37 @@ type storageAnnotations struct {
 	Control *api.API
 }
 
+// GenerateBigQueryBuilder generates Rust code for the bigquery query builder.
+func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API, cfg *parser.ModelConfig) error {
+	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)
+	if err != nil {
+		return err
+	}
+	if _, err := annotateModel(model, c); err != nil {
+		return err
+	}
+	runQueryFields, err := generateBigQueryRunQueryFields(model)
+	if err != nil {
+		return err
+	}
+
+	model = &api.API{
+		Codec: &bigQueryAnnotations{
+			Model:          model,
+			RunQueryFields: runQueryFields,
+		},
+	}
+
+	provider := templatesProvider()
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery-query-builder")
+	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+}
+
+type bigQueryAnnotations struct {
+	Model          *api.API
+	RunQueryFields []*api.Field
+}
+
 func templatesProvider() language.TemplateProvider {
 	return func(name string) (string, error) {
 		contents, err := templates.ReadFile(filepath.ToSlash(name))
