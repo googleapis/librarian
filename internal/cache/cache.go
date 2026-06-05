@@ -42,6 +42,9 @@ func Directory() (string, error) {
 	return filepath.Join(home, "librarian"), nil
 }
 
+// BinDirectory returns the directory where librarian bin files are stored.
+// It checks the $LIBRARIAN_BIN environment variable, falling back to the "bin" subdirectory
+// under the cache directory if not set.
 func BinDirectory() (string, error) {
 	if binDir := os.Getenv(EnvLibrarianBin); binDir != "" {
 		return binDir, nil
