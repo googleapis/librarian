@@ -22,7 +22,7 @@ type CommonDiscovery struct {
 	OperationID string `yaml:"operation_id"`
 
 	// Pollers is a list of LRO polling configurations.
-	Pollers []RustPoller `yaml:"pollers,omitempty"`
+	Pollers []CommonPoller `yaml:"pollers,omitempty"`
 }
 
 // CommonPoller defines how to find a suitable poller RPC for discovery APIs.
