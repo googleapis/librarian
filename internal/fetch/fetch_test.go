@@ -692,6 +692,72 @@ func TestExtractTarball_Error(t *testing.T) {
 			},
 			wantErr: errUnsupportedFileType,
 		},
+		{
+			name: "absolute symlink",
+			tarballPath: func(t *testing.T) string {
+				var buf bytes.Buffer
+				gw := gzip.NewWriter(&buf)
+				tw := tar.NewWriter(gw)
+
+				hdr := &tar.Header{
+					Typeflag: tar.TypeSymlink,
+					Name:     "repo-abc123/src/link.txt",
+					Linkname: "/etc/passwd",
+					Mode:     0777,
+				}
+				if err := tw.WriteHeader(hdr); err != nil {
+					t.Fatal(err)
+				}
+				if err := tw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if err := gw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				p := path.Join(t.TempDir(), "abs-symlink.tar.gz")
+				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: errAbsSymlinks,
+		},
+		{
+			name: "escaping symlink",
+			tarballPath: func(t *testing.T) string {
+				var buf bytes.Buffer
+				gw := gzip.NewWriter(&buf)
+				tw := tar.NewWriter(gw)
+
+				hdr := &tar.Header{
+					Typeflag: tar.TypeSymlink,
+					Name:     "repo-abc123/src/link.txt",
+					Linkname: "../../../escape.txt",
+					Mode:     0777,
+				}
+				if err := tw.WriteHeader(hdr); err != nil {
+					t.Fatal(err)
+				}
+				if err := tw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				if err := gw.Close(); err != nil {
+					t.Fatal(err)
+				}
+				p := path.Join(t.TempDir(), "escaping-symlink.tar.gz")
+				if err := os.WriteFile(p, buf.Bytes(), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return p
+			},
+			dest: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			wantErr: errSymlinkEscape,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := extractTarball(test.tarballPath(t), test.dest(t))
