@@ -27,6 +27,7 @@ import (
 // defaultVersion is the first version used for a new library.
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
+
 // libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
 // the entry is a core library, not an individual API client library.
 const libraryTypeCore = "CORE"
