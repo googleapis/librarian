@@ -432,14 +432,13 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		monolithic bool
-		altHeader  string
 		wantHeader string
 	}{
-		{"default adds header", false, "", "/*\n * Copyright"},
-		{"monolithic skips header", true, "", "package"},
-		{"alternate adds alt header", false, "/* Alternate */\n", "/* Alternate */"},
+		{"default adds header", false, "/*\n * Copyright"},
+		{"monolithic skips header", true, "package"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			outdir := t.TempDir()
 			apiBase := "v1"
 			gRPCDir := filepath.Join(outdir, apiBase, "grpc")
@@ -450,25 +449,15 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
 				t.Fatal(err)
 			}
-
 			params := postProcessParams{
 				outDir:  outdir,
 				apiBase: apiBase,
 				library: &config.Library{Java: &config.JavaModule{}},
 				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
 			}
-			if test.altHeader != "" {
-				headerFile := filepath.Join(outdir, "header.txt")
-				if err := os.WriteFile(headerFile, []byte(test.altHeader), 0644); err != nil {
-					t.Fatal(err)
-				}
-				params.library.Java.AlternateHeaders = "header.txt"
-			}
-
 			if err := addHeaders(params, []string{gRPCDir}); err != nil {
 				t.Fatal(err)
 			}
-
 			got, err := os.ReadFile(grpcFile)
 			if err != nil {
 				t.Fatal(err)
@@ -477,6 +466,43 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 				t.Errorf("mismatch got = %q, want %q", got, test.wantHeader)
 			}
 		})
+	}
+}
+
+func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
+	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
+	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		library: &config.Library{Java: &config.JavaModule{}},
+		javaAPI: &config.JavaAPI{},
+	}
+	altHeader := "/* Alternate */\n"
+	headerFile := filepath.Join(outdir, "header.txt")
+	if err := os.WriteFile(headerFile, []byte(altHeader), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params.library.Java.AlternateHeaders = "header.txt"
+	if err := addHeaders(params, []string{gRPCDir}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(grpcFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHeader := "/* Alternate */"
+	if !bytes.HasPrefix(got, []byte(wantHeader)) {
+		t.Errorf("mismatch got = %q, want %q", got, wantHeader)
 	}
 }
 
