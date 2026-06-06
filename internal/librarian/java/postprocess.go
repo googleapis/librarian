@@ -190,19 +190,19 @@ func addMissingHeaders(params postProcessParams, dir string) error {
 // the alternate_header property (a filepath). Otherwise it will grab the default license
 // header.
 func getLicenseText(params postProcessParams) ([]byte, error) {
-	if params.library != nil && params.library.Java != nil && params.library.Java.AlternateHeaders != "" {
-		headerPath := filepath.Join(params.outDir, params.library.Java.AlternateHeaders)
-		b, err := os.ReadFile(headerPath)
-		if err != nil {
-			return nil, fmt.Errorf("failed to read alternate header file %s: %w", headerPath, err)
-		}
-		if len(b) > 0 && b[len(b)-1] != '\n' {
-			b = append(b, '\n')
-		}
-		return b, nil
+	if params.library == nil || params.library.Java == nil || params.library.Java.AlternateHeaders == "" {
+		year := time.Now().Year()
+		return []byte(buildLicenseText(year)), nil
 	}
-	year := time.Now().Year()
-	return []byte(buildLicenseText(year)), nil
+	headerPath := filepath.Join(params.outDir, params.library.Java.AlternateHeaders)
+	b, err := os.ReadFile(headerPath)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read alternate header file %s: %w", headerPath, err)
+	}
+	if len(b) > 0 && b[len(b)-1] != '\n' {
+		b = append(b, '\n')
+	}
+	return b, nil
 }
 
 func copyFiles(params postProcessParams) error {
