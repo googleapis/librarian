@@ -199,6 +199,7 @@ func getLicenseText(params postProcessParams) ([]byte, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to read alternate header file %s: %w", headerPath, err)
 	}
+	// Ensure the alternate header ends with a newline before it is prepended.
 	if len(b) > 0 && b[len(b)-1] != '\n' {
 		b = append(b, '\n')
 	}
