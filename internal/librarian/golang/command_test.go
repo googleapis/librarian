@@ -35,7 +35,7 @@ func TestMergeEnv(t *testing.T) {
 			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					envPath: base + ":/original/path",
+					envPath: filepath.Join(base, toolsDir) + ":/original/path",
 				}
 			},
 		},
@@ -47,7 +47,7 @@ func TestMergeEnv(t *testing.T) {
 			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					envPath: base + ":/original/path",
+					envPath: filepath.Join(base, toolsDir) + ":/original/path",
 					"FOO":   "bar",
 				}
 			},

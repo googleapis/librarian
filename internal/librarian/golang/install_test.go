@@ -84,7 +84,7 @@ func TestGetInstallDir(t *testing.T) {
 		{
 			name: "LIBRARIAN_BIN set",
 			env:  map[string]string{cache.EnvLibrarianBin: "/custom/install/dir"},
-			want: "/custom/install/dir",
+			want: "/custom/install/dir/go_tools",
 		},
 		{
 			name: "LIBRARIAN_BIN empty",
