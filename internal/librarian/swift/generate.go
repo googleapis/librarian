@@ -84,9 +84,14 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
+	specFormat := config.SpecProtobuf
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
 
 	return &parser.ModelConfig{
-		SpecificationFormat: config.SpecProtobuf,
+		Language:            config.LanguageSwift,
+		SpecificationFormat: specFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: api.Path,
 		Source:              sourceConfig,
