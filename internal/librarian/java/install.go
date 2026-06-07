@@ -23,11 +23,14 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/pip"
 )
+
+const toolsDir = "java_tools"
 
 // errNoToolsSpecified indicates no Java tools were provided in the configuration.
 var errNoToolsSpecified = errors.New("no tools specified in configuration")
@@ -50,16 +53,15 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
-	binDir, err := getInstallDir()
+	installDir, err := getInstallDir()
 	if err != nil {
 		return err
 	}
-	// binDir ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
-	// libDir ($HOME/java_tools/lib) is a sibling directory that isolates the downloaded compiled .jar/.exe files.
-	libDir := filepath.Join(filepath.Dir(binDir), "lib")
+	binDir := filepath.Join(installDir, "bin")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
 	}
+		libDir := filepath.Join(installDir, "lib")
 	if err := os.MkdirAll(libDir, 0755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
@@ -78,18 +80,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 }
 
 // getInstallDir returns the absolute path of the installation directory for Java tools.
-// It resolves LIBRARIAN_INSTALL_DIR if set, otherwise defaults to "$HOME/java_tools/bin".
-// TODO(https://github.com/googleapis/librarian/issues/5850): Refactor this once Librarian-wide variable is ready.
 func getInstallDir() (string, error) {
-	dir := os.Getenv("LIBRARIAN_INSTALL_DIR")
-	if dir == "" {
-		home, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("failed to get user home directory: %w", err)
-		}
-		dir = filepath.Join(home, "java_tools", "bin")
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
 	}
-	return filepath.Abs(dir)
+	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
