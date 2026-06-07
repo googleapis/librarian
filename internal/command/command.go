@@ -120,7 +120,7 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 	pathEnv := os.Getenv(envPath)
 	if env != nil {
 		if val, ok := env[envPath]; ok {
-			pathEnv = val
+			pathEnv = fmt.Sprintf("%s:%s", val, pathEnv)
 		}
 	}
 	resolvedCommand, err := lookPath(command, pathEnv)
