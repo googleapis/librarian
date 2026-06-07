@@ -46,6 +46,7 @@ jobs:
         working-directory: google-cloud-java
         run: |
           librarian install
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
