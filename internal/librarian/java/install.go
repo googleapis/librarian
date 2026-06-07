@@ -61,7 +61,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
 	}
-		libDir := filepath.Join(installDir, "lib")
+	libDir := filepath.Join(installDir, "lib")
 	if err := os.MkdirAll(libDir, 0755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
