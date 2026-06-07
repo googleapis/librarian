@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	commonProtos = "google/cloud/common_resources.proto"
+	commonResourcesProto = "google/cloud/common_resources.proto"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -114,6 +114,10 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 
 	// Add additional protos from configuration.
 	protos = append(protos, nodejsAPI.AdditionalProtos...)
+	// Always include common_resources.proto. This doesn't include any messages,
+	// but allows the generator to create functions for common resources such
+	// as project, location etc.
+	protos = append(protos, commonResourcesProto)
 
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
@@ -140,23 +144,15 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 		}
 	}
 
-	omitCommon := false
 	if apiConfig != nil {
-		omitCommon = apiConfig.OmitCommonResources
 		res.DIREGAPIC = apiConfig.DIREGAPIC
-		res.OmitCommonResources = apiConfig.OmitCommonResources
-	}
-
-	var protos []string
-	if !omitCommon {
-		protos = append(protos, commonProtos)
 	}
 
 	if library.Nodejs == nil {
-		res.AdditionalProtos = protos
 		return res
 	}
 
+	var protos []string
 	// Add package-level additional protos.
 	protos = append(protos, library.Nodejs.AdditionalProtos...)
 
@@ -334,6 +330,14 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
+
+	// Remove protos/google/cloud/common_resources.proto. We're always passing
+	// this into the generator (to make sure the common resource patterns can
+	// be represented) but we never want it in the output.
+	if err := os.Remove(filepath.Join(outDir, "protos", commonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", commonResourcesProto, err)
+	}
+
 	protoDir := "src"
 	var compileArgs []string
 	if library.Nodejs != nil && library.Nodejs.ESM {

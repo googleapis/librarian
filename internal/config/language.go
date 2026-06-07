@@ -778,10 +778,6 @@ type NodejsAPI struct {
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 
-	// OmitCommonResources indicates whether to omit the default inclusion of
-	// google/cloud/common_resources.proto.
-	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
-
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 }

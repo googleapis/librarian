@@ -361,7 +361,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
-| `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
 
 ## NodejsPackage Configuration
