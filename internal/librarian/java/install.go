@@ -239,6 +239,7 @@ func getInstallDir() (string, error) {
 	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
+// getBinDir returns the absolute path of the directory where Java tool wrapper scripts are stored.
 func getBinDir() (string, error) {
 	installDir, err := getInstallDir()
 	if err != nil {
@@ -247,6 +248,8 @@ func getBinDir() (string, error) {
 	return filepath.Abs(filepath.Join(installDir, "bin"))
 }
 
+// getLibDir returns the absolute path of the directory where Java tool library files (such as .jar
+// or .exe files) are stored.
 func getLibDir() (string, error) {
 	installDir, err := getInstallDir()
 	if err != nil {
