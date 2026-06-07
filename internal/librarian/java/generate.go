@@ -48,11 +48,10 @@ var (
 		"google/rpc":   true,
 	}
 	runProtoc = func(ctx context.Context, args []string) error {
-		binDir, err := getBinDir()
+		env, err := getToolsEnv()
 		if err != nil {
 			return err
 		}
-		env := map[string]string{envPath: binDir}
 		return command.RunWithEnv(ctx, env, "protoc", args...)
 	}
 )

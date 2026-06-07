@@ -25,8 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-const envPath = "PATH"
-
 // Format formats a Java client library using google-java-format.
 func Format(ctx context.Context, library *config.Library) error {
 	files, err := collectJavaFiles(library.Output)
@@ -36,12 +34,11 @@ func Format(ctx context.Context, library *config.Library) error {
 	if len(files) == 0 {
 		return nil
 	}
-	binDir, err := getBinDir()
+	args := append([]string{"--replace"}, files...)
+	env, err := getToolsEnv()
 	if err != nil {
 		return err
 	}
-	env := map[string]string{envPath: binDir}
-	args := append([]string{"--replace"}, files...)
 	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
 		return fmt.Errorf("failed to format files: %w", err)
 	}

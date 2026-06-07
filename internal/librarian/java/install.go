@@ -30,7 +30,10 @@ import (
 	"github.com/googleapis/librarian/internal/pip"
 )
 
-const toolsDir = "java_tools"
+const (
+	envPath  = "PATH"
+	toolsDir = "java_tools"
+)
 
 // errNoToolsSpecified indicates no Java tools were provided in the configuration.
 var errNoToolsSpecified = errors.New("no tools specified in configuration")
@@ -256,4 +259,13 @@ func getLibDir() (string, error) {
 		return "", err
 	}
 	return filepath.Abs(filepath.Join(installDir, "lib"))
+}
+
+// getToolsEnv returns an environment map with the Java tools bin directory prepended to the PATH.
+func getToolsEnv() (map[string]string, error) {
+	binDir, err := getBinDir()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{envPath: binDir}, nil
 }
