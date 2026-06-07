@@ -210,3 +210,39 @@ func TestInstall(t *testing.T) {
 		})
 	}
 }
+
+func TestGetBinDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	tests := []struct {
+		name           string
+		librarianBin   string
+		librarianCache string
+		want           string
+	}{
+		{
+			name:         "LIBRARIAN_BIN is set",
+			librarianBin: tmpDir,
+			want:         filepath.Join(tmpDir, "java_tools", "bin"),
+		},
+		{
+			name:           "LIBRARIAN_CACHE is set",
+			librarianCache: tmpDir,
+			want:           filepath.Join(tmpDir, "bin", "java_tools", "bin"),
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("LIBRARIAN_BIN", test.librarianBin)
+			t.Setenv("LIBRARIAN_CACHE", test.librarianCache)
+
+			got, err := getBinDir()
+			if err != nil {
+				t.Fatalf("getBinDir() failed: %v", err)
+			}
+			if got != test.want {
+				t.Errorf("getBinDir() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
