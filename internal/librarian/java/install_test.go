@@ -144,7 +144,7 @@ func TestInstall(t *testing.T) {
 		},
 	}
 	installDir := filepath.Join(tmpDir, "java_tools", "bin")
-	t.Setenv("LIBRARIAN_INSTALL_DIR", installDir)
+	t.Setenv("LIBRARIAN_BIN", tmpDir)
 	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
 	}
