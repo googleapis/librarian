@@ -53,15 +53,17 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("failed to install pip tools: %w", err)
 		}
 	}
-	installDir, err := getInstallDir()
+	binDir, err := getBinDir()
 	if err != nil {
 		return err
 	}
-	binDir := filepath.Join(installDir, "bin")
 	if err := os.MkdirAll(binDir, 0755); err != nil {
 		return fmt.Errorf("failed to create bin directory %q: %w", binDir, err)
 	}
-	libDir := filepath.Join(installDir, "lib")
+	libDir, err := getLibDir()
+	if err != nil {
+		return err
+	}
 	if err := os.MkdirAll(libDir, 0755); err != nil {
 		return fmt.Errorf("failed to create lib directory %q: %w", libDir, err)
 	}
@@ -77,15 +79,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	return nil
-}
-
-// getInstallDir returns the absolute path of the installation directory for Java tools.
-func getInstallDir() (string, error) {
-	dir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
@@ -235,4 +228,29 @@ func buildLocalMavenProject(ctx context.Context, localPath string) error {
 		return fmt.Errorf("failed to build local Maven project %q: %w", localPath, err)
 	}
 	return nil
+}
+
+// getInstallDir returns the absolute path of the installation directory for Java tools.
+func getInstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
+}
+
+func getBinDir() (string, error) {
+	installDir, err := getInstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(installDir, "bin"))
+}
+
+func getLibDir() (string, error) {
+	installDir, err := getInstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(installDir, "lib"))
 }
