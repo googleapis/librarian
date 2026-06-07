@@ -235,7 +235,40 @@ func TestGetBinDir(t *testing.T) {
 			t.Setenv("LIBRARIAN_CACHE", test.librarianCache)
 			got, err := getBinDir()
 			if err != nil {
-				t.Fatalf("getBinDir() failed: %v", err)
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGetLibDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	for _, test := range []struct {
+		name           string
+		librarianBin   string
+		librarianCache string
+		want           string
+	}{
+		{
+			name:         "LIBRARIAN_BIN is set",
+			librarianBin: tmpDir,
+			want:         filepath.Join(tmpDir, "java_tools", "lib"),
+		},
+		{
+			name:           "LIBRARIAN_CACHE is set",
+			librarianCache: tmpDir,
+			want:           filepath.Join(tmpDir, "bin", "java_tools", "lib"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("LIBRARIAN_BIN", test.librarianBin)
+			t.Setenv("LIBRARIAN_CACHE", test.librarianCache)
+			got, err := getLibDir()
+			if err != nil {
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
