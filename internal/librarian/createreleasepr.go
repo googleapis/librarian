@@ -444,13 +444,15 @@ func isReleaseWorthy(messages []*CommitMessage, libraryId string) bool {
 	return false
 }
 
-func rollbackLibraryState(state *commandState, library *statepb.LibraryState, origVersion, origNextVersion, origLastReleasedCommit string, origReleaseTimestamp *timestamppb.Timestamp) error {
+func rollbackLibraryState(state *commandState, library *statepb.LibraryState, origVersion, origNextVersion, origLastReleasedCommit string, origReleaseTimestamp *timestamppb.Timestamp) (err error) {
 	library.CurrentVersion = origVersion
 	library.NextVersion = origNextVersion
 	library.LastReleasedCommit = origLastReleasedCommit
 	library.ReleaseTimestamp = origReleaseTimestamp
-	if err := savePipelineState(state); err != nil {
-		return err
-	}
-	return state.languageRepo.CleanWorkingTree()
+	defer func() {
+		if cleanErr := state.languageRepo.CleanWorkingTree(); cleanErr != nil {
+			err = cleanErr
+		}
+	}()
+	return savePipelineState(state)
 }
