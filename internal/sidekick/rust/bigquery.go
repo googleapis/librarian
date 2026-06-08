@@ -34,7 +34,7 @@ type queryField struct {
 	JobConfiguration      *api.Field
 }
 
-func newRunQueryBuilder(c *codec, model *api.API) (*runQueryBuilder, error) {
+func newRunQueryBuilder(c *codec, model *api.API, skippedFields []string) (*runQueryBuilder, error) {
 	qrMsg := model.Message(fmt.Sprintf(".%s.QueryRequest", model.PackageName))
 	jcqMsg := model.Message(fmt.Sprintf(".%s.JobConfigurationQuery", model.PackageName))
 	jcMsg := model.Message(fmt.Sprintf(".%s.JobConfiguration", model.PackageName))
@@ -61,8 +61,6 @@ func newRunQueryBuilder(c *codec, model *api.API) (*runQueryBuilder, error) {
 	slices.Sort(allFieldNames)
 	allFieldNames = slices.Compact(allFieldNames)
 
-	// TODO: how to have this list in librarian.yaml file?
-	skippedFields := []string{"copy", "load", "extract", "format_options", "kind", "job_type"}
 	var fields []*queryField
 
 	for _, fieldName := range allFieldNames {
@@ -122,7 +120,7 @@ func (b *runQueryBuilder) builder() (*api.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: check if we can avoid this hack chaging data on annotations
+	// TODO: check if we can avoid this hack changing data on annotations
 	msgAnn, ok := msg.Codec.(*messageAnnotation)
 	if !ok {
 		return nil, fmt.Errorf("expected message annotation for %q", msg.ID)

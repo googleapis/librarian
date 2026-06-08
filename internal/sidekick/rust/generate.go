@@ -85,7 +85,13 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		return err
 	}
 
-	runQueryBuilder, err := newRunQueryBuilder(c, model)
+	// TODO: how to have this list in librarian.yaml file?
+	skippedFields := []string{
+		"copy", "load", "extract", // skip non job types
+		"format_options",   // we want to control format options on veneer
+		"kind", "job_type", // output only but not properly marked on protos
+	}
+	runQueryBuilder, err := newRunQueryBuilder(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
