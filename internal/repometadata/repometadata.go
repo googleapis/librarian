@@ -17,7 +17,6 @@
 package repometadata
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -184,18 +183,10 @@ func Read(libraryOutputDir string) (*RepoMetadata, error) {
 // WriteJSON marshals the given data to JSON with indentation and writes it to
 // the specified file in the output directory.
 func WriteJSON(data interface{}, indent, libraryOutputDir, filename string) error {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-	enc.SetEscapeHTML(false)
-	enc.SetIndent("", indent)
-	if err := enc.Encode(data); err != nil {
+	content, err := json.MarshalIndent(data, "", indent)
+	if err != nil {
 		return fmt.Errorf("failed to marshal metadata to JSON: %w", err)
 	}
-	content := buf.Bytes()
-	// json.Encoder.Encode always adds a trailing newline, but we want to match
-	// json.MarshalIndent which does not.
-	content = bytes.TrimSuffix(content, []byte("\n"))
-
 	path := filepath.Join(libraryOutputDir, filename)
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		return fmt.Errorf("failed to write metadata file: %w", err)

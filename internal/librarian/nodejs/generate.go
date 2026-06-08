@@ -507,7 +507,21 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		}
 	}
 
-	return metadata.Write(outDir)
+	if err := metadata.Write(outDir); err != nil {
+		return err
+	}
+
+	// Post-process the file to replace \u0026 with & to match historical handwritten
+	// .repo-metadata.json files in google-cloud-node. Go's json.MarshalIndent
+	// escapes HTML characters by default, but Node.js requires literal ampersands
+	// to prevent massive git diff churn during the transition to native generation.
+	path := filepath.Join(outDir, ".repo-metadata.json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
+	return os.WriteFile(path, content, 0644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
