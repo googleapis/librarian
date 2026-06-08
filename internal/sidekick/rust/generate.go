@@ -84,26 +84,40 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 	if _, err := annotateModel(model, c); err != nil {
 		return err
 	}
-	runQueryFields, err := generateBigQueryRunQueryFields(model)
+
+	runQueryBuilder, err := newRunQueryBuilder(c, model)
+	if err != nil {
+		return err
+	}
+
+	runQueryMsg, err := runQueryBuilder.builder()
+	if err != nil {
+		return err
+	}
+	runQueryRequestMsg, err := runQueryBuilder.request()
 	if err != nil {
 		return err
 	}
 
 	model = &api.API{
 		Codec: &bigQueryAnnotations{
-			Model:          model,
-			RunQueryFields: runQueryFields,
+			Model:              model,
+			RunQueryFields:     runQueryBuilder.fields,
+			RunQueryMsg:        runQueryMsg,
+			RunQueryRequestMsg: runQueryRequestMsg,
 		},
 	}
 
 	provider := templatesProvider()
-	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery-query-builder")
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery")
 	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
 }
 
 type bigQueryAnnotations struct {
-	Model          *api.API
-	RunQueryFields []*api.Field
+	Model              *api.API
+	RunQueryFields     []*queryField
+	RunQueryMsg        *api.Message
+	RunQueryRequestMsg *api.Message
 }
 
 func templatesProvider() language.TemplateProvider {
