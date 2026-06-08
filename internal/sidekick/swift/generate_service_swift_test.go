@@ -764,7 +764,7 @@ func TestGenerateService_LRO(t *testing.T) {
 		"import GoogleRpc",
 		"public func createWorkflow(withPolling: CreateWorkflowRequest) async throws -> any GoogleCloudGax.PollableOperation<Workflow>",
 		"GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)",
-		"self.getOperation(request: .init(name: rawOp.name), options: options)",
+		"self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)",
 	}
 	for _, want := range wantContains {
 		if !strings.Contains(contentStr, want) {

@@ -334,22 +334,10 @@ type RustPaginationOverride struct {
 }
 
 // RustDiscovery contains discovery-specific configuration for LRO polling.
-type RustDiscovery struct {
-	// OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation").
-	OperationID string `yaml:"operation_id"`
-
-	// Pollers is a list of LRO polling configurations.
-	Pollers []RustPoller `yaml:"pollers,omitempty"`
-}
+type RustDiscovery = CommonDiscovery
 
 // RustPoller defines how to find a suitable poller RPC for discovery APIs.
-type RustPoller struct {
-	// Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}").
-	Prefix string `yaml:"prefix"`
-
-	// MethodID is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get").
-	MethodID string `yaml:"method_id"`
-}
+type RustPoller = CommonPoller
 
 // PythonPackage contains Python-specific library configuration. It inherits
 // from PythonDefault, allowing library-specific overrides of global settings.
@@ -521,6 +509,13 @@ type JavaModule struct {
 
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+
+	// ReleasedVersion is the last released version of the library.
+	// If omitted, it will be derived from the library version.
+	// Note: It assumes a minor bump from the previous '.0' version
+	// (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support
+	// deriving previous patch releases (e.g., '1.1.1').
+	ReleasedVersion string `yaml:"released_version,omitempty"`
 
 	// LibraryTypeOverride allows the "library_type" field in .repo-metadata.json
 	// to be overridden.

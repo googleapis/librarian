@@ -303,7 +303,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava:
 		return false
 	default:
 		return true
@@ -593,6 +593,9 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.LibrariesBOMVersion != "" {
 		res.LibrariesBOMVersion = src.LibrariesBOMVersion
+	}
+	if src.ReleasedVersion != "" {
+		res.ReleasedVersion = src.ReleasedVersion
 	}
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride

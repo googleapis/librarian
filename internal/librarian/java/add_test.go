@@ -42,6 +42,9 @@ func TestAdd(t *testing.T) {
 				},
 				Version:       defaultVersion,
 				CopyrightYear: "",
+				Java: &config.JavaModule{
+					ReleasedVersion: defaultReleasedVersion,
+				},
 			},
 		},
 		{
@@ -60,8 +63,9 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactID: "google-shopping-css",
-					GroupID:    "com.google.shopping",
+					ArtifactID:      "google-shopping-css",
+					GroupID:         "com.google.shopping",
+					ReleasedVersion: defaultReleasedVersion,
 				},
 			},
 		},
@@ -81,8 +85,9 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactID: "google-maps-routing",
-					GroupID:    "com.google.maps",
+					ArtifactID:      "google-maps-routing",
+					GroupID:         "com.google.maps",
+					ReleasedVersion: defaultReleasedVersion,
 				},
 			},
 		},
@@ -102,8 +107,9 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactID: "google-foo-bar",
-					GroupID:    "please-configure-java-group-id",
+					ArtifactID:      "google-foo-bar",
+					GroupID:         "please-configure-java-group-id",
+					ReleasedVersion: defaultReleasedVersion,
 				},
 			},
 		},
@@ -123,8 +129,9 @@ func TestAdd(t *testing.T) {
 				Version:       defaultVersion,
 				CopyrightYear: "",
 				Java: &config.JavaModule{
-					ArtifactID: "google-ads-admanager",
-					GroupID:    "com.google.api-ads",
+					ArtifactID:      "google-ads-admanager",
+					GroupID:         "com.google.api-ads",
+					ReleasedVersion: defaultReleasedVersion,
 				},
 			},
 		},

@@ -304,7 +304,7 @@ func setupMigrationTest(t *testing.T, sourceRepoPath string) string {
 	if err := os.CopyFS(dir, os.DirFS(sourceRepoPath)); err != nil {
 		t.Fatal(err)
 	}
-	writeVersionsFile(t, dir, "")
+	writeVersionsFile(t, dir, "google-cloud-language-v1:1.0.0:1.1.0-SNAPSHOT\ngoogle-cloud-java:1.0.0:1.1.0-SNAPSHOT")
 
 	// Create dummy showcase pom.xml to avoid failure in runJavaMigration
 	showcaseDir := filepath.Join(dir, "java-showcase", "gapic-showcase")
@@ -461,7 +461,7 @@ func TestBuildConfig(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		gen      *GenerationConfig
-		versions map[string]string
+		versions map[string]versionInfo
 		src      *config.Source
 		want     *config.Config
 	}{
@@ -549,9 +549,10 @@ func TestBuildConfig(t *testing.T) {
 							"gapic-showcase/src/main/java/com/google/showcase/v1beta1/Version.java",
 						},
 						Java: &config.JavaModule{
-							ArtifactID: "google-cloud-showcase",
-							GroupID:    "com.google.cloud",
-							SkipAPIID:  true,
+							ArtifactID:      "google-cloud-showcase",
+							GroupID:         "com.google.cloud",
+							SkipAPIID:       true,
+							ReleasedVersion: "0.0.0",
 						},
 					},
 				},
@@ -738,9 +739,9 @@ func TestBuildConfig(t *testing.T) {
 					},
 				},
 			},
-			versions: map[string]string{
-				"google-cloud-java":           "1.79.0",
-				"google-cloud-accessapproval": "2.86.0",
+			versions: map[string]versionInfo{
+				"google-cloud-java":           {Released: "1.78.0", Current: "1.79.0"},
+				"google-cloud-accessapproval": {Released: "2.85.0", Current: "2.86.0"},
 			},
 			src: &config.Source{},
 			want: &config.Config{
@@ -757,6 +758,9 @@ func TestBuildConfig(t *testing.T) {
 						Name:         "google-cloud-java",
 						Version:      "1.79.0",
 						SkipGenerate: true,
+						Java: &config.JavaModule{
+							ReleasedVersion: "1.78.0",
+						},
 					},
 					{
 						Name:    "accessapproval",
@@ -765,8 +769,9 @@ func TestBuildConfig(t *testing.T) {
 							{Path: "google/cloud/accessapproval/v1"},
 						},
 						Java: &config.JavaModule{
-							ArtifactID: "google-cloud-accessapproval",
-							GroupID:    "com.google.cloud",
+							ReleasedVersion: "2.85.0",
+							ArtifactID:      "google-cloud-accessapproval",
+							GroupID:         "com.google.cloud",
 						},
 					},
 				},
@@ -1223,9 +1228,9 @@ google-cloud-aiplatform:3.86.0:3.87.0-SNAPSHOT
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := map[string]string{
-		"google-cloud-accessapproval": "2.87.0-SNAPSHOT",
-		"google-cloud-aiplatform":     "3.87.0-SNAPSHOT",
+	want := map[string]versionInfo{
+		"google-cloud-accessapproval": {Released: "2.86.0", Current: "2.87.0-SNAPSHOT"},
+		"google-cloud-aiplatform":     {Released: "3.86.0", Current: "3.87.0-SNAPSHOT"},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

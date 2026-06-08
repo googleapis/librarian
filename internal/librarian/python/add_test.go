@@ -337,6 +337,57 @@ func TestFindExistingLibraryForNewAPI(t *testing.T) {
 			},
 			apiPath: "google/cloud/xyz/admin/v2",
 		},
+		{
+			name: "does not prefix match CORE library type",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/v1"},
+						{Path: "google/cloud/other/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: libraryTypeCore,
+						},
+					},
+				},
+			},
+			apiPath: "google/cloud/speech/v1",
+		},
+		{
+			name: "prefix match non-CORE library type",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "GAPIC",
+						},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/speech/v1",
+			wantName: "google-cloud-shared",
+		},
+		{
+			name: "prefix match when python options are nil",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/speech/v1",
+			wantName: "google-cloud-shared",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := FindExistingLibraryForNewAPI(test.libraries, test.apiPath)

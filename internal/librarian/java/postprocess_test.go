@@ -28,7 +28,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
 
@@ -514,7 +513,8 @@ func TestPostProcessLibrary(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			GroupID:         "com.google.cloud",
+			ReleasedVersion: "1.2.3",
 		},
 	}
 	defaultCfg := &config.Config{
@@ -542,7 +542,8 @@ func TestPostProcessLibrary(t *testing.T) {
 				Version: "1.2.0-SNAPSHOT",
 				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 				Java: &config.JavaModule{
-					SkipPOMUpdates: true,
+					SkipPOMUpdates:  true,
+					ReleasedVersion: "1.1.0",
 				},
 			},
 			setup: func(t *testing.T, outDir string) {
@@ -613,7 +614,8 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			},
 		},
 		Java: &config.JavaModule{
-			GroupID: "com.google.cloud",
+			GroupID:         "com.google.cloud",
+			ReleasedVersion: "1.2.3",
 		},
 	}
 	defaultCfg := &config.Config{
@@ -694,57 +696,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	}
 }
 
-func TestDeriveLastReleasedVersion(t *testing.T) {
-	for _, test := range []struct {
-		input string
-		want  string
-	}{
-		{input: "1.2.0-SNAPSHOT", want: "1.1.0"},
-		{input: "1.10.0-SNAPSHOT", want: "1.9.0"},
-		{input: "0.87.0-SNAPSHOT", want: "0.86.0"},
-		{input: "0.0.1-SNAPSHOT", want: "0.0.0"},
-		{input: "1.10.1-SNAPSHOT", want: "1.10.0"},
-		{input: "0.214.0-beta-SNAPSHOT", want: "0.213.0-beta"},
-		{input: "0.214.0-beta", want: "0.214.0-beta"},
-		{input: "1.2.3", want: "1.2.3"},
-	} {
-		t.Run(test.input, func(t *testing.T) {
-			got, err := deriveLastReleasedVersion(test.input)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestDeriveLastReleasedVersion_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		input   string
-		wantErr error
-	}{
-		{
-			name:    "invalid version",
-			input:   "1.invalid.0-SNAPSHOT",
-			wantErr: semver.ErrInvalidVersion,
-		},
-		{
-			name:    "v1.0.0 snapshot",
-			input:   "1.0.0-SNAPSHOT",
-			wantErr: errInvalidVersion,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := deriveLastReleasedVersion(test.input)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
+// deriveLastReleasedVersion tests were removed as the function was deleted.
 
 func writeOwlBot(t *testing.T, outDir, script string) {
 	t.Helper()
@@ -792,7 +744,12 @@ with open("owlbot-ran.txt", "w") as f:
 		t.Fatal(err)
 	}
 
-	library := &config.Library{Version: "1.2.3"}
+	library := &config.Library{
+		Version: "1.2.3",
+		Java: &config.JavaModule{
+			ReleasedVersion: "1.2.3",
+		},
+	}
 	if err := runOwlBot(t.Context(), library, outDir, "4.5.6"); err != nil {
 		t.Fatal(err)
 	}
@@ -819,7 +776,9 @@ func TestRunOwlBot_Error(t *testing.T) {
 	if err := os.WriteFile(dummyFile, []byte("dummy"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	library := &config.Library{}
+	library := &config.Library{
+		Java: &config.JavaModule{},
+	}
 	if err := runOwlBot(t.Context(), library, outDir, ""); err == nil {
 		t.Error("expected error due to missing templates directory, got nil")
 	}

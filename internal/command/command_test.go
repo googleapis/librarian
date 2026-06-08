@@ -253,3 +253,88 @@ func TestRunStreaming_Error(t *testing.T) {
 		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
 	}
 }
+
+func TestLookPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	exeName := "test-exe"
+	exePath := filepath.Join(tmpDir, exeName)
+	if err := os.WriteFile(exePath, []byte("dummy binary content"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+		want    string
+	}{
+		{
+			name:    "absolute path bypasses search",
+			cmdName: exePath,
+			pathEnv: "/dummy/path",
+			want:    exePath,
+		},
+		{
+			name:    "relative path bypasses search",
+			cmdName: "./" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "./" + exeName,
+		},
+		{
+			name:    "parent path bypasses search",
+			cmdName: "../" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "../" + exeName,
+		},
+		{
+			name:    "found in custom pathEnv",
+			cmdName: exeName,
+			pathEnv: "/another/path:" + tmpDir + ":/yet/another/path",
+			want:    exePath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := lookPath(test.cmdName, test.pathEnv)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLookPath_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	dirName := "test-dir"
+	if err := os.WriteFile(filepath.Join(tmpDir, dirName), []byte("non-executable file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+		wantErr error
+	}{
+		{
+			name:    "not found in custom pathEnv",
+			cmdName: "test-exe",
+			pathEnv: "/another/path:/yet/another/path",
+			wantErr: exec.ErrNotFound,
+		},
+		{
+			name:    "matching path is a directory (non-executable)",
+			cmdName: dirName,
+			pathEnv: tmpDir,
+			wantErr: exec.ErrNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := lookPath(test.cmdName, test.pathEnv)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("lookPath() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}

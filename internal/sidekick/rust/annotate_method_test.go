@@ -114,8 +114,9 @@ func TestAnnotateDiscoveryAnnotations(t *testing.T) {
 	}
 	got := gotMethod.DiscoveryLro.Codec.(*discoveryLroAnnotations)
 	want := &discoveryLroAnnotations{
-		MethodName: "delete",
-		ReturnType: "()",
+		MethodName:          "delete",
+		ReturnType:          "()",
+		ServiceNameToPascal: "ResourceService",
 		PollingPathParameters: []discoveryLroPathParameter{
 			{Name: "project", SetterName: "project"},
 			{Name: "zone", SetterName: "zone"},

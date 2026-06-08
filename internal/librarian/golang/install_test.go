@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -43,7 +44,7 @@ func TestInstall_Error(t *testing.T) {
 
 func TestInstall_Success(t *testing.T) {
 	installDir := t.TempDir()
-	t.Setenv(envLibrarianDir, installDir)
+	t.Setenv(cache.EnvLibrarianBin, installDir)
 	tools := &config.Tools{
 		Go: []*config.GoTool{
 			{Name: "github.com/googleapis/gapic-generator-go/cmd/protoc-gen-go_gapic", Version: "v0.58.0"},
@@ -66,7 +67,7 @@ func TestInstall_Success(t *testing.T) {
 		"protoc-gen-go",
 	} {
 		t.Run(tool, func(t *testing.T) {
-			path := filepath.Join(installDir, binDir, tool+suffix)
+			path := filepath.Join(installDir, toolsDir, tool+suffix)
 			if _, err := os.Stat(path); err != nil {
 				t.Error(err)
 			}
@@ -81,14 +82,14 @@ func TestGetInstallDir(t *testing.T) {
 		want string
 	}{
 		{
-			name: "LIBRARIAN_INSTALL_DIR set",
-			env:  map[string]string{envLibrarianDir: "/custom/install/dir"},
-			want: "/custom/install/dir",
+			name: "LIBRARIAN_BIN set",
+			env:  map[string]string{cache.EnvLibrarianBin: "/custom/install/dir"},
+			want: "/custom/install/dir/go_tools",
 		},
 		{
-			name: "LIBRARIAN_INSTALL_DIR empty",
-			env:  map[string]string{"HOME": "/my/home"},
-			want: "/my/home/go_tools",
+			name: "LIBRARIAN_BIN empty",
+			env:  map[string]string{cache.EnvLibrarianCache: "/my/home/cache"},
+			want: "/my/home/cache/bin/go_tools",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
