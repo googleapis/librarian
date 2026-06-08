@@ -19,7 +19,6 @@ import (
 	"fmt"
 	"maps"
 	"os"
-	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 )
@@ -42,11 +41,10 @@ func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd
 
 // mergeEnv merges the given environment with the installation directory.
 func mergeEnv(env map[string]string) (map[string]string, error) {
-	installDir, err := getInstallDir()
+	toolsBinDir, err := getInstallDir()
 	if err != nil {
 		return nil, err
 	}
-	toolsBinDir := filepath.Join(installDir, binDir)
 	res := map[string]string{envPath: fmt.Sprintf("%s:%s", toolsBinDir, os.Getenv(envPath))}
 	maps.Copy(res, env)
 	return res, nil
