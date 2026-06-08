@@ -143,6 +143,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				}
 				annotations.DependsOn[dep.Name] = dep
 			}
+			if field.Map && !fieldCodec.IsStringKeyed() {
+				annotations.CustomSerialization = true
+			}
 		}
 	}
 

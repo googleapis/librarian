@@ -37,6 +37,12 @@ type fieldAnnotations struct {
 	// This is used in the mustache templates, which sometimes need to refer to the underlying type.
 	BaseFieldType string
 
+	// KeyType is the key's Swift type for maps and empty otherwise.
+	KeyType string
+
+	// ValueType is the value's Swift type for maps and empty otherwise.
+	ValueType string
+
 	// PackageName is the name of the package defining the type of this field.
 	PackageName string
 
@@ -58,6 +64,12 @@ type fieldAnnotations struct {
 	InitializerType string
 }
 
+// IsStringKeyed returns true if the field is a map field and the key is a
+// string type.
+func (a *fieldAnnotations) IsStringKeyed() bool {
+	return a.KeyType == "Swift.String"
+}
+
 func (c *codec) annotateField(field *api.Field) error {
 	parts, err := c.fieldTypeName(field)
 	if err != nil {
@@ -71,10 +83,13 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
+
 	annotations := &fieldAnnotations{
 		Name:            camelCase(field.Name),
 		FieldType:       parts.Full,
 		BaseFieldType:   parts.Base,
+		KeyType:         parts.Key,
+		ValueType:       parts.Value,
 		PackageName:     packageName,
 		DocLines:        docLines,
 		InitializerType: parts.Full,
