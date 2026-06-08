@@ -1002,7 +1002,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 		Repo:     "googleapis/google-cloud-node",
 	}
 
-	tests := []struct {
+	for _, test := range []struct {
 		name    string
 		library *config.Library
 		want    func() *repometadata.RepoMetadata
@@ -1042,19 +1042,17 @@ func TestWriteRepoMetadata(t *testing.T) {
 				return w
 			},
 		},
-	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
+	} {
+		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			if err := writeRepoMetadata(cfg, tc.library, absGoogleapisDir, outDir); err != nil {
+			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
 				t.Fatal(err)
 			}
 			got, err := repometadata.Read(outDir)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := tc.want()
+			want := test.want()
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
