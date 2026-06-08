@@ -977,6 +977,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 	want.Language = cfg.Language
 	want.Repo = cfg.Repo
 	want.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+	want.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -1011,6 +1012,7 @@ func TestWriteRepoMetadata_Override(t *testing.T) {
 	want.Language = cfg.Language
 	want.Repo = cfg.Repo
 	want.ClientDocumentation = "https://custom.docs.com/ref"
+	want.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}

@@ -501,6 +501,12 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
 	}
 
+	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
+		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
+			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
+		}
+	}
+
 	return metadata.Write(outDir)
 }
 
