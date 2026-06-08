@@ -508,6 +508,51 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	}
 }
 
+func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{Name: "google-cloud-test"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create staging structure with a .OwlBot.yaml file.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	fullResourcesProto := filepath.Join(protoDir, cloudCommonResourcesProto)
+	if err := os.MkdirAll(filepath.Dir(fullResourcesProto), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(fullResourcesProto, []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected common_resources.proto to be removed after post-processing")
+	}
+}
+
 func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
@@ -1041,7 +1086,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 			},
 		},
 		{
@@ -1059,7 +1104,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 			},
 		},
 		{
@@ -1078,14 +1123,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
 			name: "deduplicates protos",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
-					AdditionalProtos: []string{commonProtos, "other.proto"},
+					AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
 							Path:             "google/cloud/secretmanager/v1",
@@ -1097,7 +1142,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto", "more.proto"},
 			},
 		},
 		{
@@ -1115,7 +1160,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 				DIREGAPIC:        true,
 			},
 		},
@@ -1217,7 +1262,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: false,
-				AdditionalProtos:    []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos:    []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
