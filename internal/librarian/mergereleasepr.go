@@ -281,6 +281,11 @@ func waitForPullRequestReadinessSingleIteration(ctx context.Context, prMetadata 
 			slog.Info(fmt.Sprintf("Check '%s' is not complete", *checkRun.Name))
 			return false, nil
 		}
+		// Ignore "skipped" checks, as we can't do anything about them.
+		if checkRun.GetConclusion() == "skipped" {
+			slog.Info(fmt.Sprintf("Check '%s' was skipped", checkRun.GetName()))
+			continue
+		}
 		if checkRun.GetConclusion() != "success" {
 			return false, reportBlockingReason(ctx, prMetadata, fmt.Sprintf("Check '%s' failed", *checkRun.Name), cfg)
 		}
