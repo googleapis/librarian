@@ -25,7 +25,7 @@ type mapFields struct {
 	Value *api.Field
 }
 
-// mapFields decomposes a map message into a key and value field
+// decomposeMap fields the key and value fields for a map message.
 func decomposeMap(m *api.Message) (*mapFields, error) {
 	var keyField, valueField *api.Field
 	for _, f := range m.Fields {
