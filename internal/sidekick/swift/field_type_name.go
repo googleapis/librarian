@@ -70,23 +70,15 @@ func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
 }
 
 func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
-	var keyField, valueField *api.Field
-	for _, f := range m.Fields {
-		switch f.Name {
-		case "key":
-			keyField = f
-		case "value":
-			valueField = f
-		}
-	}
-	if keyField == nil || valueField == nil {
-		return "", "", fmt.Errorf("map message %q missing key or value field", m.ID)
-	}
-	keyType, err := c.baseFieldTypeName(keyField)
+	kv, err := decomposeMap(m)
 	if err != nil {
 		return "", "", err
 	}
-	valueType, err := c.baseFieldTypeName(valueField)
+	keyType, err := c.baseFieldTypeName(kv.Key)
+	if err != nil {
+		return "", "", err
+	}
+	valueType, err := c.baseFieldTypeName(kv.Value)
 	if err != nil {
 		return "", "", err
 	}
