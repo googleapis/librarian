@@ -450,9 +450,7 @@ deep-copy-regex:
 	// Write custom .repo-metadata.json overrides
 	repoMeta := `
 {
-  "client_documentation": "https://custom.docs.com/client-ref",
-  "issue_tracker": "https://custom.tracker.com/issues",
-  "product_documentation": "https://custom.prod.com/docs"
+  "client_documentation": "https://custom.docs.com/client-ref"
 }
 `
 	if err := os.WriteFile(filepath.Join(pkgDir, ".repo-metadata.json"), []byte(repoMeta), 0644); err != nil {
@@ -466,10 +464,8 @@ deep-copy-regex:
 	}
 
 	want := &config.NodejsPackage{
-		PackageName:                  "@google-cloud/secret-manager",
-		ClientDocumentationOverride:  "https://custom.docs.com/client-ref",
-		IssueTrackerOverride:         "https://custom.tracker.com/issues",
-		ProductDocumentationOverride: "https://custom.prod.com/docs",
+		PackageName:                 "@google-cloud/secret-manager",
+		ClientDocumentationOverride: "https://custom.docs.com/client-ref",
 	}
 
 	if diff := cmp.Diff(want, got.Nodejs); diff != "" {

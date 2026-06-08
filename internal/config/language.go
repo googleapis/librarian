@@ -776,14 +776,6 @@ type NodejsPackage struct {
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
-
-	// IssueTrackerOverride allows the issue_tracker field in
-	// .repo-metadata.json to be overridden.
-	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
-
-	// ProductDocumentationOverride allows the product_documentation field in
-	// .repo-metadata.json to be overridden.
-	ProductDocumentationOverride string `yaml:"product_documentation_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.

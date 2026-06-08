@@ -501,15 +501,25 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
 	}
 
-	if library.Nodejs != nil && library.Nodejs.IssueTrackerOverride != "" {
-		metadata.IssueTracker = library.Nodejs.IssueTrackerOverride
+	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
+		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
+			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
+		}
 	}
 
-	if library.Nodejs != nil && library.Nodejs.ProductDocumentationOverride != "" {
-		metadata.ProductDocumentation = library.Nodejs.ProductDocumentationOverride
+	if err := metadata.Write(outDir); err != nil {
+		return err
 	}
 
-	return metadata.Write(outDir)
+	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
+	// literal ampersand in the .repo-metadata.json.
+	path := filepath.Join(outDir, ".repo-metadata.json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
+	return os.WriteFile(path, content, 0644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
