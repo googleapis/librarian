@@ -519,7 +519,7 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	// Create staging structure with a .OwlBot.yaml file.
+	// Create staging structure with a common_resources.proto file.
 	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
 	srcDir := filepath.Join(stagingBase, "src", "v1")
 	if err := os.MkdirAll(srcDir, 0755); err != nil {
@@ -532,15 +532,10 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 	if err := os.MkdirAll(protoDir, 0755); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	fullResourcesProto := filepath.Join(protoDir, cloudCommonResourcesProto)
-	if err := os.MkdirAll(filepath.Dir(fullResourcesProto), 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(fullResourcesProto, []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
 
