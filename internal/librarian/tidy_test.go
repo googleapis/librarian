@@ -56,10 +56,12 @@ func TestValidateLibraries(t *testing.T) {
 				{
 					Name: "lib1",
 					APIs: []*config.API{{Path: "google/iam/v1"}},
+					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
 				},
 				{
 					Name: "lib2",
 					APIs: []*config.API{{Path: "google/iam/v1"}},
+					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
 				},
 			},
 			language: config.LanguageJava,
@@ -601,24 +603,26 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
+			lib := &config.Library{
+				Name:   test.libName,
+				Output: test.output,
+				Roots:  []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			}
+			if test.language == config.LanguageJava {
+				lib.Java = &config.JavaModule{ReleasedVersion: "1.0.0"}
+			}
 			cfg := &config.Config{
 				Language: test.language,
 				Default: &config.Default{
 					Output: "generated/",
 				},
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name:   test.libName,
-						Output: test.output,
-						Roots:  []string{"googleapis"},
-						APIs: []*config.API{
-							{
-								Path: "google/cloud/secretmanager/v1",
-							},
-						},
-					},
-				},
+				Sources:   googleapisSource,
+				Libraries: []*config.Library{lib},
 			}
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)

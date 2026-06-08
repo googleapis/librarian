@@ -29,7 +29,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
-	"github.com/googleapis/librarian/internal/semver"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -42,7 +41,6 @@ var (
 	errTemplatesMissing = errors.New("templates directory not found")
 	errRunOwlBot        = errors.New("failed to run owlbot.py")
 	errSyncPOMs         = errors.New("failed to generate or update pom.xml files")
-	errInvalidVersion   = errors.New("invalid java library version")
 )
 
 type protoFileToCopy struct {
@@ -364,10 +362,7 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 		}
 	}()
 
-	releasedVersion, err := deriveLastReleasedVersion(library.Version)
-	if err != nil {
-		return fmt.Errorf("%w %q: %w", errInvalidVersion, library.Version, err)
-	}
+	releasedVersion := library.Java.ReleasedVersion
 	// Versions used to populate README.md file.
 	env := map[string]string{
 		"SYNTHTOOL_LIBRARY_VERSION":       releasedVersion,
@@ -384,34 +379,6 @@ func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion 
 	}
 	// Staging dirs cleans up as part of owlbot.py
 	return nil
-}
-
-// deriveLastReleasedVersion derives the last released version from a snapshot version
-// (e.g., x.y.z-SNAPSHOT or x.y.z-beta-SNAPSHOT) by decrementing the patch or minor version.
-// If the version has a prerelease tag (like "beta") before "SNAPSHOT", that tag is preserved
-// in the derived version (e.g., x.y.z-beta-SNAPSHOT becomes x.y.(z-1)-beta).
-//
-// It returns an error if both minor and patch versions are zero, as it's
-// ambiguous what the last released version was in that case.
-func deriveLastReleasedVersion(v string) (string, error) {
-	sv, err := semver.Parse(v)
-	if err != nil {
-		return "", err
-	}
-	if !strings.HasSuffix(sv.Prerelease, "SNAPSHOT") {
-		return sv.String(), nil
-	}
-	if sv.Patch > 0 {
-		sv.Patch--
-	} else if sv.Minor > 0 {
-		sv.Minor--
-		sv.Patch = 0
-	} else {
-		return "", errInvalidVersion
-	}
-	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
-	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
-	return sv.String(), nil
 }
 
 func copyProtos(protos []protoFileToCopy, destDir string) error {

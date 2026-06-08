@@ -18,7 +18,6 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -35,13 +34,12 @@ func Format(ctx context.Context, library *config.Library) error {
 	if len(files) == 0 {
 		return nil
 	}
-
-	if _, err := exec.LookPath("google-java-format"); err != nil {
-		return fmt.Errorf("google-java-format not found in PATH: %w", err)
-	}
-
 	args := append([]string{"--replace"}, files...)
-	if err := command.Run(ctx, "google-java-format", args...); err != nil {
+	env, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
+	if err := command.RunWithEnv(ctx, env, "google-java-format", args...); err != nil {
 		return fmt.Errorf("failed to format files: %w", err)
 	}
 	return nil

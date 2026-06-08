@@ -18,20 +18,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
 	envGoBin = "GOBIN"
-	// TODO(https://github.com/googleapis/librarian/issues/5850): Use LIBRARIAN_BIN
-	// for tool binaries.
-	envLibrarianDir = "LIBRARIAN_INSTALL_DIR"
-	toolsDir        = "go_tools"
-	binDir          = "bin"
+	toolsDir = "go_tools"
 )
 
 var (
@@ -54,7 +50,7 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 	if err != nil {
 		return err
 	}
-	env := map[string]string{envGoBin: filepath.Join(installDir, binDir)}
+	env := map[string]string{envGoBin: installDir}
 	for _, tool := range goTools {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
@@ -69,13 +65,9 @@ func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
 
 // getInstallDir gets the directory where tools should be installed.
 func getInstallDir() (string, error) {
-	installDir := os.Getenv(envLibrarianDir)
-	if installDir != "" {
-		return filepath.Abs(installDir)
-	}
-	homeDir, err := os.UserHomeDir()
+	dir, err := cache.BinDirectory()
 	if err != nil {
-		return "", fmt.Errorf("failed to get user home directory: %w", err)
+		return "", err
 	}
-	return filepath.Abs(filepath.Join(homeDir, toolsDir))
+	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
