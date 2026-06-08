@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	commonProtos = "google/cloud/common_resources.proto"
+	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -149,7 +149,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 
 	var protos []string
 	if !omitCommon {
-		protos = append(protos, commonProtos)
+		protos = append(protos, cloudCommonResourcesProto)
 	}
 
 	if library.Nodejs == nil {
@@ -394,6 +394,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to remove redundant linter files: %w", err)
 	}
 
+	// Remove google/cloud/common_resources.proto from the protos directory.
+	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
+	// want it to be in the diff.
+	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
 	return nil
 }
 
