@@ -511,10 +511,8 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		return err
 	}
 
-	// Post-process the file to replace \u0026 with & to match historical handwritten
-	// .repo-metadata.json files in google-cloud-node. Go's json.MarshalIndent
-	// escapes HTML characters by default, but Node.js requires literal ampersands
-	// to prevent massive git diff churn during the transition to native generation.
+	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
+	// literal ampersand in the .repo-metadata.json.
 	path := filepath.Join(outDir, ".repo-metadata.json")
 	content, err := os.ReadFile(path)
 	if err != nil {
