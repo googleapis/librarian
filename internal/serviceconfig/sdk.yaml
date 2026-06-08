@@ -2175,7 +2175,6 @@
 - path: google/cloud/secretmanager/v1
   languages:
     - all
-  new_issue_uri: https://issuetracker.google.com/issues/new?component=784854
   open_api: testdata/secretmanager_openapi_v1.json
 - path: google/cloud/secretmanager/v1beta2
   languages:

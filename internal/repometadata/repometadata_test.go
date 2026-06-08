@@ -40,8 +40,8 @@ func TestFromLibrary(t *testing.T) {
 			want: &RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/docs",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguageNodejs,
 				Repo:                 "googleapis/google-cloud-node",
@@ -154,12 +154,12 @@ func TestExtractBaseProductURL(t *testing.T) {
 		{
 			"strip /docs/overview",
 			"https://cloud.google.com/secret-manager/docs/overview",
-			"https://cloud.google.com/secret-manager/docs",
+			"https://cloud.google.com/secret-manager/",
 		},
 		{
 			"strip /docs/reference",
 			"https://cloud.google.com/storage/docs/reference",
-			"https://cloud.google.com/storage/docs",
+			"https://cloud.google.com/storage/",
 		},
 		{
 			"no /docs/ in URL",

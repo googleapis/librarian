@@ -1202,8 +1202,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 			want: &repometadata.RepoMetadata{
 				Name:                 "google-cloud-secret-manager",
 				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/docs",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
+				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguagePython,
 				Repo:                 "googleapis/google-cloud-python",
@@ -1271,7 +1271,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 			want: &repometadata.RepoMetadata{
 				Name:                 "secretmanager",
 				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/docs",
+				ProductDocumentation: "https://cloud.google.com/secret-manager/",
 				IssueTracker:         "overridden issue_tracker",
 				ReleaseLevel:         "stable",
 				Language:             config.LanguagePython,
