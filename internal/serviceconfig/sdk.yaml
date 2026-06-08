@@ -2173,7 +2173,6 @@
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5411429
 - path: google/cloud/secretmanager/v1
-  documentation_uri: https://cloud.google.com/secret-manager/docs
   languages:
     - all
   new_issue_uri: https://issuetracker.google.com/issues/new?component=784854

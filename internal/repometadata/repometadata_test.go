@@ -154,12 +154,12 @@ func TestExtractBaseProductURL(t *testing.T) {
 		{
 			"strip /docs/overview",
 			"https://cloud.google.com/secret-manager/docs/overview",
-			"https://cloud.google.com/secret-manager/",
+			"https://cloud.google.com/secret-manager/docs",
 		},
 		{
 			"strip /docs/reference",
 			"https://cloud.google.com/storage/docs/reference",
-			"https://cloud.google.com/storage/",
+			"https://cloud.google.com/storage/docs",
 		},
 		{
 			"no /docs/ in URL",

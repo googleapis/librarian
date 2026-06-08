@@ -144,9 +144,9 @@ func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Libr
 // extractBaseProductURL extracts the base product URL from a documentation URI.
 // Example: "https://cloud.google.com/secret-manager/docs/overview" -> "https://cloud.google.com/secret-manager/"
 func extractBaseProductURL(docURI string) string {
-	// Strip off /docs/* suffix to get base product URL
+	// Keep /docs suffix to get base product URL
 	if base, _, found := strings.Cut(docURI, "/docs/"); found {
-		return base + "/"
+		return base + "/docs"
 	}
 	// If no /docs/ found, return as-is
 	return docURI
