@@ -74,11 +74,10 @@ func TestAnnotateField(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:            "secretPayload",
-				DocLines:        []string{"The secret version payload."},
-				FieldType:       test.wantType,
-				BaseFieldType:   test.wantBaseType,
-				InitializerType: test.wantType,
+				Name:          "secretPayload",
+				DocLines:      []string{"The secret version payload."},
+				FieldType:     test.wantType,
+				BaseFieldType: test.wantBaseType,
 			}
 
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
@@ -118,11 +117,10 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := &fieldAnnotations{
-				Name:            "testField",
-				FieldType:       test.wantType,
-				BaseFieldType:   test.wantType,
-				DocLines:        []string{"Test documentation."},
-				InitializerType: test.wantType,
+				Name:          "testField",
+				FieldType:     test.wantType,
+				BaseFieldType: test.wantType,
+				DocLines:      []string{"Test documentation."},
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -165,12 +163,11 @@ func TestAnnotateField_PackageName(t *testing.T) {
 	}
 	got := field.Codec.(*fieldAnnotations)
 	want := &fieldAnnotations{
-		Name:            "externalMessage",
-		FieldType:       "GoogleCloudExternalV1.SomeMessage",
-		BaseFieldType:   "GoogleCloudExternalV1.SomeMessage",
-		PackageName:     "google.cloud.external.v1",
-		DocLines:        []string{"The external message."},
-		InitializerType: "GoogleCloudExternalV1.SomeMessage",
+		Name:          "externalMessage",
+		FieldType:     "GoogleCloudExternalV1.SomeMessage",
+		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
+		PackageName:   "google.cloud.external.v1",
+		DocLines:      []string{"The external message."},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -258,13 +255,12 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			}
 
 			want := &fieldAnnotations{
-				Name:            "childNode",
-				DocLines:        []string{"Recursive link."},
-				FieldType:       test.wantType,
-				BaseFieldType:   test.wantBaseType,
-				PackageName:     "test",
-				Recursive:       test.wantRecursive,
-				InitializerType: test.wantInitType,
+				Name:          "childNode",
+				DocLines:      []string{"Recursive link."},
+				FieldType:     test.wantType,
+				BaseFieldType: test.wantBaseType,
+				PackageName:   "test",
+				Recursive:     test.wantRecursive,
 			}
 			if test.isOneOf {
 				want.OneOfChecker = test.oneofProperty + "CheckAndSet"
