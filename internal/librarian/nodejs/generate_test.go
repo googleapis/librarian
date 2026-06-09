@@ -996,28 +996,67 @@ func TestWriteRepoMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outDir := t.TempDir()
+
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	library := &config.Library{
-		Name: "google-cloud-secretmanager",
-		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-	}
-	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
-		t.Fatal(err)
-	}
-	got, err := repometadata.Read(outDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := sample.RepoMetadata()
-	want.DistributionName = "@google-cloud/secretmanager"
-	want.Language = cfg.Language
-	want.Repo = cfg.Repo
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    func() *repometadata.RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+		{
+			name: "client documentation override",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					ClientDocumentationOverride: "https://custom.docs.com/ref",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://custom.docs.com/ref"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
+				t.Fatal(err)
+			}
+			got, err := repometadata.Read(outDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := test.want()
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

@@ -767,6 +767,10 @@ type NodejsPackage struct {
 
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.
