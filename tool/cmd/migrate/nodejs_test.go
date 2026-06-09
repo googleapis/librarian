@@ -448,7 +448,7 @@ func TestBuildNodejsLibrary_MetadataOverrides(t *testing.T) {
 			packageName: "secretmanager-utility",
 			// Even though this URL looks like a standard one, since the package name is not @google-cloud/,
 			// the generator will NOT produce this by default. It must be preserved as an override.
-			repoMeta:    `{"client_documentation": "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest"}`,
+			repoMeta: `{"client_documentation": "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest"}`,
 			want: &config.NodejsPackage{
 				PackageName:                 "secretmanager-utility",
 				ClientDocumentationOverride: "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest",
@@ -491,4 +491,3 @@ deep-copy-regex:
 		})
 	}
 }
-
