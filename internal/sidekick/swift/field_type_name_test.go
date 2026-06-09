@@ -115,11 +115,11 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeBaseParts(test.field)
+			got, err := c.fieldTypeBase(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := &BaseTypeNames{Base: test.want}
+			want := &fieldTypeNames{Base: test.want}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -175,11 +175,11 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeBaseParts(test.field)
+			got, err := c.fieldTypeBase(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := &BaseTypeNames{Base: test.want}
+			want := &fieldTypeNames{Base: test.want}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -212,8 +212,8 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				MessageType: secret,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Secret"},
-				Name:          "Secret?",
+				Base: "Secret",
+				Full: "Secret?",
 			},
 		},
 		{
@@ -224,8 +224,8 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				Optional: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Swift.String"},
-				Name:          "Swift.String?",
+				Base: "Swift.String",
+				Full: "Swift.String?",
 			},
 		},
 		{
@@ -236,8 +236,8 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				Optional: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Foundation.Data"},
-				Name:          "Foundation.Data?",
+				Base: "Foundation.Data",
+				Full: "Foundation.Data?",
 			},
 		},
 		{
@@ -248,13 +248,13 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				Optional: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Swift.Int32"},
-				Name:          "Swift.Int32?",
+				Base: "Swift.Int32",
+				Full: "Swift.Int32?",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeParts(test.field)
+			got, err := c.fieldTypeName(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -290,8 +290,8 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				MessageType: secret,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Secret"},
-				Name:          "[Secret]",
+				Base: "Secret",
+				Full: "[Secret]",
 			},
 		},
 		{
@@ -302,8 +302,8 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				Repeated: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Swift.String"},
-				Name:          "[Swift.String]",
+				Base: "Swift.String",
+				Full: "[Swift.String]",
 			},
 		},
 		{
@@ -314,8 +314,8 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				Repeated: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Foundation.Data"},
-				Name:          "[Foundation.Data]",
+				Base: "Foundation.Data",
+				Full: "[Foundation.Data]",
 			},
 		},
 		{
@@ -326,13 +326,13 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				Repeated: true,
 			},
 			want: &fieldTypeNames{
-				BaseTypeNames: BaseTypeNames{Base: "Swift.Int32"},
-				Name:          "[Swift.Int32]",
+				Base: "Swift.Int32",
+				Full: "[Swift.Int32]",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeParts(test.field)
+			got, err := c.fieldTypeName(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -366,17 +366,15 @@ func TestFieldTypeName_Map(t *testing.T) {
 		ID:      ".test.field1",
 	}
 
-	got, err := c.fieldTypeParts(field)
+	got, err := c.fieldTypeName(field)
 	if err != nil {
 		t.Fatal(err)
 	}
 	want := &fieldTypeNames{
-		BaseTypeNames: BaseTypeNames{
-			Base:  "[Swift.String: Swift.Int32]",
-			Key:   "Swift.String",
-			Value: "Swift.Int32",
-		},
-		Name: "[Swift.String: Swift.Int32]",
+		Full:  "[Swift.String: Swift.Int32]",
+		Base:  "[Swift.String: Swift.Int32]",
+		Key:   "Swift.String",
+		Value: "Swift.Int32",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

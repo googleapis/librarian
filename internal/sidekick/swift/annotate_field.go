@@ -59,7 +59,7 @@ type fieldAnnotations struct {
 }
 
 func (c *codec) annotateField(field *api.Field) error {
-	parts, err := c.fieldTypeParts(field)
+	parts, err := c.fieldTypeName(field)
 	if err != nil {
 		return err
 	}
@@ -73,11 +73,11 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	annotations := &fieldAnnotations{
 		Name:            camelCase(field.Name),
-		FieldType:       parts.Name,
+		FieldType:       parts.Full,
 		BaseFieldType:   parts.Base,
 		PackageName:     packageName,
 		DocLines:        docLines,
-		InitializerType: parts.Name,
+		InitializerType: parts.Full,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type

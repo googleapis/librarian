@@ -20,33 +20,31 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-type BaseTypeNames struct {
+type fieldTypeNames struct {
+	Full  string
 	Base  string
 	Key   string
 	Value string
 }
 
-type fieldTypeNames struct {
-	BaseTypeNames
-	Name string
-}
-
-func (c *codec) fieldTypeParts(field *api.Field) (*fieldTypeNames, error) {
-	base, err := c.fieldTypeBaseParts(field)
+func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
+	names, err := c.fieldTypeBase(field)
 	if err != nil {
 		return nil, err
 	}
 	if field.Optional {
-		return &fieldTypeNames{BaseTypeNames: *base, Name: fmt.Sprintf("%s?", base.Base)}, nil
+		names.Full = fmt.Sprintf("%s?", names.Base)
+		return names, nil
 	}
 	if field.Repeated {
-		return &fieldTypeNames{BaseTypeNames: *base, Name: fmt.Sprintf("[%s]", base.Base)}, nil
+		names.Full = fmt.Sprintf("[%s]", names.Base)
+		return names, nil
 	}
-	return &fieldTypeNames{BaseTypeNames: *base, Name: base.Base}, nil
+	names.Full = names.Base
+	return names, nil
 }
 
-func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
-	var base string
+func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	switch field.Typez {
 	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
@@ -54,39 +52,39 @@ func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
 			return nil, err
 		}
 		if m.IsMap {
-			return c.mapFieldTypeParts(m)
+			return c.mapFieldTypeNames(m)
 		}
-		base, err = c.messageTypeName(m)
+		base, err := c.messageTypeName(m)
 		if err != nil {
 			return nil, err
 		}
-		return &BaseTypeNames{Base: base}, nil
+		return &fieldTypeNames{Base: base}, nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {
 			return nil, err
 		}
-		base, err = c.enumTypeName(e)
+		base, err := c.enumTypeName(e)
 		if err != nil {
 			return nil, err
 		}
-		return &BaseTypeNames{Base: base}, nil
+		return &fieldTypeNames{Base: base}, nil
 	default:
 		base, err := scalarFieldTypeName(field)
 		if err != nil {
 			return nil, err
 		}
-		return &BaseTypeNames{Base: base}, nil
+		return &fieldTypeNames{Base: base}, nil
 	}
 }
 
-func (c *codec) mapFieldTypeParts(m *api.Message) (*BaseTypeNames, error) {
+func (c *codec) mapFieldTypeNames(m *api.Message) (*fieldTypeNames, error) {
 	keyType, valueType, err := c.mapFieldTypeComponents(m)
 	if err != nil {
 		return nil, err
 	}
 	base := fmt.Sprintf("[%s: %s]", keyType, valueType)
-	return &BaseTypeNames{
+	return &fieldTypeNames{
 		Base:  base,
 		Key:   keyType,
 		Value: valueType,
@@ -98,11 +96,11 @@ func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	key, err := c.fieldTypeBaseParts(kv.Key)
+	key, err := c.fieldTypeBase(kv.Key)
 	if err != nil {
 		return "", "", err
 	}
-	value, err := c.fieldTypeBaseParts(kv.Value)
+	value, err := c.fieldTypeBase(kv.Value)
 	if err != nil {
 		return "", "", err
 	}
