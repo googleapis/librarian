@@ -401,3 +401,77 @@ func TestFindExistingLibraryForNewAPI(t *testing.T) {
 		})
 	}
 }
+
+func TestReleasePleaseExtraFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []any
+	}{
+		{
+			name: "single versioned API",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/gapic_version.py",
+				"google/cloud/foo_v1/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "versionless API",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/type"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/type/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.type.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "multiple APIs sharing versionless path",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+					{Path: "google/cloud/foo/v2"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/gapic_version.py",
+				"google/cloud/foo_v1/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v1.json",
+					"type":     "json",
+				},
+				"google/cloud/foo_v2/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v2.json",
+					"type":     "json",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ReleasePleaseExtraFiles(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
