@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -63,22 +64,28 @@ func TestGenerateModule(t *testing.T) {
 func TestModuleToModelConfig(t *testing.T) {
 	src := &sources.Sources{}
 	for _, test := range []struct {
-		name            string
-		lib             *config.Library
-		module          *config.SwiftModule
-		wantIncludeList []string
-		wantCodec       map[string]string
+		name   string
+		lib    *config.Library
+		module *config.SwiftModule
+		want   *parser.ModelConfig
 	}{
 		{
 			name: "no include list",
 			lib: &config.Library{
 				Swift: &config.SwiftPackage{},
 			},
-			module:          &config.SwiftModule{APIPath: "foo"},
-			wantIncludeList: nil,
-			wantCodec: map[string]string{
-				"copyright-year": "",
-				"module":         "true",
+			module: &config.SwiftModule{APIPath: "foo"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec: map[string]string{
+					"copyright-year": "",
+					"module":         "true",
+				},
 			},
 		},
 		{
@@ -88,21 +95,36 @@ func TestModuleToModelConfig(t *testing.T) {
 					IncludeList: []string{"a.proto", "b.proto"},
 				},
 			},
-			module:          &config.SwiftModule{APIPath: "foo"},
-			wantIncludeList: []string{"a.proto", "b.proto"},
-			wantCodec: map[string]string{
-				"copyright-year": "",
-				"module":         "true",
+			module: &config.SwiftModule{APIPath: "foo"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+					IncludeList: []string{"a.proto", "b.proto"},
+				},
+				Codec: map[string]string{
+					"copyright-year": "",
+					"module":         "true",
+				},
 			},
 		},
 		{
-			name:            "nil swift",
-			lib:             &config.Library{},
-			module:          &config.SwiftModule{APIPath: "foo"},
-			wantIncludeList: nil,
-			wantCodec: map[string]string{
-				"copyright-year": "",
-				"module":         "true",
+			name:   "nil swift",
+			lib:    &config.Library{},
+			module: &config.SwiftModule{APIPath: "foo"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec: map[string]string{
+					"copyright-year": "",
+					"module":         "true",
+				},
 			},
 		},
 		{
@@ -111,20 +133,45 @@ func TestModuleToModelConfig(t *testing.T) {
 				CopyrightYear: "2038",
 				Swift:         &config.SwiftPackage{},
 			},
-			module:          &config.SwiftModule{APIPath: "foo"},
-			wantIncludeList: nil,
-			wantCodec: map[string]string{
-				"copyright-year": "2038",
-				"module":         "true",
+			module: &config.SwiftModule{APIPath: "foo"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "foo",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec: map[string]string{
+					"copyright-year": "2038",
+					"module":         "true",
+				},
+			},
+		},
+		{
+			name: "discovery",
+			lib: &config.Library{
+				CopyrightYear:       "2038",
+				Swift:               &config.SwiftPackage{},
+				SpecificationFormat: config.SpecDiscovery,
+			},
+			module: &config.SwiftModule{APIPath: "dir/foo.v1.json"},
+			want: &parser.ModelConfig{
+				SpecificationFormat: config.SpecDiscovery,
+				SpecificationSource: "dir/foo.v1.json",
+				Source: &sources.SourceConfig{
+					Sources:     &sources.Sources{},
+					ActiveRoots: []string{"googleapis"},
+				},
+				Codec: map[string]string{
+					"copyright-year": "2038",
+					"module":         "true",
+				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := moduleToModelConfig(test.lib, test.module, src)
-			if diff := cmp.Diff(test.wantIncludeList, got.Source.IncludeList); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-			if diff := cmp.Diff(test.wantCodec, got.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
