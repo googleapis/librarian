@@ -81,24 +81,6 @@ func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
 	}
 }
 
-// fieldTypeName returns the Swift type name for a field.
-//
-// The implementation is pretty simple for primitive types. For message and enum fields it may get more
-// difficult as the name may be in a separate package.
-func (c *codec) fieldTypeName(field *api.Field) (string, error) {
-	baseFieldType, err := c.baseFieldTypeName(field)
-	if err != nil {
-		return "", err
-	}
-	if field.Optional {
-		return fmt.Sprintf("%s?", baseFieldType), nil
-	}
-	if field.Repeated {
-		return fmt.Sprintf("[%s]", baseFieldType), nil
-	}
-	return baseFieldType, nil
-}
-
 // baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
 func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
