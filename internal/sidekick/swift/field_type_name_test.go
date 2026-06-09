@@ -115,11 +115,12 @@ func TestFieldTypeName_BaseMessage(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.baseFieldTypeName(test.field)
+			got, err := c.fieldTypeBaseParts(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			want := &BaseTypeNames{Base: test.want}
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -174,11 +175,12 @@ func TestFieldTypeName_BaseEnum(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.baseFieldTypeName(test.field)
+			got, err := c.fieldTypeBaseParts(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
+			want := &BaseTypeNames{Base: test.want}
+			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

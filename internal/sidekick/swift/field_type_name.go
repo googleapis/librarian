@@ -81,33 +81,6 @@ func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
 	}
 }
 
-// baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
-func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
-	switch field.Typez {
-	case api.TypezMessage:
-		m, err := lookupMessage(c.Model, field.TypezID)
-		if err != nil {
-			return "", err
-		}
-		if m.IsMap {
-			parts, err := c.mapFieldTypeParts(m)
-			if err != nil {
-				return "", err
-			}
-			return parts.Base, nil
-		}
-		return c.messageTypeName(m)
-	case api.TypezEnum:
-		e, err := lookupEnum(c.Model, field.TypezID)
-		if err != nil {
-			return "", err
-		}
-		return c.enumTypeName(e)
-	default:
-		return scalarFieldTypeName(field)
-	}
-}
-
 func (c *codec) mapFieldTypeParts(m *api.Message) (*BaseTypeNames, error) {
 	keyType, valueType, err := c.mapFieldTypeComponents(m)
 	if err != nil {
@@ -126,15 +99,15 @@ func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	keyType, err := c.baseFieldTypeName(kv.Key)
+	key, err := c.fieldTypeParts(kv.Key)
 	if err != nil {
 		return "", "", err
 	}
-	valueType, err := c.baseFieldTypeName(kv.Value)
+	value, err := c.fieldTypeParts(kv.Value)
 	if err != nil {
 		return "", "", err
 	}
-	return keyType, valueType, nil
+	return key.Base, value.Base, nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
