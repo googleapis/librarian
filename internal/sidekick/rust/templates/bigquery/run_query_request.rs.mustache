@@ -27,22 +27,12 @@ impl RunQueryRequest {
         false
         {{#Codec.RunQueryFields}}
         {{#JobOnly}}
-        {{#Map}}
-        || !self.{{Name}}.is_empty()
-        {{/Map}}
-        {{#Repeated}}
-        || !self.{{Name}}.is_empty()
-        {{/Repeated}}
-        {{^Map}}
-        {{^Repeated}}
-        {{#SourceIsOptional}}
+        {{#Optional}}
         || self.{{Name}}.is_some()
-        {{/SourceIsOptional}}
-        {{^SourceIsOptional}}
-        || self.{{Name}} != <{{{FieldType}}}>::default()
-        {{/SourceIsOptional}}
-        {{/Repeated}}
-        {{/Map}}
+        {{/Optional}}
+        {{^Optional}}
+        || !wkt::internal::is_default(&self.{{Name}})
+        {{/Optional}}
         {{/JobOnly}}
         {{/Codec.RunQueryFields}}
     }
@@ -50,65 +40,43 @@ impl RunQueryRequest {
 
 impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::QueryRequest {
     fn from(req: RunQueryRequest) -> Self {
-        Self::new()
+        let mut out = Self::default();
         {{#Codec.RunQueryFields}}
         {{#QueryRequest}}
-        {{#Optional}}
-            .set_or_clear_{{Name}}(req.{{Name}})
-        {{/Optional}}
-        {{^Optional}}
-        {{#SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}}.unwrap_or_default())
-        {{/SourceIsOptional}}
-        {{^SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}})
-        {{/SourceIsOptional}}
-        {{/Optional}}
+        out.{{Name}} = req.{{Name}}.into();
         {{/QueryRequest}}
         {{/Codec.RunQueryFields}}
+        out
     }
 }
 
 impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::JobConfigurationQuery {
     fn from(req: RunQueryRequest) -> Self {
-        Self::new()
+        let mut out = Self::default();
         {{#Codec.RunQueryFields}}
         {{#JobConfigurationQuery}}
-        {{#Optional}}
-            .set_or_clear_{{Name}}(req.{{Name}})
-        {{/Optional}}
-        {{^Optional}}
-        {{#SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}}.unwrap_or_default())
-        {{/SourceIsOptional}}
-        {{^SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}})
-        {{/SourceIsOptional}}
-        {{/Optional}}
+        out.{{Name}} = req.{{Name}}.into();
         {{/JobConfigurationQuery}}
         {{/Codec.RunQueryFields}}
+        out
     }
 }
 
 impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::JobConfiguration {
     fn from(req: RunQueryRequest) -> Self {
-        let query_config: google_cloud_bigquery_v2::model::JobConfigurationQuery = req.clone().into();
-        Self::new()
-            .set_query(query_config)
+        let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
+        {{#Codec.RunQueryFields}}
+        {{#JobConfigurationQuery}}
+        query.{{Name}} = req.{{Name}}.into();
+        {{/JobConfigurationQuery}}
+        {{/Codec.RunQueryFields}}
+        let mut out = Self::default();
+        out.query = Some(query);
         {{#Codec.RunQueryFields}}
         {{#JobConfiguration}}
-        {{#Optional}}
-            .set_or_clear_{{Name}}(req.{{Name}})
-        {{/Optional}}
-        {{^Optional}}
-        {{#SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}}.unwrap_or_default())
-        {{/SourceIsOptional}}
-        {{^SourceIsOptional}}
-            .set_{{Name}}(req.{{Name}})
-        {{/SourceIsOptional}}
-        {{/Optional}}
+        out.{{Name}} = req.{{Name}}.into();
         {{/JobConfiguration}}
         {{/Codec.RunQueryFields}}
+        out
     }
 }

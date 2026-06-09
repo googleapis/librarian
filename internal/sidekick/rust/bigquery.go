@@ -17,7 +17,6 @@ package rust
 import (
 	"fmt"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -106,7 +105,6 @@ func (b runQueryBuilder) createSyntheticMessage(name string) (*api.Message, erro
 	for _, qf := range b.fields {
 		primary := qf.firstNonNull()
 		clone := *primary
-		clone.Optional = qf.SourceIsOptional()
 		msg.Fields = append(msg.Fields, &clone)
 	}
 	if err := b.c.annotateMessage(msg, b.model, true); err != nil {
@@ -149,20 +147,7 @@ func (qf *queryField) Name() string {
 	return qf.firstNonNull().Name
 }
 
-func (qf *queryField) Map() bool {
-	return qf.firstNonNull().Map
-}
-
-func (qf *queryField) Repeated() bool {
-	return qf.firstNonNull().Repeated
-}
-
-func (qf *queryField) FieldType() string {
-	ann := qf.firstNonNull().Codec.(*fieldAnnotations)
-	return strings.ReplaceAll(ann.FieldType, "crate::model", "google_cloud_bigquery_v2::model")
-}
-
-func (qf *queryField) SourceIsOptional() bool {
+func (qf *queryField) Optional() bool {
 	return (qf.QueryRequest != nil && qf.QueryRequest.Optional) ||
 		(qf.JobConfigurationQuery != nil && qf.JobConfigurationQuery.Optional) ||
 		(qf.JobConfiguration != nil && qf.JobConfiguration.Optional)
