@@ -139,12 +139,12 @@ func (b *runQueryBuilder) request() (*api.Message, error) {
 }
 
 // Accessors for template files.
-func (qf *queryField) JobOnly() bool {
-	return qf.QueryRequest == nil
-}
-
 func (qf *queryField) Name() string {
 	return qf.firstNonNull().Name
+}
+
+func (qf *queryField) JobOnly() bool {
+	return qf.QueryRequest == nil
 }
 
 func (qf *queryField) Optional() bool {
