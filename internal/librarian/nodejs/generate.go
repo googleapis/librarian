@@ -485,6 +485,9 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 	})
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6340): Remove this function
+// and all .repo-metadata.json generation once the documentation pipeline is
+// migrated to read from librarian.yaml directly.
 // writeRepoMetadata generates .repo-metadata.json for the library.
 func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
 	if len(library.APIs) == 0 {
