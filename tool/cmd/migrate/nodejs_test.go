@@ -472,3 +472,52 @@ deep-copy-regex:
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestBuildNodejsLibrary_MetadataOverrides_NonGoogleCloud(t *testing.T) {
+	tmpDir := t.TempDir()
+	pkgDir := filepath.Join(tmpDir, "packages", "google-cloud-secretmanager")
+	if err := os.MkdirAll(pkgDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Package name does NOT start with @google-cloud/
+	pkgJSON := `{"name": "secretmanager-utility", "version": "6.1.0"}`
+	if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(pkgJSON), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	owlBot := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(.*)/.*-nodejs
+`
+	if err := os.WriteFile(filepath.Join(pkgDir, ".OwlBot.yaml"), []byte(owlBot), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Write custom .repo-metadata.json overrides.
+	// Even though this URL looks like a standard one, since the package name is not @google-cloud/,
+	// the generator will NOT produce this by default. It must be preserved as an override.
+	repoMeta := `
+{
+  "client_documentation": "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest"
+}
+`
+	if err := os.WriteFile(filepath.Join(pkgDir, ".repo-metadata.json"), []byte(repoMeta), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	// Running buildNodejsLibrary using testdata/googleapis (which contains secretmanager_v1.yaml)
+	got, err := buildNodejsLibrary("testdata/googleapis", filepath.Join(tmpDir, "packages"), "google-cloud-secretmanager")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	want := &config.NodejsPackage{
+		PackageName:                 "secretmanager-utility",
+		ClientDocumentationOverride: "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest",
+	}
+
+	if diff := cmp.Diff(want, got.Nodejs); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
