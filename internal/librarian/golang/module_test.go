@@ -434,12 +434,64 @@ func TestClientPathFromRepoRoot(t *testing.T) {
 }
 
 func TestSnippetDirectory(t *testing.T) {
-	output := t.TempDir()
-	importPath := "example/apiv1"
-	got := snippetDirectory(output, importPath)
-	want := filepath.Join(output, "internal", "generated", "snippets", importPath)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		goAPI   *config.GoAPI
+		want    string
+	}{
+		{
+			name: "basic example",
+			library: &config.Library{
+				Name: "secretmanager",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "secretmanager/apiv1",
+			},
+			want: "examples/apiv1",
+		},
+		{
+			name: "nested API path",
+			library: &config.Library{
+				Name: "shopping",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "shopping/merchant/promotions/apiv1",
+			},
+			want: "examples/merchant/promotions/apiv1",
+		},
+		{
+			name: "nested major version",
+			library: &config.Library{
+				Name: "bigquery/v2",
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "bigquery/v2/apiv2",
+			},
+			want: "examples/apiv2",
+		},
+		{
+			name: "library has a versioned module path",
+			library: &config.Library{
+				Name: "vision",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+			},
+			goAPI: &config.GoAPI{
+				ImportPath: "vision/v2/apiv1",
+			},
+			want: "examples/apiv1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			want := filepath.Join(output, test.want)
+			got := snippetDirectory(output, test.library, test.goAPI)
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 

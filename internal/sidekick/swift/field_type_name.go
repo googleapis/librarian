@@ -62,6 +62,14 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 }
 
 func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+	keyType, valueType, err := c.mapFieldTypeComponents(m)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+}
+
+func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	var keyField, valueField *api.Field
 	for _, f := range m.Fields {
 		switch f.Name {
@@ -72,17 +80,17 @@ func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
 		}
 	}
 	if keyField == nil || valueField == nil {
-		return "", fmt.Errorf("map message %q missing key or value field", m.ID)
+		return "", "", fmt.Errorf("map message %q missing key or value field", m.ID)
 	}
 	keyType, err := c.baseFieldTypeName(keyField)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
 	valueType, err := c.baseFieldTypeName(valueField)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+	return keyType, valueType, nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {

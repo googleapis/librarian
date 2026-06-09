@@ -48,7 +48,11 @@ var (
 		"google/rpc":   true,
 	}
 	runProtoc = func(ctx context.Context, args []string) error {
-		return command.Run(ctx, "protoc", args...)
+		env, err := getToolsEnv()
+		if err != nil {
+			return err
+		}
+		return command.RunWithEnv(ctx, env, "protoc", args...)
 	}
 )
 
