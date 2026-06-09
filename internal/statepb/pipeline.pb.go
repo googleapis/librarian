@@ -21,12 +21,15 @@
 package statepb
 
 import (
+	reflect "reflect"
+	"slices"
+	sync "sync"
+	unsafe "unsafe"
+
+	"google.golang.org/protobuf/proto"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
-	reflect "reflect"
-	sync "sync"
-	unsafe "unsafe"
 )
 
 const (
@@ -311,6 +314,21 @@ func (x *LibraryState) GetSourcePaths() []string {
 		return x.SourcePaths
 	}
 	return nil
+}
+
+func (x *LibraryState) deepCopy() *LibraryState {
+	return &LibraryState{
+		Id:                        x.Id,
+		CurrentVersion:            x.CurrentVersion,
+		NextVersion:               x.NextVersion,
+		GenerationAutomationLevel: x.GenerationAutomationLevel,
+		ReleaseAutomationLevel:    x.ReleaseAutomationLevel,
+		ReleaseTimestamp:          proto.Clone(x.ReleaseTimestamp).(*timestamppb.Timestamp),
+		LastGeneratedCommit:       x.LastGeneratedCommit,
+		LastReleasedCommit:        x.LastReleasedCommit,
+		ApiPaths:                  slices.Clone(x.ApiPaths),
+		SourcePaths:               slices.Clone(x.SourcePaths),
+	}
 }
 
 // Manually-maintained configuration for the pipeline.
