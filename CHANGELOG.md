@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.18.0](https://github.com/googleapis/librarian/compare/v0.17.0...v0.18.0) (2026-06-09)
+
+
+### Features
+
+* **nodejs:** support client_documentation and client_documentation_override ([#6293](https://github.com/googleapis/librarian/issues/6293)) ([13919cc](https://github.com/googleapis/librarian/commit/13919ccd69ee04178476fe8c956e0de6c7dcc4d7))
+
 ## [0.17.0](https://github.com/googleapis/librarian/compare/v0.16.0...v0.17.0) (2026-06-09)
 
 
