@@ -186,8 +186,8 @@ func addMissingHeaders(params postProcessParams, dir string) error {
 	})
 }
 
-// If a library has an alternate header file, this function will read the contents of
-// the alternate_header property (a filepath). Otherwise it will grab the default license
+// getLicenseText reads the contents of the alternate_header property (a filepath)
+// if a library has an alternate header file. Otherwise it will grab the default license
 // header.
 func getLicenseText(params postProcessParams) ([]byte, error) {
 	if params.library == nil || params.library.Java == nil || params.library.Java.AlternateHeaders == "" {

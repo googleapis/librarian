@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"testing"
 
@@ -469,43 +470,6 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 	}
 }
 
-func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
-	t.Parallel()
-	outdir := t.TempDir()
-	apiBase := "v1"
-	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
-	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
-	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	params := postProcessParams{
-		outDir:  outdir,
-		apiBase: apiBase,
-		library: &config.Library{Java: &config.JavaModule{}},
-		javaAPI: &config.JavaAPI{},
-	}
-	altHeader := "/* Alternate */\n"
-	headerFile := filepath.Join(outdir, "header.txt")
-	if err := os.WriteFile(headerFile, []byte(altHeader), 0644); err != nil {
-		t.Fatal(err)
-	}
-	params.library.Java.AlternateHeaders = "header.txt"
-	if err := addHeaders(params, []string{gRPCDir}); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(grpcFile)
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantHeader := "/* Alternate */"
-	if !bytes.HasPrefix(got, []byte(wantHeader)) {
-		t.Errorf("mismatch got = %q, want %q", got, wantHeader)
-	}
-}
-
 func TestCopyProtos_Success(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
@@ -824,34 +788,37 @@ func TestRunOwlBot_Error(t *testing.T) {
 }
 
 func TestAddMissingHeaders(t *testing.T) {
+	defaultHeader := buildLicenseText(time.Now().Year())
 	for _, test := range []struct {
-		name         string
-		params       postProcessParams
-		filename     string
-		content      string
-		wantModified bool
+		name        string
+		params      postProcessParams
+		filename    string
+		content     string
+		wantContent string
 	}{
 		{
-			name:         "file without header",
-			filename:     "NoHeader.java",
-			content:      "package com.example;",
-			wantModified: true,
+			name:        "file without header",
+			filename:    "NoHeader.java",
+			content:     "package com.example;",
+			wantContent: defaultHeader + "package com.example;",
 		},
 		{
-			name:     "file with full header",
-			filename: "WithHeader.java",
-			content:  "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
+			name:        "file with full header",
+			filename:    "WithHeader.java",
+			content:     "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
+			wantContent: "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
 		},
 		{
-			name:         "file with partial header",
-			filename:     "PartialHeader.java",
-			content:      "/* Copyright 2024 Google LLC */\npackage com.example;",
-			wantModified: true,
+			name:        "file with partial header",
+			filename:    "PartialHeader.java",
+			content:     "/* Copyright 2024 Google LLC */\npackage com.example;",
+			wantContent: defaultHeader + "/* Copyright 2024 Google LLC */\npackage com.example;",
 		},
 		{
-			name:     "non-java file",
-			filename: "test.txt",
-			content:  "some text",
+			name:        "non-java file",
+			filename:    "test.txt",
+			content:     "some text",
+			wantContent: "some text",
 		},
 		{
 			name: "alternate header",
@@ -862,17 +829,16 @@ func TestAddMissingHeaders(t *testing.T) {
 					},
 				},
 			},
-			filename:     "AlternateHeader.java",
-			content:      "package com.example;",
-			wantModified: true,
+			filename:    "AlternateHeader.java",
+			content:     "package com.example;",
+			wantContent: "/* Alternate Header */\npackage com.example;",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, test.filename)
-			originalContent := []byte(test.content)
-			if err := os.WriteFile(path, originalContent, 0644); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
 
@@ -892,19 +858,18 @@ func TestAddMissingHeaders(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			newContent, err := os.ReadFile(path)
+			got, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			wasModified := !bytes.Equal(originalContent, newContent)
-			if wasModified != test.wantModified {
-				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
+			if diff := cmp.Diff(test.wantContent, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func TestAddMissingHeaders_AlternateHeadersError(t *testing.T) {
+func TestAddMissingHeaders_AlternateHeaders_Error(t *testing.T) {
 	t.Parallel()
 	tmpDir := t.TempDir()
 	params := postProcessParams{
