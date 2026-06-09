@@ -153,6 +153,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				CopyrightYear:       "2038",
 				Swift:               &config.SwiftPackage{},
 				SpecificationFormat: config.SpecDiscovery,
+				Roots:               []string{"discovery"},
 			},
 			module: &config.SwiftModule{APIPath: "dir/foo.v1.json"},
 			want: &parser.ModelConfig{
@@ -160,7 +161,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				SpecificationSource: "dir/foo.v1.json",
 				Source: &sources.SourceConfig{
 					Sources:     &sources.Sources{},
-					ActiveRoots: []string{"googleapis"},
+					ActiveRoots: []string{"discovery"},
 				},
 				Codec: map[string]string{
 					"copyright-year": "2038",
