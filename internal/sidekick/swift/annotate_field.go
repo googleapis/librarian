@@ -59,11 +59,7 @@ type fieldAnnotations struct {
 }
 
 func (c *codec) annotateField(field *api.Field) error {
-	fieldType, err := c.fieldTypeName(field)
-	if err != nil {
-		return err
-	}
-	baseFieldType, err := c.baseFieldTypeName(field)
+	parts, err := c.fieldTypeParts(field)
 	if err != nil {
 		return err
 	}
@@ -77,11 +73,11 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	annotations := &fieldAnnotations{
 		Name:            camelCase(field.Name),
-		FieldType:       fieldType,
-		BaseFieldType:   baseFieldType,
+		FieldType:       parts.Name,
+		BaseFieldType:   parts.Base,
 		PackageName:     packageName,
 		DocLines:        docLines,
-		InitializerType: fieldType,
+		InitializerType: parts.Name,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -93,9 +89,9 @@ func (c *codec) annotateField(field *api.Field) error {
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.InitializerType = baseFieldType + "?"
-		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, baseFieldType)
-		annotations.FieldType = fmt.Sprintf("%s.Recursive<%s>?", wellKnownSwiftPackage, baseFieldType)
+		annotations.InitializerType = parts.Base + "?"
+		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
+		annotations.FieldType = annotations.BaseFieldType + "?"
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {

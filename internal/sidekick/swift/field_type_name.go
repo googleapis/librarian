@@ -20,6 +20,67 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
+type BaseTypeNames struct {
+	Base  string
+	Key   string
+	Value string
+}
+
+type fieldTypeNames struct {
+	BaseTypeNames
+	Name string
+}
+
+func (c *codec) fieldTypeParts(field *api.Field) (*fieldTypeNames, error) {
+	base, err := c.fieldTypeBaseParts(field)
+	if err != nil {
+		return nil, err
+	}
+	name := base.Base
+	if field.Optional {
+		name = fmt.Sprintf("%s?", base.Base)
+	}
+	if field.Repeated {
+		name = fmt.Sprintf("[%s]", base.Base)
+	}
+	return &fieldTypeNames{BaseTypeNames: *base, Name: name}, nil
+}
+
+func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
+	var base string
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return nil, err
+		}
+		if m.IsMap {
+			return c.mapFieldTypeParts(m)
+		}
+		base, err = c.messageTypeName(m)
+		if err != nil {
+			return nil, err
+		}
+		return &BaseTypeNames{Base: base}, nil
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return nil, err
+		}
+		base, err = c.enumTypeName(e)
+		if err != nil {
+			return nil, err
+		}
+		return &BaseTypeNames{Base: base}, nil
+	default:
+		base, err := scalarFieldTypeName(field)
+		if err != nil {
+			return nil, err
+		}
+		return &BaseTypeNames{Base: base}, nil
+	}
+}
+
 // fieldTypeName returns the Swift type name for a field.
 //
 // The implementation is pretty simple for primitive types. For message and enum fields it may get more
@@ -47,7 +108,11 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 			return "", err
 		}
 		if m.IsMap {
-			return c.mapFieldTypeName(m)
+			parts, err := c.mapFieldTypeParts(m)
+			if err != nil {
+				return "", err
+			}
+			return parts.Base, nil
 		}
 		return c.messageTypeName(m)
 	case api.TypezEnum:
@@ -61,12 +126,17 @@ func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
 	}
 }
 
-func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+func (c *codec) mapFieldTypeParts(m *api.Message) (*BaseTypeNames, error) {
 	keyType, valueType, err := c.mapFieldTypeComponents(m)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+	base := fmt.Sprintf("[%s: %s]", keyType, valueType)
+	return &BaseTypeNames{
+		Base:  base,
+		Key:   keyType,
+		Value: valueType,
+	}, nil
 }
 
 func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {

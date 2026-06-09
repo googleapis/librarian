@@ -198,7 +198,7 @@ func TestFieldTypeName_Optional(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		field *api.Field
-		want  string
+		want  *fieldTypeNames
 	}{
 		{
 			name: "optional message Secret",
@@ -209,7 +209,10 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				Optional:    true,
 				MessageType: secret,
 			},
-			want: "Secret?",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Secret"},
+				Name:          "Secret?",
+			},
 		},
 		{
 			name: "optional string",
@@ -218,7 +221,10 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field5",
 				Optional: true,
 			},
-			want: "Swift.String?",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Swift.String"},
+				Name:          "Swift.String?",
+			},
 		},
 		{
 			name: "optional bytes",
@@ -227,7 +233,10 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field7",
 				Optional: true,
 			},
-			want: "Foundation.Data?",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Foundation.Data"},
+				Name:          "Foundation.Data?",
+			},
 		},
 		{
 			name: "optional int32",
@@ -236,11 +245,14 @@ func TestFieldTypeName_Optional(t *testing.T) {
 				ID:       ".test.field9",
 				Optional: true,
 			},
-			want: "Swift.Int32?",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Swift.Int32"},
+				Name:          "Swift.Int32?",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeName(test.field)
+			got, err := c.fieldTypeParts(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -264,7 +276,7 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		field *api.Field
-		want  string
+		want  *fieldTypeNames
 	}{
 		{
 			name: "repeated message Secret",
@@ -275,7 +287,10 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				Repeated:    true,
 				MessageType: secret,
 			},
-			want: "[Secret]",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Secret"},
+				Name:          "[Secret]",
+			},
 		},
 		{
 			name: "repeated string",
@@ -284,7 +299,10 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field6",
 				Repeated: true,
 			},
-			want: "[Swift.String]",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Swift.String"},
+				Name:          "[Swift.String]",
+			},
 		},
 		{
 			name: "repeated bytes",
@@ -293,7 +311,10 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field8",
 				Repeated: true,
 			},
-			want: "[Foundation.Data]",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Foundation.Data"},
+				Name:          "[Foundation.Data]",
+			},
 		},
 		{
 			name: "repeated int32",
@@ -302,11 +323,14 @@ func TestFieldTypeName_Repeated(t *testing.T) {
 				ID:       ".test.field10",
 				Repeated: true,
 			},
-			want: "[Swift.Int32]",
+			want: &fieldTypeNames{
+				BaseTypeNames: BaseTypeNames{Base: "Swift.Int32"},
+				Name:          "[Swift.Int32]",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := c.fieldTypeName(test.field)
+			got, err := c.fieldTypeParts(test.field)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -340,11 +364,18 @@ func TestFieldTypeName_Map(t *testing.T) {
 		ID:      ".test.field1",
 	}
 
-	got, err := c.baseFieldTypeName(field)
+	got, err := c.fieldTypeParts(field)
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := "[Swift.String: Swift.Int32]"
+	want := &fieldTypeNames{
+		BaseTypeNames: BaseTypeNames{
+			Base:  "[Swift.String: Swift.Int32]",
+			Key:   "Swift.String",
+			Value: "Swift.Int32",
+		},
+		Name: "[Swift.String: Swift.Int32]",
+	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
