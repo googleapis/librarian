@@ -36,14 +36,13 @@ func (c *codec) fieldTypeParts(field *api.Field) (*fieldTypeNames, error) {
 	if err != nil {
 		return nil, err
 	}
-	name := base.Base
 	if field.Optional {
-		name = fmt.Sprintf("%s?", base.Base)
+		return &fieldTypeNames{BaseTypeNames: *base, Name: fmt.Sprintf("%s?", base.Base)}, nil
 	}
 	if field.Repeated {
-		name = fmt.Sprintf("[%s]", base.Base)
+		return &fieldTypeNames{BaseTypeNames: *base, Name: fmt.Sprintf("[%s]", base.Base)}, nil
 	}
-	return &fieldTypeNames{BaseTypeNames: *base, Name: name}, nil
+	return &fieldTypeNames{BaseTypeNames: *base, Name: base.Base}, nil
 }
 
 func (c *codec) fieldTypeBaseParts(field *api.Field) (*BaseTypeNames, error) {
@@ -99,11 +98,11 @@ func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	key, err := c.fieldTypeParts(kv.Key)
+	key, err := c.fieldTypeBaseParts(kv.Key)
 	if err != nil {
 		return "", "", err
 	}
-	value, err := c.fieldTypeParts(kv.Value)
+	value, err := c.fieldTypeBaseParts(kv.Value)
 	if err != nil {
 		return "", "", err
 	}
