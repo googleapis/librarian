@@ -71,34 +71,9 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
-	var packageName string
-	switch field.Typez {
-	case api.TypezMessage:
-		if m, err := lookupMessage(c.Model, field.TypezID); err == nil {
-			if m.IsMap {
-				for _, mf := range m.Fields {
-					if mf.Name == "value" {
-						switch mf.Typez {
-						case api.TypezMessage:
-							if vm, err := lookupMessage(c.Model, mf.TypezID); err == nil {
-								packageName = vm.Package
-							}
-						case api.TypezEnum:
-							if ve, err := lookupEnum(c.Model, mf.TypezID); err == nil {
-								packageName = ve.Package
-							}
-						}
-						break
-					}
-				}
-			} else {
-				packageName = m.Package
-			}
-		}
-	case api.TypezEnum:
-		if e, err := lookupEnum(c.Model, field.TypezID); err == nil {
-			packageName = e.Package
-		}
+	packageName, err := c.fieldPackage(field)
+	if err != nil {
+		return err
 	}
 	annotations := &fieldAnnotations{
 		Name:            camelCase(field.Name),
@@ -129,4 +104,43 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	field.Codec = annotations
 	return nil
+}
+
+func (c *codec) fieldPackage(field *api.Field) (string, error) {
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return "", err
+		}
+		if !m.IsMap {
+			return m.Package, nil
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return "", err
+		}
+		mf := fields.Value
+		switch mf.Typez {
+		case api.TypezMessage:
+			vm, err := lookupMessage(c.Model, mf.TypezID)
+			if err != nil {
+				return "", err
+			}
+			return vm.Package, nil
+		case api.TypezEnum:
+			ve, err := lookupEnum(c.Model, mf.TypezID)
+			if err != nil {
+				return "", err
+			}
+			return ve.Package, nil
+		}
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return "", err
+		}
+		return e.Package, nil
+	}
+	return "", nil
 }
