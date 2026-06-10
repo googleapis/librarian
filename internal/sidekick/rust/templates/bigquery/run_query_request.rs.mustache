@@ -23,6 +23,8 @@ limitations under the License.
 {{/Codec.RunQueryRequestMsg}}
 
 impl RunQueryRequest {
+    {{! Clippy doesn't like this expression since false is not needed for the bool expression }}
+    #[allow(clippy::nonminimal_bool)]
     pub(crate) fn force_job_path(&self) -> bool {
         false
         {{#Codec.RunQueryFields}}
@@ -58,6 +60,9 @@ impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::Jo
 }
 
 impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::JobConfiguration {
+    {{! The `dry_run` field is a `bool` in `QueryRequest`, but a `wkt::BoolValue` in `JobConfiguration`. We use `into()` to normalize these. }}
+    {{! Clippy complains about the other fields that don't require this conversion, hence this allowance. }}
+    #[allow(clippy::useless_conversion)]
     fn from(req: RunQueryRequest) -> Self {
         let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
         {{#Codec.RunQueryFields}}
@@ -68,7 +73,6 @@ impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::Jo
         let mut out = Self::default();
         out.query = Some(query);
         {{#Codec.RunQueryFields}}
-        {{! The `dry_run` field is a `bool` in `QueryRequest`, but a `wkt::BoolValue` in `JobConfiguration`. We use `into()` to normalize these. }}
         {{#JobConfiguration}}
         out.{{FieldName}} = req.{{FieldName}}.into();
         {{/JobConfiguration}}
