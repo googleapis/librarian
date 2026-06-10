@@ -85,7 +85,7 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		return err
 	}
 
-	// TODO: how to have this list in librarian.yaml file?
+	// TODO(googleapis/google-cloud-rust#5844): move this list to come from librarian.yaml
 	skippedFields := []string{
 		"copy", "load", "extract", // skip non job types
 		"format_options",   // we want to control format options on veneer
