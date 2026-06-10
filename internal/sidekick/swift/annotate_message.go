@@ -38,6 +38,9 @@ type messageAnnotations struct {
 	PageableItemType    string
 	DependsOn           map[string]*Dependency
 
+	// The name of a field to use in message examples.
+	SampleField string
+
 	// GatedBy is the list of package traits that enables this message.
 	//
 	// Empty unless the package is configured with `per_service_traits` enabled.
@@ -90,6 +93,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if err != nil {
 		return err
 	}
+	sampleField := "<placeholder>"
+	if len(message.Fields) != 0 {
+		sampleField = camelCase(message.Fields[0].Name)
+	}
 	annotations := &messageAnnotations{
 		Name:                pascalCase(message.Name),
 		DocLines:            docLines,
@@ -97,6 +104,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
 		DependsOn:           map[string]*Dependency{},
+		SampleField:         sampleField,
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.

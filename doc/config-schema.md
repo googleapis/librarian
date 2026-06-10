@@ -378,6 +378,7 @@ This document describes the schema for the librarian.yaml.
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+| `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
 
 ## PythonDefault Configuration
 

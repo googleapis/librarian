@@ -38,7 +38,7 @@ import (
 )
 
 const (
-	commonProtos = "google/cloud/common_resources.proto"
+	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -149,7 +149,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 
 	var protos []string
 	if !omitCommon {
-		protos = append(protos, commonProtos)
+		protos = append(protos, cloudCommonResourcesProto)
 	}
 
 	if library.Nodejs == nil {
@@ -394,6 +394,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to remove redundant linter files: %w", err)
 	}
 
+	// Remove google/cloud/common_resources.proto from the protos directory.
+	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
+	// want it to be in the diff.
+	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
 	return nil
 }
 
@@ -479,6 +485,9 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 	})
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6340): Remove this function
+// and all .repo-metadata.json generation once the documentation pipeline is
+// migrated to read from librarian.yaml directly.
 // writeRepoMetadata generates .repo-metadata.json for the library.
 func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
 	if len(library.APIs) == 0 {
@@ -491,7 +500,35 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	metadata.DistributionName = DerivePackageName(library)
 	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-	return metadata.Write(outDir)
+
+	if strings.HasPrefix(metadata.DistributionName, "@google-cloud/") {
+		pkgSuffix := strings.TrimPrefix(metadata.DistributionName, "@google-cloud/")
+		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
+	}
+
+	if library.Nodejs != nil && library.Nodejs.ClientDocumentationOverride != "" {
+		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
+	}
+
+	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
+		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
+			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
+		}
+	}
+
+	if err := metadata.Write(outDir); err != nil {
+		return err
+	}
+
+	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
+	// literal ampersand in the .repo-metadata.json.
+	path := filepath.Join(outDir, ".repo-metadata.json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
+	return os.WriteFile(path, content, 0644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies

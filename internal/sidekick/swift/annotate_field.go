@@ -59,11 +59,7 @@ type fieldAnnotations struct {
 }
 
 func (c *codec) annotateField(field *api.Field) error {
-	fieldType, err := c.fieldTypeName(field)
-	if err != nil {
-		return err
-	}
-	baseFieldType, err := c.baseFieldTypeName(field)
+	parts, err := c.fieldTypeName(field)
 	if err != nil {
 		return err
 	}
@@ -71,42 +67,17 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
-	var packageName string
-	switch field.Typez {
-	case api.TypezMessage:
-		if m, err := lookupMessage(c.Model, field.TypezID); err == nil {
-			if m.IsMap {
-				for _, mf := range m.Fields {
-					if mf.Name == "value" {
-						switch mf.Typez {
-						case api.TypezMessage:
-							if vm, err := lookupMessage(c.Model, mf.TypezID); err == nil {
-								packageName = vm.Package
-							}
-						case api.TypezEnum:
-							if ve, err := lookupEnum(c.Model, mf.TypezID); err == nil {
-								packageName = ve.Package
-							}
-						}
-						break
-					}
-				}
-			} else {
-				packageName = m.Package
-			}
-		}
-	case api.TypezEnum:
-		if e, err := lookupEnum(c.Model, field.TypezID); err == nil {
-			packageName = e.Package
-		}
+	packageName, err := c.fieldPackage(field)
+	if err != nil {
+		return err
 	}
 	annotations := &fieldAnnotations{
 		Name:            camelCase(field.Name),
-		FieldType:       fieldType,
-		BaseFieldType:   baseFieldType,
+		FieldType:       parts.Full,
+		BaseFieldType:   parts.Base,
 		PackageName:     packageName,
 		DocLines:        docLines,
-		InitializerType: fieldType,
+		InitializerType: parts.Full,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -118,9 +89,9 @@ func (c *codec) annotateField(field *api.Field) error {
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.InitializerType = baseFieldType + "?"
-		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, baseFieldType)
-		annotations.FieldType = fmt.Sprintf("%s.Recursive<%s>?", wellKnownSwiftPackage, baseFieldType)
+		annotations.InitializerType = parts.Base + "?"
+		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
+		annotations.FieldType = annotations.BaseFieldType + "?"
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
@@ -129,4 +100,43 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 	field.Codec = annotations
 	return nil
+}
+
+func (c *codec) fieldPackage(field *api.Field) (string, error) {
+	switch field.Typez {
+	case api.TypezMessage:
+		m, err := lookupMessage(c.Model, field.TypezID)
+		if err != nil {
+			return "", err
+		}
+		if !m.IsMap {
+			return m.Package, nil
+		}
+		fields, err := decomposeMap(m)
+		if err != nil {
+			return "", err
+		}
+		mf := fields.Value
+		switch mf.Typez {
+		case api.TypezMessage:
+			vm, err := lookupMessage(c.Model, mf.TypezID)
+			if err != nil {
+				return "", err
+			}
+			return vm.Package, nil
+		case api.TypezEnum:
+			ve, err := lookupEnum(c.Model, mf.TypezID)
+			if err != nil {
+				return "", err
+			}
+			return ve.Package, nil
+		}
+	case api.TypezEnum:
+		e, err := lookupEnum(c.Model, field.TypezID)
+		if err != nil {
+			return "", err
+		}
+		return e.Package, nil
+	}
+	return "", nil
 }

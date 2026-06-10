@@ -46,7 +46,7 @@ jobs:
         working-directory: google-cloud-java
         run: |
           librarian install
-          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
@@ -93,12 +93,10 @@ jobs:
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
-# TODO: uncomment once Java is migrated to Librarian
-# https://github.com/googleapis/librarian/issues/6176
-# create-issue-on-failure:
-#   needs: [integration]
-#   if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-#   uses: ./.github/workflows/create-issue-on-failure.yaml
-#   with:
-#     language: Java
-#     repository: google-cloud-java
+  create-issue-on-failure:
+    needs: [integration]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Java
+      repository: google-cloud-java
