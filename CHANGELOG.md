@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.20.0](https://github.com/googleapis/librarian/compare/v0.19.0...v0.20.0) (2026-06-10)
+
+
+### Features
+
+* **nodejs:** add a DefaultVersion field to NodeJSPackage ([#6358](https://github.com/googleapis/librarian/issues/6358)) ([af3218f](https://github.com/googleapis/librarian/commit/af3218f8324be8bfaa0cff33afeea1c45d45a006))
+* **sidekick/rust:** add bigquery code gen ([#6322](https://github.com/googleapis/librarian/issues/6322)) ([a7846f5](https://github.com/googleapis/librarian/commit/a7846f501eb2cece5813a13d600f69ae4d6e9897))
+* **sidekick/swift:** non-string maps ([#6361](https://github.com/googleapis/librarian/issues/6361)) ([2b6d7e4](https://github.com/googleapis/librarian/commit/2b6d7e41f3db63a4be55f6a31e201c07edfc0b0b))
+* **sidekick/swift:** support discovery-based modules ([#6351](https://github.com/googleapis/librarian/issues/6351)) ([09ef5cf](https://github.com/googleapis/librarian/commit/09ef5cf830158866b83c2eedcd2204dd6cdbe230))
+
+## [0.19.0](https://github.com/googleapis/librarian/compare/v0.18.0...v0.19.0) (2026-06-09)
+
+
+### Features
+
+* **nodejs:** update tools for nodejs ([#6348](https://github.com/googleapis/librarian/issues/6348)) ([fdc4f18](https://github.com/googleapis/librarian/commit/fdc4f185c3a681c77128b5223403c9187e81036c))
+
 ## [0.18.0](https://github.com/googleapis/librarian/compare/v0.17.0...v0.18.0) (2026-06-09)
 
 

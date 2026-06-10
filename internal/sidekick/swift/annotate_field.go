@@ -37,6 +37,12 @@ type fieldAnnotations struct {
 	// This is used in the mustache templates, which sometimes need to refer to the underlying type.
 	BaseFieldType string
 
+	// KeyType is the key's Swift type for maps and empty otherwise.
+	KeyType string
+
+	// ValueType is the value's Swift type for maps and empty otherwise.
+	ValueType string
+
 	// PackageName is the name of the package defining the type of this field.
 	PackageName string
 
@@ -50,20 +56,16 @@ type fieldAnnotations struct {
 
 	// Recursive is true if the field is a recursive reference to another message.
 	Recursive bool
+}
 
-	// InitializerType is the Swift type name of this field as it appears in the initializer signature.
-	//
-	// For recursive fields, this is the unwrapped type with an optional suffix (e.g., `Node?`), rather
-	// than the boxed type (`GoogleCloudWkt.Recursive<Node>?`). For standard fields, it matches `FieldType`.
-	InitializerType string
+// IsStringKeyed returns true if the field is a map field and the key is a
+// string type.
+func (a *fieldAnnotations) IsStringKeyed() bool {
+	return a.KeyType == "Swift.String"
 }
 
 func (c *codec) annotateField(field *api.Field) error {
-	fieldType, err := c.fieldTypeName(field)
-	if err != nil {
-		return err
-	}
-	baseFieldType, err := c.baseFieldTypeName(field)
+	parts, err := c.fieldTypeName(field)
 	if err != nil {
 		return err
 	}
@@ -75,13 +77,15 @@ func (c *codec) annotateField(field *api.Field) error {
 	if err != nil {
 		return err
 	}
+
 	annotations := &fieldAnnotations{
-		Name:            camelCase(field.Name),
-		FieldType:       fieldType,
-		BaseFieldType:   baseFieldType,
-		PackageName:     packageName,
-		DocLines:        docLines,
-		InitializerType: fieldType,
+		Name:          camelCase(field.Name),
+		FieldType:     parts.Full,
+		BaseFieldType: parts.Base,
+		KeyType:       parts.Key,
+		ValueType:     parts.Value,
+		PackageName:   packageName,
+		DocLines:      docLines,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -93,9 +97,8 @@ func (c *codec) annotateField(field *api.Field) error {
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.InitializerType = baseFieldType + "?"
-		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, baseFieldType)
-		annotations.FieldType = fmt.Sprintf("%s.Recursive<%s>?", wellKnownSwiftPackage, baseFieldType)
+		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
+		annotations.FieldType = annotations.BaseFieldType + "?"
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {

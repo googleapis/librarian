@@ -41,8 +41,8 @@ tools:
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
-      version: "1.0.5"
+      version: "1.0.6"
     - name: protobufjs-cli
       version: "1.2.0"
     - name: protobufjs
-      version: "7.5.5"
+      version: "7.5.8"

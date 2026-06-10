@@ -443,7 +443,10 @@ func TestRunPostProcessor(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-secretmanager"}
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -473,7 +476,10 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
+	library := &config.Library{
+		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -513,7 +519,10 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
+	library := &config.Library{
+		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -557,6 +566,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Keep: []string{"librarian.js", ".readme-partials.yaml", "README.md"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -640,6 +650,7 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
 		Keep: []string{"README.md", ".readme-partials.yaml", "system-test/.eslintrc.yml"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -1042,6 +1053,29 @@ func TestWriteRepoMetadata(t *testing.T) {
 				return w
 			},
 		},
+		{
+			name: "default version override",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta"},
+				},
+				Nodejs: &config.NodejsPackage{
+					DefaultVersion: "v1beta",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				w.DefaultVersion = "v1beta"
+				return w
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
@@ -1076,6 +1110,7 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Keep: []string{"librarian.js"},
 	}
 
@@ -1444,6 +1479,50 @@ func TestRemoveRedundantLinterFiles(t *testing.T) {
 			slices.Sort(got)
 			slices.Sort(test.want)
 
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResolveDefaultVersion(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want string
+	}{
+		{
+			name: "default to first API path",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v3"},
+					{Path: "google/cloud/test/v4"},
+				},
+			},
+			want: "v3",
+		},
+		{
+			name: "no APIs or override",
+			lib:  &config.Library{},
+			want: "",
+		},
+		{
+			name: "override",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v3"},
+					{Path: "google/cloud/test/v4"},
+				},
+				Nodejs: &config.NodejsPackage{
+					DefaultVersion: "v4",
+				},
+			},
+			want: "v4",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveDefaultVersion(test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
