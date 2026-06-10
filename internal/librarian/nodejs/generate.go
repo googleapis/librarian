@@ -673,7 +673,7 @@ func DefaultOutput(name, defaultOutput string) string {
 // a library, using the Node-specific override if present, or the path of the
 // first API otherwise. If the library has no override and no APIs, an empty
 // string is returned.
-// TODO(https://github.com/googleapis/librarian/issues/6357): remove default version
+// TODO(https://github.com/googleapis/librarian/issues/6357): remove default version.
 func resolveDefaultVersion(library *config.Library) string {
 	if library.Nodejs != nil && library.Nodejs.DefaultVersion != "" {
 		return library.Nodejs.DefaultVersion
