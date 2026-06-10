@@ -20,53 +20,75 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// fieldTypeName returns the Swift type name for a field.
-//
-// The implementation is pretty simple for primitive types. For message and enum fields it may get more
-// difficult as the name may be in a separate package.
-func (c *codec) fieldTypeName(field *api.Field) (string, error) {
-	baseFieldType, err := c.baseFieldTypeName(field)
-	if err != nil {
-		return "", err
-	}
-	if field.Optional {
-		return fmt.Sprintf("%s?", baseFieldType), nil
-	}
-	if field.Repeated {
-		return fmt.Sprintf("[%s]", baseFieldType), nil
-	}
-	return baseFieldType, nil
+type fieldTypeNames struct {
+	Full  string
+	Base  string
+	Key   string
+	Value string
 }
 
-// baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
-func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
+func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
+	names, err := c.fieldTypeBase(field)
+	if err != nil {
+		return nil, err
+	}
+	if field.Optional {
+		names.Full = fmt.Sprintf("%s?", names.Base)
+		return names, nil
+	}
+	if field.Repeated {
+		names.Full = fmt.Sprintf("[%s]", names.Base)
+		return names, nil
+	}
+	names.Full = names.Base
+	return names, nil
+}
+
+func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	switch field.Typez {
 	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if m.IsMap {
-			return c.mapFieldTypeName(m)
+			return c.mapFieldTypeNames(m)
 		}
-		return c.messageTypeName(m)
+		base, err := c.messageTypeName(m)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return c.enumTypeName(e)
+		base, err := c.enumTypeName(e)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	default:
-		return scalarFieldTypeName(field)
+		base, err := scalarFieldTypeName(field)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	}
 }
 
-func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
+func (c *codec) mapFieldTypeNames(m *api.Message) (*fieldTypeNames, error) {
 	keyType, valueType, err := c.mapFieldTypeComponents(m)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+	base := fmt.Sprintf("[%s: %s]", keyType, valueType)
+	return &fieldTypeNames{
+		Base:  base,
+		Key:   keyType,
+		Value: valueType,
+	}, nil
 }
 
 func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
@@ -74,15 +96,15 @@ func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
 	if err != nil {
 		return "", "", err
 	}
-	keyType, err := c.baseFieldTypeName(kv.Key)
+	key, err := c.fieldTypeBase(kv.Key)
 	if err != nil {
 		return "", "", err
 	}
-	valueType, err := c.baseFieldTypeName(kv.Value)
+	value, err := c.fieldTypeBase(kv.Value)
 	if err != nil {
 		return "", "", err
 	}
-	return keyType, valueType, nil
+	return key.Base, value.Base, nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
