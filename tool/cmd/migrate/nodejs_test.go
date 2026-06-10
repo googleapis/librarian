@@ -426,3 +426,68 @@ proto_library_with_info(
 		})
 	}
 }
+
+func TestBuildNodejsLibrary_MetadataOverrides(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		packageName string
+		repoMeta    string
+		want        *config.NodejsPackage
+	}{
+		{
+			name:        "standard google-cloud package with custom docs",
+			packageName: "@google-cloud/secret-manager",
+			repoMeta:    `{"client_documentation": "https://custom.docs.com/client-ref"}`,
+			want: &config.NodejsPackage{
+				PackageName:                 "@google-cloud/secret-manager",
+				ClientDocumentationOverride: "https://custom.docs.com/client-ref",
+			},
+		},
+		{
+			name:        "non-google-cloud package preserves docs as override",
+			packageName: "secretmanager-utility",
+			// Even though this URL looks like a standard one, since the package name is not @google-cloud/,
+			// the generator will NOT produce this by default. It must be preserved as an override.
+			repoMeta: `{"client_documentation": "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest"}`,
+			want: &config.NodejsPackage{
+				PackageName:                 "secretmanager-utility",
+				ClientDocumentationOverride: "https://cloud.google.com/nodejs/docs/reference/secretmanager-utility/latest",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			pkgDir := filepath.Join(tmpDir, "packages", "google-cloud-secretmanager")
+			if err := os.MkdirAll(pkgDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+
+			pkgJSON := `{"name": "` + test.packageName + `", "version": "6.1.0"}`
+			if err := os.WriteFile(filepath.Join(pkgDir, "package.json"), []byte(pkgJSON), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			owlBot := `
+deep-copy-regex:
+  - source: /google/cloud/secretmanager/(.*)/.*-nodejs
+`
+			if err := os.WriteFile(filepath.Join(pkgDir, ".OwlBot.yaml"), []byte(owlBot), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			if err := os.WriteFile(filepath.Join(pkgDir, ".repo-metadata.json"), []byte(test.repoMeta), 0644); err != nil {
+				t.Fatal(err)
+			}
+
+			// Running buildNodejsLibrary using testdata/googleapis (which contains secretmanager_v1.yaml)
+			got, err := buildNodejsLibrary("testdata/googleapis", filepath.Join(tmpDir, "packages"), "google-cloud-secretmanager")
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, got.Nodejs); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
