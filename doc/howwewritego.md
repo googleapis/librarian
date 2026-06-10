@@ -413,8 +413,10 @@ configures a global default text handler that outputs to `os.Stderr`.
 
 ### Best Practices
 
-1. **Prefer returning errors**: Deeply nested functions should prefer returning errors rather than logging and returning nil/empty values. Logging should be reserved for cross-cutting execution concerns, warnings where execution can proceed, or debugging info.
-2. **Provide structured context**: Always pass structured key-value pairs to log messages:
+1. **Prefer returning errors**: Deeply nested functions should prefer returning errors rather than logging and returning nil/empty values.
+2. **Log at boundaries**: Logging should be reserved for cross-cutting execution concerns, warnings where execution can proceed, or debugging info.
+3. **Provide structured context**: Always pass structured key-value pairs to log messages.
+4. **Maintain consistent keys**: When using structured logging keys (e.g., `"api"`), use them consistently across log sites.
 
    ```go
    slog.Warn("missing version, defaulting to 0.1.0", "api", api, "error", err)
