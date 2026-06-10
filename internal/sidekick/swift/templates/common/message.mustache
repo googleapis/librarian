@@ -84,6 +84,7 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
+    {{#Singular}}
     {{#Optional}}
     self.{{Codec.Name}} = try container.decodeIfPresent({{{Codec.BaseFieldType}}}.self, forKey: .{{Codec.Name}})
     {{/Optional}}
@@ -95,6 +96,28 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
     {{/Codec.Recursive}}
     {{/Optional}}
+    {{/Singular}}
+    {{#Repeated}}
+    self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
+    {{/Repeated}}
+    {{#Map}}
+    {{#Codec.IsStringKeyed}}
+    self.{{Codec.Name}} = try container.decode({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}})
+    {{/Codec.IsStringKeyed}}
+    {{^Codec.IsStringKeyed}}
+    self.{{Codec.Name}} = try { () throws in
+      let stringKeyed = try container.decode([Swift.String : {{{Codec.ValueType}}}].self, forKey: .{{Codec.Name}})
+      let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{{Codec.KeyType}}}, {{{Codec.ValueType}}}) in
+        guard let newKey = {{{Codec.KeyType}}}(key) else {
+          throw DecodingError.typeMismatch(
+            {{{Codec.KeyType}}}.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Incorrect type for map key '{{Codec.Name}}'"))
+        }
+        return (newKey, value)
+      }
+      return Dictionary(uniqueKeysWithValues: tuples)
+    }()
+    {{/Codec.IsStringKeyed}}
+    {{/Map}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
@@ -119,7 +142,24 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     var container = encoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
+    {{#Map}}
+    {{#Codec.IsStringKeyed}}
+    {{! string keys have easy encoding }}
     try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+    {{/Codec.IsStringKeyed}}
+    {{^Codec.IsStringKeyed}}
+    do {
+      let stringKeyed = Dictionary(
+        uniqueKeysWithValues: self.{{Codec.Name}}.lazy.map { (Swift.String($0), $1) }
+      )
+      try container.encode(stringKeyed, forKey: .{{Codec.Name}})
+    }
+    {{/Codec.IsStringKeyed}}
+    {{/Map}}
+    {{^Map}}
+    {{! non-maps have easy encoding }}
+    try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+    {{/Map}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
