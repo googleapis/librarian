@@ -742,6 +742,10 @@ type NodejsPackage struct {
 	// BundleConfig is the path to a GAPIC bundle config file.
 	BundleConfig string `yaml:"bundle_config,omitempty"`
 
+	// DefaultVersion is the default version of the API to use. When omitted,
+	// the version in the first API path is used.
+	DefaultVersion string `yaml:"default_version,omitempty"`
+
 	// Dependencies maps npm package names to version constraints.
 	Dependencies map[string]string `yaml:"dependencies,omitempty"`
 

@@ -286,6 +286,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		"combine-library",
 		"--source-path", stagingDir,
 		"--destination-path", outDir,
+		"--default-version", resolveDefaultVersion(library),
 	}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		combineArgs = append(combineArgs, "--is-esm")
@@ -498,8 +499,8 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 		return err
 	}
 	metadata.DistributionName = DerivePackageName(library)
-	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
+	metadata.DefaultVersion = resolveDefaultVersion(library)
 
 	if strings.HasPrefix(metadata.DistributionName, "@google-cloud/") {
 		pkgSuffix := strings.TrimPrefix(metadata.DistributionName, "@google-cloud/")
@@ -666,6 +667,20 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// resolveDefaultVersion returns the default API version (v1, v1beta etc) for
+// a library, using the Node-specific override if present, or the path of the
+// first API otherwise. If the library has no override and no APIs, an empty
+// string is returned.
+func resolveDefaultVersion(library *config.Library) string {
+	if library.Nodejs != nil && library.Nodejs.DefaultVersion != "" {
+		return library.Nodejs.DefaultVersion
+	}
+	if len(library.APIs) == 0 {
+		return ""
+	}
+	return filepath.Base(library.APIs[0].Path)
 }
 
 // TODO(https://github.com/googleapis/google-cloud-node/issues/8149):
