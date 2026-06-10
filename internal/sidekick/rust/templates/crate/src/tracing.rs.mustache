@@ -82,14 +82,7 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             self.inner.{{Codec.Name}}(req, options));
         {{#Codec.IsLroPoller}}
         #[cfg(google_cloud_unstable_tracing)]
-        {
-            if let Some(recorder) = google_cloud_lro::LroRecorder::current() {
-                if let Some(attempt) = recorder.attempt_count() {
-                    _span.record("gcp.longrunning.poll_attempt_count", attempt);
-                }
-                _span.record("gcp.longrunning.done", false);
-            }
-        }
+        google_cloud_lro::record_polling_attributes!(&_span);
         {{/Codec.IsLroPoller}}
         {{#Codec.IsLroPoller}}
         let result = pending.await;
