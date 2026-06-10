@@ -27,12 +27,7 @@ impl RunQueryRequest {
         false
         {{#Codec.RunQueryFields}}
         {{#JobOnly}}
-        {{#Optional}}
-        || self.{{Name}}.is_some()
-        {{/Optional}}
-        {{^Optional}}
-        || !wkt::internal::is_default(&self.{{Name}})
-        {{/Optional}}
+        || !wkt::internal::is_default(&self.{{FieldName}})
         {{/JobOnly}}
         {{/Codec.RunQueryFields}}
     }
@@ -43,7 +38,7 @@ impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::Qu
         let mut out = Self::default();
         {{#Codec.RunQueryFields}}
         {{#QueryRequest}}
-        out.{{Name}} = req.{{Name}}.into();
+        out.{{FieldName}} = req.{{FieldName}};
         {{/QueryRequest}}
         {{/Codec.RunQueryFields}}
         out
@@ -55,7 +50,7 @@ impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::Jo
         let mut out = Self::default();
         {{#Codec.RunQueryFields}}
         {{#JobConfigurationQuery}}
-        out.{{Name}} = req.{{Name}}.into();
+        out.{{FieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
         {{/Codec.RunQueryFields}}
         out
@@ -67,14 +62,15 @@ impl std::convert::From<RunQueryRequest> for google_cloud_bigquery_v2::model::Jo
         let mut query = google_cloud_bigquery_v2::model::JobConfigurationQuery::default();
         {{#Codec.RunQueryFields}}
         {{#JobConfigurationQuery}}
-        query.{{Name}} = req.{{Name}}.into();
+        query.{{FieldName}} = req.{{FieldName}};
         {{/JobConfigurationQuery}}
         {{/Codec.RunQueryFields}}
         let mut out = Self::default();
         out.query = Some(query);
         {{#Codec.RunQueryFields}}
+        {{! The `dry_run` field is a `bool` in `QueryRequest`, but a `wkt::BoolValue` in `JobConfiguration`. We use `into()` to normalize these. }}
         {{#JobConfiguration}}
-        out.{{Name}} = req.{{Name}}.into();
+        out.{{FieldName}} = req.{{FieldName}}.into();
         {{/JobConfiguration}}
         {{/Codec.RunQueryFields}}
         out

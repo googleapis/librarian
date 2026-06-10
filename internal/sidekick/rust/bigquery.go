@@ -95,7 +95,7 @@ func newRunQueryBuilder(c *codec, model *api.API, skippedFields []string) (*runQ
 
 // createSyntheticMessage builds an api.Message populated with fields from this queryFields list
 // and annotates it using the provided codec.
-func (b runQueryBuilder) createSyntheticMessage(name string) (*api.Message, error) {
+func (b *runQueryBuilder) createSyntheticMessage(name string) (*api.Message, error) {
 	msg := &api.Message{
 		ID:               fmt.Sprintf(".%s.%s", b.model.PackageName, name),
 		Name:             name,
@@ -118,7 +118,6 @@ func (b *runQueryBuilder) builder() (*api.Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	// TODO: check if we can avoid this hack changing data on annotations
 	msgAnn, ok := msg.Codec.(*messageAnnotation)
 	if !ok {
 		return nil, fmt.Errorf("expected message annotation for %q", msg.ID)
@@ -139,18 +138,12 @@ func (b *runQueryBuilder) request() (*api.Message, error) {
 }
 
 // Accessors for template files.
-func (qf *queryField) Name() string {
-	return qf.firstNonNull().Name
+func (qf *queryField) FieldName() string {
+	return toSnake(qf.firstNonNull().Name)
 }
 
 func (qf *queryField) JobOnly() bool {
 	return qf.QueryRequest == nil
-}
-
-func (qf *queryField) Optional() bool {
-	return (qf.QueryRequest != nil && qf.QueryRequest.Optional) ||
-		(qf.JobConfigurationQuery != nil && qf.JobConfigurationQuery.Optional) ||
-		(qf.JobConfiguration != nil && qf.JobConfiguration.Optional)
 }
 
 func (qf *queryField) firstNonNull() *api.Field {

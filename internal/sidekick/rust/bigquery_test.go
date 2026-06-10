@@ -53,8 +53,8 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 	}
 
 	qf := builder.fields[0]
-	if qf.Name() != "query" {
-		t.Errorf("expected field name 'query', got %q", qf.Name())
+	if qf.FieldName() != "query" {
+		t.Errorf("expected field name 'query', got %q", qf.FieldName())
 	}
 	if qf.QueryRequest == nil {
 		t.Error("expected QueryRequest to be set")
@@ -93,23 +93,23 @@ func TestBigQueryFiltering(t *testing.T) {
 		}
 	}
 
-	qrMsg := newTestMsg("QueryRequest", []*api.Field{newTestField("foo", true), newTestField("bar", false)})
-	jcqMsg := newTestMsg("JobConfigurationQuery", []*api.Field{newTestField("foo", true), newTestField("bar", false)})
-	jcMsg := newTestMsg("JobConfiguration", []*api.Field{newTestField("foo", true), newTestField("baz", false)})
+	qrMsg := newTestMsg("QueryRequest", []*api.Field{newTestField("output_only", true), newTestField("foo", false)})
+	jcqMsg := newTestMsg("JobConfigurationQuery", []*api.Field{newTestField("output_only", true), newTestField("foo", false)})
+	jcMsg := newTestMsg("JobConfiguration", []*api.Field{newTestField("output_only", true), newTestField("skip", false)})
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQueryBuilder(c, model, []string{"baz"})
+	builder, err := newRunQueryBuilder(c, model, []string{"skip"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var fieldNames []string
 	for _, f := range builder.fields {
-		fieldNames = append(fieldNames, f.Name())
+		fieldNames = append(fieldNames, f.FieldName())
 	}
 
-	// "foo" and "baz" must be skipped; "bar" must be present.
-	want := []string{"bar"}
+	// "output_only" and "skip" must be skipped; "foo" must be present.
+	want := []string{"foo"}
 	if diff := cmp.Diff(want, fieldNames); diff != "" {
 		t.Errorf("unexpected field list (-want +got):\n%s", diff)
 	}
@@ -216,79 +216,5 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	// Annotations should remain unchanged (not prepended with 'request.')
 	if reqfAnn.FieldName != "foo" {
 		t.Errorf("expected FieldName to remain 'foo', got %q", reqfAnn.FieldName)
-	}
-}
-
-func TestQueryFieldOptionality(t *testing.T) {
-	tests := []struct {
-		name     string
-		qrOpt    bool
-		qrNil    bool
-		jcqOpt   bool
-		jcqNil   bool
-		jcOpt    bool
-		jcNil    bool
-		expected bool
-	}{
-		{
-			name:     "optional in QueryRequest only",
-			qrOpt:    true,
-			jcqNil:   true,
-			jcNil:    true,
-			expected: true,
-		},
-		{
-			name:     "non-optional in QueryRequest only",
-			qrOpt:    false,
-			jcqNil:   true,
-			jcNil:    true,
-			expected: false,
-		},
-		{
-			name:     "optional in JobConfigurationQuery only",
-			qrNil:    true,
-			jcqOpt:   true,
-			jcNil:    true,
-			expected: true,
-		},
-		{
-			name:     "optional in JobConfiguration only",
-			qrNil:    true,
-			jcqNil:   true,
-			jcOpt:    true,
-			expected: true,
-		},
-		{
-			name:     "mixed optional and non-optional",
-			qrOpt:    false,
-			jcqOpt:   true,
-			jcOpt:    false,
-			expected: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var qrField, jcqField, jcField *api.Field
-			if !tt.qrNil {
-				qrField = &api.Field{Optional: tt.qrOpt}
-			}
-			if !tt.jcqNil {
-				jcqField = &api.Field{Optional: tt.jcqOpt}
-			}
-			if !tt.jcNil {
-				jcField = &api.Field{Optional: tt.jcOpt}
-			}
-
-			qf := &queryField{
-				QueryRequest:          qrField,
-				JobConfigurationQuery: jcqField,
-				JobConfiguration:      jcField,
-			}
-
-			if got := qf.Optional(); got != tt.expected {
-				t.Errorf("expected Optional() = %v, got %v", tt.expected, got)
-			}
-		})
 	}
 }
