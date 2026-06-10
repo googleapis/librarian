@@ -56,12 +56,6 @@ type fieldAnnotations struct {
 
 	// Recursive is true if the field is a recursive reference to another message.
 	Recursive bool
-
-	// InitializerType is the Swift type name of this field as it appears in the initializer signature.
-	//
-	// For recursive fields, this is the unwrapped type with an optional suffix (e.g., `Node?`), rather
-	// than the boxed type (`GoogleCloudWkt.Recursive<Node>?`). For standard fields, it matches `FieldType`.
-	InitializerType string
 }
 
 // IsStringKeyed returns true if the field is a map field and the key is a
@@ -85,14 +79,13 @@ func (c *codec) annotateField(field *api.Field) error {
 	}
 
 	annotations := &fieldAnnotations{
-		Name:            camelCase(field.Name),
-		FieldType:       parts.Full,
-		BaseFieldType:   parts.Base,
-		KeyType:         parts.Key,
-		ValueType:       parts.Value,
-		PackageName:     packageName,
-		DocLines:        docLines,
-		InitializerType: parts.Full,
+		Name:          camelCase(field.Name),
+		FieldType:     parts.Full,
+		BaseFieldType: parts.Base,
+		KeyType:       parts.Key,
+		ValueType:     parts.Value,
+		PackageName:   packageName,
+		DocLines:      docLines,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -104,7 +97,6 @@ func (c *codec) annotateField(field *api.Field) error {
 	//    automatically using the native indirect case mechanism.
 	if field.Recursive && field.Singular() && !field.IsOneOf {
 		annotations.Recursive = true
-		annotations.InitializerType = parts.Base + "?"
 		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
 	}
