@@ -20,6 +20,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -29,6 +30,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/statepb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -258,7 +260,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 		}
 
 		// Save the original values of the library state fields, so we can restore them if the release fails.
-		originalLib := library.deepCopy()
+		originalLib := deepCopyLibrary(library)
 		// Update the pipeline state to record what we're releasing and when, and to clear the next version field.
 		// Performing this before anything else means that container code can use the pipeline state for the steps
 		// below, if it doesn't want/need to store the version separately.
@@ -442,4 +444,19 @@ func isReleaseWorthy(messages []*CommitMessage, libraryId string) bool {
 		}
 	}
 	return false
+}
+
+func deepCopyLibrary(lib *statepb.LibraryState) *statepb.LibraryState {
+	return &statepb.LibraryState{
+		Id:                        lib.Id,
+		CurrentVersion:            lib.CurrentVersion,
+		NextVersion:               lib.NextVersion,
+		GenerationAutomationLevel: lib.GenerationAutomationLevel,
+		ReleaseAutomationLevel:    lib.ReleaseAutomationLevel,
+		ReleaseTimestamp:          proto.Clone(lib.ReleaseTimestamp).(*timestamppb.Timestamp),
+		LastGeneratedCommit:       lib.LastGeneratedCommit,
+		LastReleasedCommit:        lib.LastReleasedCommit,
+		ApiPaths:                  slices.Clone(lib.ApiPaths),
+		SourcePaths:               slices.Clone(lib.SourcePaths),
+	}
 }
