@@ -30,6 +30,7 @@ import (
 	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -224,6 +225,19 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 		}
 		library.Keep = append(library.Keep, v1smallKeep...)
 	}
+
+	// Read existing .repo-metadata.json if it exists to preserve custom metadata overrides.
+	if meta, err := repometadata.Read(pkgDir); err == nil && meta != nil {
+		var defaultClientDoc string
+		if strings.HasPrefix(pkgJSON.Name, "@google-cloud/") {
+			pkgSuffix := strings.TrimPrefix(pkgJSON.Name, "@google-cloud/")
+			defaultClientDoc = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
+		}
+		if meta.ClientDocumentation != "" && meta.ClientDocumentation != defaultClientDoc {
+			library.Nodejs.ClientDocumentationOverride = meta.ClientDocumentation
+		}
+	}
+
 	return library, nil
 }
 

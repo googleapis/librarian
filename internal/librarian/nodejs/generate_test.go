@@ -1012,7 +1012,6 @@ func TestWriteRepoMetadata(t *testing.T) {
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-
 	for _, test := range []struct {
 		name    string
 		library *config.Library
