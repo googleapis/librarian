@@ -117,10 +117,11 @@ func OutputWithEnv(ctx context.Context, env map[string]string, command string, a
 }
 
 func buildCmd(ctx context.Context, dir string, env map[string]string, command string, arg ...string) *exec.Cmd {
+	// Merge system PATH env with the provided environment variables.
 	pathEnv := os.Getenv(envPath)
 	if env != nil {
 		if val, ok := env[envPath]; ok {
-			pathEnv = val
+			pathEnv = fmt.Sprintf("%s:%s", val, pathEnv)
 		}
 	}
 	resolvedCommand, err := lookPath(command, pathEnv)
@@ -134,6 +135,10 @@ func buildCmd(ctx context.Context, dir string, env map[string]string, command st
 	if len(env) > 0 {
 		cmd.Env = os.Environ()
 		for k, v := range env {
+			// If the environment variable is PATH, merge it with the system PATH
+			if k == envPath {
+				v = pathEnv
+			}
 			cmd.Env = append(cmd.Env, k+"="+v)
 		}
 	}

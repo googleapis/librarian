@@ -36,15 +36,17 @@ import (
 const (
 	// DefaultBranchMaster represents the default git branch "master".
 	DefaultBranchMaster = "master"
+	maxDownloadRetries  = 3
 )
 
 var (
-	errChecksumMismatch = errors.New("checksum mismatch")
-	errMissingSHA256    = errors.New("must provide expected SHA256")
-	defaultBackoff      = 10 * time.Second
+	errAbsSymlinks         = errors.New("absolute symlinks are not allowed")
+	errChecksumMismatch    = errors.New("checksum mismatch")
+	errMissingSHA256       = errors.New("must provide expected SHA256")
+	errSymlinkEscape       = errors.New("symlinks are not allowed to escape destination")
+	errUnsupportedFileType = errors.New("unsupported file type")
+	defaultBackoff         = 10 * time.Second
 )
-
-const maxDownloadRetries = 3
 
 // Endpoints defines the endpoints used to access GitHub.
 type Endpoints struct {
@@ -447,6 +449,26 @@ func extractTarball(tarballPath, destDir string) error {
 				return err
 			}
 			out.Close()
+		case tar.TypeSymlink:
+			// Ensure the symlink target does not escape the destination directory.
+			linkTarget := hdr.Linkname
+			if filepath.IsAbs(linkTarget) {
+				return fmt.Errorf("%w: %s", errAbsSymlinks, linkTarget)
+			}
+			var resolvedTarget string
+			resolvedTarget = filepath.Join(filepath.Dir(target), linkTarget)
+			relLink, err := filepath.Rel(destDir, resolvedTarget)
+			if err != nil || strings.Contains(relLink, "..") {
+				return fmt.Errorf("%w: symlink target %q escapes destination directory %q", errSymlinkEscape, linkTarget, destDir)
+			}
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			if err := os.Symlink(linkTarget, target); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("%w: %v", errUnsupportedFileType, hdr.Typeflag)
 		}
 	}
 }

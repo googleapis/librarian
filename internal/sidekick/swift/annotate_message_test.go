@@ -45,6 +45,7 @@ func TestAnnotateMessage(t *testing.T) {
 				DocLines:            []string{"A secret message.", "With two lines."},
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
+				SampleField:         "secretKey",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -61,6 +62,7 @@ func TestAnnotateMessage(t *testing.T) {
 				DocLines:            []string{"A message named Protocol."},
 				TypeURL:             "type.googleapis.com/test.Protocol",
 				CustomSerialization: false,
+				SampleField:         "<placeholder>",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -76,6 +78,7 @@ func TestAnnotateMessage(t *testing.T) {
 				Name:                "WithOneof",
 				TypeURL:             "type.googleapis.com/test.WithOneof",
 				CustomSerialization: true,
+				SampleField:         "<placeholder>",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -93,6 +96,7 @@ func TestAnnotateMessage(t *testing.T) {
 				Name:                "WithCustomJSON",
 				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
 				CustomSerialization: true,
+				SampleField:         "secretKey",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -117,6 +121,7 @@ func TestAnnotateMessage(t *testing.T) {
 				IsPaginatedResponse: true,
 				PageableItemField:   "secretKey",
 				PageableItemType:    "SecretKey",
+				SampleField:         "secretKey",
 			},
 			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
 		},
@@ -206,8 +211,9 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	// Verify annotations on request message
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:    "ListSecretsRequest",
-		TypeURL: "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
+		Name:        "ListSecretsRequest",
+		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
+		SampleField: "pageSize",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -225,6 +231,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		IsPaginatedResponse: true,
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
+		SampleField:         "secrets",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -274,8 +281,9 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 
 	gotOuter := outerMessage.Codec.(*messageAnnotations)
 	wantOuter := &messageAnnotations{
-		Name:    "OuterMessage",
-		TypeURL: "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+		Name:        "OuterMessage",
+		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+		SampleField: "<placeholder>",
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

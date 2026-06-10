@@ -27,7 +27,25 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public var {{Codec.Name}}: {{{Codec.FieldType}}}
+  {{#Singular}}
+  {{#Codec.Recursive}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
+  {{/Codec.Recursive}}
+  {{^Codec.Recursive}}
+  {{^Optional}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}()
+  {{/Optional}}
+  {{#Optional}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
+  {{/Optional}}
+  {{/Codec.Recursive}}
+  {{/Singular}}
+  {{#Repeated}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = []
+  {{/Repeated}}
+  {{#Map}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = [:]
+  {{/Map}}
   {{/IsOneOf}}
   {{/Fields}}
   {{#OneOfs}}
@@ -35,53 +53,24 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public var {{Codec.PropertyName}}: {{Codec.Name}}?
+  public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
   {{/OneOfs}}
 
-  {{! Provide a memberwise initializer, with defaults for each field. }}
   /// Initialize a new instance of `{{Codec.Name}}`.
-  public init(
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
-    {{#Singular}}
-    {{#Codec.Recursive}}
-    {{Codec.Name}}: {{{Codec.InitializerType}}} = nil,
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    {{^Optional}}
-    {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}(),
-    {{/Optional}}
-    {{#Optional}}
-    {{Codec.Name}}: {{{Codec.InitializerType}}} = nil,
-    {{/Optional}}
-    {{/Codec.Recursive}}
-    {{/Singular}}
-    {{#Repeated}}
-    {{Codec.Name}}: {{{Codec.FieldType}}} = [],
-    {{/Repeated}}
-    {{#Map}}
-    {{Codec.Name}}: {{{Codec.FieldType}}} = [:],
-    {{/Map}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    {{Codec.PropertyName}}: {{Codec.Name}}? = nil,
-    {{/OneOfs}}
-  ) {
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{#Codec.Recursive}}
-    self.{{Codec.Name}} = {{Codec.Name}}.map { {{Parent.Codec.Model.WktPackage}}.Recursive(value: $0) }
-    {{/Codec.Recursive}}
-    {{^Codec.Recursive}}
-    self.{{Codec.Name}} = {{Codec.Name}}
-    {{/Codec.Recursive}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
-    {{/OneOfs}}
+  public init() {}
+
+  /// Use `config` to return a new instance of this object, with some fields updated.
+  ///
+  /// Commonly used to initialize the value, for example:
+  ///
+  /// ```
+  /// let value = {{Codec.Name}}().with { $0.{{{Codec.SampleField}}} = ... }
+  /// ```
+  {{! Using `with` for the name does not conflict with field name: https://godbolt.org/z/bxbsdfhfo }}
+  public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
+    var copy = self
+    try config(&copy)
+    return copy
   }
 
   {{#Codec.CustomSerialization}}

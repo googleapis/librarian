@@ -21,8 +21,12 @@ import (
 	"path/filepath"
 )
 
-// EnvLibrarianCache is the environment variable used to override the default cache directory.
-const EnvLibrarianCache = "LIBRARIAN_CACHE"
+const (
+	// EnvLibrarianBin is the environment variable used to override the default bin directory.
+	EnvLibrarianBin = "LIBRARIAN_BIN"
+	// EnvLibrarianCache is the environment variable used to override the default cache directory.
+	EnvLibrarianCache = "LIBRARIAN_CACHE"
+)
 
 // Directory returns the root cache directory for librarian operations. It
 // checks the $LIBRARIAN_CACHE environment variable, falling back to
@@ -37,4 +41,18 @@ func Directory() (string, error) {
 		return "", fmt.Errorf("failed to get user cache directory: %w", err)
 	}
 	return filepath.Join(home, "librarian"), nil
+}
+
+// BinDirectory returns the directory where librarian bin files are stored.
+// It checks the $LIBRARIAN_BIN environment variable, falling back to the "bin" subdirectory
+// under the cache directory if not set.
+func BinDirectory() (string, error) {
+	if binDir := os.Getenv(EnvLibrarianBin); binDir != "" {
+		return binDir, nil
+	}
+	cacheDir, err := Directory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(cacheDir, "bin"), nil
 }

@@ -334,22 +334,10 @@ type RustPaginationOverride struct {
 }
 
 // RustDiscovery contains discovery-specific configuration for LRO polling.
-type RustDiscovery struct {
-	// OperationID is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation").
-	OperationID string `yaml:"operation_id"`
-
-	// Pollers is a list of LRO polling configurations.
-	Pollers []RustPoller `yaml:"pollers,omitempty"`
-}
+type RustDiscovery = CommonDiscovery
 
 // RustPoller defines how to find a suitable poller RPC for discovery APIs.
-type RustPoller struct {
-	// Prefix is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}").
-	Prefix string `yaml:"prefix"`
-
-	// MethodID is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get").
-	MethodID string `yaml:"method_id"`
-}
+type RustPoller = CommonPoller
 
 // PythonPackage contains Python-specific library configuration. It inherits
 // from PythonDefault, allowing library-specific overrides of global settings.
@@ -779,6 +767,10 @@ type NodejsPackage struct {
 
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.

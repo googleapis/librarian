@@ -508,6 +508,46 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	}
 }
 
+func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{Name: "google-cloud-test"}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create staging structure with a common_resources.proto file.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected common_resources.proto to be removed after post-processing")
+	}
+}
+
 func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
@@ -956,28 +996,67 @@ func TestWriteRepoMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outDir := t.TempDir()
+
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	library := &config.Library{
-		Name: "google-cloud-secretmanager",
-		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-	}
-	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
-		t.Fatal(err)
-	}
-	got, err := repometadata.Read(outDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := sample.RepoMetadata()
-	want.DistributionName = "@google-cloud/secretmanager"
-	want.Language = cfg.Language
-	want.Repo = cfg.Repo
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    func() *repometadata.RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+		{
+			name: "client documentation override",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					ClientDocumentationOverride: "https://custom.docs.com/ref",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://custom.docs.com/ref"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
+				t.Fatal(err)
+			}
+			got, err := repometadata.Read(outDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := test.want()
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -1041,7 +1120,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 			},
 		},
 		{
@@ -1059,7 +1138,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 			},
 		},
 		{
@@ -1078,14 +1157,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
 			name: "deduplicates protos",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
-					AdditionalProtos: []string{commonProtos, "other.proto"},
+					AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
 							Path:             "google/cloud/secretmanager/v1",
@@ -1097,7 +1176,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto", "more.proto"},
 			},
 		},
 		{
@@ -1115,7 +1194,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 				DIREGAPIC:        true,
 			},
 		},
@@ -1217,7 +1296,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: false,
-				AdditionalProtos:    []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos:    []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
