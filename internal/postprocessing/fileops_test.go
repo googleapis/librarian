@@ -15,6 +15,8 @@
 package postprocessing
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -23,30 +25,32 @@ import (
 )
 
 func TestCopyFile(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		content string
-	}{
-		{"success", "hello copy"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			srcPath := filepath.Join(dir, "src.txt")
-			dstPath := filepath.Join(dir, "dst.txt")
-			if err := os.WriteFile(srcPath, []byte(test.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := CopyFile(srcPath, dstPath); err != nil {
-				t.Fatal(err)
-			}
-			gotBytes, err := os.ReadFile(dstPath)
-			if err != nil {
-				t.Fatal(err)
-			}
-			got := string(gotBytes)
-			if diff := cmp.Diff(test.content, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
+	dir := t.TempDir()
+	srcPath := filepath.Join(dir, "src.txt")
+	dstPath := filepath.Join(dir, "dst.txt")
+	content := "hello copy"
+	if err := os.WriteFile(srcPath, []byte(content), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := CopyFile(srcPath, dstPath); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(dstPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := string(gotBytes)
+	if diff := cmp.Diff(content, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestCopyFile_Error(t *testing.T) {
+	dir := t.TempDir()
+	srcPath := filepath.Join(dir, "nonexistent.txt")
+	dstPath := filepath.Join(dir, "dst.txt")
+	err := CopyFile(srcPath, dstPath)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("CopyFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
 	}
 }
