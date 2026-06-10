@@ -25,3 +25,9 @@ import (
 func CopyFile(src, dst string) error {
 	return filesystem.CopyFile(src, dst)
 }
+
+// RemoveFile removes the file at the specified path.
+// It acts as a wrapper around filesystem.RemoveFile.
+func RemoveFile(path string) error {
+	return filesystem.RemoveFile(path)
+}

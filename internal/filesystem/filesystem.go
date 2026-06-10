@@ -17,8 +17,10 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -81,4 +83,14 @@ func CopyFile(src, dest string) error {
 // Unzip unzips the src archive into dest directory using the system unzip command.
 func Unzip(ctx context.Context, src, dest string) error {
 	return command.Run(ctx, "unzip", "-q", "-o", src, "-d", dest)
+}
+
+// RemoveFile removes the file at the specified path.
+// It silently ignores errors if the file does not exist.
+func RemoveFile(path string) error {
+	err := os.Remove(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
 }

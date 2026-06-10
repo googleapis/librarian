@@ -54,3 +54,14 @@ func TestCopyFile_Error(t *testing.T) {
 		t.Errorf("CopyFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
 	}
 }
+
+func TestRemoveFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.txt")
+	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RemoveFile(path); err != nil {
+		t.Fatal(err)
+	}
+}
