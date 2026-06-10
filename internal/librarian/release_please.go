@@ -25,7 +25,6 @@ import (
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 )
 
@@ -78,35 +77,21 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	}
 
 	var pkgPath string
-	var previewPath string
 	var extraFiles []any
-	var previewExtraFiles []any
 	component := lib.Name
 
 	switch cfg.Language {
 	case config.LanguageGo:
 		pkgPath = lib.Name
-		if lib.Preview != nil {
-			previewPath = golang.ReleasePleasePreviewPkgPrefix + lib.Name
-		}
 	case config.LanguagePython:
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
-		if lib.Preview != nil {
-			previewPath = python.ReleasePleasePreviewPkgPrefix + lib.Name
-			previewExtraFiles = python.ReleasePleaseExtraFiles(lib.Preview)
-		}
 	default:
 		return nil
 	}
 
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
 		return err
-	}
-	if lib.Preview != nil {
-		if err := syncPackageToReleasePlease(manifest, packages, previewPath, lib.Preview.Version, component, previewExtraFiles); err != nil {
-			return err
-		}
 	}
 
 	manifestOut, err := json.MarshalIndent(manifest, "", "  ")
@@ -244,14 +229,14 @@ func addUniqueExtraFiles(seen map[string]*extraFile, items []any) error {
 		existingEF, exists := seen[ef.path]
 		if !exists {
 			seen[ef.path] = ef
-		} else {
-			if ef.isMap && !existingEF.isMap {
-				seen[ef.path] = ef
-			} else if ef.isMap && existingEF.isMap {
-				if !reflect.DeepEqual(ef.rawMap, existingEF.rawMap) {
-					return fmt.Errorf("conflicting configurations for extra-file %q:\nexisting: %v\nnew: %v", ef.path, existingEF.rawMap, ef.rawMap)
-				}
-			}
+			continue
+		}
+		if ef.isMap && !existingEF.isMap {
+			seen[ef.path] = ef
+			continue
+		}
+		if ef.isMap && existingEF.isMap && !reflect.DeepEqual(ef.rawMap, existingEF.rawMap) {
+			return fmt.Errorf("conflicting configurations for extra-file %q:\nexisting: %v\nnew: %v", ef.path, existingEF.rawMap, ef.rawMap)
 		}
 	}
 	return nil

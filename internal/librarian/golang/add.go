@@ -20,9 +20,6 @@ const (
 	// defaultVersion is the first version used for a new library.
 	// This is set on the initial `librarian add` for a new API.
 	defaultVersion = "0.0.0"
-
-	// ReleasePleasePreviewPkgPrefix is the release-please preview package prefix for Go libraries.
-	ReleasePleasePreviewPkgPrefix = "preview/internal/"
 )
 
 // Add initializes a new Go library with default values.

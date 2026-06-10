@@ -32,8 +32,6 @@ const (
 
 	// ReleasePleasePkgPrefix is the release-please package prefix for Python libraries.
 	ReleasePleasePkgPrefix = "packages/"
-	// ReleasePleasePreviewPkgPrefix is the release-please preview package prefix for Python libraries.
-	ReleasePleasePreviewPkgPrefix = "preview-packages/"
 )
 
 // libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that

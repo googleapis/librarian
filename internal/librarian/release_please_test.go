@@ -101,27 +101,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 			wantManifest: `{"secretmanager":"1.0.0"}`,
 			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"}}}`,
 		},
-		{
-			name:            "new go library with preview",
-			language:        config.LanguageGo,
-			initialManifest: `{}`,
-			initialConfig:   `{"packages": {}}`,
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Preview: &config.Library{
-					Version: "1.1.0-preview.1",
-					APIs: []*config.API{
-						{Path: "google/cloud/secretmanager/v1beta1"},
-					},
-				},
-			},
-			wantManifest: `{"preview/internal/secretmanager":"1.1.0-preview.1","secretmanager":"1.0.0"}`,
-			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"},"preview/internal/secretmanager":{"component":"secretmanager"}}}`,
-		},
+
 		{
 			name:            "new python library",
 			language:        config.LanguagePython,
@@ -235,92 +215,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 				}
 			}`,
 		},
-		{
-			name:            "preserve existing extra-files for preview library",
-			language:        config.LanguageGo,
-			initialManifest: `{}`,
-			initialConfig: `{
-				"packages": {
-					"preview/internal/secretmanager": {
-						"component": "secretmanager",
-						"extra-files": ["some/manual/preview-file.txt"]
-					}
-				}
-			}`,
-			library: &config.Library{
-				Name:    "secretmanager",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Preview: &config.Library{
-					Version: "1.1.0-preview.1",
-					APIs: []*config.API{
-						{Path: "google/cloud/secretmanager/v1beta1"},
-					},
-				},
-			},
-			wantManifest: `{"preview/internal/secretmanager":"1.1.0-preview.1","secretmanager":"1.0.0"}`,
-			wantConfig: `{
-				"packages": {
-					"secretmanager": {
-						"component": "secretmanager"
-					},
-					"preview/internal/secretmanager": {
-						"component": "secretmanager",
-						"extra-files": ["some/manual/preview-file.txt"]
-					}
-				}
-			}`,
-		},
-		{
-			name:            "new python library with preview",
-			language:        config.LanguagePython,
-			initialManifest: `{}`,
-			initialConfig:   `{"packages": {}}`,
-			library: &config.Library{
-				Name:    "google-cloud-secretmanager",
-				Version: "1.0.0",
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-				Preview: &config.Library{
-					Version: "1.1.0-preview.1",
-					APIs: []*config.API{
-						{Path: "google/cloud/secretmanager/v1beta1"},
-					},
-				},
-			},
-			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0","preview-packages/google-cloud-secretmanager":"1.1.0-preview.1"}`,
-			wantConfig: `{
-				"packages": {
-					"packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1.json",
-								"type": "json"
-							}
-						]
-					},
-					"preview-packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager",
-						"extra-files": [
-							"google/cloud/secretmanager/gapic_version.py",
-							"google/cloud/secretmanager_v1beta1/gapic_version.py",
-							{
-								"jsonpath": "$.clientLibrary.version",
-								"path": "samples/generated_samples/snippet_metadata_google.cloud.secretmanager.v1beta1.json",
-								"type": "json"
-							}
-						]
-					}
-				}
-			}`,
-		},
+
 		{
 			name:            "replace existing string extra-files with map if same path",
 			language:        config.LanguagePython,
