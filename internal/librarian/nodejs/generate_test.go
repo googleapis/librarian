@@ -455,7 +455,7 @@ func TestRunPostProcessor(t *testing.T) {
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	// Verify that the package staging directory is successfully cleaned up
@@ -500,7 +500,7 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	}
 
 	cfg := &config.Config{Language: config.LanguageNodejs}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, ".OwlBot.yaml")); !errors.Is(err, fs.ErrNotExist) {
@@ -540,7 +540,7 @@ func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
 	}
 
 	cfg := &config.Config{Language: config.LanguageNodejs}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := os.Stat(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); !errors.Is(err, fs.ErrNotExist) {
@@ -604,7 +604,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	// Verify package staging directory is cleaned up
@@ -670,7 +670,7 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1003,11 +1003,9 @@ func TestWriteRepoMetadata(t *testing.T) {
 	}
 
 	for _, test := range []struct {
-		name            string
-		library         *config.Library
-		requiresBilling bool
-		codeownerTeam   string
-		want            func() *repometadata.RepoMetadata
+		name    string
+		library *config.Library
+		want    func() *repometadata.RepoMetadata
 	}{
 		{
 			name: "no overrides",
@@ -1015,7 +1013,6 @@ func TestWriteRepoMetadata(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
-			requiresBilling: true,
 			want: func() *repometadata.RepoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
@@ -1037,7 +1034,6 @@ func TestWriteRepoMetadata(t *testing.T) {
 					ClientDocumentationOverride: "https://custom.docs.com/ref",
 				},
 			},
-			requiresBilling: true,
 			want: func() *repometadata.RepoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
@@ -1055,9 +1051,10 @@ func TestWriteRepoMetadata(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					CodeownerTeam: "@googleapis/ml-apis",
+				},
 			},
-			requiresBilling: true,
-			codeownerTeam:   "@googleapis/ml-apis",
 			want: func() *repometadata.RepoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
@@ -1076,8 +1073,10 @@ func TestWriteRepoMetadata(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					BillingNotRequired: true,
+				},
 			},
-			requiresBilling: false,
 			want: func() *repometadata.RepoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
@@ -1093,7 +1092,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
-			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir, test.requiresBilling, test.codeownerTeam); err != nil {
+			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
 				t.Fatal(err)
 			}
 			got, err := repometadata.Read(outDir)
@@ -1111,7 +1110,7 @@ func TestWriteRepoMetadata(t *testing.T) {
 func TestWriteRepoMetadata_NoAPIs(t *testing.T) {
 	cfg := &config.Config{Language: config.LanguageNodejs}
 	library := &config.Library{Name: "google-cloud-test"}
-	if err := writeRepoMetadata(cfg, library, "", t.TempDir(), false, ""); err != nil {
+	if err := writeRepoMetadata(cfg, library, "", t.TempDir()); err != nil {
 		t.Errorf("expected nil error for library with no APIs, got: %v", err)
 	}
 }
@@ -1146,7 +1145,7 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 		Repo:     "googleapis/google-cloud-node",
 	}
 
-	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir, false, ""); err != nil {
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
 		t.Fatal(err)
 	}
 	// The file should have been created at outDir/output.txt

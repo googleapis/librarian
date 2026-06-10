@@ -741,7 +741,7 @@ type NodejsPackage struct {
 
 	// BillingNotRequired indicates whether the API does NOT require billing.
 	// This is typically false.
-	BillingNotRequired *bool `yaml:"billing_not_required,omitempty"`
+	BillingNotRequired bool `yaml:"billing_not_required,omitempty"`
 
 	// BundleConfig is the path to a GAPIC bundle config file.
 	BundleConfig string `yaml:"bundle_config,omitempty"`

@@ -55,21 +55,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to resolve output directory path: %w", err)
 	}
 
-	// Determine requires_billing and codeowner_team.
-	// 1. Default requires_billing to true, and codeownerTeam to empty (matching Java).
-	requiresBilling := true
-	var codeownerTeam string
-
-	// 2. Configuration in librarian.yaml takes absolute precedence.
-	if library.Nodejs != nil {
-		if library.Nodejs.BillingNotRequired != nil && *library.Nodejs.BillingNotRequired {
-			requiresBilling = false
-		}
-		if library.Nodejs.CodeownerTeam != "" {
-			codeownerTeam = library.Nodejs.CodeownerTeam
-		}
-	}
-
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
 	}
@@ -85,7 +70,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("failed to generate api %q: %w", api.Path, err)
 		}
 	}
-	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir, requiresBilling, codeownerTeam); err != nil {
+	if err := runPostProcessor(ctx, cfg, library, googleapisDir, repoRoot, outdir); err != nil {
 		return fmt.Errorf("failed to run post processor: %w", err)
 	}
 
@@ -273,7 +258,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
-func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string, requiresBilling bool, codeownerTeam string) error {
+func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
 
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
@@ -342,7 +327,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to restore copyright year: %w", err)
 	}
 	if !slices.Contains(library.Keep, ".repo-metadata.json") {
-		if err := writeRepoMetadata(cfg, library, googleapisDir, outDir, requiresBilling, codeownerTeam); err != nil {
+		if err := writeRepoMetadata(cfg, library, googleapisDir, outDir); err != nil {
 			return fmt.Errorf("failed to write repo metadata: %w", err)
 		}
 	}
@@ -505,13 +490,25 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 // and all .repo-metadata.json generation once the documentation pipeline is
 // migrated to read from librarian.yaml directly.
 // writeRepoMetadata generates .repo-metadata.json for the library.
-func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string, requiresBilling bool, codeownerTeam string) error {
+func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
 	}
 	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return err
+	}
+
+	// Determine requires_billing and codeowner_team.
+	requiresBilling := true
+	var codeownerTeam string
+	if library.Nodejs != nil {
+		if library.Nodejs.BillingNotRequired {
+			requiresBilling = false
+		}
+		if library.Nodejs.CodeownerTeam != "" {
+			codeownerTeam = library.Nodejs.CodeownerTeam
+		}
 	}
 
 	metadata.RequiresBilling = &requiresBilling
