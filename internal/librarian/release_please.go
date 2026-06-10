@@ -76,21 +76,14 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		bulkConfig["packages"] = packages
 	}
 
-	var pkgPath string
 	var extraFiles []any
-	component := lib.Name
-
-	switch cfg.Language {
-	case config.LanguageGo:
-		pkgPath = lib.Name
-	case config.LanguagePython:
+	pkgPath := lib.Name
+	if cfg.Language == config.LanguagePython {
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
-	default:
-		return nil
 	}
 
-	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
+	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, lib.Name, extraFiles); err != nil {
 		return err
 	}
 

@@ -16,11 +16,9 @@ package golang
 
 import "github.com/googleapis/librarian/internal/config"
 
-const (
-	// defaultVersion is the first version used for a new library.
-	// This is set on the initial `librarian add` for a new API.
-	defaultVersion = "0.0.0"
-)
+// defaultVersion is the first version used for a new library.
+// This is set on the initial `librarian add` for a new API.
+const defaultVersion = "0.0.0"
 
 // Add initializes a new Go library with default values.
 func Add(lib *config.Library) *config.Library {
