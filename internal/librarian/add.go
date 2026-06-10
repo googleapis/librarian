@@ -89,9 +89,6 @@ A typical librarian workflow for adding a new client library is:
 }
 
 func runAdd(ctx context.Context, cfg *config.Config, api string) error {
-	if api == "" || api == "preview" {
-		return fmt.Errorf("invalid API path: %q", api)
-	}
 	name, cfg, err := addLibrary(cfg, api)
 	if err != nil {
 		return err

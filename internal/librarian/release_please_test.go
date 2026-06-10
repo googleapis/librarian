@@ -120,7 +120,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 				},
 			},
 			wantManifest: `{"preview/internal/secretmanager":"1.1.0-preview.1","secretmanager":"1.0.0"}`,
-			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"},"preview/internal/secretmanager":{"component":"secretmanager-preview"}}}`,
+			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"},"preview/internal/secretmanager":{"component":"secretmanager"}}}`,
 		},
 		{
 			name:            "new python library",
@@ -242,7 +242,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 			initialConfig: `{
 				"packages": {
 					"preview/internal/secretmanager": {
-						"component": "secretmanager-preview",
+						"component": "secretmanager",
 						"extra-files": ["some/manual/preview-file.txt"]
 					}
 				}
@@ -267,7 +267,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 						"component": "secretmanager"
 					},
 					"preview/internal/secretmanager": {
-						"component": "secretmanager-preview",
+						"component": "secretmanager",
 						"extra-files": ["some/manual/preview-file.txt"]
 					}
 				}
@@ -307,7 +307,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 						]
 					},
 					"preview-packages/google-cloud-secretmanager": {
-						"component": "google-cloud-secretmanager-preview",
+						"component": "google-cloud-secretmanager",
 						"extra-files": [
 							"google/cloud/secretmanager/gapic_version.py",
 							"google/cloud/secretmanager_v1beta1/gapic_version.py",

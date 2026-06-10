@@ -152,11 +152,9 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
 		version := serviceconfig.ExtractVersion(api.Path)
 
-		var versionlessPath string
+		versionlessPath := api.Path
 		if version != "" {
 			versionlessPath = path.Dir(api.Path)
-		} else {
-			versionlessPath = api.Path
 		}
 
 		if !addedVersionless[versionlessPath] {
@@ -168,6 +166,7 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 			extraFiles = append(extraFiles, versionlessPath+"_"+version+"/gapic_version.py")
 		}
 
+		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
 		snippetMetadata := map[string]any{
 			"jsonpath": "$.clientLibrary.version",
 			"path":     "samples/generated_samples/snippet_metadata_" + protoPackage + ".json",

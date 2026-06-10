@@ -104,7 +104,7 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 	if lib.Preview != nil {
-		if err := syncPackageToReleasePlease(manifest, packages, previewPath, lib.Preview.Version, component+"-preview", previewExtraFiles); err != nil {
+		if err := syncPackageToReleasePlease(manifest, packages, previewPath, lib.Preview.Version, component, previewExtraFiles); err != nil {
 			return err
 		}
 	}
