@@ -20,6 +20,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -50,6 +52,7 @@ func Run(ctx context.Context, args ...string) error {
 		},
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			command.Verbose = cmd.Bool("verbose")
+			setupLogger(command.Verbose)
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
@@ -132,4 +135,19 @@ https://go.dev/ref/mod#versions.`,
 			return nil
 		},
 	}
+}
+
+// setupLogger configures the default slog logger.
+// It uses a text handler writing to stderr at LevelWarn and above by default.
+// If verbose is true, the log level is set to LevelDebug.
+// Source information (file name and line number) is included in each log entry.
+func setupLogger(verbose bool) {
+	level := slog.LevelWarn
+	if verbose {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true,
+	})))
 }

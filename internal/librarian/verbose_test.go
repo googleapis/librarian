@@ -15,14 +15,17 @@
 package librarian
 
 import (
+	"log/slog"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
 )
 
 func TestVerboseFlag(t *testing.T) {
+	oldDefault := slog.Default()
 	t.Cleanup(func() {
 		command.Verbose = false
+		slog.SetDefault(oldDefault)
 	})
 
 	for _, test := range []struct {
@@ -41,6 +44,15 @@ func TestVerboseFlag(t *testing.T) {
 			}
 			if command.Verbose != test.wantVerbose {
 				t.Errorf("command.Verbose = %t, want %t", command.Verbose, test.wantVerbose)
+			}
+
+			// Verify slog level configuration.
+			ctx := t.Context()
+			if got := slog.Default().Enabled(ctx, slog.LevelDebug); got != test.wantVerbose {
+				t.Errorf("slog.Default().Enabled(Debug) = %t, want %t", got, test.wantVerbose)
+			}
+			if got := slog.Default().Enabled(ctx, slog.LevelWarn); !got {
+				t.Errorf("slog.Default().Enabled(Warn) = %t, want true", got)
 			}
 		})
 	}

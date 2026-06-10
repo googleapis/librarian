@@ -403,27 +403,22 @@ func TestTransform(t *testing.T) {
 
 ## Logging
 
-Do not use `slog` in this codebase. A function should either succeed or report
-failure. Logs that note progress or debug state feel useful when you write them,
-but they accumulate into noise that everyone learns to ignore. Return errors.
+We use Go's standard library `log/slog` for structured logging. The CLI
+configures a global default text handler that outputs to `os.Stderr`.
 
-```go
-// Good
-func parseReleaseLevel(path string) (string, error) {
-	// ...
-	return "", fmt.Errorf("parse release level in %s: %w", path, err)
-}
+### Log Levels
 
-// Bad
-func parseReleaseLevel(path string) string {
-	// ...
-	slog.Warn("failed to parse release level", "path", path, "error", err)
-	return ""
-}
-```
+- **Default**: Logs are filtered to `slog.LevelWarn` and above.
+- **Verbose**: If the verbose flag is set (e.g., `librarian -v` or `librarian --verbose`), the level is set to `slog.LevelDebug`, displaying all logs.
 
-For progress output, `internal/command` provides a `Verbose` flag. When enabled
-by an application (e.g., via `-v`), all executed commands are printed.
+### Best Practices
+
+1. **Prefer returning errors**: Deeply nested functions should prefer returning errors rather than logging and returning nil/empty values. Logging should be reserved for cross-cutting execution concerns, warnings where execution can proceed, or debugging info.
+2. **Provide structured context**: Always pass structured key-value pairs to log messages:
+
+   ```go
+   slog.Warn("missing version, defaulting to 0.1.0", "api", api, "error", err)
+   ```
 
 ## Package-Specific Rules
 
