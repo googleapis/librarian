@@ -144,6 +144,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				annotations.DependsOn[dep.Name] = dep
 			}
 			if field.Map && !fieldCodec.IsStringKeyed() {
+				// In ProtoJSON map fields with non-string keys need to be
+				// serialized as JSON objects with key fields. In the generated
+				// Swift code, that requires a custom implementation of the
+				// `Decodable` and `Encodable` protocol.
 				annotations.CustomSerialization = true
 			}
 		}
