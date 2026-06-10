@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -26,7 +25,6 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
@@ -100,10 +98,10 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 		return err
 	}
 	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython {
-		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
-		// fully migrating off legacylibrarian.
-		if err := syncToStateYAML(".", cfg); err != nil {
-			return err
+		if hasBulkReleasePleaseConfigs(".") {
+			if err := syncToReleasePlease(".", cfg, name); err != nil {
+				return err
+			}
 		}
 	}
 	return RunTidyOnConfig(ctx, ".", cfg)
@@ -283,127 +281,4 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}
 	return existingLib.Name, cfg, nil
-}
-
-// syncToStateYAML updates the .librarian/state.yaml with any new libraries.
-func syncToStateYAML(repoDir string, cfg *config.Config) error {
-	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
-	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
-	if err != nil {
-		return err
-	}
-	for _, lib := range cfg.Libraries {
-		legacyLib := state.LibraryByID(lib.Name)
-		if legacyLib == nil {
-			// Add a new library
-			state.Libraries = append(state.Libraries, createLegacyLibrary(cfg.Language, lib))
-		} else {
-			existingAPIs := make(map[string]bool)
-			for _, api := range legacyLib.APIs {
-				existingAPIs[api.Path] = true
-			}
-			for _, api := range lib.APIs {
-				if !existingAPIs[api.Path] {
-					legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
-				}
-			}
-		}
-		if lib.Preview != nil {
-			previewID := lib.Name + "-preview"
-			legacyPreview := state.LibraryByID(previewID)
-			if legacyPreview == nil {
-				state.Libraries = append(state.Libraries, createLegacyPreviewLibrary(cfg.Language, lib.Name, lib.Preview))
-			} else {
-				existingPreviewAPIs := make(map[string]bool)
-				for _, api := range legacyPreview.APIs {
-					existingPreviewAPIs[api.Path] = true
-				}
-				for _, api := range lib.Preview.APIs {
-					if !existingPreviewAPIs[api.Path] {
-						legacyPreview.APIs = append(legacyPreview.APIs, &legacyconfig.API{Path: api.Path})
-					}
-				}
-			}
-		}
-	}
-	sort.Slice(state.Libraries, func(i, j int) bool {
-		return state.Libraries[i].ID < state.Libraries[j].ID
-	})
-	return yaml.Write(stateFile, state)
-}
-
-func createLegacyLibrary(language string, lib *config.Library) *legacyconfig.LibraryState {
-	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
-	for _, api := range lib.APIs {
-		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
-	}
-	legacyLib := &legacyconfig.LibraryState{
-		ID:      lib.Name,
-		Version: lib.Version,
-		APIs:    libAPIs,
-		SourceRoots: []string{
-			lib.Name,
-			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
-		},
-		ReleaseExcludePaths: []string{
-			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
-		},
-		TagFormat: "{id}/v{version}",
-	}
-	switch language {
-	case config.LanguageGo:
-		legacyLib.SourceRoots = []string{
-			lib.Name,
-			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
-		}
-		legacyLib.ReleaseExcludePaths = []string{
-			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
-		}
-		legacyLib.TagFormat = "{id}/v{version}"
-	case config.LanguagePython:
-		legacyLib.SourceRoots = []string{
-			fmt.Sprintf("packages/%s", lib.Name),
-		}
-		legacyLib.ReleaseExcludePaths = []string{
-			fmt.Sprintf("packages/%s/.repo-metadata.json", lib.Name),
-			fmt.Sprintf("packages/%s/noxfile.py", lib.Name),
-			fmt.Sprintf("packages/%s/tests/", lib.Name),
-			fmt.Sprintf("packages/%s/README.rst", lib.Name),
-			fmt.Sprintf("packages/%s/docs/", lib.Name),
-		}
-		legacyLib.TagFormat = "{id}-v{version}"
-	}
-	return legacyLib
-}
-
-func createLegacyPreviewLibrary(language string, stableName string, previewLib *config.Library) *legacyconfig.LibraryState {
-	libAPIs := make([]*legacyconfig.API, 0, len(previewLib.APIs))
-	for _, api := range previewLib.APIs {
-		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
-	}
-	legacyLib := &legacyconfig.LibraryState{
-		ID:      stableName + "-preview",
-		Version: previewLib.Version,
-		APIs:    libAPIs,
-	}
-	switch language {
-	case config.LanguageGo:
-		legacyLib.SourceRoots = []string{
-			fmt.Sprintf("preview/internal/%s", stableName),
-		}
-		legacyLib.TagFormat = fmt.Sprintf("%s/v{version}", stableName)
-	case config.LanguagePython:
-		legacyLib.SourceRoots = []string{
-			fmt.Sprintf("preview-packages/%s", stableName),
-		}
-		legacyLib.ReleaseExcludePaths = []string{
-			fmt.Sprintf("preview-packages/%s/.repo-metadata.json", stableName),
-			fmt.Sprintf("preview-packages/%s/noxfile.py", stableName),
-			fmt.Sprintf("preview-packages/%s/tests/", stableName),
-			fmt.Sprintf("preview-packages/%s/README.rst", stableName),
-			fmt.Sprintf("preview-packages/%s/docs/", stableName),
-		}
-		legacyLib.TagFormat = fmt.Sprintf("%s-v{version}", stableName)
-	}
-	return legacyLib
 }

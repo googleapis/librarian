@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"path"
 	"slices"
 	"strings"
 
@@ -24,9 +25,14 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// defaultVersion is the first version used for a new library.
-// This is set on the initial `librarian add` for a new API.
-const defaultVersion = "0.0.0"
+const (
+	// defaultVersion is the first version used for a new library.
+	// This is set on the initial `librarian add` for a new API.
+	defaultVersion = "0.0.0"
+
+	// ReleasePleasePkgPrefix is the release-please package prefix for Python libraries.
+	ReleasePleasePkgPrefix = "packages/"
+)
 
 // libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
 // the entry is a core library, not an individual API client library.
@@ -133,4 +139,39 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 func versionless(apiPath string) string {
 	version := serviceconfig.ExtractVersion(apiPath)
 	return strings.TrimSuffix(apiPath, version)
+}
+
+// ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Python libraries.
+func ReleasePleaseExtraFiles(lib *config.Library) []any {
+	var extraFiles []any
+	addedVersionless := make(map[string]bool)
+
+	for _, api := range lib.APIs {
+		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
+		version := serviceconfig.ExtractVersion(api.Path)
+
+		versionlessPath := api.Path
+		if version != "" {
+			versionlessPath = path.Dir(api.Path)
+		}
+
+		if !addedVersionless[versionlessPath] {
+			addedVersionless[versionlessPath] = true
+			extraFiles = append(extraFiles, versionlessPath+"/gapic_version.py")
+		}
+
+		if version != "" {
+			extraFiles = append(extraFiles, versionlessPath+"_"+version+"/gapic_version.py")
+		}
+
+		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
+		snippetMetadata := map[string]any{
+			"jsonpath": "$.clientLibrary.version",
+			"path":     "samples/generated_samples/snippet_metadata_" + protoPackage + ".json",
+			"type":     "json",
+		}
+		extraFiles = append(extraFiles, snippetMetadata)
+	}
+
+	return extraFiles
 }
