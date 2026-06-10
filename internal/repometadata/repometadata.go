@@ -57,6 +57,10 @@ type RepoMetadata struct {
 	// A Go specific field.
 	ClientLibraryType string `json:"client_library_type,omitempty"`
 
+	// CodeownerTeam is the GitHub team name of the code owners (e.g. "@googleapis/ml-apis").
+	// A Node.js specific field.
+	CodeownerTeam string `json:"codeowner_team,omitempty"`
+
 	// DefaultVersion is the default API version (e.g., "v1", "v1beta1").
 	DefaultVersion string `json:"default_version,omitempty"`
 
@@ -87,6 +91,10 @@ type RepoMetadata struct {
 
 	// ReleaseLevel is the release level (e.g., "stable", "preview").
 	ReleaseLevel string `json:"release_level,omitempty"`
+
+	// RequiresBilling indicates whether the API requires billing to be enabled.
+	// A Node.js specific field.
+	RequiresBilling *bool `json:"requires_billing,omitempty"`
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`

@@ -369,6 +369,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
+| `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
 | `esm` | bool | Indicates that generation should produce ES Modules (ESM) outputs. |
@@ -379,6 +380,7 @@ This document describes the schema for the librarian.yaml.
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
+| `codeowner_team` | string | Is the GitHub team name of the code owners (e.g. "@googleapis/ml-apis"). |
 
 ## PythonDefault Configuration
 

@@ -739,6 +739,10 @@ type NodejsPackage struct {
 	// This can be overridden at the API level.
 	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 
+	// BillingNotRequired indicates whether the API does NOT require billing.
+	// This is typically false.
+	BillingNotRequired *bool `yaml:"billing_not_required,omitempty"`
+
 	// BundleConfig is the path to a GAPIC bundle config file.
 	BundleConfig string `yaml:"bundle_config,omitempty"`
 
@@ -771,6 +775,9 @@ type NodejsPackage struct {
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// CodeownerTeam is the GitHub team name of the code owners (e.g. "@googleapis/ml-apis").
+	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.
