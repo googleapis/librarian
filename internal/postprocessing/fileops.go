@@ -21,6 +21,6 @@ import (
 // CopyFile copies a single file from the src path to the dst path.
 // It acts as a wrapper around filesystem.CopyFile to provide a unified
 // interface for all postprocessing file operations.
-func CopyFile(dst, src string) error {
+func CopyFile(src, dst string) error {
 	return filesystem.CopyFile(src, dst)
 }

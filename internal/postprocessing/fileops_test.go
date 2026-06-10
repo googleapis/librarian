@@ -33,20 +33,16 @@ func TestCopyFile(t *testing.T) {
 			dir := t.TempDir()
 			srcPath := filepath.Join(dir, "src.txt")
 			dstPath := filepath.Join(dir, "dst.txt")
-
 			if err := os.WriteFile(srcPath, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-
-			if err := CopyFile(dstPath, srcPath); err != nil {
+			if err := CopyFile(srcPath, dstPath); err != nil {
 				t.Fatal(err)
 			}
-
 			gotBytes, err := os.ReadFile(dstPath)
 			if err != nil {
 				t.Fatal(err)
 			}
-
 			got := string(gotBytes)
 			if diff := cmp.Diff(test.content, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
