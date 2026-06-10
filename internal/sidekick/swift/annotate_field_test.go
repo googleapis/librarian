@@ -183,7 +183,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		wantType      string
 		wantBaseType  string
 		wantRecursive bool
-		wantInitType  string
 		oneofProperty string
 	}{
 		{
@@ -194,7 +193,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "GoogleCloudWkt.Recursive<Node>?",
 			wantBaseType:  "GoogleCloudWkt.Recursive<Node>",
 			wantRecursive: true,
-			wantInitType:  "Node?",
 		},
 		{
 			name:          "repeated recursive",
@@ -204,7 +202,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "[Node]",
 			wantBaseType:  "Node",
 			wantRecursive: false,
-			wantInitType:  "[Node]",
 		},
 		{
 			name:          "oneof recursive",
@@ -214,7 +211,6 @@ func TestAnnotateField_Recursive(t *testing.T) {
 			wantType:      "Node",
 			wantBaseType:  "Node",
 			wantRecursive: false,
-			wantInitType:  "Node",
 			oneofProperty: "alternatives",
 		},
 	} {
