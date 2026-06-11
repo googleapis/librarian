@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -52,5 +53,42 @@ func TestCopyFile_Error(t *testing.T) {
 	err := CopyFile(srcPath, dstPath)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("CopyFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
+	}
+}
+
+func TestRemoveFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "test.txt")
+	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := RemoveFile(path); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(path); err == nil {
+		t.Error("RemoveFile() expected file to be removed, but it still exists")
+	}
+}
+
+func TestRemoveFile_NonExistent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonexistent.txt")
+	if err := RemoveFile(path); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestRemoveFile_Error(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "target")
+	if err := os.Mkdir(path, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(path, "sub.txt"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := RemoveFile(path)
+	if !errors.Is(err, syscall.ENOTEMPTY) {
+		t.Errorf("RemoveFile() error = %v, wantErr %v", err, syscall.ENOTEMPTY)
 	}
 }

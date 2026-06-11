@@ -16,6 +16,10 @@
 package postprocessing
 
 import (
+	"errors"
+	"io/fs"
+	"os"
+
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
@@ -24,4 +28,14 @@ import (
 // interface for all postprocessing file operations.
 func CopyFile(src, dst string) error {
 	return filesystem.CopyFile(src, dst)
+}
+
+// RemoveFile removes the file at the specified path.
+// It silently ignores errors if the file does not exist.
+func RemoveFile(path string) error {
+	err := os.Remove(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil
+	}
+	return err
 }
