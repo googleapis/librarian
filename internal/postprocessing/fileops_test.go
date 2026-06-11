@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -69,41 +70,25 @@ func TestRemoveFile(t *testing.T) {
 	}
 }
 
+func TestRemoveFile_NonExistent(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "nonexistent.txt")
+	if err := RemoveFile(path); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestRemoveFile_Error(t *testing.T) {
-	for _, test := range []struct {
-		name          string
-		createDir     bool
-		expectedError bool
-	}{
-		{
-			name:          "success non-existent file",
-			createDir:     false,
-			expectedError: false,
-		},
-		{
-			name:          "error on non-empty directory",
-			createDir:     true,
-			expectedError: true,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dir := t.TempDir()
-			path := filepath.Join(dir, "target")
-			if test.createDir {
-				if err := os.Mkdir(path, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(path, "sub.txt"), []byte("data"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			err := RemoveFile(path)
-			if test.expectedError && err == nil {
-				t.Error("RemoveFile() expected an error, got nil")
-			}
-			if !test.expectedError && err != nil {
-				t.Fatalf("RemoveFile() returned unexpected error: %v", err)
-			}
-		})
+	dir := t.TempDir()
+	path := filepath.Join(dir, "target")
+	if err := os.Mkdir(path, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(path, "sub.txt"), []byte("data"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	err := RemoveFile(path)
+	if !errors.Is(err, syscall.ENOTEMPTY) {
+		t.Errorf("RemoveFile() error = %v, wantErr %v", err, syscall.ENOTEMPTY)
 	}
 }
