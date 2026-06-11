@@ -64,18 +64,18 @@ func (a *fieldAnnotations) IsStringKeyed() bool {
 	return a.KeyType == "Swift.String"
 }
 
-func (c *codec) annotateField(field *api.Field) error {
+func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
 	parts, err := c.fieldTypeName(field)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	docLines, err := c.formatDocumentation(field.Documentation, field.Scopes())
 	if err != nil {
-		return err
+		return nil, err
 	}
 	packageName, err := c.fieldPackage(field)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	annotations := &fieldAnnotations{
@@ -106,7 +106,7 @@ func (c *codec) annotateField(field *api.Field) error {
 		}
 	}
 	field.Codec = annotations
-	return nil
+	return annotations, nil
 }
 
 func (c *codec) fieldPackage(field *api.Field) (string, error) {
