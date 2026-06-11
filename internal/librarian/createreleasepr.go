@@ -29,6 +29,7 @@ import (
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/googleapis/librarian/internal/statepb"
+	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -214,7 +215,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 
 	pr := new(PullRequestContent)
 
-	for _, library := range libraries {
+	for i, library := range libraries {
 		// If we've specified a single library to release, skip all the others.
 		if cfg.LibraryID != "" && library.Id != cfg.LibraryID {
 			continue
@@ -257,6 +258,8 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			return nil, err
 		}
 
+		// Save the original values of the library state fields, so we can restore them if the release fails.
+		originalLib := proto.Clone(library).(*statepb.LibraryState)
 		// Update the pipeline state to record what we're releasing and when, and to clear the next version field.
 		// Performing this before anything else means that container code can use the pipeline state for the steps
 		// below, if it doesn't want/need to store the version separately.
@@ -270,6 +273,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 
 		if err := cc.PrepareLibraryRelease(ctx, cfg, languageRepo.Dir, inputDirectory, library.Id, releaseVersion); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "preparing library release")
+			libraries[i] = originalLib
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
@@ -278,6 +282,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 		}
 		if err := cc.BuildLibrary(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "building/testing library")
+			libraries[i] = originalLib
 			// Clean up any changes before starting the next iteration.
 			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
@@ -288,6 +293,7 @@ func generateReleaseCommitForEachLibrary(ctx context.Context, state *commandStat
 			slog.Info(fmt.Sprintf("Skipping integration tests: %s", cfg.SkipIntegrationTests))
 		} else if err := cc.IntegrationTestLibrary(ctx, cfg, languageRepo.Dir, library.Id); err != nil {
 			addErrorToPullRequest(pr, library.Id, err, "integration testing library")
+			libraries[i] = originalLib
 			if err := languageRepo.CleanWorkingTree(); err != nil {
 				return nil, err
 			}
