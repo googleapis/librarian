@@ -15,14 +15,18 @@
 package librarian
 
 import (
+	"log/slog"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/command"
 )
 
 func TestVerboseFlag(t *testing.T) {
+	oldDefault := slog.Default()
 	t.Cleanup(func() {
 		command.Verbose = false
+		slog.SetDefault(oldDefault)
 	})
 
 	for _, test := range []struct {
@@ -39,8 +43,17 @@ func TestVerboseFlag(t *testing.T) {
 			if err := Run(t.Context(), test.args...); err != nil {
 				t.Fatal(err)
 			}
-			if command.Verbose != test.wantVerbose {
-				t.Errorf("command.Verbose = %t, want %t", command.Verbose, test.wantVerbose)
+			if diff := cmp.Diff(test.wantVerbose, command.Verbose); diff != "" {
+				t.Errorf("command.Verbose mismatch (-want +got):\n%s", diff)
+			}
+
+			// Verify slog level configuration.
+			ctx := t.Context()
+			if diff := cmp.Diff(test.wantVerbose, slog.Default().Enabled(ctx, slog.LevelDebug)); diff != "" {
+				t.Errorf("slog.Default().Enabled(Debug) mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(true, slog.Default().Enabled(ctx, slog.LevelWarn)); diff != "" {
+				t.Errorf("slog.Default().Enabled(Warn) mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
