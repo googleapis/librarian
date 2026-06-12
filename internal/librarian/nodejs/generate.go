@@ -213,7 +213,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", DerivePackageName(library))
+	args = append(args, "--package-name", derivePackageName(library))
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -258,7 +258,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
 	// them afterward.
@@ -498,7 +497,7 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if err != nil {
 		return err
 	}
-	metadata.DistributionName = DerivePackageName(library)
+	metadata.DistributionName = derivePackageName(library)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 	metadata.DefaultVersion = resolveDefaultVersion(library)
 
@@ -639,10 +638,10 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 	return nil
 }
 
-// DerivePackageName returns the npm package name for a library. It uses
-// nodejs.package_name if set, otherwise derives it by splitting the library
-// name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func DerivePackageName(library *config.Library) string {
+// derivePackageName returns the npm package name for a library.
+// It uses nodejs.package_name if set, otherwise derives it by splitting the
+// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
+func derivePackageName(library *config.Library) string {
 	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
 		return library.Nodejs.PackageName
 	}
