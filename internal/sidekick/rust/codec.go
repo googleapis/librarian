@@ -731,14 +731,12 @@ func enumValueVariantName(e *api.EnumValue) string {
 	// transformation would map it as `INSTANCE_PRIVATE_IPV_6_GOOGLE_ACCESS`.
 	// Note the extra `_` in `IPV_6` in the second case.
 	prefix := toScreamingSnake(e.Parent.Name) + "_"
-	trimmed := strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	trimmed = strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	return toPascal(e.Name)
