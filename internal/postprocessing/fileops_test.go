@@ -73,8 +73,9 @@ func TestRemoveFile(t *testing.T) {
 func TestRemoveFile_NonExistent(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "nonexistent.txt")
-	if err := RemoveFile(path); err != nil {
-		t.Fatal(err)
+	err := RemoveFile(path)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("RemoveFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
 	}
 }
 
