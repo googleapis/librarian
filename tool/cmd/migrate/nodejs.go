@@ -229,8 +229,7 @@ func buildNodejsLibrary(googleapisDir, packagesDir, libraryName string) (*config
 	// Read existing .repo-metadata.json if it exists to preserve custom metadata overrides.
 	if meta, err := repometadata.Read(pkgDir); err == nil && meta != nil {
 		var defaultClientDoc string
-		if strings.HasPrefix(pkgJSON.Name, "@google-cloud/") {
-			pkgSuffix := strings.TrimPrefix(pkgJSON.Name, "@google-cloud/")
+		if pkgSuffix, ok := strings.CutPrefix(pkgJSON.Name, "@google-cloud/"); ok {
 			defaultClientDoc = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
 		}
 		if meta.ClientDocumentation != "" && meta.ClientDocumentation != defaultClientDoc {

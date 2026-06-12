@@ -30,8 +30,8 @@ type mustacheProvider struct {
 
 // Get gets the template contents.
 func (p *mustacheProvider) Get(name string) (string, error) {
-	if strings.HasPrefix(name, "/") {
-		return p.impl(strings.TrimPrefix(name, "/") + ".mustache")
+	if suffix, ok := strings.CutPrefix(name, "/"); ok {
+		return p.impl(suffix + ".mustache")
 	}
 	return p.impl(filepath.Join(p.dirname, name) + ".mustache")
 }

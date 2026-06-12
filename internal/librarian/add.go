@@ -170,11 +170,7 @@ func deriveLibraryName(language string, api string) string {
 // error if the API cannot be added (e.g. because it already exists, or the new
 // API is a preview and there is no corresponding stable library).
 func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
-	isPreview := strings.HasPrefix(apiPath, "preview/")
-	stablePath := apiPath
-	if isPreview {
-		stablePath = strings.TrimPrefix(apiPath, "preview/")
-	}
+	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
 	existingLib := findExistingLibraryForNewAPI(cfg, stablePath)
 	if isPreview {

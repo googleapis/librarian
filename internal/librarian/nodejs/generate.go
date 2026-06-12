@@ -501,8 +501,7 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
 	metadata.DefaultVersion = resolveDefaultVersion(library)
 
-	if strings.HasPrefix(metadata.DistributionName, "@google-cloud/") {
-		pkgSuffix := strings.TrimPrefix(metadata.DistributionName, "@google-cloud/")
+	if pkgSuffix, ok := strings.CutPrefix(metadata.DistributionName, "@google-cloud/"); ok {
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
 	}
 
