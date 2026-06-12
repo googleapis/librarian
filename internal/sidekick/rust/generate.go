@@ -91,7 +91,7 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		"format_options",   // we want to control format options on veneer
 		"kind", "job_type", // output only but not properly marked on protos
 	}
-	runQuery, err := newRunQueryBuilder(c, model, skippedFields)
+	runQuery, err := newRunQuery(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
@@ -109,7 +109,7 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 	skippedFields = []string{
 		"rows", // skip rows since it takes a lot of memory
 	}
-	queryMetadata, err := newQueryMetadataBuilder(c, model, skippedFields)
+	queryMetadata, err := newQueryMetadata(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
