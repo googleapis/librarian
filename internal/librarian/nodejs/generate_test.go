@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -1575,6 +1576,55 @@ func TestMoveKeep(t *testing.T) {
 				if _, err := os.Stat(path); err != nil {
 					t.Errorf("file %s does not exist in destination: %v", path, err)
 				}
+			}
+		})
+	}
+}
+
+func TestMoveKeep_Errors(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, srcDir, dstDir string)
+		filesToKeep []string
+		wantErr     error
+	}{
+		{
+			name: "mkdir failure when target parent is a regular file",
+			setup: func(t *testing.T, srcDir, dstDir string) {
+				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dstDir, "subdir"), []byte("not-a-dir"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			filesToKeep: []string{"subdir/file.txt"},
+			wantErr:     syscall.ENOTDIR,
+		},
+		{
+			name: "rename failure when target is an existing directory",
+			setup: func(t *testing.T, srcDir, dstDir string) {
+				if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(dstDir, "file.txt"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			filesToKeep: []string{"file.txt"},
+			wantErr:     os.ErrExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			srcDir := t.TempDir()
+			dstDir := t.TempDir()
+			test.setup(t, srcDir, dstDir)
+			err := moveKeep(test.filesToKeep, srcDir, dstDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("moveKeep() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}
