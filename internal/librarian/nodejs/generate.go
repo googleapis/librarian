@@ -543,6 +543,9 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 			if !ok {
 				continue
 			}
+			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
+			}
 			srcPath := filepath.Join(googleapisDir, relPath)
 			if err := filesystem.CopyFile(srcPath, absPath); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", srcPath, absPath, err)
