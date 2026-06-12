@@ -266,18 +266,9 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}
 	defer os.RemoveAll(backupDir)
-	for _, name := range library.Keep {
-		src := filepath.Join(outDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue // file doesn't exist, nothing to save
-		}
-		dst := filepath.Join(backupDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create backup subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
-		}
+	// Backup keep files.
+	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+		return err
 	}
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
@@ -293,22 +284,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
-
 	// Restore keep files.
-	for _, name := range library.Keep {
-		src := filepath.Join(backupDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		dst := filepath.Join(outDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create output subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to restore %s: %w", name, err)
-		}
+	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
+		return err
 	}
-
 	// Copy generated samples from staging into the output directory.
 	// combine-library only handles src/ and protos/; samples are generated
 	// by gapic-generator-typescript but left in staging.
@@ -715,4 +694,21 @@ func injectV1SmallExports(outDir string) error {
 	content = updated
 
 	return os.WriteFile(indexPath, []byte(content), 0644)
+}
+
+func moveKeep(files []string, srcDir, dstDir string) error {
+	for _, name := range files {
+		src := filepath.Join(srcDir, name)
+		if _, err := os.Stat(src); err != nil {
+			continue // file doesn't exist, nothing to save
+		}
+		dst := filepath.Join(dstDir, name)
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf("failed to create dstDir subdir for %s: %w", name, err)
+		}
+		if err := os.Rename(src, dst); err != nil {
+			return fmt.Errorf("failed to save %s: %w", name, err)
+		}
+	}
+	return nil
 }
