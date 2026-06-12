@@ -31,6 +31,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
@@ -541,7 +542,6 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 			if _, err := os.Stat(absPath); err == nil {
 				continue
 			}
-
 			// Extract the proto-relative path after "protos/".
 			const protosPrefix = "protos/"
 			idx := strings.Index(entry, protosPrefix)
@@ -549,17 +549,12 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 				continue
 			}
 			relPath := entry[idx+len(protosPrefix):]
-
 			srcPath := filepath.Join(googleapisDir, relPath)
-			content, err := os.ReadFile(srcPath)
-			if err != nil {
-				return fmt.Errorf("failed to read source proto %s: %w", srcPath, err)
-			}
 			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
 			}
-			if err := os.WriteFile(absPath, content, 0644); err != nil {
-				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
+			if err := filesystem.CopyFile(srcPath, absPath); err != nil {
+				return fmt.Errorf("failed to copy %s to %s: %w", srcPath, absPath, err)
 			}
 		}
 	}
