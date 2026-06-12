@@ -519,12 +519,10 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory: %w", err)
 	}
-
 	lists, err := filepath.Glob(filepath.Join(outDir, "src", "*", "*_proto_list.json"))
 	if err != nil {
 		return fmt.Errorf("failed to glob proto list files: %w", err)
 	}
-
 	for _, listPath := range lists {
 		data, err := os.ReadFile(listPath)
 		if err != nil {
@@ -534,25 +532,18 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 		if err := json.Unmarshal(data, &entries); err != nil {
 			return fmt.Errorf("failed to parse %s: %w", listPath, err)
 		}
-
 		listDir := filepath.Dir(listPath)
 		for _, entry := range entries {
-			absPath := filepath.Join(listDir, entry)
-			absPath = filepath.Clean(absPath)
+			absPath := filepath.Clean(filepath.Join(listDir, entry))
 			if _, err := os.Stat(absPath); err == nil {
 				continue
 			}
 			// Extract the proto-relative path after "protos/".
-			const protosPrefix = "protos/"
-			idx := strings.Index(entry, protosPrefix)
-			if idx < 0 {
+			_, relPath, ok := strings.Cut(entry, "protos/")
+			if !ok {
 				continue
 			}
-			relPath := entry[idx+len(protosPrefix):]
 			srcPath := filepath.Join(googleapisDir, relPath)
-			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
-				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
-			}
 			if err := filesystem.CopyFile(srcPath, absPath); err != nil {
 				return fmt.Errorf("failed to copy %s to %s: %w", srcPath, absPath, err)
 			}
