@@ -16,6 +16,7 @@
 package postprocessing
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -47,11 +48,12 @@ func Replace(path, original, replacement string) error {
 	if err != nil {
 		return err
 	}
-	if !strings.Contains(string(content), original) {
+	oldBytes := []byte(original)
+	if !bytes.Contains(content, oldBytes) {
 		return fmt.Errorf("%w: %q in file %s", ErrTextNotFound, original, path)
 	}
-	newContent := strings.ReplaceAll(string(content), original, replacement)
-	return os.WriteFile(path, []byte(newContent), 0644)
+	newContent := bytes.ReplaceAll(content, oldBytes, []byte(replacement))
+	return os.WriteFile(path, newContent, 0644)
 }
 
 // ReplaceRegex finds and replaces text in a file using a regular expression.
@@ -73,6 +75,6 @@ func ReplaceRegex(path, pattern, replacement string) error {
 	if !re.Match(content) {
 		return fmt.Errorf("%w: pattern %q in file %s", ErrTextNotFound, pattern, path)
 	}
-	newContent := re.ReplaceAllString(string(content), replacement)
-	return os.WriteFile(path, []byte(newContent), 0644)
+	newContent := re.ReplaceAll(content, []byte(replacement))
+	return os.WriteFile(path, newContent, 0644)
 }
