@@ -15,106 +15,117 @@
 package rust
 
 import (
+	"cmp"
 	"fmt"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-type runQueryBuilder struct {
-	c      *codec
-	model  *api.API
-	fields []*queryField
+type unifiedMessage struct {
+	c           *codec
+	model       *api.API
+	fields      []*api.Field
+	fieldGroups map[string]*fieldGroup
 }
 
-type queryField struct {
-	QueryRequest          *api.Field
-	JobConfigurationQuery *api.Field
-	JobConfiguration      *api.Field
+type fieldGroup struct {
+	fieldName string
+	// fields with the same name from the various messages
+	fields map[string]*api.Field
 }
 
-func newRunQueryBuilder(c *codec, model *api.API, skippedFields []string) (*runQueryBuilder, error) {
-	qrMsg := model.Message(fmt.Sprintf(".%s.QueryRequest", model.PackageName))
-	jcqMsg := model.Message(fmt.Sprintf(".%s.JobConfigurationQuery", model.PackageName))
-	jcMsg := model.Message(fmt.Sprintf(".%s.JobConfiguration", model.PackageName))
-
-	if qrMsg == nil || jcqMsg == nil || jcMsg == nil {
-		return nil, fmt.Errorf("failed to locate QueryRequest, JobConfigurationQuery, or JobConfiguration messages")
+func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn func(*api.Field) bool) (*unifiedMessage, error) {
+	msg := &unifiedMessage{
+		c:           c,
+		model:       model,
+		fields:      []*api.Field{},
+		fieldGroups: map[string]*fieldGroup{},
 	}
 
-	// Index fields by their name and collect unique names
-	var allFieldNames []string
-	indexFields := func(msg *api.Message) map[string]*api.Field {
-		fields := make(map[string]*api.Field)
-		for _, f := range msg.Fields {
-			fields[f.Name] = f
-			allFieldNames = append(allFieldNames, f.Name)
+	// Index fields by their name and collect names
+	for _, msgName := range msgNames {
+		m := model.Message(fmt.Sprintf(".%s.%s", model.PackageName, msgName))
+		if m == nil {
+			return nil, fmt.Errorf("failed to locate message %q", msgName)
 		}
-		return fields
+		for _, f := range m.Fields {
+			if skipFieldFn(f) {
+				continue
+			}
+			msg.fields = append(msg.fields, f)
+			if _, ok := msg.fieldGroups[f.Name]; !ok {
+				msg.fieldGroups[f.Name] = &fieldGroup{
+					fieldName: f.Name,
+					fields:    make(map[string]*api.Field),
+				}
+			}
+			msg.fieldGroups[f.Name].fields[msgName] = f
+		}
 	}
 
-	qrFields := indexFields(qrMsg)
-	jcqFields := indexFields(jcqMsg)
-	jcFields := indexFields(jcMsg)
+	slices.SortFunc(msg.fields, func(a, b *api.Field) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
+	msg.fields = slices.CompactFunc(msg.fields, func(a, b *api.Field) bool {
+		return a.Name == b.Name
+	})
 
-	slices.Sort(allFieldNames)
-	allFieldNames = slices.Compact(allFieldNames)
-
-	var fields []*queryField
-
-	for _, fieldName := range allFieldNames {
-		if slices.Contains(skippedFields, fieldName) {
-			continue
-		}
-
-		jcF := jcFields[fieldName]
-		// Special case since JobConfigurationQuery field is also called query while it its just a string on QueryRequest
-		if fieldName == "query" {
-			jcF = nil
-		}
-
-		qf := &queryField{
-			QueryRequest:          qrFields[fieldName],
-			JobConfigurationQuery: jcqFields[fieldName],
-			JobConfiguration:      jcF,
-		}
-
-		if qf.outputOnly() {
-			continue
-		}
-
-		fields = append(fields, qf)
-	}
-
-	return &runQueryBuilder{
-		c:      c,
-		model:  model,
-		fields: fields,
-	}, nil
+	return msg, nil
 }
 
-// createSyntheticMessage builds an api.Message populated with fields from this queryFields list
+// createSyntheticMessage builds an api.Message populated with all sorted fields
 // and annotates it using the provided codec.
-func (b *runQueryBuilder) createSyntheticMessage(name string) (*api.Message, error) {
+func (m *unifiedMessage) createSyntheticMessage(name string) (*api.Message, error) {
 	msg := &api.Message{
-		ID:               fmt.Sprintf(".%s.%s", b.model.PackageName, name),
+		ID:               fmt.Sprintf(".%s.%s", m.model.PackageName, name),
 		Name:             name,
-		Package:          b.model.PackageName,
+		Package:          m.model.PackageName,
 		SyntheticRequest: true,
 	}
-	for _, qf := range b.fields {
-		primary := qf.firstNonNull()
-		clone := *primary
+	for _, f := range m.fields {
+		clone := *f
 		msg.Fields = append(msg.Fields, &clone)
 	}
-	if err := b.c.annotateMessage(msg, b.model, true); err != nil {
+	if err := m.c.annotateMessage(msg, m.model, true); err != nil {
 		return nil, err
 	}
 	return msg, nil
 }
 
-func (b *runQueryBuilder) builder() (*api.Message, error) {
-	msg, err := b.createSyntheticMessage("RunQuery")
+func (m *unifiedMessage) fieldGroupList() []*fieldGroup {
+	list := make([]*fieldGroup, 0, len(m.fields))
+	for _, f := range m.fields {
+		list = append(list, m.fieldGroups[f.Name])
+	}
+	return list
+}
+
+func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+	msg, err := newUnifiedMessage(c, model, []string{"QueryRequest", "JobConfigurationQuery", "JobConfiguration"}, func(f *api.Field) bool {
+		// skip fields that are output only or explicitly skipped
+		return slices.Contains(skippedFields, f.Name) || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Special case since JobConfigurationQuery field is also called query while it its just a string on QueryRequest
+	if f, ok := msg.fieldGroups["query"]; ok {
+		delete(f.fields, "JobConfiguration")
+	}
+
+	return msg, nil
+}
+
+func newQueryMetadata(c *codec, model *api.API, skippedFields []string) (*unifiedMessage, error) {
+	return newUnifiedMessage(c, model, []string{"GetQueryResultsResponse", "QueryResponse"}, func(f *api.Field) bool {
+		return slices.Contains(skippedFields, f.Name)
+	})
+}
+
+func runQueryBuilder(m *unifiedMessage) (*api.Message, error) {
+	msg, err := m.createSyntheticMessage("RunQuery")
 	if err != nil {
 		return nil, err
 	}
@@ -133,31 +144,31 @@ func (b *runQueryBuilder) builder() (*api.Message, error) {
 	return msg, nil
 }
 
-func (b *runQueryBuilder) request() (*api.Message, error) {
-	return b.createSyntheticMessage("RunQueryRequest")
-}
-
 // Accessors for template files.
-func (qf *queryField) FieldName() string {
-	return toSnake(qf.firstNonNull().Name)
+func (f *fieldGroup) FieldName() string {
+	return toSnake(f.fieldName)
 }
 
-func (qf *queryField) JobOnly() bool {
-	return qf.QueryRequest == nil
+func (f *fieldGroup) JobOnly() bool {
+	return f.QueryRequest() == nil
 }
 
-func (qf *queryField) firstNonNull() *api.Field {
-	for _, f := range []*api.Field{qf.QueryRequest, qf.JobConfigurationQuery, qf.JobConfiguration} {
-		if f != nil {
-			return f
-		}
-	}
-	return nil
+func (f *fieldGroup) JobConfiguration() *api.Field {
+	return f.fields["JobConfiguration"]
 }
 
-func (qf *queryField) outputOnly() bool {
-	isOutputOnly := func(f *api.Field) bool {
-		return f == nil || slices.Contains(f.Behavior, api.FieldBehaviorOutputOnly)
-	}
-	return isOutputOnly(qf.QueryRequest) && isOutputOnly(qf.JobConfigurationQuery) && isOutputOnly(qf.JobConfiguration)
+func (f *fieldGroup) QueryRequest() *api.Field {
+	return f.fields["QueryRequest"]
+}
+
+func (f *fieldGroup) JobConfigurationQuery() *api.Field {
+	return f.fields["JobConfigurationQuery"]
+}
+
+func (f *fieldGroup) QueryResponse() *api.Field {
+	return f.fields["QueryResponse"]
+}
+
+func (f *fieldGroup) GetQueryResultsResponse() *api.Field {
+	return f.fields["GetQueryResultsResponse"]
 }
