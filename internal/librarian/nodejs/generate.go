@@ -704,10 +704,10 @@ func moveKeep(files []string, srcDir, dstDir string) error {
 		}
 		dst := filepath.Join(dstDir, name)
 		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create dstDir subdir for %s: %w", name, err)
+			return fmt.Errorf("failed to create destination subdirectory for %s: %w", name, err)
 		}
 		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
+			return fmt.Errorf("failed to move %s: %w", name, err)
 		}
 	}
 	return nil
