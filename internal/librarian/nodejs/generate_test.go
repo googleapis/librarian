@@ -136,7 +136,7 @@ func TestDerivePackageName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DerivePackageName(test.lib)
+			got := derivePackageName(test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
