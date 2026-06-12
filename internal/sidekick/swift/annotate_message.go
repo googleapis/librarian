@@ -129,27 +129,26 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 	for _, field := range message.Fields {
-		if err := c.annotateField(field); err != nil {
+		fieldCodec, err := c.annotateField(field)
+		if err != nil {
 			return err
 		}
-		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok {
-			if fieldCodec.Name != field.JSONName {
-				annotations.CustomSerialization = true
+		if fieldCodec.Name != field.JSONName {
+			annotations.CustomSerialization = true
+		}
+		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
+			if err != nil {
+				return err
 			}
-			if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
-				if err != nil {
-					return err
-				}
-				annotations.DependsOn[dep.Name] = dep
-			}
-			if field.Map && !fieldCodec.IsStringKeyed() {
-				// In ProtoJSON map fields with non-string keys need to be
-				// serialized as JSON objects with key fields. In the generated
-				// Swift code, that requires a custom implementation of the
-				// `Decodable` and `Encodable` protocol.
-				annotations.CustomSerialization = true
-			}
+			annotations.DependsOn[dep.Name] = dep
+		}
+		if field.Map && !fieldCodec.IsStringKeyed() {
+			// In ProtoJSON map fields with non-string keys need to be
+			// serialized as JSON objects with key fields. In the generated
+			// Swift code, that requires a custom implementation of the
+			// `Decodable` and `Encodable` protocol.
+			annotations.CustomSerialization = true
 		}
 	}
 
