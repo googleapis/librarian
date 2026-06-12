@@ -19,7 +19,8 @@ After modifying code, you MUST run these commands:
 - **Lint:** `go tool golangci-lint run`
 - **Tests:** `go test -short ./...` (for fast feedback)
 - **YAML:** `yamlfmt` (if YAML files were touched)
-- **Git:** Never use force push (`git push -f` or `git push --force`). If a branch needs updating, always pull/rebase or merge instead.
+- **Git:** Never use force push (`git push -f` or `git push --force`). 
+  If a branch needs updating, always pull/rebase or merge instead.
 
 Before submitting changes, run the full test suite:
 - **Full Tests:** `go test -race ./...`
