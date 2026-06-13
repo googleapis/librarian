@@ -289,9 +289,9 @@ func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 	var builder strings.Builder
 
 	// Start the commit with a line on its own saying what's being regenerated.
-	builder.WriteString(fmt.Sprintf("regen: Regenerate %s at API commit %s", libraryID, commits[0].Hash.String()[0:7]))
-	builder.WriteString("\n")
-	builder.WriteString("\n")
+	fmt.Fprintf(&builder, "regen: Regenerate %s at API commit %s", libraryID, commits[0].Hash.String()[0:7])
+	fmt.Fprintf(&builder, "\n")
+	fmt.Fprintf(&builder, "\n")
 
 	piperRevIdLines := []string{}
 	sourceLinkLines := []string{}
