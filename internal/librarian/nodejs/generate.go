@@ -40,6 +40,7 @@ import (
 
 const (
 	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
+	protosPathPrefix          = "protos/"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -539,7 +540,7 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 				continue
 			}
 			// Extract the proto-relative path after "protos/".
-			_, relPath, ok := strings.Cut(entry, "protos/")
+			_, relPath, ok := strings.Cut(entry, protosPathPrefix)
 			if !ok {
 				continue
 			}
