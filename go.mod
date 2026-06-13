@@ -1,6 +1,6 @@
 module github.com/googleapis/librarian
 
-go 1.26.1
+go 1.26.4
 
 require (
 	cloud.google.com/go/secretmanager v1.20.0
