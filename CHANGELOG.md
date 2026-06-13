@@ -1,5 +1,24 @@
 # Changelog
 
+## [0.21.0](https://github.com/googleapis/librarian/compare/v0.20.0...v0.21.0) (2026-06-13)
+
+
+### Features
+
+* **internal/librarian/nodejs:** add client_documentation_override to migrate ([#6310](https://github.com/googleapis/librarian/issues/6310)) ([cb8b040](https://github.com/googleapis/librarian/commit/cb8b040feda1f558b7c8284d679d2961aeaea814))
+* **internal/librarian:** enable structured logging with slog ([#6363](https://github.com/googleapis/librarian/issues/6363)) ([458a738](https://github.com/googleapis/librarian/commit/458a738d51be0d1b85af70b8b2539d7c690f15c6)), closes [#6338](https://github.com/googleapis/librarian/issues/6338)
+* **internal/postprocessing:** add copyFile function ([#6364](https://github.com/googleapis/librarian/issues/6364)) ([8aa57f0](https://github.com/googleapis/librarian/commit/8aa57f091c7b0952256f3679b34fab96d810b5c2)), closes [#6295](https://github.com/googleapis/librarian/issues/6295)
+* **internal/postprocessing:** add removeFile function ([#6371](https://github.com/googleapis/librarian/issues/6371)) ([9e471eb](https://github.com/googleapis/librarian/commit/9e471eb6cfe6a60b1bd29e828d02bc2420b25b52)), closes [#6296](https://github.com/googleapis/librarian/issues/6296)
+* **librarian:** sync to release-please in add command ([#6346](https://github.com/googleapis/librarian/issues/6346)) ([f1103ae](https://github.com/googleapis/librarian/commit/f1103aea8d3b31a3de8e85d3f2e639ecf9acc9c8))
+* **sidekick/rust:** add `gcp.resource.destination.id` and fix incorrect `gcp.longrunning.done` status in lro traces ([#6275](https://github.com/googleapis/librarian/issues/6275)) ([0648f55](https://github.com/googleapis/librarian/commit/0648f55b408e17c1c9daa19155d10ffd74222837))
+
+
+### Bug Fixes
+
+* **.github/workflows:** fix outdated Java tools path in integration job ([#6372](https://github.com/googleapis/librarian/issues/6372)) ([72a5447](https://github.com/googleapis/librarian/commit/72a54479bae11e516ff0e5646f4a9ae3058bcb61))
+* **internal/postprocessing:** return error for missing files in RemoveFile ([#6408](https://github.com/googleapis/librarian/issues/6408)) ([4a0e81b](https://github.com/googleapis/librarian/commit/4a0e81b040e598cb34896284ed016a6514335e2f))
+* **sidekick/rust:** add clippy allow for BigQuery request methods ([#6373](https://github.com/googleapis/librarian/issues/6373)) ([cc804c9](https://github.com/googleapis/librarian/commit/cc804c95a750189ce065d745a379009f2de06c1a))
+
 ## [0.20.0](https://github.com/googleapis/librarian/compare/v0.19.0...v0.20.0) (2026-06-10)
 
 
