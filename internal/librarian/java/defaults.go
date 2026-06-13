@@ -89,7 +89,7 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) (*config.Library, error) {
-	library.Keep = tidyKeep(library.Keep)
+	library.Keep = tidyKeep(library)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
 	}
@@ -148,14 +148,17 @@ func Tidy(library *config.Library) (*config.Library, error) {
 }
 
 // tidyKeep removes default files from the library's keep configuration.
-func tidyKeep(keep []string) []string {
-	if len(keep) == 0 {
+func tidyKeep(library *config.Library) []string {
+	if len(library.Keep) == 0 {
 		return nil
 	}
 	var filteredKeepPaths []string
-	for _, keepPath := range keep {
+	for _, keepPath := range library.Keep {
 		keepPathSlash := filepath.ToSlash(keepPath)
 		if isDefaultPreserved(keepPathSlash) {
+			continue
+		}
+		if isInGAPICModule(library, keepPath) {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -166,6 +169,20 @@ func tidyKeep(keep []string) []string {
 		return nil
 	}
 	return filteredKeepPaths
+}
+
+// isInGAPICModule checks if the given keepPath belongs to a generated GAPIC module of the library.
+func isInGAPICModule(library *config.Library, keepPath string) bool {
+	keepPathSlash := filepath.ToSlash(keepPath)
+	for pattern, isGAPIC := range cleanPatterns(library) {
+		if isGAPIC {
+			moduleName, _, _ := strings.Cut(filepath.ToSlash(pattern), "/")
+			if strings.HasPrefix(keepPathSlash, moduleName+"/") {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 var (
