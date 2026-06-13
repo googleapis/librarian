@@ -248,15 +248,48 @@ type annotateModel struct {
 	dependencyConstraints map[string]string
 	// Whether the target API supports Server-Sent Events (SSE).
 	supportsSSE bool
+
+	// Deterministic mapping of message short-names to messages.
+	messageShortNames map[string]*api.Message
+	// Deterministic mapping of enum short-names to enums.
+	enumShortNames map[string]*api.Enum
 }
 
 func newAnnotateModel(model *api.API) *annotateModel {
+	var msgs []*api.Message
+	for msg := range model.AllMessages() {
+		msgs = append(msgs, msg)
+	}
+	sort.Slice(msgs, func(i, j int) bool {
+		return msgs[i].ID < msgs[j].ID
+	})
+
+	messageShortNames := make(map[string]*api.Message)
+	for _, msg := range msgs {
+		messageShortNames[msg.Name] = msg
+	}
+
+	var enums []*api.Enum
+	for en := range model.AllEnums() {
+		enums = append(enums, en)
+	}
+	sort.Slice(enums, func(i, j int) bool {
+		return enums[i].ID < enums[j].ID
+	})
+
+	enumShortNames := make(map[string]*api.Enum)
+	for _, en := range enums {
+		enumShortNames[en.Name] = en
+	}
+
 	return &annotateModel{
 		model:                 model,
 		imports:               map[string]bool{},
 		packageMapping:        map[string]string{},
 		packagePrefixes:       map[string]string{},
 		dependencyConstraints: map[string]string{},
+		messageShortNames:     messageShortNames,
+		enumShortNames:        enumShortNames,
 	}
 }
 
@@ -466,7 +499,7 @@ func (annotate *annotateModel) annotateModel(options map[string]string) error {
 	}
 
 	slices.Sort(devDependencies)
-	docLines := formatDocComments(model.Description, model)
+	docLines := annotate.formatDocComments(model.Description)
 	ann := &modelAnnotations{
 		Parent:                    model,
 		PackageName:               pkgName,
@@ -632,7 +665,7 @@ func (annotate *annotateModel) annotateService(s *api.Service) {
 	}
 	ann := &serviceAnnotations{
 		Name:        s.Name,
-		DocLines:    formatDocComments(s.Documentation, annotate.model),
+		DocLines:    annotate.formatDocComments(s.Documentation),
 		Methods:     methods,
 		FieldName:   strcase.ToLowerCamel(s.Name),
 		StructName:  s.Name,
@@ -680,7 +713,7 @@ func (annotate *annotateModel) annotateMessage(m *api.Message) {
 		Parent:          m,
 		Name:            messageName(m),
 		QualifiedName:   qualifiedName(m),
-		DocLines:        formatDocComments(m.Documentation, annotate.model),
+		DocLines:        annotate.formatDocComments(m.Documentation),
 		OmitGeneration:  m.IsMap,
 		ConstructorBody: constructorBody,
 		ToStringLines:   toStringLines,
@@ -765,7 +798,7 @@ func (annotate *annotateModel) annotateMethod(method *api.Method) {
 		RequestMethod:       strings.ToLower(method.PathInfo.Bindings[0].Verb),
 		RequestType:         annotate.resolveMessageName(method.InputType, true),
 		ResponseType:        annotate.resolveMessageName(method.OutputType, true),
-		DocLines:            formatDocComments(method.Documentation, annotate.model),
+		DocLines:            annotate.formatDocComments(method.Documentation),
 		ReturnsValue:        !method.ReturnsEmpty,
 		BodyMessageName:     bodyMessageName,
 		QueryLines:          queryLines,
@@ -789,7 +822,7 @@ func (annotate *annotateModel) annotateOperationInfo(operationInfo *api.Operatio
 func (annotate *annotateModel) annotateOneOf(oneof *api.OneOf) {
 	oneof.Codec = &oneOfAnnotation{
 		Name:     strcase.ToLowerCamel(oneof.Name),
-		DocLines: formatDocComments(oneof.Documentation, annotate.model),
+		DocLines: annotate.formatDocComments(oneof.Documentation),
 	}
 }
 
@@ -869,7 +902,7 @@ func (annotate *annotateModel) annotateField(field *api.Field) {
 	field.Codec = &fieldAnnotation{
 		Name:                  fieldName(field),
 		Type:                  annotate.fieldType(field),
-		DocLines:              formatDocComments(field.Documentation, annotate.model),
+		DocLines:              annotate.formatDocComments(field.Documentation),
 		Required:              implicitPresence,
 		Nullable:              !implicitPresence,
 		FieldBehaviorRequired: fieldRequired,
@@ -1329,7 +1362,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 	enum.Codec = &enumAnnotation{
 		Parent:       enum,
 		Name:         enumName(enum),
-		DocLines:     formatDocComments(enum.Documentation, annotate.model),
+		DocLines:     annotate.formatDocComments(enum.Documentation),
 		DefaultValue: defaultValue,
 		Model:        annotate.model,
 	}
@@ -1338,7 +1371,7 @@ func (annotate *annotateModel) annotateEnum(enum *api.Enum) {
 func (annotate *annotateModel) annotateEnumValue(ev *api.EnumValue, enumValueToName map[*api.EnumValue]string) {
 	ev.Codec = &enumValueAnnotation{
 		Name:     enumValueToName[ev],
-		DocLines: formatDocComments(ev.Documentation, annotate.model),
+		DocLines: annotate.formatDocComments(ev.Documentation),
 	}
 }
 
