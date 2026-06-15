@@ -526,15 +526,11 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 	return "", errMonorepoVersion
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6411):
+// Simplify logic here and check at validate step.
 func findParentPOMVersion(cfg *config.Config) (string, error) {
 	for _, lib := range cfg.Libraries {
 		if lib.Name == parentPOM {
-			return lib.Version, nil
-		}
-	}
-	// Fallback to monorepoVersion if google-cloud-pom-parent is missing (e.g. in tests)
-	for _, lib := range cfg.Libraries {
-		if lib.Name == rootLibrary {
 			return lib.Version, nil
 		}
 	}
