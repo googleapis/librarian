@@ -193,10 +193,9 @@ func newLibraryCodec(library *config.Library) map[string]string {
 func extraModulesFromKeep(keep []string) []string {
 	var modules []string
 	for _, k := range keep {
-		if strings.HasPrefix(k, "src/") && strings.HasSuffix(k, ".rs") {
+		if after, ok := strings.CutPrefix(k, "src/"); ok && strings.HasSuffix(k, ".rs") {
 			// Extract module name: "src/errors.rs" -> "errors"
-			module := strings.TrimPrefix(k, "src/")
-			module = strings.TrimSuffix(module, ".rs")
+			module := strings.TrimSuffix(after, ".rs")
 			modules = append(modules, module)
 		}
 	}

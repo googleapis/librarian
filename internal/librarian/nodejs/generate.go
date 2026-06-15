@@ -31,6 +31,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
@@ -38,7 +39,8 @@ import (
 )
 
 const (
-	commonProtos = "google/cloud/common_resources.proto"
+	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
+	protosPathPrefix          = "protos/"
 )
 
 // IsMixedLibrary reports whether the library has handwritten code wrapping
@@ -149,7 +151,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 
 	var protos []string
 	if !omitCommon {
-		protos = append(protos, commonProtos)
+		protos = append(protos, cloudCommonResourcesProto)
 	}
 
 	if library.Nodejs == nil {
@@ -213,7 +215,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", DerivePackageName(library))
+	args = append(args, "--package-name", derivePackageName(library))
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -258,7 +260,6 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-
 	// combine-library wipes the destination directory before writing generated
 	// files (src/, protos/). Save the keep files it would delete, then restore
 	// them afterward.
@@ -267,18 +268,9 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to create backup dir: %w", err)
 	}
 	defer os.RemoveAll(backupDir)
-	for _, name := range library.Keep {
-		src := filepath.Join(outDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue // file doesn't exist, nothing to save
-		}
-		dst := filepath.Join(backupDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create backup subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
-		}
+	// Backup keep files.
+	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+		return err
 	}
 
 	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
@@ -286,6 +278,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		"combine-library",
 		"--source-path", stagingDir,
 		"--destination-path", outDir,
+		"--default-version", resolveDefaultVersion(library),
 	}
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		combineArgs = append(combineArgs, "--is-esm")
@@ -293,22 +286,10 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
-
 	// Restore keep files.
-	for _, name := range library.Keep {
-		src := filepath.Join(backupDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		dst := filepath.Join(outDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create output subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to restore %s: %w", name, err)
-		}
+	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
+		return err
 	}
-
 	// Copy generated samples from staging into the output directory.
 	// combine-library only handles src/ and protos/; samples are generated
 	// by gapic-generator-typescript but left in staging.
@@ -394,6 +375,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 		return fmt.Errorf("failed to remove redundant linter files: %w", err)
 	}
 
+	// Remove google/cloud/common_resources.proto from the protos directory.
+	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
+	// want it to be in the diff.
+	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
 	return nil
 }
 
@@ -479,6 +466,9 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 	})
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6340): Remove this function
+// and all .repo-metadata.json generation once the documentation pipeline is
+// migrated to read from librarian.yaml directly.
 // writeRepoMetadata generates .repo-metadata.json for the library.
 func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
 	if len(library.APIs) == 0 {
@@ -488,10 +478,37 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if err != nil {
 		return err
 	}
-	metadata.DistributionName = DerivePackageName(library)
-	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
+	metadata.DistributionName = derivePackageName(library)
 	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-	return metadata.Write(outDir)
+	metadata.DefaultVersion = resolveDefaultVersion(library)
+
+	if pkgSuffix, ok := strings.CutPrefix(metadata.DistributionName, "@google-cloud/"); ok {
+		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
+	}
+
+	if library.Nodejs != nil && library.Nodejs.ClientDocumentationOverride != "" {
+		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
+	}
+
+	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
+		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
+			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
+		}
+	}
+
+	if err := metadata.Write(outDir); err != nil {
+		return err
+	}
+
+	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
+	// literal ampersand in the .repo-metadata.json.
+	path := filepath.Join(outDir, ".repo-metadata.json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
+	return os.WriteFile(path, content, 0644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
@@ -503,12 +520,10 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory: %w", err)
 	}
-
 	lists, err := filepath.Glob(filepath.Join(outDir, "src", "*", "*_proto_list.json"))
 	if err != nil {
 		return fmt.Errorf("failed to glob proto list files: %w", err)
 	}
-
 	for _, listPath := range lists {
 		data, err := os.ReadFile(listPath)
 		if err != nil {
@@ -518,33 +533,23 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 		if err := json.Unmarshal(data, &entries); err != nil {
 			return fmt.Errorf("failed to parse %s: %w", listPath, err)
 		}
-
 		listDir := filepath.Dir(listPath)
 		for _, entry := range entries {
-			absPath := filepath.Join(listDir, entry)
-			absPath = filepath.Clean(absPath)
+			absPath := filepath.Clean(filepath.Join(listDir, entry))
 			if _, err := os.Stat(absPath); err == nil {
 				continue
 			}
-
 			// Extract the proto-relative path after "protos/".
-			const protosPrefix = "protos/"
-			idx := strings.Index(entry, protosPrefix)
-			if idx < 0 {
+			_, relPath, ok := strings.Cut(entry, protosPathPrefix)
+			if !ok {
 				continue
-			}
-			relPath := entry[idx+len(protosPrefix):]
-
-			srcPath := filepath.Join(googleapisDir, relPath)
-			content, err := os.ReadFile(srcPath)
-			if err != nil {
-				return fmt.Errorf("failed to read source proto %s: %w", srcPath, err)
 			}
 			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
 			}
-			if err := os.WriteFile(absPath, content, 0644); err != nil {
-				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
+			srcPath := filepath.Join(googleapisDir, relPath)
+			if err := filesystem.CopyFile(srcPath, absPath); err != nil {
+				return fmt.Errorf("failed to copy %s to %s: %w", srcPath, absPath, err)
 			}
 		}
 	}
@@ -601,10 +606,10 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 	return nil
 }
 
-// DerivePackageName returns the npm package name for a library. It uses
-// nodejs.package_name if set, otherwise derives it by splitting the library
-// name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func DerivePackageName(library *config.Library) string {
+// derivePackageName returns the npm package name for a library.
+// It uses nodejs.package_name if set, otherwise derives it by splitting the
+// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
+func derivePackageName(library *config.Library) string {
 	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
 		return library.Nodejs.PackageName
 	}
@@ -629,6 +634,21 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// resolveDefaultVersion returns the default API version (v1, v1beta etc) for
+// a library, using the Node-specific override if present, or the path of the
+// first API otherwise. If the library has no override and no APIs, an empty
+// string is returned.
+// TODO(https://github.com/googleapis/librarian/issues/6357): remove default version.
+func resolveDefaultVersion(library *config.Library) string {
+	if library.Nodejs != nil && library.Nodejs.DefaultVersion != "" {
+		return library.Nodejs.DefaultVersion
+	}
+	if len(library.APIs) == 0 {
+		return ""
+	}
+	return filepath.Base(library.APIs[0].Path)
 }
 
 // TODO(https://github.com/googleapis/google-cloud-node/issues/8149):
@@ -664,4 +684,21 @@ func injectV1SmallExports(outDir string) error {
 	content = updated
 
 	return os.WriteFile(indexPath, []byte(content), 0644)
+}
+
+func moveKeep(files []string, srcDir, dstDir string) error {
+	for _, name := range files {
+		src := filepath.Join(srcDir, name)
+		if _, err := os.Stat(src); err != nil {
+			continue // file doesn't exist, nothing to save
+		}
+		dst := filepath.Join(dstDir, name)
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf("failed to create destination subdirectory for %s: %w", name, err)
+		}
+		if err := os.Rename(src, dst); err != nil {
+			return fmt.Errorf("failed to move %s: %w", name, err)
+		}
+	}
+	return nil
 }

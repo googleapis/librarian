@@ -86,8 +86,8 @@ func DefaultLibraryName(api string) string {
 		path = api[:idx]
 	}
 	for _, p := range knownPrefixes {
-		if strings.HasPrefix(path, p) {
-			path = strings.TrimPrefix(path, p)
+		if after, ok := strings.CutPrefix(path, p); ok {
+			path = after
 			break
 		}
 	}

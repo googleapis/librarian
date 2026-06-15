@@ -19,24 +19,30 @@ language: nodejs
 tools:
   pnpm:
     - name: gapic-generator-typescript
-      version: "92b328bd72b7418e5eca12ee0ffc32829daf0a77"
-      package: "https://github.com/googleapis/google-cloud-node/archive/92b328bd72b7418e5eca12ee0ffc32829daf0a77.tar.gz"
-      checksum: "34a49ef9c0ded1e14d8d00a32353048e91656a87ecfe285c15f1f2375016a5c6"
+      version: "gapic-generator-v4.12.0"
+      package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.0.tar.gz"
+      checksum: "7db96e31b8c6ac15d40e92654a731ec7aa2b0a3425708ac68369b374688112e8"
       build:
         - "pnpm install"
         # tsc only compiles TypeScript; the generator also needs templates/
         # and protos/ in build/ (resolved via __dirname at runtime).
         - "./node_modules/.bin/tsc"
-        - "cp -r templates protos build/"
+        # Recreate the symlinks that are in the tarball, as fetch doesn't handle them
+        # at the moment.
+        # TODO(https://github.com/googleapis/librarian/issues/6313):
+        # remove this workaround when the issue is fixed.
+        - "ln -sf package.json templates/cjs/typescript_gapic/package.json.njk"
+        - "ln -sf package.json templates/esm/typescript_gapic/package.json.njk"
+        - "cp -a templates protos build/"
         # Pass the full directory name into "pnpm add" so that the generator
         # is registered with the name "gapic-generator-typescript" rather than
         # an arbitrary name such as "5".
-        - "pnpm add -g \"$PWD\""
+        - 'pnpm add -g "$PWD"'
     - name: gapic-node-processing
       version: "0.1.8"
     - name: gapic-tools
-      version: "1.0.5"
+      version: "1.0.6"
     - name: protobufjs-cli
       version: "1.2.0"
     - name: protobufjs
-      version: "7.5.5"
+      version: "7.5.8"

@@ -66,8 +66,6 @@ func run(ctx context.Context, args []string) error {
 	switch base {
 	case "google-cloud-java":
 		return runJavaMigration(ctx, abs, *insertMarkersFlag)
-	case "google-cloud-node":
-		return runNodejsMigration(ctx, abs)
 	case "google-cloud-dotnet":
 		return runDotnetMigration(ctx, abs)
 	default:

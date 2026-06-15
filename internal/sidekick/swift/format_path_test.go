@@ -84,11 +84,8 @@ func TestPathVariables(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{requestMessage}, nil, []*api.Service{})
 	codec := newTestCodec(t, model, nil)
-
-	for _, f := range requestMessage.Fields {
-		if err := codec.annotateField(f); err != nil {
-			t.Fatal(err)
-		}
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
 	}
 
 	for _, test := range []struct {

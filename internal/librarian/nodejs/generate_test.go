@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -136,7 +137,7 @@ func TestDerivePackageName(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := DerivePackageName(test.lib)
+			got := derivePackageName(test.lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -443,7 +444,10 @@ func TestRunPostProcessor(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-secretmanager"}
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -473,7 +477,10 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	testhelper.RequireCommand(t, "compileProtos")
 
 	repoRoot := t.TempDir()
-	library := &config.Library{Name: "google-cloud-test"}
+	library := &config.Library{
+		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		t.Fatal(err)
@@ -508,6 +515,49 @@ func TestRunPostProcessor_RemovesOwlBotYaml(t *testing.T) {
 	}
 }
 
+func TestRunPostProcessor_RemovesCloudCommonResourcesProto(t *testing.T) {
+	testhelper.RequireCommand(t, "gapic-node-processing")
+	testhelper.RequireCommand(t, "compileProtos")
+
+	repoRoot := t.TempDir()
+	library := &config.Library{
+		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
+	}
+	outDir := filepath.Join(repoRoot, "packages", library.Name)
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	// Create staging structure with a common_resources.proto file.
+	stagingBase := filepath.Join(repoRoot, "owl-bot-staging", library.Name, "v1")
+	srcDir := filepath.Join(stagingBase, "src", "v1")
+	if err := os.MkdirAll(srcDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(srcDir, "index.ts"), []byte("export {};\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	protoDir := filepath.Join(stagingBase, "protos", "google", "cloud", "test", "v1")
+	if err := os.MkdirAll(protoDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(protoDir, "test.proto"), []byte("syntax = \"proto3\";\npackage google.cloud.test.v1;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(stagingBase, "protos", cloudCommonResourcesProto), []byte("syntax = \"proto3\";\npackage google.cloud;\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	cfg := &config.Config{Language: config.LanguageNodejs}
+	if err := runPostProcessor(t.Context(), cfg, library, "", repoRoot, outDir); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := os.Stat(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); !errors.Is(err, fs.ErrNotExist) {
+		t.Error("expected common_resources.proto to be removed after post-processing")
+	}
+}
+
 func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	testhelper.RequireCommand(t, "gapic-node-processing")
 	testhelper.RequireCommand(t, "compileProtos")
@@ -517,6 +567,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Keep: []string{"librarian.js", ".readme-partials.yaml", "README.md"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -600,6 +651,7 @@ func TestRunPostProcessor_PreservesFiles(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-test",
+		APIs: []*config.API{{Path: "google/cloud/test/v1"}},
 		Keep: []string{"README.md", ".readme-partials.yaml", "system-test/.eslintrc.yml"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
@@ -956,28 +1008,89 @@ func TestWriteRepoMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	outDir := t.TempDir()
+
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
-	library := &config.Library{
-		Name: "google-cloud-secretmanager",
-		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-	}
-	if err := writeRepoMetadata(cfg, library, absGoogleapisDir, outDir); err != nil {
-		t.Fatal(err)
-	}
-	got, err := repometadata.Read(outDir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := sample.RepoMetadata()
-	want.DistributionName = "@google-cloud/secretmanager"
-	want.Language = cfg.Language
-	want.Repo = cfg.Repo
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    func() *repometadata.RepoMetadata
+	}{
+		{
+			name: "no overrides",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+		{
+			name: "client documentation override",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					ClientDocumentationOverride: "https://custom.docs.com/ref",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://custom.docs.com/ref"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				return w
+			},
+		},
+		{
+			name: "default version override",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+					{Path: "google/cloud/secretmanager/v1beta"},
+				},
+				Nodejs: &config.NodejsPackage{
+					DefaultVersion: "v1beta",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/secretmanager"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				w.DefaultVersion = "v1beta"
+				return w
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outDir := t.TempDir()
+			if err := writeRepoMetadata(cfg, test.library, absGoogleapisDir, outDir); err != nil {
+				t.Fatal(err)
+			}
+			got, err := repometadata.Read(outDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := test.want()
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -997,6 +1110,7 @@ func TestRunPostProcessor_CustomScripts_RootRelativePath(t *testing.T) {
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Keep: []string{"librarian.js"},
 	}
 
@@ -1041,7 +1155,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api:     &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 			},
 		},
 		{
@@ -1059,7 +1173,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 			},
 		},
 		{
@@ -1078,14 +1192,14 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
 			name: "deduplicates protos",
 			library: &config.Library{
 				Nodejs: &config.NodejsPackage{
-					AdditionalProtos: []string{commonProtos, "other.proto"},
+					AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto"},
 					NodejsAPIs: []*config.NodejsAPI{
 						{
 							Path:             "google/cloud/secretmanager/v1",
@@ -1097,7 +1211,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos, "other.proto", "more.proto"},
+				AdditionalProtos: []string{cloudCommonResourcesProto, "other.proto", "more.proto"},
 			},
 		},
 		{
@@ -1115,7 +1229,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			api: &config.API{Path: "google/cloud/secretmanager/v1"},
 			want: &config.NodejsAPI{
 				Path:             "google/cloud/secretmanager/v1",
-				AdditionalProtos: []string{commonProtos},
+				AdditionalProtos: []string{cloudCommonResourcesProto},
 				DIREGAPIC:        true,
 			},
 		},
@@ -1217,7 +1331,7 @@ func TestResolveNodejsAPI(t *testing.T) {
 			want: &config.NodejsAPI{
 				Path:                "google/cloud/secretmanager/v1",
 				OmitCommonResources: false,
-				AdditionalProtos:    []string{commonProtos, "pkg.proto", "api.proto"},
+				AdditionalProtos:    []string{cloudCommonResourcesProto, "pkg.proto", "api.proto"},
 			},
 		},
 		{
@@ -1367,6 +1481,150 @@ func TestRemoveRedundantLinterFiles(t *testing.T) {
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestResolveDefaultVersion(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want string
+	}{
+		{
+			name: "default to first API path",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v3"},
+					{Path: "google/cloud/test/v4"},
+				},
+			},
+			want: "v3",
+		},
+		{
+			name: "no APIs or override",
+			lib:  &config.Library{},
+			want: "",
+		},
+		{
+			name: "override",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/test/v3"},
+					{Path: "google/cloud/test/v4"},
+				},
+				Nodejs: &config.NodejsPackage{
+					DefaultVersion: "v4",
+				},
+			},
+			want: "v4",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveDefaultVersion(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestMoveKeep(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, srcDir string)
+		filesToKeep []string
+		wantFiles   []string
+		unexpected  []string
+	}{
+		{
+			name: "moves existing files successfully",
+			setup: func(t *testing.T, srcDir string) {
+				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				for _, file := range []string{"file1.txt", "subdir/file2.txt"} {
+					if err := os.WriteFile(filepath.Join(srcDir, file), []byte("content"), 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
+			},
+			filesToKeep: []string{"file1.txt", "subdir/file2.txt"},
+			wantFiles:   []string{"file1.txt", "subdir/file2.txt"},
+		},
+		{
+			name: "skips missing files without error",
+			setup: func(t *testing.T, srcDir string) {
+				if err := os.WriteFile(filepath.Join(srcDir, "file1.txt"), []byte("content1"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			filesToKeep: []string{"file1.txt", "missing.txt"},
+			wantFiles:   []string{"file1.txt"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			srcDir := t.TempDir()
+			dstDir := t.TempDir()
+			test.setup(t, srcDir)
+			if err := moveKeep(test.filesToKeep, srcDir, dstDir); err != nil {
+				t.Fatal(err)
+			}
+			for _, f := range test.wantFiles {
+				path := filepath.Join(dstDir, f)
+				if _, err := os.Stat(path); err != nil {
+					t.Errorf("file %s does not exist in destination: %v", path, err)
+				}
+			}
+		})
+	}
+}
+
+func TestMoveKeep_Errors(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		setup       func(t *testing.T, srcDir, dstDir string)
+		filesToKeep []string
+		wantErr     error
+	}{
+		{
+			name: "mkdir failure when target parent is a regular file",
+			setup: func(t *testing.T, srcDir, dstDir string) {
+				if err := os.MkdirAll(filepath.Join(srcDir, "subdir"), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(srcDir, "subdir", "file.txt"), []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(dstDir, "subdir"), []byte("not-a-dir"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			filesToKeep: []string{"subdir/file.txt"},
+			wantErr:     syscall.ENOTDIR,
+		},
+		{
+			name: "rename failure when target is an existing directory",
+			setup: func(t *testing.T, srcDir, dstDir string) {
+				if err := os.WriteFile(filepath.Join(srcDir, "file.txt"), []byte("content"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(filepath.Join(dstDir, "file.txt"), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			filesToKeep: []string{"file.txt"},
+			wantErr:     os.ErrExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			srcDir := t.TempDir()
+			dstDir := t.TempDir()
+			test.setup(t, srcDir, dstDir)
+			err := moveKeep(test.filesToKeep, srcDir, dstDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("moveKeep() error = %v, want %v", err, test.wantErr)
 			}
 		})
 	}

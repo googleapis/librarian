@@ -38,6 +38,9 @@ type messageAnnotations struct {
 	PageableItemType    string
 	DependsOn           map[string]*Dependency
 
+	// The name of a field to use in message examples.
+	SampleField string
+
 	// GatedBy is the list of package traits that enables this message.
 	//
 	// Empty unless the package is configured with `per_service_traits` enabled.
@@ -90,6 +93,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if err != nil {
 		return err
 	}
+	sampleField := "<placeholder>"
+	if len(message.Fields) != 0 {
+		sampleField = camelCase(message.Fields[0].Name)
+	}
 	annotations := &messageAnnotations{
 		Name:                pascalCase(message.Name),
 		DocLines:            docLines,
@@ -97,6 +104,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		TypeURL:             typeURLPrefix + strings.TrimPrefix(message.ID, "."),
 		CustomSerialization: len(message.OneOfs) > 0,
 		DependsOn:           map[string]*Dependency{},
+		SampleField:         sampleField,
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.
@@ -121,20 +129,26 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 	for _, field := range message.Fields {
-		if err := c.annotateField(field); err != nil {
+		fieldCodec, err := c.annotateField(field)
+		if err != nil {
 			return err
 		}
-		if fieldCodec, ok := field.Codec.(*fieldAnnotations); ok {
-			if fieldCodec.Name != field.JSONName {
-				annotations.CustomSerialization = true
+		if fieldCodec.Name != field.JSONName {
+			annotations.CustomSerialization = true
+		}
+		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
+			dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
+			if err != nil {
+				return err
 			}
-			if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
-				dep, err := c.addApiPackageDependency(fieldCodec.PackageName)
-				if err != nil {
-					return err
-				}
-				annotations.DependsOn[dep.Name] = dep
-			}
+			annotations.DependsOn[dep.Name] = dep
+		}
+		if field.Map && !fieldCodec.IsStringKeyed() {
+			// In ProtoJSON map fields with non-string keys need to be
+			// serialized as JSON objects with key fields. In the generated
+			// Swift code, that requires a custom implementation of the
+			// `Decodable` and `Encodable` protocol.
+			annotations.CustomSerialization = true
 		}
 	}
 

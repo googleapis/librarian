@@ -278,10 +278,11 @@ func (r *Resource) WithSingular(singular string) *Resource {
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.
 func ParseTemplateForTest(template string) []PathSegment {
 	var segments []PathSegment
-	parts := strings.Split(strings.TrimPrefix(template, "//"), "/")
+	trimmed, hasDoubleSlash := strings.CutPrefix(template, "//")
+	parts := strings.Split(trimmed, "/")
 
 	host := parts[0]
-	if strings.HasPrefix(template, "//") {
+	if hasDoubleSlash {
 		host = "//" + parts[0]
 	}
 	segments = append(segments, PathSegment{Literal: host})

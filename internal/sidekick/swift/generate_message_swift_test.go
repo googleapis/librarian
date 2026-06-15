@@ -314,16 +314,10 @@ func TestGenerateMessage_WithRecursiveTypes(t *testing.T) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStrA)
 	}
 
-	// Verify initializer parameter uses the unwrapped type
-	wantParam := "nodeB: NodeB? = nil"
-	if !strings.Contains(contentStrA, wantParam) {
-		t.Errorf("initializer parameter mismatch: want %q; got:\n%s", wantParam, contentStrA)
-	}
-
-	// Verify initializer maps the value
-	wantMap := "self.nodeB = nodeB.map { GoogleCloudWkt.Recursive(value: $0) }"
-	if !strings.Contains(contentStrA, wantMap) {
-		t.Errorf("initializer body mapping mismatch: want %q; got:\n%s", wantMap, contentStrA)
+	// Verify initializer is the default initializer
+	wantInit := "public init() {}"
+	if !strings.Contains(contentStrA, wantInit) {
+		t.Errorf("initializer mismatch: want %q; got:\n%s", wantInit, contentStrA)
 	}
 }
 
@@ -376,16 +370,10 @@ func TestGenerateMessage_SelfRecursive(t *testing.T) {
 		t.Errorf("property definition mismatch: want %q; got:\n%s", wantProp, contentStr)
 	}
 
-	// Verify initializer parameter uses the unwrapped type
-	wantParam := "child: Node? = nil"
-	if !strings.Contains(contentStr, wantParam) {
-		t.Errorf("initializer parameter mismatch: want %q; got:\n%s", wantParam, contentStr)
-	}
-
-	// Verify initializer maps the value
-	wantMap := "self.child = child.map { GoogleCloudWkt.Recursive(value: $0) }"
-	if !strings.Contains(contentStr, wantMap) {
-		t.Errorf("initializer body mapping mismatch: want %q; got:\n%s", wantMap, contentStr)
+	// Verify initializer is the default initializer
+	wantInit := "public init() {}"
+	if !strings.Contains(contentStr, wantInit) {
+		t.Errorf("initializer mismatch: want %q; got:\n%s", wantInit, contentStr)
 	}
 }
 
@@ -469,9 +457,9 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	if !strings.Contains(contentStrA, wantPropA) {
 		t.Errorf("nodeB property definition mismatch: want %q; got:\n%s", wantPropA, contentStrA)
 	}
-	wantParamA := "nodeB: NodeB? = nil"
-	if !strings.Contains(contentStrA, wantParamA) {
-		t.Errorf("nodeB initializer parameter mismatch: want %q; got:\n%s", wantParamA, contentStrA)
+	wantInitA := "public init() {}"
+	if !strings.Contains(contentStrA, wantInitA) {
+		t.Errorf("nodeB initializer mismatch: want %q; got:\n%s", wantInitA, contentStrA)
 	}
 
 	// Verify NodeB contains wrapped NodeC
@@ -485,9 +473,9 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 	if !strings.Contains(contentStrB, wantPropB) {
 		t.Errorf("nodeC property definition mismatch: want %q; got:\n%s", wantPropB, contentStrB)
 	}
-	wantParamB := "nodeC: NodeC? = nil"
-	if !strings.Contains(contentStrB, wantParamB) {
-		t.Errorf("nodeC initializer parameter mismatch: want %q; got:\n%s", wantParamB, contentStrB)
+	wantInitB := "public init() {}"
+	if !strings.Contains(contentStrB, wantInitB) {
+		t.Errorf("nodeC initializer mismatch: want %q; got:\n%s", wantInitB, contentStrB)
 	}
 
 	// Verify NodeC contains wrapped NodeA
@@ -497,12 +485,12 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Fatal(err)
 	}
 	contentStrC := string(contentC)
-	wantPropC := "public var nodeA: GoogleCloudWkt.Recursive<NodeA>?"
+	wantPropC := "public var nodeA: GoogleCloudWkt.Recursive<NodeA>? = nil"
 	if !strings.Contains(contentStrC, wantPropC) {
 		t.Errorf("nodeA property definition mismatch: want %q; got:\n%s", wantPropC, contentStrC)
 	}
-	wantParamC := "nodeA: NodeA? = nil"
-	if !strings.Contains(contentStrC, wantParamC) {
-		t.Errorf("nodeA initializer parameter mismatch: want %q; got:\n%s", wantParamC, contentStrC)
+	wantInitC := "public init() {}"
+	if !strings.Contains(contentStrC, wantInitC) {
+		t.Errorf("nodeA initializer mismatch: want %q; got:\n%s", wantInitC, contentStrC)
 	}
 }

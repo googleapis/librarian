@@ -194,13 +194,11 @@ func pascalCaseNoMangling(s string) string {
 // enumValueCaseName returns the name of the Swift enumeration case for a given enumeration value.
 func enumValueCaseName(e *api.EnumValue) string {
 	prefix := strcase.ToScreamingSnake(e.Parent.Name) + "_"
-	trimmed := strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	trimmed = strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return camelCase(trimmed)
 	}
 	return camelCase(e.Name)
