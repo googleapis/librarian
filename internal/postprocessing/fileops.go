@@ -16,10 +16,18 @@
 package postprocessing
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
 	"os"
+	"regexp"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/filesystem"
 )
+
+// errTextNotFound is returned when the target text or pattern is not found in the file.
+var errTextNotFound = errors.New("text not found")
 
 // CopyFile copies a single file from the src path to the dst path.
 // It acts as a wrapper around filesystem.CopyFile to provide a unified
@@ -31,4 +39,41 @@ func CopyFile(src, dst string) error {
 // RemoveFile removes the file at the specified path.
 func RemoveFile(path string) error {
 	return os.Remove(path)
+}
+
+// Replace finds and replaces exact text in a file.
+// It returns an error if the target file does not exist or if the text is not found.
+func Replace(path, original, replacement string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	oldBytes := []byte(original)
+	if !bytes.Contains(content, oldBytes) {
+		return fmt.Errorf("%w: %q in file %s", errTextNotFound, original, path)
+	}
+	newContent := bytes.ReplaceAll(content, oldBytes, []byte(replacement))
+	return os.WriteFile(path, newContent, 0644)
+}
+
+// ReplaceRegex finds and replaces text in a file using a regular expression.
+// It returns an error if the target file does not exist or if the pattern matches no text.
+func ReplaceRegex(path, pattern, replacement string) error {
+	// Default to multiline mode so ^ and $ match per-line.
+	if !strings.HasPrefix(pattern, "(?") {
+		pattern = "(?m)" + pattern
+	}
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		return err
+	}
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	if !re.Match(content) {
+		return fmt.Errorf("%w: pattern %q in file %s", errTextNotFound, pattern, path)
+	}
+	newContent := re.ReplaceAll(content, []byte(replacement))
+	return os.WriteFile(path, newContent, 0644)
 }
