@@ -458,7 +458,7 @@ func checkPullRequestCommits(ctx context.Context, prMetadata *github.PullRequest
 	}
 
 	var builder strings.Builder
-	fmt.Fprintf(&builder, "At least one library being released may have changed since release PR creation:\n\n")
+	builder.WriteString("At least one library being released may have changed since release PR creation:\n\n")
 	for _, suspectRelease := range suspectReleases {
 		fmt.Fprintf(&builder, "%s: %s\n", suspectRelease.LibraryID, suspectRelease.Reason)
 	}

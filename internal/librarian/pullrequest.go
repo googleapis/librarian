@@ -132,7 +132,7 @@ func formatListAsMarkdown(title string, list []string) string {
 	for _, value := range list {
 		fmt.Fprintf(&builder, "- %s\n", value)
 	}
-	fmt.Fprintf(&builder, "\n\n")
+	builder.WriteString("\n\n")
 	return builder.String()
 }
 

@@ -302,15 +302,18 @@ func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 			if strings.HasPrefix(line, PiperPrefix) {
 				piperRevIdLines = append(piperRevIdLines, line)
 			} else {
-				fmt.Fprintf(&builder, "%s\n", line)
+				builder.WriteString(line)
+				builder.WriteString("\n")
 			}
 		}
 	}
 	for _, revIdLine := range piperRevIdLines {
-		fmt.Fprintf(&builder, "%s\n", revIdLine)
+		builder.WriteString(revIdLine)
+		builder.WriteString("\n")
 	}
 	for _, sourceLinkLine := range sourceLinkLines {
-		fmt.Fprintf(&builder, "%s\n", sourceLinkLine)
+		builder.WriteString(sourceLinkLine)
+		builder.WriteString("\n")
 	}
 	return builder.String()
 }
