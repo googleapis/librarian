@@ -283,7 +283,7 @@ func TestBump_Error(t *testing.T) {
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
-						Path: "google/example/common",
+						Path: "google/v1",
 					},
 				},
 			},

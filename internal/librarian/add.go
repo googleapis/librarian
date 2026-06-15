@@ -271,7 +271,10 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 			return "", nil, err
 		}
 		existingLib.APIs = append(existingLib.APIs, api)
-	case config.LanguageGo, config.LanguageJava, config.LanguageNodejs:
+	case config.LanguageGo:
+		existingLib.APIs = append(existingLib.APIs, api)
+		existingLib = golang.Add(existingLib)
+	case config.LanguageJava, config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
