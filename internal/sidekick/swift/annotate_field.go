@@ -62,6 +62,13 @@ type fieldAnnotations struct {
 
 	// Encoding controls how the field is encoded.
 	Encoding EncodingStyle
+
+	// UrlSafeValue is true if the value is a `bytes` and should be serialized
+	// and deserialized using URL-safe encoding.
+	UrlSafeValue bool
+
+	// Model points to the annotations for the model.
+	Model *modelAnnotations
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -129,7 +136,7 @@ func (a *fieldAnnotations) IsEncodingMapCustomKey() bool {
 	return a.Encoding == EncodingMapCustomKey
 }
 
-func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
+func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*fieldAnnotations, error) {
 	parts, err := c.fieldTypeName(field)
 	if err != nil {
 		return nil, err
@@ -153,6 +160,7 @@ func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
 		DocLines:      docLines,
 		Decoding:      DecodingSimple,
 		Encoding:      EncodingSimple,
+		Model:         model,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -178,6 +186,14 @@ func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {
 			annotations.OneOfChecker = oneofAnn.Checker
+		}
+	}
+	if c.UrlSafeForBytes {
+		if field.Typez == api.TypezBytes {
+			annotations.UrlSafeValue = true
+		}
+		if field.Map && annotations.ValueType == "Foundation.Data" {
+			annotations.UrlSafeValue = true
 		}
 	}
 	field.Codec = annotations

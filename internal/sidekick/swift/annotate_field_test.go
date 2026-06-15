@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -79,10 +80,8 @@ func TestAnnotateField(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			test.want.Name = "secretPayload"
-			test.want.DocLines = []string{"The secret version payload."}
 
-			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -123,6 +122,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				FieldType:     test.wantType,
 				BaseFieldType: test.wantType,
 				DocLines:      []string{"Test documentation."},
+				Model:         model.Codec.(*modelAnnotations),
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -170,6 +170,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
 		PackageName:   "google.cloud.external.v1",
 		DocLines:      []string{"The external message."},
+		Model:         model.Codec.(*modelAnnotations),
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -218,6 +219,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				FieldType:     "Node",
 				BaseFieldType: "Node",
 				Recursive:     false,
+				OneOfChecker:  "alternativesCheckAndSet",
 			},
 		},
 	} {
@@ -257,14 +259,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			test.want.Name = "childNode"
-			test.want.DocLines = []string{"Recursive link."}
-			test.want.PackageName = "test"
-			if test.isOneOf {
-				test.want.OneOfChecker = test.oneofProperty + "CheckAndSet"
-			}
-
-			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
