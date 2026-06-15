@@ -24,19 +24,27 @@ limitations under the License.
 }}
 {{InputType.Codec.Name}}()
   {{#SampleInfo}}
-  {{#IsRequestResourceName}}
-  .with { $0.{{Codec.Name}} = "{{Codec.FormatString}}" }
-  {{/IsRequestResourceName}}
-  {{#IsMessageResourceName}}
   .with {
+  {{#IsRequestResourceName}}
+    $0.{{Codec.Name}} = "{{Codec.FormatString}}"
+  {{/IsRequestResourceName}}
+  {{#ResourceIDField}}
+    $0.{{Codec.Name}} = "[replace with a valid ID]"
+  {{/ResourceIDField}}
+  {{#IsMessageResourceName}}
     $0.{{MessageField.Codec.Name}} = {{MessageField.Codec.BaseFieldType}}().with {
       $0.{{Codec.Name}} = "{{Codec.FormatString}}"
     }
-  }
+  {{/IsMessageResourceName}}
+  {{^IsMessageResourceName}}
+  {{#MessageField}}
+    $0.{{Codec.Name}} = {{MessageField.Codec.BaseFieldType}}() /* .with { ... } */
+  {{/MessageField}}
   {{/IsMessageResourceName}}
   {{#UpdateMaskField}}
-  .with { $0.{{Codec.Name}} = {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"]) }
+    $0.{{Codec.Name}} = {{Service.Codec.Model.WktPackage}}.FieldMask(paths: ["field.path1", "field.path2"])
   {{/UpdateMaskField}}
+  }
   {{/SampleInfo}}
   {{^SampleInfo}}
   /* set fields using .with { $0... } */
