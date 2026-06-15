@@ -89,6 +89,9 @@ func Fill(library *config.Library) (*config.Library, error) {
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) (*config.Library, error) {
+	if _, err := Fill(library); err != nil {
+		return nil, err
+	}
 	library.Keep = tidyKeep(library)
 	if library.Output == deriveOutput(library.Name) {
 		library.Output = ""
