@@ -26,7 +26,7 @@ if let s = try container.decodeIfPresent(Swift.String.self, forKey: .{{Codec.Nam
 {{/Optional}}
 {{^Optional}}
 do {
-  let s = container.decode(Swift.String.self, forKey: .{{Codec.Name}})
+  let s = try container.decode(Swift.String.self, forKey: .{{Codec.Name}})
   guard let v = {{Codec.Model.WktPackage}}._DiscoveryBase64.decode(s) else {
     throw DecodingError.dataCorrupted(
       DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Expected url-safe encoded value")
