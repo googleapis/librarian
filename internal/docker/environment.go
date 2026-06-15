@@ -112,6 +112,7 @@ func (e *EnvironmentProvider) constructEnvironmentFileContent(ctx context.Contex
 			slog.Info(fmt.Sprintf("No value to provide to container for '%s'", variable.Name))
 			builder.WriteString(fmt.Sprintf("# No value for %s\n", variable.Name))
 		}
+		continue
 	}
 	return builder.String(), nil
 }
