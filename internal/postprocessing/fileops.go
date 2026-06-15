@@ -59,6 +59,7 @@ func Replace(path, original, replacement string) error {
 // ReplaceRegex finds and replaces text in a file using a regular expression.
 // It returns an error if the target file does not exist or if the pattern matches no text.
 func ReplaceRegex(path, pattern, replacement string) error {
+	// Default to multiline mode so ^ and $ match per-line.
 	if !strings.HasPrefix(pattern, "(?") {
 		pattern = "(?m)" + pattern
 	}

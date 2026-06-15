@@ -101,7 +101,6 @@ func TestReplace(t *testing.T) {
 	original := "World"
 	replacement := "Go"
 	want := "Hello Go"
-
 	if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
@@ -142,6 +141,7 @@ func TestReplaceRegex(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "test.txt")
 			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
