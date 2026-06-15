@@ -742,6 +742,10 @@ type NodejsPackage struct {
 	// BundleConfig is the path to a GAPIC bundle config file.
 	BundleConfig string `yaml:"bundle_config,omitempty"`
 
+	// DefaultVersion is the default version of the API to use. When omitted,
+	// the version in the first API path is used.
+	DefaultVersion string `yaml:"default_version,omitempty"`
+
 	// Dependencies maps npm package names to version constraints.
 	Dependencies map[string]string `yaml:"dependencies,omitempty"`
 
@@ -767,6 +771,10 @@ type NodejsPackage struct {
 
 	// PackageName is the npm package name (e.g., "@google-cloud/access-approval").
 	PackageName string `yaml:"package_name,omitempty"`
+
+	// ClientDocumentationOverride allows the client_documentation field in
+	// .repo-metadata.json to be overridden from the default that's inferred.
+	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.

@@ -18,6 +18,15 @@
 # ==============================================================================
 name: 'multi-approvers'
 on:
+  # We use `pull_request_target` instead of `pull_request` because this workflow
+  # requires the `secrets.MULTI_APPROVERS_TOKEN` to check membership in the
+  # 'googlers' GitHub team. Standard `pull_request` workflows triggered from
+  # forks do not have access to secrets. Since this is a public repository that
+  # receives PRs from forks, `pull_request_target` is required to access the
+  # token. This is safe because the workflow runs in the context of the base
+  # branch and does not check out or run untrusted code from the PR branch.
+  # For more details, see the action's documentation:
+  # https://github.com/abcxyz/actions/blob/main/.github/actions/multi-approvers/README.md
   pull_request_target:
     types:
       - 'opened'

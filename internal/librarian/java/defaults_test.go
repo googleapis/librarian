@@ -481,6 +481,23 @@ func TestTidy(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "do not tidy released version if version is not a snapshot",
+			lib: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.2.0",
+				},
+			},
+			want: &config.Library{
+				Name:    "secretmanager",
+				Version: "1.2.0",
+				Java: &config.JavaModule{
+					ReleasedVersion: "1.2.0",
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := Tidy(test.lib)

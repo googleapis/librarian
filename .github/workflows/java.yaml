@@ -24,6 +24,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
+      - name: Checkout google-cloud-java
+        uses: actions/checkout@v6
+        with:
+          repository: googleapis/google-cloud-java
+          path: google-cloud-java
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4
@@ -37,10 +42,11 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
-      - name: Install Java tools
+      - name: Run librarian install
+        working-directory: google-cloud-java
         run: |
-          ./.github/workflows/scripts/install_java_tools.sh "$HOME/java_tools"
-          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+          librarian install
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
@@ -81,18 +87,16 @@ jobs:
         working-directory: google-cloud-java
         run: |
           librarian install
-          echo "$HOME/java_tools/bin" >> $GITHUB_PATH
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian generate
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
         run: librarian generate --all
-# TODO: uncomment once Java is migrated to Librarian
-# https://github.com/googleapis/librarian/issues/6176
-# create-issue-on-failure:
-#   needs: [integration]
-#   if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
-#   uses: ./.github/workflows/create-issue-on-failure.yaml
-#   with:
-#     language: Java
-#     repository: google-cloud-java
+  create-issue-on-failure:
+    needs: [integration]
+    if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+    uses: ./.github/workflows/create-issue-on-failure.yaml
+    with:
+      language: Java
+      repository: google-cloud-java

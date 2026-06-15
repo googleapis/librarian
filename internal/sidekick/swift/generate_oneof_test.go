@@ -115,23 +115,28 @@ func TestGenerateOneOf(t *testing.T) {
   Sendable {
 
   /// A regular field.
-  public var regularInt32: Swift.Int32
+  public var regularInt32: Swift.Int32 = Swift.Int32()
 
   /// Another regular field.
-  public var regularString: Swift.String
+  public var regularString: Swift.String = Swift.String()
 
   /// A group of fields where only one is set.
-  public var choice: OneOf_Choice?
+  public var choice: OneOf_Choice? = nil
 
   /// Initialize a new instance of ` + "`Outer`" + `.
-  public init(
-    regularInt32: Swift.Int32 = Swift.Int32(),
-    regularString: Swift.String = Swift.String(),
-    choice: OneOf_Choice? = nil,
-  ) {
-    self.regularInt32 = regularInt32
-    self.regularString = regularString
-    self.choice = choice
+  public init() {}
+
+  /// Use ` + "`config`" + ` to return a new instance of this object, with some fields updated.
+  ///
+  /// Commonly used to initialize the value, for example:
+  ///
+  /// ` + "```" + `
+  /// let value = Outer().with { $0.stringField = ... }
+  /// ` + "```" + `
+  public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
+    var copy = self
+    try config(&copy)
+    return copy
   }
 
   private enum CodingKeys: String, CodingKey {
@@ -268,13 +273,22 @@ func TestGenerateOneOfWithKeyword(t *testing.T) {
 	want := `public struct JwtLocation: Codable, Equatable, GoogleCloudWkt._AnyPackable,
   Sendable {
 
-  public var ` + "`in`" + `: OneOf_In?
+  public var ` + "`in`" + `: OneOf_In? = nil
 
   /// Initialize a new instance of ` + "`JwtLocation`" + `.
-  public init(
-    ` + "`in`" + `: OneOf_In? = nil,
-  ) {
-    self.` + "`in`" + ` = ` + "`in`" + `
+  public init() {}
+
+  /// Use ` + "`config`" + ` to return a new instance of this object, with some fields updated.
+  ///
+  /// Commonly used to initialize the value, for example:
+  ///
+  /// ` + "```" + `
+  /// let value = JwtLocation().with { $0.header = ... }
+  /// ` + "```" + `
+  public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
+    var copy = self
+    try config(&copy)
+    return copy
   }
 
   private enum CodingKeys: String, CodingKey {

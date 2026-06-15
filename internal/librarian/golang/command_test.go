@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/cache"
 )
 
 func TestMergeEnv(t *testing.T) {
@@ -34,7 +35,7 @@ func TestMergeEnv(t *testing.T) {
 			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					envPath: filepath.Join(base, binDir) + ":/original/path",
+					envPath: filepath.Join(base, toolsDir) + ":/original/path",
 				}
 			},
 		},
@@ -46,7 +47,7 @@ func TestMergeEnv(t *testing.T) {
 			path: "/original/path",
 			want: func(base string) map[string]string {
 				return map[string]string{
-					envPath: filepath.Join(base, binDir) + ":/original/path",
+					envPath: filepath.Join(base, toolsDir) + ":/original/path",
 					"FOO":   "bar",
 				}
 			},
@@ -66,7 +67,7 @@ func TestMergeEnv(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			baseDir := t.TempDir()
-			t.Setenv(envLibrarianDir, baseDir)
+			t.Setenv(cache.EnvLibrarianBin, baseDir)
 			t.Setenv(envPath, test.path)
 			got, err := mergeEnv(test.env)
 			if err != nil {

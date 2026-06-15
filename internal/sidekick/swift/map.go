@@ -15,30 +15,29 @@
 package swift
 
 import (
-	"strings"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
-	"github.com/iancoleman/strcase"
 )
 
-// PackageName returns the package name for the API.
-func PackageName(api *api.API) string {
-	var name string
-	if suffix, ok := strings.CutPrefix(api.PackageName, "google.cloud."); ok {
-		name = "Cloud" + pascalPackageName(suffix)
-	} else if suffix, ok := strings.CutPrefix(api.PackageName, "google."); ok {
-		name = pascalPackageName(suffix)
-	} else {
-		name = pascalPackageName(api.PackageName)
-	}
-	return "Google" + name
+type mapFields struct {
+	Key   *api.Field
+	Value *api.Field
 }
 
-func pascalPackageName(packageName string) string {
-	parts := strings.Split(packageName, ".")
-	var name strings.Builder
-	for _, p := range parts {
-		name.WriteString(strcase.ToCamel(p))
+// decomposeMap fields the key and value fields for a map message.
+func decomposeMap(m *api.Message) (*mapFields, error) {
+	var keyField, valueField *api.Field
+	for _, f := range m.Fields {
+		switch f.Name {
+		case "key":
+			keyField = f
+		case "value":
+			valueField = f
+		}
 	}
-	return name.String()
+	if keyField == nil || valueField == nil {
+		return nil, fmt.Errorf("map message %q missing key or value field", m.ID)
+	}
+	return &mapFields{Key: keyField, Value: valueField}, nil
 }

@@ -103,12 +103,7 @@ func Tidy(library *config.Library) (*config.Library, error) {
 		if library.Java.GroupID == defaultGroupID {
 			library.Java.GroupID = ""
 		}
-		if library.Java.ReleasedVersion != "" {
-			derived, err := deriveLastReleasedVersion(library.Version)
-			if err == nil && library.Java.ReleasedVersion == derived {
-				library.Java.ReleasedVersion = ""
-			}
-		}
+		tidyReleasedVersion(library)
 		empty, err := yaml.Empty(library.Java)
 		if err != nil {
 			return nil, err
@@ -250,4 +245,26 @@ func deriveLastReleasedVersion(v string) (string, error) {
 	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "SNAPSHOT")
 	sv.Prerelease = strings.TrimSuffix(sv.Prerelease, "-")
 	return sv.String(), nil
+}
+
+// isSnapshot reports whether the version represents a SNAPSHOT release.
+func isSnapshot(v string) bool {
+	sv, err := semver.Parse(v)
+	return err == nil && strings.HasSuffix(sv.Prerelease, "SNAPSHOT")
+}
+
+// tidyReleasedVersion clears the Java module's released_version if it can be
+// derived from the library version. It only tidies when the current library
+// version is a SNAPSHOT.
+func tidyReleasedVersion(library *config.Library) {
+	if library.Java.ReleasedVersion == "" {
+		return
+	}
+	if !isSnapshot(library.Version) {
+		return
+	}
+	derived, err := deriveLastReleasedVersion(library.Version)
+	if err == nil && library.Java.ReleasedVersion == derived {
+		library.Java.ReleasedVersion = ""
+	}
 }

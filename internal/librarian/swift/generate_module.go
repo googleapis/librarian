@@ -42,9 +42,13 @@ func moduleToModelConfig(library *config.Library, module *config.SwiftModule, sr
 	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
+	specFormat := config.SpecProtobuf
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
 
 	return &parser.ModelConfig{
-		SpecificationFormat: config.SpecProtobuf,
+		SpecificationFormat: specFormat,
 		SpecificationSource: module.APIPath,
 		Source:              sourceConfig,
 		Codec: map[string]string{

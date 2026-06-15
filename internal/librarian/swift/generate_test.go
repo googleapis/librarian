@@ -19,10 +19,26 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
+
+const (
+	googleapisRoot = "../../../internal/testdata/googleapis"
+	discoveryRoot  = "fake/path/to/testdata/discovery"
+)
+
+func absPath(t *testing.T, p string) string {
+	t.Helper()
+	abs, err := filepath.Abs(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return abs
+}
 
 func defaultSwiftConfig(t *testing.T) *config.SwiftPackage {
 	// A package providing the `google.protobuf` API is required, as that package provides the
@@ -66,10 +82,11 @@ func TestGenerate(t *testing.T) {
 	outDir := t.TempDir()
 	libraries := []*config.Library{
 		{
-			Name:          "GoogleType",
-			APIs:          []*config.API{{Path: "google/type"}},
-			CopyrightYear: "2038",
-			Swift:         defaultSwiftConfig(t),
+			Name:                "GoogleType",
+			APIs:                []*config.API{{Path: "google/type"}},
+			CopyrightYear:       "2038",
+			SpecificationFormat: config.SpecProtobuf,
+			Swift:               defaultSwiftConfig(t),
 		},
 	}
 	for _, library := range libraries {
@@ -114,5 +131,101 @@ func TestFormat(t *testing.T) {
 
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestLibraryToModelConfig(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		api     *config.API
+		want    *parser.ModelConfig
+	}{
+		{
+			name: "minimal config",
+			library: &config.Library{
+				Name:          "google-cloud-secretmanager",
+				CopyrightYear: "2038",
+				Version:       "1.2.3",
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
+		{
+			name: "explicit specification format",
+			library: &config.Library{
+				Name:                "google-cloud-secretmanager",
+				CopyrightYear:       "2038",
+				Version:             "1.2.3",
+				SpecificationFormat: config.SpecProtobuf,
+			},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecProtobuf,
+				SpecificationSource: "google/cloud/secretmanager/v1",
+				ServiceConfig:       "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"googleapis"},
+				},
+			},
+		},
+		{
+			name: "discovery config",
+			library: &config.Library{
+				Name:                "google-cloud-compute-v1",
+				CopyrightYear:       "2038",
+				Version:             "1.2.3",
+				Roots:               []string{"discovery", "googleapis"},
+				SpecificationFormat: config.SpecDiscovery,
+			},
+			api: &config.API{
+				Path: "discoveries/compute.v1.json",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecDiscovery,
+				SpecificationSource: "discoveries/compute.v1.json",
+				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
+				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"discovery", "googleapis"},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			srcs := &sources.Sources{
+				Discovery:  absPath(t, discoveryRoot),
+				Googleapis: absPath(t, googleapisRoot),
+			}
+			if test.want.Source == nil {
+				t.Fatal("bad test expectation: test.want.Sources should not be nil")
+			}
+			// Avoid typing this in every input
+			test.want.Source.Sources = srcs
+
+			got, err := libraryToModelConfig(test.library, test.api, srcs)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

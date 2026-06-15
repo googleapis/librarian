@@ -370,6 +370,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
+| `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
 | `esm` | bool | Indicates that generation should produce ES Modules (ESM) outputs. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
@@ -378,6 +379,7 @@ This document describes the schema for the librarian.yaml.
 | `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+| `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
 
 ## PythonDefault Configuration
 
