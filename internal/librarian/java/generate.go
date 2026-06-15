@@ -39,6 +39,7 @@ const (
 var (
 	errNoProtos          = errors.New("no protos found")
 	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errParentVersion     = fmt.Errorf("failed to find parent version for %q in config", parentPOM)
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 	errUnrecognizedAPI   = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
 	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
