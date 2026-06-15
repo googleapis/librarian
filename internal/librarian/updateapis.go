@@ -289,10 +289,7 @@ func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 	var builder strings.Builder
 
 	// Start the commit with a line on its own saying what's being regenerated.
-	builder.WriteString(fmt.Sprintf("regen: Regenerate %s at API commit %s", libraryID, commits[0].Hash.String()[0:7]))
-	builder.WriteString("\n")
-	builder.WriteString("\n")
-
+	fmt.Fprintf(&builder, "regen: Regenerate %s at API commit %s\n\n", libraryID, commits[0].Hash.String()[0:7])
 	piperRevIdLines := []string{}
 	sourceLinkLines := []string{}
 	// Consume the commits in reverse order, so that they're in normal chronological order,
@@ -305,19 +302,15 @@ func createCommitMessage(libraryID string, commits []*gitrepo.Commit) string {
 			if strings.HasPrefix(line, PiperPrefix) {
 				piperRevIdLines = append(piperRevIdLines, line)
 			} else {
-				builder.WriteString(line)
-				builder.WriteString("\n")
+				fmt.Fprintf(&builder, "%s\n", line)
 			}
-
 		}
 	}
 	for _, revIdLine := range piperRevIdLines {
-		builder.WriteString(revIdLine)
-		builder.WriteString("\n")
+		fmt.Fprintf(&builder, "%s\n", revIdLine)
 	}
 	for _, sourceLinkLine := range sourceLinkLines {
-		builder.WriteString(sourceLinkLine)
-		builder.WriteString("\n")
+		fmt.Fprintf(&builder, "%s\n", sourceLinkLine)
 	}
 	return builder.String()
 }
