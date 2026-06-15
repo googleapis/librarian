@@ -1,0 +1,54 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+package test;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/timestamp.proto";
+
+// A service to unit test parsing of method signatures.
+service Service {
+  // Creates a new `Foo` resource. `Foo`s are containers for `Bar`s.
+  //
+  // Shows how a `body: "${field}"` option works.
+  rpc CreateFoo(CreateFooRequest) returns (Foo) {
+    option (google.api.http) = {post: "/v1/{parent=projects/*}/foos"};
+    option (google.api.method_signature) = "parent,foo_id,flags";
+    // Not realistic, but good to test out-of-order fields and subsets.
+    option (google.api.method_signature) = "foo_id,parent";
+  }
+}
+
+// Request message for `CreateFoo`.
+message CreateFooRequest {
+  // The resource name of the project to associate with the
+  // [Secret][google.cloud.secretmanager.v1.Secret], in the format `projects/*`.
+  string parent = 1;
+
+  // This must be unique within the project.
+  string foo_id = 2;
+
+  // Initial flags.
+  repeated string flags = 3;
+}
+
+// The `Foo` resource.
+message Foo {
+  // The resource name of `Foo`, in the format `projects/{project}/foos/{foo}`.
+  string name = 1;
+
+  repeated string flags = 2;
+}

@@ -54,11 +54,13 @@ func TestMakeServiceMethods(t *testing.T) {
 			},
 			BodyFieldPath: "",
 		},
+		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
 }
+
 func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 	model, err := ComputeDisco(t, nil)
 	if err != nil {
@@ -94,6 +96,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 			},
 			BodyFieldPath: "",
 		},
+		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -132,6 +135,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 			},
 			BodyFieldPath: "body",
 		},
+		Signatures: []*api.MethodSignature{{Names: []string{"project", "body"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
