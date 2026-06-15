@@ -25,7 +25,8 @@ self.{{Codec.Name}} = try { () throws in
   let tuples = try stringKeyed.lazy.map { (key, value) throws -> ({{{Codec.KeyType}}}, {{{Codec.ValueType}}}) in
     guard let newKey = {{{Codec.KeyType}}}(key) else {
       throw DecodingError.typeMismatch(
-        {{{Codec.KeyType}}}.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Incorrect type for map key '{{Codec.Name}}'"))
+        {{{Codec.KeyType}}}.self, DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Incorrect type for map key '{{Codec.Name}}'")
+      )
     }
     return (newKey, value)
   }

@@ -18,9 +18,9 @@ try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
 {{/Codec.IsEncodingSimple}}
 {{#Codec.IsEncodingMapCustomKey}}
 do {
-    let stringKeyed = Dictionary(
+  let stringKeyed = Dictionary(
     uniqueKeysWithValues: self.{{Codec.Name}}.lazy.map { (Swift.String($0), $1) }
-    )
-    try container.encode(stringKeyed, forKey: .{{Codec.Name}})
+  )
+  try container.encode(stringKeyed, forKey: .{{Codec.Name}})
 }
 {{/Codec.IsEncodingMapCustomKey}}

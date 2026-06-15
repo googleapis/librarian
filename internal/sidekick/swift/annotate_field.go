@@ -64,17 +64,32 @@ type fieldAnnotations struct {
 	Encoding EncodingStyle
 }
 
+// DecodingStyle defines an enumeration for decoding fields.
 type DecodingStyle int
+
+// EncodingStyle defines an enumeration for encoding fields.
 type EncodingStyle int
 
 const (
+	// DecodingSimple means that the field is decoded using a simple `.decode()`
+	// call.
 	DecodingSimple DecodingStyle = iota
+
+	// DecodingOptional means that the field is decoded using a
+	// `.decodeIfPresent()` call.
 	DecodingOptional
+
+	// DecodingMapCustomKey means that the field is a map, with non-string keys
+	// and requires mapping through a string-keyed temporary.
 	DecodingMapCustomKey
 )
 
 const (
+	// EncodingSimple means that the field is encoded using a simple `.encode()` call.
 	EncodingSimple EncodingStyle = iota
+
+	// EncodingMapCustomKey means that the field is a map, with non-string keys
+	// and requires mapping through a string-keyed temporary.
 	EncodingMapCustomKey
 )
 
