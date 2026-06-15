@@ -151,6 +151,30 @@ func TestFill(t *testing.T) {
 			},
 		},
 		{
+			name: "fill defaults for versionless/type-only api",
+			library: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/type",
+					Go: &config.GoAPI{
+						ImportPath: "secretmanager/type/typepb",
+						ProtoOnly:  true,
+					},
+				}},
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{{
+					Path: "google/cloud/secretmanager/type",
+					Go: &config.GoAPI{
+						ImportPath: "secretmanager/type/typepb",
+						ProtoOnly:  true,
+					},
+				}},
+				Go: &config.GoModule{},
+			},
+		},
+		{
 			name: "no API",
 			library: &config.Library{
 				Name: "auth",
