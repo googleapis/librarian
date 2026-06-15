@@ -38,7 +38,7 @@ limitations under the License.
   {{/IsMessageResourceName}}
   {{^IsMessageResourceName}}
   {{#MessageField}}
-    $0.{{Codec.Name}} = {{MessageField.Codec.BaseFieldType}}() /* .with { ... } */
+    $0.{{Codec.Name}} = {{Codec.BaseFieldType}}() /* .with { ... } */
   {{/MessageField}}
   {{/IsMessageResourceName}}
   {{#UpdateMaskField}}
