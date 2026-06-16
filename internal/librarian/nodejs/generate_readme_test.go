@@ -16,6 +16,7 @@ package nodejs
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -84,11 +85,11 @@ func TestFindSampleMetadata(t *testing.T) {
 				return []sampleMetadata{
 					{
 						name:     "nested sample",
-						filePath: filepath.Join(repoURLPrefix, filepath.Join(generatedDir, "sub/v1.nested_sample.js")),
+						filePath: fmt.Sprintf("%s/%s/sub/v1.nested_sample.js", repoURLPrefix, generatedDir),
 					},
 					{
 						name:     "do something",
-						filePath: filepath.Join(repoURLPrefix, filepath.Join(generatedDir, "v2.do_something.js")),
+						filePath: fmt.Sprintf("%s/%s/v2.do_something.js", repoURLPrefix, generatedDir),
 					},
 				}
 			},

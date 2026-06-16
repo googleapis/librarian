@@ -16,6 +16,7 @@ package nodejs
 
 import (
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -49,7 +50,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		}
 		metadata = append(metadata, sampleMetadata{
 			name:     extractSampleName(d.Name()),
-			filePath: filepath.Join(repoURLPrefix, path),
+			filePath: fmt.Sprintf("%s/%s", repoURLPrefix, path),
 		})
 		return nil
 	})
