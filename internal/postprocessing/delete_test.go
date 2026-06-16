@@ -18,17 +18,18 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
 
 func TestDeleteMethod(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name     string
 		content  string
 		funcName string
-		language string
 		want     string
 	}{
 		{
@@ -42,7 +43,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
@@ -62,26 +62,25 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
     }
 }`,
 		},
+		// This test has an unbalanced '{' in a string.
+		// It passes because cleanJavaCode strips strings before brace counting.
 		{
 			name: "braces in strings",
 			content: `package com.example;
 class Test {
     public void myMethod() {
         System.out.println(" { ");
-        System.out.println(" } ");
     }
     public void otherMethod() {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
@@ -100,7 +99,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
@@ -121,7 +119,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
@@ -140,7 +137,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     @MyAnnotation(keys = {"a", "b"})
@@ -162,7 +158,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     public void otherMethod() {
@@ -181,7 +176,6 @@ class Test {
     }
 }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
     // Deprecated: public void myMethod() is no longer used
@@ -193,7 +187,6 @@ class Test {
 			name:     "same line delete exact range only",
 			content:  "class Test { public void myMethod() { System.out.println(\"hello\"); } public void otherMethod() {} }",
 			funcName: "public void myMethod()",
-			language: "java",
 			want:     "class Test {  public void otherMethod() {} }",
 		},
 		{
@@ -202,18 +195,18 @@ class Test {
 class Test {
     public void myMethod() {} }`,
 			funcName: "public void myMethod()",
-			language: "java",
 			want: `package com.example;
 class Test {
      }`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			tmpFile := filepath.Join(t.TempDir(), "test.java")
 			if err := os.WriteFile(tmpFile, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := DeleteMethod(tmpFile, test.funcName, test.language); err != nil {
+			if err := DeleteMethod(tmpFile, test.funcName, "java"); err != nil {
 				t.Fatal(err)
 			}
 			got, err := os.ReadFile(tmpFile)
@@ -228,6 +221,7 @@ class Test {
 }
 
 func TestDeleteMethod_Error(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name     string
 		content  string
@@ -263,8 +257,16 @@ func TestDeleteMethod_Error(t *testing.T) {
 			language: "java",
 			wantErr:  errInvalidSignature,
 		},
+		{
+			name:     "closing brace not found",
+			content:  "class T { void m() { System.out.println();",
+			funcName: "void m()",
+			language: "java",
+			wantErr:  errClosingBraceNotFound,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			tmpFile := filepath.Join(t.TempDir(), "test.java")
 			if err := os.WriteFile(tmpFile, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
@@ -272,6 +274,54 @@ func TestDeleteMethod_Error(t *testing.T) {
 			err := DeleteMethod(tmpFile, test.funcName, test.language)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("DeleteMethod(%q, %q, %q) error = %v, wantErr %v", tmpFile, test.funcName, test.language, err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestAdjustDeleteBounds(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		content     string
+		startSub    string
+		endSub      string
+		wantDeleted string
+	}{
+		{
+			name: "method on its own lines",
+			content: `class T {
+    void m() {
+    }
+}`,
+			startSub:    "void m()",
+			endSub:      "}",
+			wantDeleted: "    void m() {\n    }\n",
+		},
+		{
+			name:        "inline method",
+			content:     "class T { void m() {} void o() {} }",
+			startSub:    "void m()",
+			endSub:      "}",
+			wantDeleted: "void m() {}",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			content := []byte(test.content)
+			start := strings.Index(test.content, test.startSub)
+			if start == -1 {
+				t.Fatalf("startSub %q not found in content", test.startSub)
+			}
+			endRelative := strings.Index(test.content[start:], test.endSub)
+			if endRelative == -1 {
+				t.Fatalf("endSub %q not found after start in content", test.endSub)
+			}
+			end := start + endRelative + len(test.endSub)
+
+			gotStart, gotEnd := adjustDeleteBounds(content, start, end)
+
+			got := string(content[gotStart:gotEnd])
+			if diff := cmp.Diff(test.wantDeleted, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
