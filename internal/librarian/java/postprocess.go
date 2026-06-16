@@ -86,7 +86,7 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 	if err != nil {
 		return err
 	}
-	parentVersion, err := findParentPOMVersion(p.cfg)
+	parentVersion, err := findParentPOMVersion(params.cfg)
 	if err != nil {
 		return err
 	}
