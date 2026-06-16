@@ -14,14 +14,56 @@
 
 package golang
 
-import "github.com/googleapis/librarian/internal/config"
+import (
+	"fmt"
+	"strings"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
+)
 
 // defaultVersion is the first version used for a new library.
 // This is set on the initial `librarian add` for a new API.
 const defaultVersion = "0.0.0"
 
-// Add initializes a new Go library with default values.
+// Add initializes a Go library with default values.
 func Add(lib *config.Library) *config.Library {
-	lib.Version = defaultVersion
+	if lib.Version == "" {
+		lib.Version = defaultVersion
+	}
+	for _, api := range lib.APIs {
+		addGoAPI(api)
+	}
 	return lib
+}
+
+// addGoAPI initializes Go-specific API configuration when adding a new API.
+// It populates the ImportPath and sets ProtoOnly to true if the API path
+// is versionless (does not contain a version segment like "v1"). It does
+// nothing for versioned API paths.
+func addGoAPI(api *config.API) {
+	if serviceconfig.ExtractVersion(api.Path) != "" {
+		return
+	}
+	if api.Go != nil {
+		return
+	}
+	importPath := deriveVersionlessImportPath(api.Path)
+	api.Go = &config.GoAPI{
+		ImportPath: importPath,
+		ProtoOnly:  true,
+	}
+}
+
+func deriveVersionlessImportPath(apiPath string) string {
+	apiPath = strings.TrimPrefix(apiPath, "google/cloud/")
+	apiPath = strings.TrimPrefix(apiPath, "google/")
+	idx := strings.LastIndex(apiPath, "/")
+	var leaf string
+	if idx == -1 {
+		leaf = apiPath
+	} else {
+		leaf = apiPath[idx+1:]
+	}
+	return fmt.Sprintf("%s/%spb", apiPath, leaf)
 }

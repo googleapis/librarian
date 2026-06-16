@@ -22,10 +22,43 @@ import (
 )
 
 func TestAdd(t *testing.T) {
-	lib := &config.Library{}
-	want := &config.Library{Version: defaultVersion}
-	got := Add(lib)
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "versioned api",
+			lib: &config.Library{
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			want: &config.Library{
+				Version: defaultVersion,
+				APIs:    []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+		},
+		{
+			name: "versionless api",
+			lib: &config.Library{
+				APIs: []*config.API{{Path: "google/shopping/type"}},
+			},
+			want: &config.Library{
+				Version: defaultVersion,
+				APIs: []*config.API{{
+					Path: "google/shopping/type",
+					Go: &config.GoAPI{
+						ImportPath: "shopping/type/typepb",
+						ProtoOnly:  true,
+					},
+				}},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := Add(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
