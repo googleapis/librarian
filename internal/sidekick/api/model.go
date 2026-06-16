@@ -457,8 +457,6 @@ type Method struct {
 	// SampleInfo may contain sample generation information for this method,
 	// usually if it is an AIP conforming metho.
 	SampleInfo *SampleInfo
-	// Signatures defines alternative signatures (overloads) for the method.
-	Signatures []*MethodSignature
 	// Codec contains language specific annotations.
 	Codec any
 }

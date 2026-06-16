@@ -64,7 +64,6 @@ func TestLroAnnotations(t *testing.T) {
 		DiscoveryLro: &api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
 		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}},
 	}
 	got := model.Method(want.ID)
 	if got == nil {

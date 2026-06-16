@@ -238,7 +238,6 @@ func TestProtobuf_OperationMixin(t *testing.T) {
 			},
 			BodyFieldPath: "*",
 		},
-		Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 	})
 }
 
@@ -327,7 +326,6 @@ func TestProtobuf_OperationMixinNoEmpty(t *testing.T) {
 			},
 			BodyFieldPath: "*",
 		},
-		Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 	})
 	got := test.Message(".google.protobuf.Empty")
 	if got == nil {
