@@ -72,7 +72,11 @@ func TestProtobuf_Signatures(t *testing.T) {
 	}
 
 	// Use IgnoreFields() to avoid recursive testing of the Field->Message->Fields cycle.
-	if diff := cmp.Diff(wantSignatures, gotMethod.Signatures, cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
+	if diff := cmp.Diff(
+		wantSignatures,
+		gotMethod.Signatures,
+		cmpopts.IgnoreFields(api.MethodSignature{}, "Method"),
+		cmpopts.IgnoreFields(api.Field{}, "Parent")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

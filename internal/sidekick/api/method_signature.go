@@ -31,4 +31,10 @@ type MethodSignature struct {
 	// Names define the list of field names from the request message included in
 	// this signature.
 	Names []string
+
+	// Method cross-references the method containing this signature.
+	//
+	// This is useful in mustache templates, as the template can access the
+	// method and the method's annotations from within a signature.
+	Method *Method
 }

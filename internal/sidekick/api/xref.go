@@ -74,6 +74,7 @@ func CrossReference(model *API) error {
 			m.OperationInfo.Method = m
 		}
 		for _, signature := range m.Signatures {
+			signature.Method = m
 			for _, name := range signature.Names {
 				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.Name == name })
 				if idx == -1 {
