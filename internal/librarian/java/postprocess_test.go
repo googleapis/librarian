@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"testing"
 
@@ -97,7 +98,7 @@ func TestPostProcessAPI(t *testing.T) {
 	}
 	apiProtos := []string{filepath.Join(googleapisDir, "google/cloud/secretmanager/v1/service.proto")}
 	api := &config.API{Path: "google/cloud/secretmanager/v1"}
-	p := postProcessParams{
+	params := postProcessParams{
 		cfg: &config.Config{
 			Libraries: []*config.Library{
 				{Name: "google-cloud-java", Version: "1.2.3"},
@@ -126,7 +127,7 @@ func TestPostProcessAPI(t *testing.T) {
 		includeSamples: true,
 		javaAPI:        &config.JavaAPI{},
 	}
-	if err := postProcessAPI(t.Context(), p); err != nil {
+	if err := postProcessAPI(t.Context(), params); err != nil {
 		t.Fatal(err)
 	}
 
@@ -198,7 +199,7 @@ func TestRestructureModules(t *testing.T) {
 	protoPath := filepath.Join(googleapisDir, "google", "cloud", "secretmanager", "v1", "service.proto")
 
 	additionalProtoPath := filepath.Join(googleapisDir, "google", "cloud", "oslogin", "common", "common.proto")
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir: tmpDir,
 		library: &config.Library{
 			Name: libraryID,
@@ -222,7 +223,7 @@ func TestRestructureModules(t *testing.T) {
 		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
-	if err := restructureModules(p, destRoot); err != nil {
+	if err := restructureModules(params, destRoot); err != nil {
 		t.Fatal(err)
 	}
 
@@ -253,7 +254,7 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 	tmpDir := t.TempDir()
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir: tmpDir,
 		library: &config.Library{
 			Name: commonProtosLibrary,
@@ -269,7 +270,7 @@ func TestRestructureModules_CommonProtos(t *testing.T) {
 		},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
-	if err := restructureModules(p, destRoot); err != nil {
+	if err := restructureModules(params, destRoot); err != nil {
 		t.Fatal(err)
 	}
 	wantPath := filepath.Join(destRoot, "proto-google-common-protos", "src", "main", "java", "com", "google", "cloud", "location", "LocationsProto.java")
@@ -283,7 +284,7 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 	tmpDir := t.TempDir()
 	apiBase := "v1"
 	setupLocationProtoFile(t, tmpDir, apiBase)
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir: tmpDir,
 		library: &config.Library{
 			Name: "secretmanager",
@@ -297,7 +298,7 @@ func TestRestructureModules_ShouldRemoveClasses(t *testing.T) {
 		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
-	if err := restructureModules(p, destRoot); err != nil {
+	if err := restructureModules(params, destRoot); err != nil {
 		t.Fatal(err)
 	}
 	wantPath := filepath.Join(destRoot, "proto-google-cloud-secretmanager-v1", "src", "main", "java", "com", "google", "cloud", "location", "LocationsProto.java")
@@ -340,7 +341,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir: tmpDir,
 		library: &config.Library{
 			Name: libraryID,
@@ -354,7 +355,7 @@ func TestRestructureModules_SamplesDisabled(t *testing.T) {
 		javaAPI:        &config.JavaAPI{},
 	}
 	destRoot := filepath.Join(tmpDir, "dest")
-	if err := restructureModules(p, destRoot); err != nil {
+	if err := restructureModules(params, destRoot); err != nil {
 		t.Fatal(err)
 	}
 	// Verify sample file location DOES NOT exist
@@ -394,7 +395,7 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 	if err := os.WriteFile(protoFile, []byte("public class Proto {}"), 0644); err != nil {
 		t.Fatal(err)
 	}
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir: tmpDir,
 		library: &config.Library{
 			Name: libraryID,
@@ -410,7 +411,7 @@ func TestRestructureModules_Monolithic(t *testing.T) {
 		},
 	}
 	destRoot := filepath.Join(tmpDir, "dest", "src")
-	if err := restructureModules(p, destRoot); err != nil {
+	if err := restructureModules(params, destRoot); err != nil {
 		t.Fatal(err)
 	}
 
@@ -432,12 +433,13 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		monolithic bool
-		wantHeader bool
+		wantHeader string
 	}{
-		{"default - adds header", false, true},
-		{"monolithic - skips header", true, false},
+		{"default adds header", false, "/*\n * Copyright"},
+		{"monolithic skips header", true, "package"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			outdir := t.TempDir()
 			apiBase := "v1"
 			gRPCDir := filepath.Join(outdir, apiBase, "grpc")
@@ -448,27 +450,60 @@ func TestPostProcessAPI_SkipHeaders(t *testing.T) {
 			if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
 				t.Fatal(err)
 			}
-
-			p := postProcessParams{
+			params := postProcessParams{
 				outDir:  outdir,
 				apiBase: apiBase,
 				library: &config.Library{Java: &config.JavaModule{}},
 				javaAPI: &config.JavaAPI{Monolithic: test.monolithic},
 			}
-			// We only care about the skip logic before restructure/cleanup.
-			if err := addHeadersIfRequired(p, []string{gRPCDir}); err != nil {
+			if err := addHeaders(params, []string{gRPCDir}); err != nil {
 				t.Fatal(err)
 			}
-
 			got, err := os.ReadFile(grpcFile)
 			if err != nil {
 				t.Fatal(err)
 			}
-			hasHeader := bytes.Contains(got, []byte("Copyright"))
-			if hasHeader != test.wantHeader {
-				t.Errorf("hasHeader = %v, want %v", hasHeader, test.wantHeader)
+			if !bytes.HasPrefix(got, []byte(test.wantHeader)) {
+				t.Errorf("mismatch got = %q, want %q", got, test.wantHeader)
 			}
 		})
+	}
+}
+
+func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
+	t.Parallel()
+	outdir := t.TempDir()
+	apiBase := "v1"
+	gRPCDir := filepath.Join(outdir, apiBase, "grpc")
+	if err := os.MkdirAll(gRPCDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	grpcFile := filepath.Join(gRPCDir, "GRPCFile.java")
+	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params := postProcessParams{
+		outDir:  outdir,
+		apiBase: apiBase,
+		library: &config.Library{Java: &config.JavaModule{}},
+		javaAPI: &config.JavaAPI{},
+	}
+	altHeader := "/* Alternate */\n"
+	headerFile := filepath.Join(outdir, "header.txt")
+	if err := os.WriteFile(headerFile, []byte(altHeader), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params.library.Java.AlternateHeaders = "header.txt"
+	if err := addHeaders(params, []string{gRPCDir}); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(grpcFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantHeader := "/* Alternate */"
+	if !bytes.HasPrefix(got, []byte(wantHeader)) {
+		t.Errorf("mismatch got = %q, want %q", got, wantHeader)
 	}
 }
 
@@ -494,8 +529,9 @@ func TestCopyProtos_Success(t *testing.T) {
 func TestCopyProtos_ErrorCase(t *testing.T) {
 	t.Parallel()
 	destDir := t.TempDir()
-	if err := copyProtos([]protoFileToCopy{{absolutePath: "/other/path/proto.proto", relativePath: "other/path/proto.proto"}}, destDir); err == nil {
-		t.Error("expected error for proto not in googleapisDir, got nil")
+	err := copyProtos([]protoFileToCopy{{absolutePath: "/other/path/proto.proto", relativePath: "other/path/proto.proto"}}, destDir)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("copyProtos() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
 }
 
@@ -779,8 +815,9 @@ func TestRunOwlBot_Error(t *testing.T) {
 	library := &config.Library{
 		Java: &config.JavaModule{},
 	}
-	if err := runOwlBot(t.Context(), library, outDir, ""); err == nil {
-		t.Error("expected error due to missing templates directory, got nil")
+	err := runOwlBot(t.Context(), library, outDir, "")
+	if !errors.Is(err, errTemplatesMissing) {
+		t.Errorf("runOwlBot() error = %v, wantErr %v", err, errTemplatesMissing)
 	}
 	if _, err := os.Stat(sDir); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("expected staging directory %s to be removed on error, but it still exists (err: %v)", sDir, err)
@@ -788,56 +825,88 @@ func TestRunOwlBot_Error(t *testing.T) {
 }
 
 func TestAddMissingHeaders(t *testing.T) {
+	defaultHeader := buildLicenseText(time.Now().Year())
 	for _, test := range []struct {
-		name         string
-		filename     string
-		content      string
-		wantModified bool
+		name        string
+		params      postProcessParams
+		filename    string
+		content     string
+		wantContent string
 	}{
 		{
-			name:         "file without header",
-			filename:     "NoHeader.java",
-			content:      "package com.example;",
-			wantModified: true,
+			name:        "file without header",
+			filename:    "NoHeader.java",
+			content:     "package com.example;",
+			wantContent: defaultHeader + "package com.example;",
 		},
 		{
-			name:     "file with full header",
-			filename: "WithHeader.java",
-			content:  "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
+			name:        "file with full header",
+			filename:    "WithHeader.java",
+			content:     "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
+			wantContent: "/* Licensed under the Apache License, Version 2.0 (the \"License\") */\npackage com.example;",
 		},
 		{
-			name:         "file with partial header",
-			filename:     "PartialHeader.java",
-			content:      "/* Copyright 2024 Google LLC */\npackage com.example;",
-			wantModified: true,
+			name:        "file with partial header",
+			filename:    "PartialHeader.java",
+			content:     "/* Copyright 2024 Google LLC */\npackage com.example;",
+			wantContent: defaultHeader + "/* Copyright 2024 Google LLC */\npackage com.example;",
 		},
 		{
-			name:     "non-java file",
-			filename: "test.txt",
-			content:  "some text",
+			name:        "non-java file",
+			filename:    "test.txt",
+			content:     "some text",
+			wantContent: "some text",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			tmpDir := t.TempDir()
 			path := filepath.Join(tmpDir, test.filename)
-			originalContent := []byte(test.content)
-			if err := os.WriteFile(path, originalContent, 0644); err != nil {
-				t.Fatal(err)
-			}
-			if err := addMissingHeaders(tmpDir); err != nil {
+			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
 
-			newContent, err := os.ReadFile(path)
+			params := test.params
+			params.outDir = tmpDir
+			if params.library != nil && params.library.Java != nil && params.library.Java.AlternateHeaders != "" {
+				headerPath := filepath.Join(tmpDir, params.library.Java.AlternateHeaders)
+				if err := os.MkdirAll(filepath.Dir(headerPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(headerPath, []byte("/* Alternate Header */\n"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+
+			if err := addMissingHeaders(params, tmpDir); err != nil {
+				t.Fatal(err)
+			}
+
+			got, err := os.ReadFile(path)
 			if err != nil {
 				t.Fatal(err)
 			}
-			wasModified := !bytes.Equal(originalContent, newContent)
-			if wasModified != test.wantModified {
-				t.Errorf("modification status = %v, want %v", wasModified, test.wantModified)
+			if diff := cmp.Diff(test.wantContent, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestAddMissingHeaders_AlternateHeaders_Error(t *testing.T) {
+	t.Parallel()
+	tmpDir := t.TempDir()
+	params := postProcessParams{
+		outDir: tmpDir,
+		library: &config.Library{
+			Java: &config.JavaModule{
+				AlternateHeaders: "missing-header.txt",
+			},
+		},
+	}
+	err := addMissingHeaders(params, tmpDir)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("addMissingHeaders() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
 }
 
@@ -857,7 +926,7 @@ func TestCopyFiles(t *testing.T) {
 	if err := os.WriteFile(fullSrcPath, []byte(content), 0644); err != nil {
 		t.Fatal(err)
 	}
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir:  outdir,
 		apiBase: apiBase,
 		javaAPI: &config.JavaAPI{
@@ -869,7 +938,7 @@ func TestCopyFiles(t *testing.T) {
 			},
 		},
 	}
-	if err := copyFiles(p); err != nil {
+	if err := copyFiles(params); err != nil {
 		t.Fatal(err)
 	}
 	// Verify copy
@@ -893,7 +962,7 @@ func TestCopyFiles_Error(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
 	apiBase := "v1"
-	p := postProcessParams{
+	params := postProcessParams{
 		outDir:  outdir,
 		apiBase: apiBase,
 		javaAPI: &config.JavaAPI{
@@ -905,8 +974,9 @@ func TestCopyFiles_Error(t *testing.T) {
 			},
 		},
 	}
-	if err := copyFiles(p); err == nil {
-		t.Error("copyFiles() error = nil, want error for non-existent source")
+	err := copyFiles(params)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("copyFiles() error = %v, wantErr %v", err, fs.ErrNotExist)
 	}
 }
 
