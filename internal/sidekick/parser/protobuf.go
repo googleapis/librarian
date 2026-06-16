@@ -549,6 +549,10 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 		return nil, fmt.Errorf("cannot parse routing annotations for %q: %w", mFQN, err)
 	}
 	outputTypeID := m.GetOutputType()
+	signatures, err := protobufMethodSignatures(m)
+	if err != nil {
+		return nil, err
+	}
 	method := &api.Method{
 		ID:                  mFQN,
 		PathInfo:            pathInfo,
@@ -563,6 +567,7 @@ func processMethod(model *api.API, m *descriptorpb.MethodDescriptorProto, mFQN, 
 		ReturnsEmpty:        outputTypeID == ".google.protobuf.Empty",
 		SourceServiceID:     serviceID,
 		APIVersion:          apiVersion,
+		Signatures:          signatures,
 	}
 	model.AddMethod(method)
 	return method, nil
