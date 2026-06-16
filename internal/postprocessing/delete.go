@@ -42,7 +42,8 @@ var (
 // Note: funcName must be the full method declaration line (including modifiers
 // and return type, e.g., "public static void foo()") to avoid matching a substring
 // of another method name (e.g., "foo()" matching inside "afoo()").
-// TODO: Enforce word boundaries during matching as a safety net against accidental substring matches.
+// TODO(https://github.com/googleapis/librarian/issues/6298): Enforce word boundaries
+// during matching as a safety net against accidental substring matches.
 func DeleteMethod(path, funcName, language string) error {
 	if language != config.LanguageJava {
 		return fmt.Errorf("%w: %s", errUnsupportedLanguage, language)

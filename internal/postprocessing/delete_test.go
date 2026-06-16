@@ -308,13 +308,7 @@ func TestAdjustDeleteBounds(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			content := []byte(test.content)
 			start := strings.Index(test.content, test.startSub)
-			if start == -1 {
-				t.Fatalf("startSub %q not found in content", test.startSub)
-			}
 			endRelative := strings.Index(test.content[start:], test.endSub)
-			if endRelative == -1 {
-				t.Fatalf("endSub %q not found after start in content", test.endSub)
-			}
 			end := start + endRelative + len(test.endSub)
 			gotStart, gotEnd := adjustDeleteBounds(content, start, end)
 			got := string(content[gotStart:gotEnd])
