@@ -2322,8 +2322,6 @@
     - java
     - nodejs
     - python
-  transports:
-    java: grpc
 - path: google/cloud/storagebatchoperations/v1
   description: Cloud Storage Batch Operations is a Cloud Storage capability that lets you perform operations on billions of objects in a serverless manner.
   languages:
