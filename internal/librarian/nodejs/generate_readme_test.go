@@ -81,15 +81,14 @@ func TestFindSampleMetadata(t *testing.T) {
 				}
 			},
 			want: func(dir string) []sampleMetadata {
-				generatedDir := filepath.Join(dir, "samples", "generated")
 				return []sampleMetadata{
 					{
 						name:     "nested sample",
-						filePath: fmt.Sprintf("%s/%s/sub/v1.nested_sample.js", repoURLPrefix, generatedDir),
+						filePath: fmt.Sprintf("%s/%s/samples/generated/sub/v1.nested_sample.js", repoURLPrefix, dir),
 					},
 					{
 						name:     "do something",
-						filePath: fmt.Sprintf("%s/%s/v2.do_something.js", repoURLPrefix, generatedDir),
+						filePath: fmt.Sprintf("%s/%s/samples/generated/v2.do_something.js", repoURLPrefix, dir),
 					},
 				}
 			},
