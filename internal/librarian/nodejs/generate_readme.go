@@ -49,7 +49,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 			return nil
 		}
 		metadata = append(metadata, sampleMetadata{
-			name:     extractSampleName(d.Name()),
+			name: extractSampleName(d.Name()),
 			// use string concat and filepath.ToSlash because we need a url format
 			// path to use in markdown file.
 			filePath: fmt.Sprintf("%s/%s", repoURLPrefix, filepath.ToSlash(path)),
