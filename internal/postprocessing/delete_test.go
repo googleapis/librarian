@@ -318,7 +318,6 @@ func TestAdjustDeleteBounds(t *testing.T) {
 			end := start + endRelative + len(test.endSub)
 
 			gotStart, gotEnd := adjustDeleteBounds(content, start, end)
-
 			got := string(content[gotStart:gotEnd])
 			if diff := cmp.Diff(test.wantDeleted, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
