@@ -86,11 +86,7 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 	if err != nil {
 		return err
 	}
-	parentVersion, err := findParentPOMVersion(params.cfg)
-	if err != nil {
-		return err
-	}
-	if err := syncPOMs(params.library, params.outDir, monorepoVersion, parentVersion, params.metadata, params.transports); err != nil {
+	if err := syncPOMs(params.library, params.outDir, monorepoVersion, params.metadata, params.transports); err != nil {
 		return fmt.Errorf("%w: %w", errSyncPOMs, err)
 	}
 

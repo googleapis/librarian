@@ -72,7 +72,7 @@ func TestSyncPOMs_Golden(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = syncPOMs(library, tmpDir, "1.2.3", "1.2.3", metadata, transports)
+	err = syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +206,7 @@ func TestSyncPOMs_Update(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -272,7 +272,7 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
 		t.Fatal(err)
 	}
 
@@ -577,7 +577,7 @@ func TestCollectModules(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, tmpDir)
 			}
-			got, err := collectModules(test.library, tmpDir, test.monorepoVersion, test.monorepoVersion, test.metadata, test.transports)
+			got, err := collectModules(test.library, tmpDir, test.monorepoVersion, test.metadata, test.transports)
 			if err != nil {
 				t.Fatal(err)
 			}
