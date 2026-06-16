@@ -260,43 +260,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the keep files it would delete, then restore
-	// them afterward.
-	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
-	if err != nil {
-		return fmt.Errorf("failed to create backup dir: %w", err)
-	}
-	defer os.RemoveAll(backupDir)
-	// Backup keep files.
-	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
 		return err
 	}
-
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-	combineArgs := []string{
-		"combine-library",
-		"--source-path", stagingDir,
-		"--destination-path", outDir,
-		"--default-version", resolveDefaultVersion(library),
-	}
-	if library.Nodejs != nil && library.Nodejs.ESM {
-		combineArgs = append(combineArgs, "--is-esm")
-	}
-	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
-		return fmt.Errorf("combine-library: %w", err)
-	}
-	// Restore keep files.
-	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
-		return err
-	}
-	// Copy generated samples from staging into the output directory.
-	// combine-library only handles src/ and protos/; samples are generated
-	// by gapic-generator-typescript but left in staging.
-	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
-		return fmt.Errorf("failed to copy samples from staging: %w", err)
-	}
-
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
 	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -339,7 +305,70 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
+	if err := generateReadme(ctx, outDir); err != nil {
+		return err
+	}
+	if err := removeRedundantLinterFiles(library, outDir); err != nil {
+		return fmt.Errorf("failed to remove redundant linter files: %w", err)
+	}
 
+	// Remove google/cloud/common_resources.proto from the protos directory.
+	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
+	// want it to be in the diff.
+	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
+	return nil
+}
+
+// movePackageFromStaging moves the generated code for a single package from
+// owl-bot-staging (in the repo root) to the package-specific directory.
+func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+	// combine-library wipes the destination directory before writing generated
+	// files (src/, protos/). Save the keep files it would delete, then restore
+	// them afterward.
+	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
+	if err != nil {
+		return fmt.Errorf("failed to create backup dir: %w", err)
+	}
+	defer os.RemoveAll(backupDir)
+	// Backup keep files.
+	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+		return err
+	}
+
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	combineArgs := []string{
+		"combine-library",
+		"--source-path", stagingDir,
+		"--destination-path", outDir,
+		"--default-version", resolveDefaultVersion(library),
+	}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		combineArgs = append(combineArgs, "--is-esm")
+	}
+	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
+		return fmt.Errorf("combine-library: %w", err)
+	}
+	// Restore keep files.
+	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
+		return err
+	}
+	// Copy generated samples from staging into the output directory.
+	// combine-library only handles src/ and protos/; samples are generated
+	// by gapic-generator-typescript but left in staging.
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy samples from staging: %w", err)
+	}
+	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove package staging: %w", err)
+	}
+	return nil
+}
+
+// generateReadme generates the README.md file in the package root, replacing
+// any introduction and body specified in .readme-partials.yaml.
+func generateReadme(ctx context.Context, outDir string) error {
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
 	if _, err := os.Stat(readmePartials); err == nil {
 		type partials struct {
@@ -365,21 +394,6 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
 			}
 		}
-	}
-
-	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove package staging: %w", err)
-	}
-
-	if err := removeRedundantLinterFiles(library, outDir); err != nil {
-		return fmt.Errorf("failed to remove redundant linter files: %w", err)
-	}
-
-	// Remove google/cloud/common_resources.proto from the protos directory.
-	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
-	// want it to be in the diff.
-	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
 	}
 	return nil
 }
