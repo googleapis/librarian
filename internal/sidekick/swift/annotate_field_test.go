@@ -88,6 +88,117 @@ func TestAnnotateField(t *testing.T) {
 	}
 }
 
+func TestAnnotateField_Discovery(t *testing.T) {
+	mapMessage := &api.Message{
+		Name:  "map<string, bytes>",
+		ID:    "$map<string, bytes>",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		input *api.Field
+		want  *fieldAnnotations
+	}{
+		{
+			name: "regular",
+			input: &api.Field{
+				Name:  "name",
+				ID:    ".test.Message.name",
+				Typez: api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Foundation.Data",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+		{
+			name: "regular string",
+			input: &api.Field{
+				Name:  "name",
+				ID:    ".test.Message.name",
+				Typez: api.TypezString,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Swift.String",
+				BaseFieldType: "Swift.String",
+			},
+		},
+		{
+			name: "optional",
+			input: &api.Field{
+				Name:     "name",
+				ID:       ".test.Message.name",
+				Optional: true,
+				Typez:    api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Foundation.Data?",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+				Decoding:      DecodingOptional,
+			},
+		},
+		{
+			name: "repeated",
+			input: &api.Field{
+				Name:     "name",
+				ID:       ".test.Message.name",
+				Repeated: true,
+				Typez:    api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "[Foundation.Data]",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+		{
+			name: "map",
+			input: &api.Field{
+				Name:    "name",
+				ID:      ".test.Message.name",
+				Typez:   api.TypezMessage,
+				TypezID: mapMessage.ID,
+				Map:     true,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "[Swift.String: Foundation.Data]",
+				BaseFieldType: "[Swift.String: Foundation.Data]",
+				KeyType:       "Swift.String",
+				ValueType:     "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := &api.Message{
+				Name:    "Message",
+				ID:      ".test.Message",
+				Package: "test",
+				Fields:  []*api.Field{test.input},
+			}
+			test.input.Parent = msg
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			model.AddMessage(mapMessage)
+			codec := newTestCodec(t, model, map[string]string{})
+			codec.UrlSafeForBytes = true
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, test.input.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAnnotateField_TypeNames(t *testing.T) {
 	for _, test := range []struct {
 		name     string
