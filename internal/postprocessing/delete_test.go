@@ -316,7 +316,6 @@ func TestAdjustDeleteBounds(t *testing.T) {
 				t.Fatalf("endSub %q not found after start in content", test.endSub)
 			}
 			end := start + endRelative + len(test.endSub)
-
 			gotStart, gotEnd := adjustDeleteBounds(content, start, end)
 			got := string(content[gotStart:gotEnd])
 			if diff := cmp.Diff(test.wantDeleted, got); diff != "" {
