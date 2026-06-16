@@ -129,7 +129,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		}
 	}
 	for _, field := range message.Fields {
-		fieldCodec, err := c.annotateField(field)
+		fieldCodec, err := c.annotateField(field, model)
 		if err != nil {
 			return err
 		}

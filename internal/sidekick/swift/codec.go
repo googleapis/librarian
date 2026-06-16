@@ -85,6 +85,10 @@ type codec struct {
 
 	// If true, these traits are enabled by default.
 	DefaultTraits []string
+
+	// If true, bytes need to be serialized and deserialized using the URL-safe
+	// base64 alphabet.
+	UrlSafeForBytes bool
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -112,6 +116,7 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 		RootName:           "googleapis",
 		ApiPackages:        map[string]*Dependency{},
 		DependenciesByName: map[string]*Dependency{},
+		UrlSafeForBytes:    cfg.SpecificationFormat == config.SpecDiscovery,
 	}
 	if swiftCfg != nil {
 		for _, d := range swiftCfg.Dependencies {

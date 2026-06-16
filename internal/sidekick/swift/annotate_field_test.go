@@ -18,6 +18,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
@@ -79,10 +80,119 @@ func TestAnnotateField(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			test.want.Name = "secretPayload"
-			test.want.DocLines = []string{"The secret version payload."}
 
-			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateField_Discovery(t *testing.T) {
+	mapMessage := &api.Message{
+		Name:  "map<string, bytes>",
+		ID:    "$map<string, bytes>",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
+		},
+	}
+
+	for _, test := range []struct {
+		name  string
+		input *api.Field
+		want  *fieldAnnotations
+	}{
+		{
+			name: "regular",
+			input: &api.Field{
+				Name:  "name",
+				ID:    ".test.Message.name",
+				Typez: api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Foundation.Data",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+		{
+			name: "regular string",
+			input: &api.Field{
+				Name:  "name",
+				ID:    ".test.Message.name",
+				Typez: api.TypezString,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Swift.String",
+				BaseFieldType: "Swift.String",
+			},
+		},
+		{
+			name: "optional",
+			input: &api.Field{
+				Name:     "name",
+				ID:       ".test.Message.name",
+				Optional: true,
+				Typez:    api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "Foundation.Data?",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+				Decoding:      DecodingOptional,
+			},
+		},
+		{
+			name: "repeated",
+			input: &api.Field{
+				Name:     "name",
+				ID:       ".test.Message.name",
+				Repeated: true,
+				Typez:    api.TypezBytes,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "[Foundation.Data]",
+				BaseFieldType: "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+		{
+			name: "map",
+			input: &api.Field{
+				Name:    "name",
+				ID:      ".test.Message.name",
+				Typez:   api.TypezMessage,
+				TypezID: mapMessage.ID,
+				Map:     true,
+			},
+			want: &fieldAnnotations{
+				FieldType:     "[Swift.String: Foundation.Data]",
+				BaseFieldType: "[Swift.String: Foundation.Data]",
+				KeyType:       "Swift.String",
+				ValueType:     "Foundation.Data",
+				UrlSafeValue:  true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := &api.Message{
+				Name:    "Message",
+				ID:      ".test.Message",
+				Package: "test",
+				Fields:  []*api.Field{test.input},
+			}
+			test.input.Parent = msg
+			model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+			model.AddMessage(mapMessage)
+			codec := newTestCodec(t, model, map[string]string{})
+			codec.UrlSafeForBytes = true
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(test.want, test.input.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -123,6 +233,7 @@ func TestAnnotateField_TypeNames(t *testing.T) {
 				FieldType:     test.wantType,
 				BaseFieldType: test.wantType,
 				DocLines:      []string{"Test documentation."},
+				Model:         model.Codec.(*modelAnnotations),
 			}
 			if diff := cmp.Diff(want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -170,6 +281,7 @@ func TestAnnotateField_PackageName(t *testing.T) {
 		BaseFieldType: "GoogleCloudExternalV1.SomeMessage",
 		PackageName:   "google.cloud.external.v1",
 		DocLines:      []string{"The external message."},
+		Model:         model.Codec.(*modelAnnotations),
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -218,6 +330,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				FieldType:     "Node",
 				BaseFieldType: "Node",
 				Recursive:     false,
+				OneOfChecker:  "alternativesCheckAndSet",
 			},
 		},
 	} {
@@ -257,14 +370,7 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			test.want.Name = "childNode"
-			test.want.DocLines = []string{"Recursive link."}
-			test.want.PackageName = "test"
-			if test.isOneOf {
-				test.want.OneOfChecker = test.oneofProperty + "CheckAndSet"
-			}
-
-			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec, cmpopts.IgnoreFields(fieldAnnotations{}, "Name", "DocLines", "PackageName", "Model")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

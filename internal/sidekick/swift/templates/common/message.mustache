@@ -84,7 +84,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
+    {{^Codec.UrlSafeValue}}
     {{> /templates/common/field_decode}}
+    {{/Codec.UrlSafeValue}}
+    {{#Codec.UrlSafeValue}}
+    {{> /templates/common/field_decode_url_safe}}
+    {{/Codec.UrlSafeValue}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
@@ -109,7 +114,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     var container = encoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
+    {{^Codec.UrlSafeValue}}
     {{> /templates/common/field_encode}}
+    {{/Codec.UrlSafeValue}}
+    {{#Codec.UrlSafeValue}}
+    {{> /templates/common/field_encode_url_safe}}
+    {{/Codec.UrlSafeValue}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}

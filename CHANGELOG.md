@@ -1,5 +1,33 @@
 # Changelog
 
+## [0.21.0](https://github.com/googleapis/librarian/compare/v0.20.0...v0.21.0) (2026-06-16)
+
+
+### Features
+
+* **internal/librarian/java:** source google-cloud-pom-parent in pom.xml templates ([#6432](https://github.com/googleapis/librarian/issues/6432)) ([c5718f4](https://github.com/googleapis/librarian/commit/c5718f4cba6bc602a4e2a35eca12e36083ba160c))
+* **internal/librarian/java:** support alternate license header files ([#6311](https://github.com/googleapis/librarian/issues/6311)) ([e7222b1](https://github.com/googleapis/librarian/commit/e7222b17a11166851d0024227a93338623398014))
+* **internal/librarian/nodejs:** add client_documentation_override to migrate ([#6310](https://github.com/googleapis/librarian/issues/6310)) ([cb8b040](https://github.com/googleapis/librarian/commit/cb8b040feda1f558b7c8284d679d2961aeaea814))
+* **internal/librarian/python:** update gapic-generator to 1.35.0 ([#6427](https://github.com/googleapis/librarian/issues/6427)) ([c3a780e](https://github.com/googleapis/librarian/commit/c3a780e6f2c56b92f5882e43562e477608c071c8))
+* **internal/librarian:** enable structured logging with slog ([#6363](https://github.com/googleapis/librarian/issues/6363)) ([458a738](https://github.com/googleapis/librarian/commit/458a738d51be0d1b85af70b8b2539d7c690f15c6)), closes [#6338](https://github.com/googleapis/librarian/issues/6338)
+* **internal/postprocessing:** add copyFile function ([#6364](https://github.com/googleapis/librarian/issues/6364)) ([8aa57f0](https://github.com/googleapis/librarian/commit/8aa57f091c7b0952256f3679b34fab96d810b5c2)), closes [#6295](https://github.com/googleapis/librarian/issues/6295)
+* **internal/postprocessing:** add removeFile function ([#6371](https://github.com/googleapis/librarian/issues/6371)) ([9e471eb](https://github.com/googleapis/librarian/commit/9e471eb6cfe6a60b1bd29e828d02bc2420b25b52)), closes [#6296](https://github.com/googleapis/librarian/issues/6296)
+* **internal/postprocessing:** add replace and replaceRegex functions ([#6412](https://github.com/googleapis/librarian/issues/6412)) ([ece3aff](https://github.com/googleapis/librarian/commit/ece3aff3c68db01838314682e50d044ae1bb5329)), closes [#6297](https://github.com/googleapis/librarian/issues/6297)
+* **librarian:** sync to release-please in add command ([#6346](https://github.com/googleapis/librarian/issues/6346)) ([f1103ae](https://github.com/googleapis/librarian/commit/f1103aea8d3b31a3de8e85d3f2e639ecf9acc9c8))
+* **sidekick/rust:** add `gcp.resource.destination.id` and fix incorrect `gcp.longrunning.done` status in lro traces ([#6275](https://github.com/googleapis/librarian/issues/6275)) ([0648f55](https://github.com/googleapis/librarian/commit/0648f55b408e17c1c9daa19155d10ffd74222837))
+* **sidekick/swift:** improve snippet body ([#6434](https://github.com/googleapis/librarian/issues/6434)) ([dcb6e6c](https://github.com/googleapis/librarian/commit/dcb6e6c0f73765cff8092cf41186ba0078ea413b))
+* **sidekick/swift:** LRO snippets ([#6431](https://github.com/googleapis/librarian/issues/6431)) ([be95a09](https://github.com/googleapis/librarian/commit/be95a098262f83db28fa21ff0ec4ddf002afc649))
+
+
+### Bug Fixes
+
+* **.github/workflows:** fix outdated Java tools path in integration job ([#6372](https://github.com/googleapis/librarian/issues/6372)) ([72a5447](https://github.com/googleapis/librarian/commit/72a54479bae11e516ff0e5646f4a9ae3058bcb61))
+* **golang:** fix onboarding versionless paths ([#6435](https://github.com/googleapis/librarian/issues/6435)) ([acd1c2b](https://github.com/googleapis/librarian/commit/acd1c2b6abbbac6e589acf2470927469a933b7e9))
+* **internal/postprocessing:** return error for missing files in RemoveFile ([#6408](https://github.com/googleapis/librarian/issues/6408)) ([4a0e81b](https://github.com/googleapis/librarian/commit/4a0e81b040e598cb34896284ed016a6514335e2f))
+* **librarian/internal/java:** preserve released_version for non-snapshot versions during tidy ([#6426](https://github.com/googleapis/librarian/issues/6426)) ([034374c](https://github.com/googleapis/librarian/commit/034374c2d0a37a62ee7c01e541ab8d555b3c9dcc))
+* **sdk.yaml:** enable java sql v1beta4 dual transport ([#6437](https://github.com/googleapis/librarian/issues/6437)) ([ac320d3](https://github.com/googleapis/librarian/commit/ac320d388211ebc3c7387cad2b0fae590765e4c9))
+* **sidekick/rust:** add clippy allow for BigQuery request methods ([#6373](https://github.com/googleapis/librarian/issues/6373)) ([cc804c9](https://github.com/googleapis/librarian/commit/cc804c95a750189ce065d745a379009f2de06c1a))
+
 ## [0.20.0](https://github.com/googleapis/librarian/compare/v0.19.0...v0.20.0) (2026-06-10)
 
 
