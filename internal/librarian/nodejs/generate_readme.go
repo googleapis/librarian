@@ -50,7 +50,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		}
 		metadata = append(metadata, sampleMetadata{
 			name:     extractSampleName(d.Name()),
-			filePath: fmt.Sprintf("%s/%s", repoURLPrefix, path),
+			filePath: fmt.Sprintf("%s/%s", repoURLPrefix, filepath.ToSlash(path)),
 		})
 		return nil
 	})
