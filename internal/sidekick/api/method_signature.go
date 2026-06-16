@@ -24,13 +24,16 @@ package api
 // These overloads select a subset of the fields in the request message, and the
 // generator emits a function for each list.
 type MethodSignature struct {
-	// Fields define the list of fields from the request message included in
-	// this signature.
-	Fields []*Field
-
 	// Names define the list of field names from the request message included in
 	// this signature.
 	Names []string
+
+	// Fields define the list of fields from the request message included in
+	// this signature.
+	//
+	// This is initialized in the cross-reference phase, as the fields may not
+	// exist when the method is first parsed.
+	Fields []*Field
 
 	// Method cross-references the method containing this signature.
 	//
