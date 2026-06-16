@@ -558,7 +558,7 @@ func TestPostProcessLibrary(t *testing.T) {
 			{Name: rootLibrary, Version: "1.0.0"},
 		},
 		Default: &config.Default{
-			Java: &config.JavaModule{
+			Java: &config.JavaDefault{
 				LibrariesBOMVersion: "26.35.0",
 			},
 		},
@@ -659,7 +659,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 			{Name: rootLibrary, Version: "1.0.0"},
 		},
 		Default: &config.Default{
-			Java: &config.JavaModule{
+			Java: &config.JavaDefault{
 				LibrariesBOMVersion: "26.35.0",
 			},
 		},

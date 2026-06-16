@@ -274,7 +274,7 @@ func TestGenerateAPI(t *testing.T) {
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{},
+			Java: &config.JavaDefault{},
 		},
 		Libraries: []*config.Library{
 			{Name: "google-cloud-java", Version: "1.2.3"},
@@ -340,7 +340,7 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{},
+			Java: &config.JavaDefault{},
 		},
 		Libraries: []*config.Library{
 			{Name: "google-cloud-java", Version: "1.2.3"},
@@ -406,7 +406,7 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{},
+			Java: &config.JavaDefault{},
 		},
 		Libraries: []*config.Library{
 			{Name: "google-cloud-java", Version: "1.2.3"},
@@ -477,7 +477,7 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{},
+			Java: &config.JavaDefault{},
 		},
 		Libraries: []*config.Library{
 			{Name: "google-cloud-java", Version: "1.2.3"},
@@ -634,7 +634,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			cfg := &config.Config{
 				Language: config.LanguageJava,
 				Default: &config.Default{
-					Java: &config.JavaModule{
+					Java: &config.JavaDefault{
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
@@ -670,7 +670,7 @@ func TestGenerate_Logic(t *testing.T) {
 		Language: config.LanguageJava,
 		Repo:     "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{
+			Java: &config.JavaDefault{
 				LibrariesBOMVersion: "1.2.3",
 			},
 		},
@@ -746,7 +746,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 		Language: config.LanguageJava,
 		Repo:     "googleapis/google-cloud-java",
 		Default: &config.Default{
-			Java: &config.JavaModule{
+			Java: &config.JavaDefault{
 				LibrariesBOMVersion: "1.2.3",
 			},
 		},
@@ -1048,7 +1048,7 @@ func TestGenerateAPI_Gating(t *testing.T) {
 			cfg := &config.Config{
 				Repo: "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Libraries: []*config.Library{
 					{Name: "google-cloud-java", Version: "1.2.3"},

@@ -460,6 +460,12 @@ type DartPackage struct {
 	Version string `yaml:"version,omitempty"`
 }
 
+// JavaDefault contains Java-specific default configuration.
+type JavaDefault struct {
+	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
+	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+}
+
 // JavaModule contains Java-specific library configuration.
 // TODO(https://github.com/googleapis/librarian/issues/4130):
 // add fill defaults for fields with default.
@@ -509,9 +515,6 @@ type JavaModule struct {
 	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
-
-	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
 	// ReleasedVersion is the last released version of the library.
 	// If omitted, it will be derived from the library version.

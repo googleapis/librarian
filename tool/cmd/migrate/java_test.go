@@ -483,7 +483,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
@@ -520,7 +520,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{},
@@ -575,7 +575,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{},
@@ -617,7 +617,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{},
@@ -687,7 +687,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{
+					Java: &config.JavaDefault{
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
@@ -748,7 +748,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{},
@@ -795,7 +795,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
@@ -832,7 +832,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "../../../internal/testdata/googleapis"},
@@ -877,7 +877,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "testdata/googleapis"},
@@ -923,7 +923,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "testdata/googleapis"},
@@ -967,7 +967,7 @@ func TestBuildConfig(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: "testdata/googleapis"},
@@ -1140,7 +1140,7 @@ func TestBuildConfig_ArtifactIDOverrides(t *testing.T) {
 				Language: "java",
 				Repo:     "googleapis/google-cloud-java",
 				Default: &config.Default{
-					Java: &config.JavaModule{},
+					Java: &config.JavaDefault{},
 				},
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Dir: srcDir},
