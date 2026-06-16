@@ -25,29 +25,62 @@ import (
 )
 
 func TestParseOptions(t *testing.T) {
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year":        "2038",
-			"package-name-override": "GoogleCloudBigtable",
-			"root-name":             "test-root",
-		},
-	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	got, err := newCodec(model, cfg, nil, ".")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &codec{
-		GenerationYear:     "2038",
-		PackageName:        "GoogleCloudBigtable",
-		MonorepoRoot:       ".",
-		RootName:           "test-root",
-		Model:              model,
-		ApiPackages:        map[string]*Dependency{},
-		DependenciesByName: map[string]*Dependency{},
-	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
-		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
+	for _, test := range []struct {
+		name string
+		cfg  *parser.ModelConfig
+		want *codec
+	}{
+		{
+			name: "baseline",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year":        "2038",
+					"package-name-override": "GoogleCloudBigtable",
+					"root-name":             "test-root",
+				},
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				PackageName:        "GoogleCloudBigtable",
+				MonorepoRoot:       ".",
+				RootName:           "test-root",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+			},
+		},
+		{
+			name: "discovery",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year":        "2038",
+					"package-name-override": "GoogleCloudComputeV1",
+					"root-name":             "test-root",
+				},
+				SpecificationFormat: config.SpecDiscovery,
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				PackageName:        "GoogleCloudComputeV1",
+				MonorepoRoot:       ".",
+				RootName:           "test-root",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				UrlSafeForBytes:    true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := newCodec(model, test.cfg, nil, ".")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+				t.Errorf("mismatch (-want, +got)\n:%s", diff)
+			}
+		})
 	}
 }
 
