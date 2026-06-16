@@ -15,6 +15,7 @@
 package postprocessing
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -46,9 +47,8 @@ func DeleteMethod(path, funcName, language string) error {
 	if err != nil {
 		return fmt.Errorf("reading file: %w", err)
 	}
-	content := string(data)
-	cleaned := cleanJavaCode(content)
-	idx := strings.Index(cleaned, funcName)
+	cleaned := cleanJavaCode(data)
+	idx := bytes.Index(cleaned, []byte(funcName))
 	if idx == -1 {
 		return fmt.Errorf("%w %q in %s", errMethodNotFound, funcName, path)
 	}
@@ -60,23 +60,23 @@ func DeleteMethod(path, funcName, language string) error {
 	if err != nil {
 		return fmt.Errorf("deleting method %s: %w", funcName, err)
 	}
-	finalStart, finalEnd := adjustDeleteBounds(content, idx, closeBraceIdx+1)
-	newContent := content[:finalStart] + content[finalEnd:]
-	if err := os.WriteFile(path, []byte(newContent), 0644); err != nil {
+	finalStart, finalEnd := adjustDeleteBounds(data, idx, closeBraceIdx+1)
+	newContent := append(data[:finalStart], data[finalEnd:]...)
+	if err := os.WriteFile(path, newContent, 0644); err != nil {
 		return fmt.Errorf("writing updated file: %w", err)
 	}
 	return nil
 }
 
 // cleanJavaCode replaces comments and strings with equal-length spaces to keep offsets.
-func cleanJavaCode(content string) string {
-	return javaCleanRegex.ReplaceAllStringFunc(content, func(match string) string {
-		return strings.Repeat(" ", len(match))
+func cleanJavaCode(content []byte) []byte {
+	return javaCleanRegex.ReplaceAllFunc(content, func(match []byte) []byte {
+		return bytes.Repeat([]byte(" "), len(match))
 	})
 }
 
-// findOpeningBrace returns the index of the first `{` after start, or error if `;` is found first.
-func findOpeningBrace(cleaned string, start int) (int, error) {
+// findOpeningBrace returns the index of the first '{' after start, or error if ';' is found first.
+func findOpeningBrace(cleaned []byte, start int) (int, error) {
 	for i := start; i < len(cleaned); i++ {
 		c := cleaned[i]
 		switch c {
@@ -90,7 +90,7 @@ func findOpeningBrace(cleaned string, start int) (int, error) {
 }
 
 // findClosingBrace returns the index of the matching closing brace.
-func findClosingBrace(cleaned string, openBraceIdx int) (int, error) {
+func findClosingBrace(cleaned []byte, openBraceIdx int) (int, error) {
 	braceCount := 1
 	for i := openBraceIdx + 1; i < len(cleaned); i++ {
 		c := cleaned[i]
@@ -108,16 +108,16 @@ func findClosingBrace(cleaned string, openBraceIdx int) (int, error) {
 }
 
 // adjustDeleteBounds expands the delete range to remove entire lines if the method is on its own lines.
-func adjustDeleteBounds(content string, start, end int) (int, int) {
+func adjustDeleteBounds(content []byte, start, end int) (int, int) {
 	startLineIdx := 0
-	if lastNL := strings.LastIndexByte(content[:start], '\n'); lastNL != -1 {
+	if lastNL := bytes.LastIndexByte(content[:start], '\n'); lastNL != -1 {
 		startLineIdx = lastNL + 1
 	}
 	endLineIdx := len(content)
-	if nextNL := strings.IndexByte(content[end:], '\n'); nextNL != -1 {
+	if nextNL := bytes.IndexByte(content[end:], '\n'); nextNL != -1 {
 		endLineIdx = end + nextNL
 	}
-	if strings.TrimSpace(content[startLineIdx:start]) == "" && strings.TrimSpace(content[end:endLineIdx]) == "" {
+	if len(bytes.TrimSpace(content[startLineIdx:start])) == 0 && len(bytes.TrimSpace(content[end:endLineIdx])) == 0 {
 		finalEnd := endLineIdx
 		if finalEnd < len(content) {
 			finalEnd++
