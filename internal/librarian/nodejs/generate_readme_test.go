@@ -15,6 +15,8 @@
 package nodejs
 
 import (
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -104,5 +106,23 @@ func TestFindSampleMetadata(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestFindSampleMetadata_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	generatedDir := filepath.Join(tmpDir, "samples", "generated")
+	if err := os.MkdirAll(generatedDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	unreadableSubdir := filepath.Join(generatedDir, "unreadable")
+	if err := os.MkdirAll(unreadableSubdir, 0000); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Chmod(unreadableSubdir, 0755)
+	})
+	if _, err := findSampleMetadata(tmpDir); !errors.Is(err, fs.ErrPermission) {
+		t.Errorf("expected permission error, got: %v", err)
 	}
 }
