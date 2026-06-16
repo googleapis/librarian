@@ -913,7 +913,6 @@ func TestProtobuf_Service(t *testing.T) {
 					},
 					BodyFieldPath: "",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 			},
 			{
 				Name:            "CreateFoo",
@@ -937,7 +936,6 @@ func TestProtobuf_Service(t *testing.T) {
 					},
 					BodyFieldPath: "foo",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}},
 			},
 			{
 				Name:            "DeleteFoo",
@@ -1051,7 +1049,6 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					},
 					BodyFieldPath: "bar",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}},
 			},
 			{
 				Name:            "AddBar",
@@ -1077,7 +1074,6 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					},
 					BodyFieldPath: "*",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent", "payload"}}},
 			},
 		},
 	})
@@ -1180,7 +1176,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsInt32",
@@ -1209,7 +1204,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsUInt32",
@@ -1238,7 +1232,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsUInt32Value",
@@ -1267,7 +1260,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsInt32Value",
@@ -1296,7 +1288,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsIncorrectMessageType",
@@ -1318,7 +1309,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingNextPageToken",
@@ -1340,7 +1330,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingPageSize",
@@ -1362,7 +1351,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingPageToken",
@@ -1384,7 +1372,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingRepeatedItemToken",
@@ -1406,7 +1393,6 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 		},
 	})
@@ -1583,7 +1569,6 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					},
 					BodyFieldPath: "*",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 			},
 		},
 	})

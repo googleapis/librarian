@@ -61,7 +61,6 @@ func TestService(t *testing.T) {
 					},
 					BodyFieldPath: "",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
 			},
 			{
 				ID:            "..zones.list",
@@ -90,7 +89,6 @@ func TestService(t *testing.T) {
 					},
 					BodyFieldPath: "",
 				},
-				Signatures: []*api.MethodSignature{{Names: []string{"project"}}},
 			},
 		},
 	}

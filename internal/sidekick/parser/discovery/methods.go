@@ -107,10 +107,6 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		fieldNames[field.Name] = true
 	}
 
-	// Every discovery-based method has one additional signature formed by the
-	// path parameters, in the order specified by the discovery doc.
-	signature := &api.MethodSignature{Names: input.ParameterOrder}
-
 	bodyPathField := ""
 	if bodyID != ".google.protobuf.Empty" {
 		name, err := bodyFieldName(fieldNames)
@@ -128,8 +124,6 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		}
 		requestMessage.Fields = append(requestMessage.Fields, body)
 		bodyPathField = name
-		// The body, if present, is required for signature requests.
-		signature.Names = append(signature.Names, name)
 	}
 
 	method := &api.Method{
@@ -144,7 +138,6 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Bindings:      []*api.PathBinding{binding},
 			BodyFieldPath: bodyPathField,
 		},
-		Signatures: []*api.MethodSignature{signature},
 		APIVersion: input.APIVersion,
 	}
 	return method, nil
