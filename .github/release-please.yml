@@ -13,3 +13,16 @@
 # limitations under the License.
 handleGHRelease: true
 manifest: true
+branches:
+  - branch: main
+    handleGHRelease: true
+    tagPullRequestNumber: true
+    manifest: true
+    manifestFile: .release-please-manifest.json
+    manifestConfig: release-please-config.json
+  - branch: antique-librarian
+    handleGHRelease: true
+    tagPullRequestNumber: true
+    manifest: true
+    manifestFile: .release-please-manifest.json
+    manifestConfig: release-please-config.json
