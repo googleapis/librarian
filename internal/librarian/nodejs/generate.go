@@ -309,7 +309,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
-	if err := generateReadme(ctx, outDir); err != nil {
+	if err := generateReadme(ctx, library, outDir); err != nil {
 		return err
 	}
 	if err := removeRedundantLinterFiles(library, outDir); err != nil {
@@ -370,9 +370,28 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 	return nil
 }
 
-// generateReadme generates the README.md file in the package root, replacing
-// any introduction and body specified in .readme-partials.yaml.
-func generateReadme(ctx context.Context, outDir string) error {
+// generateReadme generates the README.md file in the package root, applying
+// templating for samples and release level, and replacing any introduction and
+// body specified in .readme-partials.yaml.
+func generateReadme(ctx context.Context, library *config.Library, outDir string) error {
+	// Unconditionally perform replacements in the README for samples and release-level.
+	releaseLevel := "stable"
+	if strings.HasPrefix(library.Version, "0.") {
+		releaseLevel = "preview"
+	}
+	if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
+		// No, this isn't initial-generation... but that's what we need to pass
+		// in order to get the list of samples regenerated. This matches what
+		// the combine_script.sh called by Bazel did.
+		"--initial-generation", "true",
+		"--release-level", releaseLevel,
+		fmt.Sprintf("--source-path=%s", outDir),
+		"--replacement-string-samples", "[//]: # \"samples\"",
+		"--replacement-string-release-level", "[//]: # \"releaseLevel\"",
+	); err != nil {
+		return fmt.Errorf("generate-readme for samples/release-level failed: %w", err)
+	}
+	// Perform replacements in the README for any partials.
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
 	if _, err := os.Stat(readmePartials); err == nil {
 		type partials struct {
