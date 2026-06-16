@@ -163,6 +163,9 @@ func TestAnnotateMethod(t *testing.T) {
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
+			if !got.PlainRPC() {
+				t.Errorf("mismatch for PlainRPC()")
+			}
 		})
 	}
 }
@@ -361,6 +364,9 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("mismatch for PlainRPC()")
+	}
 
 	// Verify request message annotations
 	gotRequest := inputType.Codec.(*messageAnnotations)
@@ -468,6 +474,9 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("mismatch for PlainRPC()")
+	}
 }
 
 func TestAnnotateMethod_LRO_Empty(t *testing.T) {
@@ -535,5 +544,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("mismatch for PlainRPC()")
 	}
 }

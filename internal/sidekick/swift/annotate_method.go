@@ -76,6 +76,11 @@ func (ann *methodAnnotations) HasQueryParams() bool {
 	return len(ann.QueryParams) != 0
 }
 
+// PlainRPC returns true if the method is not a pagination or LRO
+func (ann *methodAnnotations) PlainRPC() bool {
+	return ann.LRO == nil && ann.Pagination == nil
+}
+
 func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) error {
 	if method.InputType != nil {
 		if err := c.annotateMessage(method.InputType, modelAnn); err != nil {

@@ -46,17 +46,37 @@ public protocol {{Codec.Name}} {
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   func {{> /templates/common/method_signature/request}}
+  {{#Codec.PlainRPC}}
+  {{#Signatures}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/overload}}
+  {{/Signatures}}
+  {{/Codec.PlainRPC}}
   {{#Codec.Pagination}}
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
   func {{> /templates/common/method_signature/pagination}}
+  {{#Signatures}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/pagination_overload}}
+  {{/Signatures}}
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
   func {{> /templates/common/method_signature/lro}}
+  {{#Signatures}}
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  func {{> /templates/common/method_signature/lro_overload}}
+  {{/Signatures}}
   {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 
@@ -178,6 +198,24 @@ extension {{Codec.Name}} {
   public func {{> /templates/common/method_signature/request_options}} {
     throw GoogleCloudGax.RequestError.unimplemented
   }
+  {{#Codec.PlainRPC}}
+  {{#Signatures}}
+
+  public func {{> /templates/common/method_signature/overload}} {
+    let request = {{Method.InputType.Codec.Name}}().with {
+      {{#Fields}}
+      $0.{{Codec.Name}} = {{Codec.Name}}
+      {{/Fields}}
+    }
+    {{#Method.Codec.ReturnsEmpty}}
+    try await self.{{Codec.Name}}(request: request)
+    {{/Method.Codec.ReturnsEmpty}}
+    {{^Method.Codec.ReturnsEmpty}}
+    return try await self.{{Codec.Name}}(request: request)
+    {{/Method.Codec.ReturnsEmpty}}
+  }
+  {{/Signatures}}
+  {{/Codec.PlainRPC}}
   {{#Codec.Pagination}}
 
   public func {{> /templates/common/method_signature/pagination}} {
@@ -190,6 +228,17 @@ extension {{Codec.Name}} {
     }
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
   }
+  {{#Signatures}}
+
+  public func {{> /templates/common/method_signature/pagination_overload}} {
+    let request = {{Method.InputType.Codec.Name}}().with {
+      {{#Fields}}
+      $0.{{Codec.Name}} = {{Codec.Name}}
+      {{/Fields}}
+    }
+    return try self.{{Codec.Name}}(byItem: request)
+  }
+  {{/Signatures}}
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
 
@@ -203,6 +252,17 @@ extension {{Codec.Name}} {
     }
     return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
   }
+  {{#Signatures}}
+
+  public func {{> /templates/common/method_signature/lro_overload}} {
+    let request = {{Method.InputType.Codec.Name}}().with {
+      {{#Fields}}
+      $0.{{Codec.Name}} = {{Codec.Name}}
+      {{/Fields}}
+    }
+    return try await self.{{Codec.Name}}(withPolling: request)
+  }
+  {{/Signatures}}
   {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 }
