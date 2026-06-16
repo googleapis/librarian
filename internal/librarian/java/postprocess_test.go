@@ -556,7 +556,6 @@ func TestPostProcessLibrary(t *testing.T) {
 	defaultCfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.0.0"},
-			{Name: parentPOM, Version: "1.0.0"},
 		},
 		Default: &config.Default{
 			Java: &config.JavaModule{
@@ -658,7 +657,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	defaultCfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.0.0"},
-			{Name: parentPOM, Version: "1.0.0"},
 		},
 		Default: &config.Default{
 			Java: &config.JavaModule{
