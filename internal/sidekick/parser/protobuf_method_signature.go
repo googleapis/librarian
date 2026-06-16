@@ -36,7 +36,10 @@ func protobufMethodSignatures(m *descriptorpb.MethodDescriptorProto) ([]*api.Met
 		return nil, fmt.Errorf("invalid signature type for %v", m.Name)
 	}
 	for _, signature := range ext {
-		names := strings.Split(signature, ",")
+		var names []string
+		for _, name := range strings.Split(signature, ",") {
+			names = append(names, strings.TrimSpace(name))
+		}
 		signatures = append(signatures, &api.MethodSignature{Names: names})
 	}
 	return signatures, nil

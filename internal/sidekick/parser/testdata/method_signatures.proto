@@ -29,6 +29,8 @@ service Service {
     option (google.api.method_signature) = "parent,foo_id,flags";
     // Not realistic, but good to test out-of-order fields and subsets.
     option (google.api.method_signature) = "foo_id,parent";
+    // Yes, to my surprise, some protos use spaces.
+    option (google.api.method_signature) = "parent, flags";
   }
 }
 

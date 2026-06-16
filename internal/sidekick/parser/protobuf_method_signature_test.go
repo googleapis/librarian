@@ -65,6 +65,10 @@ func TestProtobuf_Signatures(t *testing.T) {
 			Names:  []string{"foo_id", "parent"},
 			Fields: []*api.Field{gotMessage.Fields[1], gotMessage.Fields[0]},
 		},
+		{
+			Names:  []string{"parent", "flags"},
+			Fields: []*api.Field{gotMessage.Fields[0], gotMessage.Fields[2]},
+		},
 	}
 
 	// Use IgnoreFields() to avoid recursive testing of the Field->Message->Fields cycle.
