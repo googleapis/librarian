@@ -56,12 +56,77 @@ type fieldAnnotations struct {
 
 	// Recursive is true if the field is a recursive reference to another message.
 	Recursive bool
+
+	// Decoding controls how the field is decoded.
+	Decoding DecodingStyle
+
+	// Encoding controls how the field is encoded.
+	Encoding EncodingStyle
 }
+
+// DecodingStyle defines an enumeration for decoding fields.
+type DecodingStyle int
+
+// EncodingStyle defines an enumeration for encoding fields.
+type EncodingStyle int
+
+const (
+	// DecodingSimple means that the field is decoded using a simple `.decode()`
+	// call.
+	DecodingSimple DecodingStyle = iota
+
+	// DecodingOptional means that the field is decoded using a
+	// `.decodeIfPresent()` call.
+	DecodingOptional
+
+	// DecodingMapCustomKey means that the field is a map, with non-string keys
+	// and requires mapping through a string-keyed temporary.
+	DecodingMapCustomKey
+)
+
+const (
+	// EncodingSimple means that the field is encoded using a simple `.encode()` call.
+	EncodingSimple EncodingStyle = iota
+
+	// EncodingMapCustomKey means that the field is a map, with non-string keys
+	// and requires mapping through a string-keyed temporary.
+	EncodingMapCustomKey
+)
 
 // IsStringKeyed returns true if the field is a map field and the key is a
 // string type.
 func (a *fieldAnnotations) IsStringKeyed() bool {
 	return a.KeyType == "Swift.String"
+}
+
+// IsDecodingSimple is used in mustache templates, where it is not possible to
+// compare a field to a constant.
+func (a *fieldAnnotations) IsDecodingSimple() bool {
+	return a.Decoding == DecodingSimple
+}
+
+// IsDecodingOptional is used in mustache templates, where it is not possible to
+// compare a field to a constant.
+func (a *fieldAnnotations) IsDecodingOptional() bool {
+	return a.Decoding == DecodingOptional
+}
+
+// IsDecodingMapCustomKey is used in mustache templates, where it is not
+// possible to compare a field to a constant.
+func (a *fieldAnnotations) IsDecodingMapCustomKey() bool {
+	return a.Decoding == DecodingMapCustomKey
+}
+
+// IsEncodingSimple is used in mustache templates, where it is not possible to
+// compare a field to a constant.
+func (a *fieldAnnotations) IsEncodingSimple() bool {
+	return a.Encoding == EncodingSimple
+}
+
+// IsEncodingMapCustomKey is used in mustache templates, where it is not
+// possible to compare a field to a constant.
+func (a *fieldAnnotations) IsEncodingMapCustomKey() bool {
+	return a.Encoding == EncodingMapCustomKey
 }
 
 func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
@@ -86,6 +151,8 @@ func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
 		ValueType:     parts.Value,
 		PackageName:   packageName,
 		DocLines:      docLines,
+		Decoding:      DecodingSimple,
+		Encoding:      EncodingSimple,
 	}
 	// Swift value types (structs) cannot contain recursive references directly because their
 	// size must be known at compile time. To break the cycle, we wrap the reference in a box type
@@ -99,6 +166,14 @@ func (c *codec) annotateField(field *api.Field) (*fieldAnnotations, error) {
 		annotations.Recursive = true
 		annotations.BaseFieldType = fmt.Sprintf("%s.Recursive<%s>", wellKnownSwiftPackage, parts.Base)
 		annotations.FieldType = annotations.BaseFieldType + "?"
+		annotations.Decoding = DecodingOptional
+	}
+	if field.Map && !annotations.IsStringKeyed() {
+		annotations.Decoding = DecodingMapCustomKey
+		annotations.Encoding = EncodingMapCustomKey
+	}
+	if field.Optional {
+		annotations.Decoding = DecodingOptional
 	}
 	if field.IsOneOf && field.Group != nil {
 		if oneofAnn, ok := field.Group.Codec.(*oneOfAnnotations); ok {

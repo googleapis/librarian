@@ -24,32 +24,38 @@ import (
 
 func TestAnnotateField(t *testing.T) {
 	for _, test := range []struct {
-		name         string
-		optional     bool
-		repeated     bool
-		wantType     string
-		wantBaseType string
+		name     string
+		optional bool
+		repeated bool
+		want     *fieldAnnotations
 	}{
 		{
-			name:         "regular",
-			optional:     false,
-			repeated:     false,
-			wantType:     "Swift.String",
-			wantBaseType: "Swift.String",
+			name:     "regular",
+			optional: false,
+			repeated: false,
+			want: &fieldAnnotations{
+				FieldType:     "Swift.String",
+				BaseFieldType: "Swift.String",
+			},
 		},
 		{
-			name:         "optional",
-			optional:     true,
-			repeated:     false,
-			wantType:     "Swift.String?",
-			wantBaseType: "Swift.String",
+			name:     "optional",
+			optional: true,
+			repeated: false,
+			want: &fieldAnnotations{
+				FieldType:     "Swift.String?",
+				BaseFieldType: "Swift.String",
+				Decoding:      DecodingOptional,
+			},
 		},
 		{
-			name:         "repeated",
-			optional:     false,
-			repeated:     true,
-			wantType:     "[Swift.String]",
-			wantBaseType: "Swift.String",
+			name:     "repeated",
+			optional: false,
+			repeated: true,
+			want: &fieldAnnotations{
+				FieldType:     "[Swift.String]",
+				BaseFieldType: "Swift.String",
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -73,14 +79,10 @@ func TestAnnotateField(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			want := &fieldAnnotations{
-				Name:          "secretPayload",
-				DocLines:      []string{"The secret version payload."},
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantBaseType,
-			}
+			test.want.Name = "secretPayload"
+			test.want.DocLines = []string{"The secret version payload."}
 
-			if diff := cmp.Diff(want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -180,38 +182,43 @@ func TestAnnotateField_Recursive(t *testing.T) {
 		optional      bool
 		repeated      bool
 		isOneOf       bool
-		wantType      string
-		wantBaseType  string
-		wantRecursive bool
 		oneofProperty string
+		want          *fieldAnnotations
 	}{
 		{
-			name:          "singular optional recursive",
-			optional:      true,
-			repeated:      false,
-			isOneOf:       false,
-			wantType:      "GoogleCloudWkt.Recursive<Node>?",
-			wantBaseType:  "GoogleCloudWkt.Recursive<Node>",
-			wantRecursive: true,
+			name:     "singular optional recursive",
+			optional: true,
+			repeated: false,
+			isOneOf:  false,
+			want: &fieldAnnotations{
+				FieldType:     "GoogleCloudWkt.Recursive<Node>?",
+				BaseFieldType: "GoogleCloudWkt.Recursive<Node>",
+				Recursive:     true,
+				Decoding:      DecodingOptional,
+			},
 		},
 		{
-			name:          "repeated recursive",
-			optional:      false,
-			repeated:      true,
-			isOneOf:       false,
-			wantType:      "[Node]",
-			wantBaseType:  "Node",
-			wantRecursive: false,
+			name:     "repeated recursive",
+			optional: false,
+			repeated: true,
+			isOneOf:  false,
+			want: &fieldAnnotations{
+				FieldType:     "[Node]",
+				BaseFieldType: "Node",
+				Recursive:     false,
+			},
 		},
 		{
 			name:          "oneof recursive",
 			optional:      false,
 			repeated:      false,
 			isOneOf:       true,
-			wantType:      "Node",
-			wantBaseType:  "Node",
-			wantRecursive: false,
 			oneofProperty: "alternatives",
+			want: &fieldAnnotations{
+				FieldType:     "Node",
+				BaseFieldType: "Node",
+				Recursive:     false,
+			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -250,19 +257,14 @@ func TestAnnotateField_Recursive(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			want := &fieldAnnotations{
-				Name:          "childNode",
-				DocLines:      []string{"Recursive link."},
-				FieldType:     test.wantType,
-				BaseFieldType: test.wantBaseType,
-				PackageName:   "test",
-				Recursive:     test.wantRecursive,
-			}
+			test.want.Name = "childNode"
+			test.want.DocLines = []string{"Recursive link."}
+			test.want.PackageName = "test"
 			if test.isOneOf {
-				want.OneOfChecker = test.oneofProperty + "CheckAndSet"
+				test.want.OneOfChecker = test.oneofProperty + "CheckAndSet"
 			}
 
-			if diff := cmp.Diff(want, field.Codec); diff != "" {
+			if diff := cmp.Diff(test.want, field.Codec); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
