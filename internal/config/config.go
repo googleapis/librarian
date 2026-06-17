@@ -321,9 +321,6 @@ type Library struct {
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
-	// Surfer contains gcloud-specific library configuration.
-	Surfer *Surfer `yaml:"surfer,omitempty"`
-
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`
 }
