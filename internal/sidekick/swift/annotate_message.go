@@ -52,6 +52,10 @@ type messageAnnotations struct {
 	// service use " && ".
 	GatedOp string
 
+	// In discovery-based APIs some messages are placeholders for the service.
+	// In that case, we need to generate a slightly different name for the message.
+	PlaceholderName string
+
 	// The message type name when it appears as a method parameter name.
 	//
 	// Most of the time the request types are in the package namespace, or are
@@ -120,6 +124,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
 		ParameterTypeName:   parameterTypeName,
+	}
+	if message.ServicePlaceholder {
+		annotations.PlaceholderName = pascalCase(message.Name + "Client")
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.

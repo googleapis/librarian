@@ -84,9 +84,15 @@ func (c *codec) outputPath(elem ...string) string {
 
 func (c *codec) generateMessages(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, m := range model.Messages {
+		output := c.outputPath(m.Name + ".swift")
+		template := "templates/common/message_file.swift.mustache"
+		if m.ServicePlaceholder == true {
+			output = c.outputPath(m.Name + "+Requests.swift")
+			template = "templates/common/placeholder_file.swift.mustache"
+		}
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/message_file.swift.mustache",
-			OutputPath:   c.outputPath(m.Name + ".swift"),
+			TemplatePath: template,
+			OutputPath:   output,
 		}
 		if err := language.GenerateMessage(outdir, m, provider, generated); err != nil {
 			return err
