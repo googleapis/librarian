@@ -12,12 +12,12 @@ generation failure or other breakages in the `google-cloud-java` repository
 
 1. **Disable the Java Workflow:**
    Temporarily disable the Java integration workflow by modifying
-   [java.yaml](https://github.com/googleapis/librarian/blob/main/.github/workflows/java.yaml).
+   [java.yaml](/.github/workflows/java.yaml).
    You can disable the jobs or the trigger (e.g. by adding `if: false` or
    commenting it out).
 2. **Add a TODO:**
    Add a `TODO` comment in
-   [java.yaml](https://github.com/googleapis/librarian/blob/main/.github/workflows/java.yaml)
+   [java.yaml](/.github/workflows/java.yaml)
    linking to the GitHub issue or pull request you are working on to track the
    reinstate task.
 3. **Merge Librarian Changes:**
@@ -29,5 +29,5 @@ generation failure or other breakages in the `google-cloud-java` repository
 5. **Reinstate the Java Workflow:**
    Once `google-cloud-java` is updated and working with the new changes, remove
    the `TODO` and reinstate the
-   [java.yaml](file:///usr/local/google/home/zhumin/repos/testjava2/librarian/.github/workflows/java.yaml)
+   [java.yaml](/.github/workflows/java.yaml)
    workflow.
