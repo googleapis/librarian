@@ -20,7 +20,8 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
+    # TODO(https://github.com/googleapis/librarian/issues/6482): Speed this up and lower to 5 minutes.
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian

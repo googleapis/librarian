@@ -32,7 +32,6 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -133,7 +132,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 
 	var apiConfig *config.NodejsAPI
-	if library.Nodejs != nil {
+	if api.Nodejs != nil {
+		apiConfig = api.Nodejs
+	} else if library.Nodejs != nil {
 		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 			if nodejsAPI.Path == api.Path {
 				apiConfig = nodejsAPI
@@ -146,6 +147,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	if apiConfig != nil {
 		omitCommon = apiConfig.OmitCommonResources
 		res.DIREGAPIC = apiConfig.DIREGAPIC
+		if apiConfig.Mixins != "" {
+			res.Mixins = apiConfig.Mixins
+		}
 		res.OmitCommonResources = apiConfig.OmitCommonResources
 	}
 
@@ -250,8 +254,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		if library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", library.Nodejs.MainService)
 		}
-		if library.Nodejs.Mixins != "" {
-			args = append(args, "--mixins", library.Nodejs.Mixins)
+		if nodejsAPI.Mixins != "" {
+			args = append(args, "--mixins", nodejsAPI.Mixins)
 		}
 	}
 	return args, nil
@@ -474,32 +478,13 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
 	}
-	metadata.DistributionName = derivePackageName(library)
-	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-	metadata.DefaultVersion = resolveDefaultVersion(library)
-
-	if pkgSuffix, ok := strings.CutPrefix(metadata.DistributionName, "@google-cloud/"); ok {
-		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
-	}
-
-	if library.Nodejs != nil && library.Nodejs.ClientDocumentationOverride != "" {
-		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
-	}
-
-	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
-		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
-			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
-		}
-	}
-
 	if err := metadata.Write(outDir); err != nil {
 		return err
 	}
-
 	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
 	// literal ampersand in the .repo-metadata.json.
 	path := filepath.Join(outDir, ".repo-metadata.json")

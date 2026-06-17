@@ -101,7 +101,7 @@ func TestFromLibrary_Error(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secret-manager",
 			},
-			wantErr: errNoAPIs,
+			wantErr: ErrNoAPIs,
 		},
 		{
 			name: "non-allowlisted API",
