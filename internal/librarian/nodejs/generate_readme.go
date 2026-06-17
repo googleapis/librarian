@@ -28,7 +28,7 @@ const (
 	releaseLevelStable = `This library is considered to be **stable**. The code surface will not change in backwards-incompatible ways
 unless absolutely necessary (e.g. because of critical security issues) or with
 an extensive deprecation period. Issues and requests against **stable** libraries
-are addressed with the highest priority`
+are addressed with the highest priority.`
 
 	releaseLevelPreview = `This library is considered to be in **preview**. This means it is still a
 work-in-progress and under active development. Any release is subject to
