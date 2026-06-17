@@ -218,7 +218,7 @@ type Default struct {
 	Go *GoDefault `yaml:"go,omitempty"`
 
 	// Java contains Java-specific default configuration.
-	Java *JavaModule `yaml:"java,omitempty"`
+	Java *JavaDefault `yaml:"java,omitempty"`
 
 	// Nodejs contains Node.js-specific default configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
