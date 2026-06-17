@@ -199,6 +199,35 @@ class Test {
 class Test {
      }`,
 		},
+		{
+			name: "complete signature deletes method cleanly",
+			content: `class Test {
+    public int afoo() { return 1; }
+    public int foo() { return 2; }
+}`,
+			funcName: "public int foo()",
+			want: `class Test {
+    public int afoo() { return 1; }
+}`,
+		},
+		{
+			name: "delete multiple matching methods",
+			content: `class A {
+    public void foo() {
+        System.out.println("A");
+    }
+}
+class B {
+    public void foo() {
+        System.out.println("B");
+    }
+}`,
+			funcName: "public void foo()",
+			want: `class A {
+}
+class B {
+}`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
