@@ -92,7 +92,7 @@ jobs:
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
-        run: librarian generate --all
+        run: librarian generate -v --all
   create-issue-on-failure:
     needs: [integration]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
