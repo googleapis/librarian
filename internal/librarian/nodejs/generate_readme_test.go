@@ -126,3 +126,21 @@ func TestFindSampleMetadata_Error(t *testing.T) {
 		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errorFindSampleMetadata)
 	}
 }
+
+func TestReleaseLevelMarkdown(t *testing.T) {
+	for _, test := range []struct {
+		input string
+		want  string
+	}{
+		{input: "stable", want: releaseLevelStable},
+		{input: "preview", want: releaseLevelPreview},
+		{input: "other", want: releaseLevelPreview},
+	} {
+		t.Run(test.input, func(t *testing.T) {
+			got := releaseLevelMarkdown(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
