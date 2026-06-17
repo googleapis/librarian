@@ -83,11 +83,11 @@ func TestFindSampleMetadata(t *testing.T) {
 				return []sampleMetadata{
 					{
 						name:     "nested sample",
-						filePath: fmt.Sprintf("%s/%s/samples/generated/sub/v1.nested_sample.js", repoURLPrefix, dir),
+						filePath: fmt.Sprintf("https://github.com/googleapis/google-cloud-node/blob/main/packages/%s/samples/generated/sub/v1.nested_sample.js", dir),
 					},
 					{
 						name:     "do something",
-						filePath: fmt.Sprintf("%s/%s/samples/generated/v2.do_something.js", repoURLPrefix, dir),
+						filePath: fmt.Sprintf("https://github.com/googleapis/google-cloud-node/blob/main/packages/%s/samples/generated/v2.do_something.js", dir),
 					},
 				}
 			},
