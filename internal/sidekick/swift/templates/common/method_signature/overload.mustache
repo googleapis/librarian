@@ -17,4 +17,4 @@ limitations under the License.
   {{#Fields}}
   {{Codec.Name}}: {{Codec.FieldType}},
   {{/Fields}}
-) async throws{{^Method.ReturnsEmpty}} -> {{Method.Codec.ReturnType}}{{/Method.ReturnsEmpty}}
+) async throws{{^Method.Codec.ReturnsEmpty}} -> {{Method.Codec.ReturnType}}{{/Method.Codec.ReturnsEmpty}}
