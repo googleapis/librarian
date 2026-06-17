@@ -45,7 +45,6 @@ func DuplicateMethod(ctx context.Context, path, funcName, newName, language stri
 		return err
 	}
 	cleaned := cleanJavaCode(content)
-
 	parenIdx := strings.Index(funcName, "(")
 	beforeParen := funcName[:parenIdx]
 	trimmedBeforeParen := strings.TrimRight(beforeParen, " \t")
