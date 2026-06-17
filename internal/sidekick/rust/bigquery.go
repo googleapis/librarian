@@ -30,7 +30,7 @@ type unifiedMessage struct {
 }
 
 type fieldGroup struct {
-	fieldName string
+	name string
 	// fields with the same name from the various messages
 	fields map[string]*api.Field
 }
@@ -56,8 +56,8 @@ func newUnifiedMessage(c *codec, model *api.API, msgNames []string, skipFieldFn 
 			msg.fields = append(msg.fields, f)
 			if _, ok := msg.fieldGroups[f.Name]; !ok {
 				msg.fieldGroups[f.Name] = &fieldGroup{
-					fieldName: f.Name,
-					fields:    make(map[string]*api.Field),
+					name:   f.Name,
+					fields: make(map[string]*api.Field),
 				}
 			}
 			msg.fieldGroups[f.Name].fields[msgName] = f
@@ -110,7 +110,7 @@ func newRunQuery(c *codec, model *api.API, skippedFields []string) (*unifiedMess
 		return nil, err
 	}
 
-	// Special case since JobConfigurationQuery field is also called query while it its just a string on QueryRequest
+	// The `query` field is a string on `QueryRequest`, but a `JobConfigurationQuery` message on `JobConfiguration`
 	if f, ok := msg.fieldGroups["query"]; ok {
 		delete(f.fields, "JobConfiguration")
 	}
@@ -146,7 +146,7 @@ func runQueryBuilder(m *unifiedMessage) (*api.Message, error) {
 
 // Accessors for template files.
 func (f *fieldGroup) FieldName() string {
-	return toSnake(f.fieldName)
+	return toSnake(f.name)
 }
 
 func (f *fieldGroup) JobOnly() bool {
