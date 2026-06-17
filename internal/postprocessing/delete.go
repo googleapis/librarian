@@ -91,7 +91,7 @@ func findMethodBounds(data, cleaned []byte, funcName string) ([]methodBounds, er
 		}
 		start, end := adjustDeleteBounds(data, actualIdx, closeBraceIdx+1)
 		boundsList = append(boundsList, methodBounds{start: start, end: end})
-		searchStart = actualIdx + len(funcName)
+		searchStart = closeBraceIdx + 1
 	}
 	if len(boundsList) == 0 {
 		return nil, errMethodNotFound

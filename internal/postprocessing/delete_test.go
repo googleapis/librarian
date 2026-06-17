@@ -228,6 +228,21 @@ class B {
 class B {
 }`,
 		},
+		{
+			name: "nested method with same signature",
+			content: `class Test {
+    public void foo() {
+        Runnable r = new Runnable() {
+            public void foo() {
+                System.out.println("inner");
+            }
+        };
+    }
+}`,
+			funcName: "public void foo()",
+			want: `class Test {
+}`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
