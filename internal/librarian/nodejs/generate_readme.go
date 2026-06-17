@@ -15,12 +15,16 @@
 package nodejs
 
 import (
+	"embed"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -36,6 +40,9 @@ backwards-incompatible changes at any time.`
 )
 
 var (
+	//go:embed template/_README.md.txt
+	readmeTmpl       string
+	readmeTmplParsed = template.Must(template.New("readme").Parse(readmeTmpl))
 	errorFindSampleMetadata = errors.New("error finding sample metadata")
 	samplePathPrefix        = filepath.Join("samples", "generated")
 )
@@ -43,6 +50,28 @@ var (
 type sampleMetadata struct {
 	name     string
 	filePath string
+}
+
+func generateReadme(library *config.Library, output string) error {
+	sampleMetadata, err := findSampleMetadata(output)
+	if err != nil {
+		return err
+	}
+	readmePath := filepath.Join(output, "README.md")
+	f, err := os.Create(readmePath)
+	if err != nil {
+		return err
+	}
+	err = readmeTmplParsed.Execute(f, map[string]interface{}{
+		"Name":       title,
+		"ModulePath": modulePath(library),
+		"Samples":  sampleMetadata,
+	})
+	cerr := f.Close()
+	if err != nil {
+		return err
+	}
+	return cerr
 }
 
 func findSampleMetadata(output string) ([]sampleMetadata, error) {
