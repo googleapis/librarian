@@ -207,12 +207,12 @@ extension {{Codec.Name}} {
       $0.{{Codec.Name}} = {{Codec.Name}}
       {{/Fields}}
     }
-    {{#Method.Codec.ReturnsEmpty}}
+    {{#Method.ReturnsEmpty}}
     try await self.{{Codec.Name}}(request: request)
-    {{/Method.Codec.ReturnsEmpty}}
-    {{^Method.Codec.ReturnsEmpty}}
+    {{/Method.ReturnsEmpty}}
+    {{^Method.ReturnsEmpty}}
     return try await self.{{Codec.Name}}(request: request)
-    {{/Method.Codec.ReturnsEmpty}}
+    {{/Method.ReturnsEmpty}}
   }
   {{/Signatures}}
   {{/Codec.PlainRPC}}
