@@ -23,7 +23,7 @@ import (
 	"strings"
 )
 
-const repoURLPrefix = "https://github.com/googleapis/google-cloud-node/blob/main/packages"
+const repoURLPrefix = "https://github.com/googleapis/google-cloud-node/blob/main"
 
 var (
 	errorFindSampleMetadata = errors.New("error finding sample metadata")
