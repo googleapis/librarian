@@ -139,6 +139,7 @@ This document describes the schema for the librarian.yaml.
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
 | `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
+| `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
 
 ## GoDefault Configuration
 

@@ -135,6 +135,10 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	var apiConfig *config.NodejsAPI
 	if library.Nodejs != nil {
 		res.Mixins = library.Nodejs.Mixins
+	}
+	if api.Nodejs != nil {
+		apiConfig = api.Nodejs
+	} else if library.Nodejs != nil {
 		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 			if nodejsAPI.Path == api.Path {
 				apiConfig = nodejsAPI
