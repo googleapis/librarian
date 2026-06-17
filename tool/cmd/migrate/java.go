@@ -412,7 +412,7 @@ func buildConfig(gen *GenerationConfig, repoPath string, src, showcaseSrc *confi
 	return &config.Config{
 		Language: "java",
 		Default: &config.Default{
-			Java: &config.JavaModule{
+			Java: &config.JavaDefault{
 				LibrariesBOMVersion: gen.LibrariesBomVersion,
 			},
 		},

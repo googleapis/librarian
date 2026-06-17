@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
-	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -146,8 +145,6 @@ func deriveLibraryName(language string, api string) string {
 		return dart.DefaultLibraryName(api)
 	case config.LanguageFake:
 		return fakeDefaultLibraryName(api)
-	case config.LanguageGcloud:
-		return gcloud.DefaultLibraryName(api)
 	case config.LanguageGo:
 		return golang.DefaultLibraryName(api)
 	case config.LanguageJava:
