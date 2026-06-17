@@ -659,9 +659,6 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.MainService != "" {
 		res.MainService = src.MainService
 	}
-	if src.Mixins != "" {
-		res.Mixins = src.Mixins
-	}
 	if src.PackageName != "" {
 		res.PackageName = src.PackageName
 	}

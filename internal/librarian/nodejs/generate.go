@@ -132,7 +132,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 
 	var apiConfig *config.NodejsAPI
-	if library.Nodejs != nil {
+	if api.Nodejs != nil {
+		apiConfig = api.Nodejs
+	} else if library.Nodejs != nil {
 		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 			if nodejsAPI.Path == api.Path {
 				apiConfig = nodejsAPI
@@ -145,6 +147,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	if apiConfig != nil {
 		omitCommon = apiConfig.OmitCommonResources
 		res.DIREGAPIC = apiConfig.DIREGAPIC
+		if apiConfig.Mixins != "" {
+			res.Mixins = apiConfig.Mixins
+		}
 		res.OmitCommonResources = apiConfig.OmitCommonResources
 	}
 
@@ -249,8 +254,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		if library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", library.Nodejs.MainService)
 		}
-		if library.Nodejs.Mixins != "" {
-			args = append(args, "--mixins", library.Nodejs.Mixins)
+		if nodejsAPI.Mixins != "" {
+			args = append(args, "--mixins", nodejsAPI.Mixins)
 		}
 	}
 	return args, nil
