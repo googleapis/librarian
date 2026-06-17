@@ -128,7 +128,6 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
-| `surfer` | [Surfer](#surfer-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
 ## API Configuration
@@ -252,22 +251,6 @@ This document describes the schema for the librarian.yaml.
 | `from` | string |  |
 | `to` | string |  |
 | `wire_name` | string |  |
-
-## GcloudHelpTextRule Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
-| `brief` | string | Is a concise, single-line summary of the help text. |
-| `description` | string | Provides a detailed, multi-line description. |
-| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
-
-## GcloudHelpTextRules Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
-| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
 
 ## GoAPI Configuration
 
@@ -497,12 +480,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | Is the name of the field used for items. |
-
-## Surfer Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
 
 ## SwiftDefault Configuration
 

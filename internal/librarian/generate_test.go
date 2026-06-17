@@ -24,7 +24,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/surfer"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
 )
@@ -353,41 +352,6 @@ libraries:
 
 	if errors.Is(err, errUnsupportedLanguage) {
 		t.Errorf("expected Java to be supported, but got: %v", err)
-	}
-}
-
-func TestGenerate_Surfer(t *testing.T) {
-	tempDir := t.TempDir()
-	t.Chdir(tempDir)
-
-	googleapisDir := createGoogleapisServiceConfigs(t, tempDir, map[string]string{
-		"google/cloud/secretmanager/v1": "secretmanager_v1.yaml",
-	})
-
-	configContent := fmt.Sprintf(`language: surfer
-sources:
-  googleapis:
-    dir: %s
-libraries:
-  - name: secretmanager
-    output: out
-    apis:
-      - path: google/cloud/secretmanager/v1
-`, googleapisDir)
-
-	if err := os.WriteFile(filepath.Join(tempDir, config.LibrarianYAML), []byte(configContent), 0644); err != nil {
-		t.Fatal(err)
-	}
-
-	err := Run(t.Context(), "librarian", "generate", "secretmanager")
-	if err == nil {
-		return
-	}
-	if errors.Is(err, errUnsupportedLanguage) {
-		t.Errorf("expected surfer to be supported, but got: %v", err)
-	}
-	if !errors.Is(err, surfer.ErrNoProtosFound) {
-		t.Errorf("expected error %v, got: %v", surfer.ErrNoProtosFound, err)
 	}
 }
 
