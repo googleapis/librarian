@@ -37,17 +37,14 @@ generation failure or other breakages in the `google-cloud-java` repository
 If you are making changes in `librarian` that do not cause generation failure in
 `google-cloud-java` but will introduce a diff in the generated code:
 
-1. **Verify Local Integration:**
+1. **Librarian CI Stays Green:**
    The [java.yaml](/.github/workflows/java.yaml) integration check in the
    `librarian` repository will not fail on such changes.
-2. **Follow Through on `google-cloud-java`:**
+2. **Submit `google-cloud-java` PR:**
    It is good practice to immediately open a pull request in the
    `google-cloud-java` repository. This PR should update the `librarian`
    dependency to the new pseudo-version containing your changes and run
    `generate -all` to apply the generated diff.
-3. **Weekly Update Prevention:**
+3. **Prevent Weekly Update Diffs:**
    Proactively applying these diffs prevents them from being introduced
    abruptly during the weekly automated `librarian` updates.
-4. **Judgment Call:**
-   Whether to follow this process is a judgment call depending on the scope
-   and impact of the generated diff.
