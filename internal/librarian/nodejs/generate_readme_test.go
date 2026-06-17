@@ -16,7 +16,6 @@ package nodejs
 
 import (
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"testing"
@@ -48,22 +47,21 @@ func TestFindSampleMetadata(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name  string
-		setup func(t *testing.T, dir string)
-		want  func(dir string) []sampleMetadata
+		setup func(t *testing.T, dir string) string
+		want  []sampleMetadata
 	}{
 		{
 			name: "no samples directory",
-			setup: func(t *testing.T, dir string) {
-				// Do nothing
+			setup: func(t *testing.T, dir string) string {
+				return filepath.Join(dir, "packages", "my-package")
 			},
-			want: func(dir string) []sampleMetadata {
-				return nil
-			},
+			want: nil,
 		},
 		{
 			name: "collects and filters samples",
-			setup: func(t *testing.T, dir string) {
-				generatedDir := filepath.Join(dir, "samples", "generated")
+			setup: func(t *testing.T, dir string) string {
+				pkgDir := filepath.Join(dir, "packages", "my-package")
+				generatedDir := filepath.Join(pkgDir, "samples", "generated")
 				files := []fileInfo{
 					{path: "v2.do_something.js", content: "console.log('do something');"},
 					{path: "ignored.ts", content: "console.log('typescript');"},
@@ -78,30 +76,28 @@ func TestFindSampleMetadata(t *testing.T) {
 						t.Fatal(err)
 					}
 				}
+				return pkgDir
 			},
-			want: func(dir string) []sampleMetadata {
-				return []sampleMetadata{
-					{
-						name:     "nested sample",
-						filePath: fmt.Sprintf("https://github.com/googleapis/google-cloud-node/blob/main/%s/samples/generated/sub/v1.nested_sample.js", dir),
-					},
-					{
-						name:     "do something",
-						filePath: fmt.Sprintf("https://github.com/googleapis/google-cloud-node/blob/main/%s/samples/generated/v2.do_something.js", dir),
-					},
-				}
+			want: []sampleMetadata{
+				{
+					name:     "nested sample",
+					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/sub/v1.nested_sample.js",
+				},
+				{
+					name:     "do something",
+					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/v2.do_something.js",
+				},
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
-			test.setup(t, tmpDir)
-			got, err := findSampleMetadata(tmpDir)
+			targetDir := test.setup(t, tmpDir)
+			got, err := findSampleMetadata(targetDir)
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := test.want(tmpDir)
-			if diff := cmp.Diff(want, got, cmp.AllowUnexported(sampleMetadata{})); diff != "" {
+			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(sampleMetadata{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

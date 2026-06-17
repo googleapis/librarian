@@ -31,19 +31,23 @@ var (
 	errOpeningBraceNotFound = errors.New("opening brace not found")
 	errClosingBraceNotFound = errors.New("closing brace not found")
 	errInvalidSignature     = errors.New("invalid method signature")
-	// javaCleanRegex matches Java text blocks, double-quoted strings, char literals,
-	// block comments, and line comments.
+	// javaCleanRegex matches comments, text blocks, double-quoted strings, and char literals.
 	javaCleanRegex = regexp.MustCompile(`"""[\s\S]*?"""|"(?:[^"\\]|\\.)*"|'(?:[^'\\]|\\.)*'|/\*[\s\S]*?\*/|//.*`)
 )
 
-// DeleteMethod deletes a method from a Java file.
+// methodBounds represents the absolute physical byte range of a method in a file.
+// The range is inclusive of the method's leading indentation and trailing newline.
+type methodBounds struct {
+	start int
+	end   int
+}
+
+// DeleteMethod deletes all matching methods from a Java file.
 // It handles brace counting to remove the entire method body.
 //
-// Note: funcName must be the full method declaration line (including modifiers
-// and return type, e.g., "public static void foo()") to avoid matching a substring
-// of another method name (e.g., "foo()" matching inside "afoo()").
-// TODO(https://github.com/googleapis/librarian/issues/6298): Enforce word boundaries
-// during matching as a safety net against accidental substring matches.
+// Note: funcName must be the complete, single-line method signature declaration
+// (including modifiers and return type, e.g., "public void foo()"). Matching is
+// done via exact substring search, so any spacing or formatting mismatch will fail.
 func DeleteMethod(path, funcName, language string) error {
 	if language != config.LanguageJava {
 		return fmt.Errorf("%w: %s", errUnsupportedLanguage, language)
@@ -56,25 +60,46 @@ func DeleteMethod(path, funcName, language string) error {
 		return fmt.Errorf("reading file: %w", err)
 	}
 	cleaned := cleanJavaCode(data)
-	idx := bytes.Index(cleaned, []byte(funcName))
-	if idx == -1 {
-		return fmt.Errorf("%w %q in %s", errMethodNotFound, funcName, path)
-	}
-	openBraceIdx, err := findOpeningBrace(cleaned, idx+len(funcName))
+	boundsList, err := findMethodBounds(data, cleaned, funcName)
 	if err != nil {
-		return fmt.Errorf("deleting method %s: %w", funcName, err)
+		return fmt.Errorf("deleting method %s in %s: %w", funcName, path, err)
 	}
-	closeBraceIdx, err := findClosingBrace(cleaned, openBraceIdx)
-	if err != nil {
-		return fmt.Errorf("deleting method %s: %w", funcName, err)
+	for i := len(boundsList) - 1; i >= 0; i-- {
+		b := boundsList[i]
+		data = append(data[:b.start], data[b.end:]...)
 	}
-	finalStart, finalEnd := adjustDeleteBounds(data, idx, closeBraceIdx+1)
-	newContent := append(data[:finalStart], data[finalEnd:]...)
-	return os.WriteFile(path, newContent, 0644)
+	return os.WriteFile(path, data, 0644)
+}
+
+// findMethodBounds locates the physical byte boundaries of all valid matches for the signature.
+func findMethodBounds(data, cleaned []byte, funcName string) ([]methodBounds, error) {
+	var boundsList []methodBounds
+	searchStart := 0
+	for {
+		idx := bytes.Index(cleaned[searchStart:], []byte(funcName))
+		if idx == -1 {
+			break
+		}
+		actualIdx := searchStart + idx
+		openBraceIdx, err := findOpeningBrace(cleaned, actualIdx+len(funcName))
+		if err != nil {
+			return nil, err
+		}
+		closeBraceIdx, err := findClosingBrace(cleaned, openBraceIdx)
+		if err != nil {
+			return nil, err
+		}
+		start, end := adjustDeleteBounds(data, actualIdx, closeBraceIdx+1)
+		boundsList = append(boundsList, methodBounds{start: start, end: end})
+		searchStart = closeBraceIdx + 1
+	}
+	if len(boundsList) == 0 {
+		return nil, errMethodNotFound
+	}
+	return boundsList, nil
 }
 
 // cleanJavaCode replaces comments, strings, and char literals with spaces.
-// This prevents brace count mismatch while keeping the original offsets.
 func cleanJavaCode(content []byte) []byte {
 	return javaCleanRegex.ReplaceAllFunc(content, func(match []byte) []byte {
 		return bytes.Repeat([]byte(" "), len(match))
