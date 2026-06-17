@@ -25,7 +25,10 @@ import (
 
 const repoURLPrefix = "https://github.com/googleapis/google-cloud-node/blob/main/packages"
 
-var samplePathPrefix = filepath.Join("samples", "generated")
+var (
+	errorFindSampleMetadata = errors.New("error finding sample metadata")
+	samplePathPrefix        = filepath.Join("samples", "generated")
+)
 
 type sampleMetadata struct {
 	name     string
@@ -57,7 +60,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errorFindSampleMetadata, err)
 	}
 	return metadata, nil
 }

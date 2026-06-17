@@ -17,7 +17,6 @@ package nodejs
 import (
 	"errors"
 	"fmt"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -122,7 +121,8 @@ func TestFindSampleMetadata_Error(t *testing.T) {
 	t.Cleanup(func() {
 		_ = os.Chmod(unreadableSubdir, 0755)
 	})
-	if _, err := findSampleMetadata(tmpDir); !errors.Is(err, fs.ErrPermission) {
-		t.Errorf("expected permission error, got: %v", err)
+	_, err := findSampleMetadata(tmpDir)
+	if !errors.Is(err, errorFindSampleMetadata) {
+		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errorFindSampleMetadata)
 	}
 }
