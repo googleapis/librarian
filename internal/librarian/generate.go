@@ -22,7 +22,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/dart"
-	"github.com/googleapis/librarian/internal/librarian/gcloud"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
@@ -170,8 +169,6 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = checkAndClean(library.Output, keep)
 		case config.LanguageSwift:
 			err = checkAndClean(library.Output, library.Keep)
-		case config.LanguageGcloud:
-			// No-op. gcloud generation does not support cleaning yet.
 		case config.LanguageSurfer:
 			// No-op. surfer generation does not support cleaning yet.
 		default:
@@ -213,13 +210,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return fakePostGenerate()
-	case config.LanguageGcloud:
-		for _, library := range libraries {
-			if err := gcloud.Generate(ctx, library, src); err != nil {
-				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-			}
-		}
-		return nil
 	case config.LanguageSurfer:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
@@ -341,8 +331,6 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DefaultOutput(name, defaultOut)
-	case config.LanguageGcloud:
-		return gcloud.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
 		return golang.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
@@ -362,8 +350,6 @@ func deriveAPIPath(language string, name string) string {
 	switch language {
 	case config.LanguageDart:
 		return dart.DeriveAPIPath(name)
-	case config.LanguageGcloud:
-		return gcloud.DeriveAPIPath(name)
 	case config.LanguageRust:
 		return rust.DeriveAPIPath(name)
 	default:

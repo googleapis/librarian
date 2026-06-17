@@ -31,8 +31,6 @@ const (
 	LanguageDotnet = "dotnet"
 	// LanguageFake is the language identifier for Fakes.
 	LanguageFake = "fake"
-	// LanguageGcloud is the language identifier for gcloud command binaries.
-	LanguageGcloud = "gcloud"
 	// LanguageGo is the language identifier for Go.
 	LanguageGo = "go"
 	// LanguageJava is the language identifier for Java.
@@ -795,17 +793,6 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
-}
-
-// GcloudCommand contains gcloud-specific library configuration.
-type GcloudCommand struct {
-	// ClientImportPath overrides the GAPIC Go client import path that
-	// would otherwise be derived from the proto package. Set this when
-	// the proto package and the published Go GAPIC location diverge.
-	// For example, the proto package google.cloud.recaptchaenterprise.v1
-	// publishes its Go client at
-	// "cloud.google.com/go/recaptchaenterprise/v2/apiv1".
-	ClientImportPath string `yaml:"client_import_path,omitempty"`
 }
 
 // Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
