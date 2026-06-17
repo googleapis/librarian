@@ -43,26 +43,26 @@ func TestBigQueryQueryFieldOverride(t *testing.T) {
 	jcMsg := newTestMsgWithQuery("JobConfiguration")
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQueryBuilder(c, model, nil)
+	builder, err := newRunQuery(c, model, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	if len(builder.fields) != 1 {
-		t.Fatalf("expected 1 queryField, got %d", len(builder.fields))
+	if len(builder.fieldGroups) != 1 {
+		t.Fatalf("expected 1 queryField, got %d", len(builder.fieldGroups))
 	}
 
-	qf := builder.fields[0]
+	qf := builder.fieldGroupList()[0]
 	if qf.FieldName() != "query" {
 		t.Errorf("expected field name 'query', got %q", qf.FieldName())
 	}
-	if qf.QueryRequest == nil {
+	if qf.QueryRequest() == nil {
 		t.Error("expected QueryRequest to be set")
 	}
-	if qf.JobConfigurationQuery == nil {
+	if qf.JobConfigurationQuery() == nil {
 		t.Error("expected JobConfigurationQuery to be set")
 	}
-	if qf.JobConfiguration != nil {
+	if qf.JobConfiguration() != nil {
 		t.Error("expected JobConfiguration to be nil for field name 'query'")
 	}
 }
@@ -98,13 +98,13 @@ func TestBigQueryFiltering(t *testing.T) {
 	jcMsg := newTestMsg("JobConfiguration", []*api.Field{newTestField("output_only", true), newTestField("skip", false)})
 
 	model := api.NewTestAPI([]*api.Message{qrMsg, jcqMsg, jcMsg}, []*api.Enum{}, []*api.Service{})
-	builder, err := newRunQueryBuilder(c, model, []string{"skip"})
+	builder, err := newRunQuery(c, model, []string{"skip"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	var fieldNames []string
-	for _, f := range builder.fields {
+	for _, f := range builder.fieldGroupList() {
 		fieldNames = append(fieldNames, f.FieldName())
 	}
 
@@ -148,12 +148,11 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	builder, err := newRunQueryBuilder(c, model, nil)
+	builder, err := newRunQuery(c, model, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	// 1. Verify createSyntheticMessage basics
 	syntheticMsg, err := builder.createSyntheticMessage("MySyntheticMessage")
 	if err != nil {
 		t.Fatal(err)
@@ -169,7 +168,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 	}
 
 	// 2. Verify builder() output has modified basic field annotations
-	runQuery, err := builder.builder()
+	runQuery, err := runQueryBuilder(builder)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -194,8 +193,7 @@ func TestBigQuerySyntheticMessages(t *testing.T) {
 		t.Errorf("expected FQMessageName to be 'crate::model::RunQueryRequest', got %q", fAnn.FQMessageName)
 	}
 
-	// 3. Verify request() output does NOT have modified basic field annotations
-	runQueryRequest, err := builder.request()
+	runQueryRequest, err := builder.createSyntheticMessage("RunQueryRequest")
 	if err != nil {
 		t.Fatal(err)
 	}

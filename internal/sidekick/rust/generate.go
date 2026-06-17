@@ -91,26 +91,42 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 		"format_options",   // we want to control format options on veneer
 		"kind", "job_type", // output only but not properly marked on protos
 	}
-	runQueryBuilder, err := newRunQueryBuilder(c, model, skippedFields)
+	runQuery, err := newRunQuery(c, model, skippedFields)
 	if err != nil {
 		return err
 	}
 
-	runQueryMsg, err := runQueryBuilder.builder()
+	runQueryMsg, err := runQueryBuilder(runQuery)
 	if err != nil {
 		return err
 	}
-	runQueryRequestMsg, err := runQueryBuilder.request()
+	runQueryRequestMsg, err := runQuery.createSyntheticMessage("RunQueryRequest")
+	if err != nil {
+		return err
+	}
+
+	// TODO(googleapis/google-cloud-rust#5844): move this list to come from librarian.yaml
+	skippedFields = []string{
+		"rows", // skip rows since it takes a lot of memory
+	}
+	queryMetadata, err := newQueryMetadata(c, model, skippedFields)
+	if err != nil {
+		return err
+	}
+
+	queryMetadataMsg, err := queryMetadata.createSyntheticMessage("QueryMetadata")
 	if err != nil {
 		return err
 	}
 
 	model = &api.API{
 		Codec: &bigQueryAnnotations{
-			Model:              model,
-			RunQueryFields:     runQueryBuilder.fields,
-			RunQueryMsg:        runQueryMsg,
-			RunQueryRequestMsg: runQueryRequestMsg,
+			Model:               model,
+			RunQueryFields:      runQuery.fieldGroupList(),
+			RunQueryMsg:         runQueryMsg,
+			RunQueryRequestMsg:  runQueryRequestMsg,
+			QueryMetadataFields: queryMetadata.fieldGroupList(),
+			QueryMetadataMsg:    queryMetadataMsg,
 		},
 	}
 
@@ -120,10 +136,12 @@ func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API,
 }
 
 type bigQueryAnnotations struct {
-	Model              *api.API
-	RunQueryFields     []*queryField
-	RunQueryMsg        *api.Message
-	RunQueryRequestMsg *api.Message
+	Model               *api.API
+	RunQueryFields      []*fieldGroup
+	RunQueryMsg         *api.Message
+	RunQueryRequestMsg  *api.Message
+	QueryMetadataFields []*fieldGroup
+	QueryMetadataMsg    *api.Message
 }
 
 func templatesProvider() language.TemplateProvider {
