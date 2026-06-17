@@ -99,7 +99,7 @@ This document describes the schema for the librarian.yaml.
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
 | `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
-| `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific default configuration. |
+| `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
@@ -310,6 +310,12 @@ This document describes the schema for the librarian.yaml.
 | `generate_resource_names` | bool (optional) | Indicates whether to extract resource names from the GAPIC phase. Defaults to true. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
+
+## JavaDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
 
 ## JavaFileCopy Configuration
 
