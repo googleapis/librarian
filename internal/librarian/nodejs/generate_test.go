@@ -349,6 +349,35 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--format=esm",
 			},
 		},
+		{
+			name: "API-level mixin override",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					Mixins: "google.longrunning.Operations",
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:   "google/cloud/secretmanager/v1",
+							Mixins: "none",
+						},
+					},
+				},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--mixins", "none",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			nodejsAPI := resolveNodejsAPI(test.library, test.api)
