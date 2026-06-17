@@ -17,7 +17,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/googleapis/librarian/internal/surfer"
@@ -26,6 +26,7 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := surfer.Run(ctx, os.Args...); err != nil {
-		log.Fatal(err)
+		fmt.Fprintf(os.Stderr, "surfer: %v\n", err)
+		os.Exit(1)
 	}
 }
