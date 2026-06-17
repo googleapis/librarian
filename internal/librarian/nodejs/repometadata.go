@@ -40,8 +40,9 @@ func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapi
 	}
 
 	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
-		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
-			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
+		trimmed := strings.TrimSuffix(metadata.ProductDocumentation, "/")
+		if !strings.HasSuffix(trimmed, "/docs") {
+			metadata.ProductDocumentation = trimmed + "/docs"
 		}
 	}
 	return metadata, nil
