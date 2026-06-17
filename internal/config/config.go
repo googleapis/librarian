@@ -336,6 +336,9 @@ type API struct {
 
 	// Java contains Java-specific API configuration.
 	Java *JavaAPI `yaml:"java,omitempty"`
+
+	// Nodejs contains Node.js-specific API configuration.
+	Nodejs *NodejsAPI `yaml:"nodejs,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.
