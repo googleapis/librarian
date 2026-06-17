@@ -36,6 +36,7 @@ type sampleMetadata struct {
 }
 
 func findSampleMetadata(output string) ([]sampleMetadata, error) {
+	output = filepath.Clean(output)
 	samplesPath := filepath.Join(output, samplePathPrefix)
 	var metadata []sampleMetadata
 	if _, err := os.Stat(samplesPath); err != nil {
@@ -44,6 +45,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		}
 		return nil, err
 	}
+	repoRoot := filepath.Dir(filepath.Dir(output))
 	err := filepath.WalkDir(samplesPath, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return err
@@ -51,11 +53,13 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		if d.IsDir() || filepath.Ext(path) != ".js" {
 			return nil
 		}
+		relPath, err := filepath.Rel(repoRoot, path)
+		if err != nil {
+			return err
+		}
 		metadata = append(metadata, sampleMetadata{
-			name: extractSampleName(d.Name()),
-			// use string concat and filepath.ToSlash because we need a url format
-			// path to use in markdown file.
-			filePath: fmt.Sprintf("%s/%s", repoURLPrefix, filepath.ToSlash(path)),
+			name:     extractSampleName(d.Name()),
+			filePath: repoURLPrefix + "/" + filepath.ToSlash(relPath),
 		})
 		return nil
 	})
