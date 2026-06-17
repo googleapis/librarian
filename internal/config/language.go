@@ -766,9 +766,6 @@ type NodejsPackage struct {
 	// handwritten layer.
 	MainService string `yaml:"main_service,omitempty"`
 
-	// Mixins controls mixin behavior (e.g., "none" to disable).
-	Mixins string `yaml:"mixins,omitempty"`
-
 	// NodejsAPIs is a list of Node.js-specific API configurations.
 	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
 

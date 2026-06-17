@@ -234,7 +234,12 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 		{
 			name: "with bundle config and extra params",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
 			library: &config.Library{
 				Name: "google-cloud-translate",
 				Nodejs: &config.NodejsPackage{
@@ -242,7 +247,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 					ExtraProtocParameters: []string{"auto-populate-field-oauth-scope"},
 					HandwrittenLayer:      true,
 					MainService:           "translate",
-					Mixins:                "none",
 				},
 			},
 			want: []string{
@@ -355,7 +359,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				Nodejs: &config.NodejsPackage{
-					Mixins: "google.longrunning.Operations",
 					NodejsAPIs: []*config.NodejsAPI{
 						{
 							Path:   "google/cloud/secretmanager/v1",
@@ -387,10 +390,8 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				},
 			},
 			library: &config.Library{
-				Name: "google-cloud-secretmanager",
-				Nodejs: &config.NodejsPackage{
-					Mixins: "google.longrunning.Operations",
-				},
+				Name:   "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{},
 			},
 			want: []string{
 				"gapic-generator-typescript",
