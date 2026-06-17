@@ -19,6 +19,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 func TestDuplicateMethod(t *testing.T) {
@@ -131,8 +133,8 @@ public class TestClass {
 				t.Fatal(err)
 			}
 			got := string(gotBytes)
-			if got != test.want {
-				t.Errorf("DuplicateMethod() =\n%s\nwant:\n%s", got, test.want)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

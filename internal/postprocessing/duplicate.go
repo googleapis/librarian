@@ -68,9 +68,12 @@ func DuplicateMethod(ctx context.Context, path, funcName, newName, language stri
 		return fmt.Errorf("%w: multiple methods found matching signature %q in %s", errAmbiguousDuplication, funcName, path)
 	}
 	b := boundsList[0]
-	sContent := string(content)
-	methodBlock := sContent[b.start:b.end]
-	renamedBlock := strings.Replace(methodBlock, funcName, newSignature, 1)
-	newContent := sContent[:b.end] + "\n" + renamedBlock + sContent[b.end:]
-	return os.WriteFile(path, []byte(newContent), 0644)
+	methodBlock := content[b.start:b.end]
+	renamedBlock := bytes.Replace(methodBlock, []byte(funcName), []byte(newSignature), 1)
+	newContent := make([]byte, 0, len(content)+1+len(renamedBlock))
+	newContent = append(newContent, content[:b.end]...)
+	newContent = append(newContent, '\n')
+	newContent = append(newContent, renamedBlock...)
+	newContent = append(newContent, content[b.end:]...)
+	return os.WriteFile(path, newContent, 0644)
 }
