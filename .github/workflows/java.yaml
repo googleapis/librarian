@@ -67,9 +67,9 @@ jobs:
       - name: Run librarian install
         if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-java
-        run: librarian install
-      - name: Add Java tools to PATH
-        run: echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
+        run: |
+          librarian install
+          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
