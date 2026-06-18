@@ -61,12 +61,13 @@ jobs:
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
+      - name: Add Java tools to PATH
+        run: echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian install
         if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-java
         run: |
           librarian install
-          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Debug - List Java tools directory
         run: |
           echo "=== 1. CHECKING PATH ENVIRONMENT VARIABLE ==="
