@@ -38,6 +38,20 @@ func TestGenerateReadme(t *testing.T) {
 		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 	output := t.TempDir()
+	sampleDir := filepath.Join(output, "sample", "generated", "v1")
+	if err := os.MkdirAll(sampleDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, sample := range []string{
+		"ecret_manager_service.access_secret_version.js",
+		"secret_manager_service.add_secret_version.js",
+		"secret_manager_service.create_secret.js",
+		"secret_manager_service.delete_secret.js",
+	} {
+		if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
 	if err := generateReadme(cfg, library, absGoogleapisDir, output); err != nil {
 		t.Fatal(err)
 	}

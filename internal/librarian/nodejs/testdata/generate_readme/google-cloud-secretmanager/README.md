@@ -62,32 +62,6 @@ Samples are in the [`samples/`][homepage_samples] directory. Each sample's `READ
 | add secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.add_secret_version.js) |
 | create secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.create_secret.js) |
 | delete secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.delete_secret.js) |
-| destroy secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.destroy_secret_version.js) |
-| disable secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.disable_secret_version.js) |
-| enable secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.enable_secret_version.js) |
-| get iam policy | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.get_iam_policy.js) |
-| get secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.get_secret.js) |
-| get secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.get_secret_version.js) |
-| list secret versions | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.list_secret_versions.js) |
-| list secrets | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.list_secrets.js) |
-| set iam policy | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.set_iam_policy.js) |
-| test iam permissions | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.test_iam_permissions.js) |
-| update secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.update_secret.js) |
-| access secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.access_secret_version.js) |
-| add secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.add_secret_version.js) |
-| create secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.create_secret.js) |
-| delete secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.delete_secret.js) |
-| destroy secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.destroy_secret_version.js) |
-| disable secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.disable_secret_version.js) |
-| enable secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.enable_secret_version.js) |
-| get iam policy | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.get_iam_policy.js) |
-| get secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.get_secret.js) |
-| get secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.get_secret_version.js) |
-| list secret versions | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.list_secret_versions.js) |
-| list secrets | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.list_secrets.js) |
-| set iam policy | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.set_iam_policy.js) |
-| test iam permissions | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.test_iam_permissions.js) |
-| update secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1beta2/secret_manager_service.update_secret.js) |
 
 
 ## Supported Node.js Versions
