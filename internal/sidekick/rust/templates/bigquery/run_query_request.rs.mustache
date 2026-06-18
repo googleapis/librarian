@@ -20,10 +20,10 @@ limitations under the License.
 
 {{! Disable warnings that are known to cause trouble }}
 {{#Codec.Model.Codec.DisabledRustdocWarnings}}
-#[allow(rustdoc::{{.}})]
+#![allow(rustdoc::{{.}})]
 {{/Codec.Model.Codec.DisabledRustdocWarnings}}
 {{#Codec.Model.Codec.DisabledClippyWarnings}}
-#[allow(clippy::{{.}})]
+#![allow(clippy::{{.}})]
 {{/Codec.Model.Codec.DisabledClippyWarnings}}
 {{#Codec.RunQueryRequestMsg}}
 {{> /templates/common/message}}
