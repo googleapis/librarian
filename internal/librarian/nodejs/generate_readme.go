@@ -74,8 +74,7 @@ func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, 
 		"Name":             metadata.NamePretty,
 		"ProductDoc":       metadata.ProductDocumentation,
 		"ReleaseLevel":     releaseLevelMarkdown(metadata.ReleaseLevel),
-
-		"Samples": sampleMetadata,
+		"Samples":          sampleMetadata,
 	})
 	cerr := f.Close()
 	if err != nil {
