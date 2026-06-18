@@ -21,7 +21,37 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
+
+func TestGenerateReadme(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	library := &config.Library{
+		Name: "google-cloud-secretmanager",
+	}
+	output := t.TempDir()
+	if err := generateReadme(cfg, library, absGoogleapisDir, output); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(output, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join("testdata", "generate_readme", "google-cloud-secretmanager", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(want), string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
 
 func TestExtractSampleName(t *testing.T) {
 	for _, test := range []struct {
