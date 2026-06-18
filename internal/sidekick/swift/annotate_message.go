@@ -59,7 +59,7 @@ type messageAnnotations struct {
 	// mixin request types.
 	//
 	// For discovery-based APIs the request are synthetic and generated within a
-	// scope. They need to be fully qualifed.
+	// scope. They need to be fully qualified.
 	ParameterTypeName string
 }
 
