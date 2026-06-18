@@ -47,7 +47,7 @@ jobs:
           path: |
             ~/.cache/librarian
             venv
-          key: librarian-java-tools-v1-{{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
+          key: librarian-java-tools-v1-${{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
       - name: Create Python virtual environment
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: python3 -m venv venv
@@ -71,11 +71,11 @@ jobs:
         run: |
           echo "=== 1. CHECKING PATH ENVIRONMENT VARIABLE ==="
           echo "PATH is: $PATH"
-          
+
           echo "=== 2. CHECKING WRAPPER SCRIPT CONTENT & LINE ENDINGS ==="
           # cat -v will show carriage returns (\r) as ^M
           cat -v "$HOME/.cache/librarian/bin/java_tools/bin/google-java-format"
-          
+
           echo "=== 3. TRYING TO EXECUTE BY ABSOLUTE PATH ==="
           # This will isolate if the issue is the PATH or the file shebang
           if "$HOME/.cache/librarian/bin/java_tools/bin/google-java-format" --version; then
