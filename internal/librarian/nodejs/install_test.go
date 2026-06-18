@@ -65,7 +65,6 @@ if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CO
     exit 1
 fi
 
-
 case "$*" in
     *install*)
         mkdir -p node_modules/.bin

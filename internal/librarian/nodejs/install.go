@@ -88,10 +88,7 @@ func getPNPMEnv(ctx context.Context) ([]string, error) {
 	}
 	globalBin := strings.TrimSpace(binOut)
 
-	pnpmHome := globalBin
-	if filepath.Base(globalBin) == "bin" {
-		pnpmHome = filepath.Dir(globalBin)
-	}
+	pnpmHome := filepath.Dir(globalBin)
 
 	env := os.Environ()
 	env = append(env, "PNPM_HOME="+pnpmHome)
@@ -150,6 +147,9 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	return nil
 }
 
+// repoFromPackageURL extracts the repository path (e.g.,
+// "github.com/googleapis/google-cloud-node") from a GitHub archive URL
+// like "https://github.com/googleapis/google-cloud-node/archive/<sha>.tar.gz".
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {
