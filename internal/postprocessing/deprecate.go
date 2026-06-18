@@ -89,7 +89,7 @@ func analyzeMethodHeader(lines [][]byte, sigLineIdx int) methodHeader {
 	for idx >= 0 {
 		line := bytes.TrimSpace(lines[idx])
 		if bytes.HasPrefix(line, []byte("@")) {
-			if string(line) == "@Deprecated" || bytes.HasPrefix(line, []byte("@Deprecated(")) {
+			if bytes.Equal(line, []byte("@Deprecated")) || bytes.HasPrefix(line, []byte("@Deprecated(")) {
 				header.hasDeprecated = true
 			}
 			header.firstAnnotationIdx = idx
@@ -120,19 +120,33 @@ func annotateMethod(lines [][]byte, sigLineIdx int, indentation []byte, header m
 
 // addJavadocTag adds the @deprecated tag to the method's Javadoc block, creating one if it doesn't exist.
 func addJavadocTag(lines [][]byte, indentation []byte, header methodHeader, tagName, tagMessage string) [][]byte {
-	if !header.hasJavadoc {
-		newJavadoc := [][]byte{
-			fmt.Appendf(nil, "%s/**", indentation),
-			fmt.Appendf(nil, "%s * @%s %s", indentation, tagName, tagMessage),
-			fmt.Appendf(nil, "%s */", indentation),
-		}
-		return slices.Insert(lines, header.firstAnnotationIdx, newJavadoc...)
-	}
 	if header.hasDeprecatedTag {
 		return lines
 	}
+	if !header.hasJavadoc {
+		newJavadoc := makeNewJavadoc(indentation, tagName, tagMessage, nil)
+		return slices.Insert(lines, header.firstAnnotationIdx, newJavadoc...)
+	}
+	line := bytes.TrimSpace(lines[header.javadocEndIdx])
+	if bytes.HasPrefix(line, []byte("/**")) {
+		inner := bytes.TrimSpace(bytes.TrimSuffix(bytes.TrimPrefix(line, []byte("/**")), []byte("*/")))
+		newJavadoc := makeNewJavadoc(indentation, tagName, tagMessage, inner)
+		return slices.Replace(lines, header.javadocEndIdx, header.javadocEndIdx+1, newJavadoc...)
+	}
 	tagLine := fmt.Appendf(nil, "%s * @%s %s", indentation, tagName, tagMessage)
 	return slices.Insert(lines, header.javadocEndIdx, tagLine)
+}
+
+func makeNewJavadoc(indentation []byte, tagName, tagMessage string, inner []byte) [][]byte {
+	doc := [][]byte{
+		fmt.Appendf(nil, "%s/**", indentation),
+		fmt.Appendf(nil, "%s * @%s %s", indentation, tagName, tagMessage),
+		fmt.Appendf(nil, "%s */", indentation),
+	}
+	if len(inner) > 0 {
+		doc = slices.Insert(doc, 1, fmt.Appendf(nil, "%s * %s", indentation, inner))
+	}
+	return doc
 }
 
 func extractLineIndentation(line []byte) []byte {

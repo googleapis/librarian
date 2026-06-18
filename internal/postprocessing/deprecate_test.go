@@ -153,6 +153,33 @@ public class TestClass {
 }
 `,
 		},
+		{
+			name: "method with single-line javadoc",
+			inputContent: `package com.google.example;
+
+public class TestClass {
+  /** Formats a name. */
+  public static String formatName(String name) {
+    return name;
+  }
+}
+`,
+			funcName:           "public static String formatName(String name)",
+			deprecationMessage: "Please use {@link #anotherMethod()} instead",
+			wantContent: `package com.google.example;
+
+public class TestClass {
+  /**
+   * Formats a name.
+   * @deprecated Please use {@link #anotherMethod()} instead
+   */
+  @Deprecated
+  public static String formatName(String name) {
+    return name;
+  }
+}
+`,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
