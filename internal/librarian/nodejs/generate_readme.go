@@ -52,7 +52,7 @@ type sampleMetadata struct {
 	FilePath string
 }
 
-func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, output string) error {
+func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, output string) (err error) {
 	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
@@ -66,7 +66,13 @@ func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, 
 	if err != nil {
 		return err
 	}
-	err = readmeTmplParsed.Execute(f, map[string]interface{}{
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+
+	return readmeTmplParsed.Execute(f, map[string]any{
 		"APIID":            metadata.APIID,
 		"ClientDoc":        metadata.ClientDocumentation,
 		"DistributionName": metadata.DistributionName,
@@ -76,11 +82,6 @@ func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, 
 		"ReleaseLevel":     releaseLevelMarkdown(metadata.ReleaseLevel),
 		"Samples":          sampleMetadata,
 	})
-	cerr := f.Close()
-	if err != nil {
-		return err
-	}
-	return cerr
 }
 
 func findSampleMetadata(output string) ([]sampleMetadata, error) {
