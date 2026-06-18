@@ -55,7 +55,7 @@ func TestGenerateReadme(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if err := generateReadme(cfg, library, absGoogleapisDir, output); err != nil {
+	if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(filepath.Join(output, "README.md"))
@@ -133,7 +133,7 @@ func TestGenerateReadme_Error(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outputDir := test.output(t)
-			err := generateReadme(cfg, test.library, test.googleapisDir, outputDir)
+			err := generateReadmeNew(cfg, test.library, test.googleapisDir, outputDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("expected error %v, got %v", test.wantErr, err)
 			}
