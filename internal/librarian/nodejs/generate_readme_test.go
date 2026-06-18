@@ -85,17 +85,17 @@ func TestGenerateReadme_Error(t *testing.T) {
 		library       *config.Library
 		googleapisDir string
 		output        func(t *testing.T) string
-		wantErr error
+		wantErr       error
 	}{
 		{
-			name:          "generateRepoMetadata fails (no APIs)",
+			name:          "library has no API",
 			library:       &config.Library{Name: "google-cloud-secretmanager"},
 			googleapisDir: absGoogleapisDir,
 			output:        func(t *testing.T) string { return t.TempDir() },
 			wantErr:       repometadata.ErrNoAPIs,
 		},
 		{
-			name: "file creation fails (invalid directory)",
+			name: "output is not a directory",
 			library: &config.Library{
 				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
