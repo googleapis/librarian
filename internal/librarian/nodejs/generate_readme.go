@@ -150,5 +150,9 @@ func readPartials(output string) (map[string]string, error) {
 		}
 		return nil, fmt.Errorf("%w: %w", errReadPartials, err)
 	}
-	return *part, nil
+	res := make(map[string]string)
+	for k, v := range *part {
+		res[k] = strings.TrimSpace(v)
+	}
+	return res, nil
 }
