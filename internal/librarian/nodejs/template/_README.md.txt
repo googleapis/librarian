@@ -9,8 +9,10 @@
 [![npm version](https://img.shields.io/npm/v/{{.DistributionName}}.svg)](https://www.npmjs.org/package/{{.DistributionName}})
 
 {{.Name}} API client for Node.js
+{{- with .Partials.introduction}}
 
-{{.Partials.introduction}}
+{{.}}
+{{- end}}
 
 A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
@@ -46,8 +48,10 @@ Google APIs Client Libraries, in [Client Libraries Explained][explained].
 ```bash
 npm install {{.DistributionName}}
 ```
+{{- with .Partials.body}}
 
-{{.Partials.body}}
+{{.}}
+{{- end}}
 
 ## Samples
 
