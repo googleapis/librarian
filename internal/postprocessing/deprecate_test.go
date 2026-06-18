@@ -303,3 +303,129 @@ public class TestClass {
 		})
 	}
 }
+
+func TestAddJavadocTag(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name        string
+		lines       []string
+		indentation string
+		header      methodHeader
+		tagName     string
+		tagMessage  string
+		wantLines   []string
+	}{
+		{
+			name: "no javadoc",
+			lines: []string{
+				"  public void foo() {",
+				"  }",
+			},
+			indentation: "  ",
+			header: methodHeader{
+				hasJavadoc:         false,
+				firstAnnotationIdx: 0,
+			},
+			tagName:    "deprecated",
+			tagMessage: "use bar",
+			wantLines: []string{
+				"  /**",
+				"   * @deprecated use bar",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+		},
+		{
+			name: "existing Javadoc without tag",
+			lines: []string{
+				"  /**",
+				"   * Hello world",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+			indentation: "  ",
+			header: methodHeader{
+				hasJavadoc:       true,
+				javadocEndIdx:    2,
+				hasDeprecatedTag: false,
+			},
+			tagName:    "deprecated",
+			tagMessage: "use bar",
+			wantLines: []string{
+				"  /**",
+				"   * Hello world",
+				"   * @deprecated use bar",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+		},
+		{
+			name: "existing Javadoc with tag",
+			lines: []string{
+				"  /**",
+				"   * @deprecated use bar",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+			indentation: "  ",
+			header: methodHeader{
+				hasJavadoc:       true,
+				javadocEndIdx:    2,
+				hasDeprecatedTag: true,
+			},
+			tagName:    "deprecated",
+			tagMessage: "use bar",
+			wantLines: []string{
+				"  /**",
+				"   * @deprecated use bar",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+		},
+		{
+			name: "single-line Javadoc",
+			lines: []string{
+				"  /** Hello world */",
+				"  public void foo() {",
+				"  }",
+			},
+			indentation: "  ",
+			header: methodHeader{
+				hasJavadoc:       true,
+				javadocEndIdx:    0,
+				hasDeprecatedTag: false,
+			},
+			tagName:    "deprecated",
+			tagMessage: "use bar",
+			wantLines: []string{
+				"  /**",
+				"   * Hello world",
+				"   * @deprecated use bar",
+				"   */",
+				"  public void foo() {",
+				"  }",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			inputBytes := make([][]byte, len(test.lines))
+			for i, l := range test.lines {
+				inputBytes[i] = []byte(l)
+			}
+			gotBytes := addJavadocTag(inputBytes, []byte(test.indentation), test.header, test.tagName, test.tagMessage)
+			gotLines := make([]string, len(gotBytes))
+			for i, b := range gotBytes {
+				gotLines[i] = string(b)
+			}
+			if diff := cmp.Diff(test.wantLines, gotLines); diff != "" {
+				t.Errorf("addJavadocTag() mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
