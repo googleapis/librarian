@@ -111,6 +111,25 @@ func TestGenerateReadme_Error(t *testing.T) {
 			},
 			wantErr: syscall.ENOTDIR,
 		},
+		{
+			name: "permission denied creating readme",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			googleapisDir: absGoogleapisDir,
+			output: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				if err := os.Chmod(tempDir, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(tempDir, 0755)
+				})
+				return tempDir
+			},
+			wantErr: os.ErrPermission,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outputDir := test.output(t)
