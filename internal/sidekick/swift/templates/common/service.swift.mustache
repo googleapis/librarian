@@ -208,10 +208,10 @@ extension {{Codec.Name}} {
       {{/Fields}}
     }
     {{#Method.ReturnsEmpty}}
-    try await self.{{Codec.Name}}(request: request)
+    try await self.{{Method.Codec.Name}}(request: request)
     {{/Method.ReturnsEmpty}}
     {{^Method.ReturnsEmpty}}
-    return try await self.{{Codec.Name}}(request: request)
+    return try await self.{{Method.Codec.Name}}(request: request)
     {{/Method.ReturnsEmpty}}
   }
   {{/Signatures}}
