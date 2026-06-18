@@ -15,12 +15,16 @@
 package nodejs
 
 import (
+	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -36,13 +40,48 @@ backwards-incompatible changes at any time.`
 )
 
 var (
+	//go:embed template/_README.md.txt
+	readmeTmpl              string
+	readmeTmplParsed        = template.Must(template.New("readme").Parse(readmeTmpl))
 	errorFindSampleMetadata = errors.New("error finding sample metadata")
 	samplePathPrefix        = filepath.Join("samples", "generated")
 )
 
 type sampleMetadata struct {
-	name     string
-	filePath string
+	Name     string
+	FilePath string
+}
+
+func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDir, output string) (err error) {
+	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
+	if err != nil {
+		return err
+	}
+	sampleMetadata, err := findSampleMetadata(output)
+	if err != nil {
+		return err
+	}
+	readmePath := filepath.Join(output, "README.md")
+	f, err := os.Create(readmePath)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = cerr
+		}
+	}()
+
+	return readmeTmplParsed.Execute(f, map[string]any{
+		"APIID":            metadata.APIID,
+		"ClientDoc":        metadata.ClientDocumentation,
+		"DistributionName": metadata.DistributionName,
+		"LibraryName":      library.Name,
+		"Name":             metadata.NamePretty,
+		"ProductDoc":       metadata.ProductDocumentation,
+		"ReleaseLevel":     releaseLevelMarkdown(metadata.ReleaseLevel),
+		"Samples":          sampleMetadata,
+	})
 }
 
 func findSampleMetadata(output string) ([]sampleMetadata, error) {
@@ -68,8 +107,8 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 			return err
 		}
 		metadata = append(metadata, sampleMetadata{
-			name:     extractSampleName(d.Name()),
-			filePath: repoURLPrefix + "/" + filepath.ToSlash(relPath),
+			Name:     extractSampleName(d.Name()),
+			FilePath: repoURLPrefix + "/" + filepath.ToSlash(relPath),
 		})
 		return nil
 	})

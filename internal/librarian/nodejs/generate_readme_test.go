@@ -18,10 +18,128 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 )
+
+func TestGenerateReadme(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	library := &config.Library{
+		Name:   "google-cloud-secretmanager",
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
+	}
+	output := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
+	sampleDir := filepath.Join(output, "samples", "generated", "v1")
+	if err := os.MkdirAll(sampleDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, sample := range []string{
+		"secret_manager_service.access_secret_version.js",
+		"secret_manager_service.add_secret_version.js",
+		"secret_manager_service.create_secret.js",
+		"secret_manager_service.delete_secret.js",
+	} {
+		if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
+		t.Fatal(err)
+	}
+	got, err := os.ReadFile(filepath.Join(output, "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	want, err := os.ReadFile(filepath.Join("testdata", "generate_readme", "google-cloud-secretmanager", "README.md"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(string(want), string(got)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateReadme_Error(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		googleapisDir string
+		output        func(t *testing.T) string
+		wantErr       error
+	}{
+		{
+			name:          "library has no API",
+			library:       &config.Library{Name: "google-cloud-secretmanager"},
+			googleapisDir: absGoogleapisDir,
+			output:        func(t *testing.T) string { return t.TempDir() },
+			wantErr:       repometadata.ErrNoAPIs,
+		},
+		{
+			name: "output is not a directory",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			googleapisDir: absGoogleapisDir,
+			output: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				filePath := filepath.Join(tempDir, "README.md")
+				if err := os.WriteFile(filePath, []byte("existing file"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return filePath
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "permission denied creating readme",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			googleapisDir: absGoogleapisDir,
+			output: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				if err := os.Chmod(tempDir, 0555); err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() {
+					_ = os.Chmod(tempDir, 0755)
+				})
+				return tempDir
+			},
+			wantErr: os.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outputDir := test.output(t)
+			err := generateReadmeNew(cfg, test.library, test.googleapisDir, outputDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
+			}
+		})
+	}
+}
 
 func TestExtractSampleName(t *testing.T) {
 	for _, test := range []struct {
@@ -80,12 +198,12 @@ func TestFindSampleMetadata(t *testing.T) {
 			},
 			want: []sampleMetadata{
 				{
-					name:     "nested sample",
-					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/sub/v1.nested_sample.js",
+					Name:     "nested sample",
+					FilePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/sub/v1.nested_sample.js",
 				},
 				{
-					name:     "do something",
-					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/v2.do_something.js",
+					Name:     "do something",
+					FilePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/v2.do_something.js",
 				},
 			},
 		},
