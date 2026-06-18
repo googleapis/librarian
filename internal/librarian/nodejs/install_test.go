@@ -59,9 +59,21 @@ func TestInstall(t *testing.T) {
 	// so the subsequent "./node_modules/.bin/tsc" build step finds an executable.
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
+case "$*" in
+    *--version*)
+        echo "11.7.0"
+        exit 0
+        ;;
+esac
+
 # Assert that transient environmental variables are set dynamically for process lifetime
-if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ]; then
+if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ] || [ "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" != "true" ]; then
     echo "Error: Required transient PNPM environment variables are missing!" >&2
+    exit 1
+fi
+
+if [ "$PNPM_HOME" != "/usr/local" ]; then
+    echo "Error: PNPM_HOME should be /usr/local, got $PNPM_HOME" >&2
     exit 1
 fi
 

@@ -22,6 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -88,11 +89,24 @@ func getPNPMEnv(ctx context.Context) ([]string, error) {
 	}
 	globalBin := strings.TrimSpace(binOut)
 
+	pnpmVer, err := getPNPMVersion(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get pnpm version: %w", err)
+	}
+
+	pnpmHome := globalBin
+	if isV11OrGreater(pnpmVer) {
+		if filepath.Base(globalBin) == "bin" {
+			pnpmHome = filepath.Dir(globalBin)
+		}
+	}
+
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+globalBin)
+	env = append(env, "PNPM_HOME="+pnpmHome)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	return env, nil
 }
 
@@ -154,4 +168,24 @@ func repoFromPackageURL(packageURL string) (string, error) {
 		return "", fmt.Errorf("cannot extract repo from package URL %q", packageURL)
 	}
 	return strings.TrimPrefix(parts[0], "https://"), nil
+}
+
+func getPNPMVersion(ctx context.Context) (string, error) {
+	out, err := commandOutput(ctx, "pnpm", "--version")
+	if err != nil {
+		return "", err
+	}
+	return strings.TrimSpace(out), nil
+}
+
+func isV11OrGreater(version string) bool {
+	parts := strings.Split(version, ".")
+	if len(parts) == 0 {
+		return false
+	}
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return false
+	}
+	return major >= 11
 }
