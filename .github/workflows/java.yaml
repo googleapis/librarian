@@ -67,6 +67,25 @@ jobs:
         run: |
           librarian install
           echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
+      - name: Debug - List Java tools directory
+        run: |
+          echo "=== CHECKING PATHS ==="
+          echo "Workspace: $GITHUB_WORKSPACE"
+          echo "Home: $HOME"
+          echo "=== CHECKING JAVA TOOLS BIN ==="
+          if [ -d "$HOME/.cache/librarian/bin/java_tools/bin" ]; then
+            echo "Directory exists! Listing contents:"
+            ls -la "$HOME/.cache/librarian/bin/java_tools/bin"
+          else
+            echo "Directory DOES NOT exist!"
+          fi
+          echo "=== CHECKING LIBRARIAN CACHE ROOT ==="
+          if [ -d "$HOME/.cache/librarian" ]; then
+            echo "Librarian cache root exists! Listing:"
+            find "$HOME/.cache/librarian" -maxdepth 4
+          else
+            echo "Librarian cache root DOES NOT exist!"
+          fi
       - name: Verify tools
         run: |
           protoc --version
