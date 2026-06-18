@@ -69,22 +69,19 @@ jobs:
           echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Debug - List Java tools directory
         run: |
-          echo "=== CHECKING PATHS ==="
-          echo "Workspace: $GITHUB_WORKSPACE"
-          echo "Home: $HOME"
-          echo "=== CHECKING JAVA TOOLS BIN ==="
-          if [ -d "$HOME/.cache/librarian/bin/java_tools/bin" ]; then
-            echo "Directory exists! Listing contents:"
-            ls -la "$HOME/.cache/librarian/bin/java_tools/bin"
+          echo "=== 1. CHECKING PATH ENVIRONMENT VARIABLE ==="
+          echo "PATH is: $PATH"
+          
+          echo "=== 2. CHECKING WRAPPER SCRIPT CONTENT & LINE ENDINGS ==="
+          # cat -v will show carriage returns (\r) as ^M
+          cat -v "$HOME/.cache/librarian/bin/java_tools/bin/google-java-format"
+          
+          echo "=== 3. TRYING TO EXECUTE BY ABSOLUTE PATH ==="
+          # This will isolate if the issue is the PATH or the file shebang
+          if "$HOME/.cache/librarian/bin/java_tools/bin/google-java-format" --version; then
+            echo "Execution by absolute path succeeded!"
           else
-            echo "Directory DOES NOT exist!"
-          fi
-          echo "=== CHECKING LIBRARIAN CACHE ROOT ==="
-          if [ -d "$HOME/.cache/librarian" ]; then
-            echo "Librarian cache root exists! Listing:"
-            find "$HOME/.cache/librarian" -maxdepth 4
-          else
-            echo "Librarian cache root DOES NOT exist!"
+            echo "Execution by absolute path failed with exit code $?"
           fi
       - name: Verify tools
         run: |
