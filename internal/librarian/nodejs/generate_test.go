@@ -234,7 +234,12 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 		{
 			name: "with bundle config and extra params",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
 			library: &config.Library{
 				Name: "google-cloud-translate",
 				Nodejs: &config.NodejsPackage{
@@ -242,7 +247,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 					ExtraProtocParameters: []string{"auto-populate-field-oauth-scope"},
 					HandwrittenLayer:      true,
 					MainService:           "translate",
-					Mixins:                "none",
 				},
 			},
 			want: []string{
@@ -347,6 +351,60 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--metadata",
 				"--rest-numeric-enums",
 				"--format=esm",
+			},
+		},
+		{
+			name: "API-level mixin override",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:   "google/cloud/secretmanager/v1",
+							Mixins: "none",
+						},
+					},
+				},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--mixins", "none",
+			},
+		},
+		{
+			name: "apis[].nodejs mixin override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
+			library: &config.Library{
+				Name:   "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--mixins", "none",
 			},
 		},
 	} {

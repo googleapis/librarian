@@ -768,9 +768,6 @@ type NodejsPackage struct {
 	// handwritten layer.
 	MainService string `yaml:"main_service,omitempty"`
 
-	// Mixins controls mixin behavior (e.g., "none" to disable).
-	Mixins string `yaml:"mixins,omitempty"`
-
 	// NodejsAPIs is a list of Node.js-specific API configurations.
 	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
 
@@ -790,6 +787,10 @@ type NodejsAPI struct {
 	// DIREGAPIC indicates whether generation uses DIREGAPIC (Discovery REST GAPICs).
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
+
+	// Mixins controls mixin behavior for this API (e.g., "none" to disable).
+	// When set, this overrides the package-level mixins setting.
+	Mixins string `yaml:"mixins,omitempty"`
 
 	// OmitCommonResources indicates whether to omit the default inclusion of
 	// google/cloud/common_resources.proto.
