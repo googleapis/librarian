@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
@@ -42,11 +43,22 @@ func TestGenerateReadme(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name           string
+		setup          func(dir string)
 		wantReadmePath string
 	}{
 		{
 			name:           "secret manager, no partials",
 			wantReadmePath: filepath.Join("testdata", "generate_readme", "without_partials", "google-cloud-secretmanager", "README.md"),
+		},
+		{
+			name: "secret manager, with partials",
+			setup: func(dir string) {
+				partialsFile := filepath.Join("testdata", "generate_readme", "with_partials", "google-cloud-secretmanager", partials)
+				if err := filesystem.CopyFile(partialsFile, filepath.Join(dir, partials)); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantReadmePath: filepath.Join("testdata", "generate_readme", "with_partials", "google-cloud-secretmanager", "README.md"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -64,6 +76,9 @@ func TestGenerateReadme(t *testing.T) {
 				if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
 					t.Fatal(err)
 				}
+			}
+			if test.setup != nil {
+				test.setup(output)
 			}
 			if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
 				t.Fatal(err)
