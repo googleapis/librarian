@@ -38,13 +38,13 @@ func TestGenerateReadme(t *testing.T) {
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
 	}
-	output := t.TempDir()
+	output := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
 	sampleDir := filepath.Join(output, "samples", "generated", "v1")
 	if err := os.MkdirAll(sampleDir, 0755); err != nil {
 		t.Fatal(err)
 	}
 	for _, sample := range []string{
-		"ecret_manager_service.access_secret_version.js",
+		"secret_manager_service.access_secret_version.js",
 		"secret_manager_service.add_secret_version.js",
 		"secret_manager_service.create_secret.js",
 		"secret_manager_service.delete_secret.js",
