@@ -446,9 +446,6 @@ func TestTidy(t *testing.T) {
 					},
 				},
 				Keep: []string{
-					"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
-					"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
-					"google-cloud-vision/src/test/resources/placeholder.txt",
 					"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 				},
 			},
@@ -647,15 +644,25 @@ func TestTidyKeep(t *testing.T) {
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 			},
 			want: []string{
-				"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
-				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
-				"google-cloud-vision/src/test/resources/placeholder.txt",
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := tidyKeep(test.keep)
+			lib := &config.Library{
+				Name: "vision",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/vision/v1",
+					},
+				},
+				Java: &config.JavaModule{
+					GroupID:    "com.google.cloud",
+					ArtifactID: "google-cloud-vision",
+				},
+				Keep: test.keep,
+			}
+			got := tidyKeep(lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
