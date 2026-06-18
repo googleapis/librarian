@@ -152,11 +152,7 @@ func tidyKeep(library *config.Library) []string {
 	}
 	var filteredKeepPaths []string
 	for _, keepPath := range library.Keep {
-		keepPathSlash := filepath.ToSlash(keepPath)
-		if isDefaultPreserved(keepPathSlash) {
-			continue
-		}
-		if isInGAPICModule(library, keepPath) {
+		if isRedundantKeep(library, keepPath) {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -169,18 +165,44 @@ func tidyKeep(library *config.Library) []string {
 	return filteredKeepPaths
 }
 
-// isInGAPICModule checks if the given keepPath belongs to a generated GAPIC module of the library.
-func isInGAPICModule(library *config.Library, keepPath string) bool {
+// isRedundantKeep returns true if the keepPath is redundant and can be removed from the keep list.
+func isRedundantKeep(library *config.Library, keepPath string) bool {
 	keepPathSlash := filepath.ToSlash(keepPath)
+	if isDefaultPreserved(keepPathSlash) {
+		return true
+	}
+	var gapicModule string
 	for pattern, isGAPIC := range cleanPatterns(library) {
 		if isGAPIC {
 			moduleName, _, _ := strings.Cut(filepath.ToSlash(pattern), "/")
 			if strings.HasPrefix(keepPathSlash, moduleName+"/") {
-				return true
+				gapicModule = moduleName
+				break
 			}
 		}
 	}
-	return false
+	if gapicModule == "" {
+		return false
+	}
+	srcPrefix := gapicModule + "/src/"
+	if !strings.HasPrefix(keepPathSlash, srcPrefix) {
+		return true
+	}
+	filename := filepath.Base(keepPathSlash)
+	if slices.Contains(generateIfMissingFiles, filename) {
+		return true
+	}
+	if slices.Contains(generatedNonJavaFiles, filename) {
+		return false
+	}
+	if filepath.Ext(keepPathSlash) == ".java" {
+		fullPath := filepath.Join(library.Output, keepPath)
+		if hasMarker, err := hasMarker(fullPath); err == nil {
+			return !hasMarker
+		}
+		return false
+	}
+	return true
 }
 
 var (

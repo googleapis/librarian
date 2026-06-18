@@ -16,6 +16,8 @@ package java
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -446,6 +448,8 @@ func TestTidy(t *testing.T) {
 					},
 				},
 				Keep: []string{
+					"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
+					"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
 					"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
 				},
 			},
@@ -613,10 +617,12 @@ func TestValidate_Error(t *testing.T) {
 }
 
 func TestTidyKeep(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
-		name string
-		keep []string
-		want []string
+		name       string
+		keep       []string
+		want       []string
+		setupFiles func(t *testing.T, baseDir string)
 	}{
 		{
 			name: "nil keep",
@@ -640,15 +646,46 @@ func TestTidyKeep(t *testing.T) {
 				"google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java",
 				"google-cloud-vision/src/test/java/com/google/cloud/vision/v1/it/ITSystemTest.java",
 				"google-cloud-vision/src/test/resources/placeholder.txt",
-				"google-cloud-vision/src/main/resources/META-INF/native-image/reflect-config.json",
+				"google-cloud-vision/src/main/resources/META-INF/native-image/com.google.cloud.vision/reflect-config.json",
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Handwritten.java",
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Generated.java",
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Missing.java",
 			},
 			want: []string{
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Generated.java",
+				"google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Missing.java",
+				"google-cloud-vision/src/main/resources/META-INF/native-image/com.google.cloud.vision/reflect-config.json",
 				"proto-google-cloud-vision-v1/src/main/java/com/google/cloud/vision/v1/ImageName.java",
+			},
+			setupFiles: func(t *testing.T, baseDir string) {
+				hwPath := filepath.Join(baseDir, "google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Handwritten.java")
+				if err := os.MkdirAll(filepath.Dir(hwPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(hwPath, []byte("package com.google.cloud.vision.v1;\npublic class Handwritten {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				genPath := filepath.Join(baseDir, "google-cloud-vision/src/main/java/com/google/cloud/vision/v1/Generated.java")
+				if err := os.WriteFile(genPath, []byte("// AUTO-GENERATED DOCUMENTATION AND CLASS.\npackage com.google.cloud.vision.v1;\npublic class Generated {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				itPath := filepath.Join(baseDir, "google-cloud-vision/src/test/java/com/google/cloud/vision/it/ITSystemTest.java")
+				if err := os.MkdirAll(filepath.Dir(itPath), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(itPath, []byte("package com.google.cloud.vision.it;\npublic class ITSystemTest {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			tmpDir := t.TempDir()
+			if test.setupFiles != nil {
+				test.setupFiles(t, tmpDir)
+			}
 			lib := &config.Library{
 				Name: "vision",
 				APIs: []*config.API{
@@ -660,7 +697,8 @@ func TestTidyKeep(t *testing.T) {
 					GroupID:    "com.google.cloud",
 					ArtifactID: "google-cloud-vision",
 				},
-				Keep: test.keep,
+				Keep:   test.keep,
+				Output: tmpDir,
 			}
 			got := tidyKeep(lib)
 			if diff := cmp.Diff(test.want, got); diff != "" {
