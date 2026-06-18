@@ -30,13 +30,34 @@ jobs:
         with:
           repository: googleapis/google-cloud-java
           path: google-cloud-java
+          sparse-checkout: |
+            librarian.yaml
+            sdk-platform-java
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4
         with:
           java-version: "17"
           distribution: "temurin"
+          cache: "maven"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache Librarian Tools & Venv
+        id: cache-tools
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/librarian
+            venv
+          key: librarian-java-tools-${{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
+      - name: Create Python virtual environment
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        run: python3 -m venv venv
+      - name: Activate virtual environment
+        run: echo "$GITHUB_WORKSPACE/venv/bin" >> $GITHUB_PATH
       - name: Verify Java and Maven installation
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
           java -version
           if ! command -v mvn &> /dev/null; then
@@ -44,10 +65,11 @@ jobs:
           fi
           mvn -version
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-java
-        run: |
-          librarian install
-          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
+        run: librarian install
+      - name: Add Java tools to PATH
+        run: echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
