@@ -65,10 +65,6 @@ if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CO
     exit 1
 fi
 
-if [ "$PNPM_HOME" != "/usr/local" ]; then
-    echo "Error: PNPM_HOME should be /usr/local, got $PNPM_HOME" >&2
-    exit 1
-fi
 
 case "$*" in
     *install*)
