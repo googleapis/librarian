@@ -14,6 +14,7 @@ are addressed with the highest priority.
 Secret Manager API client for Node.js
 
 This is a multiline introduction.
+
 Second line of the introduction.
 
 A comprehensive list of changes in each version may be found in
@@ -53,6 +54,7 @@ npm install @google-cloud/secret-manager
 
 ### Body section
 This is a multiline body section.
+
 Second line of the body section.
 
 ## Samples
