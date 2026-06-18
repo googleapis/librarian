@@ -202,7 +202,7 @@ extension {{Codec.Name}} {
   {{#Signatures}}
 
   public func {{> /templates/common/method_signature/overload}} {
-    let request = {{Method.InputType.Codec.Name}}().with {
+    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
       {{#Fields}}
       $0.{{Codec.Name}} = {{Codec.Name}}
       {{/Fields}}

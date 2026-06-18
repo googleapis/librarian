@@ -148,7 +148,6 @@ func TestAnnotateMethod(t *testing.T) {
 			service := &api.Service{
 				Name:    "TestService",
 				ID:      ".test.TestService",
-				Package: "test",
 				Methods: []*api.Method{test.method},
 			}
 			model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{service})
@@ -371,9 +370,10 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	// Verify request message annotations
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:        "ListRequest",
-		TypeURL:     "type.googleapis.com/test.ListRequest",
-		SampleField: "pageSize",
+		Name:              "ListRequest",
+		TypeURL:           "type.googleapis.com/test.ListRequest",
+		SampleField:       "pageSize",
+		ParameterTypeName: "ListRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -392,6 +392,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		PageableItemField:   "items",
 		PageableItemType:    "Item",
 		SampleField:         "items",
+		ParameterTypeName:   "ListResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

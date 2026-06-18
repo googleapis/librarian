@@ -73,7 +73,7 @@ extension Clients {
         request: request,
         options: options,
         name: "{{Codec.Name}}",
-        action: { (r: {{InputType.Codec.Name}}, o: GoogleCloudGax.RequestOptions) async throws ->
+        action: { (r: {{InputType.Codec.ParameterTypeName}}, o: GoogleCloudGax.RequestOptions) async throws ->
             {{^ReturnsEmpty}}{{Codec.ReturnType}}{{/ReturnsEmpty}}
             {{#ReturnsEmpty}}Void{{/ReturnsEmpty}} in
               return try await self.inner.{{Codec.Name}}(request: r, options: o)
