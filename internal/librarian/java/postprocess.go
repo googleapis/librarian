@@ -153,7 +153,7 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 }
 
 func addHeaders(params postProcessParams, dirs []string) error {
-	if params.javaAPI.Monolithic {
+	if params.javaAPI.Monolithic && (params.library.Java == nil || params.library.Java.AlternateHeaders == "") {
 		return nil
 	}
 	for _, dir := range dirs {
