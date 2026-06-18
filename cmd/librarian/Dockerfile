@@ -70,7 +70,7 @@ ARG JAVA_VERSION=17
 ARG JAVA_PYTHON_VERSION=3.12
 ARG NODEJS_NVM_VERSION=0.40.4
 ARG NODEJS_NVM_CHECKSUM=a8e082d8d1a9b61a09e5d3e1902d2930e5b1b84a86f9777c7d2eb50ea204c0141f6a97c54a860bc3282e7b000f1c669c755f5e0db7bd6d492072744c302c0a21
-ARG NODEJS_NODE_VERSION=18
+ARG NODEJS_NODE_VERSION=22
 ARG NODEJS_PNPM_VERSION=11.7.0
 
 # ============== Build Stage ==============
@@ -285,7 +285,7 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
 # Install all the tools that Librarian needs for Node generation.
-RUN /app/librarian install nodejs -v
+RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true /app/librarian install nodejs -v
 
 # Allow normal users to read /root (as the generator is installed
 # in /root/.cache, for example)
