@@ -55,7 +55,7 @@ func TestGenerateReadme(t *testing.T) {
 				"secret_manager_service.create_secret.js",
 				"secret_manager_service.delete_secret.js",
 			},
-			wantReadmePath: filepath.Join("testdata", "generate_readme", "google-cloud-secretmanager", "README.md"),
+			wantReadmePath: filepath.Join("testdata", "generate_readme", "without_partials", "google-cloud-secretmanager", "README.md"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
