@@ -7,7 +7,7 @@
 This library is considered to be **stable**. The code surface will not change in backwards-incompatible ways
 unless absolutely necessary (e.g. because of critical security issues) or with
 an extensive deprecation period. Issues and requests against **stable** libraries
-are addressed with the highest priority
+are addressed with the highest priority.
 
 [![npm version](https://img.shields.io/npm/v/@google-cloud/secret-manager.svg)](https://www.npmjs.org/package/@google-cloud/secret-manager)
 
@@ -18,7 +18,7 @@ Secret Manager API client for Node.js
 A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
 
-* [Secret Manager API Nodejs Client API Reference](https://cloud.google.com/nodejs/docs/reference/secretmanager/latest)
+* [Secret Manager API Nodejs Client API Reference](https://cloud.google.com/nodejs/docs/reference/secret-manager/latest)
 * [Secret Manager API Documentation](https://cloud.google.com/secret-manager/docs/overview)
 
 Read more about the client libraries for Cloud APIs, including the older
@@ -41,7 +41,7 @@ Google APIs Client Libraries, in [Client Libraries Explained][explained].
 
 1.  [Select or create a Cloud Platform project][projects].
 1.  [Enable billing for your project][billing].
-1.  [Enable the Secret Manager API API][enable_api].
+1.  [Enable the Secret Manager API][enable_api].
 1.  [Set up authentication][auth] so you can access the
     API from your local workstation.
 ### Installing the client library

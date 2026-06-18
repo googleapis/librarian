@@ -34,11 +34,12 @@ func TestGenerateReadme(t *testing.T) {
 		Repo:     "googleapis/google-cloud-node",
 	}
 	library := &config.Library{
-		Name: "google-cloud-secretmanager",
-		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Name:   "google-cloud-secretmanager",
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
 	}
 	output := t.TempDir()
-	sampleDir := filepath.Join(output, "sample", "generated", "v1")
+	sampleDir := filepath.Join(output, "samples", "generated", "v1")
 	if err := os.MkdirAll(sampleDir, 0755); err != nil {
 		t.Fatal(err)
 	}
