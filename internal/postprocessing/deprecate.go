@@ -73,7 +73,7 @@ func DeprecateMethod(path, funcName, deprecationMessage, language string) error 
 	if header.hasDeprecated && header.hasDeprecatedTag {
 		return fmt.Errorf("%w: method %q in %s", errMethodAlreadyDeprecated, funcName, path)
 	}
-	indentation := extractLineIndentation(lines[sigLineIdx])
+	indentation := trimLineIndentation(lines[sigLineIdx])
 	lines = annotateMethod(lines, sigLineIdx, indentation, header)
 	lines = addJavadocTag(lines, indentation, header, "deprecated", deprecationMessage)
 	return os.WriteFile(path, bytes.Join(lines, []byte("\n")), 0644)
@@ -86,6 +86,7 @@ func analyzeMethodHeader(lines [][]byte, sigLineIdx int) methodHeader {
 		javadocEndIdx:      -1,
 	}
 	idx := sigLineIdx - 1
+	// Scan past annotations, checking if the method is deprecated.
 	for idx >= 0 {
 		line := bytes.TrimSpace(lines[idx])
 		if bytes.HasPrefix(line, []byte("@")) {
@@ -98,6 +99,7 @@ func analyzeMethodHeader(lines [][]byte, sigLineIdx int) methodHeader {
 		}
 		break
 	}
+	// Check if the line immediately above annotations is the end of Javadoc.
 	if idx >= 0 {
 		line := bytes.TrimSpace(lines[idx])
 		if bytes.HasSuffix(line, []byte("*/")) {
@@ -149,7 +151,7 @@ func makeNewJavadoc(indentation []byte, tagName, tagMessage string, inner []byte
 	return doc
 }
 
-func extractLineIndentation(line []byte) []byte {
+func trimLineIndentation(line []byte) []byte {
 	trimmed := bytes.TrimLeft(line, " \t")
 	return line[:len(line)-len(trimmed)]
 }
