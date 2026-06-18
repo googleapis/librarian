@@ -35,43 +35,37 @@ func TestGenerateReadme(t *testing.T) {
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
 	}
+	library := &config.Library{
+		Name:   "google-cloud-secretmanager",
+		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+		Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
+	}
 	for _, test := range []struct {
 		name           string
-		library        *config.Library
-		samples        []string
-		partials       map[string]string
 		wantReadmePath string
 	}{
 		{
-			name: "secret manager, no partials",
-			library: &config.Library{
-				Name:   "google-cloud-secretmanager",
-				APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
-			},
-			samples: []string{
-				"secret_manager_service.access_secret_version.js",
-				"secret_manager_service.add_secret_version.js",
-				"secret_manager_service.create_secret.js",
-				"secret_manager_service.delete_secret.js",
-			},
+			name:           "secret manager, no partials",
 			wantReadmePath: filepath.Join("testdata", "generate_readme", "without_partials", "google-cloud-secretmanager", "README.md"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			output := filepath.Join(t.TempDir(), "packages", test.library.Name)
-			if len(test.samples) > 0 {
-				sampleDir := filepath.Join(output, "samples", "generated", "v1")
-				if err := os.MkdirAll(sampleDir, 0755); err != nil {
+			output := filepath.Join(t.TempDir(), "packages", library.Name)
+			sampleDir := filepath.Join(output, "samples", "generated", "v1")
+			if err := os.MkdirAll(sampleDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			for _, sample := range []string{
+				"secret_manager_service.access_secret_version.js",
+				"secret_manager_service.add_secret_version.js",
+				"secret_manager_service.create_secret.js",
+				"secret_manager_service.delete_secret.js",
+			} {
+				if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
 					t.Fatal(err)
 				}
-				for _, sample := range test.samples {
-					if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
-						t.Fatal(err)
-					}
-				}
 			}
-			if err := generateReadmeNew(cfg, test.library, absGoogleapisDir, output); err != nil {
+			if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
 				t.Fatal(err)
 			}
 			got, err := os.ReadFile(filepath.Join(output, "README.md"))
