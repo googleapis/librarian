@@ -31,24 +31,26 @@ limitations under the License.
 
 impl std::convert::From<google_cloud_bigquery_v2::model::GetQueryResultsResponse> for QueryMetadata {
     fn from(resp: google_cloud_bigquery_v2::model::GetQueryResultsResponse) -> Self {
-        let mut out = Self::default();
-        {{#Codec.QueryMetadataFields}}
-        {{#GetQueryResultsResponse}}
-        out.{{FieldName}} = resp.{{FieldName}};
-        {{/GetQueryResultsResponse}}
-        {{/Codec.QueryMetadataFields}}
-        out
+        Self{
+            {{#Codec.QueryMetadataFields}}
+            {{#GetQueryResultsResponse}}
+            {{FieldName}}: resp.{{FieldName}},
+            {{/GetQueryResultsResponse}}
+            {{/Codec.QueryMetadataFields}}
+            ..Default::default()
+        }
     }
 }
 
 impl std::convert::From<google_cloud_bigquery_v2::model::QueryResponse> for QueryMetadata {
     fn from(resp: google_cloud_bigquery_v2::model::QueryResponse) -> Self {
-        let mut out = Self::default();
-        {{#Codec.QueryMetadataFields}}
-        {{#QueryResponse}}
-        out.{{FieldName}} = resp.{{FieldName}};
-        {{/QueryResponse}}
-        {{/Codec.QueryMetadataFields}}
-        out
+        Self{
+            {{#Codec.QueryMetadataFields}}
+            {{#QueryResponse}}
+            {{FieldName}}: resp.{{FieldName}},
+            {{/QueryResponse}}
+            {{/Codec.QueryMetadataFields}}
+            ..Default::default()
+        }
     }
 }
