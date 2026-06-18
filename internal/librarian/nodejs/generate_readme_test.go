@@ -80,12 +80,12 @@ func TestFindSampleMetadata(t *testing.T) {
 			},
 			want: []sampleMetadata{
 				{
-					name:     "nested sample",
-					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/sub/v1.nested_sample.js",
+					Name:     "nested sample",
+					FilePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/sub/v1.nested_sample.js",
 				},
 				{
-					name:     "do something",
-					filePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/v2.do_something.js",
+					Name:     "do something",
+					FilePath: "https://github.com/googleapis/google-cloud-node/blob/main/packages/my-package/samples/generated/v2.do_something.js",
 				},
 			},
 		},
