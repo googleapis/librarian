@@ -10,7 +10,7 @@
 
 {{.Name}} API client for Node.js
 
-[//]: # "partials.introduction"
+{{.Partials.introduction}}
 
 A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
@@ -47,7 +47,7 @@ Google APIs Client Libraries, in [Client Libraries Explained][explained].
 npm install {{.DistributionName}}
 ```
 
-[//]: # "partials.body"
+{{.Partials.body}}
 
 ## Samples
 

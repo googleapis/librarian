@@ -47,7 +47,6 @@ var (
 	readmeTmplParsed      = template.Must(template.New("readme").Parse(readmeTmpl))
 	errFindSampleMetadata = errors.New("error finding sample metadata")
 	errReadPartials       = errors.New("error reading partials")
-	errMultipleKeys       = errors.New("multiple keys in partials")
 	samplePathPrefix      = filepath.Join("samples", "generated")
 )
 
@@ -62,6 +61,10 @@ func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDi
 		return err
 	}
 	sampleMetadata, err := findSampleMetadata(output)
+	if err != nil {
+		return err
+	}
+	partialContent, err := readPartials(output)
 	if err != nil {
 		return err
 	}
@@ -81,6 +84,7 @@ func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDi
 		"ClientDoc":        metadata.ClientDocumentation,
 		"DistributionName": metadata.DistributionName,
 		"LibraryName":      library.Name,
+		"Partials":         partialContent,
 		"Name":             metadata.NamePretty,
 		"ProductDoc":       metadata.ProductDocumentation,
 		"ReleaseLevel":     releaseLevelMarkdown(metadata.ReleaseLevel),
@@ -138,19 +142,13 @@ func releaseLevelMarkdown(rl string) string {
 	return releaseLevelPreview
 }
 
-func readPartials(output string) (string, error) {
+func readPartials(output string) (map[string]string, error) {
 	part, err := yaml.Read[map[string]string](filepath.Join(output, partials))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return "", nil
+			return nil, nil
 		}
-		return "", fmt.Errorf("%w: %w", errReadPartials, err)
+		return nil, fmt.Errorf("%w: %w", errReadPartials, err)
 	}
-	if len(*part) != 1 {
-		return "", fmt.Errorf("%w: expected 1 key in partials, got %d", errMultipleKeys, len(*part))
-	}
-	for _, val := range *part {
-		return val, nil
-	}
-	return "", nil
+	return *part, nil
 }

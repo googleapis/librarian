@@ -13,8 +13,6 @@ are addressed with the highest priority.
 
 Secret Manager API client for Node.js
 
-[//]: # "partials.introduction"
-
 A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
 
@@ -49,8 +47,6 @@ Google APIs Client Libraries, in [Client Libraries Explained][explained].
 ```bash
 npm install @google-cloud/secret-manager
 ```
-
-[//]: # "partials.body"
 
 ## Samples
 
