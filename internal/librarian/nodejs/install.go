@@ -22,7 +22,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -89,16 +88,9 @@ func getPNPMEnv(ctx context.Context) ([]string, error) {
 	}
 	globalBin := strings.TrimSpace(binOut)
 
-	pnpmVer, err := getPNPMVersion(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get pnpm version: %w", err)
-	}
-
 	pnpmHome := globalBin
-	if isV11OrGreater(pnpmVer) {
-		if filepath.Base(globalBin) == "bin" {
-			pnpmHome = filepath.Dir(globalBin)
-		}
+	if filepath.Base(globalBin) == "bin" {
+		pnpmHome = filepath.Dir(globalBin)
 	}
 
 	env := os.Environ()
@@ -159,33 +151,10 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	return nil
 }
 
-// repoFromPackageURL extracts the repository path (e.g.,
-// "github.com/googleapis/google-cloud-node") from a GitHub archive URL
-// like "https://github.com/googleapis/google-cloud-node/archive/<sha>.tar.gz".
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {
 		return "", fmt.Errorf("cannot extract repo from package URL %q", packageURL)
 	}
 	return strings.TrimPrefix(parts[0], "https://"), nil
-}
-
-func getPNPMVersion(ctx context.Context) (string, error) {
-	out, err := commandOutput(ctx, "pnpm", "--version")
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimSpace(out), nil
-}
-
-func isV11OrGreater(version string) bool {
-	parts := strings.Split(version, ".")
-	if len(parts) == 0 {
-		return false
-	}
-	major, err := strconv.Atoi(parts[0])
-	if err != nil {
-		return false
-	}
-	return major >= 11
 }
