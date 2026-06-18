@@ -35,6 +35,7 @@ func TestGenerateReadme(t *testing.T) {
 	}
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
+		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 	}
 	output := t.TempDir()
 	if err := generateReadme(cfg, library, absGoogleapisDir, output); err != nil {
