@@ -18,6 +18,14 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.Codec.BoilerPlate}}
 
+{{! Disable warnings that are known to cause trouble }}
+{{#Codec.Model.Codec.DisabledRustdocWarnings}}
+#[allow(rustdoc::{{.}})]
+{{/Codec.Model.Codec.DisabledRustdocWarnings}}
+{{#Codec.Model.Codec.DisabledClippyWarnings}}
+#[allow(clippy::{{.}})]
+{{/Codec.Model.Codec.DisabledClippyWarnings}}
+
 impl RunQuery {
     {{#Codec.RunQueryMsg}}
     {{> /templates/common/setters}}
