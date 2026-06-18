@@ -236,8 +236,8 @@ func TestFindSampleMetadata_Error(t *testing.T) {
 		_ = os.Chmod(unreadableSubdir, 0755)
 	})
 	_, err := findSampleMetadata(tmpDir)
-	if !errors.Is(err, errorFindSampleMetadata) {
-		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errorFindSampleMetadata)
+	if !errors.Is(err, errFindSampleMetadata) {
+		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errFindSampleMetadata)
 	}
 }
 

@@ -25,6 +25,7 @@ import (
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -37,14 +38,17 @@ are addressed with the highest priority.`
 	releaseLevelPreview = `This library is considered to be in **preview**. This means it is still a
 work-in-progress and under active development. Any release is subject to
 backwards-incompatible changes at any time.`
+	partials = ".readme-partials.yaml"
 )
 
 var (
 	//go:embed template/_README.md.txt
-	readmeTmpl              string
-	readmeTmplParsed        = template.Must(template.New("readme").Parse(readmeTmpl))
-	errorFindSampleMetadata = errors.New("error finding sample metadata")
-	samplePathPrefix        = filepath.Join("samples", "generated")
+	readmeTmpl            string
+	readmeTmplParsed      = template.Must(template.New("readme").Parse(readmeTmpl))
+	errFindSampleMetadata = errors.New("error finding sample metadata")
+	errReadPartials       = errors.New("error reading partials")
+	errMultipleKeys       = errors.New("multiple keys in partials")
+	samplePathPrefix      = filepath.Join("samples", "generated")
 )
 
 type sampleMetadata struct {
@@ -113,7 +117,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errorFindSampleMetadata, err)
+		return nil, fmt.Errorf("%w: %w", errFindSampleMetadata, err)
 	}
 	return metadata, nil
 }
@@ -132,4 +136,21 @@ func releaseLevelMarkdown(rl string) string {
 		return releaseLevelStable
 	}
 	return releaseLevelPreview
+}
+
+func readPartials(output string) (string, error) {
+	part, err := yaml.Read[map[string]string](filepath.Join(output, partials))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return "", nil
+		}
+		return "", fmt.Errorf("%w: %w", errReadPartials, err)
+	}
+	if len(*part) != 1 {
+		return "", fmt.Errorf("%w: expected 1 key in partials, got %d", errMultipleKeys, len(*part))
+	}
+	for _, val := range *part {
+		return val, nil
+	}
+	return "", nil
 }
