@@ -146,7 +146,7 @@ func readPartials(output string) (map[string]string, error) {
 	part, err := yaml.Read[map[string]string](filepath.Join(output, partials))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
-			return nil, nil
+			return map[string]string{}, nil
 		}
 		return nil, fmt.Errorf("%w: %w", errReadPartials, err)
 	}
