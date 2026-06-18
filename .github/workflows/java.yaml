@@ -30,9 +30,6 @@ jobs:
         with:
           repository: googleapis/google-cloud-java
           path: google-cloud-java
-          sparse-checkout: |
-            librarian.yaml
-            sdk-platform-java
       - name: Display Go version
         run: go version
       - uses: actions/setup-java@v4
