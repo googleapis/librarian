@@ -18,10 +18,12 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"syscall"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/repometadata"
 )
 
 func TestGenerateReadme(t *testing.T) {
@@ -66,6 +68,57 @@ func TestGenerateReadme(t *testing.T) {
 	}
 	if diff := cmp.Diff(string(want), string(got)); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGenerateReadme_Error(t *testing.T) {
+	absGoogleapisDir, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cfg := &config.Config{
+		Language: config.LanguageNodejs,
+		Repo:     "googleapis/google-cloud-node",
+	}
+	for _, test := range []struct {
+		name          string
+		library       *config.Library
+		googleapisDir string
+		output        func(t *testing.T) string
+		wantErr error
+	}{
+		{
+			name:          "generateRepoMetadata fails (no APIs)",
+			library:       &config.Library{Name: "google-cloud-secretmanager"},
+			googleapisDir: absGoogleapisDir,
+			output:        func(t *testing.T) string { return t.TempDir() },
+			wantErr:       repometadata.ErrNoAPIs,
+		},
+		{
+			name: "file creation fails (invalid directory)",
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+			},
+			googleapisDir: absGoogleapisDir,
+			output: func(t *testing.T) string {
+				tempDir := t.TempDir()
+				filePath := filepath.Join(tempDir, "README.md")
+				if err := os.WriteFile(filePath, []byte("existing file"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return filePath
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			outputDir := test.output(t)
+			err := generateReadme(cfg, test.library, test.googleapisDir, outputDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("expected error %v, got %v", test.wantErr, err)
+			}
+		})
 	}
 }
 
