@@ -181,20 +181,25 @@ func isRedundantKeep(library *config.Library, keepPath string) bool {
 			}
 		}
 	}
+	// Gate 1: If it's not in a GAPIC module, it's in a Proto or GRPC module (cleaned unconditionally) -> NOT redundant.
 	if gapicModule == "" {
 		return false
 	}
+	// Gate 2: If it's not under the "src/" directory of the GAPIC module, it is not cleaned -> redundant.
 	srcPrefix := gapicModule + "/src/"
 	if !strings.HasPrefix(keepPathSlash, srcPrefix) {
 		return true
 	}
 	filename := filepath.Base(keepPathSlash)
+	// Gate 3: If it's in generateIfMissingFiles (like pom.xml), it is never cleaned -> redundant.
 	if slices.Contains(generateIfMissingFiles, filename) {
 		return true
 	}
+	// Gate 4: If it's in generatedNonJavaFiles (like reflect-config.json), it is cleaned unconditionally -> NOT redundant.
 	if slices.Contains(generatedNonJavaFiles, filename) {
 		return false
 	}
+	// Gate 5: If it's a Java file, it is only redundant if it has no auto-generated marker (meaning it is handwritten).
 	if filepath.Ext(keepPathSlash) == ".java" {
 		fullPath := filepath.Join(library.Output, keepPath)
 		if hasMarker, err := hasMarker(fullPath); err == nil {
