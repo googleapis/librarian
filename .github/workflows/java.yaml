@@ -20,8 +20,7 @@ jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    # TODO(https://github.com/googleapis/librarian/issues/6482): Speed this up and lower to 5 minutes.
-    timeout-minutes: 10
+    timeout-minutes: 5
     steps:
       - uses: actions/checkout@v6
       - uses: ./.github/actions/setup-librarian
@@ -36,18 +35,38 @@ jobs:
         with:
           java-version: "17"
           distribution: "temurin"
+          cache: "maven"
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Cache Librarian Tools & Venv
+        id: cache-tools
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/librarian
+            venv
+          key: librarian-java-tools-v1-${{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
+      - name: Create Python virtual environment
+        if: steps.cache-tools.outputs.cache-hit != 'true'
+        run: python3 -m venv venv
+      - name: Activate virtual environment
+        run: echo "$GITHUB_WORKSPACE/venv/bin" >> $GITHUB_PATH
       - name: Verify Java and Maven installation
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         run: |
           java -version
           if ! command -v mvn &> /dev/null; then
             sudo apt-get update && sudo apt-get install -y maven
           fi
           mvn -version
+      - name: Add Java tools to PATH
+        run: echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Run librarian install
+        if: steps.cache-tools.outputs.cache-hit != 'true'
         working-directory: google-cloud-java
         run: |
           librarian install
-          echo "$HOME/.cache/librarian/bin/java_tools/bin" >> $GITHUB_PATH
       - name: Verify tools
         run: |
           protoc --version
