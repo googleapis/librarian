@@ -145,6 +145,133 @@ func TestAnnotateMessage(t *testing.T) {
 	}
 }
 
+func TestAnnotateMessage_Discovery(t *testing.T) {
+	mapMessage := &api.Message{
+		Name:  "map<string, bytes>",
+		ID:    "$map<string, bytes>",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		message *api.Message
+		want    *messageAnnotations
+	}{
+		{
+			name: "simple",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezString},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: false,
+				SampleField:         "field",
+			},
+		},
+		{
+			name: "required",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+			},
+		},
+		{
+			name: "optional",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Optional: true},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+			},
+		},
+		{
+			name: "repeated",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Repeated: true},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+			},
+		},
+		{
+			name: "map",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{
+						Name:     "field",
+						JSONName: "field",
+						ID:       ".test.Secret.field",
+						Typez:    api.TypezMessage,
+						TypezID:  mapMessage.ID,
+						Map:      true,
+					},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, f := range test.message.Fields {
+				f.Parent = test.message
+			}
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			model.AddMessage(mapMessage)
+			codec := newTestCodec(t, model, map[string]string{})
+			codec.UrlSafeForBytes = true
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestAnnotateMessage_Pagination(t *testing.T) {
 	pageSizeField := &api.Field{Name: "page_size", JSONName: "pageSize", Typez: api.TypezInt32}
 	pageTokenField := &api.Field{Name: "page_token", JSONName: "pageToken", Typez: api.TypezString}
