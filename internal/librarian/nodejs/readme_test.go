@@ -23,6 +23,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
@@ -40,34 +41,60 @@ func TestGenerateReadme(t *testing.T) {
 		APIs:   []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 		Nodejs: &config.NodejsPackage{PackageName: "@google-cloud/secret-manager"},
 	}
-	output := filepath.Join(t.TempDir(), "packages", "google-cloud-secretmanager")
-	sampleDir := filepath.Join(output, "samples", "generated", "v1")
-	if err := os.MkdirAll(sampleDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	for _, sample := range []string{
-		"secret_manager_service.access_secret_version.js",
-		"secret_manager_service.add_secret_version.js",
-		"secret_manager_service.create_secret.js",
-		"secret_manager_service.delete_secret.js",
+	for _, test := range []struct {
+		name           string
+		setup          func(dir string)
+		wantReadmePath string
+	}{
+		{
+			name:           "secret manager, no partials",
+			wantReadmePath: filepath.Join("testdata", "generate_readme", "without_partials", "google-cloud-secretmanager", "README.md"),
+		},
+		{
+			name: "secret manager, with partials",
+			setup: func(dir string) {
+				partialsFile := filepath.Join("testdata", "generate_readme", "with_partials", "google-cloud-secretmanager", partials)
+				if err := filesystem.CopyFile(partialsFile, filepath.Join(dir, partials)); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantReadmePath: filepath.Join("testdata", "generate_readme", "with_partials", "google-cloud-secretmanager", "README.md"),
+		},
 	} {
-		if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
-			t.Fatal(err)
-		}
-	}
-	if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
-		t.Fatal(err)
-	}
-	got, err := os.ReadFile(filepath.Join(output, "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	want, err := os.ReadFile(filepath.Join("testdata", "generate_readme", "google-cloud-secretmanager", "README.md"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(string(want), string(got)); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		t.Run(test.name, func(t *testing.T) {
+			output := filepath.Join(t.TempDir(), "packages", library.Name)
+			sampleDir := filepath.Join(output, "samples", "generated", "v1")
+			if err := os.MkdirAll(sampleDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			for _, sample := range []string{
+				"secret_manager_service.access_secret_version.js",
+				"secret_manager_service.add_secret_version.js",
+				"secret_manager_service.create_secret.js",
+				"secret_manager_service.delete_secret.js",
+			} {
+				if err := os.WriteFile(filepath.Join(sampleDir, sample), []byte("example"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			if test.setup != nil {
+				test.setup(output)
+			}
+			if err := generateReadmeNew(cfg, library, absGoogleapisDir, output); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(filepath.Join(output, "README.md"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			want, err := os.ReadFile(test.wantReadmePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(string(want), string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -236,8 +263,8 @@ func TestFindSampleMetadata_Error(t *testing.T) {
 		_ = os.Chmod(unreadableSubdir, 0755)
 	})
 	_, err := findSampleMetadata(tmpDir)
-	if !errors.Is(err, errorFindSampleMetadata) {
-		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errorFindSampleMetadata)
+	if !errors.Is(err, errFindSampleMetadata) {
+		t.Errorf("findSampleMetadata() error = %v, wantErr %v", err, errFindSampleMetadata)
 	}
 }
 

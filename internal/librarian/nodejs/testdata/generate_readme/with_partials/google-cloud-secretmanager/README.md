@@ -2,23 +2,26 @@
 [//]: # "The comments you see below are used to generate those parts of the template in later states."
 <img src="https://avatars2.githubusercontent.com/u/2810941?v=3&s=96" alt="Google Cloud Platform logo" title="Google Cloud Platform" align="right" height="96" width="96"/>
 
-# [{{.Name}} API: Nodejs Client][homepage]
+# [Secret Manager API: Nodejs Client][homepage]
 
-{{.ReleaseLevel}}
+This library is considered to be **stable**. The code surface will not change in backwards-incompatible ways
+unless absolutely necessary (e.g. because of critical security issues) or with
+an extensive deprecation period. Issues and requests against **stable** libraries
+are addressed with the highest priority.
 
-[![npm version](https://img.shields.io/npm/v/{{.DistributionName}}.svg)](https://www.npmjs.org/package/{{.DistributionName}})
+[![npm version](https://img.shields.io/npm/v/@google-cloud/secret-manager.svg)](https://www.npmjs.org/package/@google-cloud/secret-manager)
 
-{{.Name}} API client for Node.js
-{{- with .Partials.introduction}}
+Secret Manager API client for Node.js
 
-{{.}}
-{{- end}}
+This is a multiline introduction.
+
+Second line of the introduction.
 
 A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
 
-* [{{.Name}} API Nodejs Client API Reference]({{.ClientDoc}})
-* [{{.Name}} API Documentation]({{.ProductDoc}}/overview)
+* [Secret Manager API Nodejs Client API Reference](https://cloud.google.com/nodejs/docs/reference/secret-manager/latest)
+* [Secret Manager API Documentation](https://cloud.google.com/secret-manager/docs/overview)
 
 Read more about the client libraries for Cloud APIs, including the older
 Google APIs Client Libraries, in [Client Libraries Explained][explained].
@@ -40,18 +43,19 @@ Google APIs Client Libraries, in [Client Libraries Explained][explained].
 
 1.  [Select or create a Cloud Platform project][projects].
 1.  [Enable billing for your project][billing].
-1.  [Enable the {{.Name}} API][enable_api].
+1.  [Enable the Secret Manager API][enable_api].
 1.  [Set up authentication][auth] so you can access the
     API from your local workstation.
 ### Installing the client library
 
 ```bash
-npm install {{.DistributionName}}
+npm install @google-cloud/secret-manager
 ```
-{{- with .Partials.body}}
 
-{{.}}
-{{- end}}
+### Body section
+This is a multiline body section.
+
+Second line of the body section.
 
 ## Samples
 
@@ -59,9 +63,10 @@ Samples are in the [`samples/`][homepage_samples] directory. Each sample's `READ
 
 | Sample                      | Source Code                       |
 | --------------------------- | --------------------------------- |
-{{- range .Samples}}
-| {{.Name}} | [source code]({{.FilePath}}) |
-{{- end}}
+| access secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.access_secret_version.js) |
+| add secret version | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.add_secret_version.js) |
+| create secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.create_secret.js) |
+| delete secret | [source code](https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples/generated/v1/secret_manager_service.delete_secret.js) |
 
 
 ## Supported Node.js Versions
@@ -82,7 +87,7 @@ best-efforts basis with the following warnings:
 Client libraries targeting some end-of-life versions of Node.js are available, and
 can be installed through npm [dist-tags](https://docs.npmjs.com/cli/dist-tag).
 The dist-tags follow the naming convention `legacy-(version)`.
-For example, `npm install {{.DistributionName}}@legacy-8` installs client libraries
+For example, `npm install @google-cloud/secret-manager@legacy-8` installs client libraries
 for versions compatible with Node.js 8.
 
 ## Versioning
@@ -110,8 +115,8 @@ See [LICENSE](https://github.com/googleapis/google-cloud-node/blob/main/LICENSE)
 [shell_img]: https://gstatic.com/cloudssh/images/open-btn.png
 [projects]: https://console.cloud.google.com/project
 [billing]: https://support.google.com/cloud/answer/6293499#enable-billing
-[enable_api]: https://console.cloud.google.com/flows/enableapi?apiid={{.APIID}}
+[enable_api]: https://console.cloud.google.com/flows/enableapi?apiid=secretmanager.googleapis.com
 [auth]: https://cloud.google.com/docs/authentication/external/set-up-adc-local
-[homepage_samples]: https://github.com/googleapis/google-cloud-node/blob/main/packages/{{.LibraryName}}/samples
-[homepage_changelog]: https://github.com/googleapis/google-cloud-node/blob/main/packages/{{.LibraryName}}/CHANGELOG.md
-[homepage]: https://github.com/googleapis/google-cloud-node/blob/main/packages/{{.LibraryName}}
+[homepage_samples]: https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/samples
+[homepage_changelog]: https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager/CHANGELOG.md
+[homepage]: https://github.com/googleapis/google-cloud-node/blob/main/packages/google-cloud-secretmanager

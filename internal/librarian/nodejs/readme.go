@@ -25,6 +25,7 @@ import (
 	"text/template"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -37,14 +38,16 @@ are addressed with the highest priority.`
 	releaseLevelPreview = `This library is considered to be in **preview**. This means it is still a
 work-in-progress and under active development. Any release is subject to
 backwards-incompatible changes at any time.`
+	partials = ".readme-partials.yaml"
 )
 
 var (
 	//go:embed template/_README.md.txt
-	readmeTmpl              string
-	readmeTmplParsed        = template.Must(template.New("readme").Parse(readmeTmpl))
-	errorFindSampleMetadata = errors.New("error finding sample metadata")
-	samplePathPrefix        = filepath.Join("samples", "generated")
+	readmeTmpl            string
+	readmeTmplParsed      = template.Must(template.New("readme").Parse(readmeTmpl))
+	errFindSampleMetadata = errors.New("error finding sample metadata")
+	errReadPartials       = errors.New("error reading partials")
+	samplePathPrefix      = filepath.Join("samples", "generated")
 )
 
 type sampleMetadata struct {
@@ -58,6 +61,10 @@ func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDi
 		return err
 	}
 	sampleMetadata, err := findSampleMetadata(output)
+	if err != nil {
+		return err
+	}
+	partialContent, err := readPartials(output)
 	if err != nil {
 		return err
 	}
@@ -77,6 +84,7 @@ func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDi
 		"ClientDoc":        metadata.ClientDocumentation,
 		"DistributionName": metadata.DistributionName,
 		"LibraryName":      library.Name,
+		"Partials":         partialContent,
 		"Name":             metadata.NamePretty,
 		"ProductDoc":       metadata.ProductDocumentation,
 		"ReleaseLevel":     releaseLevelMarkdown(metadata.ReleaseLevel),
@@ -113,7 +121,7 @@ func findSampleMetadata(output string) ([]sampleMetadata, error) {
 		return nil
 	})
 	if err != nil {
-		return nil, fmt.Errorf("%w: %w", errorFindSampleMetadata, err)
+		return nil, fmt.Errorf("%w: %w", errFindSampleMetadata, err)
 	}
 	return metadata, nil
 }
@@ -132,4 +140,19 @@ func releaseLevelMarkdown(rl string) string {
 		return releaseLevelStable
 	}
 	return releaseLevelPreview
+}
+
+func readPartials(output string) (map[string]string, error) {
+	part, err := yaml.Read[map[string]string](filepath.Join(output, partials))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return map[string]string{}, nil
+		}
+		return nil, fmt.Errorf("%w: %w", errReadPartials, err)
+	}
+	res := make(map[string]string)
+	for k, v := range *part {
+		res[k] = strings.TrimSpace(v)
+	}
+	return res, nil
 }
