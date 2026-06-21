@@ -18,7 +18,7 @@ A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
 
 * [{{.Name}} API Nodejs Client API Reference]({{.ClientDoc}})
-* [{{.Name}} API Documentation]({{.ProductDoc}}/overview)
+* [{{.Name}} API Documentation]({{.ProductDoc}})
 
 Read more about the client libraries for Cloud APIs, including the older
 Google APIs Client Libraries, in [Client Libraries Explained][explained].

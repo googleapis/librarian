@@ -17,7 +17,7 @@ A comprehensive list of changes in each version may be found in
 [the CHANGELOG][homepage_changelog].
 
 * [Secret Manager API Nodejs Client API Reference](https://cloud.google.com/nodejs/docs/reference/secret-manager/latest)
-* [Secret Manager API Documentation](https://cloud.google.com/secret-manager/docs/overview)
+* [Secret Manager API Documentation](https://cloud.google.com/secret-manager/docs)
 
 Read more about the client libraries for Cloud APIs, including the older
 Google APIs Client Libraries, in [Client Libraries Explained][explained].
