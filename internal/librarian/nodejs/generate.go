@@ -34,7 +34,6 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -309,8 +308,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
-	if err := generateReadme(ctx, outDir); err != nil {
-		return err
+	// TODO(https://github.com/googleapis/librarian/issues/6442): remove this if block
+	// once all readme are generated in google-cloud-node.
+	if !slices.Contains(library.Keep, "README.md") {
+		if err := generateReadme(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to generate README.md: %w", err)
+		}
 	}
 	if err := removeRedundantLinterFiles(library, outDir); err != nil {
 		return fmt.Errorf("failed to remove redundant linter files: %w", err)
@@ -366,38 +369,6 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 	}
 	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove package staging: %w", err)
-	}
-	return nil
-}
-
-// generateReadme generates the README.md file in the package root, replacing
-// any introduction and body specified in .readme-partials.yaml.
-func generateReadme(ctx context.Context, outDir string) error {
-	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if _, err := os.Stat(readmePartials); err == nil {
-		type partials struct {
-			Introduction string `yaml:"introduction"`
-			Body         string `yaml:"body"`
-		}
-		p, err := yaml.Read[partials](readmePartials)
-		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
-		}
-		for name, replacement := range map[string]string{
-			"introduction": p.Introduction,
-			"body":         p.Body,
-		} {
-			if replacement == "" {
-				continue
-			}
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
-				fmt.Sprintf("--replacement-string=%s", replacement),
-			); err != nil {
-				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
-			}
-		}
 	}
 	return nil
 }
