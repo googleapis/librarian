@@ -181,6 +181,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -198,6 +199,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -215,6 +217,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -232,6 +235,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -256,6 +260,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 	} {
