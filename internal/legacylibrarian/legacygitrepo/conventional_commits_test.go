@@ -215,6 +215,21 @@ func TestParseCommits(t *testing.T) {
 			},
 		},
 		{
+			name:    "commit_with_bracketed_range_in_description_collision",
+			message: "feat: regenerate google-cloud-[e-i] packages",
+			want: []*ConventionalCommit{
+				{
+					Type:       "feat",
+					Subject:    "regenerate google-cloud-[e-i] packages",
+					LibraryID:  "e-i",
+					IsNested:   false,
+					Footers:    make(map[string]string),
+					CommitHash: sha.String(),
+					When:       now,
+				},
+			},
+		},
+		{
 			name: "begin_commit",
 			message: `feat: original message
 

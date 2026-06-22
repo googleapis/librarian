@@ -228,6 +228,10 @@ func TestGetConventionalCommitsSinceLastRelease(t *testing.T) {
 			message: "feat(foo): another feature for foo",
 		},
 		{
+			path:    "foo/e-i.txt",
+			message: "feat: regenerate google-cloud-[e-i] packages",
+		},
+		{
 			path: "foo/something.txt",
 			message: `BEGIN_COMMIT 
 
