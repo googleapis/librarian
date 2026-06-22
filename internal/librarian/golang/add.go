@@ -95,7 +95,7 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 			clientPath = strings.Replace(clientPath, modulePathVersion, "", 1)
 		}
 
-		relPath := clientPath
+		var relPath string
 		if idx := strings.Index(clientPath, lib.Name+"/"); idx != -1 {
 			relPath = clientPath[idx+len(lib.Name)+1:]
 		} else {
