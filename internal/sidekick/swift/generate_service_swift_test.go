@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -944,18 +945,17 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			contentStr := string(content)
 
 			// Verify it contains an extension to the right Clients.$ServiceName type.
-			wantExtension := fmt.Sprintf("extension Clients.%sClient {", test.serviceName)
-			if !strings.Contains(contentStr, wantExtension) {
-				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, contentStr)
+			wantExtension := fmt.Appendf(nil, "extension Clients.%sClient {", test.serviceName)
+			if !bytes.Contains(content, wantExtension) {
+				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, content)
 			}
 
 			// Verify the request struct definition appears in that file.
-			wantStruct := fmt.Sprintf("public struct %s: ", test.structName)
-			if !strings.Contains(contentStr, wantStruct) {
-				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, contentStr)
+			wantStruct := fmt.Appendf(nil, "public struct %s: ", test.structName)
+			if !bytes.Contains(content, wantStruct) {
+				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, content)
 			}
 		})
 	}

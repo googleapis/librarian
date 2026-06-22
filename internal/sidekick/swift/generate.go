@@ -86,7 +86,7 @@ func (c *codec) generateMessages(outdir string, model *api.API, provider languag
 	for _, m := range model.Messages {
 		output := c.outputPath(m.Name + ".swift")
 		template := "templates/common/message_file.swift.mustache"
-		if m.ServicePlaceholder == true {
+		if m.ServicePlaceholder {
 			output = c.outputPath(m.Name + "+Requests.swift")
 			template = "templates/common/placeholder_file.swift.mustache"
 		}
