@@ -58,8 +58,8 @@ type messageAnnotations struct {
 	// imported with the mixin, e.g. `import GoogleCloudIamV1` imports the IAM
 	// mixin request types.
 	//
-	// For discovery-based APIs the request are synthetic and generated within a
-	// scope. They need to be fully qualified.
+	// For discovery-based APIs, the request are synthetic and generated within
+	// a scope. They need to be fully qualified.
 	ParameterTypeName string
 }
 
