@@ -46,6 +46,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
 				SampleField:         "secretKey",
+				ParameterTypeName:   "Secret",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -63,6 +64,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Protocol",
 				CustomSerialization: false,
 				SampleField:         "<placeholder>",
+				ParameterTypeName:   "Protocol_",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -79,6 +81,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithOneof",
 				CustomSerialization: true,
 				SampleField:         "<placeholder>",
+				ParameterTypeName:   "WithOneof",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -97,6 +100,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
 				CustomSerialization: true,
 				SampleField:         "secretKey",
+				ParameterTypeName:   "WithCustomJSON",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -122,6 +126,7 @@ func TestAnnotateMessage(t *testing.T) {
 				PageableItemField:   "secretKey",
 				PageableItemType:    "SecretKey",
 				SampleField:         "secretKey",
+				ParameterTypeName:   "WithPagination",
 			},
 			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
 		},
@@ -176,6 +181,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -193,6 +199,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -210,6 +217,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -227,6 +235,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 		{
@@ -251,6 +260,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: true,
 				SampleField:         "field",
+				ParameterTypeName:   "Secret",
 			},
 		},
 	} {
@@ -338,9 +348,10 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	// Verify annotations on request message
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:        "ListSecretsRequest",
-		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
-		SampleField: "pageSize",
+		Name:              "ListSecretsRequest",
+		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
+		SampleField:       "pageSize",
+		ParameterTypeName: "ListSecretsRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -359,6 +370,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
 		SampleField:         "secrets",
+		ParameterTypeName:   "ListSecretsResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -408,9 +420,10 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 
 	gotOuter := outerMessage.Codec.(*messageAnnotations)
 	wantOuter := &messageAnnotations{
-		Name:        "OuterMessage",
-		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
-		SampleField: "<placeholder>",
+		Name:              "OuterMessage",
+		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+		SampleField:       "<placeholder>",
+		ParameterTypeName: "OuterMessage",
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
