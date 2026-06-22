@@ -95,11 +95,18 @@ func ReleasePleaseExtraFiles(lib *config.Library) []any {
 			clientPath = strings.Replace(clientPath, modulePathVersion, "", 1)
 		}
 
-		snippetDir := path.Join("examples", strings.TrimPrefix(clientPath, lib.Name+"/"))
+		relPath := clientPath
+		if idx := strings.Index(clientPath, lib.Name+"/"); idx != -1 {
+			relPath = clientPath[idx+len(lib.Name)+1:]
+		} else {
+			relPath = strings.TrimPrefix(clientPath, lib.Name+"/")
+		}
+		snippetDir := path.Join("examples", relPath)
 		if lib.Go != nil {
 			deleted := false
 			for _, delPath := range lib.Go.DeleteGenerationOutputPaths {
-				if strings.HasPrefix(snippetDir, delPath) {
+				cleanedDel := strings.TrimSuffix(delPath, "/")
+				if snippetDir == cleanedDel || strings.HasPrefix(snippetDir, cleanedDel+"/") {
 					deleted = true
 					break
 				}
