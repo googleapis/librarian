@@ -25,6 +25,7 @@ import (
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 )
 
@@ -78,9 +79,12 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 
 	var extraFiles []any
 	pkgPath := lib.Name
-	if cfg.Language == config.LanguagePython {
+	switch cfg.Language {
+	case config.LanguagePython:
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
+	case config.LanguageGo:
+		extraFiles = golang.ReleasePleaseExtraFiles(lib)
 	}
 
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, lib.Name, extraFiles); err != nil {
