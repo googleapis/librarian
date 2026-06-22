@@ -934,7 +934,7 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 			structName:  "DeleteRequest",
 		},
 		{
-			filename:    "Instances+Requests.swift",
+			filename:    "instances+Requests.swift",
 			serviceName: "Instances",
 			structName:  "GetRequest",
 		},
