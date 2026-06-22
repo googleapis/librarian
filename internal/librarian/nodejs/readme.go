@@ -55,7 +55,7 @@ type sampleMetadata struct {
 	FilePath string
 }
 
-func generateReadmeNew(cfg *config.Config, library *config.Library, googleapisDir, output string) (err error) {
+func generateReadme(cfg *config.Config, library *config.Library, googleapisDir, output string) (err error) {
 	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
