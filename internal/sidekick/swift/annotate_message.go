@@ -133,7 +133,14 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		if fieldCodec.Name != field.JSONName {
+		if fieldCodec.Name != field.JSONName || fieldCodec.UrlSafeValue {
+			annotations.CustomSerialization = true
+		}
+		if field.Map && !fieldCodec.IsStringKeyed() {
+			// In ProtoJSON map fields with non-string keys need to be
+			// serialized as JSON objects with key fields. In the generated
+			// Swift code, that requires a custom implementation of the
+			// `Decodable` and `Encodable` protocol.
 			annotations.CustomSerialization = true
 		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
@@ -142,13 +149,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				return err
 			}
 			annotations.DependsOn[dep.Name] = dep
-		}
-		if field.Map && !fieldCodec.IsStringKeyed() {
-			// In ProtoJSON map fields with non-string keys need to be
-			// serialized as JSON objects with key fields. In the generated
-			// Swift code, that requires a custom implementation of the
-			// `Decodable` and `Encodable` protocol.
-			annotations.CustomSerialization = true
 		}
 	}
 
