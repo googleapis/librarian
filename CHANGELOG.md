@@ -28,7 +28,7 @@
 ### Bug Fixes
 
 * **internal/librarian/nodejs:** correct product doc link in readme template ([#6519](https://github.com/googleapis/librarian/issues/6519)) ([9cd8ee9](https://github.com/googleapis/librarian/commit/9cd8ee95b5be29f702dad03801c006e438448aa4)), closes [#6442](https://github.com/googleapis/librarian/issues/6442)
-* **internal/librarian/nodejs:** path leak during generte_readme ([#6470](https://github.com/googleapis/librarian/issues/6470)) ([d3e7c16](https://github.com/googleapis/librarian/commit/d3e7c169c3e028720cd8d3c1369972bc376d2ede))
+* **internal/librarian/nodejs:** path leak during generate_readme ([#6470](https://github.com/googleapis/librarian/issues/6470)) ([d3e7c16](https://github.com/googleapis/librarian/commit/d3e7c169c3e028720cd8d3c1369972bc376d2ede))
 * **internal/postprocessing:** support deleting multiple methods and extract boundary finder ([#6471](https://github.com/googleapis/librarian/issues/6471)) ([20442d8](https://github.com/googleapis/librarian/commit/20442d805274eec9e1ab3362ad4586f3afe0957c)), closes [#6298](https://github.com/googleapis/librarian/issues/6298)
 * **librarian:** print errors on failure ([#6458](https://github.com/googleapis/librarian/issues/6458)) ([37e4f91](https://github.com/googleapis/librarian/commit/37e4f915221045cba9e26f78c4e036d8d08076ed))
 * **sidekick/rust:** disable docs/clippy warning for BQ generated files ([#6498](https://github.com/googleapis/librarian/issues/6498)) ([0a6a4d8](https://github.com/googleapis/librarian/commit/0a6a4d8f95b552a52d2d637d6db5f95499e5a9d8))
