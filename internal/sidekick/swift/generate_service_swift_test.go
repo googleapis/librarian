@@ -175,7 +175,8 @@ func TestGenerateService_Delegation(t *testing.T) {
 func TestGenerateService_SnippetFiles(t *testing.T) {
 	outDir := t.TempDir()
 
-	dummyMessage := &api.Message{Name: "DummyMessage"}
+	packageName := "google.cloud.test.v1"
+	dummyMessage := &api.Message{Name: "DummyMessage", Package: packageName}
 	iam := &api.Service{
 		Name: "IAM",
 		Methods: []*api.Method{
@@ -202,7 +203,7 @@ func TestGenerateService_SnippetFiles(t *testing.T) {
 	}
 
 	model := api.NewTestAPI([]*api.Message{dummyMessage}, nil, []*api.Service{iam, secretManager})
-	model.PackageName = "google.cloud.test.v1"
+	model.PackageName = packageName
 
 	cfg := &parser.ModelConfig{
 		Codec: map[string]string{

@@ -51,6 +51,16 @@ type messageAnnotations struct {
 	// service that needs them is enabled. Messages that do not map to any
 	// service use " && ".
 	GatedOp string
+
+	// The message type name when it appears as a method parameter name.
+	//
+	// Most of the time the request types are in the package namespace, or are
+	// imported with the mixin, e.g. `import GoogleCloudIamV1` imports the IAM
+	// mixin request types.
+	//
+	// For discovery-based APIs, the request are synthetic and generated within
+	// a scope. They need to be fully qualified.
+	ParameterTypeName string
 }
 
 // MessageImports returns the list of dependencies for this message.
@@ -97,6 +107,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
+	parameterTypeName, err := c.messageTypeName(message)
+	if err != nil {
+		return err
+	}
 	annotations := &messageAnnotations{
 		Name:                pascalCase(message.Name),
 		DocLines:            docLines,
@@ -105,6 +119,7 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		CustomSerialization: len(message.OneOfs) > 0,
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
+		ParameterTypeName:   parameterTypeName,
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.

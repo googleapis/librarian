@@ -86,7 +86,7 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	got := extractBlock(t, contentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
 	want := `  protocol ProtocolStub {
     func getThing(
-    request: Request, options: GoogleCloudGax.RequestOptions
+    request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
 ) async throws -> SomeTestPackage.Response
 
   }`
