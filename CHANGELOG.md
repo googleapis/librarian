@@ -1,5 +1,41 @@
 # Changelog
 
+## [0.22.0](https://github.com/googleapis/librarian/compare/v0.21.0...v0.22.0) (2026-06-22)
+
+
+### Features
+
+* **internal/librarian/java:** remove redundant keep items in librarian.yaml ([#6291](https://github.com/googleapis/librarian/issues/6291)) ([2965478](https://github.com/googleapis/librarian/commit/2965478f6348bdcdb53dc8ee9a142a1a0dfceac9))
+* **internal/librarian/java:** support alternate_headers for monolithc libraries ([#6481](https://github.com/googleapis/librarian/issues/6481)) ([4165a09](https://github.com/googleapis/librarian/commit/4165a0982afee3c8ee28170b9c476eeeff2f2d17))
+* **internal/librarian/nodejs:** add release level markdown generation ([#6476](https://github.com/googleapis/librarian/issues/6476)) ([1d1281f](https://github.com/googleapis/librarian/commit/1d1281f939b2b97df259c605fa70a7395626345e))
+* **internal/librarian/nodejs:** add support for readme partials ([#6505](https://github.com/googleapis/librarian/issues/6505)) ([eca8e3d](https://github.com/googleapis/librarian/commit/eca8e3d26641893deea785e2d5850ace165ffee3)), closes [#6442](https://github.com/googleapis/librarian/issues/6442)
+* **internal/librarian/nodejs:** extract sample metadata for node readme ([#6454](https://github.com/googleapis/librarian/issues/6454)) ([00e5e0d](https://github.com/googleapis/librarian/commit/00e5e0d8d0ff8307a861a8f5e08f8b896a1b8c50)), closes [#6442](https://github.com/googleapis/librarian/issues/6442)
+* **internal/librarian/nodejs:** generate README in Node library ([#6520](https://github.com/googleapis/librarian/issues/6520)) ([68c0a20](https://github.com/googleapis/librarian/commit/68c0a2089d53f9f8604f23d86762afe26b66c884))
+* **internal/librarian/nodejs:** implement README generation without partials ([#6488](https://github.com/googleapis/librarian/issues/6488)) ([44e6954](https://github.com/googleapis/librarian/commit/44e69540b74ad4f8b8dd212e0d97952d1af6814d))
+* **internal/postprocessing:** implement Java method deprecation ([#6497](https://github.com/googleapis/librarian/issues/6497)) ([289a385](https://github.com/googleapis/librarian/commit/289a385ffb83092022fa8c98ec36bd90f4883dd7)), closes [#6298](https://github.com/googleapis/librarian/issues/6298)
+* **internal/postprocessing:** implement Java method duplication ([#6484](https://github.com/googleapis/librarian/issues/6484)) ([0c5959c](https://github.com/googleapis/librarian/commit/0c5959c38e5c50805a7bd463c29a0351eb2e134c)), closes [#6298](https://github.com/googleapis/librarian/issues/6298)
+* **nodejs:** support per-API version mixin configuration([#6462](https://github.com/googleapis/librarian/issues/6462)) ([71cd24e](https://github.com/googleapis/librarian/commit/71cd24eed5cc7bd8ac35493c597a493b3081e36d))
+* **postprocessing:** implement Java method deletion ([#6436](https://github.com/googleapis/librarian/issues/6436)) ([820646f](https://github.com/googleapis/librarian/commit/820646f3db936c15e4efb8a7998fdc20201d70a2)), closes [#6298](https://github.com/googleapis/librarian/issues/6298)
+* **sidekick/rust:** add condition to include `google-cloud-lro` as dependency ([#6503](https://github.com/googleapis/librarian/issues/6503)) ([7a89172](https://github.com/googleapis/librarian/commit/7a891726ea1062afa3641a40732948ca3800d199))
+* **sidekick/rust:** bigquery query metadata ([#6407](https://github.com/googleapis/librarian/issues/6407)) ([6989ebc](https://github.com/googleapis/librarian/commit/6989ebcebf4cd2a04c36db7fcd544e8c464105b1))
+* **sidekick/swift:** `bytes` for discovery docs ([#6433](https://github.com/googleapis/librarian/issues/6433)) ([d20f64c](https://github.com/googleapis/librarian/commit/d20f64c48ee852854344361eccaa60e5c76e9c58))
+* **sidekick/swift:** generate method signature overloads ([#6473](https://github.com/googleapis/librarian/issues/6473)) ([27a72be](https://github.com/googleapis/librarian/commit/27a72beb520feb5d7c04701e967a3454f1367b39))
+* **sidekick/swift:** qualified names for requests ([#6506](https://github.com/googleapis/librarian/issues/6506)) ([9489715](https://github.com/googleapis/librarian/commit/9489715246601f6f39268afbd4e4ad68240997b4))
+* **sidekick:** parse method signatures ([#6451](https://github.com/googleapis/librarian/issues/6451)) ([7a433e7](https://github.com/googleapis/librarian/commit/7a433e71b701feda02bcf63e78624dcd08c5eb27))
+* **sidekick:** parse method signatures ([#6461](https://github.com/googleapis/librarian/issues/6461)) ([16aa2e6](https://github.com/googleapis/librarian/commit/16aa2e6b1d00b63374d8571a0ba3e613b3768b28))
+
+
+### Bug Fixes
+
+* **internal/librarian/nodejs:** correct product doc link in readme template ([#6519](https://github.com/googleapis/librarian/issues/6519)) ([9cd8ee9](https://github.com/googleapis/librarian/commit/9cd8ee95b5be29f702dad03801c006e438448aa4)), closes [#6442](https://github.com/googleapis/librarian/issues/6442)
+* **internal/librarian/nodejs:** path leak during generate_readme ([#6470](https://github.com/googleapis/librarian/issues/6470)) ([d3e7c16](https://github.com/googleapis/librarian/commit/d3e7c169c3e028720cd8d3c1369972bc376d2ede))
+* **internal/postprocessing:** support deleting multiple methods and extract boundary finder ([#6471](https://github.com/googleapis/librarian/issues/6471)) ([20442d8](https://github.com/googleapis/librarian/commit/20442d805274eec9e1ab3362ad4586f3afe0957c)), closes [#6298](https://github.com/googleapis/librarian/issues/6298)
+* **librarian:** print errors on failure ([#6458](https://github.com/googleapis/librarian/issues/6458)) ([37e4f91](https://github.com/googleapis/librarian/commit/37e4f915221045cba9e26f78c4e036d8d08076ed))
+* **sidekick/rust:** disable docs/clippy warning for BQ generated files ([#6498](https://github.com/googleapis/librarian/issues/6498)) ([0a6a4d8](https://github.com/googleapis/librarian/commit/0a6a4d8f95b552a52d2d637d6db5f95499e5a9d8))
+* **sidekick/rust:** use struct initializer for QueryMetadata ([#6504](https://github.com/googleapis/librarian/issues/6504)) ([2bdb3b5](https://github.com/googleapis/librarian/commit/2bdb3b5f262bad05ce2a569828f06b9445ab78bd))
+* **sidekick/swift:** UrlSafe requires custom serialization ([#6522](https://github.com/googleapis/librarian/issues/6522)) ([09c74f6](https://github.com/googleapis/librarian/commit/09c74f696003106ccdfc104e8436b297a657b7bb))
+* **surfer:** print errors on failure ([#6465](https://github.com/googleapis/librarian/issues/6465)) ([d91bf4c](https://github.com/googleapis/librarian/commit/d91bf4c4c6895fe7401cdea02fe0f2c64fb286d8))
+
 ## [0.21.0](https://github.com/googleapis/librarian/compare/v0.20.0...v0.21.0) (2026-06-16)
 
 
