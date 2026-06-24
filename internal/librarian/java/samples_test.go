@@ -55,7 +55,7 @@ func TestDecamelize(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			got := decamelize(test.input)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("decamelize(%q) mismatch (-want +got):\n%s", test.input, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

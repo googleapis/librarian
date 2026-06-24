@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	// Matches lowercase/digit followed by uppercase (e.g., "FooBar" -> "Foo" + "B" + "a")
+	// Matches lowercase/digit followed by uppercase (e.g., "FooBar" -> "Foo Bar").
 	camelCaseRegexp = regexp.MustCompile(`([a-z0-9])([A-Z])`)
 )
 
