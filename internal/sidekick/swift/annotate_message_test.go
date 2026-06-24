@@ -130,6 +130,24 @@ func TestAnnotateMessage(t *testing.T) {
 			},
 			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
 		},
+		{
+			name: "service placeholder",
+			message: &api.Message{
+				Name:               "Service",
+				ID:                 ".test.Service",
+				Package:            "test",
+				ServicePlaceholder: true,
+			},
+			want: &messageAnnotations{
+				Name:                "Service",
+				TypeURL:             "type.googleapis.com/test.Service",
+				CustomSerialization: false,
+				SampleField:         "<placeholder>",
+				ParameterTypeName:   "Clients.ServiceClient",
+				PlaceholderName:     "ServiceClient",
+			},
+			wantImports: []string{"GoogleCloudWkt"},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			for _, f := range test.message.Fields {
@@ -276,6 +294,61 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		service *api.Service
+		request *api.Message
+		want    *messageAnnotations
+	}{
+		{
+			name:    "basic message",
+			service: &api.Service{Name: "Service", Package: "test", ID: ".test.Service"},
+			request: &api.Message{Name: "getRequest", Package: "test", ID: ".test.Service.getRequest", SyntheticRequest: true},
+			want: &messageAnnotations{
+				Name:              "GetRequest",
+				TypeURL:           "type.googleapis.com/test.Service.getRequest",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "Clients.ServiceClient.GetRequest",
+			},
+		},
+		{
+			name:    "service with reserved name",
+			service: &api.Service{Name: "Protocol", Package: "test", ID: ".test.Protocol"},
+			request: &api.Message{Name: "listRequest", Package: "test", ID: ".test.Protocol.listRequest", SyntheticRequest: true},
+			want: &messageAnnotations{
+				Name:              "ListRequest",
+				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "Clients.ProtocolClient.ListRequest",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Discovery requests are synthetic. The messages are injected into the data
+			// model by sidekick. To avoid clashes, sidekick puts the request messages
+			// within a placeholder named after the service.
+			servicePlaceholder := &api.Message{
+				Name:               test.service.Name,
+				Package:            test.service.Package,
+				ID:                 test.service.ID,
+				ServicePlaceholder: true,
+			}
+			test.request.Parent = servicePlaceholder
+			servicePlaceholder.Messages = append(servicePlaceholder.Messages, test.request)
+			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, []*api.Enum{}, []*api.Service{test.service})
+			model.AddMessage(test.request)
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})

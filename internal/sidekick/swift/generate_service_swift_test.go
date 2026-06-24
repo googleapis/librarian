@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -886,5 +888,75 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		if !strings.Contains(contentStr, want) {
 			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
 		}
+	}
+}
+
+func TestGenerateDiscoveryService_Files(t *testing.T) {
+	testdataDir, err := filepath.Abs("../../testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecDiscovery,
+		ServiceConfig:       filepath.Join(testdataDir, "googleapis/google/cloud/compute/v1/small-compute_v1.yaml"),
+		SpecificationSource: filepath.Join(testdataDir, "discovery/small-compute.v1.json"),
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify files
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudComputeV1")
+
+	for _, test := range []struct {
+		filename    string
+		serviceName string
+		structName  string
+	}{
+		{
+			filename:    "AcceleratorTypes+Requests.swift",
+			serviceName: "AcceleratorTypes",
+			structName:  "ListRequest",
+		},
+		{
+			filename:    "Addresses+Requests.swift",
+			serviceName: "Addresses",
+			structName:  "DeleteRequest",
+		},
+		{
+			filename:    "instances+Requests.swift",
+			serviceName: "Instances",
+			structName:  "GetRequest",
+		},
+	} {
+		t.Run(test.serviceName, func(t *testing.T) {
+			filename := filepath.Join(expectedDir, test.filename)
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify it contains an extension to the right Clients.$ServiceName type.
+			wantExtension := fmt.Appendf(nil, "extension Clients.%sClient {", test.serviceName)
+			if !bytes.Contains(content, wantExtension) {
+				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, content)
+			}
+
+			// Verify the request struct definition appears in that file.
+			wantStruct := fmt.Appendf(nil, "public struct %s: ", test.structName)
+			if !bytes.Contains(content, wantStruct) {
+				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, content)
+			}
+		})
 	}
 }
