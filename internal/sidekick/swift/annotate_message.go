@@ -52,8 +52,12 @@ type messageAnnotations struct {
 	// service use " && ".
 	GatedOp string
 
-	// In discovery-based APIs some messages are placeholders for the service.
-	// In that case, we need to generate a slightly different name for the message.
+	// In discovery-based APIs, the requests messages are nested messages of a
+	// message that is not generated, it is just a placeholder to represent the
+	// service. This placeholder provides a namespace for the requests.
+	//
+	// In the generated code, the namespace is implemented by the client struct,
+	// this is the name of this struct.
 	PlaceholderName string
 
 	// The message type name when it appears as a method parameter name.
