@@ -21,15 +21,25 @@ import (
 
 // Tidy tidies configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
-	if lib.Nodejs == nil {
-		return lib, nil
+	for _, api := range lib.APIs {
+		if api.Nodejs != nil {
+			empty, err := yaml.Empty(api.Nodejs)
+			if err != nil {
+				return nil, err
+			}
+			if empty {
+				api.Nodejs = nil
+			}
+		}
 	}
-	empty, err := yaml.Empty(lib.Nodejs)
-	if err != nil {
-		return nil, err
-	}
-	if empty {
-		lib.Nodejs = nil
+	if lib.Nodejs != nil {
+		empty, err := yaml.Empty(lib.Nodejs)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
+			lib.Nodejs = nil
+		}
 	}
 	return lib, nil
 }
