@@ -102,7 +102,7 @@ type codec struct {
 	//
 	// The codec uses this map to disambiguate names, the number of clashes for
 	// each (lowercased) name are tracked in this hash, and if necessary, the
-	// output file is disambiguated by prepending `${Counter}` to the name.
+	// output file is disambiguated by appending `+${Counter}` to the name.
 	GeneratedFiles map[string]int
 }
 
