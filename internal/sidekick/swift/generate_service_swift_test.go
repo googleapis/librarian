@@ -31,11 +31,15 @@ import (
 func TestGenerateService_Files(t *testing.T) {
 	outDir := t.TempDir()
 
-	iam := &api.Service{Name: "IAM"}
-	secretManager := &api.Service{Name: "SecretManagerService"}
+	// We need explicit Package and ID fields because we generate both messages
+	// and services.
+	iam := &api.Service{Name: "IAM", Package: "test", ID: ".test.IAM"}
+	secretManager := &api.Service{Name: "SecretManagerService", Package: "test", ID: ".test.SecretManagerService"}
+	clash0 := &api.Message{Name: "InstanceSettings", Package: "test", ID: ".test.InstanceSettings"}
+	clash1 := &api.Service{Name: "instanceSettings", Package: "test", ID: ".test.instanceSettings"}
 
-	model := api.NewTestAPI(nil, nil, []*api.Service{iam, secretManager})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{clash0}, nil, []*api.Service{iam, secretManager, clash1})
+	model.PackageName = "test"
 
 	cfg := &parser.ModelConfig{
 		Codec: map[string]string{
@@ -47,14 +51,19 @@ func TestGenerateService_Files(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleTest")
 	wantFiles := []string{
 		"IAM.swift",
-		"SecretManagerService.swift",
 		"Clients.swift",
-		"Clients/SecretManagerServiceStub.swift",
-		"Clients/SecretManagerServiceLogging.swift",
-		"Clients/SecretManagerServiceRetry.swift",
+		"SecretManagerService.swift",
+		"SecretManagerService+Stub.swift",
+		"SecretManagerService+Logging.swift",
+		"SecretManagerService+Retry.swift",
+		"InstanceSettings.swift",
+		"instanceSettings+000.swift",
+		"instanceSettings+Stub.swift",
+		"instanceSettings+Logging.swift",
+		"instanceSettings+Retry.swift",
 	}
 	for _, expected := range wantFiles {
 		filename := filepath.Join(expectedDir, expected)
@@ -435,7 +444,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "Clients", "SecretManagerServiceStub.swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Stub.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)
