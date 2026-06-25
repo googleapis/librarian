@@ -166,6 +166,21 @@ func (c *codec) generateStubs(outdir string, model *api.API, provider language.T
 
 func (c *codec) generateSnippets(outdir string, model *api.API, provider language.TemplateProvider) error {
 	for _, s := range model.Services {
+		// If two services differ only in case (such as `fooService` and
+		// `FooService`), then this might generate clashing filenames in
+		// filesystems that are case insensitive.
+		//
+		// This seems unlikely: the services are always in a flat namespace, and
+		// they always use consistent naming conventions. We have only found
+		// clashes between messages and services or between messages, not
+		// between two services.
+		//
+		// Furthermore, fixing the problem would require changing the generated
+		// code, as the name of the snippet file is referenced in the generated
+		// comments. The effort to fix that does not seem worthwhile given how
+		// unlikely is the problem.
+		//
+		// If I (coryan@) am wrong, we can fix the generator at that time.
 		generated := language.GeneratedFile{
 			TemplatePath: "templates/common/client_snippet.swift.mustache",
 			OutputPath:   filepath.Join("Snippets", s.Name+"Quickstart.swift"),
