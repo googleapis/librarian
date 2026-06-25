@@ -81,12 +81,8 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
             method: "client::{{Codec.ServiceNameToPascal}}::{{Codec.Name}}",
             self.inner.{{Codec.Name}}(req, options));
         {{#Codec.IsLroPoller}}
-        #[cfg(google_cloud_unstable_tracing)]
         google_cloud_lro::record_polling_attributes!(&_span);
-        {{/Codec.IsLroPoller}}
-        {{#Codec.IsLroPoller}}
         let result = pending.await;
-        #[cfg(google_cloud_unstable_tracing)]
         {
             if google_cloud_lro::LroRecorder::current().is_some() {
                 match &result {
@@ -149,7 +145,6 @@ where T: super::stub::{{Codec.Name}} + std::fmt::Debug + Send + Sync {
     }
 
     {{#Model.Codec.LroStubOptions}}
-    #[cfg(google_cloud_unstable_tracing)]
     #[doc(hidden)]
     fn get_poller_options(
         &self,
