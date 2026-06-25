@@ -15,7 +15,6 @@ name: Go
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
-  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
@@ -50,6 +49,8 @@ jobs:
         run: librarian generate --all
   create-issue-on-failure:
     needs: [integration]
+    permissions:
+      issues: write
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
     with:

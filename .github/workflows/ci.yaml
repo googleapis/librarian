@@ -15,7 +15,6 @@ name: Librarian
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
-  issues: write
 jobs:
   legacylibrarian:
     runs-on: ubuntu-24.04
@@ -49,6 +48,8 @@ jobs:
             $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian|internal/sample|internal/testhelper')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
+    permissions:
+      issues: write
     needs: [legacylibrarian, test]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
