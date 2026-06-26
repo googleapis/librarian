@@ -15,14 +15,15 @@ name: Go
 on: [push, pull_request, merge_group]
 permissions:
   contents: read
-  issues: write
 jobs:
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
     timeout-minutes: 5
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
@@ -30,13 +31,16 @@ jobs:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Checkout google-cloud-go
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           repository: googleapis/google-cloud-go
           path: google-cloud-go
+          persist-credentials: false
       - name: Run librarian install
         working-directory: google-cloud-go
         run: librarian install
@@ -45,6 +49,8 @@ jobs:
         run: librarian generate --all
   create-issue-on-failure:
     needs: [integration]
+    permissions:
+      issues: write
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
     with:
