@@ -152,11 +152,7 @@ func tidyKeep(library *config.Library) []string {
 	}
 	var filteredKeepPaths []string
 	for _, keepPath := range library.Keep {
-		keepPathSlash := filepath.ToSlash(keepPath)
-		if isDefaultPreserved(keepPathSlash) {
-			continue
-		}
-		if isInGAPICModule(library, keepPath) {
+		if isRedundantKeep(library, keepPath) {
 			continue
 		}
 		filteredKeepPaths = append(filteredKeepPaths, keepPath)
@@ -169,18 +165,49 @@ func tidyKeep(library *config.Library) []string {
 	return filteredKeepPaths
 }
 
-// isInGAPICModule checks if the given keepPath belongs to a generated GAPIC module of the library.
-func isInGAPICModule(library *config.Library, keepPath string) bool {
+// isRedundantKeep returns true if the keepPath is redundant and can be removed from the keep list.
+func isRedundantKeep(library *config.Library, keepPath string) bool {
 	keepPathSlash := filepath.ToSlash(keepPath)
+	if isDefaultPreserved(keepPathSlash) {
+		return true
+	}
+	var gapicModule string
 	for pattern, isGAPIC := range cleanPatterns(library) {
 		if isGAPIC {
 			moduleName, _, _ := strings.Cut(filepath.ToSlash(pattern), "/")
 			if strings.HasPrefix(keepPathSlash, moduleName+"/") {
-				return true
+				gapicModule = moduleName
+				break
 			}
 		}
 	}
-	return false
+	// Gate 1: If it's not in a GAPIC module, it's in a Proto or GRPC module (cleaned unconditionally) -> NOT redundant.
+	if gapicModule == "" {
+		return false
+	}
+	// Gate 2: If it's not under the "src/" directory of the GAPIC module, it is not cleaned -> redundant.
+	srcPrefix := gapicModule + "/src/"
+	if !strings.HasPrefix(keepPathSlash, srcPrefix) {
+		return true
+	}
+	filename := filepath.Base(keepPathSlash)
+	// Gate 3: If it's in generateIfMissingFiles (like pom.xml), it is never cleaned -> redundant.
+	if slices.Contains(generateIfMissingFiles, filename) {
+		return true
+	}
+	// Gate 4: If it's in generatedNonJavaFiles (like reflect-config.json), it is cleaned unconditionally -> NOT redundant.
+	if slices.Contains(generatedNonJavaFiles, filename) {
+		return false
+	}
+	// Gate 5: If it's a Java file, it is only redundant if it has no auto-generated marker (meaning it is handwritten).
+	if filepath.Ext(keepPathSlash) == ".java" {
+		fullPath := filepath.Join(library.Output, keepPath)
+		if hasMarker, err := hasMarker(fullPath); err == nil {
+			return !hasMarker
+		}
+		return false
+	}
+	return true
 }
 
 var (
