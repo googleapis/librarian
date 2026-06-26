@@ -15,6 +15,8 @@
 package java
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -27,4 +29,12 @@ var (
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {
 	return strings.TrimSpace(camelCaseRegexp.ReplaceAllString(value, `$1 $2`))
+}
+
+// isProductionSample reports whether the given entry represents a production Java source file
+// located under a standard "/src/main/java/" path.
+func isProductionSample(d os.DirEntry, path string) bool {
+	return !d.IsDir() &&
+		strings.HasSuffix(path, ".java") &&
+		strings.Contains(filepath.ToSlash(path), "/src/main/java/")
 }
