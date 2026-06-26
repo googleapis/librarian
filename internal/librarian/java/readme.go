@@ -15,6 +15,7 @@
 package java
 
 import (
+	"errors"
 	"regexp"
 	"strings"
 )
@@ -22,9 +23,37 @@ import (
 var (
 	// Matches lowercase/digit followed by uppercase (e.g., "FooBar" -> "Foo Bar").
 	camelCaseRegexp = regexp.MustCompile(`([a-z0-9])([A-Z])`)
+
+	// reTitle matches a "sample-metadata:" marker followed immediately by a "title:" line on the next comment line.
+	reTitle = regexp.MustCompile(`sample-metadata:\s*\n\s*(?://|#)\s*title:\s*(.*)`)
+
+	// errMissingTitle indicates the "title:" line is missing immediately following "sample-metadata:".
+	errMissingTitle = errors.New("missing title line immediately following sample-metadata")
+
+	// errEmptyTitle indicates the extracted title value is empty.
+	errEmptyTitle = errors.New("title value cannot be empty")
 )
 
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {
 	return strings.TrimSpace(camelCaseRegexp.ReplaceAllString(value, `$1 $2`))
+}
+
+// extractTitle extracts and validates the title override from Java comment blocks.
+// It expects a "title:" line to immediately follow the "sample-metadata:" marker.
+// Returns an error if the marker is present but the title line is missing, malformed, or empty.
+func extractTitle(content string) (string, error) {
+	if !strings.Contains(content, "sample-metadata:") {
+		return "", nil
+	}
+	matches := reTitle.FindStringSubmatch(content)
+	if len(matches) < 2 {
+		return "", errMissingTitle
+	}
+	// Trim surrounding whitespace, quotes, and carriage returns.
+	title := strings.Trim(matches[1], " \t\"'\r\n")
+	if title == "" {
+		return "", errEmptyTitle
+	}
+	return title, nil
 }
