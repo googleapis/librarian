@@ -15,7 +15,6 @@
 package java
 
 import (
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -31,11 +30,10 @@ func decamelize(value string) string {
 	return strings.TrimSpace(camelCaseRegexp.ReplaceAllString(value, `$1 $2`))
 }
 
-// isProductionSample reports whether the given entry represents a production Java source file
+// isProductionSample reports whether the given path represents a production Java source file
 // located under a standard "src/main/java" path.
-func isProductionSample(d os.DirEntry, path string) bool {
+func isProductionSample(path string) bool {
 	slashed := filepath.ToSlash(path)
-	return !d.IsDir() &&
-		strings.HasSuffix(slashed, ".java") &&
+	return strings.HasSuffix(slashed, ".java") &&
 		(strings.HasPrefix(slashed, "src/main/java/") || strings.Contains(slashed, "/src/main/java/"))
 }

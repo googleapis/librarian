@@ -15,7 +15,6 @@
 package java
 
 import (
-	"os"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -62,56 +61,35 @@ func TestDecamelize(t *testing.T) {
 	}
 }
 
-// mockDirEntry is a mock implementation of os.DirEntry for testing.
-type mockDirEntry struct {
-	isDir bool
-}
-
-func (m mockDirEntry) Name() string               { return "" }
-func (m mockDirEntry) IsDir() bool                { return m.isDir }
-func (m mockDirEntry) Type() os.FileMode          { return 0 }
-func (m mockDirEntry) Info() (os.FileInfo, error) { return nil, nil }
-
 func TestIsProductionSample(t *testing.T) {
 	for _, test := range []struct {
-		name  string
-		entry mockDirEntry
-		path  string
-		want  bool
+		name string
+		path string
+		want bool
 	}{
 		{
-			name:  "valid production sample",
-			entry: mockDirEntry{isDir: false},
-			path:  "samples/src/main/java/com/example/Sample.java",
-			want:  true,
+			name: "valid production sample",
+			path: "samples/src/main/java/com/example/Sample.java",
+			want: true,
 		},
 		{
-			name:  "valid production sample at root",
-			entry: mockDirEntry{isDir: false},
-			path:  "src/main/java/com/example/Sample.java",
-			want:  true,
+			name: "valid production sample at root",
+			path: "src/main/java/com/example/Sample.java",
+			want: true,
 		},
 		{
-			name:  "directory instead of file",
-			entry: mockDirEntry{isDir: true},
-			path:  "samples/src/main/java",
-			want:  false,
+			name: "non-java file",
+			path: "samples/src/main/java/README.md",
+			want: false,
 		},
 		{
-			name:  "non-java file",
-			entry: mockDirEntry{isDir: false},
-			path:  "samples/src/main/java/README.md",
-			want:  false,
-		},
-		{
-			name:  "not in src/main/java",
-			entry: mockDirEntry{isDir: false},
-			path:  "samples/src/test/java/com/example/Sample.java",
-			want:  false,
+			name: "not in src/main/java",
+			path: "samples/src/test/java/com/example/Sample.java",
+			want: false,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := isProductionSample(test.entry, test.path)
+			got := isProductionSample(test.path)
 			if got != test.want {
 				t.Errorf("isProductionSample() = %t, want %t", got, test.want)
 			}
