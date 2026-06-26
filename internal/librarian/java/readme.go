@@ -32,9 +32,10 @@ func decamelize(value string) string {
 }
 
 // isProductionSample reports whether the given entry represents a production Java source file
-// located under a standard "/src/main/java/" path.
+// located under a standard "src/main/java" path.
 func isProductionSample(d os.DirEntry, path string) bool {
+	slashed := filepath.ToSlash(path)
 	return !d.IsDir() &&
-		strings.HasSuffix(path, ".java") &&
-		strings.Contains(filepath.ToSlash(path), "/src/main/java/")
+		strings.HasSuffix(slashed, ".java") &&
+		(strings.HasPrefix(slashed, "src/main/java/") || strings.Contains(slashed, "/src/main/java/"))
 }

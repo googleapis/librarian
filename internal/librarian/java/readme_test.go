@@ -86,6 +86,12 @@ func TestIsProductionSample(t *testing.T) {
 			want:  true,
 		},
 		{
+			name:  "valid production sample at root",
+			entry: mockDirEntry{isDir: false},
+			path:  "src/main/java/com/example/Sample.java",
+			want:  true,
+		},
+		{
 			name:  "directory instead of file",
 			entry: mockDirEntry{isDir: true},
 			path:  "samples/src/main/java",
@@ -106,8 +112,8 @@ func TestIsProductionSample(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := isProductionSample(test.entry, test.path)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
+			if got != test.want {
+				t.Errorf("isProductionSample() = %t, want %t", got, test.want)
 			}
 		})
 	}
