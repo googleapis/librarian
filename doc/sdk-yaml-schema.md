@@ -1,6 +1,6 @@
-# API Schema
+# API Allowlist Schema
 
-This document describes the schema for the API configuration.
+This document describes the schema for the API Allowlist.
 
 ## API Configuration
 
