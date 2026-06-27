@@ -23,7 +23,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestFindVersion(t *testing.T) {
+func TestFindVersionAndClient(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		setup func(t *testing.T, dir string)
@@ -93,7 +93,7 @@ func TestFindVersion(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			test.setup(t, tmpDir)
-			got, err := findVersion(tmpDir)
+			got, err := findVersionAndClient(tmpDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -104,7 +104,7 @@ func TestFindVersion(t *testing.T) {
 	}
 }
 
-func TestFindVersion_Error(t *testing.T) {
+func TestFindVersionAndClient_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		setup   func(t *testing.T, dir string)
@@ -134,9 +134,9 @@ func TestFindVersion_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			test.setup(t, tmpDir)
-			_, err := findVersion(tmpDir)
+			_, err := findVersionAndClient(tmpDir)
 			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("findVersion() error = %v, wantErr %v", err, test.wantErr)
+				t.Fatalf("findVersionAndClient() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

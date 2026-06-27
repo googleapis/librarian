@@ -32,7 +32,7 @@ type versionAndClient struct {
 	Client  string
 }
 
-func findVersion(output string) ([]versionAndClient, error) {
+func findVersionAndClient(output string) ([]versionAndClient, error) {
 	output = filepath.Clean(output)
 	srcDir := filepath.Join(output, "src")
 	entries, err := os.ReadDir(srcDir)
