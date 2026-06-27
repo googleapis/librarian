@@ -28,7 +28,7 @@ jobs:
       - name: Display Go version
         run: go version
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable as of 2026-06-26
       - name: Display Cargo version
         run: cargo version
       - name: Display rustc version
@@ -49,7 +49,7 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Install Rust toolchain
-        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        uses: dtolnay/rust-toolchain@29eef336d9b2848a0b548edc03f92a220660cdb8 # stable as of 2026-06-26
       - uses: ./.github/actions/install-taplo
       - name: Checkout google-cloud-rust
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
