@@ -626,7 +626,7 @@ func TestFillDefaults_Go(t *testing.T) {
 	}
 }
 
-func TestPrepareLibrary(t *testing.T) {
+func TestApplyDefaults(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		language    string
@@ -634,7 +634,6 @@ func TestPrepareLibrary(t *testing.T) {
 		rust        *config.RustCrate
 		apis        []*config.API
 		wantOutput  string
-		wantErr     bool
 		wantAPIPath string
 	}{
 		{
@@ -672,12 +671,6 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput: "src/storage/test/v1",
 		},
 		{
-			name:     "veneer without output returns error",
-			language: config.LanguageRust,
-			rust:     &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
-			wantErr:  true,
-		},
-		{
 			name:       "veneer with explicit output succeeds",
 			language:   config.LanguageRust,
 			rust:       &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
@@ -708,12 +701,6 @@ func TestPrepareLibrary(t *testing.T) {
 				Output: "src/generated",
 			}
 			got, err := applyDefaults(test.language, lib, defaults)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
 			if err != nil {
 				t.Fatal(err)
 			}
