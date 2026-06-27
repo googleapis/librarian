@@ -100,7 +100,7 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
-	if d.Java.APIPathToGroupID == nil {
+	if lib.Java.GroupID != "" || d.Java.APIPathToGroupID == nil {
 		return lib
 	}
 	for _, api := range lib.APIs {

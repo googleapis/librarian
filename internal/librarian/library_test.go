@@ -232,6 +232,139 @@ func TestFillDefaults(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_Java(t *testing.T) {
+	defaults := &config.Default{
+		Java: &config.JavaDefault{
+			APIPathToGroupID: map[string]string{
+				"google/shopping":  "com.google.shopping",
+				"google/maps":      "com.google.maps",
+				"google/ads":       "com.google.api-ads",
+				"google/analytics": "com.google.analytics",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want *config.Library
+	}{
+		{
+			name: "shopping library",
+			lib: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+			},
+			want: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "google-shopping-merchant-issue-resolution",
+					GroupID:    "com.google.shopping",
+				},
+			},
+		},
+		{
+			name: "maps library",
+			lib: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+			},
+			want: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+				Java: &config.JavaModule{
+					ArtifactID: "google-maps-routeoptimization",
+					GroupID:    "com.google.maps",
+				},
+			},
+		},
+		{
+			name: "ads library",
+			lib: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+			},
+			want: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+				Java: &config.JavaModule{
+					ArtifactID: "google-admanager",
+					GroupID:    "com.google.api-ads",
+				},
+			},
+		},
+		{
+			name: "analytics library",
+			lib: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+			},
+			want: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "google-analytics-admin",
+					GroupID:    "com.google.analytics",
+				},
+			},
+		},
+		{
+			name: "do not override artifact id or group id if already set",
+			lib: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "proto-google-common-protos",
+					GroupID:    "com.google.api.grpc",
+				},
+			},
+			want: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "proto-google-common-protos",
+					GroupID:    "com.google.api.grpc",
+				},
+			},
+		},
+		{
+			name: "no matching api prefix leaves group id empty",
+			lib: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+			},
+			want: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fillJava(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestFillDefaults_Rust(t *testing.T) {
 	defaults := &config.Default{
 		Rust: &config.RustDefault{
