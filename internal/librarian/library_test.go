@@ -350,6 +350,23 @@ func TestFillDefaults_Java(t *testing.T) {
 			},
 		},
 		{
+			name: "do not fill group id if api path contains library name as prefix",
+			lib: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
 			name: "no matching api prefix leaves group id empty",
 			lib: &config.Library{
 				Name: "unknown",
