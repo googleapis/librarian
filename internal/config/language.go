@@ -460,6 +460,8 @@ type DartPackage struct {
 type JavaDefault struct {
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+	// APIPathToGroupID is a map of API paths to group IDs for Java.
+	APIPathToGroupID map[string]string `yaml:"api_path_to_group_id,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.

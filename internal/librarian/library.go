@@ -42,6 +42,9 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d.Go != nil {
 		return fillGo(lib, d)
 	}
+	if d.Java != nil {
+		return fillJava(lib, d)
+	}
 	if d.Rust != nil {
 		return fillRust(lib, d)
 	}
@@ -90,6 +93,29 @@ func union(a, b []string) []string {
 		}
 	}
 	return res
+}
+
+// fillJava populates empty Java-specific fields in lib from the provided default.
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	if lib.Java.ArtifactID != "" || lib.Java.GroupID != "" || d.Java.APIPathToGroupID == nil {
+		return lib
+	}
+	for _, api := range lib.APIs {
+		for apiPrefix, groupID := range d.Java.APIPathToGroupID {
+			if strings.HasPrefix(api.Path, apiPrefix+"/") {
+				lib.Java.ArtifactID = "google-" + lib.Name
+				lib.Java.GroupID = groupID
+				break
+			}
+		}
+		if lib.Java.GroupID != "" {
+			break
+		}
+	}
+	return lib
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
