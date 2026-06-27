@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.23.0](https://github.com/googleapis/librarian/compare/v0.22.0...v0.23.0) (2026-06-27)
+
+
+### Features
+
+* **internal/librarian/java:** add decamelize utility for README generation ([#6538](https://github.com/googleapis/librarian/issues/6538)) ([a6d950a](https://github.com/googleapis/librarian/commit/a6d950a157338083086d2b3d8c03150179628b10)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add production sample filter ([#6545](https://github.com/googleapis/librarian/issues/6545)) ([df213ec](https://github.com/googleapis/librarian/commit/df213ecb97834adb13c62b902fe090955845ba19)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add title override extractor ([#6546](https://github.com/googleapis/librarian/issues/6546)) ([0986d6a](https://github.com/googleapis/librarian/commit/0986d6a2cd5d3e4736b9e336a47dd85c9240e14b)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/python:** update gapic-generator to 1.36.0 ([#6548](https://github.com/googleapis/librarian/issues/6548)) ([a0930f4](https://github.com/googleapis/librarian/commit/a0930f4b0f52383ee4b19f23ae666ae4017f40f6))
+* **nodejs:** bump pnpm version to 11.7.0 and support v11+ global bin layout ([#6494](https://github.com/googleapis/librarian/issues/6494)) ([1373628](https://github.com/googleapis/librarian/commit/1373628c9c8c639a666fe17813a4f313fe0f8c40)), closes [#6480](https://github.com/googleapis/librarian/issues/6480)
+* **sidekick/swift:** generate synthetic messages ([#6530](https://github.com/googleapis/librarian/issues/6530)) ([7303648](https://github.com/googleapis/librarian/commit/730364823f86ac636ddea676bb439fce8f8e5a6c))
+* **sidekick/swift:** handle clashing names ([#6543](https://github.com/googleapis/librarian/issues/6543)) ([56bf365](https://github.com/googleapis/librarian/commit/56bf365d10860f00bc9059a6d78f5f554c59406c))
+
 ## [0.22.0](https://github.com/googleapis/librarian/compare/v0.21.0...v0.22.0) (2026-06-22)
 
 
