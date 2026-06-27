@@ -50,7 +50,7 @@ func findVersion(output string) ([]versionAndClient, error) {
 			return nil, err
 		}
 		matches := clientExportRegex.FindAllStringSubmatch(string(content), -1)
-		if len(matches) == 0 {
+		if len(matches) != 1 {
 			return nil, errClientNotFound
 		}
 		versions = append(versions, versionAndClient{
