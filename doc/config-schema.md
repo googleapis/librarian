@@ -300,7 +300,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
-| `api_path_to_group_id` | map[string]string |  |
+| `api_path_to_group_id` | map[string]string | Is a map of API paths to group IDs for Java. |
 
 ## JavaFileCopy Configuration
 
