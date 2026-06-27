@@ -16,7 +16,7 @@ package java
 
 import (
 	"errors"
-  "path/filepath"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
