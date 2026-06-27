@@ -128,7 +128,7 @@ func TestFindVersion_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantErr: errNoClientFound,
+			wantErr: errClientNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

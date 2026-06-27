@@ -24,7 +24,7 @@ import (
 var (
 	versionRegex      = regexp.MustCompile(`^(v\d+(_\d+)*)`)
 	clientExportRegex = regexp.MustCompile(`export\s*\{\s*([A-Za-z0-9_]+Client)\s*\}\s*from\s*['"][^'"]+['"]`)
-	errNoClientFound  = errors.New("do not find client export in index")
+	errClientNotFound = errors.New("client not found in index.ts")
 )
 
 type versionAndClient struct {
@@ -51,7 +51,7 @@ func findVersion(output string) ([]versionAndClient, error) {
 		}
 		matches := clientExportRegex.FindAllStringSubmatch(string(content), -1)
 		if len(matches) == 0 {
-			return nil, errNoClientFound
+			return nil, errClientNotFound
 		}
 		versions = append(versions, versionAndClient{
 			Version: e.Name(),
