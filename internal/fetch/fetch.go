@@ -392,11 +392,9 @@ func fileExists(name string) bool {
 	return stat.Mode().IsRegular()
 }
 
+// stripTopLevelDir removes the top-level directory prefix (such as "{repo}-{commit}/")
+// that GitHub automatically adds to repository archive entries.
 func stripTopLevelDir(name string) (string, bool) {
-	// When GitHub creates a tarball archive of a repository, it wraps all
-	// the files in a top-level directory named in the format
-	// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
-	// prefix.
 	parts := strings.SplitN(name, "/", 2)
 	if len(parts) == 2 {
 		return parts[1], true
