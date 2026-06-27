@@ -32,6 +32,8 @@ type versionAndClient struct {
 	Client  string
 }
 
+// findVersionAndClient scans the package source directory to discover API versions
+// and their corresponding exported service client names.
 func findVersionAndClient(output string) ([]versionAndClient, error) {
 	output = filepath.Clean(output)
 	srcDir := filepath.Join(output, "src")
