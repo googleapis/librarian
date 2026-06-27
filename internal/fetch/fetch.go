@@ -404,6 +404,9 @@ func stripTopLevelDir(name string) (string, bool) {
 
 // ExtractTarball extracts a gzipped tarball to the specified directory.
 func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bool)) error {
+	if filter == nil {
+		filter = func(name string) (string, bool) { return name, true }
+	}
 	f, err := os.Open(tarballPath)
 	if err != nil {
 		return err
