@@ -326,15 +326,36 @@ func TestFillDefaults_Java(t *testing.T) {
 			},
 		},
 		{
-			name: "do not override artifact id or group id if already set",
+			name: "do not fill if artifact id already set",
+			lib: &config.Library{
+				Name: "example-lib",
+				APIs: []*config.API{
+					{Path: "google/example/v1"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "example-lib",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "example-lib",
+				APIs: []*config.API{
+					{Path: "google/example/v1"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "example-lib",
+				},
+			},
+		},
+		{
+			name: "do not fill if group id lready set",
 			lib: &config.Library{
 				Name: "common-protos",
 				APIs: []*config.API{
 					{Path: "google/shopping/type"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "proto-google-common-protos",
-					GroupID:    "com.google.api.grpc",
+					GroupID: "com.google.api.grpc",
 				},
 			},
 			defaults: defaults,
@@ -344,8 +365,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/type"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "proto-google-common-protos",
-					GroupID:    "com.google.api.grpc",
+					GroupID: "com.google.api.grpc",
 				},
 			},
 		},
