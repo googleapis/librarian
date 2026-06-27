@@ -368,7 +368,9 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "lib",
 				APIs: []*config.API{{Path: "google/example/v1"}},
 			},
-			defaults: nil,
+			defaults: &config.Default{
+				Java: &config.JavaDefault{},
+			},
 			want: &config.Library{
 				Name: "lib",
 				APIs: []*config.API{{Path: "google/example/v1"}},
