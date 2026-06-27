@@ -66,6 +66,7 @@ jobs:
   create-issue-on-failure:
     needs: [test, integration]
     permissions:
+      contents: read
       issues: write
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     uses: ./.github/workflows/create-issue-on-failure.yaml
