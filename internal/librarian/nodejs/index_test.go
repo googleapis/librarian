@@ -15,6 +15,7 @@
 package nodejs
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -98,6 +99,44 @@ func TestFindVersion(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got, cmp.AllowUnexported(versionAndClient{})); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, dir string)
+		wantErr error
+	}{
+		{
+			name: "missing src dir",
+			setup: func(t *testing.T, dir string) {
+				// Do nothing
+			},
+			wantErr: os.ErrNotExist,
+		},
+		{
+			name: "missing client export in index.ts",
+			setup: func(t *testing.T, dir string) {
+				v1Dir := filepath.Join(dir, "src", "v1")
+				if err := os.MkdirAll(v1Dir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(v1Dir, "index.ts"), []byte("export const foo = 'bar';"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errNoClientFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			test.setup(t, tmpDir)
+			_, err := findVersion(tmpDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("findVersion() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
