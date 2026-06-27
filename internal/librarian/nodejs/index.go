@@ -23,7 +23,7 @@ import (
 
 var (
 	versionRegex      = regexp.MustCompile(`^(v\d+(_\d+)*)`)
-	clientExportRegex = regexp.MustCompile(`export\s*\{\s*([A-Za-z0-9_]+)\s*\}\s*from\s*['"][^'"]+['"]`)
+	clientExportRegex = regexp.MustCompile(`export\s*\{\s*([A-Za-z0-9_]+Client)\s*\}\s*from\s*['"][^'"]+['"]`)
 	errNoClientFound  = errors.New("do not find client export in index")
 )
 
@@ -49,13 +49,13 @@ func findVersion(output string) ([]versionAndClient, error) {
 		if err != nil {
 			return nil, err
 		}
-		matches := clientExportRegex.FindStringSubmatch(string(content))
-		if len(matches) != 1 {
+		matches := clientExportRegex.FindAllStringSubmatch(string(content), -1)
+		if len(matches) == 0 {
 			return nil, errNoClientFound
 		}
 		versions = append(versions, versionAndClient{
 			Version: e.Name(),
-			Client:  matches[1],
+			Client:  matches[0][1],
 		})
 	}
 	return versions, nil
