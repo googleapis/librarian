@@ -459,7 +459,8 @@ type DartPackage struct {
 // JavaDefault contains Java-specific default configuration.
 type JavaDefault struct {
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
+	LibrariesBOMVersion string            `yaml:"libraries_bom_version,omitempty"`
+	APIPathToGroupID    map[string]string `yaml:"api_path_to_group_id,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.
