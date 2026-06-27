@@ -287,13 +287,13 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 }
 
 // Download downloads a file from the given url to the target path, verifying
-// its SHA256 checksum matches expectedSha256. It retries up to
+// its SHA256 checksum matches expectedSHA256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
-func Download(ctx context.Context, target, url, expectedSha256 string) error {
+func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if fileExists(target) {
 		return nil
 	}
-	if expectedSha256 == "" {
+	if expectedSHA256 == "" {
 		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
@@ -319,8 +319,8 @@ func Download(ctx context.Context, target, url, expectedSha256 string) error {
 	if err != nil {
 		return err
 	}
-	if sha != expectedSha256 {
-		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSha256, sha)
+	if sha != expectedSHA256 {
+		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
 	}
 	return os.Rename(tempPath, target)
 }
