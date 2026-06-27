@@ -1,6 +1,6 @@
-# API Allowlist Schema
+# SDK YAML Schema
 
-This document describes the schema for the API Allowlist.
+This document describes the schema for the SDK YAML.
 
 ## API Configuration
 
