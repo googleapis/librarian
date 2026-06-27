@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -712,6 +713,37 @@ func TestApplyDefaults(t *testing.T) {
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
 					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
 				}
+			}
+		})
+	}
+}
+
+func TestApplyDefaults_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		lib      *config.Library
+		wantErr  error
+	}{
+		{
+			name:     "mixed library without explicit output returns error",
+			language: config.LanguageRust,
+			lib: &config.Library{
+				Name: "storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{{APIPath: "google/storage/v2"}},
+				},
+			},
+			wantErr: errNoExplicitOutput,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Output: "src/generated",
+			}
+			_, err := applyDefaults(test.language, test.lib, defaults)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
