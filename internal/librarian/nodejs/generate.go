@@ -150,6 +150,7 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 			res.Mixins = apiConfig.Mixins
 		}
 		res.OmitCommonResources = apiConfig.OmitCommonResources
+		res.CompatibilityResources = apiConfig.CompatibilityResources
 	}
 
 	var protos []string
@@ -235,6 +236,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 	if nodejsAPI.DIREGAPIC {
 		args = append(args, "--diregapic")
+	}
+	if len(nodejsAPI.CompatibilityResources) > 0 {
+		args = append(args, "--compatibility-resources", strings.Join(nodejsAPI.CompatibilityResources, ";"))
 	}
 
 	if library.Nodejs != nil {
