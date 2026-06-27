@@ -146,7 +146,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
-	if err := download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
+	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
 	if err := extractTarball(tgz, outDir); err != nil {
@@ -286,10 +286,10 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
-// download downloads a file from the given url to the target path, verifying
+// Download downloads a file from the given url to the target path, verifying
 // its SHA256 checksum matches expectedSha256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
-func download(ctx context.Context, target, url, expectedSha256 string) error {
+func Download(ctx context.Context, target, url, expectedSha256 string) error {
 	if fileExists(target) {
 		return nil
 	}
