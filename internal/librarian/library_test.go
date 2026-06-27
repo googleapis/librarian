@@ -726,7 +726,7 @@ func TestApplyDefaults_Error(t *testing.T) {
 		wantErr  error
 	}{
 		{
-			name:     "mixed library without explicit output returns error",
+			name:     "veneer without output returns error",
 			language: config.LanguageRust,
 			lib: &config.Library{
 				Name: "storage",
