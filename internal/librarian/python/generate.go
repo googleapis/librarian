@@ -215,7 +215,7 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 		repoMetadata.Name = library.Name
 	}
 	repoMetadata.LibraryType = packageOptions.LibraryType
-	repoMetadata.ClientDocumentation = BuildClientDocumentationURI(library.Name, repoMetadata.Name)
+	repoMetadata.ClientDocumentation = buildClientDocumentationURI(library.Name, repoMetadata.Name)
 	// Even after migration oddities, just a few libraries don't fit into the
 	// normal pattern for client documentation URI (e.g. the documentation is
 	// in cloud.google.com when it would be expected to be in googleapis.dev).
@@ -229,12 +229,9 @@ func createRepoMetadata(cfg *config.Config, library *config.Library, googleapisD
 	return repoMetadata, nil
 }
 
-// BuildClientDocumentationURI builds the URI for the client documentation
+// buildClientDocumentationURI builds the URI for the client documentation
 // for the library.
-// TODO(https://github.com/googleapis/librarian/issues/4175): make this function
-// package-private (or inline it) after migration, when we won't need to
-// determine whether or not to specify an override.
-func BuildClientDocumentationURI(libraryName, repoMetadataName string) string {
+func buildClientDocumentationURI(libraryName, repoMetadataName string) string {
 	// Work out the right documentation URI based on whether this is a Cloud
 	// or non-Cloud API.
 	docTemplate := cloudGoogleComDocumentationTemplate
@@ -252,7 +249,6 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	// the correct final position in the repository.
 	// TODO(https://github.com/googleapis/librarian/issues/3210): generate
 	// directly in place.
-
 	protoOnly := isProtoOnly(api, library)
 	stagingChildDirectory := getStagingChildDirectory(api.Path, protoOnly)
 	stagingDir := filepath.Join(generationRoot, "owl-bot-staging", library.Name, stagingChildDirectory)
