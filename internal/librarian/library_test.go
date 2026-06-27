@@ -244,9 +244,10 @@ func TestFillDefaults_Java(t *testing.T) {
 		},
 	}
 	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		want *config.Library
+		name     string
+		lib      *config.Library
+		defaults *config.Default
+		want     *config.Library
 	}{
 		{
 			name: "shopping library",
@@ -257,6 +258,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/merchant/issueresolution/v1beta"},
 				},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "shopping-merchant-issue-resolution",
 				APIs: []*config.API{
@@ -275,6 +277,7 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "maps-routeoptimization",
 				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "maps-routeoptimization",
 				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
@@ -290,6 +293,7 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "admanager",
 				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "admanager",
 				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
@@ -308,6 +312,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/analytics/admin/v1alpha"},
 				},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "analytics-admin",
 				APIs: []*config.API{
@@ -332,6 +337,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					GroupID:    "com.google.api.grpc",
 				},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "common-protos",
 				APIs: []*config.API{
@@ -349,15 +355,29 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "unknown",
 				APIs: []*config.API{{Path: "google/unknown/v1"}},
 			},
+			defaults: defaults,
 			want: &config.Library{
 				Name: "unknown",
 				APIs: []*config.API{{Path: "google/unknown/v1"}},
 				Java: &config.JavaModule{},
 			},
 		},
+		{
+			name: "library does not change with nil map",
+			lib: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+			},
+			defaults: nil,
+			want: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := fillJava(test.lib, defaults)
+			got := fillJava(test.lib, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
