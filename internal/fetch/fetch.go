@@ -128,7 +128,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 				if err := os.MkdirAll(outDir, 0755); err != nil {
 					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 				}
-				if err := extractTarball(tgz, outDir); err == nil {
+				if err := ExtractTarball(tgz, outDir, stripTopLevelDir); err == nil {
 					return outDir, nil
 				}
 			}
@@ -146,10 +146,10 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
-	if err := download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
+	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
-	if err := extractTarball(tgz, outDir); err != nil {
+	if err := ExtractTarball(tgz, outDir, stripTopLevelDir); err != nil {
 		return "", fmt.Errorf("failed to extract tarball: %w", err)
 	}
 	return outDir, nil
@@ -286,14 +286,14 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
-// download downloads a file from the given url to the target path, verifying
-// its SHA256 checksum matches expectedSha256. It retries up to
+// Download downloads a file from the given url to the target path, verifying
+// its SHA256 checksum matches expectedSHA256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
-func download(ctx context.Context, target, url, expectedSha256 string) error {
+func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if fileExists(target) {
 		return nil
 	}
-	if expectedSha256 == "" {
+	if expectedSHA256 == "" {
 		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
@@ -319,8 +319,8 @@ func download(ctx context.Context, target, url, expectedSha256 string) error {
 	if err != nil {
 		return err
 	}
-	if sha != expectedSha256 {
-		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSha256, sha)
+	if sha != expectedSHA256 {
+		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
 	}
 	return os.Rename(tempPath, target)
 }
@@ -392,9 +392,21 @@ func fileExists(name string) bool {
 	return stat.Mode().IsRegular()
 }
 
-// extractTarball extracts a gzipped tarball to the specified directory,
-// stripping the top-level directory prefix that GitHub adds to tarballs.
-func extractTarball(tarballPath, destDir string) error {
+// stripTopLevelDir removes the top-level directory prefix (such as "{repo}-{commit}/")
+// that GitHub automatically adds to repository archive entries.
+func stripTopLevelDir(name string) (string, bool) {
+	parts := strings.SplitN(name, "/", 2)
+	if len(parts) == 2 {
+		return parts[1], true
+	}
+	return "", false
+}
+
+// ExtractTarball extracts a gzipped tarball to the specified directory.
+func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bool)) error {
+	if filter == nil {
+		filter = func(name string) (string, bool) { return name, true }
+	}
 	f, err := os.Open(tarballPath)
 	if err != nil {
 		return err
@@ -417,18 +429,10 @@ func extractTarball(tarballPath, destDir string) error {
 			return err
 		}
 
-		// When GitHub creates a tarball archive of a repository, it wraps all
-		// the files in a top-level directory named in the format
-		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
-		// prefix.
-		name := hdr.Name
-		parts := strings.SplitN(name, "/", 2)
-		if len(parts) == 2 {
-			name = parts[1]
-		} else {
+		name, ok := filter(hdr.Name)
+		if !ok {
 			continue
 		}
-
 		target := filepath.Join(destDir, name)
 		switch hdr.Typeflag {
 		case tar.TypeDir:

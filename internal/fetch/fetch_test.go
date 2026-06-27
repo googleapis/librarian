@@ -446,7 +446,7 @@ func TestDownload_TgzExists(t *testing.T) {
 	if err := os.WriteFile(target, tarball.Contents, 0644); err != nil {
 		t.Fatal(err)
 	}
-	if err := download(t.Context(), target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
+	if err := Download(t.Context(), target, "https://unused/placeholder.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -464,7 +464,7 @@ func TestDownload_NeedsDownload(t *testing.T) {
 	defer server.Close()
 
 	expected := path.Join(testDir, "new-file")
-	if err := download(t.Context(), expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
+	if err := Download(t.Context(), expected, server.URL+"/placeholder.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
 	got, err := os.ReadFile(expected)
@@ -488,7 +488,7 @@ func TestDownload_ChecksumMismatch(t *testing.T) {
 	target := path.Join(testDir, "target-file")
 	wrongSha := "0000000000000000000000000000000000000000000000000000000000000000"
 
-	err := download(t.Context(), target, server.URL+"/test.tar.gz", wrongSha)
+	err := Download(t.Context(), target, server.URL+"/test.tar.gz", wrongSha)
 	if !errors.Is(err, errChecksumMismatch) {
 		t.Fatalf("expected errChecksumMismatch, got: %v", err)
 	}
@@ -516,7 +516,7 @@ func TestDownload_ContextCanceled(t *testing.T) {
 		cancel()
 	}()
 
-	err := download(ctx, target, server.URL+"/test.tar.gz", "any-sha")
+	err := Download(ctx, target, server.URL+"/test.tar.gz", "any-sha")
 	if !errors.Is(err, context.Canceled) {
 		t.Fatalf("expected context.Canceled, got: %v", err)
 	}
@@ -557,7 +557,7 @@ func TestExtractTarball(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := extractTarball(tarballPath, destDir); err != nil {
+	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -760,7 +760,7 @@ func TestExtractTarball_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := extractTarball(test.tarballPath(t), test.dest(t))
+			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
@@ -803,7 +803,7 @@ func TestExtractTarball_PathError(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := extractTarball(test.tarballPath(t), test.dest(t))
+			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
 			var pathErr *fs.PathError
 			if !errors.As(err, &pathErr) {
 				t.Fatalf("got error %v, want *fs.PathError", err)
@@ -834,7 +834,8 @@ func TestDownload_Error(t *testing.T) {
 			},
 			sha:     "any-sha",
 			wantErr: true,
-		}, {
+		},
+		{
 			name: "cannot create parent directory",
 			target: func(t *testing.T) string {
 				// Create a read-only directory to trigger a permission error.
@@ -860,9 +861,9 @@ func TestDownload_Error(t *testing.T) {
 			t.Cleanup(func() {
 				defaultBackoff = 10 * time.Second
 			})
-			err := download(context.Background(), test.target(t), test.url(t), test.sha)
+			err := Download(context.Background(), test.target(t), test.url(t), test.sha)
 			if (err != nil) != test.wantErr {
-				t.Errorf("download() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("Download() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -870,7 +871,7 @@ func TestDownload_Error(t *testing.T) {
 
 func TestDownload_EmptySha(t *testing.T) {
 	target := path.Join(t.TempDir(), "target")
-	err := download(t.Context(), target, "https://any-url", "")
+	err := Download(t.Context(), target, "https://any-url", "")
 	if !errors.Is(err, errMissingSHA256) {
 		t.Errorf("expected errMissingSHA256, got: %v", err)
 	}
@@ -980,7 +981,7 @@ func TestDownload_RetryErrorIncludesLastFailure(t *testing.T) {
 	defer server.Close()
 
 	target := path.Join(t.TempDir(), "target-file")
-	err := download(t.Context(), target, server.URL+"/test.tar.gz", "any-sha")
+	err := Download(t.Context(), target, server.URL+"/test.tar.gz", "any-sha")
 	if err == nil {
 		t.Fatal("expected an error")
 	}
@@ -1011,7 +1012,7 @@ func TestDownload_RetrySucceeds(t *testing.T) {
 	defer server.Close()
 
 	target := path.Join(t.TempDir(), "target-file")
-	if err := download(t.Context(), target, server.URL+"/test.tar.gz", tarball.Sha256); err != nil {
+	if err := Download(t.Context(), target, server.URL+"/test.tar.gz", tarball.Sha256); err != nil {
 		t.Fatal(err)
 	}
 
@@ -1114,7 +1115,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := extractTarball(tarballPath, destDir); err != nil {
+	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
 		t.Fatal(err)
 	}
 
