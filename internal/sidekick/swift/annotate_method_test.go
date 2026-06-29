@@ -26,14 +26,16 @@ import (
 func TestAnnotateMethod(t *testing.T) {
 	keyField := &api.Field{Name: "key", ID: ".test.Request.key", Typez: api.TypezString}
 	inputType := &api.Message{
-		Name:   "Request",
-		ID:     ".test.Request",
-		Fields: []*api.Field{keyField},
+		Name:    "Request",
+		ID:      ".test.Request",
+		Package: "test",
+		Fields:  []*api.Field{keyField},
 	}
 	keyField.Parent = inputType
 	outputType := &api.Message{
-		Name: "Response",
-		ID:   ".test.Response",
+		Name:    "Response",
+		ID:      ".test.Response",
+		Package: "test",
 		Fields: []*api.Field{
 			{Name: "value", ID: ".test.Request.value", Typez: api.TypezString},
 		},
@@ -64,7 +66,7 @@ func TestAnnotateMethod(t *testing.T) {
 				DocLines:       []string{"Gets a thing.", "", "Test multiple comment lines.", ""},
 				HTTPMethod:     "GET",
 				HasBody:        false,
-				ReturnType:     "Response",
+				ReturnType:     "GoogleTest.Response",
 			},
 		},
 		{
@@ -88,7 +90,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HasBody:        true,
 				IsBodyWildcard: false,
 				BodyField:      "key",
-				ReturnType:     "Response",
+				ReturnType:     "GoogleTest.Response",
 			},
 		},
 		{
@@ -111,7 +113,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "POST",
 				HasBody:        true,
 				IsBodyWildcard: true,
-				ReturnType:     "Response",
+				ReturnType:     "GoogleTest.Response",
 			},
 		},
 		{
@@ -136,7 +138,7 @@ func TestAnnotateMethod(t *testing.T) {
 				HTTPMethod:     "GET",
 				HasBody:        false,
 				QueryParams:    []*api.Field{keyField},
-				ReturnType:     "Response",
+				ReturnType:     "GoogleTest.Response",
 			},
 		},
 	} {
@@ -162,6 +164,9 @@ func TestAnnotateMethod(t *testing.T) {
 			got := test.method.Codec.(*methodAnnotations)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if !got.PlainRPC() {
+				t.Errorf("got.PlainRPC() == true, want false\ngot=%+v", got)
 			}
 		})
 	}
@@ -361,13 +366,17 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
 	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)
+	}
 
 	// Verify request message annotations
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:        "ListRequest",
-		TypeURL:     "type.googleapis.com/test.ListRequest",
-		SampleField: "pageSize",
+		Name:              "ListRequest",
+		TypeURL:           "type.googleapis.com/test.ListRequest",
+		SampleField:       "pageSize",
+		ParameterTypeName: "ListRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -386,6 +395,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		PageableItemField:   "items",
 		PageableItemType:    "Item",
 		SampleField:         "items",
+		ParameterTypeName:   "ListResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -468,6 +478,9 @@ func TestAnnotateMethod_LRO(t *testing.T) {
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)
+	}
 }
 
 func TestAnnotateMethod_LRO_Empty(t *testing.T) {
@@ -535,5 +548,8 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
+	}
+	if gotMethod.PlainRPC() {
+		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)
 	}
 }

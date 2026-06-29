@@ -46,6 +46,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Secret",
 				CustomSerialization: false,
 				SampleField:         "secretKey",
+				ParameterTypeName:   "Secret",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -63,6 +64,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Protocol",
 				CustomSerialization: false,
 				SampleField:         "<placeholder>",
+				ParameterTypeName:   "Protocol_",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -79,6 +81,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithOneof",
 				CustomSerialization: true,
 				SampleField:         "<placeholder>",
+				ParameterTypeName:   "WithOneof",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -97,6 +100,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.WithCustomJSON",
 				CustomSerialization: true,
 				SampleField:         "secretKey",
+				ParameterTypeName:   "WithCustomJSON",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
 		},
@@ -122,8 +126,27 @@ func TestAnnotateMessage(t *testing.T) {
 				PageableItemField:   "secretKey",
 				PageableItemType:    "SecretKey",
 				SampleField:         "secretKey",
+				ParameterTypeName:   "WithPagination",
 			},
 			wantImports: []string{"GoogleCloudGax", "GoogleCloudWkt"},
+		},
+		{
+			name: "service placeholder",
+			message: &api.Message{
+				Name:               "Service",
+				ID:                 ".test.Service",
+				Package:            "test",
+				ServicePlaceholder: true,
+			},
+			want: &messageAnnotations{
+				Name:                "Service",
+				TypeURL:             "type.googleapis.com/test.Service",
+				CustomSerialization: false,
+				SampleField:         "<placeholder>",
+				ParameterTypeName:   "Clients.ServiceClient",
+				PlaceholderName:     "ServiceClient",
+			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -139,6 +162,193 @@ func TestAnnotateMessage(t *testing.T) {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_Discovery(t *testing.T) {
+	mapMessage := &api.Message{
+		Name:  "map<string, bytes>",
+		ID:    "$map<string, bytes>",
+		IsMap: true,
+		Fields: []*api.Field{
+			{Name: "key", JSONName: "key", Typez: api.TypezString},
+			{Name: "value", JSONName: "value", Typez: api.TypezBytes},
+		},
+	}
+
+	for _, test := range []struct {
+		name    string
+		message *api.Message
+		want    *messageAnnotations
+	}{
+		{
+			name: "simple",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezString},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: false,
+				SampleField:         "field",
+				ParameterTypeName:   "Secret",
+			},
+		},
+		{
+			name: "required",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+				ParameterTypeName:   "Secret",
+			},
+		},
+		{
+			name: "optional",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Optional: true},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+				ParameterTypeName:   "Secret",
+			},
+		},
+		{
+			name: "repeated",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{Name: "field", JSONName: "field", ID: ".test.Secret.field", Typez: api.TypezBytes, Repeated: true},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+				ParameterTypeName:   "Secret",
+			},
+		},
+		{
+			name: "map",
+			message: &api.Message{
+				Name:    "Secret",
+				ID:      ".test.Secret",
+				Package: "test",
+				Fields: []*api.Field{
+					{
+						Name:     "field",
+						JSONName: "field",
+						ID:       ".test.Secret.field",
+						Typez:    api.TypezMessage,
+						TypezID:  mapMessage.ID,
+						Map:      true,
+					},
+				},
+			},
+			want: &messageAnnotations{
+				Name:                "Secret",
+				TypeURL:             "type.googleapis.com/test.Secret",
+				CustomSerialization: true,
+				SampleField:         "field",
+				ParameterTypeName:   "Secret",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for _, f := range test.message.Fields {
+				f.Parent = test.message
+			}
+			model := api.NewTestAPI([]*api.Message{test.message}, []*api.Enum{}, []*api.Service{})
+			model.AddMessage(mapMessage)
+			codec := newTestCodec(t, model, map[string]string{})
+			codec.UrlSafeForBytes = true
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want, +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		service *api.Service
+		request *api.Message
+		want    *messageAnnotations
+	}{
+		{
+			name:    "basic message",
+			service: &api.Service{Name: "Service", Package: "test", ID: ".test.Service"},
+			request: &api.Message{Name: "getRequest", Package: "test", ID: ".test.Service.getRequest", SyntheticRequest: true},
+			want: &messageAnnotations{
+				Name:              "GetRequest",
+				TypeURL:           "type.googleapis.com/test.Service.getRequest",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "Clients.ServiceClient.GetRequest",
+			},
+		},
+		{
+			name:    "service with reserved name",
+			service: &api.Service{Name: "Protocol", Package: "test", ID: ".test.Protocol"},
+			request: &api.Message{Name: "listRequest", Package: "test", ID: ".test.Protocol.listRequest", SyntheticRequest: true},
+			want: &messageAnnotations{
+				Name:              "ListRequest",
+				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
+				SampleField:       "<placeholder>",
+				ParameterTypeName: "Clients.ProtocolClient.ListRequest",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			// Discovery requests are synthetic. The messages are injected into the data
+			// model by sidekick. To avoid clashes, sidekick puts the request messages
+			// within a placeholder named after the service.
+			servicePlaceholder := &api.Message{
+				Name:               test.service.Name,
+				Package:            test.service.Package,
+				ID:                 test.service.ID,
+				ServicePlaceholder: true,
+			}
+			test.request.Parent = servicePlaceholder
+			servicePlaceholder.Messages = append(servicePlaceholder.Messages, test.request)
+			model := api.NewTestAPI([]*api.Message{servicePlaceholder}, []*api.Enum{}, []*api.Service{test.service})
+			model.AddMessage(test.request)
+			codec := newTestCodec(t, model, map[string]string{})
+			if err := codec.annotateModel(); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 				t.Errorf("mismatch (-want, +got):\n%s", diff)
 			}
 		})
@@ -211,9 +421,10 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 	// Verify annotations on request message
 	gotRequest := inputType.Codec.(*messageAnnotations)
 	wantRequest := &messageAnnotations{
-		Name:        "ListSecretsRequest",
-		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
-		SampleField: "pageSize",
+		Name:              "ListSecretsRequest",
+		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.ListSecretsRequest",
+		SampleField:       "pageSize",
+		ParameterTypeName: "ListSecretsRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -232,6 +443,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		PageableItemField:   "secrets",
 		PageableItemType:    "Secret",
 		SampleField:         "secrets",
+		ParameterTypeName:   "ListSecretsResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)
@@ -281,9 +493,10 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 
 	gotOuter := outerMessage.Codec.(*messageAnnotations)
 	wantOuter := &messageAnnotations{
-		Name:        "OuterMessage",
-		TypeURL:     "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
-		SampleField: "<placeholder>",
+		Name:              "OuterMessage",
+		TypeURL:           "type.googleapis.com/google.cloud.secretmanager.v1.OuterMessage",
+		SampleField:       "<placeholder>",
+		ParameterTypeName: "OuterMessage",
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
 		t.Errorf("mismatch (-want, +got):\n%s", diff)

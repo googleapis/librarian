@@ -505,6 +505,20 @@ func TestPostProcessAPI_AlternateHeaders(t *testing.T) {
 	if !bytes.HasPrefix(got, []byte(wantHeader)) {
 		t.Errorf("mismatch got = %q, want %q", got, wantHeader)
 	}
+	if err := os.WriteFile(grpcFile, []byte("package com.test;"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params.javaAPI.Monolithic = true
+	if err := addHeaders(params, []string{gRPCDir}); err != nil {
+		t.Fatal(err)
+	}
+	got, err = os.ReadFile(grpcFile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !bytes.HasPrefix(got, []byte(wantHeader)) {
+		t.Errorf("monolithic mismatch got = %q, want %q", got, wantHeader)
+	}
 }
 
 func TestCopyProtos_Success(t *testing.T) {

@@ -45,8 +45,6 @@ const (
 	LanguageRuby = "ruby"
 	// LanguageRust is the language identifier for Rust.
 	LanguageRust = "rust"
-	// LanguageSurfer is the language identifier for gcloud command surfaces.
-	LanguageSurfer = "surfer"
 	// LanguageSwift is the language identifier for Swift.
 	LanguageSwift = "swift"
 )
@@ -770,9 +768,6 @@ type NodejsPackage struct {
 	// handwritten layer.
 	MainService string `yaml:"main_service,omitempty"`
 
-	// Mixins controls mixin behavior (e.g., "none" to disable).
-	Mixins string `yaml:"mixins,omitempty"`
-
 	// NodejsAPIs is a list of Node.js-specific API configurations.
 	NodejsAPIs []*NodejsAPI `yaml:"nodejs_apis,omitempty"`
 
@@ -793,41 +788,14 @@ type NodejsAPI struct {
 	// This is typically false. Used for the GCE (compute) client.
 	DIREGAPIC bool `yaml:"diregapic,omitempty"`
 
+	// Mixins controls mixin behavior for this API (e.g., "none" to disable).
+	// When set, this overrides the package-level mixins setting.
+	Mixins string `yaml:"mixins,omitempty"`
+
 	// OmitCommonResources indicates whether to omit the default inclusion of
 	// google/cloud/common_resources.proto.
 	OmitCommonResources bool `yaml:"omit_common_resources,omitempty"`
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
-}
-
-// Surfer contains gcloud-specific library configuration. Surfer is related to gcloud command generation.
-type Surfer struct {
-	// HelpText contains help text overrides for the surface.
-	HelpText *GcloudHelpTextRules `yaml:"help_text,omitempty"`
-}
-
-// GcloudHelpTextRules contains rules for various types of help text within an API
-// surface.
-type GcloudHelpTextRules struct {
-	// MethodRules defines help text rules specifically for API methods (commands).
-	MethodRules []*GcloudHelpTextRule `yaml:"method_rules,omitempty"`
-
-	// FieldRules defines help text rules specifically for individual fields (flags/arguments).
-	FieldRules []*GcloudHelpTextRule `yaml:"field_rules,omitempty"`
-}
-
-// GcloudHelpTextRule maps an API selector to its corresponding help text content.
-type GcloudHelpTextRule struct {
-	// Selector is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method").
-	Selector string `yaml:"selector"`
-
-	// Brief is a concise, single-line summary of the help text.
-	Brief string `yaml:"brief,omitempty"`
-
-	// Description provides a detailed, multi-line description.
-	Description string `yaml:"description,omitempty"`
-
-	// Examples provides a list of examples illustrating how to use the element.
-	Examples []string `yaml:"examples,omitempty"`
 }

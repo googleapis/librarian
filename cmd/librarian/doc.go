@@ -66,6 +66,10 @@ If the API path should naturally be included in an existing library, and if the
 language supports doing so, that library is modified. Otherwise, a new library
 is created.
 
+While release-please is responsible for library releases, the relevant
+release-please configuration will be updated as necessary to onboard any new
+library.
+
 To add a preview client of an existing library, prefix the API path with
 "preview/".
 

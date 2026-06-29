@@ -76,7 +76,7 @@ func TestGenerateService_StubStructure(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Clients", "ProtocolStub.swift")
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Protocol+Stub.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
@@ -86,7 +86,7 @@ func TestGenerateService_StubStructure(t *testing.T) {
 	got := extractBlock(t, contentStr, `  protocol ProtocolStub {`, "\n"+`  }`)
 	want := `  protocol ProtocolStub {
     func getThing(
-    request: Request, options: GoogleCloudGax.RequestOptions
+    request: SomeTestPackage.Request, options: GoogleCloudGax.RequestOptions
 ) async throws -> SomeTestPackage.Response
 
   }`
@@ -190,7 +190,7 @@ func TestGenerateService_QueryParameters(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	filename := filepath.Join(outDir, "Sources", "GoogleTest", "Clients", "ServiceStub.swift")
+	filename := filepath.Join(outDir, "Sources", "GoogleTest", "Service+Stub.swift")
 	content, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)

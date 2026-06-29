@@ -51,6 +51,24 @@ type messageAnnotations struct {
 	// service that needs them is enabled. Messages that do not map to any
 	// service use " && ".
 	GatedOp string
+
+	// In discovery-based APIs, the requests messages are nested messages of a
+	// message that is not generated, it is just a placeholder to represent the
+	// service. This placeholder provides a namespace for the requests.
+	//
+	// In the generated code, the namespace is implemented by the client struct,
+	// this is the name of this struct.
+	PlaceholderName string
+
+	// The message type name when it appears as a method parameter name.
+	//
+	// Most of the time the request types are in the package namespace, or are
+	// imported with the mixin, e.g. `import GoogleCloudIamV1` imports the IAM
+	// mixin request types.
+	//
+	// For discovery-based APIs, the request are synthetic and generated within
+	// a scope. They need to be fully qualified.
+	ParameterTypeName string
 }
 
 // MessageImports returns the list of dependencies for this message.
@@ -97,6 +115,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 	if len(message.Fields) != 0 {
 		sampleField = camelCase(message.Fields[0].Name)
 	}
+	parameterTypeName, err := c.messageTypeName(message)
+	if err != nil {
+		return err
+	}
 	annotations := &messageAnnotations{
 		Name:                pascalCase(message.Name),
 		DocLines:            docLines,
@@ -105,6 +127,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		CustomSerialization: len(message.OneOfs) > 0,
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
+		ParameterTypeName:   parameterTypeName,
+	}
+	if message.ServicePlaceholder {
+		annotations.PlaceholderName = pascalCase(message.Name + "Client")
 	}
 
 	// Ensure the entire package depends on the package this message belongs to.
@@ -133,7 +159,14 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		if err != nil {
 			return err
 		}
-		if fieldCodec.Name != field.JSONName {
+		if fieldCodec.Name != field.JSONName || fieldCodec.UrlSafeValue {
+			annotations.CustomSerialization = true
+		}
+		if field.Map && !fieldCodec.IsStringKeyed() {
+			// In ProtoJSON map fields with non-string keys need to be
+			// serialized as JSON objects with key fields. In the generated
+			// Swift code, that requires a custom implementation of the
+			// `Decodable` and `Encodable` protocol.
 			annotations.CustomSerialization = true
 		}
 		if fieldCodec.PackageName != "" && fieldCodec.PackageName != c.Model.PackageName {
@@ -142,13 +175,6 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 				return err
 			}
 			annotations.DependsOn[dep.Name] = dep
-		}
-		if field.Map && !fieldCodec.IsStringKeyed() {
-			// In ProtoJSON map fields with non-string keys need to be
-			// serialized as JSON objects with key fields. In the generated
-			// Swift code, that requires a custom implementation of the
-			// `Decodable` and `Encodable` protocol.
-			annotations.CustomSerialization = true
 		}
 	}
 

@@ -234,7 +234,12 @@ func TestBuildGeneratorArgs(t *testing.T) {
 		},
 		{
 			name: "with bundle config and extra params",
-			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
 			library: &config.Library{
 				Name: "google-cloud-translate",
 				Nodejs: &config.NodejsPackage{
@@ -242,7 +247,6 @@ func TestBuildGeneratorArgs(t *testing.T) {
 					ExtraProtocParameters: []string{"auto-populate-field-oauth-scope"},
 					HandwrittenLayer:      true,
 					MainService:           "translate",
-					Mixins:                "none",
 				},
 			},
 			want: []string{
@@ -347,6 +351,60 @@ func TestBuildGeneratorArgs(t *testing.T) {
 				"--metadata",
 				"--rest-numeric-enums",
 				"--format=esm",
+			},
+		},
+		{
+			name: "API-level mixin override",
+			api:  &config.API{Path: "google/cloud/secretmanager/v1"},
+			library: &config.Library{
+				Name: "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{
+					NodejsAPIs: []*config.NodejsAPI{
+						{
+							Path:   "google/cloud/secretmanager/v1",
+							Mixins: "none",
+						},
+					},
+				},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--mixins", "none",
+			},
+		},
+		{
+			name: "apis[].nodejs mixin override",
+			api: &config.API{
+				Path: "google/cloud/secretmanager/v1",
+				Nodejs: &config.NodejsAPI{
+					Mixins: "none",
+				},
+			},
+			library: &config.Library{
+				Name:   "google-cloud-secretmanager",
+				Nodejs: &config.NodejsPackage{},
+			},
+			want: []string{
+				"gapic-generator-typescript",
+				"--protoc=" + protocPath,
+				"--common-proto-path=.",
+				"-I", ".",
+				"--output-dir", "staging",
+				"--grpc-service-config", "google/cloud/secretmanager/v1/secretmanager_grpc_service_config.json",
+				"--service-yaml", "google/cloud/secretmanager/v1/secretmanager_v1.yaml",
+				"--package-name", "@google-cloud/secretmanager",
+				"--metadata",
+				"--rest-numeric-enums",
+				"--mixins", "none",
 			},
 		},
 	} {
@@ -568,7 +626,7 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	library := &config.Library{
 		Name: "google-cloud-secretmanager",
 		APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-		Keep: []string{"librarian.js", ".readme-partials.yaml", "README.md"},
+		Keep: []string{"librarian.js", ".readme-partials.yaml"},
 	}
 	outDir := filepath.Join(repoRoot, "packages", library.Name)
 	if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -595,22 +653,14 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(protoDir, "service.proto"), []byte(protoContent), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	librarianJS := filepath.Join(outDir, "librarian.js")
 	if err := os.WriteFile(librarianJS, []byte("const fs = require('fs');\nfs.writeFileSync('librarian-ran.txt', 'yes');\n"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
-	readmePath := filepath.Join(outDir, "README.md")
-	if err := os.WriteFile(readmePath, []byte("Some Title\n[//]: # \"partials.introduction\"\n[//]: # \"partials.body\"\nFooter"), 0644); err != nil {
-		t.Fatal(err)
-	}
-
 	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
 	if err := os.WriteFile(readmePartials, []byte("introduction: 'intro text'\nbody: 'body text'"), 0644); err != nil {
 		t.Fatal(err)
 	}
-
 	cfg := &config.Config{
 		Language: config.LanguageNodejs,
 		Repo:     "googleapis/google-cloud-node",
@@ -626,11 +676,10 @@ func TestRunPostProcessor_CustomScripts(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(repoRoot, "owl-bot-staging")); err != nil {
 		t.Error("expected top-level owl-bot-staging directory to remain intact")
 	}
-
 	if _, err := os.Stat(filepath.Join(repoRoot, "librarian-ran.txt")); err != nil {
 		t.Errorf("expected librarian.js to run and create librarian-ran.txt in repoRoot: %v", err)
 	}
-
+	readmePath := filepath.Join(outDir, "README.md")
 	content, err := os.ReadFile(readmePath)
 	if err != nil {
 		t.Fatal(err)

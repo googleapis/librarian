@@ -128,7 +128,6 @@ This document describes the schema for the librarian.yaml.
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
-| `surfer` | [Surfer](#surfer-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
 
 ## API Configuration
@@ -138,6 +137,7 @@ This document describes the schema for the librarian.yaml.
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
 | `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
+| `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -253,22 +253,6 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
-## GcloudHelpTextRule Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
-| `brief` | string | Is a concise, single-line summary of the help text. |
-| `description` | string | Provides a detailed, multi-line description. |
-| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
-
-## GcloudHelpTextRules Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
-| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
-
 ## GoAPI Configuration
 
 | Field | Type | Description |
@@ -361,6 +345,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `mixins` | string | Controls mixin behavior for this API (e.g., "none" to disable). When set, this overrides the package-level mixins setting. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
 
@@ -376,7 +361,6 @@ This document describes the schema for the librarian.yaml.
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
-| `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
@@ -497,12 +481,6 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | Is the name of the field used for items. |
-
-## Surfer Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
 
 ## SwiftDefault Configuration
 

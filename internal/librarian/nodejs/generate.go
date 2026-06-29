@@ -32,10 +32,8 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/repometadata"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
@@ -133,7 +131,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	}
 
 	var apiConfig *config.NodejsAPI
-	if library.Nodejs != nil {
+	if api.Nodejs != nil {
+		apiConfig = api.Nodejs
+	} else if library.Nodejs != nil {
 		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
 			if nodejsAPI.Path == api.Path {
 				apiConfig = nodejsAPI
@@ -146,6 +146,9 @@ func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAP
 	if apiConfig != nil {
 		omitCommon = apiConfig.OmitCommonResources
 		res.DIREGAPIC = apiConfig.DIREGAPIC
+		if apiConfig.Mixins != "" {
+			res.Mixins = apiConfig.Mixins
+		}
 		res.OmitCommonResources = apiConfig.OmitCommonResources
 	}
 
@@ -250,8 +253,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		if library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", library.Nodejs.MainService)
 		}
-		if library.Nodejs.Mixins != "" {
-			args = append(args, "--mixins", library.Nodejs.Mixins)
+		if nodejsAPI.Mixins != "" {
+			args = append(args, "--mixins", nodejsAPI.Mixins)
 		}
 	}
 	return args, nil
@@ -260,43 +263,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the keep files it would delete, then restore
-	// them afterward.
-	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
-	if err != nil {
-		return fmt.Errorf("failed to create backup dir: %w", err)
-	}
-	defer os.RemoveAll(backupDir)
-	// Backup keep files.
-	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
 		return err
 	}
-
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-	combineArgs := []string{
-		"combine-library",
-		"--source-path", stagingDir,
-		"--destination-path", outDir,
-		"--default-version", resolveDefaultVersion(library),
-	}
-	if library.Nodejs != nil && library.Nodejs.ESM {
-		combineArgs = append(combineArgs, "--is-esm")
-	}
-	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
-		return fmt.Errorf("combine-library: %w", err)
-	}
-	// Restore keep files.
-	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
-		return err
-	}
-	// Copy generated samples from staging into the output directory.
-	// combine-library only handles src/ and protos/; samples are generated
-	// by gapic-generator-typescript but left in staging.
-	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
-		return fmt.Errorf("failed to copy samples from staging: %w", err)
-	}
-
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
 	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -339,38 +308,13 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
-
-	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if _, err := os.Stat(readmePartials); err == nil {
-		type partials struct {
-			Introduction string `yaml:"introduction"`
-			Body         string `yaml:"body"`
-		}
-		p, err := yaml.Read[partials](readmePartials)
-		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
-		}
-		for name, replacement := range map[string]string{
-			"introduction": p.Introduction,
-			"body":         p.Body,
-		} {
-			if replacement == "" {
-				continue
-			}
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
-				fmt.Sprintf("--replacement-string=%s", replacement),
-			); err != nil {
-				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
-			}
+	// TODO(https://github.com/googleapis/librarian/issues/6442): remove this if block
+	// once all readme are generated in google-cloud-node.
+	if !slices.Contains(library.Keep, "README.md") {
+		if err := generateReadme(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to generate README.md: %w", err)
 		}
 	}
-
-	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove package staging: %w", err)
-	}
-
 	if err := removeRedundantLinterFiles(library, outDir); err != nil {
 		return fmt.Errorf("failed to remove redundant linter files: %w", err)
 	}
@@ -380,6 +324,51 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// want it to be in the diff.
 	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
+	return nil
+}
+
+// movePackageFromStaging moves the generated code for a single package from
+// owl-bot-staging (in the repo root) to the package-specific directory.
+func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+	// combine-library wipes the destination directory before writing generated
+	// files (src/, protos/). Save the keep files it would delete, then restore
+	// them afterward.
+	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
+	if err != nil {
+		return fmt.Errorf("failed to create backup dir: %w", err)
+	}
+	defer os.RemoveAll(backupDir)
+	// Backup keep files.
+	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+		return err
+	}
+
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	combineArgs := []string{
+		"combine-library",
+		"--source-path", stagingDir,
+		"--destination-path", outDir,
+		"--default-version", resolveDefaultVersion(library),
+	}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		combineArgs = append(combineArgs, "--is-esm")
+	}
+	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
+		return fmt.Errorf("combine-library: %w", err)
+	}
+	// Restore keep files.
+	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
+		return err
+	}
+	// Copy generated samples from staging into the output directory.
+	// combine-library only handles src/ and protos/; samples are generated
+	// by gapic-generator-typescript but left in staging.
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy samples from staging: %w", err)
+	}
+	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove package staging: %w", err)
 	}
 	return nil
 }
@@ -474,32 +463,13 @@ func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDi
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
 	}
-	metadata.DistributionName = derivePackageName(library)
-	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-	metadata.DefaultVersion = resolveDefaultVersion(library)
-
-	if pkgSuffix, ok := strings.CutPrefix(metadata.DistributionName, "@google-cloud/"); ok {
-		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
-	}
-
-	if library.Nodejs != nil && library.Nodejs.ClientDocumentationOverride != "" {
-		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
-	}
-
-	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {
-		if !strings.HasSuffix(metadata.ProductDocumentation, "/docs") && !strings.HasSuffix(metadata.ProductDocumentation, "/docs/") {
-			metadata.ProductDocumentation = strings.TrimSuffix(metadata.ProductDocumentation, "/") + "/docs"
-		}
-	}
-
 	if err := metadata.Write(outDir); err != nil {
 		return err
 	}
-
 	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
 	// literal ampersand in the .repo-metadata.json.
 	path := filepath.Join(outDir, ".repo-metadata.json")

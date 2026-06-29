@@ -89,6 +89,21 @@ type codec struct {
 	// If true, bytes need to be serialized and deserialized using the URL-safe
 	// base64 alphabet.
 	UrlSafeForBytes bool
+
+	// Tracks generated files, considering case-insensitive filesystems.
+	//
+	// The generated file names are based on message, enum, and service names.
+	// When using case-insensitive filesystems (such as APFS on macOS, or NTFS
+	// on Windows) this can result in filename clashes when two messages differ
+	// only in case, such as `HTTPCheckName` vs. `HttpCheckName`.
+	//
+	// Furthermore, Swift requires all the files in a package to have different
+	// names, even if they are in different subdirectories.
+	//
+	// The codec uses this map to disambiguate names, the number of clashes for
+	// each (lowercased) name are tracked in this hash, and if necessary, the
+	// output file is disambiguated by appending `+${Counter}` to the basename.
+	GeneratedFiles map[string]int
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
