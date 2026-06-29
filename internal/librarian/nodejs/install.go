@@ -98,6 +98,7 @@ func getPNPMEnv(ctx context.Context) ([]string, error) {
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	return env, nil
 }
 

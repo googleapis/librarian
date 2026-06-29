@@ -27,17 +27,17 @@ jobs:
       - uses: ./.github/actions/setup-librarian
       - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6
         with:
-          node-version: "18"
+          node-version: "22"
       - name: "Set up pnpm via corepack"
         run: |
           corepack enable pnpm
-          corepack prepare pnpm@7.32.2 --activate
+          corepack prepare pnpm@11.7.0 --activate
       - name: "Install Node.js dependencies (resolve cache paths)"
         id: tool-paths
         run: |
           echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
       - name: "Install Node.js dependencies (restore cache)"
-        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: tools-cache
         with:
           path: |
