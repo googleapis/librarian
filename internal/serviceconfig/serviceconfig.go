@@ -76,6 +76,24 @@ func Read(serviceConfigPath string) (*Service, error) {
 	return cfg, nil
 }
 
+// findAPI looks up the API by path in sdk.yaml and validates that it is
+// allowed for the specified language. If the API is not explicitly
+// configured in sdk.yaml, it is assumed to be allowed and an entry is returned.
+func findAPI(path, language string) (*API, error) {
+	if path == "" {
+		return &API{}, nil
+	}
+	var result *API
+	for _, api := range APIs {
+		if api.Path == path || api.OpenAPI == path || api.Discovery == path {
+			r := api
+			result = &r
+			break
+		}
+	}
+	return validateAPI(path, language, result)
+}
+
 // Find looks up the service config path and title override for a given API path,
 // and validates that the API is allowed for the specified language.
 //
@@ -91,23 +109,7 @@ func Read(serviceConfigPath string) (*Service, error) {
 // it does not live under https://github.com/googleapis/googleapis.
 // For this API only, googleapisDir should point to showcase source dir instead.
 func Find(googleapisDir, path string, language string) (*API, error) {
-	var result *API
-	for _, api := range APIs {
-		// The path for OpenAPI and discovery documents are in
-		// googleapis/google-cloud-rust and
-		// googleapis/discovery-artifact-manager, respectively.
-		// The api.Path field is that API path in googleapis/googleapis.
-		if api.Path == path || api.OpenAPI == path || api.Discovery == path {
-			// Create a copy of the API struct to allow modifications to
-			// result.ServiceConfig without affecting the APIs slice.
-			r := api
-			result = &r
-			break
-		}
-	}
-
-	var err error
-	result, err = validateAPI(path, language, result)
+	result, err := findAPI(path, language)
 	if err != nil {
 		return nil, err
 	}

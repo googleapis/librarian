@@ -228,6 +228,18 @@ func HasAPIPath(path, language string) bool {
 	return slices.Contains(api.Languages, config.LanguageAll) || slices.Contains(api.Languages, language)
 }
 
+// FindTransport looks up the API by path in sdk.yaml, validates that it is
+// allowed for the specified language, and returns its configured transport.
+// If the API is not explicitly configured in sdk.yaml, it is assumed to be
+// allowed and defaults to GRPCRest.
+func FindTransport(path, language string) (Transport, error) {
+	api, err := findAPI(path, language)
+	if err != nil {
+		return "", err
+	}
+	return api.Transport(language), nil
+}
+
 func unmarshalAPIsOrPanic() []API {
 	apis, err := yaml.Unmarshal[[]API](sdkYaml)
 	if err != nil {

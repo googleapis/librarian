@@ -376,3 +376,57 @@ func TestRepoMetadataTransport(t *testing.T) {
 		})
 	}
 }
+
+func TestFindTransport(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		want     Transport
+		wantErr  bool
+	}{
+		{
+			name:     "matching path and allowed language with custom transport",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageJava,
+			want:     Rest,
+		},
+		{
+			name:     "matching path and allowed language with default transport",
+			path:     "google/ads/datamanager/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "matching path but not allowed language",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageGo,
+			wantErr:  true,
+		},
+		{
+			name:     "unknown path defaults to GRPCRest",
+			path:     "google/does/not/exist/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "empty path defaults to GRPCRest",
+			path:     "",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindTransport(test.path, test.language)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("FindTransport(%q, %q) error = %v, wantErr %v", test.path, test.language, err, test.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			if got != test.want {
+				t.Errorf("FindTransport(%q, %q) = %q, want %q", test.path, test.language, got, test.want)
+			}
+		})
+	}
+}
