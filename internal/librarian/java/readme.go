@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -37,6 +38,62 @@ var (
 	// errEmptyTitle indicates the extracted title value is empty.
 	errEmptyTitle = errors.New("title value cannot be empty")
 )
+
+// codeSample represents a discovered Java code sample along with its derived title.
+type codeSample struct {
+	Title string
+	File  string
+}
+
+// collectSampleFiles recursively scans dir/samples for Java production files.
+func collectSampleFiles(dir string) ([]string, error) {
+	samplesDir := filepath.Join(dir, "samples")
+	var files []string
+	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		// Skip directories and non-regular files.
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		// Get relative path of file and filter for only Java files in src/main/java/ production trees.
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if isProductionSample(rel) {
+			files = append(files, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk samples directory: %w", err)
+	}
+	return files, nil
+}
+
+// parseCodeSample reads a Java sample file and constructs a codeSample struct with its title and relative path.
+func parseCodeSample(dir, file string) (codeSample, error) {
+	// Derive default title by stripping extension and converting CamelCase to space-separated words.
+	base := strings.TrimSuffix(filepath.Base(file), ".java")
+	title := decamelize(base)
+	titleOverride, err := extractTitle(filepath.Join(dir, file))
+	if err != nil {
+		return codeSample{}, fmt.Errorf("failed to extract title from %s: %w", file, err)
+	}
+	if titleOverride != "" {
+		title = titleOverride
+	}
+	return codeSample{
+		Title: title,
+		// Normalize path separators to forward slashes for Markdown links in README.
+		File: filepath.ToSlash(file),
+	}, nil
+}
 
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {
