@@ -91,12 +91,11 @@ func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile := bulkManifestFile
-			configFile := bulkConfigFile
-			if test.language == config.LanguageNodejs {
-				manifestFile = defaultManifestFile
-				configFile = defaultConfigFile
-			}
+			manifestFile, configFile := releasePleaseFiles(
+				&config.Config{
+					Language: test.language,
+				},
+			)
 			if test.createConfig {
 				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0644); err != nil {
 					t.Fatal(err)
@@ -312,12 +311,11 @@ func TestSyncToReleasePlease(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestFile := bulkManifestFile
-			configFile := bulkConfigFile
-			if test.language == config.LanguageNodejs {
-				manifestFile = defaultManifestFile
-				configFile = defaultConfigFile
-			}
+			manifestFile, configFile := releasePleaseFiles(
+				&config.Config{
+					Language: test.language,
+				},
+			)
 			manifestPath := filepath.Join(tmp, manifestFile)
 			configPath := filepath.Join(tmp, configFile)
 			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0644); err != nil {
