@@ -1,0 +1,69 @@
+// Copyright 2026 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     https://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package librarian
+
+import (
+	"context"
+	"fmt"
+	"io"
+
+	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/urfave/cli/v3"
+)
+
+// debugCommand returns the CLI command for librarian debugging tools.
+func debugCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "debug",
+		Usage:     "various debugging commands",
+		UsageText: "librarian debug [command]",
+		Commands: []*cli.Command{
+			envCommand(),
+		},
+	}
+}
+
+// envCommand returns the CLI command for printing the librarian environment.
+func envCommand() *cli.Command {
+	return &cli.Command{
+		Name:      "env",
+		Usage:     "print environment variables for the librarian command line interface.",
+		UsageText: "librarian debug env",
+		Description: `env prints the librarian interpretation of the environment it is run in.
+This includes the resolved LIBRARIAN_CACHE and LIBRARIAN_BIN paths,
+as well as the language-specific tool installation directories.`,
+		Action: func(ctx context.Context, cmd *cli.Command) error {
+			return runEnv(cmd.Root().Writer)
+		},
+	}
+}
+
+func runEnv(w io.Writer) error {
+	cacheDir, _ := cache.Directory()
+	buildDir, _ := cache.BinDirectory()
+	goToolsDir, _ := golang.InstallDir()
+	javaToolsDir, _ := java.InstallDir()
+
+	fmt.Fprintf(w, "LIBRARIAN_CACHE=%s\n", cacheDir)
+	fmt.Fprintf(w, "LIBRARIAN_BIN=%s\n", buildDir)
+
+	fmt.Fprintf(w, "\nLanguage-specific tool installation directories:\n")
+	fmt.Fprintf(w, "  golang: %s\n", goToolsDir)
+	fmt.Fprintf(w, "  java: %s\n", javaToolsDir)
+
+	return nil
+}
