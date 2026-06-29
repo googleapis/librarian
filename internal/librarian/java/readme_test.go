@@ -85,10 +85,10 @@ public class RequesterPays {}`
 
 func TestExtractSamples_Error(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		dir     string
-		content string
-		wantErr error
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		dir        string
+		wantErr    error
 	}{
 		{
 			name:    "error on empty directory",
@@ -97,31 +97,44 @@ func TestExtractSamples_Error(t *testing.T) {
 		},
 		{
 			name: "error on empty title override",
-			content: `// sample-metadata:
-//   title: ""
-public class Invalid {}`,
-			wantErr: errEmptyTitle,
-		},
-		{
-			name: "error on missing title line immediately following sample-metadata",
-			content: `// sample-metadata:
-//   description: missing title line
-public class Invalid {}`,
-			wantErr: errMissingTitle,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			dir := test.dir
-			if test.name != "error on empty directory" {
-				dir = t.TempDir()
+			setupFiles: func(t *testing.T, dir string) {
 				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
 				if err := os.MkdirAll(samplesDir, 0755); err != nil {
 					t.Fatal(err)
 				}
 				file := filepath.Join(samplesDir, "Sample.java")
-				if err := os.WriteFile(file, []byte(test.content), 0644); err != nil {
+				content := `// sample-metadata:
+//   title: ""
+public class Invalid {}`
+				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
 					t.Fatal(err)
 				}
+			},
+			wantErr: errEmptyTitle,
+		},
+		{
+			name: "error on missing title line immediately following sample-metadata",
+			setupFiles: func(t *testing.T, dir string) {
+				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
+				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				file := filepath.Join(samplesDir, "Sample.java")
+				content := `// sample-metadata:
+//   description: missing title line
+public class Invalid {}`
+				if err := os.WriteFile(file, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errMissingTitle,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := test.dir
+			if test.setupFiles != nil {
+				dir = t.TempDir()
+				test.setupFiles(t, dir)
 			}
 			_, err := extractSamples(dir)
 			if !errors.Is(err, test.wantErr) {
