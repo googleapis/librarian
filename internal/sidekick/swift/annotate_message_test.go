@@ -143,7 +143,7 @@ func TestAnnotateMessage(t *testing.T) {
 				TypeURL:             "type.googleapis.com/test.Service",
 				CustomSerialization: false,
 				SampleField:         "<placeholder>",
-				ParameterTypeName:   "Clients.ServiceClient",
+				ParameterTypeName:   "ServiceClient",
 				PlaceholderName:     "ServiceClient",
 			},
 			wantImports: []string{"GoogleCloudWkt"},
@@ -315,7 +315,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				Name:              "GetRequest",
 				TypeURL:           "type.googleapis.com/test.Service.getRequest",
 				SampleField:       "<placeholder>",
-				ParameterTypeName: "Clients.ServiceClient.GetRequest",
+				ParameterTypeName: "ServiceClient.GetRequest",
 			},
 		},
 		{
@@ -326,7 +326,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				Name:              "ListRequest",
 				TypeURL:           "type.googleapis.com/test.Protocol.listRequest",
 				SampleField:       "<placeholder>",
-				ParameterTypeName: "Clients.ProtocolClient.ListRequest",
+				ParameterTypeName: "ProtocolClient.ListRequest",
 			},
 		},
 	} {
