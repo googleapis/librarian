@@ -109,13 +109,13 @@ func TestParseCodeSample(t *testing.T) {
 		name    string
 		relPath string
 		content string
-		want    codeSample
+		want    *codeSample
 	}{
 		{
 			name:    "default title derived from filename",
 			relPath: filepath.Join("samples", "src", "main", "java", "DemoSample.java"),
 			content: "public class DemoSample {}",
-			want: codeSample{
+			want: &codeSample{
 				Title: "Demo Sample",
 				File:  "samples/src/main/java/DemoSample.java",
 			},
@@ -124,7 +124,7 @@ func TestParseCodeSample(t *testing.T) {
 			name:    "custom title override from metadata",
 			relPath: filepath.Join("samples", "src", "main", "java", "RequesterPays.java"),
 			content: "// sample-metadata:\n//   title: Custom Title Override\npublic class RequesterPays {}",
-			want: codeSample{
+			want: &codeSample{
 				Title: "Custom Title Override",
 				File:  "samples/src/main/java/RequesterPays.java",
 			},

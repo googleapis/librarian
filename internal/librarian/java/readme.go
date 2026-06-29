@@ -48,19 +48,20 @@ type codeSample struct {
 // collectSampleFiles recursively scans dir/samples for Java production files.
 func collectSampleFiles(dir string) ([]string, error) {
 	samplesDir := filepath.Join(dir, "samples")
+	if _, err := os.Stat(samplesDir); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to stat samples directory: %w", err)
+	}
 	var files []string
 	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
 		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				return nil
-			}
 			return err
 		}
-		// Skip directories and non-regular files.
 		if !d.Type().IsRegular() {
 			return nil
 		}
-		// Get relative path of file and filter for only Java files in src/main/java/ production trees.
 		rel, err := filepath.Rel(dir, path)
 		if err != nil {
 			return err
@@ -77,21 +78,21 @@ func collectSampleFiles(dir string) ([]string, error) {
 }
 
 // parseCodeSample reads a Java sample file and constructs a codeSample struct with its title and relative path.
-func parseCodeSample(dir, file string) (codeSample, error) {
+func parseCodeSample(dir, file string) (*codeSample, error) {
 	// Derive default title by stripping extension and converting CamelCase to space-separated words.
 	base := strings.TrimSuffix(filepath.Base(file), ".java")
 	title := decamelize(base)
 	titleOverride, err := extractTitle(filepath.Join(dir, file))
 	if err != nil {
-		return codeSample{}, fmt.Errorf("failed to extract title from %s: %w", file, err)
+		return nil, fmt.Errorf("failed to extract title from %s: %w", file, err)
 	}
 	if titleOverride != "" {
 		title = titleOverride
 	}
-	return codeSample{
+	return &codeSample{
 		Title: title,
 		// Normalize path separators to forward slashes for Markdown links in README.
-		File: filepath.ToSlash(file),
+		File:  filepath.ToSlash(file),
 	}, nil
 }
 
