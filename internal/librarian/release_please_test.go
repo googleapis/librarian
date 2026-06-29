@@ -153,7 +153,7 @@ func TestSyncToReleasePlease(t *testing.T) {
 				},
 			},
 			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
-			wantConfig:   `{"packages":{"packages/google-cloud-secretmanager":{"component":"google-cloud-secretmanager"}}}`,
+			wantConfig:   `{"packages":{"packages/google-cloud-secretmanager":{}}}`,
 		},
 
 		{

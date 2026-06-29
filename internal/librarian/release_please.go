@@ -103,7 +103,14 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		pkgPath = "packages/" + lib.Name
 	}
 
-	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, lib.Name, extraFiles); err != nil {
+	component := lib.Name
+	if cfg.Language == config.LanguageNodejs {
+		// google-cloud-node does not need to override
+		// component value in package.
+		component = ""
+	}
+
+	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
 		return err
 	}
 
@@ -160,7 +167,11 @@ func syncPackageToReleasePlease(manifest map[string]string, packages map[string]
 		packages[pkgPath] = pkgCfg
 	}
 
-	pkgCfg["component"] = component
+	if component != "" {
+		// Python and NodeJS sets component names for packages in the config file.
+		// NodeJS does not do this.
+		pkgCfg["component"] = component
+	}
 
 	if len(extraFiles) > 0 {
 		var existing []any
