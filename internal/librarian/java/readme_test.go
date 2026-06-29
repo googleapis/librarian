@@ -18,7 +18,6 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -86,16 +85,15 @@ public class RequesterPays {}`
 
 func TestExtractSamples_Error(t *testing.T) {
 	for _, test := range []struct {
-		name      string
-		emptyDir  bool
-		content   string
-		wantErr   error
-		errString string
+		name    string
+		dir     string
+		content string
+		wantErr error
 	}{
 		{
-			name:      "error on empty directory",
-			emptyDir:  true,
-			errString: "dir cannot be empty",
+			name:    "error on empty directory",
+			dir:     "",
+			wantErr: errEmptyDir,
 		},
 		{
 			name: "error on empty title override",
@@ -113,23 +111,19 @@ public class Invalid {}`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if test.emptyDir {
-				_, err := extractSamples("")
-				if err == nil || !strings.Contains(err.Error(), test.errString) {
-					t.Errorf("extractSamples(\"\") err = %v, want substring %q", err, test.errString)
+			dir := test.dir
+			if test.name != "error on empty directory" {
+				dir = t.TempDir()
+				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
+				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+					t.Fatal(err)
 				}
-				return
+				file := filepath.Join(samplesDir, "Sample.java")
+				if err := os.WriteFile(file, []byte(test.content), 0644); err != nil {
+					t.Fatal(err)
+				}
 			}
-			tempDir := t.TempDir()
-			samplesDir := filepath.Join(tempDir, "samples", "src", "main", "java")
-			if err := os.MkdirAll(samplesDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-			file := filepath.Join(samplesDir, "Sample.java")
-			if err := os.WriteFile(file, []byte(test.content), 0644); err != nil {
-				t.Fatal(err)
-			}
-			_, err := extractSamples(tempDir)
+			_, err := extractSamples(dir)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("extractSamples() err = %v, want %v", err, test.wantErr)
 			}
