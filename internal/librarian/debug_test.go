@@ -23,36 +23,55 @@ import (
 )
 
 func TestRunEnv(t *testing.T) {
-	for _, test := range []struct {
-		name string
-	}{
-		{"success"},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cacheDir := t.TempDir()
-			binDir := t.TempDir()
+	cacheDir := t.TempDir()
+	binDir := t.TempDir()
 
-			t.Setenv("LIBRARIAN_CACHE", cacheDir)
-			t.Setenv("LIBRARIAN_BIN", binDir)
+	t.Setenv("LIBRARIAN_CACHE", cacheDir)
+	t.Setenv("LIBRARIAN_BIN", binDir)
 
-			var buf bytes.Buffer
-			if err := runEnv(&buf); err != nil {
-				t.Fatal(err)
-			}
+	var buf bytes.Buffer
+	if err := runEnv(&buf); err != nil {
+		t.Fatal(err)
+	}
 
-			got := buf.String()
-			wants := []string{
-				fmt.Sprintf("LIBRARIAN_CACHE=%s", cacheDir),
-				fmt.Sprintf("LIBRARIAN_BIN=%s", binDir),
-				fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
-				fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
-			}
+	got := buf.String()
+	wants := []string{
+		fmt.Sprintf("LIBRARIAN_CACHE=%s", cacheDir),
+		fmt.Sprintf("LIBRARIAN_BIN=%s", binDir),
+		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
+		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
+	}
 
-			for _, want := range wants {
-				if !strings.Contains(got, want) {
-					t.Errorf("runEnv() output missing %q\ngot:\n%s", want, got)
-				}
-			}
-		})
+	for _, want := range wants {
+		if !strings.Contains(got, want) {
+			t.Errorf("runEnv() output missing %q\ngot:\n%s", want, got)
+		}
+	}
+}
+
+func TestRunEnv_Error(t *testing.T) {
+	// Unset environment variables to force path resolution errors.
+	t.Setenv("LIBRARIAN_CACHE", "")
+	t.Setenv("LIBRARIAN_BIN", "")
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CACHE_HOME", "")
+
+	var buf bytes.Buffer
+	if err := runEnv(&buf); err != nil {
+		t.Fatal(err)
+	}
+
+	got := buf.String()
+	wants := []string{
+		"LIBRARIAN_CACHE=<error:",
+		"LIBRARIAN_BIN=<error:",
+		"golang: <error:",
+		"java: <error:",
+	}
+
+	for _, want := range wants {
+		if !strings.Contains(got, want) {
+			t.Errorf("runEnv() output missing %q\ngot:\n%s", want, got)
+		}
 	}
 }

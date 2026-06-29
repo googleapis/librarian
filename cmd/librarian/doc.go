@@ -192,7 +192,7 @@ https://go.dev/ref/mod#versions.
 
 Usage:
 
-	librarian debug [env]
+	librarian debug [command]
 
 # Print environment variables for the librarian command line interface.
 
