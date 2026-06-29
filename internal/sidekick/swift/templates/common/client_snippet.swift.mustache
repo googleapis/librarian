@@ -32,7 +32,7 @@ import {{.}}
 {{/Codec.SnippetImports}}
 
 func sample({{#Codec.QuickstartMethod.SampleInfo}}{{#Codec.Parameters}}{{.}}: String, {{/Codec.Parameters}}{{/Codec.QuickstartMethod.SampleInfo}}) async throws {
-  let client = try {{Codec.PackageName}}.Clients.{{Codec.ClientName}}()
+  let client = try {{Codec.PackageName}}.{{Codec.ClientName}}()
   {{#Codec.QuickstartMethod}}
   {{> /templates/snippet/generic}}
   {{/Codec.QuickstartMethod}}

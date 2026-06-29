@@ -100,9 +100,8 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock := extractBlock(t, contentStr, "/// @Snippet", "public protocol Protocol_ {")
-	wantBlock := `/// @Snippet(path: "ProtocolQuickstart")
-public protocol Protocol_ {`
+	gotBlock := extractBlock(t, contentStr, "public protocol ", "{")
+	wantBlock := `public protocol ProtocolProtocol {`
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -173,8 +172,8 @@ func TestGenerateService_Delegation(t *testing.T) {
 	contentStr := string(content)
 
 	for _, want := range []string{
-		"let inner: any IAMStub",
-		"var inner: any IAMStub = try IAMTransport(options)",
+		"let inner: any Clients.IAMStub",
+		"var inner: any Clients.IAMStub = try Clients.IAMTransport(options)",
 		"try await self.inner.createRole(request: request, options: options)",
 	} {
 		if !strings.Contains(contentStr, want) {
@@ -579,18 +578,18 @@ func verifyGeneratedService(t *testing.T, outDir string) {
 	contentStr := string(content)
 
 	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
-    byItem: ListSecretsRequest, options: `, "\n    }")
+    byItem: ListSecretsRequest, options: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Swift.Error>
  {
-      let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
-        var request = byItem
-        request.pageToken = token
-        return try await self.listSecrets(request: request, options: options)
-      }
-      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
-    }`
+    let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
+      var request = byItem
+      request.pageToken = token
+      return try await self.listSecrets(request: request, options: options)
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+  }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -955,8 +954,8 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Verify it contains an extension to the right Clients.$ServiceName type.
-			wantExtension := fmt.Appendf(nil, "extension Clients.%sClient {", test.serviceName)
+			// Verify it contains an extension to the right ${ServiceName}Client type.
+			wantExtension := fmt.Appendf(nil, "extension %sClient {", test.serviceName)
 			if !bytes.Contains(content, wantExtension) {
 				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, content)
 			}
