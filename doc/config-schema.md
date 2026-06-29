@@ -299,8 +299,8 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `custom_group_ids` | map[string]string | Maps API path prefixes (e.g., "google/shopping") to their corresponding Maven Group IDs (e.g., "com.google.shopping"). Use this to override the default "com.google.cloud" Group ID for specific API paths (e.g., maps, ads, shopping). |
 | `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
-| `api_path_to_group_id` | map[string]string | Is a map of API paths to group IDs for Java. |
 
 ## JavaFileCopy Configuration
 
