@@ -237,10 +237,11 @@ func TestFillDefaults_Java(t *testing.T) {
 	defaults := &config.Default{
 		Java: &config.JavaDefault{
 			CustomGroupIDs: map[string]string{
-				"google/shopping":  "com.google.shopping",
-				"google/maps":      "com.google.maps",
-				"google/ads":       "com.google.api-ads",
-				"google/analytics": "com.google.analytics",
+				"google/shopping":                   "com.google.shopping",
+				"google/exact/v1": "com.google.exact",
+				"google/maps":                       "com.google.maps",
+				"google/ads":                        "com.google.api-ads",
+				"google/analytics":                  "com.google.analytics",
 			},
 		},
 	}
@@ -413,6 +414,26 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "lib",
 				APIs: []*config.API{{Path: "google/example/v1"}},
 				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "api path exact match",
+			lib: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "google-exact",
+					GroupID:    "com.google.exact",
+				},
 			},
 		},
 	} {

@@ -110,7 +110,7 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 	}
 	for _, api := range lib.APIs {
 		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
-			if strings.HasPrefix(api.Path, apiPrefix+"/") {
+			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
 				lib.Java.ArtifactID = "google-" + lib.Name
 				lib.Java.GroupID = groupID
 				break
