@@ -16,6 +16,8 @@ package java
 
 import (
 	"errors"
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -141,7 +143,11 @@ public class Normal {}`,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := extractTitle(test.content)
+			tmpPath := filepath.Join(t.TempDir(), "Sample.java")
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := extractTitle(tmpPath)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -172,7 +178,11 @@ func TestExtractTitle_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, gotErr := extractTitle(test.content)
+			tmpPath := filepath.Join(t.TempDir(), "Sample.java")
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			_, gotErr := extractTitle(tmpPath)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("extractTitle() error = %v, wantErr %v", gotErr, test.wantErr)
 			}
