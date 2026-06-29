@@ -85,7 +85,13 @@ func findAPI(path, language string) (*API, error) {
 	}
 	var result *API
 	for _, api := range APIs {
+		// The path for OpenAPI and discovery documents are in
+		// googleapis/google-cloud-rust and
+		// googleapis/discovery-artifact-manager, respectively.
+		// The api.Path field is that API path in googleapis/googleapis.
 		if api.Path == path || api.OpenAPI == path || api.Discovery == path {
+			// Create a copy of the API struct to allow modifications to
+			// result.ServiceConfig without affecting the APIs slice.
 			r := api
 			result = &r
 			break
