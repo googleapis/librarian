@@ -19,9 +19,9 @@ language: nodejs
 tools:
   pnpm:
     - name: gapic-generator-typescript
-      version: "gapic-generator-v4.12.0"
-      package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.0.tar.gz"
-      checksum: "7db96e31b8c6ac15d40e92654a731ec7aa2b0a3425708ac68369b374688112e8"
+      version: "gapic-generator-v4.12.1"
+      package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz"
+      checksum: "0c3e59cd3ef5c997d8e72cccd14605b65117419491dbd9c4711032d6770d71ba"
       build:
         - "pnpm install"
         # tsc only compiles TypeScript; the generator also needs templates/
