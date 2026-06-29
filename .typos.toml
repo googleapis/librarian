@@ -16,6 +16,8 @@
 extend-exclude = [
   # The test data have typos, or at least uncommon spelling. Not worth fixing.
   "**/testdata/**",
+  # The CHANGELOG has commit hashes which can be flagged as typos.
+  "CHANGELOG.md",
 ]
 
 [type.mustache]
