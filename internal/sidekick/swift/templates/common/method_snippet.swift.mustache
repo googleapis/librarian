@@ -31,7 +31,7 @@ import {{Service.Codec.PackageName}}
 import {{.}}
 {{/Service.Codec.SnippetImports}}
 
-func sample(client: some {{Service.Codec.Name}}{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: String{{/Codec.Parameters}}{{/SampleInfo}}) async throws {
+func sample(client: {{Service.Codec.ClientName}}{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: String{{/Codec.Parameters}}{{/SampleInfo}}) async throws {
   {{> /templates/snippet/generic}}
 }
 // snippet.hide
@@ -40,7 +40,7 @@ func sample(client: some {{Service.Codec.Name}}{{#SampleInfo}}{{#Codec.Parameter
 struct SnippetRunner {
     static func main() async throws {
         do {
-            let client = try {{Service.Codec.PackageName}}.Clients.{{Service.Codec.ClientName}}()
+            let client = try {{Service.Codec.PackageName}}.{{Service.Codec.ClientName}}()
             try await sample(client: client{{#SampleInfo}}{{#Codec.Parameters}}, {{.}}: "[placeholder]"{{/Codec.Parameters}}{{/SampleInfo}})
         } catch {
             print("Error: \(error)")
