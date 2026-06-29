@@ -23,10 +23,16 @@ generation failure or other breakages in the `google-cloud-java` repository
      if: false && github.event_name == 'push' && (github.ref == 'refs/heads/main')
    ```
 2. **Add a TODO:**
-   Add a `TODO` comment in
-   [java.yaml](/.github/workflows/java.yaml)
-   linking to the GitHub issue or pull request you are working on to track the
-   reinstate task.
+   Add a `TODO` comment in [java.yaml](/.github/workflows/java.yaml) linking to
+   the GitHub issue or pull request you are working on to track the reinstate
+   task:
+
+   ```yaml
+   integration:
+     runs-on: ubuntu-24.04
+     # TODO(https://github.com/googleapis/librarian/issues/XXXX): Reinstate this job
+     if: false && github.event_name == 'push' && (github.ref == 'refs/heads/main')
+   ```
 3. **Merge Librarian Changes:**
    Merge your changes into the `librarian` repository.
 4. **Update `google-cloud-java`:**
