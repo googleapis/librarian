@@ -15,6 +15,8 @@
 package swift
 
 import (
+	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -29,11 +31,15 @@ import (
 func TestGenerateService_Files(t *testing.T) {
 	outDir := t.TempDir()
 
-	iam := &api.Service{Name: "IAM"}
-	secretManager := &api.Service{Name: "SecretManagerService"}
+	// We need explicit Package and ID fields because we generate both messages
+	// and services.
+	iam := &api.Service{Name: "IAM", Package: "test", ID: ".test.IAM"}
+	secretManager := &api.Service{Name: "SecretManagerService", Package: "test", ID: ".test.SecretManagerService"}
+	clash0 := &api.Message{Name: "InstanceSettings", Package: "test", ID: ".test.InstanceSettings"}
+	clash1 := &api.Service{Name: "instanceSettings", Package: "test", ID: ".test.instanceSettings"}
 
-	model := api.NewTestAPI(nil, nil, []*api.Service{iam, secretManager})
-	model.PackageName = "google.cloud.test.v1"
+	model := api.NewTestAPI([]*api.Message{clash0}, nil, []*api.Service{iam, secretManager, clash1})
+	model.PackageName = "test"
 
 	cfg := &parser.ModelConfig{
 		Codec: map[string]string{
@@ -45,14 +51,19 @@ func TestGenerateService_Files(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleTest")
 	wantFiles := []string{
 		"IAM.swift",
-		"SecretManagerService.swift",
 		"Clients.swift",
-		"Clients/SecretManagerServiceStub.swift",
-		"Clients/SecretManagerServiceLogging.swift",
-		"Clients/SecretManagerServiceRetry.swift",
+		"SecretManagerService.swift",
+		"SecretManagerService+Stub.swift",
+		"SecretManagerService+Logging.swift",
+		"SecretManagerService+Retry.swift",
+		"InstanceSettings.swift",
+		"instanceSettings+000.swift",
+		"instanceSettings+Stub.swift",
+		"instanceSettings+Logging.swift",
+		"instanceSettings+Retry.swift",
 	}
 	for _, expected := range wantFiles {
 		filename := filepath.Join(expectedDir, expected)
@@ -89,9 +100,8 @@ func TestGenerateServiceSwift_SnippetReference(t *testing.T) {
 	}
 	contentStr := string(content)
 
-	gotBlock := extractBlock(t, contentStr, "/// @Snippet", "public protocol Protocol_ {")
-	wantBlock := `/// @Snippet(path: "ProtocolQuickstart")
-public protocol Protocol_ {`
+	gotBlock := extractBlock(t, contentStr, "public protocol ", "{")
+	wantBlock := `public protocol ProtocolProtocol {`
 	if diff := cmp.Diff(wantBlock, gotBlock); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -162,8 +172,8 @@ func TestGenerateService_Delegation(t *testing.T) {
 	contentStr := string(content)
 
 	for _, want := range []string{
-		"let inner: any IAMStub",
-		"var inner: any IAMStub = try IAMTransport(options)",
+		"let inner: any Clients.IAMStub",
+		"var inner: any Clients.IAMStub = try Clients.IAMTransport(options)",
 		"try await self.inner.createRole(request: request, options: options)",
 	} {
 		if !strings.Contains(contentStr, want) {
@@ -433,7 +443,7 @@ func TestGenerateService_PathParameters(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "Clients", "SecretManagerServiceStub.swift")
+			filename := filepath.Join(outDir, "Sources", "GoogleCloudSecretmanagerV1", "SecretManagerService+Stub.swift")
 			content, err := os.ReadFile(filename)
 			if err != nil {
 				t.Fatal(err)
@@ -568,18 +578,18 @@ func verifyGeneratedService(t *testing.T, outDir string) {
 	contentStr := string(content)
 
 	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
-    byItem: ListSecretsRequest, options: `, "\n    }")
+    byItem: ListSecretsRequest, options: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<Secret, Swift.Error>
  {
-      let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
-        var request = byItem
-        request.pageToken = token
-        return try await self.listSecrets(request: request, options: options)
-      }
-      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
-    }`
+    let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
+      var request = byItem
+      request.pageToken = token
+      return try await self.listSecrets(request: request, options: options)
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+  }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
@@ -886,5 +896,75 @@ func TestGenerateService_LRO_Empty(t *testing.T) {
 		if !strings.Contains(contentStr, want) {
 			t.Errorf("expected %q in WorkflowsService.swift, got:\n%s", want, contentStr)
 		}
+	}
+}
+
+func TestGenerateDiscoveryService_Files(t *testing.T) {
+	testdataDir, err := filepath.Abs("../../testdata")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+
+	cfg := &parser.ModelConfig{
+		SpecificationFormat: config.SpecDiscovery,
+		ServiceConfig:       filepath.Join(testdataDir, "googleapis/google/cloud/compute/v1/small-compute_v1.yaml"),
+		SpecificationSource: filepath.Join(testdataDir, "discovery/small-compute.v1.json"),
+		Codec: map[string]string{
+			"copyright-year": "2038",
+		},
+	}
+	model, err := parser.CreateModel(cfg)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	// Verify files
+	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudComputeV1")
+
+	for _, test := range []struct {
+		filename    string
+		serviceName string
+		structName  string
+	}{
+		{
+			filename:    "AcceleratorTypes+Requests.swift",
+			serviceName: "AcceleratorTypes",
+			structName:  "ListRequest",
+		},
+		{
+			filename:    "Addresses+Requests.swift",
+			serviceName: "Addresses",
+			structName:  "DeleteRequest",
+		},
+		{
+			filename:    "instances+Requests.swift",
+			serviceName: "Instances",
+			structName:  "GetRequest",
+		},
+	} {
+		t.Run(test.serviceName, func(t *testing.T) {
+			filename := filepath.Join(expectedDir, test.filename)
+			content, err := os.ReadFile(filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			// Verify it contains an extension to the right ${ServiceName}Client type.
+			wantExtension := fmt.Appendf(nil, "extension %sClient {", test.serviceName)
+			if !bytes.Contains(content, wantExtension) {
+				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, content)
+			}
+
+			// Verify the request struct definition appears in that file.
+			wantStruct := fmt.Appendf(nil, "public struct %s: ", test.structName)
+			if !bytes.Contains(content, wantStruct) {
+				t.Errorf("expected struct %q in %s, got:\n%s", wantStruct, filename, content)
+			}
+		})
 	}
 }

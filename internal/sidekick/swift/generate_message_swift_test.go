@@ -44,8 +44,11 @@ func TestGenerateMessage_Files(t *testing.T) {
 
 	secret := &api.Message{Name: "Secret", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Secret"}
 	volume := &api.Message{Name: "Volume", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.Volume"}
+	clash0 := &api.Message{Name: "HttpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HttpHealthCheck"}
+	clash1 := &api.Message{Name: "HTTPHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.HTTPHealthCheck"}
+	clash2 := &api.Message{Name: "httpHealthCheck", Package: "google.cloud.test.v1", ID: ".google.cloud.test.v1.httpHealthCheck"}
 
-	model := api.NewTestAPI([]*api.Message{secret, volume}, []*api.Enum{}, []*api.Service{})
+	model := api.NewTestAPI([]*api.Message{secret, volume, clash0, clash1, clash2}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
 
 	cfg := &parser.ModelConfig{
@@ -59,7 +62,14 @@ func TestGenerateMessage_Files(t *testing.T) {
 	}
 
 	expectedDir := filepath.Join(outDir, "Sources", "GoogleCloudTestV1")
-	for _, expected := range []string{"Secret.swift", "Volume.swift"} {
+	want := []string{
+		"Secret.swift",
+		"Volume.swift",
+		"HttpHealthCheck.swift",
+		"HTTPHealthCheck+000.swift",
+		"httpHealthCheck+001.swift",
+	}
+	for _, expected := range want {
 		filename := filepath.Join(expectedDir, expected)
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)

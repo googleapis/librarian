@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -26,6 +27,10 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
+)
+
+var (
+	errNoExplicitOutput = errors.New("library requires an explicit output path")
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -288,13 +293,17 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	}
 	if lib.Output == "" {
 		if isMixedLibrary(language, lib) {
-			return nil, fmt.Errorf("library %q requires an explicit output path", lib.Name)
+			return nil, fmt.Errorf("%s: %w", lib.Name, errNoExplicitOutput)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
 			apiPath = lib.APIs[0].Path
 		}
-		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
+		var defaultOut string
+		if defaults != nil {
+			defaultOut = defaults.Output
+		}
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }

@@ -88,11 +88,17 @@ func getPNPMEnv(ctx context.Context) ([]string, error) {
 	}
 	globalBin := strings.TrimSpace(binOut)
 
+	// In pnpm v11+, globally installed binaries are stored in PNPM_HOME/bin.
+	// We want them to be stored directly in globalBin (node's bin directory).
+	// See https://pnpm.io/blog/releases/11.0#isolated-global-virtual-store-global-installs
+	pnpmHome := filepath.Dir(globalBin)
+
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+globalBin)
+	env = append(env, "PNPM_HOME="+pnpmHome)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	return env, nil
 }
 

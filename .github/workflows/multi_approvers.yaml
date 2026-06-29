@@ -27,6 +27,7 @@ on:
   # branch and does not check out or run untrusted code from the PR branch.
   # For more details, see the action's documentation:
   # https://github.com/abcxyz/actions/blob/main/.github/actions/multi-approvers/README.md
+  # zizmor: ignore[dangerous-triggers] - {Multi-approver check needs this}
   pull_request_target:
     types:
       - 'opened'
