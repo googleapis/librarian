@@ -92,7 +92,7 @@ func parseCodeSample(dir, file string) (*codeSample, error) {
 	return &codeSample{
 		Title: title,
 		// Normalize path separators to forward slashes for Markdown links in README.
-		File:  filepath.ToSlash(file),
+		File: filepath.ToSlash(file),
 	}, nil
 }
 
