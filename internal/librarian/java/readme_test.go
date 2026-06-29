@@ -18,10 +18,124 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 )
+
+func TestExtractSamples(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		want       []codeSample
+	}{
+		{
+			name: "missing samples directory",
+			setupFiles: func(t *testing.T, dir string) {
+				// Do nothing, tempDir is empty.
+			},
+			want: nil,
+		},
+		{
+			name: "extract successfully",
+			setupFiles: func(t *testing.T, dir string) {
+				samplesDir := filepath.Join(dir, "samples", "src", "main", "java")
+				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				file1 := filepath.Join(samplesDir, "RequesterPays.java")
+				content1 := `// sample-metadata:
+//   title: Custom Title Override
+public class RequesterPays {}`
+				if err := os.WriteFile(file1, []byte(content1), 0644); err != nil {
+					t.Fatal(err)
+				}
+				file2 := filepath.Join(samplesDir, "DemoSample.java")
+				content2 := `public class DemoSample {}`
+				if err := os.WriteFile(file2, []byte(content2), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: []codeSample{
+				{
+					Title: "Demo Sample",
+					File:  "samples/src/main/java/DemoSample.java",
+				},
+				{
+					Title: "Custom Title Override",
+					File:  "samples/src/main/java/RequesterPays.java",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			test.setupFiles(t, tempDir)
+
+			samples, err := extractSamples(tempDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, samples); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractSamples_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		emptyDir  bool
+		content   string
+		wantErr   error
+		errString string
+	}{
+		{
+			name:      "error on empty directory",
+			emptyDir:  true,
+			errString: "dir cannot be empty",
+		},
+		{
+			name: "error on empty title override",
+			content: `// sample-metadata:
+//   title: ""
+public class Invalid {}`,
+			wantErr: errEmptyTitle,
+		},
+		{
+			name: "error on missing title line immediately following sample-metadata",
+			content: `// sample-metadata:
+//   description: missing title line
+public class Invalid {}`,
+			wantErr: errMissingTitle,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.emptyDir {
+				_, err := extractSamples("")
+				if err == nil || !strings.Contains(err.Error(), test.errString) {
+					t.Errorf("extractSamples(\"\") err = %v, want substring %q", err, test.errString)
+				}
+				return
+			}
+			tempDir := t.TempDir()
+			samplesDir := filepath.Join(tempDir, "samples", "src", "main", "java")
+			if err := os.MkdirAll(samplesDir, 0755); err != nil {
+				t.Fatal(err)
+			}
+			file := filepath.Join(samplesDir, "Sample.java")
+			if err := os.WriteFile(file, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			_, err := extractSamples(tempDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("extractSamples() err = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
 
 func TestCollectSampleFiles(t *testing.T) {
 	for _, test := range []struct {

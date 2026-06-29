@@ -45,6 +45,27 @@ type codeSample struct {
 	File  string
 }
 
+// extractSamples locates production Java sample files and returns parsed codeSample structs
+// containing display titles and relative paths for README rendering.
+func extractSamples(dir string) ([]codeSample, error) {
+	if dir == "" {
+		return nil, fmt.Errorf("dir cannot be empty")
+	}
+	files, err := collectSampleFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	var samples []codeSample
+	for _, file := range files {
+		sample, err := parseCodeSample(dir, file)
+		if err != nil {
+			return nil, err
+		}
+		samples = append(samples, sample)
+	}
+	return samples, nil
+}
+
 // collectSampleFiles recursively scans dir/samples for Java production files.
 func collectSampleFiles(dir string) ([]string, error) {
 	samplesDir := filepath.Join(dir, "samples")
