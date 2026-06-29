@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
