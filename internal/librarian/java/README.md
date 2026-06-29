@@ -1,8 +1,16 @@
 # Java Package Developer Guide
 
-This guide describes how to handle changes in the `librarian` repository that
-are expected to temporarily break client library generation in
-`google-cloud-java`.
+This guide describes how to handle changes in the `librarian` repository
+that affect client library generation in `google-cloud-java`. It covers
+two scenarios:
+
+1.  **Breaking Changes:** Changes that cause code generation failures,
+    compilation errors, or integration test failures in
+    `google-cloud-java` (see
+    [Handling Breaking Changes](#handling-breaking-changes-in-google-cloud-java)).
+2.  **Non-Breaking Diffs:** Changes that introduce diffs in the
+    generated code but do not break the build or tests (see
+    [Handling Changes That Cause Generation Diffs](#handling-changes-that-cause-generation-diffs)).
 
 ## Handling Breaking Changes in `google-cloud-java`
 
