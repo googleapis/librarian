@@ -375,7 +375,7 @@ func TestFillDefaults_Java(t *testing.T) {
 			},
 		},
 		{
-			name: "do not fill if group id lready set",
+			name: "do not fill if group id already set",
 			lib: &config.Library{
 				Name: "common-protos",
 				APIs: []*config.API{
