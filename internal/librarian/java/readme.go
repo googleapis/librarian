@@ -16,6 +16,8 @@ package java
 
 import (
 	"errors"
+	"fmt"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -48,10 +50,16 @@ func isProductionSample(path string) bool {
 		(strings.HasPrefix(slashed, "src/main/java/") || strings.Contains(slashed, "/src/main/java/"))
 }
 
-// extractTitle extracts and validates the title override from Java comment blocks.
+// extractTitle reads a file from disk and extracts the title override from Java comment blocks.
 // It expects a "title:" line to immediately follow the "sample-metadata:" marker.
-// Returns an error if the marker is present but the title line is missing, malformed, or empty.
-func extractTitle(content string) (string, error) {
+// Returns an error if the file cannot be read, or if the marker is present but the title line
+// is missing, malformed, or empty.
+func extractTitle(filePath string) (string, error) {
+	contentBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+	content := string(contentBytes)
 	if !strings.Contains(content, "sample-metadata:") {
 		return "", nil
 	}
