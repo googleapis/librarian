@@ -274,6 +274,31 @@ func TestFillDefaults_Java(t *testing.T) {
 			},
 		},
 		{
+			name: "shopping library with custom artifact id",
+			lib: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+					GroupID:    "com.google.shopping",
+				},
+			},
+		},
+		{
 			name: "maps library",
 			lib: &config.Library{
 				Name: "maps-routeoptimization",
@@ -367,7 +392,8 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/type"},
 				},
 				Java: &config.JavaModule{
-					GroupID: "com.google.api.grpc",
+					ArtifactID: "google-common-protos",
+					GroupID:    "com.google.api.grpc",
 				},
 			},
 		},
