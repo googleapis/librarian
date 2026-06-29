@@ -31,10 +31,19 @@ import (
 const (
 	bulkManifestFile            = ".release-please-bulk-manifest.json"
 	bulkConfigFile              = "release-please-bulk-config.json"
+	defaultManifestFile         = ".release-please-manifest.json"
+	defaultConfigFile           = "release-please-config.json"
 	defaultReleasePleaseVersion = "0.0.0"
 )
 
-func hasBulkReleasePleaseConfigs(dir string) bool {
+func hasBulkReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	// google-cloud-node uses the default Release Please files to add a new library.
+	// google-cloud-python and google-cloud-go use the "-bulk-" files.
+	if cfg.Language == config.LanguageNodejs {
+		_, errM := os.Stat(filepath.Join(dir, defaultManifestFile))
+		_, errC := os.Stat(filepath.Join(dir, defaultConfigFile))
+		return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
+	}
 	_, errM := os.Stat(filepath.Join(dir, bulkManifestFile))
 	_, errC := os.Stat(filepath.Join(dir, bulkConfigFile))
 	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
@@ -49,16 +58,24 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	manifestPath := filepath.Join(dir, bulkManifestFile)
+	manifestFile := bulkManifestFile
+	configFile := bulkConfigFile
+	if cfg.Language == config.LanguageNodejs {
+		// google-cloud-node uses the default files
+		manifestFile = defaultManifestFile
+		configFile = defaultConfigFile
+	}
+
+	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {
-		return fmt.Errorf("failed to read bulk manifest file: %w", err)
+		return fmt.Errorf("failed to read manifest file: %w", err)
 	}
 	if manifest == nil {
 		manifest = make(map[string]string)
 	}
 
-	configPath := filepath.Join(dir, bulkConfigFile)
+	configPath := filepath.Join(dir, configFile)
 	bulkConfig, err := readJSONFile[map[string]any](configPath)
 	if err != nil {
 		return fmt.Errorf("failed to read bulk config file: %w", err)
@@ -78,9 +95,12 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 
 	var extraFiles []any
 	pkgPath := lib.Name
-	if cfg.Language == config.LanguagePython {
+	switch cfg.Language {
+	case config.LanguagePython:
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
+	case config.LanguageNodejs:
+		pkgPath = "packages/" + lib.Name
 	}
 
 	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, lib.Name, extraFiles); err != nil {

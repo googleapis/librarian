@@ -100,8 +100,8 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython {
-		if hasBulkReleasePleaseConfigs(".") {
+	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython || cfg.Language == config.LanguageNodejs {
+		if hasBulkReleasePleaseConfigs(".", cfg) {
 			if err := syncToReleasePlease(".", cfg, name); err != nil {
 				return err
 			}
