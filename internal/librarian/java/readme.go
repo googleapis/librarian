@@ -59,10 +59,10 @@ func extractTitle(filePath string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to read file: %w", err)
 	}
-	content := string(contentBytes)
-	if !strings.Contains(content, "sample-metadata:") {
+	if !bytes.Contains(contentBytes, []byte("sample-metadata:")) {
 		return "", nil
 	}
+	content := string(contentBytes)
 	matches := reTitle.FindStringSubmatch(content)
 	if len(matches) < 2 {
 		return "", errMissingTitle
