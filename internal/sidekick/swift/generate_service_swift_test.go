@@ -954,7 +954,7 @@ func TestGenerateDiscoveryService_Files(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			// Verify it contains an extension to the right Clients.$ServiceName type.
+			// Verify it contains an extension to the right ${ServiceName}Client type.
 			wantExtension := fmt.Appendf(nil, "extension %sClient {", test.serviceName)
 			if !bytes.Contains(content, wantExtension) {
 				t.Errorf("expected extension %q in %s, got:\n%s", wantExtension, filename, content)
