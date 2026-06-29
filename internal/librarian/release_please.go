@@ -37,16 +37,25 @@ const (
 )
 
 func hasBulkReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	manifestFile, configFile := releasePleaseFiles(cfg)
+	_, errM := os.Stat(filepath.Join(dir, manifestFile))
+	_, errC := os.Stat(filepath.Join(dir, configFile))
+	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
+}
+
+// releasePleaseFiles returns the file names for the Release Please manifest file
+// and config file in this order, depending on the SDK language.
+func releasePleaseFiles(cfg *config.Config) (string, string) {
 	// google-cloud-node uses the default Release Please files to add a new library.
 	// google-cloud-python and google-cloud-go use the "-bulk-" files.
+	manifestFile := bulkManifestFile
+	configFile := bulkConfigFile
 	if cfg.Language == config.LanguageNodejs {
-		_, errM := os.Stat(filepath.Join(dir, defaultManifestFile))
-		_, errC := os.Stat(filepath.Join(dir, defaultConfigFile))
-		return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
+		// google-cloud-node uses the default files
+		manifestFile = defaultManifestFile
+		configFile = defaultConfigFile
 	}
-	_, errM := os.Stat(filepath.Join(dir, bulkManifestFile))
-	_, errC := os.Stat(filepath.Join(dir, bulkConfigFile))
-	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
+	return manifestFile, configFile
 }
 
 // syncToReleasePlease updates the release-please configuration files with the
@@ -58,14 +67,7 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	manifestFile := bulkManifestFile
-	configFile := bulkConfigFile
-	if cfg.Language == config.LanguageNodejs {
-		// google-cloud-node uses the default files
-		manifestFile = defaultManifestFile
-		configFile = defaultConfigFile
-	}
-
+	manifestFile, configFile := releasePleaseFiles(cfg)
 	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {
@@ -78,7 +80,7 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	configPath := filepath.Join(dir, configFile)
 	bulkConfig, err := readJSONFile[map[string]any](configPath)
 	if err != nil {
-		return fmt.Errorf("failed to read bulk config file: %w", err)
+		return fmt.Errorf("failed to read config file: %w", err)
 	}
 	if bulkConfig == nil {
 		bulkConfig = make(map[string]any)
@@ -86,7 +88,8 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	packagesRaw, pkgsExist := bulkConfig["packages"]
 	packages, isMap := packagesRaw.(map[string]any)
 	if pkgsExist && !isMap {
-		return fmt.Errorf("'packages' in bulk config is not an object: %v", packagesRaw)
+		return fmt.Errorf("'packages' in %s is not an object: %v",
+			configPath, packagesRaw)
 	}
 	if !isMap || packages == nil {
 		packages = make(map[string]any)
@@ -168,8 +171,8 @@ func syncPackageToReleasePlease(manifest map[string]string, packages map[string]
 	}
 
 	if component != "" {
-		// Python and NodeJS sets component names for packages in the config file.
-		// NodeJS does not do this.
+		// Python and Go set component names for packages in the config file.
+		// NodeJS does not do this and passes an empty string in the argument.
 		pkgCfg["component"] = component
 	}
 
