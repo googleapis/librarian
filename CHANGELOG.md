@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.23.0](https://github.com/googleapis/librarian/compare/v0.22.0...v0.23.0) (2026-06-29)
+
+
+### Features
+
+* **internal/librarian/java:** add decamelize utility for README generation ([#6538](https://github.com/googleapis/librarian/issues/6538)) ([a6d950a](https://github.com/googleapis/librarian/commit/a6d950a157338083086d2b3d8c03150179628b10)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** Add JSpecify dep to proto module template ([#6564](https://github.com/googleapis/librarian/issues/6564)) ([660ab2b](https://github.com/googleapis/librarian/commit/660ab2bcbb654ad546945b4a107fd77923ee57a9))
+* **internal/librarian/java:** add production sample filter ([#6545](https://github.com/googleapis/librarian/issues/6545)) ([df213ec](https://github.com/googleapis/librarian/commit/df213ecb97834adb13c62b902fe090955845ba19)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add README sample extraction helpers ([#6574](https://github.com/googleapis/librarian/issues/6574)) ([500ba22](https://github.com/googleapis/librarian/commit/500ba22a7de65f5ab0e84112daa7d16ff76ff841)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add title override extractor ([#6546](https://github.com/googleapis/librarian/issues/6546)) ([0986d6a](https://github.com/googleapis/librarian/commit/0986d6a2cd5d3e4736b9e336a47dd85c9240e14b)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/python:** update gapic-generator to 1.36.0 ([#6548](https://github.com/googleapis/librarian/issues/6548)) ([a0930f4](https://github.com/googleapis/librarian/commit/a0930f4b0f52383ee4b19f23ae666ae4017f40f6))
+* **nodejs:** bump pnpm version to 11.7.0 and support v11+ global bin layout ([#6494](https://github.com/googleapis/librarian/issues/6494)) ([1373628](https://github.com/googleapis/librarian/commit/1373628c9c8c639a666fe17813a4f313fe0f8c40)), closes [#6480](https://github.com/googleapis/librarian/issues/6480)
+* **sidekick/rust:** track recording error info for discovery LROs ([#6304](https://github.com/googleapis/librarian/issues/6304)) ([feb2ef2](https://github.com/googleapis/librarian/commit/feb2ef22fa2b45f2bf216a7da95c106eeaacbad8)), closes [#6286](https://github.com/googleapis/librarian/issues/6286)
+* **sidekick/swift:** generate synthetic messages ([#6530](https://github.com/googleapis/librarian/issues/6530)) ([7303648](https://github.com/googleapis/librarian/commit/730364823f86ac636ddea676bb439fce8f8e5a6c))
+* **sidekick/swift:** handle clashing names ([#6543](https://github.com/googleapis/librarian/issues/6543)) ([56bf365](https://github.com/googleapis/librarian/commit/56bf365d10860f00bc9059a6d78f5f554c59406c))
+* **sidekick/swift:** swap client vs. protocol ([#6566](https://github.com/googleapis/librarian/issues/6566)) ([14e186c](https://github.com/googleapis/librarian/commit/14e186cb2cdc1d8c545d022aba24bbd864e13ea0))
+
+
+### Bug Fixes
+
+* **internal/librarian:** gracefully handle nil defaults in applyDefaults ([#6571](https://github.com/googleapis/librarian/issues/6571)) ([3ee938a](https://github.com/googleapis/librarian/commit/3ee938a275e1f34480d3119331c8c97790f70aab))
+
 ## [0.22.0](https://github.com/googleapis/librarian/compare/v0.21.0...v0.22.0) (2026-06-22)
 
 
