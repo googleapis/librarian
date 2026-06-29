@@ -458,10 +458,13 @@ type DartPackage struct {
 
 // JavaDefault contains Java-specific default configuration.
 type JavaDefault struct {
+	// CustomGroupIDs maps API path prefixes (e.g., "google/shopping") to their
+	// corresponding Maven Group IDs (e.g., "com.google.shopping").
+	// Use this to override the default "com.google.cloud" Group ID for specific API
+	// paths (e.g., maps, ads, shopping).
+	CustomGroupIDs map[string]string `yaml:"custom_group_ids,omitempty"`
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
-	// APIPathToGroupID is a map of API paths to group IDs for Java.
-	APIPathToGroupID map[string]string `yaml:"api_path_to_group_id,omitempty"`
 }
 
 // JavaModule contains Java-specific library configuration.

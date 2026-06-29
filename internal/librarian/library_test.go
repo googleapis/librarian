@@ -236,7 +236,7 @@ func TestFillDefaults(t *testing.T) {
 func TestFillDefaults_Java(t *testing.T) {
 	defaults := &config.Default{
 		Java: &config.JavaDefault{
-			APIPathToGroupID: map[string]string{
+			CustomGroupIDs: map[string]string{
 				"google/shopping":  "com.google.shopping",
 				"google/maps":      "com.google.maps",
 				"google/ads":       "com.google.api-ads",
