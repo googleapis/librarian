@@ -293,7 +293,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	}
 	if lib.Output == "" {
 		if isMixedLibrary(language, lib) {
-			return nil, fmt.Errorf("%w: %s", errNoExplicitOutput, lib.Name)
+			return nil, fmt.Errorf("%s: %w", lib.Name, errNoExplicitOutput)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
