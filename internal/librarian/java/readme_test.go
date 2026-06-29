@@ -62,6 +62,42 @@ func TestDecamelize(t *testing.T) {
 	}
 }
 
+func TestIsProductionSample(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		path string
+		want bool
+	}{
+		{
+			name: "valid production sample",
+			path: "samples/src/main/java/com/example/Sample.java",
+			want: true,
+		},
+		{
+			name: "valid production sample at root",
+			path: "src/main/java/com/example/Sample.java",
+			want: true,
+		},
+		{
+			name: "non-java file",
+			path: "samples/src/main/java/README.md",
+			want: false,
+		},
+		{
+			name: "not in src/main/java",
+			path: "samples/src/test/java/com/example/Sample.java",
+			want: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := isProductionSample(test.path)
+			if got != test.want {
+				t.Errorf("isProductionSample() = %t, want %t", got, test.want)
+			}
+		})
+	}
+}
+
 func TestExtractTitle(t *testing.T) {
 	for _, test := range []struct {
 		name    string
