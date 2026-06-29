@@ -155,18 +155,18 @@ func verifyGeneratedMapService(t *testing.T, outDir string) {
 	contentStr := string(content)
 
 	gotMethodOverload := extractBlock(t, contentStr, `  public func listSecrets(
-    byItem: `, "\n    }")
+    byItem: `, "\n  }")
 	wantMethodOverload := `  public func listSecrets(
     byItem: ListSecretsRequest, options: GoogleCloudGax.RequestOptions
 ) throws -> any AsyncSequence<(Swift.String, Secret), Swift.Error>
  {
-      let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
-        var request = byItem
-        request.pageToken = token
-        return try await self.listSecrets(request: request, options: options)
-      }
-      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
-    }`
+    let listRpc = { (token: String) async throws -> GoogleCloudSecretmanagerV1.ListSecretsResponse in
+      var request = byItem
+      request.pageToken = token
+      return try await self.listSecrets(request: request, options: options)
+    }
+    return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
+  }`
 	if diff := cmp.Diff(wantMethodOverload, gotMethodOverload); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
