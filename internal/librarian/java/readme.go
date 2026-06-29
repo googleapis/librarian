@@ -16,6 +16,9 @@ package java
 
 import (
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -35,6 +38,82 @@ var (
 	errEmptyTitle = errors.New("title value cannot be empty")
 )
 
+// CodeSample represents a Java code sample and its metadata for README generation.
+type CodeSample struct {
+	Title string
+	File  string
+}
+
+func ExtractSamples(dir string) ([]CodeSample, error) {
+	if dir == "" {
+		return nil, fmt.Errorf("dir cannot be empty")
+	}
+	files, err := collectSampleFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	var samples []CodeSample
+	for _, file := range files {
+		sample, err := parseCodeSample(dir, file)
+		if err != nil {
+			return nil, err
+		}
+		samples = append(samples, sample)
+	}
+	return samples, nil
+}
+
+// collectSampleFiles recursively traverses dir/samples to find production Java sample files.
+func collectSampleFiles(dir string) ([]string, error) {
+	samplesDir := filepath.Join(dir, "samples")
+	var files []string
+	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil
+			}
+			return err
+		}
+		// Skip directories and non-regular files.
+		if !d.Type().IsRegular() {
+			return nil
+		}
+
+		// Get relative path of file and filter for only Java files in src/main/java/ production trees.
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if isProductionSample(rel) {
+			files = append(files, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk samples directory: %w", err)
+	}
+	return files, nil
+}
+
+// parseCodeSample reads a Java sample file and constructs a CodeSample struct with its title and relative path.
+func parseCodeSample(dir, file string) (CodeSample, error) {
+	// Derive default human-readable title by stripping extension and converting CamelCase to space-separated words.
+	base := strings.TrimSuffix(filepath.Base(file), ".java")
+	title := decamelize(base)
+	titleOverride, err := extractTitle(filepath.Join(dir, file))
+	if err != nil {
+		return CodeSample{}, fmt.Errorf("failed to extract title from %s: %w", file, err)
+	}
+	if titleOverride != "" {
+		title = titleOverride
+	}
+	return CodeSample{
+		Title: title,
+		// Normalize path separators to forward slashes for Markdown links in README.
+		File: filepath.ToSlash(file),
+	}, nil
+}
+
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {
 	return strings.TrimSpace(camelCaseRegexp.ReplaceAllString(value, `$1 $2`))
@@ -48,10 +127,15 @@ func isProductionSample(path string) bool {
 		(strings.HasPrefix(slashed, "src/main/java/") || strings.Contains(slashed, "/src/main/java/"))
 }
 
-// extractTitle extracts and validates the title override from Java comment blocks.
+// extractTitle reads a file to extract and validate any title override from Java comment blocks.
 // It expects a "title:" line to immediately follow the "sample-metadata:" marker.
 // Returns an error if the marker is present but the title line is missing, malformed, or empty.
-func extractTitle(content string) (string, error) {
+func extractTitle(filePath string) (string, error) {
+	contentBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read sample file: %w", err)
+	}
+	content := string(contentBytes)
 	if !strings.Contains(content, "sample-metadata:") {
 		return "", nil
 	}
