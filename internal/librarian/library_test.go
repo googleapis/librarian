@@ -237,11 +237,11 @@ func TestFillDefaults_Java(t *testing.T) {
 	defaults := &config.Default{
 		Java: &config.JavaDefault{
 			CustomGroupIDs: map[string]string{
-				"google/shopping":                   "com.google.shopping",
-				"google/exact/v1": "com.google.exact",
-				"google/maps":                       "com.google.maps",
-				"google/ads":                        "com.google.api-ads",
-				"google/analytics":                  "com.google.analytics",
+				"google/shopping":  "com.google.shopping",
+				"google/exact/v1":  "com.google.exact",
+				"google/maps":      "com.google.maps",
+				"google/ads":       "com.google.api-ads",
+				"google/analytics": "com.google.analytics",
 			},
 		},
 	}
