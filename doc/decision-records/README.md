@@ -15,17 +15,17 @@ They are not well-suited for larger designs that may involve a variety of intert
 Some examples of good candidates:
 
 1. Choosing a test framework
-2. Choosing a programming language
-3. Choosing a build system
-4. Choosing a database
-5. Choosing a vendor for capability X
-6. Choosing a code review methodology or workflow (if specific, if a more involved SDLC, may be better fit for a design doc)
+1. Choosing a programming language
+1. Choosing a build system
+1. Choosing a database
+1. Choosing a vendor for capability X
+1. Choosing a code review methodology or workflow (if specific, if a more involved SDLC, may be better fit for a design doc)
 
 Some examples of unsuitable candidates:
 
 1. Designing a build system
-2. Designing an API
-3. Code generation implementation
+1. Designing an API
+1. Code generation implementation
 
 ## Structure
 
