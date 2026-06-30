@@ -512,9 +512,6 @@ type JavaModule struct {
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
 
-	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
-
 	// ReleasedVersion is the last released version of the library.
 	// If omitted, it will be derived from the library version.
 	// Note: It assumes a minor bump from the previous '.0' version
