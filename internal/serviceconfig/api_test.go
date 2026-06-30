@@ -15,6 +15,7 @@
 package serviceconfig
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -432,17 +433,19 @@ func TestFindTransport_Error(t *testing.T) {
 		name     string
 		path     string
 		language string
+		want     error
 	}{
 		{
 			name:     "matching path but not allowed language",
 			path:     "google/ads/admanager/v1",
 			language: config.LanguageGo,
+			want:     errNotAllowed,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_, err := FindTransport(test.path, test.language)
-			if err == nil {
-				t.Errorf("FindTransport(%q, %q) expected error, got nil", test.path, test.language)
+			if !errors.Is(err, test.want) {
+				t.Errorf("FindTransport(%q, %q) expected %v, got %v", test.path, test.language, test.want, err)
 			}
 		})
 	}

@@ -45,6 +45,10 @@ type (
 	OAuthRequirements  = serviceconfig.OAuthRequirements
 )
 
+var (
+	errNotAllowed = errors.New("API is not allowlisted")
+)
+
 // Read reads a service config from a YAML file and returns it as a Service
 // proto. The file is parsed as YAML, converted to JSON, and then unmarshaled
 // into a Service proto.
@@ -230,7 +234,7 @@ func validateAPI(path string, language string, api *API) (*API, error) {
 			return api, nil
 		}
 	}
-	return nil, fmt.Errorf("API %s is not allowed for language %s", path, language)
+	return nil, fmt.Errorf("%s for language %s: %w", path, language, errNotAllowed)
 }
 
 // isServiceConfigFile checks if the file contains "type: google.api.Service".
