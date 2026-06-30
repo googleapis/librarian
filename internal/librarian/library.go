@@ -44,25 +44,22 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if d.Go != nil {
+	switch {
+	case d.Go != nil:
 		return fillGo(lib, d)
-	}
-	if d.Java != nil {
+	case d.Java != nil:
 		return fillJava(lib, d)
-	}
-	if d.Rust != nil {
+	case d.Rust != nil:
 		return fillRust(lib, d)
-	}
-	if d.Dart != nil {
+	case d.Dart != nil:
 		return fillDart(lib, d)
-	}
-	if d.Python != nil {
+	case d.Python != nil:
 		return fillPython(lib, d)
-	}
-	if d.Swift != nil {
+	case d.Swift != nil:
 		return fillSwift(lib, d)
+	default:
+		return lib
 	}
-	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
