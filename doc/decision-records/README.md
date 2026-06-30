@@ -32,8 +32,7 @@ Some examples of unsuitable candidates:
 
 ## Structure
 
-See 00000-decision-record-template.md for a template to use.
-The number of the ADR can be the PR number, or some monotonically increasing number.
-Using the PR number avoids conflicts, and having to re-number when decision record PRs get merged in a different order from their creation.
+See [the template](./00000-decision-record-template.md) for general structure.
+The number of the ADR can be the PR number, or some monotonically increasing number relative to prior decision records.
 
 Feel free to customize the format as best fit for the particular situation, as long as its key components are captured (like the context, considered options, consequences): the template is a guide, not a rule.
