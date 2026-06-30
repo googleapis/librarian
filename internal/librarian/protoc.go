@@ -36,34 +36,36 @@ func extractZip(zipPath, destDir string) error {
 			!strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
 			continue
 		}
-		target := filepath.Join(destDir, cleanPath)
-		// Check for Zip Slip vulnerability (directory traversal)
-		rel, err := filepath.Rel(destDir, target)
-		if err != nil || strings.HasPrefix(rel, "..") {
-			return fmt.Errorf("illegal file path in zip: %s", file.Name)
-		}
-		if file.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, file.Mode()); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
-		}
-		rc, err := file.Open()
-		if err != nil {
-			return err
-		}
-		defer rc.Close()
-		out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, file.Mode())
-		if err != nil {
-			return err
-		}
-		defer out.Close()
-		if _, err := io.Copy(out, rc); err != nil {
+		if err := unzipFile(file, destDir, cleanPath); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func unzipFile(file *zip.File, destDir, cleanPath string) error {
+	target := filepath.Join(destDir, cleanPath)
+	// Check for Zip Slip vulnerability (directory traversal)
+	rel, err := filepath.Rel(destDir, target)
+	if err != nil || strings.HasPrefix(rel, "..") {
+		return fmt.Errorf("illegal file path in zip: %s", file.Name)
+	}
+	if file.FileInfo().IsDir() {
+		return os.MkdirAll(target, file.Mode())
+	}
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		return err
+	}
+	rc, err := file.Open()
+	if err != nil {
+		return err
+	}
+	defer rc.Close()
+	out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, file.Mode())
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	_, err = io.Copy(out, rc)
+	return err
 }
