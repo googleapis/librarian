@@ -112,11 +112,8 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
 			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
 				lib.Java.GroupID = groupID
-				break
+				return lib
 			}
-		}
-		if lib.Java.GroupID != "" {
-			break
 		}
 	}
 	return lib
