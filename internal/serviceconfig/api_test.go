@@ -50,7 +50,7 @@ func TestHasAPIPath(t *testing.T) {
 		want     bool
 	}{
 		{"matching path and language", "google/cloud/accessapproval/v1", config.LanguageRust, true},
-		{"matching path but not language", "google/ads/admanager/v1", config.LanguageRust, false},
+		{"matching path but not language", "google/ads/admanager/v1", config.LanguageFake, false},
 		{"unknown path", "google/does/not/exist/v1", config.LanguageRust, false},
 		{"empty path", "", config.LanguageRust, false},
 	} {
