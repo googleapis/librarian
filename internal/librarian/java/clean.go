@@ -85,9 +85,6 @@ func cleanPatterns(library *config.Library) map[string]bool {
 	}
 	for _, api := range library.APIs {
 		javaAPI := api.Java
-		if javaAPI == nil {
-			javaAPI = &config.JavaAPI{}
-		}
 		version := filepath.Base(api.Path)
 		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
 		if apiCoordinates.Proto.ArtifactID != "" && shouldGenerateProto(javaAPI) {
@@ -176,29 +173,16 @@ func isDefaultPreserved(path string) bool {
 	return itTestRegexp.MatchString(path) || versionRegexp.MatchString(path)
 }
 
-// isManualFile checks if the file at the given path is manually maintained.
-func isManualFile(path string, name string) (bool, error) {
-	if slices.Contains(generatedNonJavaFiles, name) {
-		return false, nil
-	}
-	if filepath.Ext(path) != ".java" {
-		return true, nil
-	}
-	hasGenMarker, err := hasMarker(path)
-	if err != nil {
-		return false, err
-	}
-	return !hasGenMarker, nil
-}
-
 // shouldCleanMarkerPath returns true if the file at path should be cleaned based on
 // its name or whether it contains the auto-generated marker.
 func shouldCleanMarkerPath(path string, d os.DirEntry) (bool, error) {
-	isManual, err := isManualFile(path, d.Name())
-	if err != nil {
-		return false, err
+	if slices.Contains(generatedNonJavaFiles, d.Name()) {
+		return true, nil
 	}
-	return !isManual, nil
+	if filepath.Ext(path) != ".java" {
+		return false, nil
+	}
+	return hasMarker(path)
 }
 
 // hasMarker checks if the file at path contains the auto-generated marker.
