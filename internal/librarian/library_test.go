@@ -268,7 +268,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/merchant/issueresolution/v1beta"},
 				},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.shopping",
+					GroupID: "com.google.shopping",
 				},
 			},
 		},
@@ -308,7 +308,7 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "maps-routeoptimization",
 				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.maps",
+					GroupID: "com.google.maps",
 				},
 			},
 		},
@@ -323,7 +323,7 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "admanager",
 				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.api-ads",
+					GroupID: "com.google.api-ads",
 				},
 			},
 		},
@@ -344,7 +344,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/analytics/admin/v1alpha"},
 				},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.analytics",
+					GroupID: "com.google.analytics",
 				},
 			},
 		},
@@ -366,7 +366,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/type"},
 				},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.api.grpc",
+					GroupID: "com.google.api.grpc",
 				},
 			},
 		},
@@ -430,7 +430,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/exact/v1"},
 				},
 				Java: &config.JavaModule{
-					GroupID:    "com.google.exact",
+					GroupID: "com.google.exact",
 				},
 			},
 		},
