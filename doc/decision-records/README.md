@@ -29,7 +29,7 @@ Some examples of unsuitable candidates:
 1. Designing an API
 1. Code generation implementation
 
-When unsure, ask a friend, or feel free to use Gemini to help structure your thoughts and context using the template linked below.
+When unsure, ask a friend, or err on the side of writing a quick one by using Gemini to help structure your thoughts and context using the template linked below.
 
 > [!NOTE]
 > We intentionally use the phrase "decision records" and not "architecture decision records" as these are not limited to just "architecture."
