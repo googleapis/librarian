@@ -557,7 +557,7 @@ func TestExtractTarball(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := ExtractTarball(tarballPath, destDir, filter); err != nil {
+	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -760,7 +760,7 @@ func TestExtractTarball_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := ExtractTarball(test.tarballPath(t), test.dest(t), filter)
+			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
@@ -803,7 +803,7 @@ func TestExtractTarball_PathError(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := ExtractTarball(test.tarballPath(t), test.dest(t), filter)
+			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
 			var pathErr *fs.PathError
 			if !errors.As(err, &pathErr) {
 				t.Fatalf("got error %v, want *fs.PathError", err)
@@ -834,7 +834,8 @@ func TestDownload_Error(t *testing.T) {
 			},
 			sha:     "any-sha",
 			wantErr: true,
-		}, {
+		},
+		{
 			name: "cannot create parent directory",
 			target: func(t *testing.T) string {
 				// Create a read-only directory to trigger a permission error.
@@ -862,7 +863,7 @@ func TestDownload_Error(t *testing.T) {
 			})
 			err := Download(context.Background(), test.target(t), test.url(t), test.sha)
 			if (err != nil) != test.wantErr {
-				t.Errorf("download() error = %v, wantErr %v", err, test.wantErr)
+				t.Errorf("Download() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
@@ -1114,7 +1115,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := ExtractTarball(tarballPath, destDir, filter); err != nil {
+	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
 		t.Fatal(err)
 	}
 

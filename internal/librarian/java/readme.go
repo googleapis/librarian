@@ -15,7 +15,12 @@
 package java
 
 import (
+	"bytes"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -34,18 +39,89 @@ var (
 	errEmptyTitle = errors.New("title value cannot be empty")
 )
 
+// codeSample represents a discovered Java code sample along with its derived title.
+type codeSample struct {
+	Title string
+	File  string
+}
+
+// collectSampleFiles recursively scans dir/samples for Java production files.
+func collectSampleFiles(dir string) ([]string, error) {
+	samplesDir := filepath.Join(dir, "samples")
+	if _, err := os.Stat(samplesDir); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to stat samples directory: %w", err)
+	}
+	var files []string
+	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if isProductionSample(rel) {
+			files = append(files, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk samples directory: %w", err)
+	}
+	return files, nil
+}
+
+// parseCodeSample reads a Java sample file and constructs a codeSample struct with its title and relative path.
+func parseCodeSample(dir, file string) (*codeSample, error) {
+	// Derive default title by stripping extension and converting CamelCase to space-separated words.
+	base := strings.TrimSuffix(filepath.Base(file), ".java")
+	title := decamelize(base)
+	titleOverride, err := extractTitle(filepath.Join(dir, file))
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract title from %s: %w", file, err)
+	}
+	if titleOverride != "" {
+		title = titleOverride
+	}
+	return &codeSample{
+		Title: title,
+		// Normalize path separators to forward slashes for Markdown links in README.
+		File: filepath.ToSlash(file),
+	}, nil
+}
+
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {
 	return strings.TrimSpace(camelCaseRegexp.ReplaceAllString(value, `$1 $2`))
 }
 
-// extractTitle extracts and validates the title override from Java comment blocks.
+// isProductionSample reports whether the given path represents a production Java source file
+// located under a standard "src/main/java" path.
+func isProductionSample(path string) bool {
+	slashed := filepath.ToSlash(path)
+	return strings.HasSuffix(slashed, ".java") &&
+		(strings.HasPrefix(slashed, "src/main/java/") || strings.Contains(slashed, "/src/main/java/"))
+}
+
+// extractTitle reads a file from disk and extracts the title override from Java comment blocks.
 // It expects a "title:" line to immediately follow the "sample-metadata:" marker.
-// Returns an error if the marker is present but the title line is missing, malformed, or empty.
-func extractTitle(content string) (string, error) {
-	if !strings.Contains(content, "sample-metadata:") {
+// Returns an error if the file cannot be read, or if the marker is present but the title line
+// is missing, malformed, or empty.
+func extractTitle(filePath string) (string, error) {
+	contentBytes, err := os.ReadFile(filePath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read file: %w", err)
+	}
+	if !bytes.Contains(contentBytes, []byte("sample-metadata:")) {
 		return "", nil
 	}
+	content := string(contentBytes)
 	matches := reTitle.FindStringSubmatch(content)
 	if len(matches) < 2 {
 		return "", errMissingTitle

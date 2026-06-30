@@ -16,17 +16,6 @@ on: [push, pull_request, merge_group]
 permissions:
   contents: read
 jobs:
-  legacylibrarian:
-    runs-on: ubuntu-24.04
-    # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/setup-librarian
-      - name: Run tests and check coverage
-        run: go run ./tool/cmd/coverage ./internal/legacylibrarian/...
   test:
     runs-on: ubuntu-24.04
     # Presubmit jobs must complete within 5 minutes. See CONTRIBUTING.md.
@@ -45,13 +34,13 @@ jobs:
       - name: Run tests and check coverage
         run: |
           go run ./tool/cmd/coverage -target=80 \
-            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/legacylibrarian|internal/sample|internal/testhelper')
+            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|python|rust|swift)|internal/sidekick|internal/sample|internal/testhelper')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     permissions:
       contents: read
       issues: write
-    needs: [legacylibrarian, test]
+    needs: [test]
     if: ${{ always() && contains(needs.*.result, 'failure') && github.event_name == 'push' && github.ref == 'refs/heads/main' }}
     steps:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
