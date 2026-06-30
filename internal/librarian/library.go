@@ -299,7 +299,11 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		if len(lib.APIs) > 0 {
 			apiPath = lib.APIs[0].Path
 		}
-		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
+		var defaultOut string
+		if defaults != nil {
+			defaultOut = defaults.Output
+		}
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
