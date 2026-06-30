@@ -4,7 +4,7 @@
 
 Decision records (otherwise known as architecture decision records or "ADRs") are records of important decisions made throughout a project. 
 
-They capture the context and rationale for a decision at a point in time, which is invaluable for new joiners and for evolution of a system.
+They capture the context and rationale for a decision at a point in time, which is invaluable for new joiners and for a system's evolution and maintenance.
 By capturing how and why a decision was made, it can be re-assessed much more easily, as decision makers will know how important it was and the non-obvious details of why it was made, when building on or revisiting those decisions.
 
 ## When to write one
