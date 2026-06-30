@@ -25,15 +25,12 @@ import (
 func TestRunEnv(t *testing.T) {
 	cacheDir := t.TempDir()
 	binDir := t.TempDir()
-
 	t.Setenv("LIBRARIAN_CACHE", cacheDir)
 	t.Setenv("LIBRARIAN_BIN", binDir)
-
 	var buf bytes.Buffer
 	if err := runEnv(&buf); err != nil {
 		t.Fatal(err)
 	}
-
 	got := buf.String()
 	wants := []string{
 		fmt.Sprintf("LIBRARIAN_CACHE=%s", cacheDir),
@@ -41,7 +38,6 @@ func TestRunEnv(t *testing.T) {
 		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
 		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
 	}
-
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("runEnv() output missing %q\ngot:\n%s", want, got)
@@ -55,12 +51,10 @@ func TestRunEnv_Error(t *testing.T) {
 	t.Setenv("LIBRARIAN_BIN", "")
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_CACHE_HOME", "")
-
 	var buf bytes.Buffer
 	if err := runEnv(&buf); err != nil {
 		t.Fatal(err)
 	}
-
 	got := buf.String()
 	wants := []string{
 		"LIBRARIAN_CACHE=<error:",
@@ -68,7 +62,6 @@ func TestRunEnv_Error(t *testing.T) {
 		"golang: <error:",
 		"java: <error:",
 	}
-
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
 			t.Errorf("runEnv() output missing %q\ngot:\n%s", want, got)

@@ -57,14 +57,11 @@ func runEnv(w io.Writer) error {
 	buildDir := dirOrErr(cache.BinDirectory())
 	goToolsDir := dirOrErr(golang.InstallDir())
 	javaToolsDir := dirOrErr(java.InstallDir())
-
 	fmt.Fprintf(w, "LIBRARIAN_CACHE=%s\n", cacheDir)
 	fmt.Fprintf(w, "LIBRARIAN_BIN=%s\n", buildDir)
-
 	fmt.Fprintf(w, "\nLanguage-specific tool installation directories:\n")
 	fmt.Fprintf(w, "  golang: %s\n", goToolsDir)
 	fmt.Fprintf(w, "  java: %s\n", javaToolsDir)
-
 	return nil
 }
 
