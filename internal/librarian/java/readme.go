@@ -23,6 +23,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
 )
 
 var (
@@ -156,4 +157,35 @@ func extractTitle(filePath string) (string, error) {
 		return "", errEmptyTitle
 	}
 	return title, nil
+}
+
+// toCamelCase converts snake_case, kebab-case, or space-separated strings into CamelCase identifiers.
+func toCamelCase(s string) string {
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-' || r == ' '
+	})
+	var sb strings.Builder
+	for _, p := range parts {
+		r := []rune(p)
+		r[0] = unicode.ToUpper(r[0])
+		sb.WriteString(string(r))
+	}
+	return sb.String()
+}
+
+// parseGroupIDArtifactID extracts GroupID and ArtifactID from a Maven distribution name.
+func parseGroupIDArtifactID(distributionName string) (string, string) {
+	groupID, artifactID, _ := strings.Cut(distributionName, ":")
+	return groupID, artifactID
+}
+
+// parseRepoShortName extracts the short repository name from the full repo path.
+func parseRepoShortName(repo string) string {
+	if repo == "" {
+		return ""
+	}
+	if i := strings.LastIndexByte(repo, '/'); i >= 0 {
+		return repo[i+1:]
+	}
+	return repo
 }
