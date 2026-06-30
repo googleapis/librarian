@@ -7,6 +7,8 @@ Decision records (otherwise known as architecture decision records or "ADRs") ar
 They capture the context and rationale for a decision at a point in time, which is invaluable for new joiners and for a system's evolution and maintenance.
 By capturing how and why a decision was made, it can be re-assessed much more easily, as decision makers will know how important it was and the non-obvious details of why it was made, when building on or revisiting those decisions.
 
+Googlers can check out go/adr for internal documentation on decision records.
+
 ## When to write one
 
 Decision records are typically for documenting when a particular choice must be made among several options, whether it is a particular technology or a practice for the team to follow.
