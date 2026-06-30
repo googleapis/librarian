@@ -43,10 +43,11 @@ func install(ctx context.Context, protoc *config.Protoc) error {
 		return err
 	}
 	defer os.Remove(tarball)
-	return fetch.ExtractZip(tarball, dir, filter)
+	return fetch.ExtractZip(tarball, dir, protocFilter)
 }
 
-func filter(path string) (string, bool) {
+// protocFilter filters the files in the protoc zip file.
+func protocFilter(path string) (string, bool) {
 	cleanPath := filepath.Clean(path)
 	if cleanPath == filepath.Join("bin", "protoc") ||
 		strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
