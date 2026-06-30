@@ -371,7 +371,7 @@ func TestFillDefaults_Java(t *testing.T) {
 			},
 		},
 		{
-			name: "do not fill group id if api path contains library name as prefix",
+			name: "prefix match respects path segment boundaries",
 			lib: &config.Library{
 				Name: "shopping-foo",
 				APIs: []*config.API{
