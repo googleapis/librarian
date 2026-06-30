@@ -123,7 +123,7 @@ func TestFindServiceDependencies(t *testing.T) {
 	got := FindServiceDependencies(model, ".test.NotFound")
 	want := &ServiceDependencies{}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = FindServiceDependencies(model, ".test.Service1")
@@ -132,7 +132,7 @@ func TestFindServiceDependencies(t *testing.T) {
 		Enums:    []string{".test.SomeEnum"},
 	}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = FindServiceDependencies(model, ".test.Service2")
@@ -140,6 +140,6 @@ func TestFindServiceDependencies(t *testing.T) {
 		Messages: []string{".test.Empty", ".test.OpMetadata", ".test.OpResponse"},
 	}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -187,5 +187,21 @@ Usage:
 version prints the librarian binary version and exits. The version is
 embedded at build time and follows the conventions described at
 https://go.dev/ref/mod#versions.
+
+# Various debugging commands
+
+Usage:
+
+	librarian debug [command]
+
+# Print environment variables for the librarian command line interface.
+
+Usage:
+
+	librarian debug env
+
+env prints the librarian interpretation of the environment it is run in.
+This includes the resolved LIBRARIAN_CACHE and LIBRARIAN_BIN paths,
+as well as the language-specific tool installation directories.
 */
 package main

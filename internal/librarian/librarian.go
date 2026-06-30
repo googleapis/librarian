@@ -66,6 +66,7 @@ func Run(ctx context.Context, args ...string) error {
 			publishCommand(),
 			tagCommand(),
 			versionCommand(),
+			debugCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)

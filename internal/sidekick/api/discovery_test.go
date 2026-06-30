@@ -34,12 +34,12 @@ func TestLroServices(t *testing.T) {
 	}
 	got := d.LroServices()
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("LroServices() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestPathParameters(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name  string
 		input *Poller
 		want  []string
@@ -59,12 +59,11 @@ func TestPathParameters(t *testing.T) {
 			input: &Poller{Prefix: "a/{b}"},
 			want:  []string{"b"},
 		},
-	}
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.input.PathParameters()
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("PathParameters(%q) mismatch (-want +got):\n%s", test.input.Prefix, diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

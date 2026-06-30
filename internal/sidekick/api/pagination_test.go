@@ -90,7 +90,7 @@ func TestPageSimple(t *testing.T) {
 		PageableItem:  response.Fields[1],
 	}
 	if diff := cmp.Diff(want, response.Pagination); diff != "" {
-		t.Errorf("mismatch, (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -175,7 +175,7 @@ func TestPageWithOverride(t *testing.T) {
 		PageableItem:  response.Fields[2],
 	}
 	if diff := cmp.Diff(want, response.Pagination); diff != "" {
-		t.Errorf("mismatch, (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -429,7 +429,7 @@ func TestPaginationRequestPageSizeSuccess(t *testing.T) {
 		}
 		got := paginationRequestPageSize(response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -559,7 +559,7 @@ func TestPaginationResponseItemMatching(t *testing.T) {
 		}
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -594,7 +594,7 @@ func TestPaginationResponseItemMatchingMany(t *testing.T) {
 		}
 		got := paginationResponseItem(nil, "package.Service.List", response)
 		if diff := cmp.Diff(response.Fields[0], got); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -620,7 +620,7 @@ func TestPaginationResponseItemMatchingPreferRepeatedOverMap(t *testing.T) {
 	}
 	got := paginationResponseItem(nil, "package.Service.List", response)
 	if diff := cmp.Diff(response.Fields[1], got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

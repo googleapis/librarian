@@ -167,24 +167,10 @@ func (api *API) ReleaseLevel(language, version string) string {
 }
 
 // RepoMetadataTransport returns the transport for repo metadata.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4854): delete
-// once the issue is resolved.
-// For Java, it maps the transport to "grpc", "http", or "both".
 func (api *API) RepoMetadataTransport(language string, library *config.Library) string {
 	transport := api.Transport(language)
-	if language == config.LanguageJava {
-		if library != nil && library.Java != nil && library.Java.TransportOverride != "" {
-			transport = Transport(library.Java.TransportOverride)
-		}
-		switch transport {
-		case GRPC:
-			return "grpc"
-		case Rest:
-			return "http"
-		default:
-			return "both"
-		}
+	if language == config.LanguageJava && library != nil && library.Java != nil && library.Java.TransportOverride != "" {
+		transport = Transport(library.Java.TransportOverride)
 	}
 	return string(transport)
 }
