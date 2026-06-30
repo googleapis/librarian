@@ -43,14 +43,16 @@ func install(ctx context.Context, protoc *config.Protoc) error {
 		return err
 	}
 	defer os.Remove(tarball)
-	filter := func(path string) (string, bool) {
-		cleanPath := filepath.Clean(path)
-		if cleanPath == filepath.Join("bin", "protoc") || cleanPath == "include" || strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
-			return cleanPath, true
-		}
-		return "", false
-	}
 	return fetch.ExtractZip(tarball, dir, filter)
+}
+
+func filter(path string) (string, bool) {
+	cleanPath := filepath.Clean(path)
+	if cleanPath == filepath.Join("bin", "protoc") ||
+		strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
+		return cleanPath, true
+	}
+	return "", false
 }
 
 // installDir returns the directory where the protoc binary should be installed.
