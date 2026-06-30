@@ -12,6 +12,8 @@ By capturing how and why a decision was made, it can be re-assessed much more ea
 Decision records are typically for documenting when a particular choice must be made among several options, whether it is a particular technology or a practice for the team to follow.
 They are not well-suited for larger designs that may involve a variety of intertwined design choices.
 
+The process is intended to be lightweight, and more focused on content and record-keeping with context than formality.
+
 Some examples of good candidates:
 
 1. Choosing a test framework
@@ -26,6 +28,8 @@ Some examples of unsuitable candidates:
 1. Designing a build system
 1. Designing an API
 1. Code generation implementation
+
+When unsure, ask a friend, or feel free to use Gemini to help structure your thoughts and context using the template linked below.
 
 > [!NOTE]
 > We intentionally use the phrase "decision records" and not "architecture decision records" as these are not limited to just "architecture."
