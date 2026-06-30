@@ -94,7 +94,7 @@ func TestMakeServiceMethods(t *testing.T) {
 				t.Fatalf("expected method %s in the API model", test.id)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
