@@ -875,6 +875,7 @@ func TestApplyDefaults(t *testing.T) {
 		apis        []*config.API
 		wantOutput  string
 		wantAPIPath string
+		nilDefaults bool
 	}{
 		{
 			name:       "empty output derives path from api",
@@ -929,6 +930,12 @@ func TestApplyDefaults(t *testing.T) {
 			language:   config.LanguageGo,
 			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
+		{
+			name:        "nil defaults is handled safely",
+			language:    config.LanguageGo,
+			nilDefaults: true,
+			wantOutput:  "google-cloud-secretmanager-v1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
@@ -937,8 +944,11 @@ func TestApplyDefaults(t *testing.T) {
 				APIs:   test.apis,
 				Rust:   test.rust,
 			}
-			defaults := &config.Default{
-				Output: "src/generated",
+			var defaults *config.Default
+			if !test.nilDefaults {
+				defaults = &config.Default{
+					Output: "src/generated",
+				}
 			}
 			got, err := applyDefaults(test.language, lib, defaults)
 			if err != nil {

@@ -64,7 +64,7 @@ func TestQueryParams(t *testing.T) {
 	want := []*api.Field{field1, field2}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched query parameters (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -83,7 +83,7 @@ func TestPathParams(t *testing.T) {
 	}
 	want := []*api.Field{sample.CreateRequest().Fields[0]}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched query parameters (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got, err = PathParams(sample.MethodUpdate(), test)
@@ -92,7 +92,7 @@ func TestPathParams(t *testing.T) {
 	}
 	want = []*api.Field{sample.UpdateRequest().Fields[0]}
 	if diff := cmp.Diff(want, got, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("mismatched query parameters (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -100,7 +100,7 @@ func TestFilterSlice(t *testing.T) {
 	got := FilterSlice([]string{"a.1", "b.1", "a.2", "b.2"}, func(s string) bool { return strings.HasPrefix(s, "a.") })
 	want := []string{"a.1", "a.2"}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched FilterSlice result (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -108,7 +108,7 @@ func TestMapSlice(t *testing.T) {
 	got := MapSlice([]string{"a", "aa", "aaa"}, func(s string) int { return len(s) })
 	want := []int{1, 2, 3}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched FilterSlice result (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

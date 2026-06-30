@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -36,7 +37,88 @@ var (
 
 	// errEmptyTitle indicates the extracted title value is empty.
 	errEmptyTitle = errors.New("title value cannot be empty")
+
+	// errEmptyDir indicates the provided directory path is empty.
+	errEmptyDir = errors.New("dir cannot be empty")
 )
+
+// codeSample represents a discovered Java code sample along with its derived title.
+type codeSample struct {
+	Title string
+	File  string
+}
+
+// extractSamples locates production Java sample files and returns parsed codeSample structs
+// containing display titles and relative paths for README rendering.
+func extractSamples(dir string) ([]codeSample, error) {
+	if dir == "" {
+		return nil, errEmptyDir
+	}
+	files, err := collectSampleFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	var samples []codeSample
+	for _, file := range files {
+		sample, err := parseCodeSample(dir, file)
+		if err != nil {
+			return nil, err
+		}
+		samples = append(samples, *sample)
+	}
+	return samples, nil
+}
+
+// collectSampleFiles recursively scans dir/samples for Java production files.
+func collectSampleFiles(dir string) ([]string, error) {
+	samplesDir := filepath.Join(dir, "samples")
+	if _, err := os.Stat(samplesDir); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to stat samples directory: %w", err)
+	}
+	var files []string
+	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			return err
+		}
+		if isProductionSample(rel) {
+			files = append(files, rel)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk samples directory: %w", err)
+	}
+	return files, nil
+}
+
+// parseCodeSample reads a Java sample file and constructs a codeSample struct with its title and relative path.
+func parseCodeSample(dir, file string) (*codeSample, error) {
+	// Derive default title by stripping extension and converting CamelCase to space-separated words.
+	base := strings.TrimSuffix(filepath.Base(file), ".java")
+	title := decamelize(base)
+	titleOverride, err := extractTitle(filepath.Join(dir, file))
+	if err != nil {
+		return nil, fmt.Errorf("failed to extract title from %s: %w", file, err)
+	}
+	if titleOverride != "" {
+		title = titleOverride
+	}
+	return &codeSample{
+		Title: title,
+		// Normalize path separators to forward slashes for Markdown links in README.
+		File: filepath.ToSlash(file),
+	}, nil
+}
 
 // decamelize converts CamelCase string to space-separated string (e.g. "CamelCase" -> "Camel Case").
 func decamelize(value string) string {

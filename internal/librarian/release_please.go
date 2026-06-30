@@ -31,13 +31,31 @@ import (
 const (
 	bulkManifestFile            = ".release-please-bulk-manifest.json"
 	bulkConfigFile              = "release-please-bulk-config.json"
+	defaultManifestFile         = ".release-please-manifest.json"
+	defaultConfigFile           = "release-please-config.json"
 	defaultReleasePleaseVersion = "0.0.0"
 )
 
-func hasBulkReleasePleaseConfigs(dir string) bool {
-	_, errM := os.Stat(filepath.Join(dir, bulkManifestFile))
-	_, errC := os.Stat(filepath.Join(dir, bulkConfigFile))
+func hasBulkReleasePleaseConfigs(dir string, cfg *config.Config) bool {
+	manifestFile, configFile := releasePleaseFiles(cfg)
+	_, errM := os.Stat(filepath.Join(dir, manifestFile))
+	_, errC := os.Stat(filepath.Join(dir, configFile))
 	return !errors.Is(errM, fs.ErrNotExist) && !errors.Is(errC, fs.ErrNotExist)
+}
+
+// releasePleaseFiles returns the file names for the Release Please manifest file
+// and config file in this order, depending on the SDK language.
+func releasePleaseFiles(cfg *config.Config) (string, string) {
+	// google-cloud-node uses the default Release Please files to add a new library.
+	// google-cloud-python and google-cloud-go use the "-bulk-" files.
+	manifestFile := bulkManifestFile
+	configFile := bulkConfigFile
+	if cfg.Language == config.LanguageNodejs {
+		// google-cloud-node uses the default files
+		manifestFile = defaultManifestFile
+		configFile = defaultConfigFile
+	}
+	return manifestFile, configFile
 }
 
 // syncToReleasePlease updates the release-please configuration files with the
@@ -49,19 +67,20 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 		return err
 	}
 
-	manifestPath := filepath.Join(dir, bulkManifestFile)
+	manifestFile, configFile := releasePleaseFiles(cfg)
+	manifestPath := filepath.Join(dir, manifestFile)
 	manifest, err := readJSONFile[map[string]string](manifestPath)
 	if err != nil {
-		return fmt.Errorf("failed to read bulk manifest file: %w", err)
+		return fmt.Errorf("failed to read manifest file: %w", err)
 	}
 	if manifest == nil {
 		manifest = make(map[string]string)
 	}
 
-	configPath := filepath.Join(dir, bulkConfigFile)
+	configPath := filepath.Join(dir, configFile)
 	bulkConfig, err := readJSONFile[map[string]any](configPath)
 	if err != nil {
-		return fmt.Errorf("failed to read bulk config file: %w", err)
+		return fmt.Errorf("failed to read config file: %w", err)
 	}
 	if bulkConfig == nil {
 		bulkConfig = make(map[string]any)
@@ -69,7 +88,8 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	packagesRaw, pkgsExist := bulkConfig["packages"]
 	packages, isMap := packagesRaw.(map[string]any)
 	if pkgsExist && !isMap {
-		return fmt.Errorf("'packages' in bulk config is not an object: %v", packagesRaw)
+		return fmt.Errorf("'packages' in %s is not an object: %v",
+			configPath, packagesRaw)
 	}
 	if !isMap || packages == nil {
 		packages = make(map[string]any)
@@ -78,12 +98,22 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 
 	var extraFiles []any
 	pkgPath := lib.Name
-	if cfg.Language == config.LanguagePython {
+	switch cfg.Language {
+	case config.LanguagePython:
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
+	case config.LanguageNodejs:
+		pkgPath = "packages/" + lib.Name
 	}
 
-	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, lib.Name, extraFiles); err != nil {
+	component := lib.Name
+	if cfg.Language == config.LanguageNodejs {
+		// google-cloud-node does not need to override
+		// component value in package.
+		component = ""
+	}
+
+	if err := syncPackageToReleasePlease(manifest, packages, pkgPath, lib.Version, component, extraFiles); err != nil {
 		return err
 	}
 
@@ -140,7 +170,11 @@ func syncPackageToReleasePlease(manifest map[string]string, packages map[string]
 		packages[pkgPath] = pkgCfg
 	}
 
-	pkgCfg["component"] = component
+	if component != "" {
+		// Python and Go set component names for packages in the config file.
+		// NodeJS does not do this and passes an empty string in the argument.
+		pkgCfg["component"] = component
+	}
 
 	if len(extraFiles) > 0 {
 		var existing []any

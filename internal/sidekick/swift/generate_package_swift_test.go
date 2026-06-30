@@ -73,7 +73,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
     .package(path: "../../packages/wkt"),
   ],`
 	if diff := cmp.Diff(wantPackageDeps, gotPackageDeps); diff != "" {
-		t.Errorf("mismatch in package dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	gotTargetDeps := extractBlock(t, contentStr, "      dependencies: [", "\n      ]")
@@ -83,7 +83,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
         .product(name: "wkt", package: "wkt"),
       ]`
 	if diff := cmp.Diff(wantTargetDeps, gotTargetDeps); diff != "" {
-		t.Errorf("mismatch in target dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

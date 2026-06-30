@@ -15,6 +15,7 @@
 package dart
 
 import (
+	"fmt"
 	"maps"
 	"slices"
 	"testing"
@@ -50,10 +51,10 @@ func TestAnnotateModel(t *testing.T) {
 	codec := model.Codec.(*modelAnnotations)
 
 	if diff := cmp.Diff("google_cloud_test", codec.PackageName); diff != "" {
-		t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff("test.dart", codec.MainFileNameWithExtension); diff != "" {
-		t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -105,7 +106,7 @@ func TestAnnotateModel_FakeList(t *testing.T) {
 
 	want := "FakeAccessApprovalService, FakeSecretManagerService"
 	if diff := cmp.Diff(want, codec.FakeList); diff != "" {
-		t.Errorf("mismatch in Codec.FakeList (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -121,7 +122,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("src/buffers.dart", codec.MainFileNameWithExtension); diff != "" {
-					t.Errorf("mismatch in Codec.MainFileNameWithExtension (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -130,7 +131,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("google-cloud-type", codec.PackageName); diff != "" {
-					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -139,7 +140,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff([]string{"mockito", "test"}, codec.DevDependencies); diff != "" {
-					t.Errorf("mismatch in Codec.PackageName (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -165,7 +166,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 				if diff := cmp.Diff([]string{
 					"export 'package:google_cloud_gax/gax.dart' show Any",
 					"export 'package:google_cloud_gax/gax.dart' show Status"}, codec.Exports); diff != "" {
-					t.Errorf("mismatch in Codec.Exports (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -186,7 +187,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("1.2.3", codec.PackageVersion); diff != "" {
-					t.Errorf("mismatch in Codec.PackageVersion (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -195,7 +196,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("src/test.p.dart", codec.PartFileReference); diff != "" {
-					t.Errorf("mismatch in Codec.PartFileReference (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -204,7 +205,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("> [!TIP] Still beta!", codec.ReadMeAfterTitleText); diff != "" {
-					t.Errorf("mismatch in Codec.ReadMeAfterTitleText (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -213,7 +214,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("## Getting Started\n...", codec.ReadMeQuickstartText); diff != "" {
-					t.Errorf("mismatch in Codec.ReadMeQuickstartText (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -222,7 +223,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/repo", codec.RepositoryURL); diff != "" {
-					t.Errorf("mismatch in Codec.RepositoryURL (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -231,7 +232,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 			func(t *testing.T, am *annotateModel) {
 				codec := model.Codec.(*modelAnnotations)
 				if diff := cmp.Diff("http://example.com/issues", codec.IssueTrackerURL); diff != "" {
-					t.Errorf("mismatch in Codec.IssueTrackerURL (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -243,7 +244,7 @@ func TestAnnotateModel_Options(t *testing.T) {
 					"google_cloud_protobuf": "^7.8.9",
 					"http":                  "1.2.0"},
 					am.dependencyConstraints); diff != "" {
-					t.Errorf("mismatch in annotateModel.dependencyConstraints (-want, +got)\n:%s", diff)
+					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 			},
 		},
@@ -628,7 +629,7 @@ func TestCalculateImports(t *testing.T) {
 			got := calculateImports(deps, test.packageName, test.mainFileName)
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in calculateImports (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -914,7 +915,7 @@ func TestBuildQueryLines_Primitives(t *testing.T) {
 
 			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.field)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -979,7 +980,7 @@ func TestBuildQueryLines_Enums(t *testing.T) {
 		t.Run(test.enumField.Name, func(t *testing.T) {
 			got := annotate.buildQueryLines([]string{}, "result.", false, "", test.enumField)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestBuildQueryLinesEnums (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1046,7 +1047,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.message1?.state case final $1? when $1.isNotDefault) 'message1.state': $1.value",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = annotate.buildQueryLines([]string{}, "result.", false, "", messageField2)
@@ -1055,7 +1056,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.message2?.dataCrc32C case final $1?) 'message2.dataCrc32c': '${$1}'",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// nested messages
@@ -1065,7 +1066,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.message3?.fieldMask case final $1?) 'message3.fieldMask': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// custom encoded messages
@@ -1074,7 +1075,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.fieldMask case final $1?) 'fieldMask': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = annotate.buildQueryLines([]string{}, "result.", false, "", durationField)
@@ -1082,7 +1083,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.duration case final $1?) 'duration': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = annotate.buildQueryLines([]string{}, "result.", false, "", timestampField)
@@ -1090,7 +1091,7 @@ func TestBuildQueryLines_Messages(t *testing.T) {
 		"if (result.time case final $1?) 'time': $1.toJson()",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1349,7 +1350,7 @@ func TestCreateFromJsonLine(t *testing.T) {
 
 			got := annotate.createFromJsonLine(test.field, codec.Required)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestBuildQueryLines (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1721,7 +1722,7 @@ func TestToJson(t *testing.T) {
 			annotate.annotateField(test.field)
 			got := test.field.Codec.(*fieldAnnotation).ToJson
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestToJson (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1796,25 +1797,30 @@ func TestAnnotateEnum(t *testing.T) {
 			wantValueAnnotations: []wantedValueAnnotation{{"NAME"}, {"name"}},
 		},
 	} {
-		annotate.annotateEnum(test.enum)
-		codec := test.enum.Codec.(*enumAnnotation)
-		gotEnumName := codec.Name
-		gotEnumDefaultValue := codec.DefaultValue
+		t.Run(test.wantEnumName, func(t *testing.T) {
+			annotate.annotateEnum(test.enum)
+			codec := test.enum.Codec.(*enumAnnotation)
+			gotEnumName := codec.Name
+			gotEnumDefaultValue := codec.DefaultValue
 
-		if diff := cmp.Diff(test.wantEnumName, gotEnumName); diff != "" {
-			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
-		}
-		if diff := cmp.Diff(test.wantEnumDefaultValue, gotEnumDefaultValue); diff != "" {
-			t.Errorf("mismatch in TestAnnotateEnum(%q) (-want, +got)\n:%s", test.enum.Name, diff)
-		}
-
-		for i, value := range test.enum.Values {
-			wantValueAnnotation := test.wantValueAnnotations[i]
-			gotValueAnnotation := value.Codec.(*enumValueAnnotation)
-			if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
-				t.Errorf("mismatch in TestAnnotateEnum(%q) [value annotation %d] (-want, +got)\n:%s", test.enum.Name, i, diff)
+			if diff := cmp.Diff(test.wantEnumName, gotEnumName); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
-		}
+			if diff := cmp.Diff(test.wantEnumDefaultValue, gotEnumDefaultValue); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			for i, value := range test.enum.Values {
+				testName := fmt.Sprintf("TestAnnotateEnum(%q) [value annotation %d]", test.enum.Name, i)
+				t.Run(testName, func(t *testing.T) {
+					wantValueAnnotation := test.wantValueAnnotations[i]
+					gotValueAnnotation := value.Codec.(*enumValueAnnotation)
+					if diff := cmp.Diff(wantValueAnnotation.wantValueName, gotValueAnnotation.Name); diff != "" {
+						t.Errorf("mismatch (-want +got):\n%s", diff)
+					}
+				})
+			}
+		})
 	}
 }
 
@@ -2069,7 +2075,7 @@ func TestAnnotateField(t *testing.T) {
 			got.ToJson = ""
 
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch in TestAnnotateField(-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

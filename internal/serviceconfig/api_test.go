@@ -330,7 +330,13 @@ func TestRepoMetadataTransport(t *testing.T) {
 				Transports: map[string]Transport{config.LanguageJava: Rest},
 			},
 			language: config.LanguageJava,
-			want:     "http",
+			want:     "rest",
+		},
+		{
+			name:     "java, default",
+			sc:       &API{},
+			language: config.LanguageJava,
+			want:     "grpc+rest",
 		},
 		{
 			name:     "non-java, default",
@@ -365,7 +371,7 @@ func TestRepoMetadataTransport(t *testing.T) {
 					TransportOverride: "rest",
 				},
 			},
-			want: "http",
+			want: "rest",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
