@@ -55,18 +55,15 @@ func extractZip(zipPath, destDir string) error {
 		if err != nil {
 			return err
 		}
+		defer rc.Close()
 		out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, file.Mode())
 		if err != nil {
-			rc.Close()
 			return err
 		}
+		defer out.Close()
 		if _, err := io.Copy(out, rc); err != nil {
-			out.Close()
-			rc.Close()
 			return err
 		}
-		out.Close()
-		rc.Close()
 	}
 	return nil
 }
