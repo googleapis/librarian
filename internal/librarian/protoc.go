@@ -24,10 +24,7 @@ import (
 )
 
 // extractZip extracts a ZIP archive to the specified directory.
-func extractZip(zipPath, destDir string, filter func(string) (string, bool)) error {
-	if filter == nil {
-		filter = func(name string) (string, bool) { return name, true }
-	}
+func extractZip(zipPath, destDir string) error {
 	r, err := zip.OpenReader(zipPath)
 	if err != nil {
 		return err
@@ -35,7 +32,7 @@ func extractZip(zipPath, destDir string, filter func(string) (string, bool)) err
 	defer r.Close()
 	for _, file := range r.File {
 		cleanPath := filepath.Clean(file.Name)
-		if cleanPath != filepath.Join("bin", "protoc") ||
+		if !strings.HasPrefix(cleanPath, "bin"+string(filepath.Separator)) &&
 			!strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
 			continue
 		}
