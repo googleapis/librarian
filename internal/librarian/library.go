@@ -105,6 +105,12 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
+	return fillGroupIDIfEmpty(lib, d)
+}
+
+// fillGroupIDIfEmpty fills the group ID for the library if it is empty.
+// The group ID is derived from the library name.
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
 		return lib
 	}
