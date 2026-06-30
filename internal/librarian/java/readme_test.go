@@ -628,3 +628,170 @@ func TestExtractSnippetsFromFile_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestMinLeadingSpaces(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		lines []string
+		want  int
+	}{
+		{
+			name:  "two lines indented",
+			lines: []string{"  foo", "    bar"},
+			want:  2,
+		},
+		{
+			name:  "zero indented line",
+			lines: []string{"foo", "  bar"},
+			want:  0,
+		},
+		{
+			name:  "empty slice",
+			lines: nil,
+			want:  0,
+		},
+		{
+			name:  "only whitespace lines",
+			lines: []string{"   ", "\t"},
+			want:  0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := minLeadingSpaces(test.lines)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTrimLeadingWhitespace(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		lines []string
+		want  string
+	}{
+		{
+			name:  "standard indentation",
+			lines: []string{"  int x = 1;", "    int y = 2;"},
+			want:  "int x = 1;\n  int y = 2;\n",
+		},
+		{
+			name:  "with blank line",
+			lines: []string{"  int x = 1;", "", "  int y = 2;"},
+			want:  "int x = 1;\n\nint y = 2;\n",
+		},
+		{
+			name:  "empty input",
+			lines: nil,
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := trimLeadingWhitespace(test.lines)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractSnippets(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		want       map[string]string
+	}{
+		{
+			name: "extracts snippets across java and xml files with indentation trimmed",
+			setupFiles: func(t *testing.T, dir string) {
+				samplesDir := filepath.Join(dir, "samples")
+				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				pomPath := filepath.Join(samplesDir, "pom.xml")
+				pomContent := `<project>
+  <!-- [START dependency_snippet] -->
+  <dependency>
+    <groupId>com.google.cloud</groupId>
+  </dependency>
+  <!-- [END dependency_snippet] -->
+</project>`
+				if err := os.WriteFile(pomPath, []byte(pomContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+				javaPath := filepath.Join(samplesDir, "Demo.java")
+				javaContent := `public class Demo {
+  // [START quickstart]
+  public void run() {
+    // [START_EXCLUDE]
+    System.out.println("hidden");
+    // [END_EXCLUDE]
+    System.out.println("visible");
+  }
+  // [END quickstart]
+}`
+				if err := os.WriteFile(javaPath, []byte(javaContent), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: map[string]string{
+				"dependency_snippet": "<dependency>\n  <groupId>com.google.cloud</groupId>\n</dependency>\n",
+				"quickstart":         "public void run() {\n  System.out.println(\"visible\");\n}\n",
+			},
+		},
+		{
+			name: "missing samples directory returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				// No samples dir.
+			},
+			want: nil,
+		},
+		{
+			name: "no snippet tags in java files returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				samplesDir := filepath.Join(dir, "samples")
+				if err := os.MkdirAll(samplesDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(samplesDir, "Plain.java"), []byte("public class Plain {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setupFiles(t, dir)
+			got, err := extractSnippets(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractSnippets_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		dir     string
+		wantErr error
+	}{
+		{
+			name:    "empty directory parameter returns error",
+			dir:     "",
+			wantErr: errEmptyDir,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := extractSnippets(test.dir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("extractSnippets(%q) error = %v, wantErr %v", test.dir, err, test.wantErr)
+			}
+		})
+	}
+}
