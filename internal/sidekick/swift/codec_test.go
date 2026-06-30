@@ -78,7 +78,7 @@ func TestParseOptions(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
-				t.Errorf("mismatch (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -105,14 +105,14 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 		{SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantDeps, got.Dependencies); diff != "" {
-		t.Errorf("mismatch in Dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantApiPackages := map[string]*Dependency{
 		"google.cloud.location": {SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantApiPackages, got.ApiPackages); diff != "" {
-		t.Errorf("mismatch in ApiPackages (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

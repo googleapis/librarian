@@ -152,7 +152,7 @@ func TestPathVariables(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("pathVariables() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -318,7 +318,7 @@ func TestNewPathVariable(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPathVariable() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

@@ -364,7 +364,7 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		ReturnType: "GoogleTest.ListResponse",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if gotMethod.PlainRPC() {
 		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)
@@ -379,11 +379,11 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		ParameterTypeName: "ListRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantRequestImports := []string{"GoogleCloudWkt"}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify response message annotations
@@ -398,12 +398,12 @@ func TestAnnotateMethod_Pagination(t *testing.T) {
 		ParameterTypeName:   "ListResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Response type is a paginated response which depends on gax
 	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -547,7 +547,7 @@ func TestAnnotateMethod_LRO_Empty(t *testing.T) {
 		ReturnType: "GoogleTest.Operation",
 	}
 	if diff := cmp.Diff(wantMethod, gotMethod); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if gotMethod.PlainRPC() {
 		t.Errorf("gotMethod.PlainRPC() == false, want true\ngotMethod=%+v", gotMethod)

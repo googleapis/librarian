@@ -138,7 +138,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -177,7 +177,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		Signatures: []*api.MethodSignature{{Names: []string{"project", "body"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

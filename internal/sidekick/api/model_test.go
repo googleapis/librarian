@@ -54,7 +54,7 @@ func TestRoutingCombosSimpleOr(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
-		t.Errorf("Incorrect routing combos (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -92,7 +92,7 @@ func TestRoutingCombosSimpleAnd(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
-		t.Errorf("Incorrect routing combos (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -161,7 +161,7 @@ func TestRoutingCombosFull(t *testing.T) {
 		make_combo(va3, vb2, vc1),
 	}
 	if diff := cmp.Diff(want, method.RoutingCombos()); diff != "" {
-		t.Errorf("Incorrect routing combos (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -229,7 +229,7 @@ func TestPathTemplateBuilder(t *testing.T) {
 		Verb: verb,
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("bad builder result (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

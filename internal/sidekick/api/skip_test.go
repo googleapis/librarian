@@ -46,7 +46,7 @@ func TestSkipMessages(t *testing.T) {
 	want := []*Message{m0, m2}
 
 	if diff := cmp.Diff(want, model.Messages); diff != "" {
-		t.Errorf("mismatch in messages (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -75,7 +75,7 @@ func TestSkipEnums(t *testing.T) {
 	want := []*Enum{e0, e2}
 
 	if diff := cmp.Diff(want, model.Enums); diff != "" {
-		t.Errorf("mismatch in enums (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -103,7 +103,7 @@ func TestSkipNestedMessages(t *testing.T) {
 	})
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages); diff != "" {
-		t.Errorf("mismatch in messages (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -137,7 +137,7 @@ func TestSkipNestedEnums(t *testing.T) {
 
 	want := []*Enum{e0, e2}
 	if diff := cmp.Diff(want, m.Enums); diff != "" {
-		t.Errorf("mismatch in enums (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -166,7 +166,7 @@ func TestSkipServices(t *testing.T) {
 	want := []*Service{s0, s2}
 
 	if diff := cmp.Diff(want, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
-		t.Errorf("mismatch in services (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -208,7 +208,7 @@ func TestSkipMethods(t *testing.T) {
 
 	wantServices := []*Service{s0, s1, s2}
 	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Service{}, "Model")); diff != "" {
-		t.Errorf("mismatch in services (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{
@@ -222,7 +222,7 @@ func TestSkipMethods(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(wantMethods, s1.Methods); diff != "" {
-		t.Errorf("mismatch in methods (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -270,7 +270,7 @@ func TestIncludeNestedEnums(t *testing.T) {
 
 	want := []*Enum{e0}
 	if diff := cmp.Diff(want, m.Enums, cmpopts.IgnoreFields(Message{}, "Enums")); diff != "" {
-		t.Errorf("mismatch in enums (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -297,7 +297,7 @@ func TestIncludeNestedMessages(t *testing.T) {
 	})
 	want := []*Message{m0}
 	if diff := cmp.Diff(want, m2.Messages, cmpopts.IgnoreFields(Message{}, "Messages")); diff != "" {
-		t.Errorf("mismatch in messages (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -373,7 +373,7 @@ func TestIncludeMethods(t *testing.T) {
 
 	wantServices := []*Service{s1}
 	if diff := cmp.Diff(wantServices, model.Services, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...), cmpopts.IgnoreFields(Service{}, "Model", "QuickstartMethod")); diff != "" {
-		t.Errorf("mismatch in services (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantMethods := []*Method{
@@ -387,6 +387,6 @@ func TestIncludeMethods(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(wantMethods, s1.Methods, cmpopts.IgnoreFields(Method{}, methodIgnoreFields...)); diff != "" {
-		t.Errorf("mismatch in methods (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

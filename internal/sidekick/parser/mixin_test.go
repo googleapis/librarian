@@ -47,7 +47,7 @@ func TestProtobuf_ForceLongrunning(t *testing.T) {
 	}
 	gotMethods, gotDescriptors := loadMixins(sc, true)
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
-		t.Errorf("mismatched operations (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	names := map[string]bool{}
@@ -68,7 +68,7 @@ func TestProtobuf_ForceLongrunningNoRules(t *testing.T) {
 	}
 	gotMethods, gotDescriptors := loadMixins(sc, true)
 	if diff := cmp.Diff(wantMethods, gotMethods); diff != "" {
-		t.Errorf("mismatched operations (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	names := map[string]bool{}

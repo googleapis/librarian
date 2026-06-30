@@ -30,7 +30,7 @@ func TestLookupMessage(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(msg, got); diff != "" {
-		t.Errorf("lookupMessage() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -52,7 +52,7 @@ func TestLookupEnum(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(enum, got); diff != "" {
-		t.Errorf("lookupEnum() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -78,7 +78,7 @@ func TestLookupField(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(field, got); diff != "" {
-		t.Errorf("lookupField() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
