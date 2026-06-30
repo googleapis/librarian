@@ -48,13 +48,11 @@ func TestInstallDir(t *testing.T) {
 			} else {
 				t.Setenv("LIBRARIAN_BIN", "")
 			}
-
 			if test.cacheDir != "" {
 				t.Setenv("LIBRARIAN_CACHE", test.cacheDir)
 			} else {
 				t.Setenv("LIBRARIAN_CACHE", "")
 			}
-
 			got, err := installDir(test.version)
 			if err != nil {
 				t.Fatal(err)
