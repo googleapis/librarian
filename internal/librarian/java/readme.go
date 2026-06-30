@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -26,6 +27,11 @@ import (
 )
 
 var (
+	openSnippetRegex  = regexp.MustCompile(`\[START ([a-zA-Z0-9_-]+)\]`)
+	closeSnippetRegex = regexp.MustCompile(`\[END ([a-zA-Z0-9_-]+)\]`)
+	openExcludeRegex  = regexp.MustCompile(`\[START_EXCLUDE\]`)
+	closeExcludeRegex = regexp.MustCompile(`\[END_EXCLUDE\]`)
+
 	// Matches lowercase/digit followed by uppercase (e.g., "FooBar" -> "Foo Bar").
 	camelCaseRegexp = regexp.MustCompile(`([a-z0-9])([A-Z])`)
 
@@ -40,6 +46,9 @@ var (
 
 	// errEmptyDir indicates the provided directory path is empty.
 	errEmptyDir = errors.New("dir cannot be empty")
+
+	// errEmptyFile indicates an empty file path was provided.
+	errEmptyFile = errors.New("file cannot be empty")
 )
 
 // codeSample represents a discovered Java code sample along with its derived title.
@@ -156,4 +165,97 @@ func extractTitle(filePath string) (string, error) {
 		return "", errEmptyTitle
 	}
 	return title, nil
+}
+
+// collectSnippetFiles recursively scans dir/samples for Java and XML files containing snippets.
+func collectSnippetFiles(dir string) ([]string, error) {
+	samplesDir := filepath.Join(dir, "samples")
+	if _, err := os.Stat(samplesDir); err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to stat samples directory: %w", err)
+	}
+	var files []string
+	err := filepath.WalkDir(samplesDir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			if d.Name() == "test" || (d.Name() == "generated" && filepath.Base(filepath.Dir(path)) == "snippets") {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !d.Type().IsRegular() {
+			return nil
+		}
+		ext := filepath.Ext(path)
+		if ext == ".java" || ext == ".xml" {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to walk samples directory: %w", err)
+	}
+	return files, nil
+}
+
+// extractSnippetsFromFile parses a single file to return a map of tagged code snippets.
+// Reads code between START and END markers while omitting EXCLUDE blocks.
+// START and END markers must be named (e.g. [START <name>]).
+func extractSnippetsFromFile(file string) (map[string][]string, error) {
+	if file == "" {
+		return nil, errEmptyFile
+	}
+	f, err := os.Open(file)
+	if err != nil {
+		return nil, fmt.Errorf("failed to open file %s: %w", file, err)
+	}
+	defer f.Close()
+	scanner := bufio.NewScanner(f)
+	// 10 MB sanity limit to protect system memory.
+	scanner.Buffer(make([]byte, 64*1024), 10*1024*1024)
+	// Scan through file line by line and capture all open snippets.
+	// More than one open block might exist for a given line, so we
+	// need to track open snippets in a map.
+	snippetLines := make(map[string][]string)
+	openSnippets := make(map[string]bool)
+	excluding := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		if openExcludeRegex.MatchString(line) {
+			excluding = true
+			continue
+		}
+		if closeExcludeRegex.MatchString(line) {
+			excluding = false
+			continue
+		}
+		if excluding {
+			continue
+		}
+		openMatch := openSnippetRegex.FindStringSubmatch(line)
+		closeMatch := closeSnippetRegex.FindStringSubmatch(line)
+		if len(openMatch) > 1 {
+			name := openMatch[1]
+			openSnippets[name] = true
+			if _, exists := snippetLines[name]; !exists {
+				snippetLines[name] = []string{}
+			}
+			continue
+		}
+		if len(closeMatch) > 1 {
+			delete(openSnippets, closeMatch[1])
+			continue
+		}
+		for s := range openSnippets {
+			snippetLines[s] = append(snippetLines[s], line)
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("failed scanning file %s: %w", file, err)
+	}
+	return snippetLines, nil
 }

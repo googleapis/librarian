@@ -16,6 +16,7 @@ package java
 
 import (
 	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -472,6 +473,157 @@ func TestExtractTitle_Error(t *testing.T) {
 			_, gotErr := extractTitle(tmpPath)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("extractTitle() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestCollectSnippetFiles(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		want       []string
+	}{
+		{
+			name: "missing samples directory returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				// Empty directory.
+			},
+			want: nil,
+		},
+		{
+			name: "collects java and xml files while ignoring excluded directories",
+			setupFiles: func(t *testing.T, dir string) {
+				validJavaDir := filepath.Join(dir, "samples", "src", "main", "java")
+				validXMLDir := filepath.Join(dir, "samples", "src", "main", "resources")
+				testDir := filepath.Join(dir, "samples", "src", "test", "java")
+				genDir := filepath.Join(dir, "samples", "snippets", "generated")
+				if err := os.MkdirAll(validJavaDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(validXMLDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(testDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.MkdirAll(genDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(validJavaDir, "Sample.java"), []byte("public class Sample {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(validXMLDir, "pom.xml"), []byte("<project></project>"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(validJavaDir, "README.md"), []byte("# Ignore"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(testDir, "TestSample.java"), []byte("public class TestSample {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(genDir, "GenSnippet.java"), []byte("public class GenSnippet {}"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: []string{
+				filepath.Join("samples", "src", "main", "java", "Sample.java"),
+				filepath.Join("samples", "src", "main", "resources", "pom.xml"),
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			test.setupFiles(t, tempDir)
+
+			got, err := collectSnippetFiles(tempDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			var relGot []string
+			for _, p := range got {
+				rel, err := filepath.Rel(tempDir, p)
+				if err != nil {
+					t.Fatal(err)
+				}
+				relGot = append(relGot, rel)
+			}
+			if diff := cmp.Diff(test.want, relGot); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractSnippetsFromFile(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		content string
+		want    map[string][]string
+	}{
+		{
+			name: "extracts snippets and respects exclude blocks",
+			content: `public class Example {
+  // [START my_snippet]
+  public void run() {
+    // [START_EXCLUDE]
+    secretInit();
+    // [END_EXCLUDE]
+    doWork();
+  }
+  // [END my_snippet]
+}`,
+			want: map[string][]string{
+				"my_snippet": {
+					"  public void run() {",
+					"    doWork();",
+					"  }",
+				},
+			},
+		},
+		{
+			name:    "no snippets in file",
+			content: "public class Simple {}",
+			want:    map[string][]string{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpPath := filepath.Join(t.TempDir(), "SampleSnippet.java")
+			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := extractSnippetsFromFile(tmpPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractSnippetsFromFile_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		file    string
+		wantErr error
+	}{
+		{
+			name:    "empty file parameter returns error",
+			file:    "",
+			wantErr: errEmptyFile,
+		},
+		{
+			name:    "non-existent file returns error",
+			file:    "non-existent-file.java",
+			wantErr: fs.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := extractSnippetsFromFile(test.file)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("extractSnippetsFromFile(%q) error = %v, wantErr %v", test.file, err, test.wantErr)
 			}
 		})
 	}
