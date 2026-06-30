@@ -59,7 +59,6 @@ func createMockZip(t *testing.T) ([]byte, error) {
 	t.Helper()
 	var buf bytes.Buffer
 	w := zip.NewWriter(&buf)
-
 	files := []struct {
 		Name, Body string
 	}{
@@ -67,7 +66,6 @@ func createMockZip(t *testing.T) ([]byte, error) {
 		{"include/google/protobuf/any.proto", "mock any proto"},
 		{"some_other_file.txt", "should be ignored"},
 	}
-
 	for _, file := range files {
 		f, err := w.Create(file.Name)
 		if err != nil {
@@ -78,7 +76,6 @@ func createMockZip(t *testing.T) ([]byte, error) {
 			return nil, err
 		}
 	}
-
 	if err := w.Close(); err != nil {
 		return nil, err
 	}
