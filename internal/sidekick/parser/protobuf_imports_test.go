@@ -33,7 +33,7 @@ func TestProtobufImportsSync(t *testing.T) {
 	sort.Strings(g3Names)
 
 	if diff := cmp.Diff(ossNames, g3Names); diff != "" {
-		t.Errorf("protobuf_imports_oss.go and protobuf_imports_google3.go are out of sync (-oss +g3):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

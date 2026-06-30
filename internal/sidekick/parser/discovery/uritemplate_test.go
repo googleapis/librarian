@@ -53,14 +53,15 @@ func TestParseUriTemplateSuccess(t *testing.T) {
 			WithVariable(api.NewPathVariable("resource").WithAllowReserved().WithMatchRecursive()).
 			WithVerb("getIamPolicy")},
 	} {
-		got, err := ParseUriTemplate(test.input)
-		if err != nil {
-			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
-			continue
-		}
-		if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
-			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			got, err := ParseUriTemplate(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.EquateEmpty()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -78,9 +79,11 @@ func TestParseUriTemplateError(t *testing.T) {
 		{"dns/v1/{+resource}:verb/should/not/have/slashes"},
 		{"dns/v1/{+emptyVerb}:"},
 	} {
-		if got, err := ParseUriTemplate(test.input); err == nil {
-			t.Errorf("expected a parsing error with input=%s, got=%v", test.input, got)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			if got, err := ParseUriTemplate(test.input); err == nil {
+				t.Fatalf("expected error, got=%v", got)
+			}
+		})
 	}
 }
 
@@ -95,17 +98,18 @@ func TestParseExpression(t *testing.T) {
 		{"{abc_012}", "abc_012"},
 		{"{abc_012}/foo/{bar}", "abc_012"},
 	} {
-		gotSegment, gotWidth, err := parseExpression(test.input)
-		if err != nil {
-			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
-			continue
-		}
-		if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
-			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
-		}
-		if len(test.want)+2 != gotWidth {
-			t.Errorf("mismatch want=%d, got=%d", len(test.want), gotWidth)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			gotSegment, gotWidth, err := parseExpression(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(&api.PathSegment{Variable: api.NewPathVariable(test.want).WithMatch()}, gotSegment); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if len(test.want)+2 != gotWidth {
+				t.Errorf("mismatch want=%d, got=%d", len(test.want), gotWidth)
+			}
+		})
 	}
 }
 
@@ -136,17 +140,18 @@ func TestParseLiteral(t *testing.T) {
 		{"abcde/f", "abcde"},
 		{"abcdef", "abcdef"},
 	} {
-		gotSegment, gotWidth, err := parseLiteral(test.input)
-		if err != nil {
-			t.Errorf("expected a successful parse with input=%s, err=%v", test.input, err)
-			continue
-		}
-		if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
-			t.Errorf("mismatch [%s] (-want, +got):\n%s", test.input, diff)
-		}
-		if len(test.want) != gotWidth {
-			t.Errorf("mismatch want=%d, got=%d", len(test.want), gotWidth)
-		}
+		t.Run(test.input, func(t *testing.T) {
+			gotSegment, gotWidth, err := parseLiteral(test.input)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(&api.PathSegment{Literal: test.want}, gotSegment); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+			if len(test.want) != gotWidth {
+				t.Errorf("mismatch want=%d, got=%d", len(test.want), gotWidth)
+			}
+		})
 	}
 }
 

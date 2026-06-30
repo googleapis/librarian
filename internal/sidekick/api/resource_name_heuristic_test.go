@@ -162,7 +162,7 @@ func TestBuildHeuristicVocabulary(t *testing.T) {
 			}
 			got := BuildHeuristicVocabulary(model)
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("BuildHeuristicVocabulary() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

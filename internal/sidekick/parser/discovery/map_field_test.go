@@ -322,7 +322,7 @@ func TestMapScalarTypes(t *testing.T) {
 			},
 		}
 		if diff := cmp.Diff(wantFields, message.Fields, cmpopts.IgnoreFields(api.Field{}, "TypezID")); diff != "" {
-			t.Errorf("mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 			continue
 		}
 		mapMessage := model.Message(message.Fields[0].TypezID)
@@ -342,7 +342,7 @@ func TestMapScalarTypes(t *testing.T) {
 			TypezID: test.WantTypeID,
 		}
 		if diff := cmp.Diff(want, got); diff != "" {
-			t.Errorf("mismatch on value field (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
