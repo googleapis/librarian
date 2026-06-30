@@ -194,10 +194,11 @@ type PNPMTool struct {
 	Build []string `yaml:"build,omitempty"`
 }
 
+// Protoc defines the configuration for installing the protoc compiler.
 type Protoc struct {
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
-	
+
 	// SHA256 is the SHA256 checksum of the tarball.
 	SHA256 string `yaml:"checksum,omitempty"`
 }
