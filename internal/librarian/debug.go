@@ -18,6 +18,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/librarian/golang"
@@ -57,12 +58,15 @@ func runEnv(w io.Writer) error {
 	buildDir := dirOrErr(cache.BinDirectory())
 	goToolsDir := dirOrErr(golang.InstallDir())
 	javaToolsDir := dirOrErr(java.InstallDir())
-	fmt.Fprintf(w, "LIBRARIAN_CACHE=%s\n", cacheDir)
-	fmt.Fprintf(w, "LIBRARIAN_BIN=%s\n", buildDir)
-	fmt.Fprintf(w, "\nLanguage-specific tool installation directories:\n")
-	fmt.Fprintf(w, "  golang: %s\n", goToolsDir)
-	fmt.Fprintf(w, "  java: %s\n", javaToolsDir)
-	return nil
+	var b strings.Builder
+	fmt.Fprintf(&b, "LIBRARIAN_CACHE=%s\n", cacheDir)
+	fmt.Fprintf(&b, "LIBRARIAN_BIN=%s\n", buildDir)
+	fmt.Fprintln(&b)
+	fmt.Fprintln(&b, "Language-specific tool installation directories:")
+	fmt.Fprintf(&b, "  golang: %s\n", goToolsDir)
+	fmt.Fprintf(&b, "  java: %s\n", javaToolsDir)
+	_, err := io.WriteString(w, b.String())
+	return err
 }
 
 // dirOrErr converts a directory path and potential error into a string. If an error
