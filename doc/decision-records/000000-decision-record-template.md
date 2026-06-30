@@ -1,6 +1,6 @@
 _This template is based on Michael Nygard's, available [here](https://github.com/architecture-decision-record/architecture-decision-record/blob/main/locales/en/templates/decision-record-template-by-michael-nygard/index.md)_.
 
-In each ADR file (named as `#####-choose-x.md`), write these sections:
+In each ADR file (named as `######-choose-x.md`), write these sections:
 
 # Title
 
