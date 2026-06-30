@@ -37,7 +37,14 @@ func install(ctx context.Context, protoc *config.Protoc) error {
 		return err
 	}
 	defer os.Remove(tarball)
-	return nil
+	filter := func(path string) (string, bool) {
+		cleanPath := filepath.Clean(path)
+		if cleanPath == "bin/protoc" || cleanPath == "include" {
+			return cleanPath, true
+		}
+		return "", false
+	}
+	return fetch.ExtractTarball(tarball, dir, filter)
 }
 
 // downloadURL returns the download URL for the protoc binary for the given version.
