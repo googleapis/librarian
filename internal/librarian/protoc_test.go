@@ -15,10 +15,19 @@
 package librarian
 
 import (
+	"archive/zip"
+	"bytes"
+	"context"
+	"crypto/sha256"
+	"fmt"
+	"net/http"
+	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstallDir(t *testing.T) {
@@ -88,4 +97,81 @@ func TestDownloadURL(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestInstall(t *testing.T) {
+	mockZip, err := createMockZip(t)
+	if err != nil {
+		t.Fatal(err)
+	}
+	hasher := sha256.New()
+	hasher.Write(mockZip)
+	checksum := fmt.Sprintf("%x", hasher.Sum(nil))
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/zip")
+		_, _ = w.Write(mockZip)
+	}))
+	defer server.Close()
+	oldDownloadURL := downloadURL
+	defer func() { downloadURL = oldDownloadURL }()
+	downloadURL = func(version string) string {
+		return server.URL
+	}
+	installBinDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", installBinDir)
+	protocCfg := &config.Protoc{
+		Version: "25.1",
+		SHA256:  checksum,
+	}
+	if err := install(context.Background(), protocCfg); err != nil {
+		t.Fatalf("install() failed: %v", err)
+	}
+	// Verify that the files were extracted to the correct directory structure:
+	// LIBRARIAN_BIN/protoc/vVersion/
+	targetDir := filepath.Join(installBinDir, "protoc", "v25.1")
+	expectedFiles := []string{
+		filepath.Join(targetDir, "bin", "protoc"),
+		filepath.Join(targetDir, "include", "google", "protobuf", "any.proto"),
+	}
+	for _, expected := range expectedFiles {
+		if _, err := os.Stat(expected); err != nil {
+			t.Errorf("Expected file %q was not extracted: %v", expected, err)
+		}
+	}
+	unexpectedFiles := []string{
+		filepath.Join(targetDir, "some_other_file.txt"),
+		filepath.Join(targetDir, "protoc.zip"), // Should be cleaned up
+	}
+	for _, unexpected := range unexpectedFiles {
+		if _, err := os.Stat(unexpected); err == nil {
+			t.Errorf("Unexpected file %q exists in target directory", unexpected)
+		}
+	}
+}
+
+func createMockZip(t *testing.T) ([]byte, error) {
+	t.Helper()
+	var buf bytes.Buffer
+	w := zip.NewWriter(&buf)
+	files := []struct {
+		Name, Body string
+	}{
+		{"bin/protoc", "mock protoc binary"},
+		{"include/google/protobuf/any.proto", "mock any proto"},
+		{"some_other_file.txt", "should be ignored"},
+	}
+	for _, file := range files {
+		f, err := w.Create(file.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = f.Write([]byte(file.Body))
+		if err != nil {
+			return nil, err
+		}
+	}
+	if err := w.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
 }

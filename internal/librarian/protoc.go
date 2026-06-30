@@ -19,11 +19,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 )
+
+// downloadURL returns the download URL for the protoc binary for the given version.
+var downloadURL = func(version string) string {
+	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-linux-x86_64.zip", version, version)
+}
 
 // install installs the protoc tool.
 func install(ctx context.Context, protoc *config.Protoc) error {
@@ -39,17 +45,12 @@ func install(ctx context.Context, protoc *config.Protoc) error {
 	defer os.Remove(tarball)
 	filter := func(path string) (string, bool) {
 		cleanPath := filepath.Clean(path)
-		if cleanPath == "bin/protoc" || cleanPath == "include" {
+		if cleanPath == filepath.Join("bin", "protoc") || cleanPath == "include" || strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
 			return cleanPath, true
 		}
 		return "", false
 	}
-	return fetch.ExtractTarball(tarball, dir, filter)
-}
-
-// downloadURL returns the download URL for the protoc binary for the given version.
-func downloadURL(version string) string {
-	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-linux-x86_64.zip", version, version)
+	return fetch.ExtractZip(tarball, dir, filter)
 }
 
 // installDir returns the directory where the protoc binary should be installed.
