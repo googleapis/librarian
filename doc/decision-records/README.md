@@ -36,7 +36,7 @@ When unsure, ask a friend, or err on the side of writing a quick one by using Ge
 
 ## Structure
 
-See [the template](./00000-decision-record-template.md) for general structure.
+See [the template](doc/decision-records/000000-decision-record-template.md) for general structure.
 The number of the ADR can be the PR number, or some monotonically increasing number relative to prior decision records.
 
 Feel free to customize the format as best fit for the particular situation, as long as its key components are captured (like the context, considered options, consequences): the template is a guide, not a rule.
