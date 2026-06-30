@@ -43,6 +43,6 @@ func TestParseOptions(t *testing.T) {
 		RootName:       "test-root",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

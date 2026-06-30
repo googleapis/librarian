@@ -37,12 +37,36 @@ var (
 
 	// errEmptyTitle indicates the extracted title value is empty.
 	errEmptyTitle = errors.New("title value cannot be empty")
+
+	// errEmptyDir indicates the provided directory path is empty.
+	errEmptyDir = errors.New("dir cannot be empty")
 )
 
 // codeSample represents a discovered Java code sample along with its derived title.
 type codeSample struct {
 	Title string
 	File  string
+}
+
+// extractSamples locates production Java sample files and returns parsed codeSample structs
+// containing display titles and relative paths for README rendering.
+func extractSamples(dir string) ([]codeSample, error) {
+	if dir == "" {
+		return nil, errEmptyDir
+	}
+	files, err := collectSampleFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+	var samples []codeSample
+	for _, file := range files {
+		sample, err := parseCodeSample(dir, file)
+		if err != nil {
+			return nil, err
+		}
+		samples = append(samples, *sample)
+	}
+	return samples, nil
 }
 
 // collectSampleFiles recursively scans dir/samples for Java production files.

@@ -27,37 +27,76 @@ func TestMakeServiceMethods(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	id := "..zones.get"
-	got := model.Method(id)
-	if got == nil {
-		t.Fatalf("expected method %s in the API model", id)
-	}
-	want := &api.Method{
-		ID:            "..zones.get",
-		Name:          "get",
-		Documentation: "Returns the specified Zone resource.",
-		InputTypeID:   "..zones.getRequest",
-		OutputTypeID:  "..Zone",
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{
-				{
-					Verb: "GET",
-					PathTemplate: (&api.PathTemplate{}).
-						WithLiteral("compute").
-						WithLiteral("v1").
-						WithLiteral("projects").
-						WithVariableNamed("project").
-						WithLiteral("zones").
-						WithVariableNamed("zone"),
-					QueryParameters: map[string]bool{},
+	for _, test := range []struct {
+		id   string
+		want *api.Method
+	}{
+		{
+			id: "..zones.get",
+			want: &api.Method{
+				ID:            "..zones.get",
+				Name:          "get",
+				Documentation: "Returns the specified Zone resource.",
+				InputTypeID:   "..zones.getRequest",
+				OutputTypeID:  "..Zone",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "GET",
+							PathTemplate: (&api.PathTemplate{}).
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("projects").
+								WithVariableNamed("project").
+								WithLiteral("zones").
+								WithVariableNamed("zone"),
+							QueryParameters: map[string]bool{},
+						},
+					},
+					BodyFieldPath: "",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
 			},
-			BodyFieldPath: "",
 		},
-		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone"}}},
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		{
+			id: "..firewallPolicies.insert",
+			want: &api.Method{
+				ID:            "..firewallPolicies.insert",
+				Name:          "insert",
+				Documentation: "Creates a new policy in the specified project using the data included in the request.",
+				InputTypeID:   "..firewallPolicies.insertRequest",
+				OutputTypeID:  "..Operation",
+				PathInfo: &api.PathInfo{
+					Bindings: []*api.PathBinding{
+						{
+							Verb: "POST",
+							PathTemplate: (&api.PathTemplate{}).
+								WithLiteral("compute").
+								WithLiteral("v1").
+								WithLiteral("locations").
+								WithLiteral("global").
+								WithLiteral("firewallPolicies"),
+							QueryParameters: map[string]bool{
+								"parentId":  true,
+								"requestId": true,
+							},
+						},
+					},
+					BodyFieldPath: "body",
+				},
+				Signatures: []*api.MethodSignature{},
+			},
+		},
+	} {
+		t.Run(test.id, func(t *testing.T) {
+			got := model.Method(test.id)
+			if got == nil {
+				t.Fatalf("expected method %s in the API model", test.id)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -99,7 +138,7 @@ func TestMakeServiceMethodsReturnsEmpty(t *testing.T) {
 		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "operation"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -138,7 +177,7 @@ func TestMakeServiceMethodsDeprecated(t *testing.T) {
 		Signatures: []*api.MethodSignature{{Names: []string{"project", "body"}}},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

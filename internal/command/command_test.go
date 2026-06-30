@@ -230,10 +230,10 @@ func TestRunStreaming(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantOut, outBuf.String()); diff != "" {
-				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantErr, errBuf.String()); diff != "" {
-				t.Errorf("mismatch of stderr (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
