@@ -27,6 +27,9 @@ Some examples of unsuitable candidates:
 1. Designing an API
 1. Code generation implementation
 
+> [!NOTE]
+> We intentionally use the phrase "decision records" and not "architecture decision records" as these are not limited to just "architecture."
+
 ## Structure
 
 See 00000-decision-record-template.md for a template to use.
