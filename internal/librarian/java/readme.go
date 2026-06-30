@@ -191,11 +191,7 @@ func trimLeadingWhitespace(lines []string) string {
 			sb.WriteString("\n")
 			continue
 		}
-		if len(line) >= minSpaces {
-			sb.WriteString(line[minSpaces:])
-		} else {
-			sb.WriteString(line)
-		}
+		sb.WriteString(line[minSpaces:])
 		sb.WriteString("\n")
 	}
 	return sb.String()
