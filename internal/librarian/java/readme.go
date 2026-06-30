@@ -242,7 +242,7 @@ func extractSnippetsFromFile(file string) (map[string][]string, error) {
 			name := openMatch[1]
 			openSnippets[name] = true
 			if _, exists := snippetLines[name]; !exists {
-				snippetLines[name] = []string{}
+				snippetLines[name] = nil
 			}
 			continue
 		}
