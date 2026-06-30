@@ -105,18 +105,13 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
-	if (lib.Java.ArtifactID != "" && lib.Java.GroupID != "") || d.Java.CustomGroupIDs == nil {
+	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
 		return lib
 	}
 	for _, api := range lib.APIs {
 		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
 			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
-				if lib.Java.ArtifactID == "" {
-					lib.Java.ArtifactID = "google-" + lib.Name
-				}
-				if lib.Java.GroupID == "" {
-					lib.Java.GroupID = groupID
-				}
+				lib.Java.GroupID = groupID
 				break
 			}
 		}

@@ -268,13 +268,12 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/merchant/issueresolution/v1beta"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "google-shopping-merchant-issue-resolution",
 					GroupID:    "com.google.shopping",
 				},
 			},
 		},
 		{
-			name: "shopping library with custom artifact id",
+			name: "do not override custom artifact id",
 			lib: &config.Library{
 				Name: "custom-shopping",
 				APIs: []*config.API{
@@ -309,7 +308,6 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "maps-routeoptimization",
 				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
 				Java: &config.JavaModule{
-					ArtifactID: "google-maps-routeoptimization",
 					GroupID:    "com.google.maps",
 				},
 			},
@@ -325,7 +323,6 @@ func TestFillDefaults_Java(t *testing.T) {
 				Name: "admanager",
 				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
 				Java: &config.JavaModule{
-					ArtifactID: "google-admanager",
 					GroupID:    "com.google.api-ads",
 				},
 			},
@@ -347,30 +344,7 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/analytics/admin/v1alpha"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "google-analytics-admin",
 					GroupID:    "com.google.analytics",
-				},
-			},
-		},
-		{
-			name: "do not fill if artifact id already set",
-			lib: &config.Library{
-				Name: "example-lib",
-				APIs: []*config.API{
-					{Path: "google/example/v1"},
-				},
-				Java: &config.JavaModule{
-					ArtifactID: "example-lib",
-				},
-			},
-			defaults: defaults,
-			want: &config.Library{
-				Name: "example-lib",
-				APIs: []*config.API{
-					{Path: "google/example/v1"},
-				},
-				Java: &config.JavaModule{
-					ArtifactID: "example-lib",
 				},
 			},
 		},
@@ -392,7 +366,6 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/shopping/type"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "google-common-protos",
 					GroupID:    "com.google.api.grpc",
 				},
 			},
@@ -457,7 +430,6 @@ func TestFillDefaults_Java(t *testing.T) {
 					{Path: "google/exact/v1"},
 				},
 				Java: &config.JavaModule{
-					ArtifactID: "google-exact",
 					GroupID:    "com.google.exact",
 				},
 			},
