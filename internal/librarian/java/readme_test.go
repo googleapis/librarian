@@ -586,3 +586,112 @@ func TestParseRepoShortName(t *testing.T) {
 		})
 	}
 }
+
+func TestLoadReadmePartials(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		want       map[string]interface{}
+	}{
+		{
+			name: "loads yaml partials with camel case conversion",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, ".readme-partials.yaml")
+				content := `about_text: "Custom about"`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: map[string]interface{}{"AboutText": "Custom about"},
+		},
+		{
+			name: "loads yml fallback partials",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, ".readme-partials.yml")
+				content := `introduction: "Intro text"`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: map[string]interface{}{"Introduction": "Intro text"},
+		},
+		{
+			name: "missing partials file returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				// No file written.
+			},
+			want: nil,
+		},
+		{
+			name: "empty partials file returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, ".readme-partials.yaml")
+				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+		{
+			name: "partials file with only comments returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, ".readme-partials.yaml")
+				if err := os.WriteFile(path, []byte("# only comments\n# no keys defined"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setupFiles(t, dir)
+			got, err := loadReadmePartials(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadReadmePartials_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		dir        string
+		setupFiles func(t *testing.T, dir string)
+		wantErr    error
+	}{
+		{
+			name:    "empty directory parameter returns error",
+			dir:     "",
+			wantErr: errEmptyDir,
+		},
+		{
+			name: "invalid yaml syntax",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, ".readme-partials.yaml")
+				content := `key: [unclosed list`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := test.dir
+			if test.setupFiles != nil {
+				dir = t.TempDir()
+				test.setupFiles(t, dir)
+			}
+			_, err := loadReadmePartials(dir)
+			if err == nil {
+				t.Errorf("expected error, got nil")
+			} else if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+				t.Errorf("loadReadmePartials() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}

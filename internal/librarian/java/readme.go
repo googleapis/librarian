@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 var (
@@ -188,4 +190,39 @@ func parseRepoShortName(repo string) string {
 		return repo[i+1:]
 	}
 	return repo
+}
+
+// loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml or .yml.
+func loadReadmePartials(dir string) (map[string]interface{}, error) {
+	if dir == "" {
+		return nil, errEmptyDir
+	}
+	partialsBytes, err := os.ReadFile(filepath.Join(dir, ".readme-partials.yaml"))
+	if err != nil {
+		if !errors.Is(err, fs.ErrNotExist) {
+			return nil, fmt.Errorf("failed to read partials file: %w", err)
+		}
+		partialsBytes, err = os.ReadFile(filepath.Join(dir, ".readme-partials.yml"))
+		if err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				return nil, nil
+			}
+			return nil, fmt.Errorf("failed to read partials file: %w", err)
+		}
+	}
+	if len(partialsBytes) == 0 {
+		return nil, nil
+	}
+	rawPartials, err := yaml.Unmarshal[map[string]interface{}](partialsBytes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal partials: %w", err)
+	}
+	if rawPartials == nil || len(*rawPartials) == 0 {
+		return nil, nil
+	}
+	result := make(map[string]interface{}, len(*rawPartials))
+	for k, v := range *rawPartials {
+		result[toCamelCase(k)] = v
+	}
+	return result, nil
 }
