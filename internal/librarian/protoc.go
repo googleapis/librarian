@@ -54,7 +54,7 @@ func installProtoc(ctx context.Context, protoc *config.Protoc) error {
 }
 
 // downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
-func downloadURL(version, os, arch string) string {
+var downloadURL = func(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
 	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, suffix)
 }

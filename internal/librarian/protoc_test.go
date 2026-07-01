@@ -77,22 +77,22 @@ func TestDownloadURL(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		version string
-		os string
-		arch string
+		os      string
+		arch    string
 		want    string
 	}{
 		{
 			name:    "simple version",
 			version: "25.1",
 			os:      "darwin",
-			arch: "arm64",
+			arch:    "arm64",
 			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-osx-aarch_64.zip",
 		},
 		{
 			name:    "release candidate",
 			version: "26.0-rc1",
-			os: "linux",
-			arch: "amd64",
+			os:      "linux",
+			arch:    "amd64",
 			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v26.0-rc1/protoc-26.0-rc1-linux-x86_64.zip",
 		},
 	} {
@@ -120,7 +120,7 @@ func TestInstallProtoc(t *testing.T) {
 	defer server.Close()
 	oldDownloadURL := downloadURL
 	defer func() { downloadURL = oldDownloadURL }()
-	downloadURL = func(version string) string {
+	downloadURL = func(version, os, arch string) string {
 		return server.URL
 	}
 	installBinDir := t.TempDir()
