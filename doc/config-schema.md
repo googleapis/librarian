@@ -348,6 +348,7 @@ This document describes the schema for the librarian.yaml.
 | `mixins` | string | Controls mixin behavior for this API (e.g., "none" to disable). When set, this overrides the package-level mixins setting. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
+| `compatibility_resources` | list of string | Is the list of resource names for which legacy single-pattern functions should be generated for compatibility reasons. |
 
 ## NodejsPackage Configuration
 
