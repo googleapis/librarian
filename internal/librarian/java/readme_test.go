@@ -498,17 +498,10 @@ func TestCollectSnippetFiles(t *testing.T) {
 				validXMLDir := filepath.Join(dir, "samples", "src", "main", "resources")
 				testDir := filepath.Join(dir, "samples", "src", "test", "java")
 				genDir := filepath.Join(dir, "samples", "snippets", "generated")
-				if err := os.MkdirAll(validJavaDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.MkdirAll(validXMLDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.MkdirAll(testDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.MkdirAll(genDir, 0755); err != nil {
-					t.Fatal(err)
+				for _, d := range []string{validJavaDir, validXMLDir, testDir, genDir} {
+					if err := os.MkdirAll(d, 0755); err != nil {
+						t.Fatal(err)
+					}
 				}
 				if err := os.WriteFile(filepath.Join(validJavaDir, "Sample.java"), []byte("public class Sample {}"), 0644); err != nil {
 					t.Fatal(err)
@@ -556,6 +549,7 @@ func TestCollectSnippetFiles(t *testing.T) {
 }
 
 func TestExtractSnippetsFromFile(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		content string
@@ -582,12 +576,60 @@ func TestExtractSnippetsFromFile(t *testing.T) {
 			},
 		},
 		{
+			name: "multiple independent snippets in single file",
+			content: `public class Multi {
+  // [START first]
+  void a() {}
+  // [END first]
+  // [START second]
+  void b() {}
+  // [END second]
+}`,
+			want: map[string][]string{
+				"first": {
+					"  void a() {}",
+				},
+				"second": {
+					"  void b() {}",
+				},
+			},
+		},
+		{
+			name: "nested snippets with exclude block",
+			content: `public class Nested {
+  // [START outer]
+  void start() {
+    // [START inner]
+    doInner();
+    // [START_EXCLUDE]
+    logDebug();
+    // [END_EXCLUDE]
+    finishInner();
+    // [END inner]
+  }
+  // [END outer]
+}`,
+			want: map[string][]string{
+				"outer": {
+					"  void start() {",
+					"    doInner();",
+					"    finishInner();",
+					"  }",
+				},
+				"inner": {
+					"    doInner();",
+					"    finishInner();",
+				},
+			},
+		},
+		{
 			name:    "no snippets in file",
 			content: "public class Simple {}",
 			want:    map[string][]string{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			tmpPath := filepath.Join(t.TempDir(), "SampleSnippet.java")
 			if err := os.WriteFile(tmpPath, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
@@ -614,6 +656,7 @@ func TestExtractSnippetsFromFile_Error(t *testing.T) {
 			file:    "",
 			wantErr: errEmptyFile,
 		},
+		// Triggers os.Open error when target file does not exist on disk.
 		{
 			name:    "non-existent file returns error",
 			file:    "non-existent-file.java",

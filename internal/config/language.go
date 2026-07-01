@@ -777,6 +777,12 @@ type NodejsPackage struct {
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// MetadataNameOverride allows the name field in .repo-metadata.json to be overridden.
+	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
+
+	// NamePrettyOverride allows the name_pretty field in .repo-metadata.json to be overridden.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.
