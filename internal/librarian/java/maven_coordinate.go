@@ -33,13 +33,7 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/5050):
-// Exported selected functions and fields to use in migrate tool.
-// Unexport after migrate is done.
-
-// Coordinate represents a Maven Coordinate, uniquely identifies a project
-// artifact using its GroupID, ArtifactID, and Version.
-type Coordinate struct {
+type coordinate struct {
 	// GroupID is the Maven Group ID.
 	GroupID string
 	// ArtifactID is the Maven Artifact ID.
@@ -48,49 +42,49 @@ type Coordinate struct {
 	Version string
 }
 
-// LibraryCoordinate contains Maven coordinates for the library modules (GAPIC,
+// libraryCoordinate contains Maven coordinates for the library modules (GAPIC,
 // parent, and BOM).
-type LibraryCoordinate struct {
+type libraryCoordinate struct {
 	// GAPIC is the Maven coordinate for the GAPIC module.
-	GAPIC Coordinate
+	GAPIC coordinate
 	// Parent is the Maven coordinate for the parent module.
-	Parent Coordinate
+	Parent coordinate
 	// BOM is the Maven coordinate for the BOM module.
-	BOM Coordinate
+	BOM coordinate
 }
 
-// APICoordinate contains Maven coordinates for the library and its API-specific
+// apiCoordinate contains Maven coordinates for the library and its API-specific
 // modules (proto and gRPC).
-type APICoordinate struct {
-	LibraryCoordinate
+type apiCoordinate struct {
+	libraryCoordinate
 	// Proto is the Maven coordinate for the proto module.
-	Proto Coordinate
+	Proto coordinate
 	// GRPC is the Maven coordinate for the gRPC module.
-	GRPC Coordinate
+	GRPC coordinate
 }
 
-// DistributionName returns the Maven distribution name (GroupID:ArtifactID)
+// distributionName returns the Maven distribution name (GroupID:ArtifactID)
 // for the library.
-func DistributionName(library *config.Library) string {
+func distributionName(library *config.Library) string {
 	return fmt.Sprintf("%s:%s", library.Java.GroupID, library.Java.ArtifactID)
 }
 
-// DeriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
+// deriveLibraryCoordinates calculates the Maven coordinates for the GAPIC library,
 // its parent, and its BOM based on the library's configuration.
-func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
-	gapic := Coordinate{
+func deriveLibraryCoordinates(library *config.Library) libraryCoordinate {
+	gapic := coordinate{
 		GroupID:    library.Java.GroupID,
 		ArtifactID: library.Java.ArtifactID,
 		Version:    library.Version,
 	}
-	return LibraryCoordinate{
+	return libraryCoordinate{
 		GAPIC: gapic,
-		Parent: Coordinate{
+		Parent: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-parent", gapic.ArtifactID),
 			Version:    gapic.Version,
 		},
-		BOM: Coordinate{
+		BOM: coordinate{
 			GroupID:    gapic.GroupID,
 			ArtifactID: fmt.Sprintf("%s-bom", gapic.ArtifactID),
 			Version:    gapic.Version,
@@ -98,9 +92,9 @@ func DeriveLibraryCoordinates(library *config.Library) LibraryCoordinate {
 	}
 }
 
-// DeriveAPICoordinates returns the Maven coordinates for the proto and gRPC
+// deriveAPICoordinates returns the Maven coordinates for the proto and gRPC
 // artifacts associated with a specific API version.
-func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.JavaAPI) APICoordinate {
+func deriveAPICoordinates(lc libraryCoordinate, version string, javaAPI *config.JavaAPI) apiCoordinate {
 	if javaAPI.GAPICArtifactIDOverride != "" {
 		lc.GAPIC.ArtifactID = javaAPI.GAPICArtifactIDOverride
 	}
@@ -109,9 +103,9 @@ func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.
 	if protoArtifactID == "" {
 		protoArtifactID = fmt.Sprintf("%s%s-%s", protoPrefix, lc.GAPIC.ArtifactID, version)
 	}
-	res := APICoordinate{
-		LibraryCoordinate: lc,
-		Proto: Coordinate{
+	res := apiCoordinate{
+		libraryCoordinate: lc,
+		Proto: coordinate{
 			GroupID:    protoGRPCGroupID,
 			ArtifactID: protoArtifactID,
 			Version:    lc.GAPIC.Version,
@@ -121,7 +115,7 @@ func DeriveAPICoordinates(lc LibraryCoordinate, version string, javaAPI *config.
 	if grpcArtifactID == "" {
 		grpcArtifactID = fmt.Sprintf("%s%s-%s", gRPCPrefix, lc.GAPIC.ArtifactID, version)
 	}
-	res.GRPC = Coordinate{
+	res.GRPC = coordinate{
 		GroupID:    protoGRPCGroupID,
 		ArtifactID: grpcArtifactID,
 		Version:    lc.GAPIC.Version,
