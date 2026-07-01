@@ -132,6 +132,7 @@ func TestInstall(t *testing.T) {
 	expectedFiles := []string{
 		filepath.Join(targetDir, "bin", "protoc"),
 		filepath.Join(targetDir, "include", "google", "protobuf", "any.proto"),
+		filepath.Join(targetDir, "other_file.txt"),
 	}
 	for _, expected := range expectedFiles {
 		if _, err := os.Stat(expected); err != nil {
@@ -139,8 +140,8 @@ func TestInstall(t *testing.T) {
 		}
 	}
 	unexpectedFiles := []string{
-		filepath.Join(targetDir, "some_other_file.txt"),
-		filepath.Join(targetDir, "protoc.zip"), // Should be cleaned up
+		// The zip file should be cleaned up
+		filepath.Join(targetDir, "protoc.zip"),
 	}
 	for _, unexpected := range unexpectedFiles {
 		if _, err := os.Stat(unexpected); err == nil {
@@ -158,7 +159,7 @@ func createMockZip(t *testing.T) ([]byte, error) {
 	}{
 		{"bin/protoc", "mock protoc binary"},
 		{"include/google/protobuf/any.proto", "mock any proto"},
-		{"some_other_file.txt", "should be ignored"},
+		{"other_file.txt", "should be included"},
 	}
 	for _, file := range files {
 		f, err := w.Create(file.Name)

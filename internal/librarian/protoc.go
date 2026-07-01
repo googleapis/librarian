@@ -19,11 +19,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/filesystem"
 )
 
 // downloadURL returns the download URL for the protoc binary for the given version.
@@ -43,17 +43,7 @@ func install(ctx context.Context, protoc *config.Protoc) error {
 		return err
 	}
 	defer os.Remove(tarball)
-	return fetch.ExtractZip(tarball, dir, protocFilter)
-}
-
-// protocFilter filters the files in the protoc zip file.
-func protocFilter(path string) (string, bool) {
-	cleanPath := filepath.Clean(path)
-	if cleanPath == filepath.Join("bin", "protoc") ||
-		strings.HasPrefix(cleanPath, "include"+string(filepath.Separator)) {
-		return cleanPath, true
-	}
-	return "", false
+	return filesystem.Unzip(ctx, tarball, dir)
 }
 
 // installDir returns the directory where the protoc binary should be installed.
