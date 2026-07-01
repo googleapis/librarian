@@ -102,8 +102,8 @@ func (params postProcessParams) gRPCDir() string {
 func (params postProcessParams) protoDir() string {
 	return filepath.Join(params.outDir, params.apiBase, "proto")
 }
-func (params postProcessParams) coords() APICoordinate {
-	return DeriveAPICoordinates(DeriveLibraryCoordinates(params.library), params.apiBase, params.javaAPI)
+func (params postProcessParams) coords() apiCoordinate {
+	return deriveAPICoordinates(deriveLibraryCoordinates(params.library), params.apiBase, params.javaAPI)
 }
 
 func stagingDir(outDir string) string { return filepath.Join(outDir, owlbotStagingDir) }
