@@ -100,7 +100,7 @@ func TestDownloadURL(t *testing.T) {
 	}
 }
 
-func TestInstall(t *testing.T) {
+func TestInstallProtoc(t *testing.T) {
 	mockZip, err := createMockZip(t)
 	if err != nil {
 		t.Fatal(err)
@@ -124,8 +124,8 @@ func TestInstall(t *testing.T) {
 		Version: "25.1",
 		SHA256:  checksum,
 	}
-	if err := install(context.Background(), protocCfg); err != nil {
-		t.Fatalf("install() failed: %v", err)
+	if err := installProtoc(context.Background(), protocCfg); err != nil {
+		t.Fatal(err)
 	}
 	// Verify that the files were extracted to the correct directory structure:
 	// LIBRARIAN_BIN/protoc/vVersion/

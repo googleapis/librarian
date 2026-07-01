@@ -42,8 +42,8 @@ var (
 	}
 )
 
-// install installs the protoc tool.
-func install(ctx context.Context, protoc *config.Protoc) error {
+// installProtoc installs the protoc tool.
+func installProtoc(ctx context.Context, protoc *config.Protoc) error {
 	url := downloadURL(protoc.Version)
 	dir, err := installDir(protoc.Version)
 	if err != nil {
