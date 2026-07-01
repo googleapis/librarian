@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.24.0](https://github.com/googleapis/librarian/compare/v0.23.0...v0.24.0) (2026-07-01)
+
+
+### Features
+
+* **add:** handle Release Please config for google-cloud-node ([#6569](https://github.com/googleapis/librarian/issues/6569)) ([1f8ee00](https://github.com/googleapis/librarian/commit/1f8ee00cfecad14cfb77b8b93d4e3b73b00100d5))
+* **internal/librarian/java:** add code snippet extraction helpers for README rendering ([#6593](https://github.com/googleapis/librarian/issues/6593)) ([96f6925](https://github.com/googleapis/librarian/commit/96f6925fb95a81bdaa95e3405d4a09701a70178b)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add extractSamples for README generation ([#6578](https://github.com/googleapis/librarian/issues/6578)) ([b5e3d45](https://github.com/googleapis/librarian/commit/b5e3d4519d4a747fa8f09fdababb3bf77e78611c)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/nodejs:** add metadata_name_override and name_pretty_override support ([#6603](https://github.com/googleapis/librarian/issues/6603)) ([3f6cfed](https://github.com/googleapis/librarian/commit/3f6cfed0b7d4c24c2d5aaa4750b4cc32db34cc51)), closes [#6453](https://github.com/googleapis/librarian/issues/6453)
+* **internal/librarian:** add debug command with env subcommand ([#6576](https://github.com/googleapis/librarian/issues/6576)) ([027103b](https://github.com/googleapis/librarian/commit/027103b817777f101d72ad7df3af2bf7255e7b6a)), closes [#6374](https://github.com/googleapis/librarian/issues/6374)
+* **internal/librarian:** populate Java Maven coordinates from defaults ([#6554](https://github.com/googleapis/librarian/issues/6554)) ([accb8ad](https://github.com/googleapis/librarian/commit/accb8adb99c8905d91489d59e6ed112159630874)), closes [#6513](https://github.com/googleapis/librarian/issues/6513)
+* **librarian/swift:** use discovery config ([#6604](https://github.com/googleapis/librarian/issues/6604)) ([5a44ed7](https://github.com/googleapis/librarian/commit/5a44ed7b04f06fefcb1cf78c2e46b0f8bedeb035))
+* **sidekick/discovery:** signatures without path params ([#6588](https://github.com/googleapis/librarian/issues/6588)) ([bb40e83](https://github.com/googleapis/librarian/commit/bb40e83a4e605ac0cc9b1719f8d965b4a68bb908))
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** exclude google-cloud-bom and libraries-bom when generating gapic-libraries-bom/pom.xml ([#6601](https://github.com/googleapis/librarian/issues/6601)) ([b8e50a5](https://github.com/googleapis/librarian/commit/b8e50a51a11cb07192f209c0e7fadeb5f3ce77c7))
+* **internal/serviceconfig:** normalize transport name for Java repo-metadata ([#6582](https://github.com/googleapis/librarian/issues/6582)) ([e20f77a](https://github.com/googleapis/librarian/commit/e20f77a70df502836fedda0f302fda66b09f1452))
+* **sdk.yaml:** allow rust for many non-cloud apis ([#6598](https://github.com/googleapis/librarian/issues/6598)) ([0efb6e7](https://github.com/googleapis/librarian/commit/0efb6e71ddbdb5fd6d121a02ecbf02138235e102))
+
 ## [0.23.0](https://github.com/googleapis/librarian/compare/v0.22.0...v0.23.0) (2026-06-29)
 
 

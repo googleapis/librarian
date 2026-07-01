@@ -71,7 +71,7 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 	if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
 		return err
 	}
-	bomVersion, err := findBOMVersion(params.cfg, params.library)
+	bomVersion, err := findBOMVersion(params.cfg)
 	if err != nil {
 		return err
 	}

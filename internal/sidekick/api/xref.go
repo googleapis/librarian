@@ -361,11 +361,11 @@ func sortOneOfFieldForExamples(f1, f2 *Field) int {
 }
 
 func enrichMethodSamples(m *Method) {
-	m.IsSimple = m.Pagination == nil &&
-		!m.ClientSideStreaming && !m.ServerSideStreaming &&
-		m.OperationInfo == nil && m.DiscoveryLro == nil
-
-	m.IsLRO = m.OperationInfo != nil
+	// Methods with AIP-151 LRO annotations *OR* discovery LRO annotations are LROs.
+	m.IsLRO = m.OperationInfo != nil || m.DiscoveryLro != nil
+	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
+	// A simple method is not paginated, not streaming and not an LRO.
+	m.IsSimple = m.Pagination == nil && !m.IsStreaming && !m.IsLRO
 
 	if m.SourceServiceID == ".google.longrunning.Operations" &&
 		m.Name == "GetOperation" &&
@@ -380,8 +380,6 @@ func enrichMethodSamples(m *Method) {
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
 
 	m.IsList = m.OutputType != nil && m.OutputType.Pagination != nil
-
-	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
 
 	if m.SampleInfo = aipStandardGetInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardGet = true
