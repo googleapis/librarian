@@ -674,6 +674,12 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
 	}
+	if src.MetadataNameOverride != "" {
+		res.MetadataNameOverride = src.MetadataNameOverride
+	}
+	if src.NamePrettyOverride != "" {
+		res.NamePrettyOverride = src.NamePrettyOverride
+	}
 	return &res
 }
 
