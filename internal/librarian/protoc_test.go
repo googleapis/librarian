@@ -74,25 +74,30 @@ func TestInstallDir(t *testing.T) {
 }
 
 func TestDownloadURL(t *testing.T) {
-	suffix := platformSuffix()
 	for _, test := range []struct {
 		name    string
 		version string
+		os string
+		arch string
 		want    string
 	}{
 		{
 			name:    "simple version",
 			version: "25.1",
-			want:    fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-%s.zip", suffix),
+			os:      "darwin",
+			arch: "arm64",
+			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-osx-aarch_64.zip",
 		},
 		{
 			name:    "release candidate",
 			version: "26.0-rc1",
-			want:    fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v26.0-rc1/protoc-26.0-rc1-%s.zip", suffix),
+			os: "linux",
+			arch: "amd64",
+			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v26.0-rc1/protoc-26.0-rc1-linux-x86_64.zip",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := downloadURL(test.version)
+			got := downloadURL(test.version, test.os, test.arch)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}

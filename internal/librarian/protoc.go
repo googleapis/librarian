@@ -28,10 +28,6 @@ import (
 )
 
 var (
-	// downloadURL returns the download URL for the protoc binary for the given version and platform.
-	downloadURL = func(version string) string {
-		return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, platformSuffix())
-	}
 	osMap = map[string]string{
 		"darwin": "osx",
 		"linux":  "linux",
@@ -44,7 +40,7 @@ var (
 
 // installProtoc installs the protoc tool.
 func installProtoc(ctx context.Context, protoc *config.Protoc) error {
-	url := downloadURL(protoc.Version)
+	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
 	dir, err := installDir(protoc.Version)
 	if err != nil {
 		return err
@@ -57,6 +53,12 @@ func installProtoc(ctx context.Context, protoc *config.Protoc) error {
 	return filesystem.Unzip(ctx, tarball, dir)
 }
 
+// downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
+func downloadURL(version, os, arch string) string {
+	suffix := platformSuffix(os, arch)
+	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, suffix)
+}
+
 // installDir returns the directory where the protoc binary should be installed.
 func installDir(version string) (string, error) {
 	binDir, err := cache.BinDirectory()
@@ -66,10 +68,10 @@ func installDir(version string) (string, error) {
 	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
 }
 
-func platformSuffix() string {
-	if runtime.GOOS == "windows" {
+func platformSuffix(os string, arch string) string {
+	if os == "windows" {
 		return "win64"
 	}
 
-	return osMap[runtime.GOOS] + "-" + archMap[runtime.GOARCH]
+	return osMap[os] + "-" + archMap[arch]
 }
