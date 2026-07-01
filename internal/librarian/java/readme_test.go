@@ -478,6 +478,116 @@ func TestExtractTitle_Error(t *testing.T) {
 	}
 }
 
+func TestToCamelCase(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "snake case",
+			input: "custom_content",
+			want:  "CustomContent",
+		},
+		{
+			name:  "kebab case",
+			input: "readme-partials",
+			want:  "ReadmePartials",
+		},
+		{
+			name:  "space separated",
+			input: "about us",
+			want:  "AboutUs",
+		},
+		{
+			name:  "already camel",
+			input: "About",
+			want:  "About",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := toCamelCase(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseGroupIDArtifactID(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		input          string
+		wantGroupID    string
+		wantArtifactID string
+	}{
+		{
+			name:           "standard coordinates",
+			input:          "com.google.cloud:google-cloud-storage",
+			wantGroupID:    "com.google.cloud",
+			wantArtifactID: "google-cloud-storage",
+		},
+		{
+			name:           "missing artifact id",
+			input:          "com.google.cloud",
+			wantGroupID:    "com.google.cloud",
+			wantArtifactID: "",
+		},
+		{
+			name:           "empty distribution name",
+			input:          "",
+			wantGroupID:    "",
+			wantArtifactID: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotGroup, gotArtifact := parseGroupIDArtifactID(test.input)
+			if diff := cmp.Diff(test.wantGroupID, gotGroup); diff != "" {
+				t.Errorf("group ID mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantArtifactID, gotArtifact); diff != "" {
+				t.Errorf("artifact ID mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseRepoShortName(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "full repo path",
+			input: "googleapis/google-cloud-java",
+			want:  "google-cloud-java",
+		},
+		{
+			name:  "short repo name only",
+			input: "google-cloud-java",
+			want:  "google-cloud-java",
+		},
+		{
+			name:  "empty repo string",
+			input: "",
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := parseRepoShortName(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCollectSnippetFiles(t *testing.T) {
 	for _, test := range []struct {
 		name       string
