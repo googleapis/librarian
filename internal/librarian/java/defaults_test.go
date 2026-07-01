@@ -714,3 +714,62 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestValidateDefault_Success(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		def  *config.Default
+	}{
+		{
+			name: "valid bom version",
+			def: &config.Default{
+				Java: &config.JavaDefault{
+					LibrariesBOMVersion: "1.2.3",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := ValidateDefault(test.def); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestValidateDefault_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		def     *config.Default
+		wantErr error
+	}{
+		{
+			name:    "nil default",
+			def:     nil,
+			wantErr: errBOMVersionMissing,
+		},
+		{
+			name: "nil java",
+			def: &config.Default{
+				Java: nil,
+			},
+			wantErr: errBOMVersionMissing,
+		},
+		{
+			name: "empty bom version",
+			def: &config.Default{
+				Java: &config.JavaDefault{
+					LibrariesBOMVersion: "",
+				},
+			},
+			wantErr: errBOMVersionMissing,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ValidateDefault(test.def)
+			if !errors.Is(got, test.wantErr) {
+				t.Errorf("ValidateDefault() error = %v, wantErr %v", got, test.wantErr)
+			}
+		})
+	}
+}

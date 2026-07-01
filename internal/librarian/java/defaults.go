@@ -169,15 +169,15 @@ var (
 	ErrOmitCommonResourcesConflict = errors.New("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
 	// ErrCannotDeriveReleasedVersion is returned when released_version cannot be derived.
 	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
-	// ErrBOMVersionMissing is returned when libraries_bom_version is not set.
-	ErrBOMVersionMissing = errors.New("libraries bom version not found in config")
+	// errBOMVersionMissing is returned when libraries_bom_version is not set.
+	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
 // ValidateDefault checks that the Java-specific default configuration is
 // correctly formatted.
 func ValidateDefault(def *config.Default) error {
 	if def == nil || def.Java == nil || def.Java.LibrariesBOMVersion == "" {
-		return ErrBOMVersionMissing
+		return errBOMVersionMissing
 	}
 	return nil
 }
