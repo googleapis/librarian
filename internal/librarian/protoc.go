@@ -60,7 +60,8 @@ func installDir(version string) (string, error) {
 	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
 }
 
-func platformSuffix(os string, arch string) string {
+// platformSuffix returns the platform suffix for the given OS and architecture.
+func platformSuffix(os, arch string) string {
 	if os == "windows" {
 		return "win64"
 	}
