@@ -18,12 +18,21 @@ import (
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // Tidy tidies the Rust-specific configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
 	if lib.Rust != nil && lib.Rust.Modules != nil {
 		lib.Rust.Modules = slices.DeleteFunc(lib.Rust.Modules, isEmptyModule)
+	}
+
+	empty, err := yaml.Empty(lib.Rust)
+	if err != nil {
+		return nil, err
+	}
+	if empty {
+		lib.Rust = nil
 	}
 
 	return lib, nil
