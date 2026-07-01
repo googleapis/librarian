@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
 	"github.com/googleapis/librarian/internal/sources"
@@ -74,8 +75,8 @@ func camelLibraryName(api string) string {
 	return name.String()
 }
 
-func libraryToModelConfig(library *config.Library, api *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
-	svcConfig, err := serviceconfig.Find(src.Googleapis, api.Path, config.LanguageSwift)
+func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
+	svcConfig, err := serviceconfig.Find(src.Googleapis, apiCfg.Path, config.LanguageSwift)
 	if err != nil {
 		return nil, err
 	}
@@ -89,15 +90,29 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 		specFormat = library.SpecificationFormat
 	}
 
-	return &parser.ModelConfig{
+	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
-		SpecificationSource: api.Path,
+		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,
 		},
-	}, nil
+	}
+	if library.Swift != nil && library.Swift.Discovery != nil {
+		pollers := make([]*api.Poller, len(library.Swift.Discovery.Pollers))
+		for i, poller := range library.Swift.Discovery.Pollers {
+			pollers[i] = &api.Poller{
+				Prefix:   poller.Prefix,
+				MethodID: poller.MethodID,
+			}
+		}
+		modelCfg.Discovery = &api.Discovery{
+			OperationID: library.Swift.Discovery.OperationID,
+			Pollers:     pollers,
+		}
+	}
+	return modelCfg, nil
 }
