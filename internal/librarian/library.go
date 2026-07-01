@@ -44,22 +44,22 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if d.Go != nil {
+	switch {
+	case d.Go != nil:
 		return fillGo(lib, d)
-	}
-	if d.Rust != nil {
+	case d.Java != nil:
+		return fillJava(lib, d)
+	case d.Rust != nil:
 		return fillRust(lib, d)
-	}
-	if d.Dart != nil {
+	case d.Dart != nil:
 		return fillDart(lib, d)
-	}
-	if d.Python != nil {
+	case d.Python != nil:
 		return fillPython(lib, d)
-	}
-	if d.Swift != nil {
+	case d.Swift != nil:
 		return fillSwift(lib, d)
+	default:
+		return lib
 	}
-	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
@@ -95,6 +95,32 @@ func union(a, b []string) []string {
 		}
 	}
 	return res
+}
+
+// fillJava populates empty Java-specific fields in lib from the provided default.
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	fillGroupIDIfEmpty(lib, d)
+	return lib
+}
+
+// fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
+// It matches the library's API paths against the custom group ID prefixes in default
+// and assigns the first matching group ID.
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
+	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
+		return
+	}
+	for _, api := range lib.APIs {
+		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
+			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
+				lib.Java.GroupID = groupID
+				return
+			}
+		}
+	}
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
