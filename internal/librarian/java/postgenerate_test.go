@@ -41,6 +41,7 @@ func TestPostGenerate(t *testing.T) {
 		Language: "java",
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 			{Name: "analytics-admin", Version: "0.98.0"},
 			{Name: "area120-tables", Version: "0.92.0"},
 			{Name: "aiplatform", Version: "3.89.0"},
@@ -195,6 +196,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
@@ -214,6 +216,7 @@ func TestPostGenerate_Error(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), tmpDir, cfg, nil)

@@ -458,6 +458,11 @@ type DartPackage struct {
 
 // JavaDefault contains Java-specific default configuration.
 type JavaDefault struct {
+	// CustomGroupIDs maps API path prefixes (e.g., "google/shopping") to their
+	// corresponding Maven Group IDs (e.g., "com.google.shopping").
+	// Use this to override the default "com.google.cloud" Group ID for specific API
+	// paths (e.g., maps, ads, shopping).
+	CustomGroupIDs map[string]string `yaml:"custom_group_ids,omitempty"`
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 }
@@ -511,9 +516,6 @@ type JavaModule struct {
 	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
-
-	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
 	// ReleasedVersion is the last released version of the library.
 	// If omitted, it will be derived from the library version.

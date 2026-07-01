@@ -17,14 +17,15 @@ package rust
 import (
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestTidyLanguageConfig_Rust(t *testing.T) {
+func TestTidy(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		lib         *config.Library
-		wantNumMods int
+		name string
+		lib  *config.Library
+		want *config.RustCrate
 	}{
 		{
 			name: "empty_module_removed",
@@ -44,7 +45,15 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 					},
 				},
 			},
-			wantNumMods: 1, // Modules should be removed
+			want: &config.RustCrate{
+				Modules: []*config.RustModule{
+					{
+						Output:   "src/storage/src/generated/protos/storage",
+						APIPath:  "google/storage/v2",
+						Template: "prost",
+					},
+				},
+			},
 		},
 		{
 			name: "storage_module_not_removed",
@@ -60,7 +69,23 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 					},
 				},
 			},
-			wantNumMods: 1, // Rust storage module should NOT be removed
+			want: &config.RustCrate{
+				Modules: []*config.RustModule{
+					{
+						Output:   "src/storage/src/generated/protos/storage",
+						Template: "storage",
+					},
+				},
+			},
+		},
+		{
+			name: "empty_rust_removed",
+			lib: &config.Library{
+				Name:   "google-cloud-storage",
+				Output: "src/storage",
+				Rust:   &config.RustCrate{},
+			},
+			want: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -68,8 +93,8 @@ func TestTidyLanguageConfig_Rust(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if len(got.Rust.Modules) != test.wantNumMods {
-				t.Fatalf("wrong number of modules")
+			if diff := cmp.Diff(test.want, got.Rust); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

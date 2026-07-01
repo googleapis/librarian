@@ -107,8 +107,9 @@ func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPa
 	if len(externalPackages) == 0 {
 		return cfg
 	}
-	if lib.Rust == nil {
-		lib.Rust = &config.RustCrate{}
+	crate := lib.Rust
+	if crate == nil {
+		crate = &config.RustCrate{}
 	}
 	// Map Protobuf packages to Rust crates.
 	for pkg := range externalPackages {
@@ -128,7 +129,7 @@ func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPa
 			}
 			libNameMatches := toPackageName(DeriveAPIPath(other.Name)) == pkg
 			if apiPathMatches || libNameMatches {
-				lib.Rust.PackageDependencies = append(lib.Rust.PackageDependencies, &config.RustPackageDependency{
+				crate.PackageDependencies = append(crate.PackageDependencies, &config.RustPackageDependency{
 					Name:    other.Name,
 					Package: other.Name,
 					Source:  pkg,
@@ -136,6 +137,12 @@ func resolveExternalPackages(cfg *config.Config, lib *config.Library, externalPa
 				break
 			}
 		}
+	}
+	// Only update the library Rust field if there are actually new dependencies
+	// to add. This avoids adding an empty Rust field when there are no
+	// dependencies.
+	if len(crate.PackageDependencies) > 0 {
+		lib.Rust = crate
 	}
 	return cfg
 }
