@@ -117,6 +117,7 @@ func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
 		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
 			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
 				lib.Java.GroupID = groupID
+				return
 			}
 		}
 	}
