@@ -478,6 +478,73 @@ func TestExtractTitle_Error(t *testing.T) {
 	}
 }
 
+func TestMinLeadingSpaces(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		lines []string
+		want  int
+	}{
+		{
+			name:  "two lines indented",
+			lines: []string{"  foo", "    bar"},
+			want:  2,
+		},
+		{
+			name:  "zero indented line",
+			lines: []string{"foo", "  bar"},
+			want:  0,
+		},
+		{
+			name:  "empty slice",
+			lines: nil,
+			want:  0,
+		},
+		{
+			name:  "only whitespace lines",
+			lines: []string{"   ", "\t"},
+			want:  0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := minLeadingSpaces(test.lines)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestTrimLeadingWhitespace(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		lines []string
+		want  string
+	}{
+		{
+			name:  "standard indentation",
+			lines: []string{"  int x = 1;", "    int y = 2;"},
+			want:  "int x = 1;\n  int y = 2;\n",
+		},
+		{
+			name:  "with blank line",
+			lines: []string{"  int x = 1;", "", "  int y = 2;"},
+			want:  "int x = 1;\n\nint y = 2;\n",
+		},
+		{
+			name:  "empty input",
+			lines: nil,
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := trimLeadingWhitespace(test.lines)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestCollectSnippetFiles(t *testing.T) {
 	for _, test := range []struct {
 		name       string

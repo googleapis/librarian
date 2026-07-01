@@ -167,6 +167,45 @@ func extractTitle(filePath string) (string, error) {
 	return title, nil
 }
 
+// minLeadingSpaces finds the minimum number of leading spaces across non-empty lines.
+func minLeadingSpaces(lines []string) int {
+	if len(lines) == 0 {
+		return 0
+	}
+	minSpaces := -1
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			continue
+		}
+		spaces := len(line) - len(strings.TrimLeft(line, " "))
+		if minSpaces == -1 || spaces < minSpaces {
+			minSpaces = spaces
+		}
+	}
+	if minSpaces == -1 {
+		return 0
+	}
+	return minSpaces
+}
+
+// trimLeadingWhitespace computes minimum leading space indentation and trims it.
+func trimLeadingWhitespace(lines []string) string {
+	if len(lines) == 0 {
+		return ""
+	}
+	minSpaces := minLeadingSpaces(lines)
+	var sb strings.Builder
+	for _, line := range lines {
+		if strings.TrimSpace(line) == "" {
+			sb.WriteString("\n")
+			continue
+		}
+		sb.WriteString(line[minSpaces:])
+		sb.WriteString("\n")
+	}
+	return sb.String()
+}
+
 // collectSnippetFiles recursively scans dir/samples for Java and XML files containing snippets.
 func collectSnippetFiles(dir string) ([]string, error) {
 	samplesDir := filepath.Join(dir, "samples")
