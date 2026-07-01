@@ -53,8 +53,8 @@ func downloadURL(version, os, arch string) string {
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
 }
 
-// installDir returns the directory where the protoc binary should be installed.
-func installDir(version string) (string, error) {
+// protocInstallDir returns the directory where the protoc binary should be installed.
+func protocInstallDir(version string) (string, error) {
 	binDir, err := cache.BinDirectory()
 	if err != nil {
 		return "", err

@@ -29,7 +29,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestInstallDir(t *testing.T) {
+func TestProtocInstallDir(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		version      string
@@ -61,7 +61,7 @@ func TestInstallDir(t *testing.T) {
 			} else {
 				t.Setenv("LIBRARIAN_CACHE", "")
 			}
-			got, err := installDir(test.version)
+			got, err := protocInstallDir(test.version)
 			if err != nil {
 				t.Fatal(err)
 			}
