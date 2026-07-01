@@ -37,11 +37,10 @@ const (
 )
 
 var (
-	errNoProtos          = errors.New("no protos found")
-	errMonorepoVersion   = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
-	errParentVersion     = fmt.Errorf("failed to find parent version for %q in config", parentPOM)
-	errBOMVersionMissing = errors.New("libraries bom version not found in config")
-	errUnrecognizedAPI   = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
+	errNoProtos        = errors.New("no protos found")
+	errMonorepoVersion = fmt.Errorf("failed to find monorepo version for %q in config", rootLibrary)
+	errParentVersion   = fmt.Errorf("failed to find parent version for %q in config", parentPOM)
+	errUnrecognizedAPI = errors.New("unrecognized non-cloud API: configure java.group_id and java.distribution_name_override in librarian.yaml")
 	// nonRecursivePaths is a set of paths where proto gathering should not be recursive.
 	nonRecursivePaths = map[string]bool{
 		"google/api":   true,
@@ -334,15 +333,6 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 
 func gapicOpt(key, value string) string {
 	return fmt.Sprintf("%s=%s", key, value)
-}
-
-// TODO(https://github.com/googleapis/librarian/issues/5152):
-// BOM version should be required and pre-validated, remove this and inline when done.
-func findBOMVersion(cfg *config.Config) (string, error) {
-	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBOMVersion != "" {
-		return cfg.Default.Java.LibrariesBOMVersion, nil
-	}
-	return "", errBOMVersionMissing
 }
 
 // gatherProtos returns a sorted list of proto files in the given root directory,

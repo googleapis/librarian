@@ -78,6 +78,9 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if err := validateTools(cfg); err != nil {
 		return err
 	}
+	if err := validateLanguageDefault(cfg); err != nil {
+		return err
+	}
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
@@ -143,6 +146,22 @@ func validateTools(cfg *config.Config) error {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", rust.ErrMissingToolVersion, tool.Name)
 		}
+	}
+	return nil
+}
+
+// languageDefaultValidators maps a language to a function that validates the language-specific
+// default configuration.
+var languageDefaultValidators = map[string]func(*config.Default) error{
+	config.LanguageJava: java.ValidateDefault,
+}
+
+func validateLanguageDefault(cfg *config.Config) error {
+	if cfg.Default == nil {
+		return nil
+	}
+	if validator, ok := languageDefaultValidators[cfg.Language]; ok {
+		return validator(cfg.Default)
 	}
 	return nil
 }
