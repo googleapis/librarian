@@ -38,10 +38,11 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
-| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
-| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
-| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
+| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
+| `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
 
 ## CargoTool Configuration
 
@@ -50,15 +51,12 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
 
-## PNPMTool Configuration
+## GoTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the pnpm package name. |
+| `name` | string | Is the go module name. |
 | `version` | string | Is the version to install. |
-| `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
-| `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## MavenTool Configuration
 
@@ -82,12 +80,22 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
 | `local_path` | string | Is the path to a local Python package to install. |
 
-## GoTool Configuration
+## PNPMTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the go module name. |
+| `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
+| `package` | string | Is the URL or path of the package to install. |
+| `checksum` | string | Is the SHA256 checksum of the package. |
+| `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## Protoc Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `version` | string | Is the version to install. |
+| `checksum` | string | Is the SHA256 checksum of the tarball. |
 
 ## Default Configuration
 
