@@ -105,6 +105,22 @@ func TestResolveDependencies_Success(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "no external dependencies",
+			lib: &config.Library{
+				Name: "google-api",
+				APIs: []*config.API{
+					{Path: "google/api"},
+				},
+			},
+			cfg: &config.Config{
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Dir: googleapisDir},
+				},
+				Language: config.LanguageRust,
+			},
+			want: nil,
+		},
+		{
 			name: "existing dependencies preserved",
 			lib: &config.Library{
 				Name: "google-cloud-secretmanager-v1",
