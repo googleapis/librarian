@@ -554,6 +554,30 @@ func TestAnnotateSampleInfo(t *testing.T) {
 	}
 }
 
+func TestFormatHttpResourceNameArgs(t *testing.T) {
+	// A method whose path binding has NO variables
+	path := &api.PathTemplate{Segments: []api.PathSegment{{Literal: "v1"}}}
+	binding := &api.PathBinding{PathTemplate: path}
+
+	// But the heuristic identified a target resource field
+	binding.TargetResource = &api.TargetResource{
+		FieldPaths: [][]string{{"parent_id"}},
+		Template:   []api.PathSegment{{Literal: "//test-api.googleapis.com/"}},
+	}
+
+	m := &api.Method{
+		InputType: &api.Message{Fields: []*api.Field{{Name: "parent_id", Typez: api.TypezString}}},
+	}
+
+	got := formatHttpResourceNameArgs(binding, m)
+
+	// We expect the direct req accessor with unwrap, not "var_parent_id"
+	want := []string{`Some(&req).map(|m| &m.parent_id).map(|s| s.as_str()).unwrap_or("")`}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestMethodAnnotationsDetailedTracing(t *testing.T) {
 	model := serviceAnnotationsModel()
 	method := model.Method(".test.v1.ResourceService.GetResource")

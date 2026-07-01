@@ -592,7 +592,7 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 						return err
 					}
 					bAnn.ResourceNameTemplate = tmpl
-					bAnn.ResourceNameArgs = formatResourceNameArgs(b.TargetResource.FieldPaths)
+					bAnn.ResourceNameArgs = formatHttpResourceNameArgs(b, m)
 				} else {
 					bAnn.ResourceNameTemplate = ""
 					bAnn.ResourceNameArgs = nil
@@ -622,17 +622,38 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 	return sb.String(), nil
 }
 
-func formatResourceNameArgs(fieldPaths [][]string) []string {
-	var args []string
-	for _, path := range fieldPaths {
-		var rustNames []string
-		for _, p := range path {
-			rustNames = append(rustNames, toSnakeNoMangling(p))
-		}
-		varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
-		args = append(args, varName)
+func fieldIsPathVariable(path []string, b *api.PathBinding) bool {
+	if b.PathTemplate == nil {
+		return false
 	}
-	return args
+	for _, seg := range b.PathTemplate.Segments {
+		if seg.Variable != nil && slices.Equal(seg.Variable.FieldPath, path) {
+			return true
+		}
+	}
+	return false
+}
+
+func formatHttpResourceNameArgs(b *api.PathBinding, m *api.Method) []string {
+	var httpArgs []string
+	for _, path := range b.TargetResource.FieldPaths {
+		if fieldIsPathVariable(path, b) {
+			var rustNames []string
+			for _, p := range path {
+				rustNames = append(rustNames, toSnakeNoMangling(p))
+			}
+			varName := fmt.Sprintf("var_%s", strings.Join(rustNames, "_"))
+			httpArgs = append(httpArgs, varName)
+		} else {
+			accessors, _ := makeAccessors(path, m)
+			fieldAccessor := "Some(&req)"
+			for _, a := range accessors {
+				fieldAccessor += a
+			}
+			httpArgs = append(httpArgs, fieldAccessor+`.unwrap_or("")`)
+		}
+	}
+	return httpArgs
 }
 
 func isIdempotent(p *api.PathInfo) string {
