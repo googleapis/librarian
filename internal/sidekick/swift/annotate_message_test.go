@@ -159,10 +159,10 @@ func TestAnnotateMessage(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -294,7 +294,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -349,7 +349,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -427,11 +427,11 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ParameterTypeName: "ListSecretsRequest",
 	}
 	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantRequestImports := []string{"GoogleCloudWkt"}
 	if diff := cmp.Diff(wantRequestImports, gotRequest.MessageImports()); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify annotations on response message
@@ -446,11 +446,11 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		ParameterTypeName:   "ListSecretsResponse",
 	}
 	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
 	if diff := cmp.Diff(wantResponseImports, gotResponse.MessageImports()); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -499,12 +499,12 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		ParameterTypeName: "OuterMessage",
 	}
 	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
 	if diff := cmp.Diff(wantImports, gotOuter.MessageImports()); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

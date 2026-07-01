@@ -510,7 +510,7 @@ We want to respect whitespace at the beginning, because it important in Markdown
 	}
 	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -520,13 +520,13 @@ func TestFormatDocCommentsEmpty(t *testing.T) {
 	want := []string{}
 	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
 func TestFormatDocCommentsTrimTrailingSpaces(t *testing.T) {
 	input := `The next line contains spaces.
-  
+
 This line has trailing spaces.  `
 
 	want := []string{
@@ -536,7 +536,7 @@ This line has trailing spaces.  `
 	}
 	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -554,7 +554,7 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 	}
 	got := formatDocComments(input, nil)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -603,7 +603,7 @@ is set to true, this field will contain the sentiment for the sentence.`,
 			gotLines := formatDocComments(test.input, nil)
 			got := strings.Join(gotLines, "\n")
 			if diff := cmp.Diff(test.output, got); diff != "" {
-				t.Errorf("mismatch in FormatDocComments (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

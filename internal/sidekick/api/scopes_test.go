@@ -29,7 +29,7 @@ func TestScopesService(t *testing.T) {
 	got := service.Scopes()
 	want := []string{"test.Service", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched service.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -50,13 +50,13 @@ func TestScopesMessage(t *testing.T) {
 	got := parent.Scopes()
 	want := []string{"test.Parent", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched parent.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got = child.Scopes()
 	want = []string{"test.Parent.Child", "test.Parent", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched child.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -70,7 +70,7 @@ func TestScopesEnum(t *testing.T) {
 	got := enum.Scopes()
 	want := []string{"test.Enum", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched enum.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -91,7 +91,7 @@ func TestScopesEnumInMessage(t *testing.T) {
 	got := child.Scopes()
 	want := []string{"test.Parent.Child", "test.Parent", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched child.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -111,7 +111,7 @@ func TestScopesEnumValue(t *testing.T) {
 	got := enumValue.Scopes()
 	want := []string{"test.Enum", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched enum.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -138,7 +138,7 @@ func TestScopesEnumValueInMessage(t *testing.T) {
 	got := enumValue.Scopes()
 	want := []string{"test.Parent.Enum", "test.Parent", "test"}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched child.Scopes() (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

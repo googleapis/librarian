@@ -51,7 +51,7 @@ func TestBasic(t *testing.T) {
 		filepath.ToSlash(path.Join(testdataDir, source, "service.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -75,6 +75,6 @@ func TestIncludeList(t *testing.T) {
 		filepath.ToSlash(path.Join(testdataDir, source, "resources.proto")),
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched merged config (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

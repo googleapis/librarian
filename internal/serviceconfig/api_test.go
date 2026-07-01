@@ -15,6 +15,7 @@
 package serviceconfig
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -330,7 +331,13 @@ func TestRepoMetadataTransport(t *testing.T) {
 				Transports: map[string]Transport{config.LanguageJava: Rest},
 			},
 			language: config.LanguageJava,
-			want:     "http",
+			want:     "rest",
+		},
+		{
+			name:     "java, default",
+			sc:       &API{},
+			language: config.LanguageJava,
+			want:     "grpc+rest",
 		},
 		{
 			name:     "non-java, default",
@@ -365,13 +372,80 @@ func TestRepoMetadataTransport(t *testing.T) {
 					TransportOverride: "rest",
 				},
 			},
-			want: "http",
+			want: "rest",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.RepoMetadataTransport(test.language, test.library)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindTransport(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		want     Transport
+	}{
+		{
+			name:     "matching path and allowed language with custom transport",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageJava,
+			want:     Rest,
+		},
+		{
+			name:     "matching path and allowed language with default transport",
+			path:     "google/ads/datamanager/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "unknown path defaults to GRPCRest",
+			path:     "google/does/not/exist/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "empty path defaults to GRPCRest",
+			path:     "",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindTransport(test.path, test.language)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("FindTransport(%q, %q) = %q, want %q", test.path, test.language, got, test.want)
+			}
+		})
+	}
+}
+
+func TestFindTransport_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		want     error
+	}{
+		{
+			name:     "matching path but not allowed language",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageGo,
+			want:     errNotAllowed,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := FindTransport(test.path, test.language)
+			if !errors.Is(err, test.want) {
+				t.Errorf("FindTransport(%q, %q) expected %v, got %v", test.path, test.language, test.want, err)
 			}
 		})
 	}

@@ -41,7 +41,7 @@ func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd
 
 // mergeEnv merges the given environment with the installation directory.
 func mergeEnv(env map[string]string) (map[string]string, error) {
-	toolsBinDir, err := getInstallDir()
+	toolsBinDir, err := InstallDir()
 	if err != nil {
 		return nil, err
 	}
