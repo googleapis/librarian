@@ -191,6 +191,7 @@ func collectSnippetFiles(dir string) ([]string, error) {
 		if !d.Type().IsRegular() {
 			return nil
 		}
+		// Include .xml files since non-POM configs (e.g., logback.xml) also contain snippets.
 		ext := filepath.Ext(path)
 		if ext == ".java" || ext == ".xml" {
 			files = append(files, path)

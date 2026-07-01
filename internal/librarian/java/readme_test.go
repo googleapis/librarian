@@ -656,6 +656,7 @@ func TestExtractSnippetsFromFile_Error(t *testing.T) {
 			file:    "",
 			wantErr: errEmptyFile,
 		},
+		// Triggers os.Open error when target file does not exist on disk.
 		{
 			name:    "non-existent file returns error",
 			file:    "non-existent-file.java",
