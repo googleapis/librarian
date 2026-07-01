@@ -27,10 +27,20 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
-// downloadURL returns the download URL for the protoc binary for the given version and platform.
-var downloadURL = func(version string) string {
-	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, platformSuffix())
-}
+var (
+	// downloadURL returns the download URL for the protoc binary for the given version and platform.
+	downloadURL = func(version string) string {
+		return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, platformSuffix())
+	}
+	osMap = map[string]string{
+		"darwin": "osx",
+		"linux":  "linux",
+	}
+	archMap = map[string]string{
+		"arm64": "aarch_64",
+		"amd64": "x86_64",
+	}
+)
 
 // install installs the protoc tool.
 func install(ctx context.Context, protoc *config.Protoc) error {
@@ -60,13 +70,6 @@ func platformSuffix() string {
 	if runtime.GOOS == "windows" {
 		return "win64"
 	}
-	osMap := map[string]string{
-		"darwin": "osx",
-		"linux":  "linux",
-	}
-	archMap := map[string]string{
-		"arm64": "aarch_64",
-		"amd64": "x86_64",
-	}
+
 	return osMap[runtime.GOOS] + "-" + archMap[runtime.GOARCH]
 }
