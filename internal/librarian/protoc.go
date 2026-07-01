@@ -64,5 +64,9 @@ func platformSuffix() string {
 		"darwin": "osx",
 		"linux":  "linux",
 	}
-	return osMap[runtime.GOOS] + "-" + runtime.GOARCH
+	archMap := map[string]string{
+		"arm64": "aarch_64",
+		"amd64": "x86_64",
+	}
+	return osMap[runtime.GOOS] + "-" + archMap[runtime.GOARCH]
 }
