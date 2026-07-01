@@ -102,25 +102,24 @@ func fillJava(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
-	return fillGroupIDIfEmpty(lib, d)
+	fillGroupIDIfEmpty(lib, d)
+	return lib
 }
 
 // fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
 // It matches the library's API paths against the custom group ID prefixes in default
 // and assigns the first matching group ID.
-func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) *config.Library {
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
 	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
-		return lib
+		return
 	}
 	for _, api := range lib.APIs {
 		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
 			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
 				lib.Java.GroupID = groupID
-				return lib
 			}
 		}
 	}
-	return lib
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
