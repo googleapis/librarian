@@ -672,7 +672,7 @@ func TestIsSimpleMethod(t *testing.T) {
 }
 
 func TestIsLRO(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name   string
 		method *Method
 		want   bool
@@ -687,12 +687,16 @@ func TestIsLRO(t *testing.T) {
 			method: &Method{OperationInfo: &OperationInfo{}},
 			want:   true,
 		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			enrichMethodSamples(tc.method)
-			if got := tc.method.IsLRO; got != tc.want {
-				t.Errorf("IsLRO() = %v, want %v", got, tc.want)
+		{
+			name:   "LRO method is discovery LRO",
+			method: &Method{DiscoveryLro: &DiscoveryLro{}},
+			want:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			enrichMethodSamples(test.method)
+			if got := test.method.IsLRO; got != test.want {
+				t.Errorf("IsLRO() = %v, want %v", got, test.want)
 			}
 		})
 	}

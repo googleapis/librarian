@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -103,14 +102,14 @@ type expectedModule struct {
 	APICoords  *APICoordinate
 }
 
-func loadTransports(library *config.Library, googleapisDir string) (map[string]serviceconfig.Transport, error) {
+func loadTransports(library *config.Library) (map[string]serviceconfig.Transport, error) {
 	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
-		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		transport, err := serviceconfig.FindTransport(api.Path, config.LanguageJava)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+			return nil, err
 		}
-		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
+		transports[api.Path] = transport
 	}
 	return transports, nil
 }
@@ -263,10 +262,8 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 // IdentifyMissingModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
 // for the given library based on its configuration and checks for pom.xml presence
 // on the filesystem. It returns a list of artifact IDs for the missing modules.
-func IdentifyMissingModules(library *config.Library, libraryDir string, srcs *sources.Sources) ([]string, error) {
-	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
-	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
-	transports, err := loadTransports(library, primaryDir)
+func IdentifyMissingModules(library *config.Library, libraryDir string) ([]string, error) {
+	transports, err := loadTransports(library)
 	if err != nil {
 		return nil, err
 	}

@@ -16,16 +16,12 @@
     - java
     - nodejs
     - python
+    - rust
   release_level:
     java: preview
   transports:
     all: rest
 - path: google/ads/datamanager/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/ai/generativelanguage/v1
@@ -148,15 +144,11 @@
   languages:
     - java
     - python
+    - rust
   skip_rest_numeric_enums:
     - python
   title: Google Apps Card
 - path: google/apps/events/subscriptions/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/apps/events/subscriptions/v1beta
@@ -168,11 +160,6 @@
   release_level:
     java: preview
 - path: google/apps/meet/v2
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/apps/meet/v2beta
@@ -273,11 +260,6 @@
   transports:
     java: grpc
 - path: google/chat/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/cloud
@@ -2807,6 +2789,7 @@
   languages:
     - java
     - python
+    - rust
   skip_rest_numeric_enums:
     - python
   transports:
@@ -2921,39 +2904,19 @@
     go: stable
 - path: google/maps/addressvalidation/v1
   documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
   transports:
     csharp: grpc
     ruby: grpc
 - path: google/maps/areainsights/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     go: preview
     java: preview
 - path: google/maps/fleetengine/delivery/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/maps/fleetengine/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
   transports:
@@ -2961,12 +2924,6 @@
     java: grpc
     nodejs: grpc
     python: grpc
-- path: google/maps/geocode/v4
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/maps/mapmanagement/v2beta
   languages:
     - go
@@ -2974,10 +2931,6 @@
     - nodejs
     - python
 - path: google/maps/mapsplatformdatasets/v1
-  languages:
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/maps/navconnect/v1
@@ -2985,38 +2938,18 @@
     - nodejs
     - python
 - path: google/maps/places/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   sample_uris:
     go: https://developers.google.com/maps/documentation/places/web-service/client-library-examples#go
   release_level:
     go: preview
     java: preview
 - path: google/maps/routeoptimization/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     go: preview
     java: preview
 - path: google/maps/routing/v2
   documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/maps/solar/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
   release_level:
     java: preview
 - path: google/marketingplatform/admin/v1alpha
@@ -3080,19 +3013,7 @@
   release_level:
     go: preview
     java: preview
-- path: google/shopping/merchant/accounts/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/accounts/v1beta
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-- path: google/shopping/merchant/conversions/v1
   languages:
     - go
     - java
@@ -3104,19 +3025,7 @@
     - java
     - nodejs
     - python
-- path: google/shopping/merchant/datasources/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/datasources/v1beta
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-- path: google/shopping/merchant/inventories/v1
   languages:
     - go
     - java
@@ -3128,19 +3037,7 @@
     - java
     - nodejs
     - python
-- path: google/shopping/merchant/issueresolution/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/issueresolution/v1beta
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-- path: google/shopping/merchant/lfp/v1
   languages:
     - go
     - java
@@ -3152,31 +3049,13 @@
     - java
     - nodejs
     - python
-- path: google/shopping/merchant/notifications/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/notifications/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-- path: google/shopping/merchant/ordertracking/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/ordertracking/v1beta
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-- path: google/shopping/merchant/products/v1
   languages:
     - go
     - java
@@ -3195,31 +3074,13 @@
     - python
   release_level:
     java: preview
-- path: google/shopping/merchant/promotions/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/promotions/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-- path: google/shopping/merchant/quota/v1
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
 - path: google/shopping/merchant/quota/v1beta
-  languages:
-    - go
-    - java
-    - nodejs
-    - python
-- path: google/shopping/merchant/reports/v1
   languages:
     - go
     - java
@@ -3253,6 +3114,7 @@
     - go
     - java
     - python
+    - rust
   skip_rest_numeric_enums:
     - python
   title: Shopping Common Types
@@ -3289,6 +3151,7 @@
   languages:
     - go
     - nodejs
+    - rust
 - path: grafeas/v1
   documentation_uri: https://grafeas.io
   languages:

@@ -49,6 +49,8 @@ var (
 	// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
 	excludedBOMs = map[string]bool{
 		"google-cloud-bigtable-deps-bom": true,
+		"google-cloud-bom":               true,
+		"libraries-bom":                  true,
 	}
 	ignoredDirs = map[string]bool{
 		gapicBOM:                   true,
