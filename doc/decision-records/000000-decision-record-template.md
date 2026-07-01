@@ -9,6 +9,7 @@ The title should typically be formatted as "Choose X", and the file name should 
 ## Status
 
 What is the status, such as proposed, accepted, rejected, deprecated, superseded, etc.?
+When merged, there should be at least two rows, one for the proposed date, and one for the resultant state (such as Accepted or Rejected).
 
 * 2025-06-25: Proposed
 * 2025-07-01: Accepted
