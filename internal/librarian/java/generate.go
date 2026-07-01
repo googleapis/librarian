@@ -291,7 +291,7 @@ func resolveGAPICOptions(cfg *config.Config, library *config.Library, api *confi
 	gapicOpts := []string{"metadata"}
 
 	gapicOpts = append(gapicOpts, gapicOpt("repo", cfg.Repo))
-	gapicOpts = append(gapicOpts, gapicOpt("artifact", DistributionName(library)))
+	gapicOpts = append(gapicOpts, gapicOpt("artifact", distributionName(library)))
 
 	if apiCfg.ServiceConfig != "" {
 		// api-service-config specifies the service YAML (e.g., logging_v2.yaml) which
