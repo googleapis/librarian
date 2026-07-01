@@ -443,6 +443,7 @@ func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bo
 			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 				return err
 			}
+
 			out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, os.FileMode(hdr.Mode))
 			if err != nil {
 				return err
