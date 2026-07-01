@@ -717,7 +717,7 @@ func TestOpenAPI_MakeAPI(t *testing.T) {
 	wantService.Name = "Service"
 	wantService.ID = "..Service"
 	if diff := cmp.Diff(wantService, service, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
-		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	apitest.CheckMethod(t, service, "ListLocations", &api.Method{
@@ -1156,7 +1156,7 @@ func TestOpenAPI_AutoPopulated(t *testing.T) {
 	}
 	wantField := []*api.Field{request_id, request_id_explicit}
 	if diff := cmp.Diff(wantField, method.AutoPopulated); diff != "" {
-		t.Errorf("incorrect auto-populated fields on method (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -27,30 +27,63 @@ import (
 func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 	for _, test := range []struct {
 		name           string
+		language       string
 		createConfig   bool
 		createManifest bool
 		want           bool
 	}{
 		{
-			name:           "both missing",
+			name:           "both missing (Go)",
+			language:       config.LanguageGo,
 			createConfig:   false,
 			createManifest: false,
 			want:           false,
 		},
 		{
-			name:           "config missing",
+			name:           "config missing (Go)",
+			language:       config.LanguageGo,
 			createConfig:   false,
 			createManifest: true,
 			want:           false,
 		},
 		{
-			name:           "manifest missing",
+			name:           "manifest missing (Go)",
+			language:       config.LanguageGo,
 			createConfig:   true,
 			createManifest: false,
 			want:           false,
 		},
 		{
-			name:           "both exist",
+			name:           "both exist (Go)",
+			language:       config.LanguageGo,
+			createConfig:   true,
+			createManifest: true,
+			want:           true,
+		},
+		{
+			name:           "both missing (Nodejs)",
+			language:       config.LanguageNodejs,
+			createConfig:   false,
+			createManifest: false,
+			want:           false,
+		},
+		{
+			name:           "config missing (Nodejs)",
+			language:       config.LanguageNodejs,
+			createConfig:   false,
+			createManifest: true,
+			want:           false,
+		},
+		{
+			name:           "manifest missing (Nodejs)",
+			language:       config.LanguageNodejs,
+			createConfig:   true,
+			createManifest: false,
+			want:           false,
+		},
+		{
+			name:           "both exist (Nodejs)",
+			language:       config.LanguageNodejs,
 			createConfig:   true,
 			createManifest: true,
 			want:           true,
@@ -58,19 +91,24 @@ func TestHasBulkReleasePleaseConfigs(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
+			manifestFile, configFile := releasePleaseFiles(
+				&config.Config{
+					Language: test.language,
+				},
+			)
 			if test.createConfig {
-				if err := os.WriteFile(filepath.Join(tmp, "release-please-bulk-config.json"), []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, configFile), []byte("{}"), 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
 			if test.createManifest {
-				if err := os.WriteFile(filepath.Join(tmp, ".release-please-bulk-manifest.json"), []byte("{}"), 0644); err != nil {
+				if err := os.WriteFile(filepath.Join(tmp, manifestFile), []byte("{}"), 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
-			got := hasBulkReleasePleaseConfigs(tmp)
+			got := hasBulkReleasePleaseConfigs(tmp, &config.Config{Language: test.language})
 			if got != test.want {
-				t.Errorf("hasBulkReleasePleaseConfigs(%s) = %t, want %t", tmp, got, test.want)
+				t.Errorf("hasBulkReleasePleaseConfigs(%s, %s) = %t, want %t", tmp, test.language, got, test.want)
 			}
 		})
 	}
@@ -100,6 +138,21 @@ func TestSyncToReleasePlease(t *testing.T) {
 			},
 			wantManifest: `{"secretmanager":"1.0.0"}`,
 			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"}}}`,
+		},
+		{
+			name:            "new nodejs library",
+			language:        config.LanguageNodejs,
+			initialManifest: `{}`,
+			initialConfig:   `{"packages": {}}`,
+			library: &config.Library{
+				Name:    "google-cloud-secretmanager",
+				Version: "1.0.0",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			wantManifest: `{"packages/google-cloud-secretmanager":"1.0.0"}`,
+			wantConfig:   `{"packages":{"packages/google-cloud-secretmanager":{}}}`,
 		},
 
 		{
@@ -258,8 +311,13 @@ func TestSyncToReleasePlease(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmp := t.TempDir()
-			manifestPath := filepath.Join(tmp, ".release-please-bulk-manifest.json")
-			configPath := filepath.Join(tmp, "release-please-bulk-config.json")
+			manifestFile, configFile := releasePleaseFiles(
+				&config.Config{
+					Language: test.language,
+				},
+			)
+			manifestPath := filepath.Join(tmp, manifestFile)
+			configPath := filepath.Join(tmp, configFile)
 			if err := os.WriteFile(manifestPath, []byte(test.initialManifest), 0644); err != nil {
 				t.Fatal(err)
 			}

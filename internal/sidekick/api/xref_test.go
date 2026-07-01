@@ -286,7 +286,7 @@ func TestEnrichSamplesEnumValues(t *testing.T) {
 
 			got := enum.ValuesForExamples
 			if diff := cmp.Diff(tc.wantExamples, got, cmpopts.IgnoreFields(EnumValue{}, "Parent")); diff != "" {
-				t.Errorf("mismatch in ValuesForExamples (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -413,7 +413,7 @@ func TestEnrichSamplesOneOfExampleField(t *testing.T) {
 
 			got := group.ExampleField
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("mismatch in ExampleField (-want, +got)\n:%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -672,7 +672,7 @@ func TestIsSimpleMethod(t *testing.T) {
 }
 
 func TestIsLRO(t *testing.T) {
-	testCases := []struct {
+	for _, test := range []struct {
 		name   string
 		method *Method
 		want   bool
@@ -687,12 +687,16 @@ func TestIsLRO(t *testing.T) {
 			method: &Method{OperationInfo: &OperationInfo{}},
 			want:   true,
 		},
-	}
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			enrichMethodSamples(tc.method)
-			if got := tc.method.IsLRO; got != tc.want {
-				t.Errorf("IsLRO() = %v, want %v", got, tc.want)
+		{
+			name:   "LRO method is discovery LRO",
+			method: &Method{DiscoveryLro: &DiscoveryLro{}},
+			want:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			enrichMethodSamples(test.method)
+			if got := test.method.IsLRO; got != test.want {
+				t.Errorf("IsLRO() = %v, want %v", got, test.want)
 			}
 		})
 	}
@@ -1144,7 +1148,7 @@ func TestAIPStandardGetInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1277,7 +1281,7 @@ func TestAIPStandardDeleteInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1418,7 +1422,7 @@ func TestAIPStandardUndeleteInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1516,7 +1520,7 @@ func TestAIPStandardCreateInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1642,7 +1646,7 @@ func TestAIPStandardUpdateInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1776,7 +1780,7 @@ func TestAIPStandardListInfo(t *testing.T) {
 			enrichMethodSamples(tc.method)
 			got := tc.method.SampleInfo
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("SampleInfo() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1826,7 +1830,7 @@ func TestFindBestResourceFieldByType(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
 			got := findBestResourceFieldByType(msg, f.model, targetType)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findBestResourceFieldByType() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1881,7 +1885,7 @@ func TestFindBestResourceFieldBySingular(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
 			got := findBestResourceFieldBySingular(msg, f.model, targetSingular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findBestResourceFieldBySingular() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -1942,7 +1946,7 @@ func TestFindBestParentFieldByType(t *testing.T) {
 			msg := &Message{Fields: tc.fields}
 			got := findBestParentFieldByType(msg, childType)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findBestParentFieldByType() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2132,7 +2136,7 @@ func TestFindBodyField(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findBodyField(tc.message, tc.pathInfo, tc.targetType, tc.singular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findBodyField() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2166,7 +2170,7 @@ func TestFindResourceIDField(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findResourceIDField(tc.message, tc.singular)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findResourceIDField() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2237,7 +2241,7 @@ func TestFindQuickstartMethod(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartMethod(tc.service)
 			if diff := cmp.Diff(tc.want, got, cmpopts.IgnoreFields(Method{}, "Service", "Model")); diff != "" {
-				t.Errorf("findQuickstartMethod() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -2285,7 +2289,7 @@ func TestFindQuickstartService(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			got := findQuickstartService(tc.api)
 			if diff := cmp.Diff(tc.want, got); diff != "" {
-				t.Errorf("findQuickstartService() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

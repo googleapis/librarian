@@ -21,6 +21,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
@@ -204,6 +205,49 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
 				Source: &sources.SourceConfig{
 					ActiveRoots: []string{"discovery", "googleapis"},
+				},
+			},
+		},
+		{
+			name: "discovery config with LRO",
+			library: &config.Library{
+				Name:                "google-cloud-compute-v1",
+				CopyrightYear:       "2038",
+				Version:             "1.2.3",
+				Roots:               []string{"discovery", "googleapis"},
+				SpecificationFormat: config.SpecDiscovery,
+				Swift: &config.SwiftPackage{
+					Discovery: &config.SwiftDiscovery{
+						OperationID: ".google.cloud.compute.v1.",
+						Pollers: []config.SwiftPoller{
+							{
+								Prefix:   "compute/v1/projects/{project}/zones/{zone}",
+								MethodID: ".google.cloud.compute.v1.zoneOperations.get",
+							},
+						},
+					},
+				},
+			},
+			api: &config.API{
+				Path: "discoveries/compute.v1.json",
+			},
+			want: &parser.ModelConfig{
+				Language:            config.LanguageSwift,
+				SpecificationFormat: config.SpecDiscovery,
+				SpecificationSource: "discoveries/compute.v1.json",
+				ServiceConfig:       "google/cloud/compute/v1/compute_v1.yaml",
+				Codec:               map[string]string{"copyright-year": "2038", "version": "1.2.3"},
+				Source: &sources.SourceConfig{
+					ActiveRoots: []string{"discovery", "googleapis"},
+				},
+				Discovery: &api.Discovery{
+					OperationID: ".google.cloud.compute.v1.",
+					Pollers: []*api.Poller{
+						{
+							Prefix:   "compute/v1/projects/{project}/zones/{zone}",
+							MethodID: ".google.cloud.compute.v1.zoneOperations.get",
+						},
+					},
 				},
 			},
 		},

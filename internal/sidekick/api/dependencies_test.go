@@ -71,7 +71,7 @@ func TestFindDependenciesEnumFields(t *testing.T) {
 	// Note that `MessageWithEnumField` is not included.
 	want := []string{".test.OrphanEnum"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify that a message with an enum field depends on the enum.
@@ -81,7 +81,7 @@ func TestFindDependenciesEnumFields(t *testing.T) {
 	}
 	want = []string{".test.OrphanEnum", ".test.MessageWithEnumField"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -110,7 +110,7 @@ func TestFindDependenciesNestedEnum(t *testing.T) {
 	}
 	want := []string{parent, child}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got, err = FindDependencies(model, []string{parent})
@@ -119,7 +119,7 @@ func TestFindDependenciesNestedEnum(t *testing.T) {
 	}
 	want = []string{parent}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -169,7 +169,7 @@ func TestFindDependenciesNestedMessage(t *testing.T) {
 			t.Fatal(err)
 		}
 		if diff := cmp.Diff(test.Want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-			t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 	}
@@ -205,7 +205,7 @@ func TestFindDependenciesMessage(t *testing.T) {
 	}
 	want := []string{".test.MessageWithMessageField", ".test.Orphan"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got, err = FindDependencies(model, []string{".test.Orphan"})
@@ -215,7 +215,7 @@ func TestFindDependenciesMessage(t *testing.T) {
 	// Note that `MessageWithMessageField` is not included.
 	want = []string{".test.Orphan"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -244,7 +244,7 @@ func TestFindDependenciesHandlesCycles1(t *testing.T) {
 	}
 	want := []string{".test.Recursive"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -294,7 +294,7 @@ func TestFindDependenciesHandlesCycles2(t *testing.T) {
 		}
 		want := []string{".test.A", ".test.B"}
 		if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-			t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -346,7 +346,7 @@ func TestFindDependenciesHandlesCycles3(t *testing.T) {
 		}
 		want := []string{".test.Triangle2.Triangle1", ".test.Triangle2", ".test.Triangle3"}
 		if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-			t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	}
 }
@@ -394,7 +394,7 @@ func TestFindDependenciesMethod(t *testing.T) {
 	// Note that `Sibling` is not included
 	want := []string{".test.Service", ".test.Service.Method", ".test.Request", ".test.Response"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// Verify that messages don't imply methods
@@ -404,7 +404,7 @@ func TestFindDependenciesMethod(t *testing.T) {
 	}
 	want = []string{".test.Request"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -452,7 +452,7 @@ func TestFindDependenciesLroMethod(t *testing.T) {
 	}
 	want := []string{".test.Service", ".test.Service.Lro", ".test.Empty", ".test.OpMetadata", ".test.OpResponse"}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -557,7 +557,7 @@ func TestFindDependenciesService(t *testing.T) {
 		".test.Enum",
 	}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	got, err = FindDependencies(model, []string{".test.Service", ".test.OtherService"})
@@ -579,7 +579,7 @@ func TestFindDependenciesService(t *testing.T) {
 		".test.OtherResponse",
 	}
 	if diff := cmp.Diff(want, flatten(got), cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("dependencies mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

@@ -167,24 +167,10 @@ func (api *API) ReleaseLevel(language, version string) string {
 }
 
 // RepoMetadataTransport returns the transport for repo metadata.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4854): delete
-// once the issue is resolved.
-// For Java, it maps the transport to "grpc", "http", or "both".
 func (api *API) RepoMetadataTransport(language string, library *config.Library) string {
 	transport := api.Transport(language)
-	if language == config.LanguageJava {
-		if library != nil && library.Java != nil && library.Java.TransportOverride != "" {
-			transport = Transport(library.Java.TransportOverride)
-		}
-		switch transport {
-		case GRPC:
-			return "grpc"
-		case Rest:
-			return "http"
-		default:
-			return "both"
-		}
+	if language == config.LanguageJava && library != nil && library.Java != nil && library.Java.TransportOverride != "" {
+		transport = Transport(library.Java.TransportOverride)
 	}
 	return string(transport)
 }
@@ -226,6 +212,18 @@ func HasAPIPath(path, language string) bool {
 		return false
 	}
 	return slices.Contains(api.Languages, config.LanguageAll) || slices.Contains(api.Languages, language)
+}
+
+// FindTransport looks up the API by path in sdk.yaml, validates that it is
+// allowed for the specified language, and returns its configured transport.
+// If the API is not explicitly configured in sdk.yaml, it is assumed to be
+// allowed and defaults to GRPCRest.
+func FindTransport(path, language string) (Transport, error) {
+	api, err := findAPI(path, language)
+	if err != nil {
+		return "", err
+	}
+	return api.Transport(language), nil
 }
 
 func unmarshalAPIsOrPanic() []API {

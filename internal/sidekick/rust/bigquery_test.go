@@ -111,7 +111,7 @@ func TestBigQueryFiltering(t *testing.T) {
 	// "output_only" and "skip" must be skipped; "foo" must be present.
 	want := []string{"foo"}
 	if diff := cmp.Diff(want, fieldNames); diff != "" {
-		t.Errorf("unexpected field list (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

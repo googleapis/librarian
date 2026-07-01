@@ -64,7 +64,7 @@ func TestMaybeInlineObject(t *testing.T) {
 		TypezID:       ".package.Message.inline",
 	}
 	if diff := cmp.Diff(wantField, field); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantInlineMessage := &api.Message{
@@ -149,7 +149,7 @@ func TestArrayWithInlineObject(t *testing.T) {
 		TypezID:       ".package.Message.arrayWithObject",
 	}
 	if diff := cmp.Diff(wantField, field); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantInlineMessage := &api.Message{

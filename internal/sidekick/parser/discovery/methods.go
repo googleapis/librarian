@@ -107,9 +107,18 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		fieldNames[field.Name] = true
 	}
 
-	// Every discovery-based method has one additional signature formed by the
-	// path parameters, in the order specified by the discovery doc.
-	signature := &api.MethodSignature{Names: input.ParameterOrder}
+	// Methods without path parameters don't get an overload. Typically one of
+	// the query parameter is "required" for them. Otherwise the request is some
+	// kind of singleton, these are sufficiently rare that missing the
+	// convenience overload is not a big problem.
+	var signature *api.MethodSignature
+	signatures := []*api.MethodSignature{}
+	if len(input.ParameterOrder) != 0 {
+		// If there are path parameters, then create an additional signature
+		// formed by them, in the order specified by the discovery doc.
+		signature = &api.MethodSignature{Names: input.ParameterOrder}
+		signatures = append(signatures, signature)
+	}
 
 	bodyPathField := ""
 	if bodyID != ".google.protobuf.Empty" {
@@ -128,8 +137,10 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 		}
 		requestMessage.Fields = append(requestMessage.Fields, body)
 		bodyPathField = name
-		// The body, if present, is required for signature requests.
-		signature.Names = append(signature.Names, name)
+		if signature != nil {
+			// The body, if present, is required for signature requests.
+			signature.Names = append(signature.Names, name)
+		}
 	}
 
 	method := &api.Method{
@@ -144,7 +155,7 @@ func makeMethod(model *api.API, parent *api.Message, doc *document, input *metho
 			Bindings:      []*api.PathBinding{binding},
 			BodyFieldPath: bodyPathField,
 		},
-		Signatures: []*api.MethodSignature{signature},
+		Signatures: signatures,
 		APIVersion: input.APIVersion,
 	}
 	return method, nil
