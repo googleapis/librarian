@@ -74,6 +74,7 @@ func TestInstallDir(t *testing.T) {
 }
 
 func TestDownloadURL(t *testing.T) {
+	suffix := platformSuffix()
 	for _, test := range []struct {
 		name    string
 		version string
@@ -82,12 +83,12 @@ func TestDownloadURL(t *testing.T) {
 		{
 			name:    "simple version",
 			version: "25.1",
-			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-linux-x86_64.zip",
+			want:    fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v25.1/protoc-25.1-%s.zip", suffix),
 		},
 		{
 			name:    "release candidate",
 			version: "26.0-rc1",
-			want:    "https://github.com/protocolbuffers/protobuf/releases/download/v26.0-rc1/protoc-26.0-rc1-linux-x86_64.zip",
+			want:    fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v26.0-rc1/protoc-26.0-rc1-%s.zip", suffix),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
