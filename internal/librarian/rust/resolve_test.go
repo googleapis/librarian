@@ -140,12 +140,16 @@ func TestResolveDependencies_Success(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			wasRustNil := test.lib.Rust == nil
 			test.cfg.Libraries = append(test.cfg.Libraries, test.lib)
 			_, err := ResolveDependencies(t.Context(), test.cfg, test.lib, sources)
 			if err != nil {
 				t.Fatalf("ResolveDependencies() error = %v", err)
 			}
 			gotLib := test.lib
+			if wasRustNil && len(test.want) == 0 && gotLib.Rust != nil {
+				t.Errorf("lib.Rust should remain nil, got: %+v", gotLib.Rust)
+			}
 			var got []*config.RustPackageDependency
 			if gotLib.Rust != nil {
 				got = gotLib.Rust.PackageDependencies
