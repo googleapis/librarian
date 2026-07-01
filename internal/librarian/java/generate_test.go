@@ -677,6 +677,7 @@ func TestGenerate_Logic(t *testing.T) {
 		Libraries: []*config.Library{
 			library,
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	// Setup mandatory files for postProcessAPI and syncPOMs
@@ -753,6 +754,7 @@ func TestGenerate_ProtoExclusion(t *testing.T) {
 		Libraries: []*config.Library{
 			library,
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	err := Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: googleapisDir})

@@ -97,17 +97,20 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Go defines tools to install via go.
+	Go []*GoTool `yaml:"go,omitempty"`
+
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
-
-	// PNPM defines tools to install via pnpm.
-	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
 
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
 
-	// Go defines tools to install via go.
-	Go []*GoTool `yaml:"go,omitempty"`
+	// PNPM defines tools to install via pnpm.
+	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
+
+	// Protoc defines the protoc installation.
+	Protoc *Protoc `yaml:"protoc,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -119,22 +122,13 @@ type CargoTool struct {
 	Version string `yaml:"version"`
 }
 
-// PNPMTool defines a tool to install via pnpm.
-type PNPMTool struct {
-	// Name is the pnpm package name.
+// GoTool defines a tool to install via go.
+type GoTool struct {
+	// Name is the go module name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
-	Version string `yaml:"version"`
-
-	// Package is the URL or path of the package to install.
-	Package string `yaml:"package,omitempty"`
-
-	// Checksum is the SHA256 checksum of the package.
-	Checksum string `yaml:"checksum,omitempty"`
-
-	// Build defines the commands to run to build the tool after installation.
-	Build []string `yaml:"build,omitempty"`
+	Version string `yaml:"version,omitempty"`
 }
 
 // MavenTool defines a tool to install via Maven.
@@ -182,13 +176,31 @@ type PipTool struct {
 	LocalPath string `yaml:"local_path,omitempty"`
 }
 
-// GoTool defines a tool to install via go.
-type GoTool struct {
-	// Name is the go module name.
+// PNPMTool defines a tool to install via pnpm.
+type PNPMTool struct {
+	// Name is the pnpm package name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the URL or path of the package to install.
+	Package string `yaml:"package,omitempty"`
+
+	// Checksum is the SHA256 checksum of the package.
+	Checksum string `yaml:"checksum,omitempty"`
+
+	// Build defines the commands to run to build the tool after installation.
+	Build []string `yaml:"build,omitempty"`
+}
+
+// Protoc defines the configuration for installing the protoc compiler.
+type Protoc struct {
+	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
+
+	// SHA256 is the SHA256 checksum of the tarball.
+	SHA256 string `yaml:"checksum,omitempty"`
 }
 
 // Default contains default settings for all libraries.
