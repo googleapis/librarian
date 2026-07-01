@@ -71,6 +71,7 @@ type bomParentPOMData struct {
 	MainModule      Coordinate
 	Name            string
 	MonorepoVersion string
+	ParentVersion   string
 	Modules         []Coordinate
 }
 
@@ -215,8 +216,8 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 // and parent POMs when new proto or gRPC modules are added. It returns a list
 // of newly created artifact version entries to be added to versions.txt.
 // TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries.
-func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
-	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
+func syncPOMs(library *config.Library, libraryDir, monorepoVersion, parentVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
+	modules, err := collectModules(library, libraryDir, monorepoVersion, parentVersion, metadata, transports)
 	if err != nil {
 		return err
 	}
@@ -393,7 +394,7 @@ func detectIndentation(content string, index int) string {
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
+func collectModules(library *config.Library, libraryDir, monorepoVersion, parentVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
 	expectedModules, err := discoverModules(library, libraryDir, transports)
 	if err != nil {
 		return nil, err
@@ -453,6 +454,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 				MainModule:      libCoord.GAPIC,
 				Name:            metadata.NamePretty,
 				MonorepoVersion: monorepoVersion,
+				ParentVersion:   parentVersion,
 				Modules:         allModules,
 			}
 			template = bomPOMTemplateName
@@ -461,6 +463,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 				MainModule:      libCoord.GAPIC,
 				Name:            metadata.NamePretty,
 				MonorepoVersion: monorepoVersion,
+				ParentVersion:   parentVersion,
 				Modules:         allModules,
 			}
 			template = parentPOMTemplateName
@@ -518,4 +521,15 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 		}
 	}
 	return "", errMonorepoVersion
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6411):
+// Simplify logic here and check at validate step.
+func findParentPOMVersion(cfg *config.Config) (string, error) {
+	for _, lib := range cfg.Libraries {
+		if lib.Name == parentPOM {
+			return lib.Version, nil
+		}
+	}
+	return "", errParentVersion
 }

@@ -32,6 +32,8 @@ const (
 	// rootLibrary is the name of the monorepo library used to identify
 	// the version for all libraries in the repository.
 	rootLibrary = "google-cloud-java"
+	// parentPOM is the name of the parent POM library.
+	parentPOM = "google-cloud-pom-parent"
 	// gapicBOM is the name of the directory and artifact ID for the
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
@@ -102,6 +104,13 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
+	parentVersion, err := findParentPOMVersion(cfg)
+	if err != nil {
+		return err
+	}
+	if parentVersion == "" {
+		return fmt.Errorf("%s library not found in librarian.yaml", parentPOM)
+	}
 
 	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
 	versions := constructVersionLines(missingArtifacts)
@@ -120,7 +129,7 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 	if err != nil {
 		return fmt.Errorf("failed to search for BOM artifacts: %w", err)
 	}
-	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
+	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, parentVersion, bomConfigs); err != nil {
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
@@ -327,17 +336,19 @@ func generateRootPOM(repoPath string, modules []string) error {
 
 // generateGAPICLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGAPICLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) error {
+func generateGAPICLibrariesBOM(repoPath, version, parentVersion string, bomConfigs []*bomConfig) error {
 	bomDir := filepath.Join(repoPath, gapicBOM)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
 	}
 	data := struct {
-		Version    string
-		BOMConfigs []*bomConfig
+		Version       string
+		ParentVersion string
+		BOMConfigs    []*bomConfig
 	}{
-		Version:    version,
-		BOMConfigs: bomConfigs,
+		Version:       version,
+		ParentVersion: parentVersion,
+		BOMConfigs:    bomConfigs,
 	}
 	return writePOM(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
 }
