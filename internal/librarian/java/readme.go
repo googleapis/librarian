@@ -24,6 +24,7 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 )
 
 var (
@@ -166,9 +167,9 @@ func toCamelCase(s string) string {
 	})
 	var sb strings.Builder
 	for _, p := range parts {
-		r := []rune(p)
-		r[0] = unicode.ToUpper(r[0])
-		sb.WriteString(string(r))
+		r, size := utf8.DecodeRuneInString(p)
+		sb.WriteRune(unicode.ToUpper(r))
+		sb.WriteString(p[size:])
 	}
 	return sb.String()
 }
