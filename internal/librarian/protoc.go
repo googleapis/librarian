@@ -38,7 +38,8 @@ var (
 	}
 )
 
-func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
+// installProtoc downloads and installs the protoc binary from the given URL to the given directory.
+func installProtoc(ctx context.Context, url, dir, sha256 string) error {
 	tarball := filepath.Join(dir, "protoc.zip")
 	if err := fetch.Download(ctx, tarball, url, sha256); err != nil {
 		return err
@@ -47,8 +48,8 @@ func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 	return filesystem.Unzip(ctx, tarball, dir)
 }
 
-// downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
-func downloadURL(version, os, arch string) string {
+// protocDownloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
+func protocDownloadURL(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
 }

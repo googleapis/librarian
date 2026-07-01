@@ -72,7 +72,7 @@ func TestProtocInstallDir(t *testing.T) {
 	}
 }
 
-func TestDownloadURL(t *testing.T) {
+func TestProtocDownloadURL(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		version string
@@ -96,7 +96,7 @@ func TestDownloadURL(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := downloadURL(test.version, test.os, test.arch)
+			got := protocDownloadURL(test.version, test.os, test.arch)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -104,7 +104,7 @@ func TestDownloadURL(t *testing.T) {
 	}
 }
 
-func TestDownloadAndExtract(t *testing.T) {
+func TestInstallProtoc(t *testing.T) {
 	mockZip, err := createMockZip(t)
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +118,7 @@ func TestDownloadAndExtract(t *testing.T) {
 	}))
 	defer server.Close()
 	dir := t.TempDir()
-	if err := downloadAndExtract(context.Background(), server.URL, dir, checksum); err != nil {
+	if err := installProtoc(context.Background(), server.URL, dir, checksum); err != nil {
 		t.Fatal(err)
 	}
 	expectedFiles := []string{
