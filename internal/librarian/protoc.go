@@ -25,6 +25,8 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
+const githubURLBase = "https://github.com"
+
 var (
 	osMap = map[string]string{
 		"darwin": "osx",
@@ -48,7 +50,7 @@ func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 // downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
 func downloadURL(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
-	return fmt.Sprintf("https://github.com/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", version, version, suffix)
+	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
 }
 
 // installDir returns the directory where the protoc binary should be installed.
