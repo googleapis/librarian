@@ -27,7 +27,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstallDir(t *testing.T) {
@@ -105,7 +104,7 @@ func TestDownloadURL(t *testing.T) {
 	}
 }
 
-func TestInstallProtoc(t *testing.T) {
+func TestDownloadAndExtract(t *testing.T) {
 	mockZip, err := createMockZip(t)
 	if err != nil {
 		t.Fatal(err)
@@ -118,41 +117,22 @@ func TestInstallProtoc(t *testing.T) {
 		_, _ = w.Write(mockZip)
 	}))
 	defer server.Close()
-	oldDownloadURL := downloadURL
-	defer func() { downloadURL = oldDownloadURL }()
-	downloadURL = func(version, os, arch string) string {
-		return server.URL
-	}
-	installBinDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", installBinDir)
-	protocCfg := &config.Protoc{
-		Version: "25.1",
-		SHA256:  checksum,
-	}
-	if err := installProtoc(context.Background(), protocCfg); err != nil {
+	dir := t.TempDir()
+	if err := downloadAndExtract(context.Background(), server.URL, dir, checksum); err != nil {
 		t.Fatal(err)
 	}
-	// Verify that the files were extracted to the correct directory structure:
-	// LIBRARIAN_BIN/protoc/vVersion/
-	targetDir := filepath.Join(installBinDir, "protoc", "v25.1")
 	expectedFiles := []string{
-		filepath.Join(targetDir, "bin", "protoc"),
-		filepath.Join(targetDir, "include", "google", "protobuf", "any.proto"),
-		filepath.Join(targetDir, "other_file.txt"),
+		filepath.Join(dir, "bin", "protoc"),
+		filepath.Join(dir, "include", "google", "protobuf", "any.proto"),
+		filepath.Join(dir, "other_file.txt"),
 	}
 	for _, expected := range expectedFiles {
 		if _, err := os.Stat(expected); err != nil {
-			t.Errorf("Expected file %q was not extracted: %v", expected, err)
+			t.Errorf("expected file %q was not extracted: %v", expected, err)
 		}
 	}
-	unexpectedFiles := []string{
-		// The zip file should be cleaned up
-		filepath.Join(targetDir, "protoc.zip"),
-	}
-	for _, unexpected := range unexpectedFiles {
-		if _, err := os.Stat(unexpected); err == nil {
-			t.Errorf("Unexpected file %q exists in target directory", unexpected)
-		}
+	if _, err := os.Stat(filepath.Join(dir, "protoc.zip")); err == nil {
+		t.Errorf("zip file was not cleaned up")
 	}
 }
 
