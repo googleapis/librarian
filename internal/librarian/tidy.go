@@ -37,6 +37,7 @@ var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
+	errBOMVersionMissing     = errors.New("libraries bom version not found in config")
 
 	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
 	// libraries in Java without triggering the duplicate API path error.
@@ -76,6 +77,9 @@ the configuration is well-formed.`,
 // and writes it to disk, relative to the specified repository root directory.
 func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) error {
 	if err := validateTools(cfg); err != nil {
+		return err
+	}
+	if err := validateBOM(cfg); err != nil {
 		return err
 	}
 	if err := validateLibraries(cfg); err != nil {
@@ -142,6 +146,15 @@ func validateTools(cfg *config.Config) error {
 	for _, tool := range cfg.Tools.Cargo {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", rust.ErrMissingToolVersion, tool.Name)
+		}
+	}
+	return nil
+}
+
+func validateBOM(cfg *config.Config) error {
+	if cfg.Language == config.LanguageJava {
+		if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
+			return errBOMVersionMissing
 		}
 	}
 	return nil

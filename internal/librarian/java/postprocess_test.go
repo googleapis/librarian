@@ -686,14 +686,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "findBOMVersion failure",
-			cfg:  &config.Config{},
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-			},
-			wantErr: errBOMVersionMissing,
-		},
-		{
 			name: "runOwlBot failure (missing templates)",
 			cfg:  defaultCfg,
 			setup: func(t *testing.T, outDir string) {

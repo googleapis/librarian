@@ -620,6 +620,9 @@ func TestTidy_DerivableOutput(t *testing.T) {
 				Language: test.language,
 				Default: &config.Default{
 					Output: "generated/",
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.0.0",
+					},
 				},
 				Sources:   googleapisSource,
 				Libraries: []*config.Library{lib},
