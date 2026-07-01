@@ -37,7 +37,6 @@ var (
 	errDuplicateLibraryName  = errors.New("duplicate library name")
 	errDuplicateAPIPath      = errors.New("duplicate api path")
 	errNoGoogleapiSourceInfo = errors.New("googleapis source not configured in librarian.yaml")
-	errBOMVersionMissing     = errors.New("libraries bom version not found in config")
 
 	// javaSkipDuplicatePaths lists special API paths that are allowed to appear in multiple
 	// libraries in Java without triggering the duplicate API path error.
@@ -79,7 +78,7 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if err := validateTools(cfg); err != nil {
 		return err
 	}
-	if err := validateBOM(cfg); err != nil {
+	if err := validateLanguageDefault(cfg); err != nil {
 		return err
 	}
 	if err := validateLibraries(cfg); err != nil {
@@ -151,11 +150,18 @@ func validateTools(cfg *config.Config) error {
 	return nil
 }
 
-func validateBOM(cfg *config.Config) error {
-	if cfg.Language == config.LanguageJava {
-		if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
-			return errBOMVersionMissing
-		}
+// languageDefaultValidators maps a language to a function that validates the language-specific
+// default configuration.
+var languageDefaultValidators = map[string]func(*config.Default) error{
+	config.LanguageJava: java.ValidateDefault,
+}
+
+func validateLanguageDefault(cfg *config.Config) error {
+	if cfg.Default == nil {
+		return nil
+	}
+	if validator, ok := languageDefaultValidators[cfg.Language]; ok {
+		return validator(cfg.Default)
 	}
 	return nil
 }
