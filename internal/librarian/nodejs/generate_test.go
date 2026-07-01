@@ -1125,6 +1125,28 @@ func TestWriteRepoMetadata(t *testing.T) {
 				return w
 			},
 		},
+		{
+			name: "metadata name and name pretty overrides",
+			library: &config.Library{
+				Name: "google-cloud-dialogflow-cx",
+				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
+				Nodejs: &config.NodejsPackage{
+					MetadataNameOverride: "dialogflow-cx",
+					NamePrettyOverride:   "Dialogflow CX API",
+				},
+			},
+			want: func() *repometadata.RepoMetadata {
+				w := sample.RepoMetadata()
+				w.DistributionName = "@google-cloud/dialogflow-cx"
+				w.Language = cfg.Language
+				w.Repo = cfg.Repo
+				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/dialogflow-cx/latest"
+				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
+				w.Name = "dialogflow-cx"
+				w.NamePretty = "Dialogflow CX API"
+				return w
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
