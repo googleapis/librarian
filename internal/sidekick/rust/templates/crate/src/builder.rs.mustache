@@ -213,9 +213,7 @@ pub mod {{Codec.ModuleName}} {
               `poller_options` must be extracted here before `self` is moved into
               the `start` closure.
             }}
-            #[cfg(google_cloud_unstable_tracing)]
             let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
-            #[cfg(google_cloud_unstable_tracing)]
             if let Some(ref mut details) = poller_options.tracing {
                 details.method_name = "{{Model.Codec.PackageNamespace}}::client::{{Codec.ServiceNameToPascal}}::{{Codec.MethodName}}::until_done";
             }
@@ -250,7 +248,6 @@ pub mod {{Codec.ModuleName}} {
             };
 
             {{#Model.Codec.LroStubOptions}}
-            #[cfg(google_cloud_unstable_tracing)]
             {
                 use google_cloud_lro::internal::PollerExt;
                 google_cloud_lro::internal::new_discovery_poller(
@@ -261,14 +258,6 @@ pub mod {{Codec.ModuleName}} {
                 )
                 .with_options(poller_options)
             }
-
-            #[cfg(not(google_cloud_unstable_tracing))]
-            google_cloud_lro::internal::new_discovery_poller(
-                polling_error_policy,
-                polling_backoff_policy,
-                start,
-                query,
-            )
             {{/Model.Codec.LroStubOptions}}
             {{^Model.Codec.LroStubOptions}}
             google_cloud_lro::internal::new_discovery_poller(
@@ -307,9 +296,7 @@ pub mod {{Codec.ModuleName}} {
               `poller_options` must be extracted here before `self` is moved into
               the `start` closure.
             }}
-            #[cfg(google_cloud_unstable_tracing)]
             let mut poller_options = self.0.stub.get_poller_options(&self.0.options);
-            #[cfg(google_cloud_unstable_tracing)]
             if let Some(ref mut details) = poller_options.tracing {
                 details.method_name = "{{Model.Codec.PackageNamespace}}::client::{{Method.Codec.ServiceNameToPascal}}::{{Method.Codec.Name}}::until_done";
             }
@@ -337,7 +324,6 @@ pub mod {{Codec.ModuleName}} {
             };
 
             {{#Model.Codec.LroStubOptions}}
-            #[cfg(google_cloud_unstable_tracing)]
             {
                 use google_cloud_lro::internal::PollerExt;
                 {
@@ -355,22 +341,6 @@ pub mod {{Codec.ModuleName}} {
                     {{/Codec.BothAreEmpty}}
                 }
                 .with_options(poller_options)
-            }
-
-            #[cfg(not(google_cloud_unstable_tracing))]
-            {
-                {{#Codec.NoneAreEmpty}}
-                google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
-                {{/Codec.NoneAreEmpty}}
-                {{#Codec.OnlyResponseIsEmpty}}
-                google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
-                {{/Codec.OnlyResponseIsEmpty}}
-                {{#Codec.OnlyMetadataIsEmpty}}
-                google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
-                {{/Codec.OnlyMetadataIsEmpty}}
-                {{#Codec.BothAreEmpty}}
-                google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
-                {{/Codec.BothAreEmpty}}
             }
             {{/Model.Codec.LroStubOptions}}
             {{^Model.Codec.LroStubOptions}}
