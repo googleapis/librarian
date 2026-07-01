@@ -198,6 +198,8 @@ func parseRepoShortName(repo string) string {
 		return repo[i+1:]
 	}
 	return repo
+}
+
 // collectSnippetFiles recursively scans dir/samples for Java and XML files containing snippets.
 func collectSnippetFiles(dir string) ([]string, error) {
 	samplesDir := filepath.Join(dir, "samples")

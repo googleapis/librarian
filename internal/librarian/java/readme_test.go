@@ -657,7 +657,7 @@ func TestCollectSnippetFiles(t *testing.T) {
 		})
 	}
 }
-        
+
 func TestExtractSnippetsFromFile(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
