@@ -71,13 +71,7 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 	if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
 		return err
 	}
-	bomVersion := ""
-	if params.cfg.Default != nil && params.cfg.Default.Java != nil {
-		bomVersion = params.cfg.Default.Java.LibrariesBOMVersion
-	}
-	if bomVersion == "" {
-		return errors.New("libraries bom version not found in config")
-	}
+	bomVersion := params.cfg.Default.Java.LibrariesBOMVersion
 	if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
 		return fmt.Errorf("failed to remove kept files from staging: %w", err)
 	}
