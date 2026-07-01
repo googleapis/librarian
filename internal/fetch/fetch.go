@@ -17,7 +17,6 @@ package fetch
 
 import (
 	"archive/tar"
-	"archive/zip"
 	"compress/gzip"
 	"context"
 	"crypto/sha256"
@@ -475,54 +474,4 @@ func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bo
 			return fmt.Errorf("%w: %v", errUnsupportedFileType, hdr.Typeflag)
 		}
 	}
-}
-
-// ExtractZip extracts a ZIP archive to the specified directory.
-func ExtractZip(zipPath, destDir string, filter func(string) (string, bool)) error {
-	if filter == nil {
-		filter = func(name string) (string, bool) { return name, true }
-	}
-	r, err := zip.OpenReader(zipPath)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-	for _, file := range r.File {
-		name, ok := filter(file.Name)
-		if !ok {
-			continue
-		}
-		target := filepath.Join(destDir, name)
-		// Check for Zip Slip vulnerability (directory traversal)
-		rel, err := filepath.Rel(destDir, target)
-		if err != nil || strings.HasPrefix(rel, "..") {
-			return fmt.Errorf("illegal file path in zip: %s", file.Name)
-		}
-		if file.FileInfo().IsDir() {
-			if err := os.MkdirAll(target, file.Mode()); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-			return err
-		}
-		rc, err := file.Open()
-		if err != nil {
-			return err
-		}
-		out, err := os.OpenFile(target, os.O_CREATE|os.O_RDWR|os.O_TRUNC, file.Mode())
-		if err != nil {
-			rc.Close()
-			return err
-		}
-		if _, err := io.Copy(out, rc); err != nil {
-			out.Close()
-			rc.Close()
-			return err
-		}
-		out.Close()
-		rc.Close()
-	}
-	return nil
 }
