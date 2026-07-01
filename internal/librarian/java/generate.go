@@ -337,10 +337,7 @@ func gapicOpt(key, value string) string {
 
 // TODO(https://github.com/googleapis/librarian/issues/5152):
 // BOM version should be required and pre-validated, remove this and inline when done.
-func findBOMVersion(cfg *config.Config, library *config.Library) (string, error) {
-	if library != nil && library.Java != nil && library.Java.LibrariesBOMVersion != "" {
-		return library.Java.LibrariesBOMVersion, nil
-	}
+func findBOMVersion(cfg *config.Config) (string, error) {
 	if cfg.Default != nil && cfg.Default.Java != nil && cfg.Default.Java.LibrariesBOMVersion != "" {
 		return cfg.Default.Java.LibrariesBOMVersion, nil
 	}
