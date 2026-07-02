@@ -19,8 +19,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
@@ -37,6 +39,16 @@ var (
 		"amd64": "x86_64",
 	}
 )
+
+// InstallProtoc installs the protoc tool.
+func InstallProtoc(ctx context.Context, protoc *config.Protoc) error {
+	url := protocDownloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
+	dir, err := protocInstallDir(protoc.Version)
+	if err != nil {
+		return err
+	}
+	return installProtoc(ctx, url, dir, protoc.SHA256)
+}
 
 // installProtoc downloads and installs the protoc binary from the given URL to the given directory.
 func installProtoc(ctx context.Context, url, dir, sha256 string) error {
