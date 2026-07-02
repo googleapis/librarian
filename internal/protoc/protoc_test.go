@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
+package protoc
 
 import (
 	"archive/zip"
@@ -29,7 +29,7 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-func TestProtocInstallDir(t *testing.T) {
+func TestInstallDir(t *testing.T) {
 	for _, test := range []struct {
 		name         string
 		version      string
@@ -61,7 +61,7 @@ func TestProtocInstallDir(t *testing.T) {
 			} else {
 				t.Setenv("LIBRARIAN_CACHE", "")
 			}
-			got, err := protocInstallDir(test.version)
+			got, err := installDir(test.version)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -72,7 +72,7 @@ func TestProtocInstallDir(t *testing.T) {
 	}
 }
 
-func TestProtocDownloadURL(t *testing.T) {
+func TestDownloadURL(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		version string
@@ -96,7 +96,7 @@ func TestProtocDownloadURL(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := protocDownloadURL(test.version, test.os, test.arch)
+			got := downloadURL(test.version, test.os, test.arch)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -104,7 +104,7 @@ func TestProtocDownloadURL(t *testing.T) {
 	}
 }
 
-func TestInstallProtoc(t *testing.T) {
+func TestDownloadAndExtract(t *testing.T) {
 	mockZip, err := createMockZip(t)
 	if err != nil {
 		t.Fatal(err)
@@ -118,7 +118,7 @@ func TestInstallProtoc(t *testing.T) {
 	}))
 	defer server.Close()
 	dir := t.TempDir()
-	if err := installProtoc(context.Background(), server.URL, dir, checksum); err != nil {
+	if err := downloadAndExtract(context.Background(), server.URL, dir, checksum); err != nil {
 		t.Fatal(err)
 	}
 	expectedFiles := []string{

@@ -27,8 +27,8 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/pip"
+	"github.com/googleapis/librarian/internal/protoc"
 )
 
 const (
@@ -53,7 +53,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	if tools.Protoc != nil {
-		if err := librarian.InstallProtoc(ctx, tools.Protoc); err != nil {
+		if err := protoc.Install(ctx, tools.Protoc); err != nil {
 			return fmt.Errorf("failed to install protoc: %w", err)
 		}
 	}
