@@ -22,6 +22,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 
@@ -61,6 +62,9 @@ var (
 				return fmt.Errorf("failed to get protoc install dir %s: %w", protocVersion, err)
 			}
 			protocCmd = filepath.Join(protocInstallDir, "bin", "protoc")
+			if runtime.GOOS == "windows" {
+				protocCmd += ".exe"
+			}
 		}
 		return command.RunWithEnv(ctx, env, protocCmd, args...)
 	}
