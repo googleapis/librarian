@@ -17,7 +17,6 @@ package protoc
 import (
 	"archive/zip"
 	"bytes"
-	"context"
 	"crypto/sha256"
 	"fmt"
 	"net/http"
@@ -118,7 +117,7 @@ func TestDownloadAndExtract(t *testing.T) {
 	}))
 	defer server.Close()
 	dir := t.TempDir()
-	if err := downloadAndExtract(context.Background(), server.URL, dir, checksum); err != nil {
+	if err := downloadAndExtract(t.Context(), server.URL, dir, checksum); err != nil {
 		t.Fatal(err)
 	}
 	expectedFiles := []string{
