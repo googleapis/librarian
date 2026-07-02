@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.25.0](https://github.com/googleapis/librarian/compare/v0.24.0...v0.25.0) (2026-07-02)
+
+
+### Features
+
+* **internal/librarian/java:** add README metadata parsing helpers ([#6595](https://github.com/googleapis/librarian/issues/6595)) ([c402d4a](https://github.com/googleapis/librarian/commit/c402d4a96213cdc8519924aecd4cb025eb5e268a)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** source google-cloud-pom-parent in pom.xml templates ([#6607](https://github.com/googleapis/librarian/issues/6607)) ([3c46b73](https://github.com/googleapis/librarian/commit/3c46b735a8022b8272b0c6d7e73edb3ca2884b95))
+* **internal/librarian:** add `protoc` installation support ([#6583](https://github.com/googleapis/librarian/issues/6583)) ([6037497](https://github.com/googleapis/librarian/commit/6037497ba994e88193d8d99458eb7ee3322893fa)), closes [#6558](https://github.com/googleapis/librarian/issues/6558)
+
+
+### Bug Fixes
+
+* **rust:** do not add empty rust config ([#6609](https://github.com/googleapis/librarian/issues/6609)) ([c563304](https://github.com/googleapis/librarian/commit/c563304001e75ec6ebf7c9740c97afd012a7ea97))
+* **rust:** tidy empty rust blocks ([#6618](https://github.com/googleapis/librarian/issues/6618)) ([dfa0f2d](https://github.com/googleapis/librarian/commit/dfa0f2da0dc61be993051444b7fafee6589a825e))
+
 ## [0.24.0](https://github.com/googleapis/librarian/compare/v0.23.0...v0.24.0) (2026-07-01)
 
 
