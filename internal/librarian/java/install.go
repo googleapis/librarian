@@ -52,6 +52,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
 		}
 	}
+	// TODO(https://github.com/googleapis/librarian/issues/6558): Remove this check after adding protoc
+	// in librarian.yaml.
 	if tools.Protoc != nil {
 		if err := protoc.Install(ctx, tools.Protoc); err != nil {
 			return fmt.Errorf("failed to install protoc: %w", err)
