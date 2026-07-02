@@ -128,7 +128,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 				if err := os.MkdirAll(outDir, 0755); err != nil {
 					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 				}
-				if err := ExtractTarball(tgz, outDir, stripTopLevelDir); err == nil {
+				if err := extractTarball(tgz, outDir); err == nil {
 					return outDir, nil
 				}
 			}
@@ -149,7 +149,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
-	if err := ExtractTarball(tgz, outDir, stripTopLevelDir); err != nil {
+	if err := extractTarball(tgz, outDir); err != nil {
 		return "", fmt.Errorf("failed to extract tarball: %w", err)
 	}
 	return outDir, nil
@@ -392,21 +392,9 @@ func fileExists(name string) bool {
 	return stat.Mode().IsRegular()
 }
 
-// stripTopLevelDir removes the top-level directory prefix (such as "{repo}-{commit}/")
-// that GitHub automatically adds to repository archive entries.
-func stripTopLevelDir(name string) (string, bool) {
-	parts := strings.SplitN(name, "/", 2)
-	if len(parts) == 2 {
-		return parts[1], true
-	}
-	return "", false
-}
-
-// ExtractTarball extracts a gzipped tarball to the specified directory.
-func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bool)) error {
-	if filter == nil {
-		filter = func(name string) (string, bool) { return name, true }
-	}
+// extractTarball extracts a gzipped tarball to the specified directory,
+// stripping the top-level directory prefix that GitHub adds to tarballs.
+func extractTarball(tarballPath, destDir string) error {
 	f, err := os.Open(tarballPath)
 	if err != nil {
 		return err
@@ -428,11 +416,18 @@ func ExtractTarball(tarballPath, destDir string, filter func(string) (string, bo
 		if err != nil {
 			return err
 		}
-
-		name, ok := filter(hdr.Name)
-		if !ok {
+		// When GitHub creates a tarball archive of a repository, it wraps all
+		// the files in a top-level directory named in the format
+		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
+		// prefix.
+		name := hdr.Name
+		parts := strings.SplitN(name, "/", 2)
+		if len(parts) == 2 {
+			name = parts[1]
+		} else {
 			continue
 		}
+
 		target := filepath.Join(destDir, name)
 		switch hdr.Typeflag {
 		case tar.TypeDir:
