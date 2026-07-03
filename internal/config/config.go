@@ -200,7 +200,7 @@ type Protoc struct {
 	Version string `yaml:"version,omitempty"`
 
 	// SHA256 is the SHA256 checksum of the tarball.
-	SHA256 string `yaml:"checksum,omitempty"`
+	SHA256 string `yaml:"sha256,omitempty"`
 }
 
 // Default contains default settings for all libraries.
