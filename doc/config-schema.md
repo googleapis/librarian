@@ -95,7 +95,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `version` | string | Is the version to install. |
-| `checksum` | string | Is the SHA256 checksum of the tarball. |
+| `sha256` | string | Is the SHA256 checksum of the tarball. |
 
 ## Default Configuration
 
