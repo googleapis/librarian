@@ -33,8 +33,19 @@ var (
 	errNoExplicitOutput = errors.New("library requires an explicit output path")
 )
 
+// languageDefaultFillers maps a language to a function that fills
+// language-specific library fields from the provided defaults.
+var languageDefaultFillers = map[string]func(*config.Library, *config.Default) *config.Library{
+	config.LanguageDart:   fillDart,
+	config.LanguageGo:     fillGo,
+	config.LanguageJava:   fillJava,
+	config.LanguagePython: fillPython,
+	config.LanguageRust:   fillRust,
+	config.LanguageSwift:  fillSwift,
+}
+
 // fillDefaults populates empty library fields from the provided defaults.
-func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
+func fillDefaults(language string, lib *config.Library, d *config.Default) *config.Library {
 	if d == nil {
 		return lib
 	}
@@ -44,22 +55,10 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	switch {
-	case d.Go != nil:
-		return fillGo(lib, d)
-	case d.Java != nil:
-		return fillJava(lib, d)
-	case d.Rust != nil:
-		return fillRust(lib, d)
-	case d.Dart != nil:
-		return fillDart(lib, d)
-	case d.Python != nil:
-		return fillPython(lib, d)
-	case d.Swift != nil:
-		return fillSwift(lib, d)
-	default:
-		return lib
+	if filler, ok := languageDefaultFillers[language]; ok {
+		return filler(lib, d)
 	}
+	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
@@ -99,6 +98,9 @@ func union(a, b []string) []string {
 
 // fillJava populates empty Java-specific fields in lib from the provided default.
 func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if d.Java == nil {
+		return lib
+	}
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
@@ -125,6 +127,9 @@ func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
 func fillRust(lib *config.Library, d *config.Default) *config.Library {
+	if d.Rust == nil {
+		return lib
+	}
 	if lib.Rust == nil {
 		lib.Rust = &config.RustCrate{}
 	}
@@ -162,6 +167,9 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 }
 
 func fillDart(lib *config.Library, d *config.Default) *config.Library {
+	if d.Dart == nil {
+		return lib
+	}
 	if lib.Version == "" {
 		lib.Version = d.Dart.Version
 	}
@@ -184,6 +192,9 @@ func fillDart(lib *config.Library, d *config.Default) *config.Library {
 // fillPython populates empty Python-specific fields in lib from the provided
 // default.
 func fillPython(lib *config.Library, d *config.Default) *config.Library {
+	if d.Python == nil {
+		return lib
+	}
 	if lib.Python == nil {
 		lib.Python = &config.PythonPackage{}
 	}
@@ -196,6 +207,9 @@ func fillPython(lib *config.Library, d *config.Default) *config.Library {
 
 // fillSwift populates empty Swift-specific fields in lib from the provided default.
 func fillSwift(lib *config.Library, d *config.Default) *config.Library {
+	if d.Swift == nil {
+		return lib
+	}
 	if lib.Swift == nil {
 		lib.Swift = &config.SwiftPackage{}
 	}
@@ -331,7 +345,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
-	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
+	return fillLibraryDefaults(language, fillDefaults(language, lib, defaults))
 }
 
 // canDeriveAPIPath reports whether the language's library name contains enough information to

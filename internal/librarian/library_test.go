@@ -29,12 +29,14 @@ func TestFillDefaults(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name     string
+		language string
 		defaults *config.Default
 		lib      *config.Library
 		want     *config.Library
 	}{
 		{
 			name:     "fills empty fields",
+			language: config.LanguageDart,
 			defaults: defaults,
 			lib:      &config.Library{},
 			want: &config.Library{
@@ -44,6 +46,7 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "preserves existing values",
+			language: config.LanguageDart,
 			defaults: defaults,
 			lib: &config.Library{
 				Output: "custom/output/",
@@ -55,6 +58,7 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "partial fill",
+			language: config.LanguageDart,
 			defaults: defaults,
 			lib:      &config.Library{Output: "custom/output/"},
 			want: &config.Library{
@@ -64,12 +68,14 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "nil defaults",
+			language: config.LanguageDart,
 			defaults: nil,
 			lib:      &config.Library{Output: "foo/"},
 			want:     &config.Library{Output: "foo/"},
 		},
 		{
-			name: "dart defaults",
+			name:     "dart defaults",
+			language: config.LanguageDart,
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
@@ -109,7 +115,8 @@ func TestFillDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "dart defaults do not override library params",
+			name:     "dart defaults do not override library params",
+			language: config.LanguageDart,
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
@@ -171,7 +178,8 @@ func TestFillDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "swift defaults",
+			name:     "swift defaults",
+			language: config.LanguageSwift,
 			defaults: &config.Default{
 				Swift: &config.SwiftDefault{
 					Dependencies: []config.SwiftDependency{
@@ -192,7 +200,8 @@ func TestFillDefaults(t *testing.T) {
 			},
 		},
 		{
-			name: "swift defaults do not override library params",
+			name:     "swift defaults do not override library params",
+			language: config.LanguageSwift,
 			defaults: &config.Default{
 				Swift: &config.SwiftDefault{
 					Dependencies: []config.SwiftDependency{
@@ -225,7 +234,7 @@ func TestFillDefaults(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := fillDefaults(test.lib, test.defaults)
+			got := fillDefaults(test.language, test.lib, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -600,7 +609,7 @@ func TestFillDefaults_Rust(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := fillDefaults(test.lib, defaults)
+			got := fillDefaults(config.LanguageRust, test.lib, defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -706,7 +715,7 @@ func TestFillDefaults_Python(t *testing.T) {
 			defaults := &config.Default{
 				Python: test.defaults,
 			}
-			got := fillDefaults(test.lib, defaults)
+			got := fillDefaults(config.LanguagePython, test.lib, defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -830,7 +839,7 @@ func TestFillDefaults_Go(t *testing.T) {
 			defaults := &config.Default{
 				Go: test.defaults,
 			}
-			got := fillDefaults(test.lib, defaults)
+			got := fillDefaults(config.LanguageGo, test.lib, defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
