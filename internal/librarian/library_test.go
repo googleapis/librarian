@@ -22,21 +22,19 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestFillDefaults(t *testing.T) {
+func TestFillDefaults_Dart(t *testing.T) {
 	defaults := &config.Default{
 		Keep:   []string{"CHANGES.md"},
 		Output: "src/generated/",
 	}
 	for _, test := range []struct {
 		name     string
-		language string
 		defaults *config.Default
 		lib      *config.Library
 		want     *config.Library
 	}{
 		{
 			name:     "fills empty fields",
-			language: config.LanguageDart,
 			defaults: defaults,
 			lib:      &config.Library{},
 			want: &config.Library{
@@ -46,7 +44,6 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "preserves existing values",
-			language: config.LanguageDart,
 			defaults: defaults,
 			lib: &config.Library{
 				Output: "custom/output/",
@@ -58,7 +55,6 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "partial fill",
-			language: config.LanguageDart,
 			defaults: defaults,
 			lib:      &config.Library{Output: "custom/output/"},
 			want: &config.Library{
@@ -68,14 +64,12 @@ func TestFillDefaults(t *testing.T) {
 		},
 		{
 			name:     "nil defaults",
-			language: config.LanguageDart,
 			defaults: nil,
 			lib:      &config.Library{Output: "foo/"},
 			want:     &config.Library{Output: "foo/"},
 		},
 		{
-			name:     "dart defaults",
-			language: config.LanguageDart,
+			name: "dart defaults",
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
@@ -115,8 +109,7 @@ func TestFillDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:     "dart defaults do not override library params",
-			language: config.LanguageDart,
+			name: "dart defaults do not override library params",
 			defaults: &config.Default{
 				Dart: &config.DartPackage{
 					APIKeysEnvironmentVariables: "apiKey-1,apiKey-2",
@@ -177,10 +170,25 @@ func TestFillDefaults(t *testing.T) {
 				},
 			},
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fillDefaults(config.LanguageDart, test.lib, test.defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillDefaults_Swift(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		defaults *config.Default
+		lib      *config.Library
+		want     *config.Library
+	}{
 		{
-			name:     "swift defaults",
-			language: config.LanguageSwift,
-			defaults: &config.Default{
+			name: "swift defaults", defaults: &config.Default{
 				Swift: &config.SwiftDefault{
 					Dependencies: []config.SwiftDependency{
 						{Name: "wkt", URL: "https://github.com/googleapis/swift-protobuf"},
@@ -200,8 +208,7 @@ func TestFillDefaults(t *testing.T) {
 			},
 		},
 		{
-			name:     "swift defaults do not override library params",
-			language: config.LanguageSwift,
+			name: "swift defaults do not override library params",
 			defaults: &config.Default{
 				Swift: &config.SwiftDefault{
 					Dependencies: []config.SwiftDependency{
@@ -234,7 +241,7 @@ func TestFillDefaults(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := fillDefaults(test.language, test.lib, test.defaults)
+			got := fillDefaults(config.LanguageSwift, test.lib, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
