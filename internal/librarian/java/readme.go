@@ -25,9 +25,9 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
+	"unicode/utf8"
 
 	"github.com/googleapis/librarian/internal/yaml"
-	"unicode/utf8"
 )
 
 var (
@@ -53,6 +53,9 @@ var (
 
 	// errEmptyFile indicates an empty file path was provided.
 	errEmptyFile = errors.New("file cannot be empty")
+
+	// errInvalidYAML indicates the YAML file syntax is invalid or cannot be unmarshaled.
+	errInvalidYAML = errors.New("invalid yaml syntax")
 )
 
 // codeSample represents a discovered Java code sample along with its derived title.
@@ -202,30 +205,24 @@ func parseRepoShortName(repo string) string {
 	return repo
 }
 
-// loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml or .yml.
+// loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml.
 func loadReadmePartials(dir string) (map[string]interface{}, error) {
 	if dir == "" {
 		return nil, errEmptyDir
 	}
 	partialsBytes, err := os.ReadFile(filepath.Join(dir, ".readme-partials.yaml"))
 	if err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return nil, fmt.Errorf("failed to read partials file: %w", err)
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
 		}
-		partialsBytes, err = os.ReadFile(filepath.Join(dir, ".readme-partials.yml"))
-		if err != nil {
-			if errors.Is(err, fs.ErrNotExist) {
-				return nil, nil
-			}
-			return nil, fmt.Errorf("failed to read partials file: %w", err)
-		}
+		return nil, fmt.Errorf("failed to read partials file: %w", err)
 	}
 	if len(partialsBytes) == 0 {
 		return nil, nil
 	}
 	rawPartials, err := yaml.Unmarshal[map[string]interface{}](partialsBytes)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal partials: %w", err)
+		return nil, fmt.Errorf("%w: failed to unmarshal partials: %w", errInvalidYAML, err)
 	}
 	if rawPartials == nil || len(*rawPartials) == 0 {
 		return nil, nil

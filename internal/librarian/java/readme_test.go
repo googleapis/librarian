@@ -606,17 +606,6 @@ func TestLoadReadmePartials(t *testing.T) {
 			want: map[string]interface{}{"AboutText": "Custom about"},
 		},
 		{
-			name: "loads yml fallback partials",
-			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, ".readme-partials.yml")
-				content := `introduction: "Intro text"`
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			want: map[string]interface{}{"Introduction": "Intro text"},
-		},
-		{
 			name: "missing partials file returns nil",
 			setupFiles: func(t *testing.T, dir string) {
 				// No file written.
@@ -679,6 +668,7 @@ func TestLoadReadmePartials_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
+			wantErr: errInvalidYAML,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
