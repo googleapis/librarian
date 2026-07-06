@@ -176,30 +176,36 @@ var (
 // Validate checks that the Java-specific configuration for a library and global config is
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
-func Validate(cfg *config.Config, library *config.Library) error {
+func Validate(cfg *config.Config) error {
 	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
 		return errBOMVersionMissing
 	}
-	if library.Version != "" {
-		if _, err := semver.Parse(library.Version); err != nil {
-			return fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err)
-		}
-	}
-	if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
-		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
-			return fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err)
-		}
-	}
-	for _, api := range library.APIs {
-		if api.Java == nil || !api.Java.OmitCommonResources {
-			continue
-		}
-		for _, proto := range api.Java.AdditionalProtos {
-			if proto != nil && proto.Path == commonResourcesProto {
-				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
+	var errs []error
+	for _, library := range cfg.Libraries {
+		if library.Version != "" {
+			if _, err := semver.Parse(library.Version); err != nil {
+				errs = append(errs, fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err))
 			}
 		}
+		if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
+			if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+				errs = append(errs, fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err))
+			}
+		}
+		for _, api := range library.APIs {
+			if api.Java == nil || !api.Java.OmitCommonResources {
+				continue
+			}
+			for _, proto := range api.Java.AdditionalProtos {
+				if proto != nil && proto.Path == commonResourcesProto {
+					errs = append(errs, fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict))
+				}
+			}
 
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 	return nil
 }

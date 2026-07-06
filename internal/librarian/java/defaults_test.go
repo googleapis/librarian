@@ -550,8 +550,9 @@ func TestValidate(t *testing.T) {
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
+				Libraries: []*config.Library{test.lib},
 			}
-			if err := Validate(cfg, test.lib); err != nil {
+			if err := Validate(cfg); err != nil {
 				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
 			}
 		})
@@ -620,8 +621,9 @@ func TestValidate_Error(t *testing.T) {
 						LibrariesBOMVersion: "1.2.3",
 					},
 				},
+				Libraries: []*config.Library{test.lib},
 			}
-			err := Validate(cfg, test.lib)
+			err := Validate(cfg)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Validate() error = %v, want %v", err, test.wantErr)
 			}
@@ -745,7 +747,7 @@ func TestValidate_Config(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Default: test.def}
-			if err := Validate(cfg, &config.Library{}); err != nil {
+			if err := Validate(cfg); err != nil {
 				t.Fatal(err)
 			}
 		})
@@ -782,7 +784,7 @@ func TestValidate_ConfigError(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			cfg := &config.Config{Default: test.def}
-			got := Validate(cfg, &config.Library{})
+			got := Validate(cfg)
 			if !errors.Is(got, test.wantErr) {
 				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)
 			}
