@@ -612,8 +612,8 @@ func TestPostProcessLibrary(t *testing.T) {
 				if err := os.MkdirAll(filepath.Join(filepath.Dir(outDir), owlbotTemplatesRelPath), 0755); err != nil {
 					t.Fatal(err)
 				}
-				libCoords := DeriveLibraryCoordinates(library)
-				apiCoords := DeriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
+				libCoords := deriveLibraryCoordinates(library)
+				apiCoords := deriveAPICoordinates(libCoords, "v1", &config.JavaAPI{})
 				for _, dir := range []string{
 					filepath.Join(outDir, apiCoords.Proto.ArtifactID),
 					filepath.Join(outDir, apiCoords.GRPC.ArtifactID),

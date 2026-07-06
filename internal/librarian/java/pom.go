@@ -48,31 +48,31 @@ const (
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
-	Proto          Coordinate
-	GRPC           Coordinate
-	Parent         Coordinate
+	Proto          coordinate
+	GRPC           coordinate
+	Parent         coordinate
 	Version        string
 	MainArtifactID string
 }
 
 // clientPOMData holds the data for rendering the client library POM template.
 type clientPOMData struct {
-	Client       Coordinate
+	Client       coordinate
 	Version      string
 	Name         string
 	Description  string
-	Parent       Coordinate
-	ProtoModules []Coordinate
-	GRPCModules  []Coordinate
+	Parent       coordinate
+	ProtoModules []coordinate
+	GRPCModules  []coordinate
 }
 
 // bomParentPOMData holds the data for rendering the BOM and Parent library POM template.
 type bomParentPOMData struct {
-	MainModule      Coordinate
+	MainModule      coordinate
 	Name            string
 	MonorepoVersion string
 	ParentVersion   string
-	Modules         []Coordinate
+	Modules         []coordinate
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -99,8 +99,8 @@ type expectedModule struct {
 	Dir        string
 	Kind       moduleKind
 	IsMissing  bool
-	Coordinate Coordinate
-	APICoords  *APICoordinate
+	Coordinate coordinate
+	APICoords  *apiCoordinate
 }
 
 func loadTransports(library *config.Library) (map[string]serviceconfig.Transport, error) {
@@ -120,7 +120,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		return nil, nil
 	}
 	var modules []expectedModule
-	libCoord := DeriveLibraryCoordinates(library)
+	libCoord := deriveLibraryCoordinates(library)
 	var shouldGenerateClient bool
 	for _, api := range library.APIs {
 		javaAPI := api.Java
@@ -128,7 +128,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 			shouldGenerateClient = true
 		}
 		apiBase := deriveAPIBase(library, api.Path)
-		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
+		apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
 		// Proto module
 		if shouldGenerateProto(javaAPI) {
@@ -399,11 +399,11 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion, parent
 	if err != nil {
 		return nil, err
 	}
-	libCoord := DeriveLibraryCoordinates(library)
-	protoModules := make([]Coordinate, 0, len(library.APIs))
-	gRPCModules := make([]Coordinate, 0, len(library.APIs))
+	libCoord := deriveLibraryCoordinates(library)
+	protoModules := make([]coordinate, 0, len(library.APIs))
+	gRPCModules := make([]coordinate, 0, len(library.APIs))
 	// At most one client module per library; slice used for variadic append.
-	var clientModule []Coordinate
+	var clientModule []coordinate
 	for _, m := range expectedModules {
 		switch m.Kind {
 		case kindProto:
@@ -415,7 +415,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion, parent
 		}
 	}
 
-	var allModules []Coordinate
+	var allModules []coordinate
 	allModules = append(allModules, clientModule...)
 	allModules = append(allModules, gRPCModules...)
 	allModules = append(allModules, protoModules...)
