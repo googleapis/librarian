@@ -332,7 +332,9 @@ RUN pnpm add -g \
     pnpm install && \
     ./node_modules/.bin/tsc && \
     cp -a templates protos build/ && \
-    pnpm add -g "$PWD" && \
+    node -e "const fs = require('fs'); const f = 'package.json'; const p = JSON.parse(fs.readFileSync(f)); p.dependencies['google-gax'] = p.devDependencies['google-gax']; delete p.devDependencies['google-gax']; fs.writeFileSync(f, JSON.stringify(p, null, 2))" && \
+    pnpm pack && \
+    pnpm add -g ./*.tgz && \
     rm -rf /tmp/generator /tmp/generator.tar.gz
 
 # ============== Java Stage ==============
