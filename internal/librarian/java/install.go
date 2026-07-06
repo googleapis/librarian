@@ -28,7 +28,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/pip"
-	"github.com/googleapis/librarian/internal/protoc"
 )
 
 const (
@@ -50,13 +49,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	for _, cmd := range []string{"java", "mvn", "pip"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Java tool installation: %w", cmd, err)
-		}
-	}
-	// TODO(https://github.com/googleapis/librarian/issues/6558): Remove this check after adding protoc
-	// in librarian.yaml.
-	if tools.Protoc != nil {
-		if err := protoc.Install(ctx, tools.Protoc); err != nil {
-			return fmt.Errorf("failed to install protoc: %w", err)
 		}
 	}
 	if len(tools.Pip) > 0 {
