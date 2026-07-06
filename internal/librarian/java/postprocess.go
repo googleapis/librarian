@@ -79,11 +79,11 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 		return fmt.Errorf("%w: %w", errRunOwlBot, err)
 	}
 
-	monorepoVersion, err := findMonorepoVersion(params.cfg)
+	monorepoVersion, err := findLibraryVersion(params.cfg, rootLibrary, errMonorepoVersion)
 	if err != nil {
 		return err
 	}
-	parentVersion, err := findParentPOMVersion(params.cfg)
+	parentVersion, err := findLibraryVersion(params.cfg, parentPOM, errParentVersion)
 	if err != nil {
 		return err
 	}

@@ -156,10 +156,8 @@ var languageDefaultValidators = map[string]func(*config.Default) error{
 	config.LanguageJava: java.ValidateDefault,
 }
 
+// validateLanguageDefault validates the language-specific default configuration.
 func validateLanguageDefault(cfg *config.Config) error {
-	if cfg.Default == nil {
-		return nil
-	}
 	if validator, ok := languageDefaultValidators[cfg.Language]; ok {
 		return validator(cfg.Default)
 	}
