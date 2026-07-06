@@ -12,8 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package php provides functionality for generating and releasing PHP client
-// libraries.
+// Package php provides PHP specific functionality for librarian.
 package php
 
 import (
@@ -35,7 +34,8 @@ func Format(ctx context.Context, library *config.Library) error {
 	return nil
 }
 
-// Clean cleans the generated PHP library.
+// Clean removes all generated code from beneath the given library's
+// output directory.
 func Clean(library *config.Library) error {
 	// TODO(https://github.com/googleapis/librarian/issues/6629): implement PHP cleaning
 	return nil
