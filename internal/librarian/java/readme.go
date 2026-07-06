@@ -159,12 +159,12 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		Monorepo:          true,
 		BOMVersion:        bomVersion,
 	}
-	var buf strings.Builder
+	var buf bytes.Buffer
 	if err := readmeTmplParsed.Execute(&buf, data); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
 	outputPath := filepath.Join(params.outDir, "README.md")
-	return os.WriteFile(outputPath, []byte(buf.String()), 0644)
+	return os.WriteFile(outputPath, buf.Bytes(), 0644)
 }
 
 // extractSamples locates production Java sample files and returns parsed codeSample structs

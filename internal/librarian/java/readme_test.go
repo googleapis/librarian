@@ -960,12 +960,12 @@ func TestRenderREADME(t *testing.T) {
 			}
 			err := renderREADME(params, test.keepSet)
 			if err != nil {
-				t.Fatalf("renderREADME() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 			outputPath := filepath.Join(dir, "README.md")
 			outputBytes, err := os.ReadFile(outputPath)
 			if err != nil {
-				t.Fatalf("failed reading generated README: %v", err)
+				t.Fatal(err)
 			}
 			content := string(outputBytes)
 			if test.wantContent != "" {
