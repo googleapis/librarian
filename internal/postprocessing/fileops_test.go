@@ -24,38 +24,8 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
-
-func TestCopyFile(t *testing.T) {
-	dir := t.TempDir()
-	srcPath := filepath.Join(dir, "src.txt")
-	dstPath := filepath.Join(dir, "dst.txt")
-	content := "hello copy"
-	if err := os.WriteFile(srcPath, []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := CopyFile(srcPath, dstPath); err != nil {
-		t.Fatal(err)
-	}
-	gotBytes, err := os.ReadFile(dstPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	got := string(gotBytes)
-	if diff := cmp.Diff(content, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestCopyFile_Error(t *testing.T) {
-	dir := t.TempDir()
-	srcPath := filepath.Join(dir, "nonexistent.txt")
-	dstPath := filepath.Join(dir, "dst.txt")
-	err := CopyFile(srcPath, dstPath)
-	if !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("CopyFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
-	}
-}
 
 func TestReplace(t *testing.T) {
 	dir := t.TempDir()
@@ -407,4 +377,61 @@ func readDirFiles(t *testing.T, dir string) map[string]string {
 		t.Fatal(err)
 	}
 	return gotFiles
+}
+
+func TestCopyFiles(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		files     map[string]string
+		configs   []config.CopyConfig
+		wantFiles map[string]string
+	}{
+		{
+			name:  "single file copy",
+			files: map[string]string{"src.txt": "hello"},
+			configs: []config.CopyConfig{
+				{Src: "src.txt", Dst: "dst.txt"},
+			},
+			wantFiles: map[string]string{"src.txt": "hello", "dst.txt": "hello"},
+		},
+		{
+			name:  "multiple copies of same source",
+			files: map[string]string{"src.txt": "hello"},
+			configs: []config.CopyConfig{
+				{Src: "src.txt", Dst: "copied1.txt"},
+				{Src: "src.txt", Dst: "copied2.txt"},
+			},
+			wantFiles: map[string]string{"src.txt": "hello", "copied1.txt": "hello", "copied2.txt": "hello"},
+		},
+		{
+			name:  "nested directory copy",
+			files: map[string]string{"sub/src.txt": "nested content"},
+			configs: []config.CopyConfig{
+				{Src: "sub/src.txt", Dst: "out/dst.txt"},
+			},
+			wantFiles: map[string]string{"sub/src.txt": "nested content", "out/dst.txt": "nested content"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := CopyFiles(dir, test.configs); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestCopyFiles_Error(t *testing.T) {
+	dir := t.TempDir()
+	configs := []config.CopyConfig{
+		{Src: "nonexistent.txt", Dst: "dst.txt"},
+	}
+	err := CopyFiles(dir, configs)
+	if !errors.Is(err, fs.ErrNotExist) {
+		t.Errorf("CopyFiles() error = %v, want %v", err, fs.ErrNotExist)
+	}
 }
