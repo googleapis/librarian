@@ -84,6 +84,15 @@ type javaModule struct {
 	template     string
 }
 
+type syncPOMsParams struct {
+	library         *config.Library
+	libraryDir      string
+	monorepoVersion string
+	parentVersion   string
+	metadata        *repoMetadata
+	transports      map[string]serviceconfig.Transport
+}
+
 type moduleKind int
 
 const (
@@ -216,8 +225,8 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 // and parent POMs when new proto or gRPC modules are added. It returns a list
 // of newly created artifact version entries to be added to versions.txt.
 // TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries.
-func syncPOMs(library *config.Library, libraryDir, monorepoVersion, parentVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
-	modules, err := collectModules(library, libraryDir, monorepoVersion, parentVersion, metadata, transports)
+func syncPOMs(params syncPOMsParams) error {
+	modules, err := collectModules(params)
 	if err != nil {
 		return err
 	}
@@ -394,14 +403,14 @@ func detectIndentation(content string, index int) string {
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, monorepoVersion, parentVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
-	expectedModules, err := discoverModules(library, libraryDir, transports)
+func collectModules(params syncPOMsParams) ([]javaModule, error) {
+	expectedModules, err := discoverModules(params.library, params.libraryDir, params.transports)
 	if err != nil {
 		return nil, err
 	}
-	libCoord := deriveLibraryCoordinates(library)
-	protoModules := make([]coordinate, 0, len(library.APIs))
-	gRPCModules := make([]coordinate, 0, len(library.APIs))
+	libCoord := deriveLibraryCoordinates(params.library)
+	protoModules := make([]coordinate, 0, len(params.library.APIs))
+	gRPCModules := make([]coordinate, 0, len(params.library.APIs))
 	// At most one client module per library; slice used for variadic append.
 	var clientModule []coordinate
 	for _, m := range expectedModules {
@@ -431,7 +440,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion, parent
 				GRPC:           m.APICoords.GRPC,
 				Parent:         libCoord.Parent,
 				MainArtifactID: libCoord.GAPIC.ArtifactID,
-				Version:        library.Version,
+				Version:        params.library.Version,
 			}
 			if m.Kind == kindProto {
 				template = protoPOMTemplateName
@@ -441,9 +450,9 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion, parent
 		case kindClient:
 			templateData = clientPOMData{
 				Client:       m.Coordinate,
-				Version:      library.Version,
-				Name:         metadata.NamePretty,
-				Description:  metadata.APIDescription,
+				Version:      params.library.Version,
+				Name:         params.metadata.NamePretty,
+				Description:  params.metadata.APIDescription,
 				Parent:       libCoord.Parent,
 				ProtoModules: protoModules,
 				GRPCModules:  gRPCModules,
@@ -452,18 +461,18 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion, parent
 		case kindBOM:
 			templateData = bomParentPOMData{
 				MainModule:      libCoord.GAPIC,
-				Name:            metadata.NamePretty,
-				MonorepoVersion: monorepoVersion,
-				ParentVersion:   parentVersion,
+				Name:            params.metadata.NamePretty,
+				MonorepoVersion: params.monorepoVersion,
+				ParentVersion:   params.parentVersion,
 				Modules:         allModules,
 			}
 			template = bomPOMTemplateName
 		case kindParent:
 			templateData = bomParentPOMData{
 				MainModule:      libCoord.GAPIC,
-				Name:            metadata.NamePretty,
-				MonorepoVersion: monorepoVersion,
-				ParentVersion:   parentVersion,
+				Name:            params.metadata.NamePretty,
+				MonorepoVersion: params.monorepoVersion,
+				ParentVersion:   params.parentVersion,
 				Modules:         allModules,
 			}
 			template = parentPOMTemplateName
