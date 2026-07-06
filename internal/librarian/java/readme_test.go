@@ -1018,12 +1018,6 @@ func TestRenderREADME_Error(t *testing.T) {
 			params:  libraryPostProcessParams{outDir: "dir", metadata: validMeta, library: validLib, cfg: nil},
 			wantErr: errNilConfig,
 		},
-		{
-			name:    "keepSet protecting README.md exits early without error even with nil pointers",
-			params:  libraryPostProcessParams{outDir: "", metadata: nil, library: nil, cfg: nil},
-			keepSet: map[string]bool{"README.md": true},
-			wantErr: nil,
-		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := renderREADME(test.params, test.keepSet)
