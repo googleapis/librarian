@@ -52,8 +52,6 @@ type repoMetadata struct {
 	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
 	// Java-specific field.
-	ExcludedDependencies string `json:"excluded_dependencies,omitempty"`
-	// Java-specific field.
 	ExcludedPOMs string `json:"excluded_poms,omitempty"`
 	IssueTracker string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
@@ -146,7 +144,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
 		metadata.ExcludedPOMs = strings.Join(library.Java.ExcludedPOMs, ",")
 		metadata.MinJavaVersion = library.Java.MinJavaVersion
 		metadata.RecommendedPackage = library.Java.RecommendedPackage
