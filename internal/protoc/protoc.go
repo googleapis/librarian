@@ -57,7 +57,7 @@ func InstallDir(version string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Abs(filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)))
+	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
 }
 
 // downloadAndExtract downloads and installs the protoc binary from the given URL to the given directory.
