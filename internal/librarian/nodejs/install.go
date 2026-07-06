@@ -17,6 +17,7 @@ package nodejs
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -32,9 +33,15 @@ import (
 // source.
 const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
+var errNoToolsSpecified = errors.New("no tools specified in configuration")
+
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || len(tools.PNPM) == 0 {
+	if tools == nil {
+		return errNoToolsSpecified
+	}
+
+	if len(tools.PNPM) == 0 {
 		return nil
 	}
 
