@@ -30,6 +30,10 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+const (
+	readmePartialsFile = ".readme-partials.yaml"
+)
+
 var (
 	openSnippetRegex  = regexp.MustCompile(`\[START ([a-zA-Z0-9_-]+)\]`)
 	closeSnippetRegex = regexp.MustCompile(`\[END ([a-zA-Z0-9_-]+)\]`)
@@ -210,7 +214,7 @@ func loadReadmePartials(dir string) (map[string]interface{}, error) {
 	if dir == "" {
 		return nil, errEmptyDir
 	}
-	partialsBytes, err := os.ReadFile(filepath.Join(dir, ".readme-partials.yaml"))
+	partialsBytes, err := os.ReadFile(filepath.Join(dir, readmePartialsFile))
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return nil, nil

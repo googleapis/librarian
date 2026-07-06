@@ -597,7 +597,7 @@ func TestLoadReadmePartials(t *testing.T) {
 		{
 			name: "loads yaml partials with camel case conversion",
 			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, ".readme-partials.yaml")
+				path := filepath.Join(dir, readmePartialsFile)
 				content := `about_text: "Custom about"`
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatal(err)
@@ -615,7 +615,7 @@ func TestLoadReadmePartials(t *testing.T) {
 		{
 			name: "empty partials file returns nil",
 			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, ".readme-partials.yaml")
+				path := filepath.Join(dir, readmePartialsFile)
 				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -625,7 +625,7 @@ func TestLoadReadmePartials(t *testing.T) {
 		{
 			name: "partials file with only comments returns nil",
 			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, ".readme-partials.yaml")
+				path := filepath.Join(dir, readmePartialsFile)
 				if err := os.WriteFile(path, []byte("# only comments\n# no keys defined"), 0644); err != nil {
 					t.Fatal(err)
 				}
@@ -662,7 +662,7 @@ func TestLoadReadmePartials_Error(t *testing.T) {
 		{
 			name: "invalid yaml syntax",
 			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, ".readme-partials.yaml")
+				path := filepath.Join(dir, readmePartialsFile)
 				content := `key: [unclosed list`
 				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 					t.Fatal(err)
@@ -678,9 +678,7 @@ func TestLoadReadmePartials_Error(t *testing.T) {
 				test.setupFiles(t, dir)
 			}
 			_, err := loadReadmePartials(dir)
-			if err == nil {
-				t.Errorf("expected error, got nil")
-			} else if test.wantErr != nil && !errors.Is(err, test.wantErr) {
+			if !errors.Is(err, test.wantErr) {
 				t.Errorf("loadReadmePartials() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
