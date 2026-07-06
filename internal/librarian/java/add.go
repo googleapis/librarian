@@ -181,15 +181,15 @@ func readExistingModules(path string) (map[string]bool, error) {
 		return nil, err
 	}
 	modules := make(map[string]bool)
-	lines := strings.Split(string(content), "\n")
+	lines := bytes.Split(content, []byte("\n"))
 	for _, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" || strings.HasPrefix(line, "#") {
+		line = bytes.TrimSpace(line)
+		if len(line) == 0 || bytes.HasPrefix(line, []byte("#")) {
 			continue
 		}
-		parts := strings.Split(line, ":")
-		if len(parts) > 0 {
-			modules[parts[0]] = true
+		parts := bytes.Split(line, []byte(":"))
+		if len(parts) > 0 && len(parts[0]) > 0 {
+			modules[string(parts[0])] = true
 		}
 	}
 	return modules, nil
