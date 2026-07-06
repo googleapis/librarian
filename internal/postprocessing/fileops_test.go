@@ -19,6 +19,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 	"testing"
 
@@ -53,44 +54,6 @@ func TestCopyFile_Error(t *testing.T) {
 	err := CopyFile(srcPath, dstPath)
 	if !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("CopyFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
-	}
-}
-
-func TestRemoveFile(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "test.txt")
-	if err := os.WriteFile(path, []byte("content"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := RemoveFile(path); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(path); err == nil {
-		t.Error("RemoveFile() expected file to be removed, but it still exists")
-	}
-}
-
-func TestRemoveFile_NonExistent(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "nonexistent.txt")
-	err := RemoveFile(path)
-	if !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("RemoveFile() returned unexpected error: got %v, want %v", err, fs.ErrNotExist)
-	}
-}
-
-func TestRemoveFile_Error(t *testing.T) {
-	dir := t.TempDir()
-	path := filepath.Join(dir, "target")
-	if err := os.Mkdir(path, 0755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(path, "sub.txt"), []byte("data"), 0644); err != nil {
-		t.Fatal(err)
-	}
-	err := RemoveFile(path)
-	if !errors.Is(err, syscall.ENOTEMPTY) {
-		t.Errorf("RemoveFile() error = %v, wantErr %v", err, syscall.ENOTEMPTY)
 	}
 }
 
@@ -253,4 +216,200 @@ func TestReplaceRegex_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestApplyToFiles(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		pattern string
+	}{
+		{
+			name:    "exact file success",
+			files:   map[string]string{"foo.txt": "hello"},
+			pattern: "foo.txt",
+		},
+		{
+			name:    "glob pattern success",
+			files:   map[string]string{"a.java": "match", "b.java": "match"},
+			pattern: "*.java",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := applyToFiles(dir, test.pattern, func(string) error { return nil }); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestApplyToFiles_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		pattern string
+		action  func(string) error
+		wantErr error
+	}{
+		{
+			name:    "action fails on glob match",
+			files:   map[string]string{"a.java": "match", "b.java": "nomatch"},
+			pattern: "*.java",
+			action: func(p string) error {
+				if strings.HasSuffix(p, "b.java") {
+					return errTextNotFound
+				}
+				return nil
+			},
+			wantErr: errTextNotFound,
+		},
+		{
+			name:    "action fails on exact file",
+			files:   map[string]string{"foo.txt": "nomatch"},
+			pattern: "foo.txt",
+			action:  func(string) error { return errTextNotFound },
+			wantErr: errTextNotFound,
+		},
+		{
+			name:    "zero files match pattern",
+			files:   map[string]string{"other.txt": "hello"},
+			pattern: "*.java",
+			action:  func(string) error { return nil },
+			wantErr: fs.ErrNotExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			err := applyToFiles(dir, test.pattern, test.action)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("applyToFiles() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestRemoveFiles(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		files     map[string]string
+		patterns  []string
+		wantFiles map[string]string
+	}{
+		{
+			name:      "single glob pattern",
+			files:     map[string]string{"A.java": "java content", "B.txt": "txt content"},
+			patterns:  []string{"*.java"},
+			wantFiles: map[string]string{"B.txt": "txt content"},
+		},
+		{
+			name:      "exact filename",
+			files:     map[string]string{"A.java": "java content", "B.txt": "txt content"},
+			patterns:  []string{"A.java"},
+			wantFiles: map[string]string{"B.txt": "txt content"},
+		},
+		{
+			name:      "multiple glob patterns",
+			files:     map[string]string{"A.java": "java content", "B.txt": "txt content", "C.md": "md content"},
+			patterns:  []string{"*.java", "*.txt"},
+			wantFiles: map[string]string{"C.md": "md content"},
+		},
+		{
+			name:      "nested directory file removal",
+			files:     map[string]string{"src/A.java": "java", "src/B.txt": "txt", "docs/C.html": "html"},
+			patterns:  []string{"src/*.java"},
+			wantFiles: map[string]string{"src/B.txt": "txt", "docs/C.html": "html"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := RemoveFiles(dir, test.patterns); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRemoveFiles_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		setup    func(t *testing.T, dir string)
+		patterns []string
+		wantErr  error
+	}{
+		{
+			name:     "zero files match pattern",
+			setup:    func(t *testing.T, dir string) {},
+			patterns: []string{"nonexistent/*.java"},
+			wantErr:  fs.ErrNotExist,
+		},
+		{
+			name: "remove non-empty directory",
+			setup: func(t *testing.T, dir string) {
+				subDir := filepath.Join(dir, "targetDir")
+				if err := os.Mkdir(subDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("data"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			patterns: []string{"targetDir"},
+			wantErr:  syscall.ENOTEMPTY,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if test.setup != nil {
+				test.setup(t, dir)
+			}
+			err := RemoveFiles(dir, test.patterns)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("RemoveFiles() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func createFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for relPath, content := range files {
+		absPath := filepath.Join(dir, relPath)
+		if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(absPath, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func readDirFiles(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	gotFiles := make(map[string]string)
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		gotFiles[filepath.ToSlash(rel)] = string(b)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return gotFiles
 }

@@ -6,6 +6,7 @@ require (
 	cloud.google.com/go/iam v1.5.3
 	cloud.google.com/go/longrunning v0.8.0
 	github.com/bazelbuild/buildtools v0.0.0-20260202105709-e24971d9d1a7
+	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/cbroglie/mustache v1.4.0
 	github.com/go-git/go-git/v5 v5.19.1
 	github.com/google/go-cmp v0.7.0
@@ -58,7 +59,6 @@ require (
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.10.0 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/bombsimon/wsl/v5 v5.6.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
