@@ -11,6 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
+libraries_bom_version: "26.35.0"
 libraries:
   - library_name: language-v1
     GAPICs:

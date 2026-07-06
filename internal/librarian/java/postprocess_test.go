@@ -570,6 +570,7 @@ func TestPostProcessLibrary(t *testing.T) {
 	defaultCfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.0.0"},
+			{Name: parentPOM, Version: "1.0.0"},
 		},
 		Default: &config.Default{
 			Java: &config.JavaDefault{
@@ -671,6 +672,7 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 	defaultCfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.0.0"},
+			{Name: parentPOM, Version: "1.0.0"},
 		},
 		Default: &config.Default{
 			Java: &config.JavaDefault{
@@ -685,14 +687,6 @@ func TestPostProcessLibrary_ErrorCase(t *testing.T) {
 		setup   func(t *testing.T, outDir string)
 		wantErr error
 	}{
-		{
-			name: "findBOMVersion failure",
-			cfg:  &config.Config{},
-			setup: func(t *testing.T, outDir string) {
-				writeOwlBot(t, outDir, "sys.exit(0)")
-			},
-			wantErr: errBOMVersionMissing,
-		},
 		{
 			name: "runOwlBot failure (missing templates)",
 			cfg:  defaultCfg,
