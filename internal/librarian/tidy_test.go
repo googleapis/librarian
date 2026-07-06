@@ -87,6 +87,13 @@ func TestValidateLibraries(t *testing.T) {
 				Language:  test.language,
 				Libraries: test.libraries,
 			}
+			if test.language == config.LanguageJava {
+				cfg.Default = &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.2.3",
+					},
+				}
+			}
 			err := validateLibraries(cfg)
 			if test.wantErr == nil {
 				if err != nil {

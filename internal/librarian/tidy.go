@@ -78,9 +78,6 @@ func RunTidyOnConfig(ctx context.Context, repoDir string, cfg *config.Config) er
 	if err := validateTools(cfg); err != nil {
 		return err
 	}
-	if err := validateLanguageDefault(cfg); err != nil {
-		return err
-	}
 	if err := validateLibraries(cfg); err != nil {
 		return err
 	}
@@ -150,20 +147,6 @@ func validateTools(cfg *config.Config) error {
 	return nil
 }
 
-// languageDefaultValidators maps a language to a function that validates the language-specific
-// default configuration.
-var languageDefaultValidators = map[string]func(*config.Default) error{
-	config.LanguageJava: java.ValidateDefault,
-}
-
-// validateLanguageDefault validates the language-specific default configuration.
-func validateLanguageDefault(cfg *config.Config) error {
-	if validator, ok := languageDefaultValidators[cfg.Language]; ok {
-		return validator(cfg.Default)
-	}
-	return nil
-}
-
 func validateLibraries(cfg *config.Config) error {
 	var (
 		errs      []error
@@ -182,7 +165,7 @@ func validateLibraries(cfg *config.Config) error {
 				pathCount[ch.Path]++
 			}
 		}
-		if err := validateLanguageConfig(lib, cfg.Language); err != nil {
+		if err := validateLanguageConfig(cfg, lib); err != nil {
 			errs = append(errs, err)
 		}
 	}
@@ -204,14 +187,14 @@ func validateLibraries(cfg *config.Config) error {
 
 // languageValidators maps a language to a function that validates the language-specific
 // configuration.
-var languageValidators = map[string]func(*config.Library) error{
+var languageValidators = map[string]func(*config.Config, *config.Library) error{
 	config.LanguageJava: java.Validate,
 }
 
 // validateLanguageConfig finds and executes the language-specific validator for a library.
-func validateLanguageConfig(lib *config.Library, language string) error {
-	if validator, ok := languageValidators[language]; ok {
-		return validator(lib)
+func validateLanguageConfig(cfg *config.Config, lib *config.Library) error {
+	if validator, ok := languageValidators[cfg.Language]; ok {
+		return validator(cfg, lib)
 	}
 	return nil
 }

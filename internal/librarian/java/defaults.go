@@ -173,19 +173,13 @@ var (
 	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
-// ValidateDefault checks that the Java-specific default configuration is
-// correctly formatted.
-func ValidateDefault(def *config.Default) error {
-	if def == nil || def.Java == nil || def.Java.LibrariesBOMVersion == "" {
-		return errBOMVersionMissing
-	}
-	return nil
-}
-
-// Validate checks that the Java-specific configuration for a library is
+// Validate checks that the Java-specific configuration for a library and global config is
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
-func Validate(library *config.Library) error {
+func Validate(cfg *config.Config, library *config.Library) error {
+	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
+		return errBOMVersionMissing
+	}
 	if library.Version != "" {
 		if _, err := semver.Parse(library.Version); err != nil {
 			return fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err)

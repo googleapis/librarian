@@ -544,7 +544,14 @@ func TestValidate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := Validate(test.lib); err != nil {
+			cfg := &config.Config{
+				Default: &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.2.3",
+					},
+				},
+			}
+			if err := Validate(cfg, test.lib); err != nil {
 				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
 			}
 		})
@@ -607,7 +614,14 @@ func TestValidate_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := Validate(test.lib)
+			cfg := &config.Config{
+				Default: &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.2.3",
+					},
+				},
+			}
+			err := Validate(cfg, test.lib)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Validate() error = %v, want %v", err, test.wantErr)
 			}
@@ -715,7 +729,7 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 	}
 }
 
-func TestValidateDefault_Success(t *testing.T) {
+func TestValidate_Config(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		def  *config.Default
@@ -730,14 +744,15 @@ func TestValidateDefault_Success(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if err := ValidateDefault(test.def); err != nil {
+			cfg := &config.Config{Default: test.def}
+			if err := Validate(cfg, &config.Library{}); err != nil {
 				t.Fatal(err)
 			}
 		})
 	}
 }
 
-func TestValidateDefault_Error(t *testing.T) {
+func TestValidate_ConfigError(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		def     *config.Default
@@ -766,9 +781,10 @@ func TestValidateDefault_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := ValidateDefault(test.def)
+			cfg := &config.Config{Default: test.def}
+			got := Validate(cfg, &config.Library{})
 			if !errors.Is(got, test.wantErr) {
-				t.Errorf("ValidateDefault() error = %v, wantErr %v", got, test.wantErr)
+				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)
 			}
 		})
 	}
