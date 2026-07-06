@@ -91,6 +91,9 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
+
+	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
+	Transport string `json:"transport,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -107,6 +110,7 @@ type RepoMetadata struct {
 // - ProductDocumentation
 // - ReleaseLevel
 // - Repo
+// - Transport (Java only)
 //
 // Any other fields required by the caller's language should be populated by the
 // caller before writing to disk.
@@ -126,19 +130,27 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 }
 
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
-func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
+func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	return &RepoMetadata{
 		APIDescription:       api.Description,
 		APIID:                api.ServiceName,
 		APIShortname:         api.ShortName,
 		DistributionName:     library.Name,
 		IssueTracker:         api.NewIssueURI,
-		Language:             config.Language,
+		Language:             cfg.Language,
 		Name:                 api.ShortName,
 		NamePretty:           cleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
-		ReleaseLevel:         api.ReleaseLevel(config.Language, library.Version),
-		Repo:                 config.Repo,
+		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
+		Repo:                 cfg.Repo,
+		Transport: func() string {
+			switch cfg.Language {
+			case config.LanguageJava:
+				return api.RepoMetadataTransport(cfg.Language, library)
+			default:
+				return ""
+			}
+		}(),
 	}
 }
 

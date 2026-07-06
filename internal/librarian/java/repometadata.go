@@ -101,6 +101,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		ProductDocumentation: sharedMetadata.ProductDocumentation,
 		APIDescription:       sharedMetadata.APIDescription,
 		ReleaseLevel:         sharedMetadata.ReleaseLevel,
+		Transport:            sharedMetadata.Transport,
 		Language:             config.LanguageJava,
 		Repo:                 sharedMetadata.Repo,
 		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
@@ -160,11 +161,5 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		artifactID := parts[len(parts)-1]
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
-	// transport
-	apiCfg, err := serviceconfig.Find(sourceDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava, library)
 	return metadata, nil
 }
