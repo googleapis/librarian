@@ -335,6 +335,78 @@ type Library struct {
 
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`
+
+	// Postprocess contains post-processing operations executed after code generation.
+	Postprocess *Postprocess `yaml:"postprocess,omitempty"`
+}
+
+// Postprocess represents post-processing configuration options integrated into librarian.yaml.
+type Postprocess struct {
+	// Replace contains literal string replacement rules.
+	Replace []ReplaceConfig `yaml:"replace,omitempty"`
+
+	// ReplaceRegex contains regular expression replacement rules.
+	ReplaceRegex []ReplaceRegexConfig `yaml:"replace_regex,omitempty"`
+
+	// CopyFile contains file copy rules.
+	CopyFile []CopyConfig `yaml:"copy_file,omitempty"`
+
+	// RemoveFile contains glob patterns of files to remove.
+	RemoveFile []string `yaml:"remove_file,omitempty"`
+
+	// MethodOperations contains method-level operations (`delete`, `duplicate`, `deprecate`).
+	MethodOperations []MethodOperation `yaml:"method_operations,omitempty"`
+}
+
+// MethodOperation represents a method-level operation like delete, duplicate, or deprecate.
+type MethodOperation struct {
+	// Path specifies the relative file path to modify.
+	Path string `yaml:"path"`
+
+	// Action specifies the operation (`delete`, `duplicate`, or `deprecate`).
+	Action string `yaml:"action"`
+
+	// FuncName specifies the target method name.
+	FuncName string `yaml:"func_name"`
+
+	// NewName specifies the new method name for duplicate operations.
+	NewName string `yaml:"new_name,omitempty"`
+
+	// DeprecationMessage specifies the deprecation message for deprecate operations.
+	DeprecationMessage string `yaml:"deprecation_message,omitempty"`
+}
+
+// ReplaceConfig represents a replacement rule.
+type ReplaceConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Original specifies the exact string to find.
+	Original string `yaml:"original"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// ReplaceRegexConfig represents a regex replacement rule.
+type ReplaceRegexConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Pattern specifies the regular expression pattern to find.
+	Pattern string `yaml:"pattern"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// CopyConfig represents a file copy rule.
+type CopyConfig struct {
+	// Src specifies the source file path relative to the staging directory.
+	Src string `yaml:"src"`
+
+	// Dst specifies the destination file path relative to the library root.
+	Dst string `yaml:"dst"`
 }
 
 // API describes an API to include in a library.

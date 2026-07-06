@@ -137,6 +137,50 @@ This document describes the schema for the librarian.yaml.
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
+| `postprocess` | [Postprocess](#postprocess-configuration) (optional) | Contains post-processing operations executed after code generation. |
+
+## Postprocess Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `replace` | list of [ReplaceConfig](#replaceconfig-configuration) | Contains literal string replacement rules. |
+| `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
+| `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
+| `remove_file` | list of string | Contains glob patterns of files to remove. |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `duplicate`, `deprecate`). |
+
+## MethodOperation Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path to modify. |
+| `action` | string | Specifies the operation (`delete`, `duplicate`, or `deprecate`). |
+| `func_name` | string | Specifies the target method name. |
+| `new_name` | string | Specifies the new method name for duplicate operations. |
+| `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
+
+## ReplaceConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `original` | string | Specifies the exact string to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## ReplaceRegexConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `pattern` | string | Specifies the regular expression pattern to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## CopyConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `src` | string | Specifies the source file path relative to the staging directory. |
+| `dst` | string | Specifies the destination file path relative to the library root. |
 
 ## API Configuration
 
