@@ -311,13 +311,14 @@ RUN chmod a+x /root
 # nvm from Librarian. We're only using it to set up the right version of Node.
 RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
 ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
+ENV PNPM_HOME=/root/.nvm/versions/node/current
 ENV PNPM_CONFIG_GLOBAL_BIN_DIR=/root/.nvm/versions/node/current/bin
 ENV PNPM_CONFIG_GLOBAL_DIR=/root/.nvm/versions/node/current/pnpm-global
 ENV PNPM_CONFIG_STORE_DIR=/root/.nvm/versions/node/current/pnpm-store
 ENV PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true
 
 # Install Node generation tools
-RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
+RUN pnpm add -g \
         gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
         gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
         protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
@@ -325,14 +326,18 @@ RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
     curl -fsSL --retry 5 --retry-delay 15 -o /tmp/generator.tar.gz \
         https://github.com/googleapis/google-cloud-node/archive/${NODEJS_GAPIC_GENERATOR_VERSION}.tar.gz && \
     echo "${NODEJS_GAPIC_GENERATOR_CHECKSUM} /tmp/generator.tar.gz" | sha256sum -c - && \
-    mkdir -p /tmp/generator && \
-    tar -xzf /tmp/generator.tar.gz -C /tmp/generator --strip-components=1 && \
-    cd /tmp/generator/core/generator/gapic-generator-typescript && \
+    # The generator is installed in /opt (rather than a transient /tmp) and linked via
+    # `pnpm add -g` to preserve its node_modules. This is necessary because google-gax is
+    # defined as a devDependency in the generator but is required at startup. Deleting the
+    # source directory would break the global installation with MODULE_NOT_FOUND.
+    mkdir -p /opt/gapic-generator-typescript && \
+    tar -xzf /tmp/generator.tar.gz -C /opt/gapic-generator-typescript --strip-components=4 google-cloud-node-${NODEJS_GAPIC_GENERATOR_VERSION}/core/generator/gapic-generator-typescript && \
+    rm /tmp/generator.tar.gz && \
+    cd /opt/gapic-generator-typescript && \
     pnpm install && \
     ./node_modules/.bin/tsc && \
     cp -a templates protos build/ && \
-    PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g "$PWD" && \
-    rm -rf /tmp/generator /tmp/generator.tar.gz
+    pnpm add -g "$PWD"
 
 # ============== Java Stage ==============
 ARG JAVA_PYTHON_VERSION
