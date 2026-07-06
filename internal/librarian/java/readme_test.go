@@ -19,7 +19,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -891,22 +890,16 @@ func TestRenderREADME(t *testing.T) {
 	defaultBOMVersion := "1.0.0-BOM"
 	defaultLibraryVersion := "1.2.3-LIB"
 	for _, test := range []struct {
-		name              string
-		metadata          *repoMetadata
-		keepSet           map[string]bool
-		setupFiles        func(t *testing.T, dir string)
-		wantSubstrings    []string
-		wantNotSubstrings []string
-		wantContent       string
+		name        string
+		metadata    *repoMetadata
+		keepSet     map[string]bool
+		setupFiles  func(t *testing.T, dir string)
+		goldenFile  string
+		wantContent string
 	}{
 		{
-			name: "renders standard README without partials",
-			wantSubstrings: []string{
-				"# Google My API Client for Java",
-				"<groupId>com.google.cloud</groupId>",
-				"<artifactId>google-cloud-myapi</artifactId>",
-				"<version>1.2.3-LIB</version>",
-			},
+			name:       "renders standard README without partials",
+			goldenFile: filepath.Join("testdata", "readme", "standard.golden"),
 		},
 		{
 			name: "renders README with loaded partial overrides",
@@ -917,10 +910,7 @@ func TestRenderREADME(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			wantSubstrings: []string{
-				"# Google My API Client for Java",
-				"This is a great API.",
-			},
+			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
 		},
 		{
 			name:    "skips rendering if README.md is in keep list",
@@ -968,21 +958,29 @@ func TestRenderREADME(t *testing.T) {
 				t.Fatal(err)
 			}
 			content := string(outputBytes)
+			if test.goldenFile != "" {
+				if *update {
+					if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0755); err != nil {
+						t.Fatal(err)
+					}
+					if err := os.WriteFile(test.goldenFile, outputBytes, 0644); err != nil {
+						t.Fatal(err)
+					}
+				}
+				wantBytes, err := os.ReadFile(test.goldenFile)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if diff := cmp.Diff(string(wantBytes), content); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+				return
+			}
 			if test.wantContent != "" {
 				if diff := cmp.Diff(test.wantContent, content); diff != "" {
 					t.Errorf("mismatch (-want +got):\n%s", diff)
 				}
 				return
-			}
-			for _, want := range test.wantSubstrings {
-				if !strings.Contains(content, want) {
-					t.Errorf("generated README missing expected substring %q", want)
-				}
-			}
-			for _, notWant := range test.wantNotSubstrings {
-				if strings.Contains(content, notWant) {
-					t.Errorf("generated README contains unexpected substring %q", notWant)
-				}
 			}
 		})
 	}
