@@ -131,6 +131,10 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
+	var transport string
+	if cfg.Language == config.LanguageJava {
+		transport = api.RepoMetadataTransport(cfg.Language, library)
+	}
 	return &RepoMetadata{
 		APIDescription:       api.Description,
 		APIID:                api.ServiceName,
@@ -143,14 +147,7 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
 		Repo:                 cfg.Repo,
-		Transport: func() string {
-			switch cfg.Language {
-			case config.LanguageJava:
-				return api.RepoMetadataTransport(cfg.Language, library)
-			default:
-				return ""
-			}
-		}(),
+		Transport:            transport,
 	}
 }
 
