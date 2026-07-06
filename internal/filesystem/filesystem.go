@@ -29,6 +29,8 @@ import (
 // It merges directories recursively if they exist in both source and target.
 // If an entry in sourceDir is a file that already exists in targetDir, it returns an error
 // instead of overwriting it. It also returns an error if sourceDir and targetDir are the same.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Deprecate and
+// remove MoveAndMerge after MoveAndMergeWithKeep is in production across all generators.
 func MoveAndMerge(sourceDir, targetDir string) error {
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -55,6 +57,58 @@ func MoveAndMerge(sourceDir, targetDir string) error {
 		}
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return err
+		}
+	}
+	return nil
+}
+
+// MoveAndMergeWithKeep moves entries from sourceDir to targetDir.
+// It merges directories recursively if they exist in both source and target.
+// Existing target files are preserved if keepFunc returns true, otherwise they are overwritten.
+func MoveAndMergeWithKeep(sourceDir, targetDir, libraryRoot string, keepFunc func(string) bool) error {
+	entries, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		oldPath := filepath.Join(sourceDir, entry.Name())
+		newPath := filepath.Join(targetDir, entry.Name())
+		if entry.IsDir() {
+			if _, err := os.Stat(newPath); err == nil {
+				// Destination exists, merge contents.
+				if err := MoveAndMergeWithKeep(oldPath, newPath, libraryRoot, keepFunc); err != nil {
+					return err
+				}
+				// Remove the now-empty source directory after successful merge.
+				if err := os.Remove(oldPath); err != nil {
+					return err
+				}
+				continue
+			}
+		} else {
+			if _, err := os.Stat(newPath); err == nil {
+				rel, err := filepath.Rel(libraryRoot, newPath)
+				if err != nil {
+					return err
+				}
+				if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
+					if err := os.Remove(oldPath); err != nil {
+						return err
+					}
+					continue
+				}
+				if err := os.Remove(newPath); err != nil {
+					return err
+				}
+			}
+		}
+		if err := os.Rename(oldPath, newPath); err != nil {
+			if err := CopyFile(oldPath, newPath); err != nil {
+				return err
+			}
+			if err := os.Remove(oldPath); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
