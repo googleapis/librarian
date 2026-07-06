@@ -42,7 +42,7 @@ Usage:
 
 Usage:
 
-	librarian config get [path]
+	librarian config get [path] [value]
 
 # Set a configuration value
 

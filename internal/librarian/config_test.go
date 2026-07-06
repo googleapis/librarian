@@ -32,6 +32,7 @@ func TestRunConfigGet(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
+		value      string
 		configYAML string
 		want       string
 	}{
@@ -40,6 +41,25 @@ func TestRunConfigGet(t *testing.T) {
 			path:       "version",
 			configYAML: "version: 1.2.3\n",
 			want:       "1.2.3\n",
+		},
+		{
+			name:       "get library (derived)",
+			path:       "libraries",
+			value:      "google/cloud/secretmanager/v1",
+			configYAML: "language: go\n",
+			want:       "secretmanager\n",
+		},
+		{
+			name:  "get library (existing)",
+			path:  "libraries",
+			value: "google/cloud/secretmanager/v1",
+			configYAML: `language: python
+libraries:
+- name: mysecretmanager
+  apis:
+  - path: google/cloud/secretmanager/v1
+`,
+			want: "mysecretmanager\n",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -53,7 +73,7 @@ func TestRunConfigGet(t *testing.T) {
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err = runConfigGet(&buf, test.path)
+			err = runConfigGet(&buf, test.path, test.value)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -69,6 +89,7 @@ func TestRunConfigGet_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		path       string
+		value      string
 		configYAML string
 		wantErr    error
 	}{
@@ -84,6 +105,13 @@ func TestRunConfigGet_Error(t *testing.T) {
 			configYAML: "version: 1.2.3\n",
 			wantErr:    errUnsupportedPath,
 		},
+		{
+			name:       "missing value for library path",
+			path:       "libraries",
+			value:      "",
+			configYAML: "language: go\n",
+			wantErr:    errValueRequired,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -92,7 +120,7 @@ func TestRunConfigGet_Error(t *testing.T) {
 				t.Fatal(err)
 			}
 			var buf bytes.Buffer
-			err := runConfigGet(&buf, test.path)
+			err := runConfigGet(&buf, test.path, test.value)
 			if err == nil {
 				t.Fatal("expected error; got nil")
 			}
