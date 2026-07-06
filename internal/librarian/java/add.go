@@ -107,7 +107,7 @@ func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 }
 
 func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string, error) {
-	libCoord := DeriveLibraryCoordinates(lib)
+	libCoord := deriveLibraryCoordinates(lib)
 	var artifacts []string
 
 	addAPIArtifacts := func(api *config.API) error {
@@ -116,7 +116,7 @@ func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string
 			javaAPI = &config.JavaAPI{}
 		}
 		apiBase := deriveAPIBase(lib, api.Path)
-		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
+		apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
 
 		if shouldGenerateProto(javaAPI) {
 			artifacts = append(artifacts, apiCoord.Proto.ArtifactID)
