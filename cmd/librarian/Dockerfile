@@ -317,7 +317,7 @@ ENV PNPM_CONFIG_STORE_DIR=/root/.nvm/versions/node/current/pnpm-store
 ENV PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true
 
 # Install Node generation tools
-RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
+RUN pnpm add -g \
         gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
         gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
         protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
@@ -331,7 +331,7 @@ RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
     pnpm install && \
     ./node_modules/.bin/tsc && \
     cp -a templates protos build/ && \
-    PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g "$PWD" && \
+    pnpm add -g "$PWD" && \
     rm -rf /tmp/generator /tmp/generator.tar.gz
 
 # ============== Java Stage ==============
