@@ -177,10 +177,11 @@ var (
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
 func Validate(cfg *config.Config) error {
-	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
-		return errBOMVersionMissing
-	}
 	var errs []error
+	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
+		errs = append(errs, errBOMVersionMissing)
+	}
+
 	for _, library := range cfg.Libraries {
 		if library.Version != "" {
 			if _, err := semver.Parse(library.Version); err != nil {
