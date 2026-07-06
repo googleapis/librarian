@@ -15,7 +15,6 @@
 package java
 
 import (
-	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -38,9 +37,6 @@ const (
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
-	// versionsFileName is the name of the  manifest file that keeps track of
-	// artifact versions for release-please.
-	versionsFileName = "versions.txt"
 )
 
 var (
@@ -73,12 +69,6 @@ type legacyBOM struct {
 	artifactID string
 }
 
-// MissingArtifact pairs an artifact ID with the library it was generated from.
-type MissingArtifact struct {
-	ID      string
-	Library *config.Library
-}
-
 type bomConfig struct {
 	GroupID           string
 	ArtifactID        string
@@ -96,7 +86,7 @@ type mavenProject struct {
 }
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, missingArtifacts []MissingArtifact) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -110,12 +100,6 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 	}
 	if parentVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", parentPOM)
-	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
-	versions := constructVersionLines(missingArtifacts)
-	if err := appendVersions(repoPath, versions); err != nil {
-		return err
 	}
 
 	modules, err := searchForJavaModules(repoPath)
@@ -133,47 +117,6 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, miss
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
-}
-
-func constructVersionLines(missingArtifacts []MissingArtifact) []string {
-	var lines []string
-	for _, ma := range missingArtifacts {
-		releasedVersion := ma.Library.Java.ReleasedVersion
-		lines = append(lines, fmt.Sprintf("%s:%s:%s", ma.ID, releasedVersion, ma.Library.Version))
-	}
-	return lines
-}
-
-func appendVersions(repoPath string, versions []string) error {
-	versionsPath := filepath.Join(repoPath, versionsFileName)
-	if err := appendLines(versionsPath, versions); err != nil {
-		return fmt.Errorf("failed to update %s: %w", versionsFileName, err)
-	}
-	return nil
-}
-
-// appendLines appends the given lines to an existing file, ensuring that it
-// ends with a newline character before appending. It returns an error if the
-// file does not exist.
-func appendLines(path string, lines []string) error {
-	if len(lines) == 0 {
-		return nil
-	}
-	existing, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	var buf bytes.Buffer
-	buf.Write(existing)
-	// Ensure the file ends with a newline before appending.
-	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
-		buf.WriteByte('\n')
-	}
-	for _, line := range lines {
-		buf.WriteString(line)
-		buf.WriteByte('\n')
-	}
-	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 // searchForJavaModules scans top-level subdirectories in the repoPath for those that
