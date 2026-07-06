@@ -240,6 +240,10 @@ func tidyReleasedVersion(library *config.Library) {
 	if library.Java.ReleasedVersion == "" {
 		return
 	}
+	if library.Java.ReleasedVersion == defaultReleasedVersion {
+		library.Java.ReleasedVersion = ""
+		return
+	}
 	if !isSnapshot(library.Version) {
 		return
 	}

@@ -468,6 +468,18 @@ func TestTidy(t *testing.T) {
 			},
 		},
 		{
+			name: "tidy released version if default",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Java: &config.JavaModule{
+					ReleasedVersion: defaultReleasedVersion,
+				},
+			},
+			want: &config.Library{
+				Name: "secretmanager",
+			},
+		},
+		{
 			name: "do not tidy released version if different from derived",
 			lib: &config.Library{
 				Name:    "secretmanager",
