@@ -78,7 +78,7 @@ func Clean(library *config.Library) error {
 //   - false: Disable marker-based cleaning. Files are deleted unconditionally
 //     (subject to general preservation rules). Used for Proto, GRPC, and samples.
 func cleanPatterns(library *config.Library) map[string]bool {
-	libraryCoordinates := DeriveLibraryCoordinates(library)
+	libraryCoordinates := deriveLibraryCoordinates(library)
 	patterns := map[string]bool{
 		filepath.Join("samples", "snippets", "generated"): false,
 		".repo-metadata.json":                             false,
@@ -86,7 +86,7 @@ func cleanPatterns(library *config.Library) map[string]bool {
 	for _, api := range library.APIs {
 		javaAPI := api.Java
 		version := filepath.Base(api.Path)
-		apiCoordinates := DeriveAPICoordinates(libraryCoordinates, version, javaAPI)
+		apiCoordinates := deriveAPICoordinates(libraryCoordinates, version, javaAPI)
 		if apiCoordinates.Proto.ArtifactID != "" && shouldGenerateProto(javaAPI) {
 			patterns[filepath.Join(apiCoordinates.Proto.ArtifactID, "src")] = false
 		}
