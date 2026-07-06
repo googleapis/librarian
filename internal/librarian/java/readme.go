@@ -29,11 +29,13 @@ import (
 	"unicode"
 	"unicode/utf8"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
 	readmePartialsFile = ".readme-partials.yaml"
+	readmeFile         = "README.md"
 )
 
 var (
@@ -102,31 +104,15 @@ type readmeData struct {
 // renderREADME generates README.md using the embedded Markdown template.
 // Skips if keepSet protects README.md.
 func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) error {
-	if keepSet["README.md"] {
+	if keepSet[readmeFile] {
 		return nil
 	}
-	if params.outDir == "" {
-		return errEmptyDir
+	if err := validateReadmeParams(params); err != nil {
+		return err
 	}
-	if params.metadata == nil {
-		return errNilMetadata
-	}
-	if params.library == nil {
-		return errNilLibrary
-	}
-	if params.cfg == nil {
-		return errNilConfig
-	}
-
-	var libraryVersion string
-	if params.library.Java != nil && params.library.Java.ReleasedVersion != "" {
-		libraryVersion = params.library.Java.ReleasedVersion
-	} else {
-		var err error
-		libraryVersion, err = deriveLastReleasedVersion(params.library.Version)
-		if err != nil {
-			return fmt.Errorf("failed to derive library version: %w", err)
-		}
+	libraryVersion, err := getLibraryVersion(params.library)
+	if err != nil {
+		return err
 	}
 	bomVersion, err := findBOMVersion(params.cfg)
 	if err != nil {
@@ -136,12 +122,9 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return err
 	}
-	groupID, artifactID := parseGroupIDArtifactID(params.metadata.DistributionName)
+	groupID, artifactID := getGroupIDArtifactID(params)
 	repoShort := parseRepoShortName(params.metadata.Repo)
-	minJavaVersion := params.metadata.MinJavaVersion
-	if minJavaVersion == 0 {
-		minJavaVersion = 8
-	}
+	minJavaVersion := getMinJavaVersion(params.metadata)
 	samples, err := extractSamples(params.outDir)
 	if err != nil {
 		return fmt.Errorf("failed to extract samples: %w", err)
@@ -163,8 +146,50 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err := readmeTmplParsed.Execute(&buf, data); err != nil {
 		return fmt.Errorf("failed to execute template: %w", err)
 	}
-	outputPath := filepath.Join(params.outDir, "README.md")
+	outputPath := filepath.Join(params.outDir, readmeFile)
 	return os.WriteFile(outputPath, buf.Bytes(), 0644)
+}
+
+// validateReadmeParams validates that required parameters are present before rendering README.md.
+func validateReadmeParams(params libraryPostProcessParams) error {
+	if params.outDir == "" {
+		return errEmptyDir
+	}
+	if params.metadata == nil {
+		return errNilMetadata
+	}
+	if params.library == nil {
+		return errNilLibrary
+	}
+	if params.cfg == nil {
+		return errNilConfig
+	}
+	return nil
+}
+
+func getLibraryVersion(lib *config.Library) (string, error) {
+	if lib.Java != nil && lib.Java.ReleasedVersion != "" {
+		return lib.Java.ReleasedVersion, nil
+	}
+	ver, err := deriveLastReleasedVersion(lib.Version)
+	if err != nil {
+		return "", fmt.Errorf("failed to derive library version: %w", err)
+	}
+	return ver, nil
+}
+
+func getGroupIDArtifactID(params libraryPostProcessParams) (string, string) {
+	if params.library.Java != nil && params.library.Java.GroupID != "" && params.library.Java.ArtifactID != "" {
+		return params.library.Java.GroupID, params.library.Java.ArtifactID
+	}
+	return parseGroupIDArtifactID(params.metadata.DistributionName)
+}
+
+func getMinJavaVersion(meta *repoMetadata) int {
+	if meta == nil || meta.MinJavaVersion == 0 {
+		return 8
+	}
+	return meta.MinJavaVersion
 }
 
 // extractSamples locates production Java sample files and returns parsed codeSample structs
