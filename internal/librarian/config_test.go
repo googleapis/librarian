@@ -42,13 +42,7 @@ func TestRunConfigGet(t *testing.T) {
 			configYAML: "version: 1.2.3\n",
 			want:       "1.2.3\n",
 		},
-		{
-			name:       "get library (derived)",
-			path:       "libraries",
-			value:      "google/cloud/secretmanager/v1",
-			configYAML: "language: go\n",
-			want:       "secretmanager\n",
-		},
+
 		{
 			name:  "get library (existing)",
 			path:  "libraries",
@@ -111,6 +105,13 @@ func TestRunConfigGet_Error(t *testing.T) {
 			value:      "",
 			configYAML: "language: go\n",
 			wantErr:    errValueRequired,
+		},
+		{
+			name:       "library not found for API",
+			path:       "libraries",
+			value:      "google/cloud/secretmanager/v1",
+			configYAML: "language: go\n",
+			wantErr:    ErrLibraryNotFound,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

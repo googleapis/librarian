@@ -69,7 +69,11 @@ func runConfigGet(w io.Writer, path, value string) error {
 		if value == "" {
 			return errValueRequired
 		}
-		_, err = fmt.Fprintln(w, libraryName(cfg, value))
+		name, err := libraryName(cfg, value)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintln(w, name)
 		return err
 	}
 	val, err := getConfigValue(cfg, path)
@@ -98,9 +102,9 @@ func runConfigSet(path, value string) error {
 	return yaml.Write(config.LibrarianYAML, updated)
 }
 
-func libraryName(cfg *config.Config, apiPath string) string {
+func libraryName(cfg *config.Config, apiPath string) (string, error) {
 	if library := findExistingLibraryForNewAPI(cfg, apiPath); library != nil {
-		return library.Name
+		return library.Name, nil
 	}
-	return deriveLibraryName(cfg.Language, apiPath)
+	return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
 }
