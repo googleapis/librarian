@@ -26,8 +26,16 @@ import (
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
-// errTextNotFound is returned when the target text or pattern is not found in the file.
-var errTextNotFound = errors.New("text not found")
+var (
+	// errTextNotFound is returned when the target text or pattern is not found in the file.
+	errTextNotFound = errors.New("text not found")
+
+	// errEmptyOriginal is returned when the original text to replace is empty.
+	errEmptyOriginal = errors.New("original text to replace cannot be empty")
+
+	// errEmptyPattern is returned when the regex pattern to replace is empty.
+	errEmptyPattern = errors.New("regex pattern cannot be empty")
+)
 
 // CopyFile copies a single file from the src path to the dst path.
 // It acts as a wrapper around filesystem.CopyFile to provide a unified
@@ -44,6 +52,9 @@ func RemoveFile(path string) error {
 // Replace finds and replaces exact text in a file.
 // It returns an error if the target file does not exist or if the text is not found.
 func Replace(path, original, replacement string) error {
+	if strings.TrimSpace(original) == "" {
+		return errEmptyOriginal
+	}
 	content, err := os.ReadFile(path)
 	if err != nil {
 		return err
@@ -59,6 +70,9 @@ func Replace(path, original, replacement string) error {
 // ReplaceRegex finds and replaces text in a file using a regular expression.
 // It returns an error if the target file does not exist or if the pattern matches no text.
 func ReplaceRegex(path, pattern, replacement string) error {
+	if strings.TrimSpace(pattern) == "" {
+		return errEmptyPattern
+	}
 	// Default to multiline mode so ^ and $ match per-line.
 	if !strings.HasPrefix(pattern, "(?") {
 		pattern = "(?m)" + pattern

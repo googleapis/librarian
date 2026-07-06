@@ -184,6 +184,13 @@ func TestReplace_Error(t *testing.T) {
 			replacement: "Go",
 			wantErr:     errTextNotFound,
 		},
+		{
+			name:        "empty original string",
+			content:     "Hello World",
+			original:    "   ",
+			replacement: "Go",
+			wantErr:     errEmptyOriginal,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -222,6 +229,13 @@ func TestReplaceRegex_Error(t *testing.T) {
 			pattern:     `\d+`,
 			replacement: "Number",
 			wantErr:     errTextNotFound,
+		},
+		{
+			name:        "empty pattern string",
+			content:     "Hello World",
+			pattern:     "",
+			replacement: "Number",
+			wantErr:     errEmptyPattern,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
