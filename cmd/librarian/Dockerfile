@@ -62,6 +62,12 @@ ARG GO_GOIMPORTS_VERSION=latest
 # NodeJS dependency versions
 ARG NODEJS_PROTOC_VERSION=33.2
 ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+ARG NODEJS_GAPIC_GENERATOR_VERSION=gapic-generator-v4.12.1
+ARG NODEJS_GAPIC_GENERATOR_CHECKSUM=477e4a9b3442457667846bd5c629d1c059e7caf2d5a3ebce95da626a2d42ea80
+ARG NODEJS_GAPIC_NODE_PROCESSING_VERSION=0.1.8
+ARG NODEJS_GAPIC_TOOLS_VERSION=1.0.6
+ARG NODEJS_PROTOBUFJS_CLI_VERSION=1.2.0
+ARG NODEJS_PROTOBUFJS_VERSION=7.5.8
 
 # Java dependency versions
 ARG JAVA_PROTOC_VERSION=33.2
@@ -246,6 +252,12 @@ ARG NODEJS_NVM_VERSION
 ARG NODEJS_NVM_CHECKSUM
 ARG NODEJS_NODE_VERSION
 ARG NODEJS_PNPM_VERSION
+ARG NODEJS_GAPIC_GENERATOR_VERSION
+ARG NODEJS_GAPIC_GENERATOR_CHECKSUM
+ARG NODEJS_GAPIC_NODE_PROCESSING_VERSION
+ARG NODEJS_GAPIC_TOOLS_VERSION
+ARG NODEJS_PROTOBUFJS_CLI_VERSION
+ARG NODEJS_PROTOBUFJS_VERSION
 
 # Node requires libatomic but doesn't install it.
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -284,9 +296,6 @@ RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
     echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
     cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
 
-# Install all the tools that Librarian needs for Node generation.
-RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true /app/librarian install nodejs -v
-
 # Allow normal users to read /root (as the generator is installed
 # in /root/.cache, for example)
 RUN chmod a+x /root
@@ -302,6 +311,24 @@ RUN chmod a+x /root
 # nvm from Librarian. We're only using it to set up the right version of Node.
 RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
 ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
+
+# Install Node generation tools
+RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
+        gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
+        gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
+        protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
+        protobufjs@${NODEJS_PROTOBUFJS_VERSION} && \
+    curl -fsSL --retry 5 --retry-delay 15 -o /tmp/generator.tar.gz \
+        https://github.com/googleapis/google-cloud-node/archive/${NODEJS_GAPIC_GENERATOR_VERSION}.tar.gz && \
+    echo "${NODEJS_GAPIC_GENERATOR_CHECKSUM} /tmp/generator.tar.gz" | sha256sum -c - && \
+    mkdir -p /tmp/generator && \
+    tar -xzf /tmp/generator.tar.gz -C /tmp/generator --strip-components=1 && \
+    cd /tmp/generator/core/generator/gapic-generator-typescript && \
+    pnpm install && \
+    ./node_modules/.bin/tsc && \
+    cp -a templates protos build/ && \
+    PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g "$PWD" && \
+    rm -rf /tmp/generator /tmp/generator.tar.gz
 
 # ============== Java Stage ==============
 ARG JAVA_PYTHON_VERSION
