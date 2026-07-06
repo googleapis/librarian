@@ -165,7 +165,6 @@ func validateLibraries(cfg *config.Config) error {
 				pathCount[ch.Path]++
 			}
 		}
-
 	}
 	for name, count := range nameCount {
 		if count > 1 {

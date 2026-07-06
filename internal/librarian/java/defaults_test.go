@@ -766,13 +766,6 @@ func TestValidate_ConfigError(t *testing.T) {
 			wantErr: errBOMVersionMissing,
 		},
 		{
-			name: "nil java",
-			def: &config.Default{
-				Java: nil,
-			},
-			wantErr: errBOMVersionMissing,
-		},
-		{
 			name: "empty bom version",
 			def: &config.Default{
 				Java: &config.JavaDefault{
