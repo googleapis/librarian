@@ -263,6 +263,20 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			})
 		}
 		return g.Wait()
+	case config.LanguagePhp:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := php.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				if err := php.Format(gctx, library); err != nil {
+					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
 	case config.LanguagePython:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
@@ -297,20 +311,6 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			}
 		}
 		return rust.UpdateWorkspace(ctx)
-	case config.LanguagePhp:
-		g, gctx := errgroup.WithContext(ctx)
-		for _, library := range libraries {
-			g.Go(func() error {
-				if err := php.Generate(gctx, cfg, library, src); err != nil {
-					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				if err := php.Format(gctx, library); err != nil {
-					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
-				}
-				return nil
-			})
-		}
-		return g.Wait()
 	case config.LanguageSwift:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
