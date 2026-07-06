@@ -97,14 +97,14 @@ type mavenProject struct {
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
 func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, missingArtifacts []MissingArtifact) error {
-	monorepoVersion, err := findLibraryVersion(cfg, rootLibrary, errMonorepoVersion)
+	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
 	}
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
-	parentVersion, err := findLibraryVersion(cfg, parentPOM, errParentVersion)
+	parentVersion, err := findParentPOMVersion(cfg)
 	if err != nil {
 		return err
 	}

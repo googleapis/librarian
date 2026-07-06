@@ -514,8 +514,6 @@ func writePOM(pomPath, templateName string, data any) (err error) {
 	return nil
 }
 
-// TODO(https://github.com/googleapis/librarian/issues/6411):
-// Simplify logic here and check at validate step.
 func findLibraryVersion(cfg *config.Config, name string, errNotFound error) (string, error) {
 	for _, lib := range cfg.Libraries {
 		if lib.Name == name {
@@ -523,4 +521,14 @@ func findLibraryVersion(cfg *config.Config, name string, errNotFound error) (str
 		}
 	}
 	return "", errNotFound
+}
+
+func findMonorepoVersion(cfg *config.Config) (string, error) {
+	return findLibraryVersion(cfg, rootLibrary, errMonorepoVersion)
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6411):
+// Simplify logic here and check at validate step.
+func findParentPOMVersion(cfg *config.Config) (string, error) {
+	return findLibraryVersion(cfg, parentPOM, errParentVersion)
 }
