@@ -125,6 +125,7 @@ This document describes the schema for the librarian.yaml.
 | `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
+| `postprocess` | [Postprocess](#postprocess-configuration) (optional) | Contains post-processing operations executed after code generation. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
@@ -137,7 +138,6 @@ This document describes the schema for the librarian.yaml.
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
-| `postprocess` | [Postprocess](#postprocess-configuration) (optional) | Contains post-processing operations executed after code generation. |
 
 ## Postprocess Configuration
 

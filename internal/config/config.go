@@ -297,6 +297,9 @@ type Library struct {
 	// Default.Output.
 	Output string `yaml:"output,omitempty"`
 
+	// Postprocess contains post-processing operations executed after code generation.
+	Postprocess *Postprocess `yaml:"postprocess,omitempty"`
+
 	// Roots specifies the source roots to use for generation. Defaults to googleapis.
 	Roots []string `yaml:"roots,omitempty"`
 
@@ -335,9 +338,6 @@ type Library struct {
 
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`
-
-	// Postprocess contains post-processing operations executed after code generation.
-	Postprocess *Postprocess `yaml:"postprocess,omitempty"`
 }
 
 // Postprocess represents post-processing configuration options integrated into librarian.yaml.
