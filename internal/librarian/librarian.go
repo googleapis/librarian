@@ -104,7 +104,7 @@ Examples:
 			}
 			// TODO(https://github.com/googleapis/librarian/issues/6558): Remove this check after adding protoc
 			// in librarian.yaml.
-			if tools.Protoc != nil {
+			if tools != nil && tools.Protoc != nil {
 				if err := protoc.Install(ctx, tools.Protoc); err != nil {
 					return fmt.Errorf("failed to install protoc: %w", err)
 				}
