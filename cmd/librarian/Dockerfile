@@ -326,16 +326,14 @@ RUN pnpm add -g \
     curl -fsSL --retry 5 --retry-delay 15 -o /tmp/generator.tar.gz \
         https://github.com/googleapis/google-cloud-node/archive/${NODEJS_GAPIC_GENERATOR_VERSION}.tar.gz && \
     echo "${NODEJS_GAPIC_GENERATOR_CHECKSUM} /tmp/generator.tar.gz" | sha256sum -c - && \
-    mkdir -p /tmp/generator && \
-    tar -xzf /tmp/generator.tar.gz -C /tmp/generator --strip-components=1 && \
-    cd /tmp/generator/core/generator/gapic-generator-typescript && \
+    mkdir -p /opt/gapic-generator-typescript && \
+    tar -xzf /tmp/generator.tar.gz -C /opt/gapic-generator-typescript --strip-components=4 google-cloud-node-${NODEJS_GAPIC_GENERATOR_VERSION}/core/generator/gapic-generator-typescript && \
+    rm /tmp/generator.tar.gz && \
+    cd /opt/gapic-generator-typescript && \
     pnpm install && \
     ./node_modules/.bin/tsc && \
     cp -a templates protos build/ && \
-    node -e "const fs = require('fs'); const f = 'package.json'; const p = JSON.parse(fs.readFileSync(f)); p.dependencies['google-gax'] = p.devDependencies['google-gax']; delete p.devDependencies['google-gax']; fs.writeFileSync(f, JSON.stringify(p, null, 2))" && \
-    pnpm pack && \
-    pnpm add -g ./*.tgz && \
-    rm -rf /tmp/generator /tmp/generator.tar.gz
+    pnpm add -g "$PWD"
 
 # ============== Java Stage ==============
 ARG JAVA_PYTHON_VERSION
