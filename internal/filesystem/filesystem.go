@@ -17,8 +17,10 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -73,42 +75,43 @@ func MoveAndMergeWithKeep(sourceDir, targetDir, libraryRoot string, keepFunc fun
 	for _, entry := range entries {
 		oldPath := filepath.Join(sourceDir, entry.Name())
 		newPath := filepath.Join(targetDir, entry.Name())
-		if entry.IsDir() {
-			if _, err := os.Stat(newPath); err == nil {
-				// Destination exists, merge contents.
-				if err := MoveAndMergeWithKeep(oldPath, newPath, libraryRoot, keepFunc); err != nil {
-					return err
-				}
-				// Remove the now-empty source directory after successful merge.
-				if err := os.Remove(oldPath); err != nil {
-					return err
-				}
-				continue
+		// If target does not exist, move the entire file or directory directly.
+		if _, err := os.Stat(newPath); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				return err
 			}
-		} else {
-			if _, err := os.Stat(newPath); err == nil {
-				rel, err := filepath.Rel(libraryRoot, newPath)
-				if err != nil {
-					return err
-				}
-				if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
-					if err := os.Remove(oldPath); err != nil {
-						return err
-					}
-					continue
-				}
-				if err := os.Remove(newPath); err != nil {
-					return err
-				}
+			if err := os.Rename(oldPath, newPath); err != nil {
+				return err
 			}
+			continue
 		}
-		if err := os.Rename(oldPath, newPath); err != nil {
-			if err := CopyFile(oldPath, newPath); err != nil {
+		// If both source and target are directories, recurse to merge contents.
+		if entry.IsDir() {
+			if err := MoveAndMergeWithKeep(oldPath, newPath, libraryRoot, keepFunc); err != nil {
 				return err
 			}
 			if err := os.Remove(oldPath); err != nil {
 				return err
 			}
+			continue
+		}
+		rel, err := filepath.Rel(libraryRoot, newPath)
+		if err != nil {
+			return err
+		}
+		// If target file exists and matches keepFunc, preserve it by discarding source.
+		if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
+			if err := os.Remove(oldPath); err != nil {
+				return err
+			}
+			continue
+		}
+		// Otherwise overwrite target file with the new source file.
+		if err := os.Remove(newPath); err != nil {
+			return err
+		}
+		if err := os.Rename(oldPath, newPath); err != nil {
+			return err
 		}
 	}
 	return nil
