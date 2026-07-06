@@ -17,6 +17,7 @@ package java
 import (
 	"bufio"
 	"bytes"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -24,6 +25,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 	"unicode/utf8"
 
@@ -35,6 +37,10 @@ const (
 )
 
 var (
+	//go:embed template/README.md.go.tmpl
+	readmeTmpl       string
+	readmeTmplParsed = template.Must(template.New("README").Parse(readmeTmpl))
+
 	openSnippetRegex  = regexp.MustCompile(`\[START ([a-zA-Z0-9_-]+)\]`)
 	closeSnippetRegex = regexp.MustCompile(`\[END ([a-zA-Z0-9_-]+)\]`)
 	openExcludeRegex  = regexp.MustCompile(`\[START_EXCLUDE\]`)
@@ -60,12 +66,105 @@ var (
 
 	// errInvalidYAML indicates the YAML file syntax is invalid or cannot be unmarshaled.
 	errInvalidYAML = errors.New("invalid yaml syntax")
+
+	// errNilMetadata indicates a nil repoMetadata pointer was provided.
+	errNilMetadata = errors.New("metadata cannot be nil")
+
+	// errNilLibrary indicates a nil Library pointer was provided.
+	errNilLibrary = errors.New("library cannot be nil")
+
+	// errNilConfig indicates a nil Config pointer was provided.
+	errNilConfig = errors.New("cfg cannot be nil")
 )
 
 // codeSample represents a discovered Java code sample along with its derived title.
 type codeSample struct {
 	Title string
 	File  string
+}
+
+// readmeData represents the top-level template execution context passed to README.md.go.tmpl.
+type readmeData struct {
+	Repo              *repoMetadata
+	Samples           []codeSample
+	MinJavaVersion    int
+	Partials          map[string]interface{}
+	Snippets          map[string]string
+	GroupID           string
+	ArtifactID        string
+	Version           string
+	RepoShort         string
+	MigratedSplitRepo bool
+	Monorepo          bool
+	BOMVersion        string
+}
+
+// renderREADME generates README.md using the embedded Markdown template.
+// Skips if keepSet protects README.md.
+func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) error {
+	if keepSet["README.md"] {
+		return nil
+	}
+	if params.outDir == "" {
+		return errEmptyDir
+	}
+	if params.metadata == nil {
+		return errNilMetadata
+	}
+	if params.library == nil {
+		return errNilLibrary
+	}
+	if params.cfg == nil {
+		return errNilConfig
+	}
+
+	var libraryVersion string
+	if params.library.Java != nil && params.library.Java.ReleasedVersion != "" {
+		libraryVersion = params.library.Java.ReleasedVersion
+	} else {
+		var err error
+		libraryVersion, err = deriveLastReleasedVersion(params.library.Version)
+		if err != nil {
+			return fmt.Errorf("failed to derive library version: %w", err)
+		}
+	}
+	bomVersion, err := findBOMVersion(params.cfg)
+	if err != nil {
+		return fmt.Errorf("failed to find BOM version: %w", err)
+	}
+	partials, err := loadReadmePartials(params.outDir)
+	if err != nil {
+		return err
+	}
+	groupID, artifactID := parseGroupIDArtifactID(params.metadata.DistributionName)
+	repoShort := parseRepoShortName(params.metadata.Repo)
+	minJavaVersion := params.metadata.MinJavaVersion
+	if minJavaVersion == 0 {
+		minJavaVersion = 8
+	}
+	samples, err := extractSamples(params.outDir)
+	if err != nil {
+		return fmt.Errorf("failed to extract samples: %w", err)
+	}
+	data := readmeData{
+		Repo:              params.metadata,
+		Samples:           samples,
+		MinJavaVersion:    minJavaVersion,
+		Partials:          partials,
+		GroupID:           groupID,
+		ArtifactID:        artifactID,
+		Version:           libraryVersion,
+		RepoShort:         repoShort,
+		MigratedSplitRepo: false,
+		Monorepo:          true,
+		BOMVersion:        bomVersion,
+	}
+	var buf strings.Builder
+	if err := readmeTmplParsed.Execute(&buf, data); err != nil {
+		return fmt.Errorf("failed to execute template: %w", err)
+	}
+	outputPath := filepath.Join(params.outDir, "README.md")
+	return os.WriteFile(outputPath, []byte(buf.String()), 0644)
 }
 
 // extractSamples locates production Java sample files and returns parsed codeSample structs

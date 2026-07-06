@@ -19,9 +19,11 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestExtractSamples(t *testing.T) {
@@ -874,6 +876,159 @@ func TestExtractSnippetsFromFile_Error(t *testing.T) {
 			_, err := extractSnippetsFromFile(test.file)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("extractSnippetsFromFile(%q) error = %v, wantErr %v", test.file, err, test.wantErr)
+			}
+		})
+	}
+}
+func TestRenderREADME(t *testing.T) {
+	defaultMetadata := &repoMetadata{
+		NamePretty:       "My API",
+		DistributionName: "com.google.cloud:google-cloud-myapi",
+		Repo:             "googleapis/google-cloud-java",
+		APIShortname:     "myapi",
+		MinJavaVersion:   8,
+	}
+	defaultBOMVersion := "1.0.0-BOM"
+	defaultLibraryVersion := "1.2.3-LIB"
+	for _, test := range []struct {
+		name              string
+		metadata          *repoMetadata
+		keepSet           map[string]bool
+		setupFiles        func(t *testing.T, dir string)
+		wantSubstrings    []string
+		wantNotSubstrings []string
+		wantContent       string
+	}{
+		{
+			name: "renders standard README without partials",
+			wantSubstrings: []string{
+				"# Google My API Client for Java",
+				"<groupId>com.google.cloud</groupId>",
+				"<artifactId>google-cloud-myapi</artifactId>",
+				"<version>1.2.3-LIB</version>",
+			},
+		},
+		{
+			name: "renders README with loaded partial overrides",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				content := `about: "This is a great API."`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantSubstrings: []string{
+				"# Google My API Client for Java",
+				"This is a great API.",
+			},
+		},
+		{
+			name:    "skips rendering if README.md is in keep list",
+			keepSet: map[string]bool{"README.md": true},
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, "README.md")
+				content := "Custom README content"
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantContent: "Custom README content",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if test.setupFiles != nil {
+				test.setupFiles(t, dir)
+			}
+			meta := test.metadata
+			if meta == nil {
+				meta = defaultMetadata
+			}
+			params := libraryPostProcessParams{
+				outDir: dir,
+				library: &config.Library{
+					Version: defaultLibraryVersion,
+				},
+				cfg: &config.Config{
+					Default: &config.Default{
+						Java: &config.JavaDefault{
+							LibrariesBOMVersion: defaultBOMVersion,
+						},
+					},
+				},
+				metadata: meta,
+			}
+			err := renderREADME(params, test.keepSet)
+			if err != nil {
+				t.Fatalf("renderREADME() unexpected error: %v", err)
+			}
+			outputPath := filepath.Join(dir, "README.md")
+			outputBytes, err := os.ReadFile(outputPath)
+			if err != nil {
+				t.Fatalf("failed reading generated README: %v", err)
+			}
+			content := string(outputBytes)
+			if test.wantContent != "" {
+				if diff := cmp.Diff(test.wantContent, content); diff != "" {
+					t.Errorf("mismatch (-want +got):\n%s", diff)
+				}
+				return
+			}
+			for _, want := range test.wantSubstrings {
+				if !strings.Contains(content, want) {
+					t.Errorf("generated README missing expected substring %q", want)
+				}
+			}
+			for _, notWant := range test.wantNotSubstrings {
+				if strings.Contains(content, notWant) {
+					t.Errorf("generated README contains unexpected substring %q", notWant)
+				}
+			}
+		})
+	}
+}
+
+func TestRenderREADME_Error(t *testing.T) {
+	validMeta := &repoMetadata{Repo: "repo", DistributionName: "com.google.cloud:google-cloud-foo"}
+	validLib := &config.Library{Version: "1.2.3"}
+	validCfg := &config.Config{Default: &config.Default{Java: &config.JavaDefault{LibrariesBOMVersion: "1.0.0"}}}
+	for _, test := range []struct {
+		name    string
+		params  libraryPostProcessParams
+		keepSet map[string]bool
+		wantErr error
+	}{
+		{
+			name:    "empty directory returns error",
+			params:  libraryPostProcessParams{outDir: "", metadata: validMeta, library: validLib, cfg: validCfg},
+			wantErr: errEmptyDir,
+		},
+		{
+			name:    "nil metadata returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: nil, library: validLib, cfg: validCfg},
+			wantErr: errNilMetadata,
+		},
+		{
+			name:    "nil library returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: validMeta, library: nil, cfg: validCfg},
+			wantErr: errNilLibrary,
+		},
+		{
+			name:    "nil config returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: validMeta, library: validLib, cfg: nil},
+			wantErr: errNilConfig,
+		},
+		{
+			name:    "keepSet protecting README.md exits early without error even with nil pointers",
+			params:  libraryPostProcessParams{outDir: "", metadata: nil, library: nil, cfg: nil},
+			keepSet: map[string]bool{"README.md": true},
+			wantErr: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := renderREADME(test.params, test.keepSet)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("renderREADME() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}
