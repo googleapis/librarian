@@ -17,13 +17,9 @@
     - nodejs
     - python
     - rust
-  release_level:
-    java: preview
   transports:
     all: rest
 - path: google/ads/datamanager/v1
-  release_level:
-    java: preview
 - path: google/ai/generativelanguage/v1
   languages:
     - go
@@ -57,8 +53,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  release_level:
-    java: preview
 - path: google/analytics/admin/v1beta
   documentation_uri: https://developers.google.com/analytics/
   languages:
@@ -66,8 +60,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  release_level:
-    java: preview
 - path: google/analytics/data/v1alpha
   documentation_uri: https://developers.google.com/analytics/
   languages:
@@ -75,8 +67,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  release_level:
-    java: preview
 - path: google/analytics/data/v1beta
   documentation_uri: https://developers.google.com/analytics/
   languages:
@@ -84,8 +74,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
-  release_level:
-    java: preview
 - path: google/api/apikeys/v2
   documentation_uri: https://cloud.google.com/api-keys/docs
   languages:
@@ -149,27 +137,19 @@
     - python
   title: Google Apps Card
 - path: google/apps/events/subscriptions/v1
-  release_level:
-    java: preview
 - path: google/apps/events/subscriptions/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/apps/meet/v2
-  release_level:
-    java: preview
 - path: google/apps/meet/v2beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/apps/script/type
   documentation_uri: https://developers.google.com/apps-script/
   languages:
@@ -241,8 +221,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/bigtable/admin/v2
   languages:
     - all
@@ -260,8 +238,6 @@
   transports:
     java: grpc
 - path: google/chat/v1
-  release_level:
-    java: preview
 - path: google/cloud
   languages:
     - java
@@ -420,15 +396,11 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
   transports:
     go: ""
 - path: google/cloud/apihub/v1
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: rest
     go: rest
@@ -439,30 +411,22 @@
 - path: google/cloud/apiregistry/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/apiregistry/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/apphub/v1
   description: App Hub acts as the foundational data model and central registry for your applications on Google Cloud.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/appoptimize/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
@@ -521,8 +485,6 @@
 - path: google/cloud/auditmanager/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/automl/v1
   documentation_uri: https://cloud.google.com/automl/docs/
   languages:
@@ -554,8 +516,6 @@
   documentation_uri: https://cloud.google.com/bare-metal/docs
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/batch/v1
   documentation_uri: https://cloud.google.com/batch/docs
   languages:
@@ -563,22 +523,16 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/batch/v1alpha
   documentation_uri: https://cloud.google.com/batch/docs
   languages:
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/beyondcorp/appconnections/v1
   documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: ""
@@ -588,8 +542,6 @@
   documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: ""
@@ -599,8 +551,6 @@
   documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: ""
@@ -610,8 +560,6 @@
   documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: ""
@@ -621,8 +569,6 @@
   documentation_uri: https://cloud.google.com/beyondcorp/
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: ""
@@ -633,13 +579,9 @@
     - go
     - java
     - python
-  release_level:
-    java: preview
 - path: google/cloud/biglake/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/bigquery/analyticshub/v1
   documentation_uri: https://cloud.google.com/analytics-hub
   languages:
@@ -655,15 +597,11 @@
     - go
     - java
     - python
-  release_level:
-    java: preview
 - path: google/cloud/bigquery/biglake/v1alpha1
   languages:
     - go
     - java
     - python
-  release_level:
-    java: preview
 - path: google/cloud/bigquery/connection/v1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigqueryconnection
   languages:
@@ -684,16 +622,12 @@
     - python
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     python: grpc
 - path: google/cloud/bigquery/datapolicies/v1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/bigquery/datapolicies/v1beta1
   documentation_uri: https://cloud.google.com/bigquery/docs/reference/bigquerydatapolicy/rest
   languages:
@@ -703,8 +637,6 @@
     - python
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     python: grpc
 - path: google/cloud/bigquery/datapolicies/v2
@@ -712,15 +644,12 @@
     - all
   release_level:
     go: preview
-    java: preview
 - path: google/cloud/bigquery/datapolicies/v2beta1
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/bigquery/datatransfer/v1
   documentation_uri: https://cloud.google.com/bigquery/transfer/
   languages:
@@ -742,8 +671,6 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     go: grpc
     nodejs: grpc
@@ -758,8 +685,6 @@
   new_issue_uri: https://issuetracker.google.com/savedsearches/559654
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     python: grpc
 - path: google/cloud/bigquery/reservation/v1
@@ -872,20 +797,14 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/certificatemanager/v1
   description: Certificate Manager simplifies the acquisition, deployment, and management of Transport Layer Security (TLS) certificates.
   documentation_uri: https://docs.cloud.google.com/certificate-manager/docs/overview
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/ces/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/ces/v1beta
   languages:
     - dart
@@ -893,8 +812,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/channel/v1
   documentation_uri: https://cloud.google.com/channel/
   languages:
@@ -907,8 +824,6 @@
 - path: google/cloud/chronicle/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/cloudcontrolspartner/v1
   languages:
     - all
@@ -935,13 +850,9 @@
   description: Compliance Manager uses software-defined controls that let you assess support for multiple compliance programs and security requirements within a Google Cloud organization.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/commerce/consumer/procurement/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/commerce/consumer/procurement/v1alpha1
   documentation_uri: https://cloud.google.com/marketplace/docs/
   languages:
@@ -949,8 +860,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/issues/new?component=1396141
-  release_level:
-    java: preview
 - path: google/cloud/common
   description: Provides common protobuf definitions for APIs.
   documentation_uri: https://cloud.google.com
@@ -989,8 +898,6 @@
 - path: google/cloud/confidentialcomputing/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/confidentialcomputing/v1alpha1
   languages:
     - dart
@@ -998,8 +905,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/config/v1
   languages:
     - all
@@ -1008,8 +913,6 @@
 - path: google/cloud/configdelivery/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/configdelivery/v1alpha
   languages:
     - nodejs
@@ -1020,8 +923,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/connectors/v1
   languages:
     - all
@@ -1036,15 +937,11 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/databasecenter/v1beta
   languages:
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/datacatalog/lineage/v1
   description: Data lineage is a visual map that tracks the entire lifecycle of your data. It shows you where your data comes from (the origin), where it travels (the destinations), and all the changes or transformations that happen along the way.
   documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
@@ -1074,16 +971,12 @@
 - path: google/cloud/dataform/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/dataform/v1beta1
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/datafusion/v1
   documentation_uri: https://cloud.google.com/data-fusion
   languages:
@@ -1102,8 +995,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     java: grpc
@@ -1156,20 +1047,14 @@
 - path: google/cloud/developerconnect/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/devicestreaming/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/dialogflow/cx/v3
   documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   languages:
     - all
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
-  release_level:
-    java: preview
 - path: google/cloud/dialogflow/cx/v3beta1
   documentation_uri: https://cloud.google.com/dialogflow/cx/docs
   languages:
@@ -1178,8 +1063,6 @@
     - nodejs
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/5300385
-  release_level:
-    java: preview
 - path: google/cloud/dialogflow/v2
   languages:
     - all
@@ -1257,8 +1140,6 @@
   languages:
     - java
     - python
-  release_level:
-    java: preview
 - path: google/cloud/essentialcontacts/v1
   description: Essential Contacts helps you direct critical Google Cloud notifications to the appropriate personnel across your projects, folders, and organization resources.
   documentation_uri: https://cloud.google.com/resource-manager/docs/managing-notification-contacts/
@@ -1273,8 +1154,6 @@
   documentation_uri: https://cloud.google.com/eventarc/docs
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/eventarc/v1
   documentation_uri: https://cloud.google.com/eventarc/
   languages:
@@ -1294,8 +1173,6 @@
   description: A unified AI platform for financial services, leveraging Google's global framework for security and compliance.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/functions/v1
   documentation_uri: https://cloud.google.com/functions/
   languages:
@@ -1329,8 +1206,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/geminidataanalytics/v1alpha
   description: Developers can use the Conversational Analytics API, accessed through geminidataanalytics.googleapis.com, to build an artificial intelligence (AI)-powered chat interface, or data agent, that answers questions about structured data in BigQuery, Looker, and Looker Studio using natural language.
   languages:
@@ -1343,8 +1218,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/gkebackup/logging/v1
   languages:
     - all
@@ -1353,13 +1226,9 @@
 - path: google/cloud/gkebackup/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/gkeconnect/gateway/v1
   languages:
     - all
-  release_level:
-    java: preview
   transports:
     all: rest
 - path: google/cloud/gkeconnect/gateway/v1beta1
@@ -1521,16 +1390,12 @@
     - all
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     go: grpc
     nodejs: grpc
 - path: google/cloud/gkerecommender/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/gsuiteaddons/v1
   description: Add-ons are customized applications that extend Google Workspace applications.
   documentation_uri: https://developers.google.com/workspace/add-ons/overview
@@ -1539,8 +1404,6 @@
 - path: google/cloud/hypercomputecluster/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/hypercomputecluster/v1alpha
   languages:
     - dart
@@ -1554,8 +1417,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/iamconnectorcredentials/v1alpha
   languages:
     - python
@@ -1588,8 +1449,6 @@
   description: Cloud Key Management Service (Cloud KMS) lets you create and manage cryptographic keys for use in compatible Google Cloud services and in your own applications.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/kms/v1
   documentation_uri: https://cloud.google.com/kms
   languages:
@@ -1617,8 +1476,6 @@
 - path: google/cloud/licensemanager/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/lifesciences/v2beta
   documentation_uri: https://cloud.google.com/life-sciences/
   languages:
@@ -1626,8 +1483,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/location
   languages:
     - all
@@ -1635,27 +1490,19 @@
   description: Cloud Location Finder is a public API that offers a repository of all Google Cloud and Google Distributed Cloud locations, as well as cloud locations for other cloud providers.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/lustre/v1
   description: Google Cloud Managed Lustre delivers a high-performance, fully managed parallel file system optimized for AI and HPC applications.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/maintenance/api/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/maintenance/api/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/managedidentities/v1
   documentation_uri: https://cloud.google.com/managed-microsoft-ad/
   languages:
@@ -1682,8 +1529,6 @@
 - path: google/cloud/managedkafka/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/mediatranslation/v1beta1
   description: The Media Translation API provides enterprise-quality translation from/to various media types.
   documentation_uri: https://cloud.google.com/media-translation
@@ -1692,8 +1537,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: grpc
@@ -1746,26 +1589,18 @@
 - path: google/cloud/migrationcenter/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/modelarmor/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/modelarmor/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/netapp/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/networkanalyzer/logging/v1
   languages:
     - all
@@ -1840,8 +1675,6 @@
 - path: google/cloud/networkservices/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/networkservices/v1beta1
   languages:
     - dart
@@ -1882,8 +1715,6 @@
 - path: google/cloud/oracledatabase/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/orchestration/airflow/service/v1
   documentation_uri: https://cloud.google.com/composer/
   languages:
@@ -1952,8 +1783,6 @@
   description: Parallelstore is a high performance, managed parallel file service based on DAOS. It delivers up to 6x greater read throughput performance compared to competitive Lustre scratch offerings.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/parallelstore/v1beta
   description: Parallelstore is a high performance, managed parallel file service based on DAOS. It delivers up to 6x greater read throughput performance compared to competitive Lustre scratch offerings.
   languages:
@@ -1961,13 +1790,9 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/parametermanager/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/paymentgateway/issuerswitch/v1
   languages:
     - all
@@ -1981,13 +1806,9 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/policysimulator/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/policytroubleshooter/iam/v3
   description: Policy Troubleshooter helps you understand whether a principal can access a resource. Given a principal, a resource, and a permission, Policy Troubleshooter examines the allow policies, deny policies, and principal access boundary (PAB) policies that impact the principal's access.
   languages:
@@ -2011,13 +1832,9 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/privilegedaccessmanager/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/pubsublite/v1
   languages:
     - all
@@ -2035,8 +1852,6 @@
 - path: google/cloud/rapidmigrationassessment/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/recaptchaenterprise/v1
   documentation_uri: https://cloud.google.com/recaptcha-enterprise
   languages:
@@ -2061,8 +1876,6 @@
     - go
     - java
     - python
-  release_level:
-    java: preview
 - path: google/cloud/recommender/logging/v1
   languages:
     - all
@@ -2081,15 +1894,11 @@
 - path: google/cloud/redis/cluster/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/redis/cluster/v1beta1
   languages:
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/redis/v1
   languages:
     - all
@@ -2131,16 +1940,12 @@
   documentation_uri: https://cloud.google.com/run/docs
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/saasplatform/saasservicemgmt/v1beta1
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/scheduler/v1
   documentation_uri: https://cloud.google.com/scheduler/docs
   languages:
@@ -2210,8 +2015,6 @@
     - python
   skip_rest_numeric_enums:
     - all
-  release_level:
-    java: preview
   transports:
     java: grpc
 - path: google/cloud/securitycenter/v1
@@ -2265,8 +2068,6 @@
 - path: google/cloud/servicehealth/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/shell/v1
   documentation_uri: https://cloud.google.com/shell/
   languages:
@@ -2308,26 +2109,18 @@
   description: Cloud Storage Batch Operations is a Cloud Storage capability that lets you perform operations on billions of objects in a serverless manner.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/storageinsights/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/support/v2
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/support/v2beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/talent/v4
   documentation_uri: https://cloud.google.com/solutions/talent-solution/
   languages:
@@ -2442,23 +2235,17 @@
 - path: google/cloud/vectorsearch/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/vectorsearch/v1beta
   languages:
     - go
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/cloud/video/livestream/v1
   description: The Live Stream API transcodes mezzanine live signals into direct-to-consumer streaming formats, including Dynamic Adaptive Streaming over HTTP (DASH/MPEG-DASH), and HTTP Live Streaming (HLS), for multiple device platforms.
   documentation_uri: https://cloud.google.com/livestream/docs
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/video/stitcher/v1
   description: The Video Stitcher API allows you to manipulate video content to dynamically insert ads prior to delivery to client devices.
   documentation_uri: https://cloud.google.com/video-stitcher
@@ -2551,8 +2338,6 @@
   description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/visionai/v1alpha1
   description: Vertex AI Vision is an AI-powered platform to ingest, analyze and store video data.
   documentation_uri: https://cloud.google.com/vision-ai/docs
@@ -2569,7 +2354,6 @@
   languages:
     - all
   release_level:
-    java: preview
     python: preview
 - path: google/cloud/vpcaccess/v1
   documentation_uri: https://cloud.google.com/vpc/
@@ -2646,8 +2430,6 @@
 - path: google/cloud/workloadmanager/v1
   languages:
     - all
-  release_level:
-    java: preview
 - path: google/cloud/workstations/v1
   languages:
     - all
@@ -2685,8 +2467,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/datastore/admin/v1
   documentation_uri: https://cloud.google.com/datastore
   languages:
@@ -2729,8 +2509,6 @@
     - java
     - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559780
-  release_level:
-    java: preview
 - path: google/devtools/cloudtrace/v1
   documentation_uri: https://cloud.google.com/trace/docs
   languages:
@@ -2904,21 +2682,14 @@
     go: stable
 - path: google/maps/addressvalidation/v1
   documentation_uri: https://mapsplatform.google.com/maps-products/address-validation/
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     ruby: grpc
 - path: google/maps/areainsights/v1
   release_level:
     go: preview
-    java: preview
 - path: google/maps/fleetengine/delivery/v1
-  release_level:
-    java: preview
 - path: google/maps/fleetengine/v1
-  release_level:
-    java: preview
   transports:
     go: grpc
     java: grpc
@@ -2931,34 +2702,26 @@
     - nodejs
     - python
 - path: google/maps/mapsplatformdatasets/v1
-  release_level:
-    java: preview
 - path: google/maps/navconnect/v1
   languages:
     - nodejs
     - python
 - path: google/maps/places/v1
-  sample_uris:
-    go: https://developers.google.com/maps/documentation/places/web-service/client-library-examples#go
   release_level:
     go: preview
-    java: preview
+  sample_uris:
+    go: https://developers.google.com/maps/documentation/places/web-service/client-library-examples#go
 - path: google/maps/routeoptimization/v1
   release_level:
     go: preview
-    java: preview
 - path: google/maps/routing/v2
   documentation_uri: https://mapsplatform.google.com/maps-products/#routes-section
 - path: google/maps/solar/v1
-  release_level:
-    java: preview
 - path: google/marketingplatform/admin/v1alpha
   languages:
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/monitoring/dashboard/v1
   documentation_uri: https://cloud.google.com/monitoring/dashboards/
   languages:
@@ -2969,8 +2732,6 @@
   languages:
     - all
   new_issue_uri: https://issuetracker.google.com/savedsearches/559785
-  release_level:
-    java: preview
   transports:
     csharp: grpc
     go: grpc
@@ -3012,7 +2773,6 @@
     - python
   release_level:
     go: preview
-    java: preview
 - path: google/shopping/merchant/accounts/v1beta
   languages:
     - go
@@ -3072,8 +2832,6 @@
     - go
     - java
     - python
-  release_level:
-    java: preview
 - path: google/shopping/merchant/promotions/v1beta
   languages:
     - go
@@ -3106,8 +2864,6 @@
     - java
     - nodejs
     - python
-  release_level:
-    java: preview
 - path: google/shopping/type
   documentation_uri: https://developers.google.com/merchant/api
   languages:
@@ -3124,7 +2880,6 @@
     - java
   release_level:
     go: preview
-    java: preview
 - path: google/spanner/executor/v1
   languages:
     - go
