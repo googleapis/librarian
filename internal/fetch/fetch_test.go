@@ -557,7 +557,7 @@ func TestExtractTarball(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
+	if err := extractTarball(tarballPath, destDir); err != nil {
 		t.Fatal(err)
 	}
 
@@ -760,7 +760,7 @@ func TestExtractTarball_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
+			err := extractTarball(test.tarballPath(t), test.dest(t))
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("got error %v, want %v", err, test.wantErr)
 			}
@@ -803,7 +803,7 @@ func TestExtractTarball_PathError(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			err := ExtractTarball(test.tarballPath(t), test.dest(t), stripTopLevelDir)
+			err := extractTarball(test.tarballPath(t), test.dest(t))
 			var pathErr *fs.PathError
 			if !errors.As(err, &pathErr) {
 				t.Fatalf("got error %v, want *fs.PathError", err)
@@ -1115,7 +1115,7 @@ func TestExtractTarball_Symlink(t *testing.T) {
 	}
 
 	destDir := t.TempDir()
-	if err := ExtractTarball(tarballPath, destDir, stripTopLevelDir); err != nil {
+	if err := extractTarball(tarballPath, destDir); err != nil {
 		t.Fatal(err)
 	}
 

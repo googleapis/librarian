@@ -40,8 +40,8 @@ var errNoToolsSpecified = errors.New("no tools specified in configuration")
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
-// - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
-// - lib/ ($HOME/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
+// - bin/ ($LIBRARIAN_BIN/java_tools/bin) stores the generated executable wrapper scripts.
+// - lib/ ($LIBRARIAN_BIN/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || (len(tools.Maven) == 0 && len(tools.Pip) == 0) {
 		return errNoToolsSpecified

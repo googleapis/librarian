@@ -24,6 +24,14 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"unicode"
+	"unicode/utf8"
+
+	"github.com/googleapis/librarian/internal/yaml"
+)
+
+const (
+	readmePartialsFile = ".readme-partials.yaml"
 )
 
 var (
@@ -49,6 +57,9 @@ var (
 
 	// errEmptyFile indicates an empty file path was provided.
 	errEmptyFile = errors.New("file cannot be empty")
+
+	// errInvalidYAML indicates the YAML file syntax is invalid or cannot be unmarshaled.
+	errInvalidYAML = errors.New("invalid yaml syntax")
 )
 
 // codeSample represents a discovered Java code sample along with its derived title.
@@ -165,6 +176,66 @@ func extractTitle(filePath string) (string, error) {
 		return "", errEmptyTitle
 	}
 	return title, nil
+}
+
+// toCamelCase converts snake_case, kebab-case, or space-separated strings into CamelCase identifiers.
+func toCamelCase(s string) string {
+	parts := strings.FieldsFunc(s, func(r rune) bool {
+		return r == '_' || r == '-' || r == ' '
+	})
+	var sb strings.Builder
+	for _, p := range parts {
+		r, size := utf8.DecodeRuneInString(p)
+		sb.WriteRune(unicode.ToUpper(r))
+		sb.WriteString(p[size:])
+	}
+	return sb.String()
+}
+
+// parseGroupIDArtifactID extracts GroupID and ArtifactID from a Maven distribution name.
+func parseGroupIDArtifactID(distributionName string) (string, string) {
+	groupID, artifactID, _ := strings.Cut(distributionName, ":")
+	return groupID, artifactID
+}
+
+// parseRepoShortName extracts the short repository name from the full repo path.
+func parseRepoShortName(repo string) string {
+	if repo == "" {
+		return ""
+	}
+	if i := strings.LastIndexByte(repo, '/'); i >= 0 {
+		return repo[i+1:]
+	}
+	return repo
+}
+
+// loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml.
+func loadReadmePartials(dir string) (map[string]interface{}, error) {
+	if dir == "" {
+		return nil, errEmptyDir
+	}
+	partialsBytes, err := os.ReadFile(filepath.Join(dir, readmePartialsFile))
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return nil, nil
+		}
+		return nil, fmt.Errorf("failed to read partials file: %w", err)
+	}
+	if len(partialsBytes) == 0 {
+		return nil, nil
+	}
+	rawPartials, err := yaml.Unmarshal[map[string]interface{}](partialsBytes)
+	if err != nil {
+		return nil, fmt.Errorf("%w: failed to unmarshal partials: %w", errInvalidYAML, err)
+	}
+	if rawPartials == nil || len(*rawPartials) == 0 {
+		return nil, nil
+	}
+	result := make(map[string]interface{}, len(*rawPartials))
+	for k, v := range *rawPartials {
+		result[toCamelCase(k)] = v
+	}
+	return result, nil
 }
 
 // collectSnippetFiles recursively scans dir/samples for Java and XML files containing snippets.

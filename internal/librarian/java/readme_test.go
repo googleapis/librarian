@@ -478,6 +478,213 @@ func TestExtractTitle_Error(t *testing.T) {
 	}
 }
 
+func TestToCamelCase(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "snake case",
+			input: "custom_content",
+			want:  "CustomContent",
+		},
+		{
+			name:  "kebab case",
+			input: "readme-partials",
+			want:  "ReadmePartials",
+		},
+		{
+			name:  "space separated",
+			input: "about us",
+			want:  "AboutUs",
+		},
+		{
+			name:  "already camel",
+			input: "About",
+			want:  "About",
+		},
+		{
+			name:  "empty string",
+			input: "",
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := toCamelCase(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseGroupIDArtifactID(t *testing.T) {
+	for _, test := range []struct {
+		name           string
+		input          string
+		wantGroupID    string
+		wantArtifactID string
+	}{
+		{
+			name:           "standard coordinates",
+			input:          "com.google.cloud:google-cloud-storage",
+			wantGroupID:    "com.google.cloud",
+			wantArtifactID: "google-cloud-storage",
+		},
+		{
+			name:           "missing artifact id",
+			input:          "com.google.cloud",
+			wantGroupID:    "com.google.cloud",
+			wantArtifactID: "",
+		},
+		{
+			name:           "empty distribution name",
+			input:          "",
+			wantGroupID:    "",
+			wantArtifactID: "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotGroup, gotArtifact := parseGroupIDArtifactID(test.input)
+			if diff := cmp.Diff(test.wantGroupID, gotGroup); diff != "" {
+				t.Errorf("group ID mismatch (-want +got):\n%s", diff)
+			}
+			if diff := cmp.Diff(test.wantArtifactID, gotArtifact); diff != "" {
+				t.Errorf("artifact ID mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestParseRepoShortName(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		want  string
+	}{
+		{
+			name:  "full repo path",
+			input: "googleapis/google-cloud-java",
+			want:  "google-cloud-java",
+		},
+		{
+			name:  "short repo name only",
+			input: "google-cloud-java",
+			want:  "google-cloud-java",
+		},
+		{
+			name:  "empty repo string",
+			input: "",
+			want:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := parseRepoShortName(test.input)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadReadmePartials(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		want       map[string]interface{}
+	}{
+		{
+			name: "loads yaml partials with camel case conversion",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				content := `about_text: "Custom about"`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: map[string]interface{}{"AboutText": "Custom about"},
+		},
+		{
+			name: "missing partials file returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				// No file written.
+			},
+			want: nil,
+		},
+		{
+			name: "empty partials file returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+		{
+			name: "partials file with only comments returns nil",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				if err := os.WriteFile(path, []byte("# only comments\n# no keys defined"), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			test.setupFiles(t, dir)
+			got, err := loadReadmePartials(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLoadReadmePartials_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		dir        string
+		setupFiles func(t *testing.T, dir string)
+		wantErr    error
+	}{
+		{
+			name:    "empty directory parameter returns error",
+			dir:     "",
+			wantErr: errEmptyDir,
+		},
+		{
+			name: "invalid yaml syntax",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				content := `key: [unclosed list`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: errInvalidYAML,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := test.dir
+			if test.setupFiles != nil {
+				dir = t.TempDir()
+				test.setupFiles(t, dir)
+			}
+			_, err := loadReadmePartials(dir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("loadReadmePartials() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestCollectSnippetFiles(t *testing.T) {
 	for _, test := range []struct {
 		name       string

@@ -12,15 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package librarian
+// Package protoc provides utilities for installing the protoc tool.
+package protoc
 
 import (
 	"context"
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
@@ -38,8 +41,18 @@ var (
 	}
 )
 
-// installProtoc downloads and installs the protoc binary from the given URL to the given directory.
-func installProtoc(ctx context.Context, url, dir, sha256 string) error {
+// Install installs the protoc tool.
+func Install(ctx context.Context, protoc *config.Protoc) error {
+	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
+	dir, err := installDir(protoc.Version)
+	if err != nil {
+		return err
+	}
+	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
+}
+
+// downloadAndExtract downloads and installs the protoc binary from the given URL to the given directory.
+func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 	tarball := filepath.Join(dir, "protoc.zip")
 	if err := fetch.Download(ctx, tarball, url, sha256); err != nil {
 		return err
@@ -48,14 +61,14 @@ func installProtoc(ctx context.Context, url, dir, sha256 string) error {
 	return filesystem.Unzip(ctx, tarball, dir)
 }
 
-// protocDownloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
-func protocDownloadURL(version, os, arch string) string {
+// downloadURL returns the download URL for the protoc binary for the given version, OS, and arch.
+func downloadURL(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
 }
 
-// protocInstallDir returns the directory where the protoc binary should be installed.
-func protocInstallDir(version string) (string, error) {
+// installDir returns the directory where the protoc binary should be installed.
+func installDir(version string) (string, error) {
 	binDir, err := cache.BinDirectory()
 	if err != nil {
 		return "", err
