@@ -97,9 +97,6 @@ func TestAddLibraryCommand(t *testing.T) {
 			}
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
-			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
-				t.Fatal(err)
-			}
 
 			cfg := sample.Config()
 			cfg.Default.Output = "output"
