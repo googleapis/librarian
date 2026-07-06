@@ -41,6 +41,10 @@ jobs:
         with:
           repository: googleapis/google-cloud-node
           path: google-cloud-node
+          depth: 1
+          sparse-checkout: |
+            librarian.yaml
+          sparse-checkout-cone-mode: false
           persist-credentials: false
       - name: "Install Node.js dependencies (restore cache)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
