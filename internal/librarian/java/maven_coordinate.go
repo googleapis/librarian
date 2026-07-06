@@ -33,6 +33,8 @@ var groupInclusions = map[string]bool{
 	"com.google.area120":   true,
 }
 
+// coordinate represents a Maven Coordinate, uniquely identifies a project
+// artifact using its GroupID, ArtifactID, and Version.
 type coordinate struct {
 	// GroupID is the Maven Group ID.
 	GroupID string
