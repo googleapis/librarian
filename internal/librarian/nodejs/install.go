@@ -17,7 +17,6 @@ package nodejs
 import (
 	"bytes"
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -33,18 +32,16 @@ import (
 // source.
 const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
-
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
+	if tools == nil || len(tools.PNPM) == 0 {
+		return nil
+	}
+
 	for _, cmd := range []string{"node", "pnpm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
 		}
-	}
-
-	if tools == nil || len(tools.PNPM) == 0 {
-		return errNoToolsSpecified
 	}
 
 	env, err := getPNPMEnv(ctx)

@@ -15,7 +15,6 @@
 package nodejs
 
 import (
-	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -102,29 +101,25 @@ exit 0
 	}
 }
 
-func TestInstall_Errors(t *testing.T) {
+func TestInstall_NoOp(t *testing.T) {
 	tests := []struct {
-		name    string
-		tools   *config.Tools
-		wantErr error
+		name  string
+		tools *config.Tools
 	}{
 		{
-			name:    "nil tools",
-			tools:   nil,
-			wantErr: errNoToolsSpecified,
+			name:  "nil tools",
+			tools: nil,
 		},
 		{
-			name:    "empty tools",
-			tools:   &config.Tools{},
-			wantErr: errNoToolsSpecified,
+			name:  "empty tools",
+			tools: &config.Tools{},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			err := Install(t.Context(), tc.tools)
-			if !errors.Is(err, tc.wantErr) {
-				t.Fatalf("Install() err = %v, wantErr = %v", err, tc.wantErr)
+			if err := Install(t.Context(), tc.tools); err != nil {
+				t.Fatalf("Install() err = %v, want nil", err)
 			}
 		})
 	}
