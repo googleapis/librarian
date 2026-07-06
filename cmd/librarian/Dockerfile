@@ -326,6 +326,10 @@ RUN pnpm add -g \
     curl -fsSL --retry 5 --retry-delay 15 -o /tmp/generator.tar.gz \
         https://github.com/googleapis/google-cloud-node/archive/${NODEJS_GAPIC_GENERATOR_VERSION}.tar.gz && \
     echo "${NODEJS_GAPIC_GENERATOR_CHECKSUM} /tmp/generator.tar.gz" | sha256sum -c - && \
+    # The generator is installed in /opt (rather than a transient /tmp) and linked via
+    # `pnpm add -g` to preserve its node_modules. This is necessary because google-gax is
+    # defined as a devDependency in the generator but is required at startup. Deleting the
+    # source directory would break the global installation with MODULE_NOT_FOUND.
     mkdir -p /opt/gapic-generator-typescript && \
     tar -xzf /tmp/generator.tar.gz -C /opt/gapic-generator-typescript --strip-components=4 google-cloud-node-${NODEJS_GAPIC_GENERATOR_VERSION}/core/generator/gapic-generator-typescript && \
     rm /tmp/generator.tar.gz && \
