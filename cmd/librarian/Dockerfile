@@ -311,6 +311,10 @@ RUN chmod a+x /root
 # nvm from Librarian. We're only using it to set up the right version of Node.
 RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
 ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
+ENV PNPM_CONFIG_GLOBAL_BIN_DIR=/root/.nvm/versions/node/current/bin
+ENV PNPM_CONFIG_GLOBAL_DIR=/root/.nvm/versions/node/current/pnpm-global
+ENV PNPM_CONFIG_STORE_DIR=/root/.nvm/versions/node/current/pnpm-store
+ENV PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true
 
 # Install Node generation tools
 RUN PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true pnpm add -g \
