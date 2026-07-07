@@ -16,7 +16,11 @@ package swift
 
 import (
 	"context"
+	"os"
+	"path/filepath"
+	"strings"
 
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
@@ -25,16 +29,81 @@ import (
 
 func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
 	for _, module := range library.Swift.Modules {
-		modelConfig := moduleToModelConfig(library, module, src)
-		model, err := parser.CreateModel(modelConfig)
-		if err != nil {
-			return err
-		}
-		if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
-			return err
+		switch module.Template {
+		case "swift-protobuf":
+			if err := compileProtobufs(ctx, library, module, src); err != nil {
+				return err
+			}
+		default:
+			// Fall back to standard GAPIC generation
+			modelConfig := moduleToModelConfig(library, module, src)
+			model, err := parser.CreateModel(modelConfig)
+			if err != nil {
+				return err
+			}
+			if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+				return err
+			}
 		}
 	}
 	return nil
+}
+
+func compileProtobufs(ctx context.Context, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
+	if err := os.MkdirAll(module.Output, 0755); err != nil {
+		return err
+	}
+
+	sourceConfig := sources.NewSourceConfig(src, library.Roots)
+	apiPathAbs := sourceConfig.ResolveDir(module.APIPath)
+
+	var protoFiles []string
+	if len(module.IncludeList) > 0 {
+		for _, file := range module.IncludeList {
+			protoFiles = append(protoFiles, filepath.Join(apiPathAbs, file))
+		}
+	} else {
+		entries, err := os.ReadDir(apiPathAbs)
+		if err != nil {
+			return err
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".proto") {
+				protoFiles = append(protoFiles, filepath.Join(apiPathAbs, entry.Name()))
+			}
+		}
+	}
+
+	if len(protoFiles) == 0 {
+		return nil
+	}
+
+	importsMap := make(map[string]bool)
+	var protoImports []string
+
+	addImport := func(path string) {
+		if path != "" && !importsMap[path] {
+			importsMap[path] = true
+			protoImports = append(protoImports, "-I", path)
+		}
+	}
+
+	for _, r := range sourceConfig.ActiveRoots {
+		addImport(sourceConfig.Root(r))
+	}
+	addImport(src.Googleapis)
+	addImport(src.ProtobufSrc)
+	addImport(src.Showcase)
+	addImport(src.Conformance)
+
+	args := []string{
+		"--swift_out=Visibility=Public:" + module.Output,
+		"--grpc-swift_out=Visibility=Public:" + module.Output,
+	}
+	args = append(args, protoImports...)
+	args = append(args, protoFiles...)
+
+	return command.Run(ctx, "protoc", args...)
 }
 
 func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {

@@ -108,6 +108,15 @@ type SwiftModule struct {
 
 	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
 	APIPath string `yaml:"api_path"`
+
+	// Template is the generation template to use (e.g., "swift-protobuf", "convert-swift", or empty for standard GAPIC).
+	Template string `yaml:"template,omitempty"`
+
+	// IncludeList is a subset of proto files under the target API path to include.
+	IncludeList []string `yaml:"include_list,omitempty"`
+
+	// ModulePath is the module import path or target containing stubs (used by convert-swift).
+	ModulePath string `yaml:"module_path,omitempty"`
 }
 
 // SwiftDiscovery contains discovery-specific configuration for LRO polling.
