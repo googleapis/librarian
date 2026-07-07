@@ -453,29 +453,42 @@ func TestFindTransport_Error(t *testing.T) {
 }
 
 func TestParseRequiresBilling(t *testing.T) {
-	sdkYAML := `
-- path: "with-billing"
-  requires_billing: true
-- path: "without-billing"
-  requires_billing: false
-- path: "unspecified"
-`
-	apis, err := yaml.Unmarshal[[]API]([]byte(sdkYAML))
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	if len(*apis) != 3 {
-		t.Fatalf("expected 3 APIs, got %d", len(*apis))
-	}
-
-	if (*apis)[0].RequiresBilling == nil || !*(*apis)[0].RequiresBilling {
-		t.Errorf("expected true for with-billing")
-	}
-	if (*apis)[1].RequiresBilling == nil || *(*apis)[1].RequiresBilling {
-		t.Errorf("expected false for without-billing")
-	}
-	if (*apis)[2].RequiresBilling != nil {
-		t.Errorf("expected nil for unspecified")
+	truePtr := true
+	falsePtr := false
+	for _, test := range []struct {
+		name    string
+		content string
+		want    *bool
+	}{
+		{
+			name: "with billing",
+			content: `- path: "with-billing"
+  requires_billing: true`,
+			want: &truePtr,
+		},
+		{
+			name: "without billing",
+			content: `- path: "without-billing"
+  requires_billing: false`,
+			want: &falsePtr,
+		},
+		{
+			name: "unspecified",
+			content: `- path: "unspecified"`,
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			apis, err := yaml.Unmarshal[[]API]([]byte(test.content))
+			if err != nil {
+				t.Fatal(err)
+			}
+			if len(*apis) != 1 {
+				t.Fatalf("expected 1 API, got %d", len(*apis))
+			}
+			if diff := cmp.Diff(test.want, (*apis)[0].RequiresBilling); diff != "" {
+				t.Errorf("RequiresBilling mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
