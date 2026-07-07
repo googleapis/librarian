@@ -87,13 +87,6 @@ func TestValidateLibraries(t *testing.T) {
 				Language:  test.language,
 				Libraries: test.libraries,
 			}
-			if test.language == config.LanguageJava {
-				cfg.Default = &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				}
-			}
 			err := validateLibraries(cfg)
 			if test.wantErr == nil {
 				if err != nil {
@@ -627,9 +620,6 @@ func TestTidy_DerivableOutput(t *testing.T) {
 				Language: test.language,
 				Default: &config.Default{
 					Output: "generated/",
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.0.0",
-					},
 				},
 				Sources:   googleapisSource,
 				Libraries: []*config.Library{lib},

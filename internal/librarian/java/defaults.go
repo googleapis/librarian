@@ -169,44 +169,32 @@ var (
 	ErrOmitCommonResourcesConflict = errors.New("conflict: OmitCommonResources is true but google/cloud/common_resources.proto is explicitly listed in AdditionalProtos")
 	// ErrCannotDeriveReleasedVersion is returned when released_version cannot be derived.
 	ErrCannotDeriveReleasedVersion = errors.New("cannot derive released version")
-	// errBOMVersionMissing is returned when libraries_bom_version is not set.
-	errBOMVersionMissing = errors.New("libraries bom version not found in config")
 )
 
-// Validate checks that the Java-specific configuration for a library and global config is
+// Validate checks that the Java-specific configuration for a library is
 // correctly formatted. It ensures that there are no conflicts in common
 // resources configuration.
-func Validate(cfg *config.Config) error {
-	var errs []error
-	if cfg.Default == nil || cfg.Default.Java == nil || cfg.Default.Java.LibrariesBOMVersion == "" {
-		errs = append(errs, errBOMVersionMissing)
-	}
-
-	for _, library := range cfg.Libraries {
-		if library.Version != "" {
-			if _, err := semver.Parse(library.Version); err != nil {
-				errs = append(errs, fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err))
-			}
-		}
-		if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
-			if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
-				errs = append(errs, fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err))
-			}
-		}
-		for _, api := range library.APIs {
-			if api.Java == nil || !api.Java.OmitCommonResources {
-				continue
-			}
-			for _, proto := range api.Java.AdditionalProtos {
-				if proto != nil && proto.Path == commonResourcesProto {
-					errs = append(errs, fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict))
-				}
-			}
-
+func Validate(library *config.Library) error {
+	if library.Version != "" {
+		if _, err := semver.Parse(library.Version); err != nil {
+			return fmt.Errorf("library %q: invalid version %q: %w", library.Name, library.Version, err)
 		}
 	}
-	if len(errs) > 0 {
-		return errors.Join(errs...)
+	if !library.SkipGenerate && library.Java != nil && library.Java.ReleasedVersion != "" {
+		if _, err := semver.Parse(library.Java.ReleasedVersion); err != nil {
+			return fmt.Errorf("library %q: invalid released_version %q: %w", library.Name, library.Java.ReleasedVersion, err)
+		}
+	}
+	for _, api := range library.APIs {
+		if api.Java == nil || !api.Java.OmitCommonResources {
+			continue
+		}
+		for _, proto := range api.Java.AdditionalProtos {
+			if proto != nil && proto.Path == commonResourcesProto {
+				return fmt.Errorf("%s: %w", api.Path, ErrOmitCommonResourcesConflict)
+			}
+		}
+
 	}
 	return nil
 }

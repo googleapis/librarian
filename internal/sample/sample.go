@@ -76,9 +76,6 @@ func Config() *config.Config {
 		Version:  LibrarianVersion,
 		Default: &config.Default{
 			TagFormat: "{name}/v{version}",
-			Java: &config.JavaDefault{
-				LibrariesBOMVersion: "1.0.0",
-			},
 		},
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
