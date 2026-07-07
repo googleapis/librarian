@@ -81,7 +81,6 @@ func TestReplace(t *testing.T) {
 }
 
 func TestReplaceRegex(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name        string
 		content     string
@@ -105,7 +104,6 @@ func TestReplaceRegex(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "test.txt")
 			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
@@ -156,7 +154,6 @@ func TestReplace_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
@@ -203,7 +200,6 @@ func TestReplaceRegex_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
@@ -250,7 +246,6 @@ func TestApplyToFiles(t *testing.T) {
 }
 
 func TestApplyToFiles_Error(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		files   map[string]string
@@ -286,7 +281,6 @@ func TestApplyToFiles_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			err := applyToFiles(dir, test.pattern, test.action)
@@ -298,7 +292,6 @@ func TestApplyToFiles_Error(t *testing.T) {
 }
 
 func TestRemoveFiles(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		files     map[string]string
@@ -337,7 +330,6 @@ func TestRemoveFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			if err := RemoveFiles(dir, test.patterns); err != nil {
@@ -351,40 +343,27 @@ func TestRemoveFiles(t *testing.T) {
 }
 
 func TestRemoveFiles_Error(t *testing.T) {
-	t.Parallel()
 	for _, test := range []struct {
 		name     string
-		setup    func(t *testing.T, dir string)
+		files    map[string]string
 		patterns []string
 		wantErr  error
 	}{
 		{
 			name:     "zero files match pattern",
-			setup:    func(t *testing.T, dir string) {},
 			patterns: []string{"nonexistent/*.java"},
 			wantErr:  fs.ErrNotExist,
 		},
 		{
-			name: "remove non-empty directory",
-			setup: func(t *testing.T, dir string) {
-				subDir := filepath.Join(dir, "targetDir")
-				if err := os.Mkdir(subDir, 0755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(subDir, "file.txt"), []byte("data"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
+			name:     "remove non-empty directory",
+			files:    map[string]string{"targetDir/file.txt": "data"},
 			patterns: []string{"targetDir"},
 			wantErr:  syscall.ENOTEMPTY,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			t.Parallel()
 			dir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, dir)
-			}
+			createFiles(t, dir, test.files)
 			err := RemoveFiles(dir, test.patterns)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("RemoveFiles() error = %v, want %v", err, test.wantErr)
