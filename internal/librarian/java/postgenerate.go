@@ -60,10 +60,12 @@ var (
 		"google-cloud-pom-parent":  true,
 		"google-cloud-shared-deps": true,
 	}
-	dnsBOM            = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
-	notificationBOM   = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
-	loggingLogbackBOM = legacyBOM{"java-logging-logback", "com.google.cloud", "google-cloud-logging-logback"}
-	grafeasBOM        = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
+	legacyBOMs = []legacyBOM{
+		{"java-dns", "com.google.cloud", "google-cloud-dns"},
+		{"java-notification", "com.google.cloud", "google-cloud-notification"},
+		{"java-logging-logback", "com.google.cloud", "google-cloud-logging-logback"},
+		{"java-grafeas", "io.grafeas", "grafeas"},
+	}
 )
 
 // legacyBOM represents a library that does not have a -bom module
@@ -206,7 +208,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	configs := make([]*bomConfig, 0, len(modules)+3)
+	configs := make([]*bomConfig, 0, len(modules)+len(legacyBOMs))
 	for _, module := range modules {
 		if !module.IsDir() || module.Name() == gapicBOM {
 			continue
@@ -218,7 +220,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 		configs = append(configs, moduleConfigs...)
 	}
 
-	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM, loggingLogbackBOM)
+	legacies, err := collectLegacyBOMs(repoPath, legacyBOMs...)
 	if err != nil {
 		return nil, err
 	}
@@ -226,13 +228,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
-	// Add Grafeas last. This is done after sorting to match the current order in google-cloud-java.
-	// TODO(https://github.com/googleapis/librarian/issues/4706): Move this prior to sort.
-	grafeas, err := collectLegacyBOMs(repoPath, grafeasBOM)
-	if err != nil {
-		return nil, err
-	}
-	return append(configs, grafeas...), nil
+	return configs, nil
 }
 
 // searchModuleForBOM scans a specific module's directory for submodules that end in "-bom"
