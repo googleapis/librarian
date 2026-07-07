@@ -106,7 +106,14 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
-		RequiresBilling:      true,
+	}
+
+	if library.RequiresBilling != nil {
+		metadata.RequiresBilling = *library.RequiresBilling
+	} else if library.Java != nil {
+		metadata.RequiresBilling = !library.Java.BillingNotRequired
+	} else {
+		metadata.RequiresBilling = true
 	}
 
 	// Java-specific overrides and optional fields
@@ -140,7 +147,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		if library.Java.ClientDocumentationOverride != "" {
 			metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 		}
-		metadata.RequiresBilling = !library.Java.BillingNotRequired
 		// Java only fields
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
