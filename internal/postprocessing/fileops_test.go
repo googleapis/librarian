@@ -469,7 +469,7 @@ func TestReplaceAll(t *testing.T) {
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			if err := ReplaceAll(dir, test.replaces); err != nil {
-				t.Fatalf("ReplaceAll() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -557,7 +557,7 @@ func TestReplaceRegexAll(t *testing.T) {
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			if err := ReplaceRegexAll(dir, test.regexes); err != nil {
-				t.Fatalf("ReplaceRegexAll() unexpected error: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
