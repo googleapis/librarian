@@ -1,0 +1,5 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0">
+  <groupId>com.google.cloud</groupId>
+  <artifactId>google-cloud-logging-logback</artifactId>
+  <version>0.143.0-alpha-SNAPSHOT</version>
+</project>
