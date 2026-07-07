@@ -890,12 +890,10 @@ func TestRenderREADME(t *testing.T) {
 	defaultBOMVersion := "1.0.0-BOM"
 	defaultLibraryVersion := "1.2.3-LIB"
 	for _, test := range []struct {
-		name        string
-		metadata    *repoMetadata
-		keepSet     map[string]bool
-		setupFiles  func(t *testing.T, dir string)
-		goldenFile  string
-		wantContent string
+		name       string
+		metadata   *repoMetadata
+		setupFiles func(t *testing.T, dir string)
+		goldenFile string
 	}{
 		{
 			name:       "renders standard README without partials",
@@ -911,18 +909,6 @@ func TestRenderREADME(t *testing.T) {
 				}
 			},
 			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
-		},
-		{
-			name:    "skips rendering if README.md is in keep list",
-			keepSet: map[string]bool{"README.md": true},
-			setupFiles: func(t *testing.T, dir string) {
-				path := filepath.Join(dir, "README.md")
-				content := "Custom README content"
-				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
-			wantContent: "Custom README content",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -948,8 +934,7 @@ func TestRenderREADME(t *testing.T) {
 				},
 				metadata: meta,
 			}
-			err := renderREADME(params, test.keepSet)
-			if err != nil {
+			if err := renderREADME(params, nil); err != nil {
 				t.Fatal(err)
 			}
 			outputPath := filepath.Join(dir, "README.md")
@@ -957,32 +942,42 @@ func TestRenderREADME(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			content := string(outputBytes)
-			if test.goldenFile != "" {
-				if *update {
-					if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0755); err != nil {
-						t.Fatal(err)
-					}
-					if err := os.WriteFile(test.goldenFile, outputBytes, 0644); err != nil {
-						t.Fatal(err)
-					}
-				}
-				wantBytes, err := os.ReadFile(test.goldenFile)
-				if err != nil {
+			if *update {
+				if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0755); err != nil {
 					t.Fatal(err)
 				}
-				if diff := cmp.Diff(string(wantBytes), content); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
+				if err := os.WriteFile(test.goldenFile, outputBytes, 0644); err != nil {
+					t.Fatal(err)
 				}
-				return
 			}
-			if test.wantContent != "" {
-				if diff := cmp.Diff(test.wantContent, content); diff != "" {
-					t.Errorf("mismatch (-want +got):\n%s", diff)
-				}
-				return
+			wantBytes, err := os.ReadFile(test.goldenFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(string(wantBytes), string(outputBytes)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestRenderREADME_KeepSet(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "README.md")
+	wantContent := "Custom README content"
+	if err := os.WriteFile(path, []byte(wantContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params := libraryPostProcessParams{outDir: dir}
+	if err := renderREADME(params, map[string]bool{readmeFile: true}); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantContent, string(gotBytes)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
