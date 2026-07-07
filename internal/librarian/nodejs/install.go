@@ -35,7 +35,10 @@ const (
 	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 )
 
-var errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
+var (
+	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
+	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+)
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
@@ -161,7 +164,7 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {
-		return "", fmt.Errorf("cannot extract repo from package URL %q", packageURL)
+		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
 	}
 	return strings.TrimPrefix(parts[0], "https://"), nil
 }

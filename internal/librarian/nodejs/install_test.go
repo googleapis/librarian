@@ -174,6 +174,7 @@ func TestInstall_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				stubExecutables(t)
 			},
+			wantErr: errCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -197,7 +198,7 @@ func TestRepoFromPackageURL(t *testing.T) {
 		name       string
 		packageURL string
 		want       string
-		wantErr    bool
+		wantErr    error
 	}{
 		{
 			name:       "valid archive url",
@@ -207,12 +208,12 @@ func TestRepoFromPackageURL(t *testing.T) {
 		{
 			name:       "invalid archive url",
 			packageURL: "https://github.com/googleapis/google-cloud-node/invalid",
-			wantErr:    true,
+			wantErr:    errCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := repoFromPackageURL(test.packageURL)
-			if (err != nil) != test.wantErr {
+			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("repoFromPackageURL(%q) error = %v, wantErr = %v", test.packageURL, err, test.wantErr)
 			}
 			if got != test.want {
