@@ -283,9 +283,6 @@ type Library struct {
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
-	// RequiresBilling indicates whether the API requires billing.
-	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
-
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 

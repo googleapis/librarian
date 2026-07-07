@@ -20,6 +20,7 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestAPIsNoDuplicates(t *testing.T) {
@@ -448,5 +449,33 @@ func TestFindTransport_Error(t *testing.T) {
 				t.Errorf("FindTransport(%q, %q) expected %v, got %v", test.path, test.language, test.want, err)
 			}
 		})
+	}
+}
+
+func TestParseRequiresBilling(t *testing.T) {
+	sdkYAML := `
+- path: "with-billing"
+  requires_billing: true
+- path: "without-billing"
+  requires_billing: false
+- path: "unspecified"
+`
+	apis, err := yaml.Unmarshal[[]API]([]byte(sdkYAML))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(*apis) != 3 {
+		t.Fatalf("expected 3 APIs, got %d", len(*apis))
+	}
+
+	if (*apis)[0].RequiresBilling == nil || !*(*apis)[0].RequiresBilling {
+		t.Errorf("expected true for with-billing")
+	}
+	if (*apis)[1].RequiresBilling == nil || *(*apis)[1].RequiresBilling {
+		t.Errorf("expected false for without-billing")
+	}
+	if (*apis)[2].RequiresBilling != nil {
+		t.Errorf("expected nil for unspecified")
 	}
 }
