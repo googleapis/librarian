@@ -105,6 +105,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		RequiresBilling:      true,
+		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 	}
 
 	// Java-specific overrides and optional fields
@@ -144,7 +145,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
 		metadata.MinJavaVersion = library.Java.MinJavaVersion
-		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}
