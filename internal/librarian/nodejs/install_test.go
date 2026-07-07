@@ -48,6 +48,8 @@ func TestInstall(t *testing.T) {
 	// without downloading the tarball over the network.
 	cache := t.TempDir()
 	t.Setenv("LIBRARIAN_CACHE", cache)
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
 	genDir := filepath.Join(cache,
 		repo+"@"+tool.Version,
 		gapicGeneratorSubdir)
@@ -82,11 +84,6 @@ esac
 exit 0
 `
 	nodeStub := `#!/bin/sh
-case "$*" in
-    *dirname*)
-        echo "/usr/local/bin"
-        ;;
-esac
 exit 0
 `
 	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
@@ -99,6 +96,30 @@ exit 0
 
 	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestInstallDir(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	got, err := InstallDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != binDir {
+		t.Errorf("InstallDir() = %q, want %q", got, binDir)
+	}
+}
+
+func TestGetToolsEnv(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	env, err := getToolsEnv()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := env["PATH"]; got != binDir {
+		t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, binDir)
 	}
 }
 

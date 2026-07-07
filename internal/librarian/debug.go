@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/urfave/cli/v3"
 )
 
@@ -58,6 +59,7 @@ func runEnv(w io.Writer) error {
 	buildDir := dirOrErr(cache.BinDirectory())
 	goToolsDir := dirOrErr(golang.InstallDir())
 	javaToolsDir := dirOrErr(java.InstallDir())
+	nodejsToolsDir := dirOrErr(nodejs.InstallDir())
 	var b strings.Builder
 	fmt.Fprintf(&b, "LIBRARIAN_CACHE=%s\n", cacheDir)
 	fmt.Fprintf(&b, "LIBRARIAN_BIN=%s\n", buildDir)
@@ -65,6 +67,7 @@ func runEnv(w io.Writer) error {
 	fmt.Fprintln(&b, "Language-specific tool installation directories:")
 	fmt.Fprintf(&b, "  golang: %s\n", goToolsDir)
 	fmt.Fprintf(&b, "  java: %s\n", javaToolsDir)
+	fmt.Fprintf(&b, "  nodejs: %s\n", nodejsToolsDir)
 	_, err := io.WriteString(w, b.String())
 	return err
 }

@@ -37,6 +37,7 @@ func TestRunEnv(t *testing.T) {
 		fmt.Sprintf("LIBRARIAN_BIN=%s", binDir),
 		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
 		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
+		fmt.Sprintf("nodejs: %s", binDir),
 	}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
@@ -61,6 +62,7 @@ func TestRunEnv_Error(t *testing.T) {
 		"LIBRARIAN_BIN=<error:",
 		"golang: <error:",
 		"java: <error:",
+		"nodejs: <error:",
 	}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {

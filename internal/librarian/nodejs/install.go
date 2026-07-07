@@ -15,7 +15,6 @@
 package nodejs
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,14 +23,17 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-// gapicGeneratorSubdir is the sub-directory within the
-// google-cloud-node repo that contains the gapic-generator-typescript
-// source.
-const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
+const (
+	// gapicGeneratorSubdir is the sub-directory within the
+	// google-cloud-node repo that contains the gapic-generator-typescript
+	// source.
+	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
+)
 
 var errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
 
@@ -47,7 +49,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 
-	env, err := getPNPMEnv(ctx)
+	env, err := getPNPMEnv()
 	if err != nil {
 		return err
 	}
@@ -71,32 +73,44 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return nil
 }
 
-// getPNPMEnv resolves Node's global installation bin prefix path dynamically
-// and constructs a transient environment variable block to configure pnpm.
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	return cache.BinDirectory()
+}
+
+// getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.
+func getToolsEnv() (map[string]string, error) {
+	binDir, err := InstallDir()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{"PATH": binDir}, nil
+}
+
+// getPNPMEnv constructs a transient environment variable block to configure pnpm.
 //
-// This redirects all globally-installed pnpm binaries, virtual stores, and
-// content-addressable storage caches to be nested under the Node prefix folder.
+// This redirects all globally-installed pnpm binaries to LIBRARIAN_BIN, and
+// virtual stores / content-addressable storage caches to LIBRARIAN_CACHE.
 // This enables complete environment caching and restore on CI runners,
 // while permanently avoiding persistent side-effects on the host machine
 // (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv(ctx context.Context) ([]string, error) {
-	binOut, err := commandOutput(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
+func getPNPMEnv() ([]string, error) {
+	cacheDir, err := cache.Directory()
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve node bin directory: %w", err)
+		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	globalBin := strings.TrimSpace(binOut)
-
-	// In pnpm v11+, globally installed binaries are stored in PNPM_HOME/bin.
-	// We want them to be stored directly in globalBin (node's bin directory).
-	// See https://pnpm.io/blog/releases/11.0#isolated-global-virtual-store-global-installs
-	pnpmHome := filepath.Dir(globalBin)
+	binDir, err := InstallDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
+	}
 
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+pnpmHome)
-	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
-	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
-	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	env = append(env, "PNPM_HOME="+filepath.Dir(binDir))
+	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
+	env = append(env, "PATH="+binDir+":"+os.Getenv("PATH"))
 	return env, nil
 }
 
@@ -116,14 +130,6 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd.Run()
-}
-
-func commandOutput(ctx context.Context, name string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	return out.String(), err
 }
 
 func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
