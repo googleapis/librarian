@@ -60,9 +60,10 @@ var (
 		"google-cloud-pom-parent":  true,
 		"google-cloud-shared-deps": true,
 	}
-	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
-	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
-	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
+	dnsBOM            = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
+	notificationBOM   = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
+	loggingLogbackBOM = legacyBOM{"java-logging-logback", "com.google.cloud", "google-cloud-logging-logback"}
+	grafeasBOM        = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
 )
 
 // legacyBOM represents a library that does not have a -bom module
@@ -217,7 +218,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 		configs = append(configs, moduleConfigs...)
 	}
 
-	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM)
+	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM, loggingLogbackBOM)
 	if err != nil {
 		return nil, err
 	}
