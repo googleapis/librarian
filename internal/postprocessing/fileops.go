@@ -105,6 +105,13 @@ func RemoveFiles(outDir string, removePatterns []string) error {
 func ReplaceAll(outDir string, replaceConfigs []config.ReplaceConfig) error {
 	for _, r := range replaceConfigs {
 		if err := applyToFiles(outDir, r.Path, func(file string) error {
+			info, err := os.Stat(file)
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
 			if err := Replace(file, r.Original, r.Replacement); err != nil {
 				return fmt.Errorf("failed to apply replacement in %s: %w", file, err)
 			}
@@ -120,6 +127,13 @@ func ReplaceAll(outDir string, replaceConfigs []config.ReplaceConfig) error {
 func ReplaceRegexAll(outDir string, replaceRegexConfigs []config.ReplaceRegexConfig) error {
 	for _, r := range replaceRegexConfigs {
 		if err := applyToFiles(outDir, r.Path, func(file string) error {
+			info, err := os.Stat(file)
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
 			if err := ReplaceRegex(file, r.Pattern, r.Replacement); err != nil {
 				return fmt.Errorf("failed to apply regex replacement in %s: %w", file, err)
 			}

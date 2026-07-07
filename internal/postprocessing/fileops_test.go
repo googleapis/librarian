@@ -450,6 +450,20 @@ func TestReplaceAll(t *testing.T) {
 			},
 			wantFiles: map[string]string{"Test.java": "gamma delta"},
 		},
+		{
+			name: "skips directories matched by glob",
+			files: map[string]string{
+				"subdir/A.java": "old text",
+				"B.java":        "old text",
+			},
+			replaces: []config.ReplaceConfig{
+				{Path: "*", Original: "old", Replacement: "new"},
+			},
+			wantFiles: map[string]string{
+				"subdir/A.java": "old text",
+				"B.java":        "new text",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
@@ -522,6 +536,20 @@ func TestReplaceRegexAll(t *testing.T) {
 			wantFiles: map[string]string{
 				"src/A.java": "import com.new.Foo;\nimport com.new.Bar;",
 				"sub/B.txt":  "import com.old.Baz;",
+			},
+		},
+		{
+			name: "skips directories matched by glob",
+			files: map[string]string{
+				"subdir/A.java": "version 1.2.3",
+				"B.java":        "version 1.2.3",
+			},
+			regexes: []config.ReplaceRegexConfig{
+				{Path: "*", Pattern: `version \d+\.\d+\.\d+`, Replacement: "version 2.0.0"},
+			},
+			wantFiles: map[string]string{
+				"subdir/A.java": "version 1.2.3",
+				"B.java":        "version 2.0.0",
 			},
 		},
 	} {
