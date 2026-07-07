@@ -19,8 +19,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io/fs"
 	"os"
+	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/filesystem"
@@ -42,11 +45,6 @@ var (
 // interface for all postprocessing file operations.
 func CopyFile(src, dst string) error {
 	return filesystem.CopyFile(src, dst)
-}
-
-// RemoveFile removes the file at the specified path.
-func RemoveFile(path string) error {
-	return os.Remove(path)
 }
 
 // Replace finds and replaces exact text in a file.
@@ -90,4 +88,35 @@ func ReplaceRegex(path, pattern, replacement string) error {
 	}
 	newContent := re.ReplaceAll(content, []byte(replacement))
 	return os.WriteFile(path, newContent, 0644)
+}
+
+// RemoveFiles removes all files in outDir matching the given patterns (exact paths or globs).
+func RemoveFiles(outDir string, removePatterns []string) error {
+	for _, rem := range removePatterns {
+		if err := applyToFiles(outDir, rem, os.Remove); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// applyToFiles executes action on files matching pathPattern under outDir.
+// Note: Uses [filepath.Glob] (* only, ** is not supported).
+func applyToFiles(outDir string, pathPattern string, action func(string) error) error {
+	files, err := filepath.Glob(filepath.Join(outDir, pathPattern))
+	if err != nil {
+		return fmt.Errorf("failed to resolve glob for %s: %w", pathPattern, err)
+	}
+	if len(files) == 0 {
+		return fmt.Errorf("no files match pattern %q in %s: %w", pathPattern, outDir, fs.ErrNotExist)
+	}
+	// Reverse sort so children are processed before parent directories.
+	slices.Sort(files)
+	slices.Reverse(files)
+	for _, file := range files {
+		if err := action(file); err != nil {
+			return err
+		}
+	}
+	return nil
 }
