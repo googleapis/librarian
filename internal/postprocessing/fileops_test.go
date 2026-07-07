@@ -323,9 +323,9 @@ func TestRemoveFiles(t *testing.T) {
 			wantFiles: map[string]string{"src/B.txt": "txt", "docs/C.html": "html"},
 		},
 		{
-			name:      "recursive directory deletion",
+			name:      "directory file deletion",
 			files:     map[string]string{"src/A.java": "java", "src/B.txt": "txt"},
-			patterns:  []string{"src/**"},
+			patterns:  []string{"src/*"},
 			wantFiles: map[string]string{},
 		},
 	} {

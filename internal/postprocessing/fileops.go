@@ -26,7 +26,6 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
@@ -101,9 +100,10 @@ func RemoveFiles(outDir string, removePatterns []string) error {
 	return nil
 }
 
-// applyToFiles executes action on all files matching pathPattern under outDir.
+// applyToFiles executes action on files matching pathPattern under outDir.
+// Note: Uses filepath.Glob (* only, ** is not supported).
 func applyToFiles(outDir string, pathPattern string, action func(string) error) error {
-	files, err := doublestar.FilepathGlob(filepath.Join(outDir, pathPattern))
+	files, err := filepath.Glob(filepath.Join(outDir, pathPattern))
 	if err != nil {
 		return fmt.Errorf("failed to resolve glob for %s: %w", pathPattern, err)
 	}
