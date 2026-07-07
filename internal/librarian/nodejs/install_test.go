@@ -184,12 +184,8 @@ func TestInstall_Error(t *testing.T) {
 				test.setup(t)
 			}
 			err := Install(t.Context(), test.tools)
-			if test.wantErr != nil {
-				if !errors.Is(err, test.wantErr) {
-					t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
-				}
-			} else if err == nil {
-				t.Fatal("Install() expected error, got nil")
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}
