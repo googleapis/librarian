@@ -40,7 +40,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil {
 		return errNoToolsSpecified
 	}
-
 	if len(tools.PNPM) == 0 {
 		return nil
 	}
