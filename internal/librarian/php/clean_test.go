@@ -12,18 +12,18 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package php provides PHP specific functionality for librarian.
 package php
 
 import (
-	"context"
+	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
-// Generate generates a PHP client library.
-func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6629): implement PHP generation
-	return nil
+func TestClean(t *testing.T) {
+	lib := &config.Library{}
+
+	if err := Clean(lib); err != nil {
+		t.Errorf("Clean() returned error: %v", err)
+	}
 }

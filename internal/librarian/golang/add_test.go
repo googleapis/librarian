@@ -62,3 +62,145 @@ func TestAdd(t *testing.T) {
 		})
 	}
 }
+
+func TestReleasePleaseExtraFiles(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []any
+	}{
+		{
+			name: "proto-only is skipped",
+			lib: &config.Library{
+				Name: "oslogin",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/oslogin/common",
+						Go: &config.GoAPI{
+							ProtoOnly: true,
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "no snippets is skipped",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Go: &config.GoAPI{
+							NoSnippets: true,
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "derived import path and proto package",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: []any{
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "examples/apiv1/snippet_metadata.google.cloud.secretmanager.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "explicit import path and proto package",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Go: &config.GoAPI{
+							ImportPath:   "secretmanager/custom/path",
+							ProtoPackage: "google.cloud.secretmanager.custom.v1",
+						},
+					},
+				},
+			},
+			want: []any{
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "examples/custom/path/snippet_metadata.google.cloud.secretmanager.custom.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "strips module path version",
+			lib: &config.Library{
+				Name: "pubsub",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/pubsub/v1",
+						Go: &config.GoAPI{
+							ImportPath: "pubsub/v2/apiv1",
+						},
+					},
+				},
+			},
+			want: []any{
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "examples/apiv1/snippet_metadata.google.cloud.pubsub.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "deleted generation path is skipped",
+			lib: &config.Library{
+				Name: "secretmanager",
+				Go: &config.GoModule{
+					DeleteGenerationOutputPaths: []string{"examples/apiv1"},
+				},
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "domain prefix in import path is handled",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						Go: &config.GoAPI{
+							ImportPath: "cloud.google.com/go/secretmanager/apiv1",
+						},
+					},
+				},
+			},
+			want: []any{
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "examples/apiv1/snippet_metadata.google.cloud.secretmanager.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ReleasePleaseExtraFiles(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -12,8 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-// Package php provides PHP specific functionality for librarian.
-package php
+// Package ruby provides Ruby specific functionality for librarian.
+package ruby
 
 import (
 	"context"
@@ -22,8 +22,8 @@ import (
 	"github.com/googleapis/librarian/internal/sources"
 )
 
-// Generate generates a PHP client library.
+// Generate generates a Ruby client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6629): implement PHP generation
+	// TODO(https://github.com/googleapis/librarian/issues/6633): implement Ruby generation
 	return nil
 }

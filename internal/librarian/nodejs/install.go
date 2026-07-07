@@ -17,7 +17,7 @@ package nodejs
 import (
 	"bytes"
 	"context"
-	_ "embed"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 // gapicGeneratorSubdir is the sub-directory within the
@@ -34,27 +33,26 @@ import (
 // source.
 const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
-//go:embed librarian.yaml
-var librarianYAML []byte
+var errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
 
 // Install installs Node.js tool dependencies.
-func Install(ctx context.Context) error {
+func Install(ctx context.Context, tools *config.Tools) error {
+	if tools == nil || len(tools.PNPM) == 0 {
+		return errNoToolsSpecified
+	}
+
 	for _, cmd := range []string{"node", "pnpm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
 		}
 	}
 
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
-	}
 	env, err := getPNPMEnv(ctx)
 	if err != nil {
 		return err
 	}
 
-	for _, tool := range cfg.Tools.PNPM {
+	for _, tool := range tools.PNPM {
 		if len(tool.Build) > 0 {
 			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
