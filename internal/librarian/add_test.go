@@ -402,7 +402,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 							{Path: "google/cloud/secretmanager/v1"},
 							{Path: "google/cloud/secretmanager/v1beta2"},
 						},
-						Java: &config.JavaModule{ReleasedVersion: "0.0.0"},
+						Java: &config.JavaModule{ReleasedVersion: "1.2.3"},
 					},
 				},
 			},
