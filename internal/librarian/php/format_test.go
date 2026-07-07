@@ -15,34 +15,13 @@
 package php
 
 import (
-	"context"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
-func TestGenerate(t *testing.T) {
-	ctx := context.Background()
-	cfg := &config.Config{}
-	lib := &config.Library{}
-	src := &sources.Sources{}
-
-	if err := Generate(ctx, cfg, lib, src); err != nil {
-		t.Errorf("Generate() returned error: %v", err)
-	}
-}
-
-func TestClean(t *testing.T) {
-	lib := &config.Library{}
-
-	if err := Clean(lib); err != nil {
-		t.Errorf("Clean() returned error: %v", err)
-	}
-}
-
 func TestFormat(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	lib := &config.Library{}
 
 	if err := Format(ctx, lib); err != nil {
