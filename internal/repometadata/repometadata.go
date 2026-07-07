@@ -92,6 +92,9 @@ type RepoMetadata struct {
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
 
+	// RequiresBilling indicates whether the API requires billing.
+	RequiresBilling bool `json:"requires_billing"`
+
 	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
 	Transport string `json:"transport,omitempty"`
 }
@@ -135,6 +138,16 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 	if cfg.Language == config.LanguageJava {
 		transport = api.RepoMetadataTransport(cfg.Language, library)
 	}
+
+	var requiresBilling bool
+	if api.RequiresBilling != nil {
+		requiresBilling = *api.RequiresBilling
+	} else if library.Java != nil {
+		requiresBilling = !library.Java.BillingNotRequired
+	} else {
+		requiresBilling = true
+	}
+
 	return &RepoMetadata{
 		APIDescription:       api.Description,
 		APIID:                api.ServiceName,
@@ -147,6 +160,7 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
 		Repo:                 cfg.Repo,
+		RequiresBilling:      requiresBilling,
 		Transport:            transport,
 	}
 }

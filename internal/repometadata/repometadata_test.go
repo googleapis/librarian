@@ -49,6 +49,7 @@ func TestFromLibrary(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				RequiresBilling:      true,
 			},
 		},
 		{
@@ -63,6 +64,7 @@ func TestFromLibrary(t *testing.T) {
 				Repo:             "googleapis/google-cloud-python",
 				DistributionName: "google-longrunning",
 				APIDescription:   "Defines types and an abstract service to handle long-running operations.\n\n[Long-running operations] are a common pattern to handle methods that may take\na significant amount of time to execute. Many Google APIs return an `Operation`\nmessage (defined in this package) that are roughly analogous to a future. The\noperation will eventually complete, though it may still return an error on\ncompletion. The client libraries provide helpers to simplify polling of these\noperations.\n\n[Long-running operations]: https://google.aip.dev/151",
+				RequiresBilling:  true,
 			},
 		},
 	} {

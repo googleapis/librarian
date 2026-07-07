@@ -43,7 +43,6 @@ type repoMetadata struct {
 	DistributionName string `json:"distribution_name"`
 	APIID            string `json:"api_id,omitempty"`
 	LibraryType      string `json:"library_type"`
-	// Java-specific field.
 	RequiresBilling bool `json:"requires_billing"`
 
 	// Optional fields (appended in this order in Python)
@@ -106,19 +105,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
-	}
-
-	apiCfg, err := serviceconfig.Find(sourceDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-
-	if apiCfg.RequiresBilling != nil {
-		metadata.RequiresBilling = *apiCfg.RequiresBilling
-	} else if library.Java != nil {
-		metadata.RequiresBilling = !library.Java.BillingNotRequired
-	} else {
-		metadata.RequiresBilling = true
+		RequiresBilling:      sharedMetadata.RequiresBilling,
 	}
 
 	// Java-specific overrides and optional fields
