@@ -322,6 +322,12 @@ func TestRemoveFiles(t *testing.T) {
 			patterns:  []string{"src/*.java"},
 			wantFiles: map[string]string{"src/B.txt": "txt", "docs/C.html": "html"},
 		},
+		{
+			name:      "recursive directory deletion",
+			files:     map[string]string{"src/A.java": "java", "src/B.txt": "txt"},
+			patterns:  []string{"src/**"},
+			wantFiles: map[string]string{},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()

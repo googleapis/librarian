@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
@@ -109,6 +110,9 @@ func applyToFiles(outDir string, pathPattern string, action func(string) error) 
 	if len(files) == 0 {
 		return fmt.Errorf("no files match pattern %q in %s: %w", pathPattern, outDir, fs.ErrNotExist)
 	}
+	// Reverse sort so children are processed before parent directories.
+	slices.Sort(files)
+	slices.Reverse(files)
 	for _, file := range files {
 		if err := action(file); err != nil {
 			return err
