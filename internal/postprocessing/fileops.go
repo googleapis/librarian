@@ -39,6 +39,9 @@ var (
 
 	// errEmptyPattern is returned when the regex pattern to replace is empty.
 	errEmptyPattern = errors.New("regex pattern cannot be empty")
+
+	// errSameSourceAndDestination is returned when Src and Dst resolve to the same path.
+	errSameSourceAndDestination = errors.New("src and dst must be different")
 )
 
 // Replace finds and replaces exact text in a file.
@@ -89,6 +92,9 @@ func CopyFiles(outDir string, copyConfigs []config.CopyConfig) error {
 	for _, c := range copyConfigs {
 		srcAbs := filepath.Join(outDir, c.Src)
 		dstAbs := filepath.Join(outDir, c.Dst)
+		if srcAbs == dstAbs {
+			return fmt.Errorf("invalid copy config for %s: %w", c.Src, errSameSourceAndDestination)
+		}
 		if err := os.MkdirAll(filepath.Dir(dstAbs), 0755); err != nil {
 			return fmt.Errorf("failed to create directory for %s: %w", c.Dst, err)
 		}

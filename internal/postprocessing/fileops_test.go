@@ -426,12 +426,36 @@ func TestCopyFiles(t *testing.T) {
 }
 
 func TestCopyFiles_Error(t *testing.T) {
-	dir := t.TempDir()
-	configs := []config.CopyConfig{
-		{Src: "nonexistent.txt", Dst: "dst.txt"},
-	}
-	err := CopyFiles(dir, configs)
-	if !errors.Is(err, fs.ErrNotExist) {
-		t.Errorf("CopyFiles() error = %v, want %v", err, fs.ErrNotExist)
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		configs []config.CopyConfig
+		wantErr error
+	}{
+		{
+			name:  "nonexistent source file",
+			files: map[string]string{},
+			configs: []config.CopyConfig{
+				{Src: "nonexistent.txt", Dst: "dst.txt"},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:  "same source and destination",
+			files: map[string]string{"foo.txt": "hello"},
+			configs: []config.CopyConfig{
+				{Src: "foo.txt", Dst: "foo.txt"},
+			},
+			wantErr: errSameSourceAndDestination,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			err := CopyFiles(dir, test.configs)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("CopyFiles() error = %v, want %v", err, test.wantErr)
+			}
+		})
 	}
 }
