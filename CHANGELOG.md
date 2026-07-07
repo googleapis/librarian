@@ -1,5 +1,31 @@
 # Changelog
 
+## [0.25.0](https://github.com/googleapis/librarian/compare/v0.24.0...v0.25.0) (2026-07-07)
+
+
+### Features
+
+* **internal/config:** add declarative postprocessing config schema ([#6651](https://github.com/googleapis/librarian/issues/6651)) ([12ecef3](https://github.com/googleapis/librarian/commit/12ecef3cc5ecf710f41b3af5b1c68bc15c1ddce0)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/filesystem:** add MoveAndMergeWithKeep and MoveAndMerge deprecation TODO ([#6644](https://github.com/googleapis/librarian/issues/6644)) ([fe91dda](https://github.com/googleapis/librarian/commit/fe91ddabce012d514ad171ae530ec7673a7fc06c)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/librarian/java:** add comment to fully generated POM templates ([#6648](https://github.com/googleapis/librarian/issues/6648)) ([54f881b](https://github.com/googleapis/librarian/commit/54f881be2f540f0d48fafde876eb544bc901f9c4))
+* **internal/librarian/java:** add Java README rendering without snippets ([#6636](https://github.com/googleapis/librarian/issues/6636)) ([96e890a](https://github.com/googleapis/librarian/commit/96e890a94817aaa004ea0eb1abed7afdcd4041a6)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add logging-logback to legacy BOMs ([#6669](https://github.com/googleapis/librarian/issues/6669)) ([258d1de](https://github.com/googleapis/librarian/commit/258d1de0147d3d3d874015895dab778f96640e9e))
+* **internal/librarian/java:** add README metadata parsing helpers ([#6595](https://github.com/googleapis/librarian/issues/6595)) ([c402d4a](https://github.com/googleapis/librarian/commit/c402d4a96213cdc8519924aecd4cb025eb5e268a)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** add README partials loader ([#6596](https://github.com/googleapis/librarian/issues/6596)) ([4babb38](https://github.com/googleapis/librarian/commit/4babb38e4e68913c0a2fdc872f477e4faf56f14c)), closes [#6515](https://github.com/googleapis/librarian/issues/6515)
+* **internal/librarian/java:** pre-validate java libraries bom version in config ([#6613](https://github.com/googleapis/librarian/issues/6613)) ([6fe1ee3](https://github.com/googleapis/librarian/commit/6fe1ee3235dc4ad4ee39ed52c9fcdc85acf1417c))
+* **internal/librarian/java:** source google-cloud-pom-parent in pom.xml templates ([#6607](https://github.com/googleapis/librarian/issues/6607)) ([3c46b73](https://github.com/googleapis/librarian/commit/3c46b735a8022b8272b0c6d7e73edb3ca2884b95))
+* **internal/librarian/php:** add skeleton code for PHP client library generation ([#6641](https://github.com/googleapis/librarian/issues/6641)) ([dba27ec](https://github.com/googleapis/librarian/commit/dba27ecf21729abee39aca325f6310884dabe613))
+* **internal/librarian:** add `protoc` installation support ([#6583](https://github.com/googleapis/librarian/issues/6583)) ([6037497](https://github.com/googleapis/librarian/commit/6037497ba994e88193d8d99458eb7ee3322893fa)), closes [#6558](https://github.com/googleapis/librarian/issues/6558)
+* **internal/librarian:** track Go snippet metadata in release-please ([#6525](https://github.com/googleapis/librarian/issues/6525)) ([22c3b33](https://github.com/googleapis/librarian/commit/22c3b3371c30ac9b2bfd584ea4b02b7a19251bb6))
+* **nodejs:** read nodejs tools from librarian.yaml config ([#6649](https://github.com/googleapis/librarian/issues/6649)) ([0bebff2](https://github.com/googleapis/librarian/commit/0bebff2b209bdbadca48216df52e91550430cce4))
+
+
+### Bug Fixes
+
+* **internal/postprocessing:** add input validation and error handling in Replace and ReplaceRegex ([#6661](https://github.com/googleapis/librarian/issues/6661)) ([1a32aab](https://github.com/googleapis/librarian/commit/1a32aabc20c0127e4a1f57a2f0d4554c7f68466b)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **rust:** do not add empty rust config ([#6609](https://github.com/googleapis/librarian/issues/6609)) ([c563304](https://github.com/googleapis/librarian/commit/c563304001e75ec6ebf7c9740c97afd012a7ea97))
+* **rust:** tidy empty rust blocks ([#6618](https://github.com/googleapis/librarian/issues/6618)) ([dfa0f2d](https://github.com/googleapis/librarian/commit/dfa0f2da0dc61be993051444b7fafee6589a825e))
+
 ## [0.24.0](https://github.com/googleapis/librarian/compare/v0.23.0...v0.24.0) (2026-07-01)
 
 
