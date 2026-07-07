@@ -43,7 +43,7 @@ type repoMetadata struct {
 	DistributionName string `json:"distribution_name"`
 	APIID            string `json:"api_id,omitempty"`
 	LibraryType      string `json:"library_type"`
-	RequiresBilling bool `json:"requires_billing"`
+	RequiresBilling  bool   `json:"requires_billing"`
 
 	// Optional fields (appended in this order in Python)
 	// Java-specific field.
