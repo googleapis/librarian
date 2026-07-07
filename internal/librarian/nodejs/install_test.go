@@ -237,27 +237,47 @@ func TestRepoFromPackageURL_Error(t *testing.T) {
 }
 
 func TestInstallDir(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", binDir)
-	got, err := InstallDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := filepath.Join(binDir, "nodejs_tools")
-	if got != want {
-		t.Errorf("InstallDir() = %q, want %q", got, want)
+	for _, test := range []struct {
+		name string
+	}{
+		{
+			name: "returns nodejs_tools directory under LIBRARIAN_BIN",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			got, err := InstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := filepath.Join(binDir, "nodejs_tools")
+			if got != want {
+				t.Errorf("InstallDir() = %q, want %q", got, want)
+			}
+		})
 	}
 }
 
 func TestGetToolsEnv(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", binDir)
-	env, err := getToolsEnv()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := filepath.Join(binDir, "nodejs_tools", "bin")
-	if got := env["PATH"]; got != want {
-		t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
+	for _, test := range []struct {
+		name string
+	}{
+		{
+			name: "returns PATH with nodejs_tools bin directory",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			env, err := getToolsEnv()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := filepath.Join(binDir, "nodejs_tools", "bin")
+			if got := env["PATH"]; got != want {
+				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
+			}
+		})
 	}
 }
