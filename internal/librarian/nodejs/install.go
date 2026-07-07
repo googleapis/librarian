@@ -89,9 +89,18 @@ func InstallDir() (string, error) {
 	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
+// getBinDir returns the directory where Node.js tool executables are stored.
+func getBinDir() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, "bin"), nil
+}
+
 // getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.
 func getToolsEnv() (map[string]string, error) {
-	binDir, err := InstallDir()
+	binDir, err := getBinDir()
 	if err != nil {
 		return nil, err
 	}
@@ -110,13 +119,17 @@ func getPNPMEnv() ([]string, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	binDir, err := InstallDir()
+	installDir, err := InstallDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve librarian install directory: %w", err)
+	}
+	binDir, err := getBinDir()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
 	}
 
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+binDir)
+	env = append(env, "PNPM_HOME="+installDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
