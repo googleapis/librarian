@@ -61,6 +61,44 @@ func TestGenerateModule(t *testing.T) {
 	}
 }
 
+func TestGenerateModule_SwiftProtobuf(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-swift")
+	testhelper.RequireCommand(t, "protoc-gen-grpc-swift")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:          "GoogleTypeModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        outDir,
+	}
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:  "google/type",
+			Output:   filepath.Join(outDir, "ProtoJSON"),
+			Template: "swift-protobuf",
+		},
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	if err := Generate(t.Context(), cfg, library, src); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedFile := filepath.Join(outDir, "ProtoJSON", "google", "type", "expr.pb.swift")
+	if _, err := os.Stat(expectedFile); err != nil {
+		t.Error(err)
+	}
+}
+
 func TestModuleToModelConfig(t *testing.T) {
 	src := &sources.Sources{}
 	for _, test := range []struct {
