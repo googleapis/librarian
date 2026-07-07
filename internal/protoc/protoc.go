@@ -44,11 +44,20 @@ var (
 // Install installs the protoc tool.
 func Install(ctx context.Context, protoc *config.Protoc) error {
 	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
-	dir, err := installDir(protoc.Version)
+	dir, err := InstallDir(protoc.Version)
 	if err != nil {
 		return err
 	}
 	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
+}
+
+// InstallDir returns the directory where the protoc binary should be installed.
+func InstallDir(version string) (string, error) {
+	binDir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
 }
 
 // downloadAndExtract downloads and installs the protoc binary from the given URL to the given directory.
@@ -65,15 +74,6 @@ func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 func downloadURL(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
-}
-
-// installDir returns the directory where the protoc binary should be installed.
-func installDir(version string) (string, error) {
-	binDir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
 }
 
 // platformSuffix returns the platform suffix for the given OS and architecture.
