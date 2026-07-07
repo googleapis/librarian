@@ -33,15 +33,12 @@ import (
 // source.
 const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil {
+	if tools == nil || len(tools.PNPM) == 0 {
 		return errNoToolsSpecified
-	}
-	if len(tools.PNPM) == 0 {
-		return nil
 	}
 
 	for _, cmd := range []string{"node", "pnpm"} {

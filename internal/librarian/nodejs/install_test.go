@@ -102,24 +102,6 @@ exit 0
 	}
 }
 
-func TestInstall_NoOp(t *testing.T) {
-	for _, test := range []struct {
-		name  string
-		tools *config.Tools
-	}{
-		{
-			name:  "empty tools",
-			tools: &config.Tools{},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if err := Install(t.Context(), test.tools); err != nil {
-				t.Fatalf("Install() err = %v, want nil", err)
-			}
-		})
-	}
-}
-
 func TestInstall_Error(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -129,6 +111,11 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name:    "nil tools",
 			tools:   nil,
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name:    "empty tools",
+			tools:   &config.Tools{},
 			wantErr: errNoToolsSpecified,
 		},
 	} {
