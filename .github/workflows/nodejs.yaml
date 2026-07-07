@@ -36,6 +36,16 @@ jobs:
         id: tool-paths
         run: |
           echo "npm=$(npm config get prefix)" >> "$GITHUB_OUTPUT"
+      - name: "Checkout google-cloud-node"
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
+        with:
+          repository: googleapis/google-cloud-node
+          path: google-cloud-node
+          depth: 1
+          sparse-checkout: |
+            librarian.yaml
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
       - name: "Install Node.js dependencies (restore cache)"
         uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         id: tools-cache
@@ -43,9 +53,10 @@ jobs:
           path: |
             ${{ steps.tool-paths.outputs.npm }}
             ~/.cache/librarian
-          key: nodejs-tools-v2-${{ hashFiles('internal/librarian/nodejs/librarian.yaml') }}
+          key: nodejs-tools-v3-${{ hashFiles('google-cloud-node/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'
         run: librarian -v install nodejs
+        working-directory: google-cloud-node
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/nodejs
