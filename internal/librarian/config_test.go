@@ -201,3 +201,32 @@ func TestRunConfigSet_FileNotFound(t *testing.T) {
 		t.Fatalf("got error %v, want %v", err, fs.ErrNotExist)
 	}
 }
+
+func TestParseRequiresBilling(t *testing.T) {
+	configYAML := `
+libraries:
+  - name: "with-billing"
+    requires_billing: true
+  - name: "without-billing"
+    requires_billing: false
+  - name: "unspecified"
+`
+	cfg, err := yaml.Unmarshal[config.Config]([]byte(configYAML))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if len(cfg.Libraries) != 3 {
+		t.Fatalf("expected 3 libraries, got %d", len(cfg.Libraries))
+	}
+
+	if cfg.Libraries[0].RequiresBilling == nil || !*cfg.Libraries[0].RequiresBilling {
+		t.Errorf("expected true for with-billing")
+	}
+	if cfg.Libraries[1].RequiresBilling == nil || *cfg.Libraries[1].RequiresBilling {
+		t.Errorf("expected false for without-billing")
+	}
+	if cfg.Libraries[2].RequiresBilling != nil {
+		t.Errorf("expected nil for unspecified")
+	}
+}
