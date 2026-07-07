@@ -26,6 +26,7 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
@@ -38,14 +39,10 @@ var (
 
 	// errEmptyPattern is returned when the regex pattern to replace is empty.
 	errEmptyPattern = errors.New("regex pattern cannot be empty")
-)
 
-// CopyFile copies a single file from the src path to the dst path.
-// It acts as a wrapper around filesystem.CopyFile to provide a unified
-// interface for all postprocessing file operations.
-func CopyFile(src, dst string) error {
-	return filesystem.CopyFile(src, dst)
-}
+	// errSameSourceAndDestination is returned when Src and Dst resolve to the same path.
+	errSameSourceAndDestination = errors.New("src and dst must be different")
+)
 
 // Replace finds and replaces exact text in a file.
 // It returns an error if the target file does not exist or if the text is not found.
@@ -88,6 +85,24 @@ func ReplaceRegex(path, pattern, replacement string) error {
 	}
 	newContent := re.ReplaceAll(content, []byte(replacement))
 	return os.WriteFile(path, newContent, 0644)
+}
+
+// CopyFiles copies files specified by copyConfigs from src to dst inside outDir.
+func CopyFiles(outDir string, copyConfigs []config.CopyConfig) error {
+	for _, c := range copyConfigs {
+		srcAbs := filepath.Join(outDir, c.Src)
+		dstAbs := filepath.Join(outDir, c.Dst)
+		if srcAbs == dstAbs {
+			return fmt.Errorf("invalid copy config for %s: %w", c.Src, errSameSourceAndDestination)
+		}
+		if err := os.MkdirAll(filepath.Dir(dstAbs), 0755); err != nil {
+			return fmt.Errorf("failed to create directory for %s: %w", c.Dst, err)
+		}
+		if err := filesystem.CopyFile(srcAbs, dstAbs); err != nil {
+			return fmt.Errorf("failed to copy file from %s to %s: %w", c.Src, c.Dst, err)
+		}
+	}
+	return nil
 }
 
 // RemoveFiles removes all files in outDir matching the given patterns (exact paths or globs).
