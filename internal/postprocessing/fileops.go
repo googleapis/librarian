@@ -101,7 +101,7 @@ func RemoveFiles(outDir string, removePatterns []string) error {
 }
 
 // applyToFiles executes action on files matching pathPattern under outDir.
-// Note: Uses filepath.Glob (* only, ** is not supported).
+// Note: Uses [filepath.Glob] (* only, ** is not supported).
 func applyToFiles(outDir string, pathPattern string, action func(string) error) error {
 	files, err := filepath.Glob(filepath.Join(outDir, pathPattern))
 	if err != nil {
