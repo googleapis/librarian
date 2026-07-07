@@ -891,7 +891,6 @@ func TestRenderREADME(t *testing.T) {
 	defaultLibraryVersion := "1.2.3-LIB"
 	for _, test := range []struct {
 		name       string
-		metadata   *repoMetadata
 		setupFiles func(t *testing.T, dir string)
 		goldenFile string
 	}{
@@ -916,10 +915,6 @@ func TestRenderREADME(t *testing.T) {
 			if test.setupFiles != nil {
 				test.setupFiles(t, dir)
 			}
-			meta := test.metadata
-			if meta == nil {
-				meta = defaultMetadata
-			}
 			params := libraryPostProcessParams{
 				outDir: dir,
 				library: &config.Library{
@@ -932,7 +927,7 @@ func TestRenderREADME(t *testing.T) {
 						},
 					},
 				},
-				metadata: meta,
+				metadata: defaultMetadata,
 			}
 			if err := renderREADME(params, nil); err != nil {
 				t.Fatal(err)
