@@ -196,13 +196,31 @@ func TestRepoFromPackageURL(t *testing.T) {
 		name       string
 		packageURL string
 		want       string
-		wantErr    error
 	}{
 		{
 			name:       "valid archive url",
 			packageURL: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
 			want:       "github.com/googleapis/google-cloud-node",
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := repoFromPackageURL(test.packageURL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("repoFromPackageURL(%q) = %q, want %q", test.packageURL, got, test.want)
+			}
+		})
+	}
+}
+
+func TestRepoFromPackageURL_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		packageURL string
+		wantErr    error
+	}{
 		{
 			name:       "invalid archive url",
 			packageURL: "https://github.com/googleapis/google-cloud-node/invalid",
@@ -210,12 +228,9 @@ func TestRepoFromPackageURL(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got, err := repoFromPackageURL(test.packageURL)
+			_, err := repoFromPackageURL(test.packageURL)
 			if !errors.Is(err, test.wantErr) {
 				t.Fatalf("repoFromPackageURL(%q) error = %v, wantErr = %v", test.packageURL, err, test.wantErr)
-			}
-			if got != test.want {
-				t.Errorf("repoFromPackageURL(%q) = %q, want %q", test.packageURL, got, test.want)
 			}
 		})
 	}
