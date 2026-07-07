@@ -464,7 +464,6 @@ type JavaDefault struct {
 	// paths (e.g., maps, ads, shopping).
 	CustomGroupIDs map[string]string `yaml:"custom_group_ids,omitempty"`
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	// This must be set in the default configuration.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 }
 

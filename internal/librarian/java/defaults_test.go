@@ -544,15 +544,7 @@ func TestValidate(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Default: &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				},
-				Libraries: []*config.Library{test.lib},
-			}
-			if err := Validate(cfg); err != nil {
+			if err := Validate(test.lib); err != nil {
 				t.Errorf("Validate(%+v) error = %v, want nil", test.lib, err)
 			}
 		})
@@ -615,15 +607,7 @@ func TestValidate_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{
-				Default: &config.Default{
-					Java: &config.JavaDefault{
-						LibrariesBOMVersion: "1.2.3",
-					},
-				},
-				Libraries: []*config.Library{test.lib},
-			}
-			err := Validate(cfg)
+			err := Validate(test.lib)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Validate() error = %v, want %v", err, test.wantErr)
 			}
@@ -726,60 +710,6 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 			_, err := deriveLastReleasedVersion(test.input)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
-			}
-		})
-	}
-}
-
-func TestValidate_Config(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		def  *config.Default
-	}{
-		{
-			name: "valid bom version",
-			def: &config.Default{
-				Java: &config.JavaDefault{
-					LibrariesBOMVersion: "1.2.3",
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Default: test.def}
-			if err := Validate(cfg); err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func TestValidate_ConfigError(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		def     *config.Default
-		wantErr error
-	}{
-		{
-			name:    "nil default",
-			def:     nil,
-			wantErr: errBOMVersionMissing,
-		},
-		{
-			name: "empty bom version",
-			def: &config.Default{
-				Java: &config.JavaDefault{
-					LibrariesBOMVersion: "",
-				},
-			},
-			wantErr: errBOMVersionMissing,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			cfg := &config.Config{Default: test.def}
-			got := Validate(cfg)
-			if !errors.Is(got, test.wantErr) {
-				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)
 			}
 		})
 	}
