@@ -114,10 +114,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return err
 	}
-	bomVersion, err := findBOMVersion(params.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to find BOM version: %w", err)
-	}
+	bomVersion := params.cfg.Default.Java.LibrariesBOMVersion
 	partials, err := loadReadmePartials(params.outDir)
 	if err != nil {
 		return err
