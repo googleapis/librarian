@@ -152,6 +152,7 @@ func TestInstall_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
+			wantErr: errMissingExecutable,
 		},
 		{
 			name: "missing package url for build tool",
@@ -163,6 +164,7 @@ func TestInstall_Error(t *testing.T) {
 			setup: func(t *testing.T) {
 				stubExecutables(t)
 			},
+			wantErr: errMissingPackageURL,
 		},
 		{
 			name: "invalid package url for build tool",

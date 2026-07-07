@@ -38,6 +38,8 @@ const (
 var (
 	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
 	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
+	errMissingPackageURL = errors.New("has build steps but no package URL")
 )
 
 // Install installs Node.js tool dependencies.
@@ -48,7 +50,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 
 	for _, cmd := range []string{"node", "pnpm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
-			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
+			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
 		}
 	}
 
@@ -137,7 +139,7 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 
 func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
-		return fmt.Errorf("pnpm tool %s has build steps but no package URL", tool.Name)
+		return fmt.Errorf("pnpm tool %s %w", tool.Name, errMissingPackageURL)
 	}
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
