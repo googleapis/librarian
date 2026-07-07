@@ -16,6 +16,7 @@ package golang
 
 import (
 	"fmt"
+	"path"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -66,4 +67,66 @@ func deriveVersionlessImportPath(apiPath string) string {
 		leaf = apiPath[idx+1:]
 	}
 	return fmt.Sprintf("%s/%spb", apiPath, leaf)
+}
+
+// ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Go libraries.
+func ReleasePleaseExtraFiles(lib *config.Library) []any {
+	var extraFiles []any
+	for _, api := range lib.APIs {
+		goAPI := api.Go
+		if goAPI == nil {
+			goAPI = &config.GoAPI{}
+		}
+		if goAPI.ProtoOnly || goAPI.NoSnippets {
+			continue
+		}
+
+		importPath := goAPI.ImportPath
+		if importPath == "" {
+			importPath, _ = defaultImportPathAndClientPkg(api.Path)
+		}
+		if importPath == "" {
+			continue
+		}
+
+		clientPath := importPath
+		if lib.Go != nil && lib.Go.ModulePathVersion != "" {
+			modulePathVersion := "/" + lib.Go.ModulePathVersion
+			clientPath = strings.Replace(clientPath, modulePathVersion, "", 1)
+		}
+
+		var relPath string
+		if idx := strings.Index(clientPath, lib.Name+"/"); idx != -1 {
+			relPath = clientPath[idx+len(lib.Name)+1:]
+		} else {
+			relPath = strings.TrimPrefix(clientPath, lib.Name+"/")
+		}
+		snippetDir := path.Join("examples", relPath)
+		if lib.Go != nil {
+			deleted := false
+			for _, delPath := range lib.Go.DeleteGenerationOutputPaths {
+				cleanedDel := strings.TrimSuffix(delPath, "/")
+				if snippetDir == cleanedDel || strings.HasPrefix(snippetDir, cleanedDel+"/") {
+					deleted = true
+					break
+				}
+			}
+			if deleted {
+				continue
+			}
+		}
+
+		protoPackage := goAPI.ProtoPackage
+		if protoPackage == "" {
+			protoPackage = strings.ReplaceAll(api.Path, "/", ".")
+		}
+
+		snippetMetadata := map[string]any{
+			"jsonpath": "$.clientLibrary.version",
+			"path":     path.Join(snippetDir, "snippet_metadata."+protoPackage+".json"),
+			"type":     "json",
+		}
+		extraFiles = append(extraFiles, snippetMetadata)
+	}
+	return extraFiles
 }

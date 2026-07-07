@@ -15,20 +15,30 @@
 package nodejs
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func TestInstall(t *testing.T) {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		t.Fatal(err)
+	tools := &config.Tools{
+		PNPM: []*config.PNPMTool{
+			{
+				Name:    "gapic-generator-typescript",
+				Version: "4.12.1",
+				Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+				Build: []string{
+					"pnpm install",
+					"./node_modules/.bin/tsc",
+					"cp -a templates protos build/",
+				},
+			},
+		},
 	}
-	tool := cfg.Tools.PNPM[0]
+	tool := tools.PNPM[0]
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
 		t.Fatal(err)
@@ -87,7 +97,33 @@ exit 0
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 
-	if err := Install(t.Context()); err != nil {
+	if err := Install(t.Context(), tools); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestInstall_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tools   *config.Tools
+		wantErr error
+	}{
+		{
+			name:    "nil tools",
+			tools:   nil,
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name:    "empty tools",
+			tools:   &config.Tools{},
+			wantErr: errNoToolsSpecified,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Install(t.Context(), test.tools)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Install() err = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
 	}
 }

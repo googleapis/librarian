@@ -22,6 +22,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestExtractSamples(t *testing.T) {
@@ -874,6 +875,142 @@ func TestExtractSnippetsFromFile_Error(t *testing.T) {
 			_, err := extractSnippetsFromFile(test.file)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("extractSnippetsFromFile(%q) error = %v, wantErr %v", test.file, err, test.wantErr)
+			}
+		})
+	}
+}
+func TestRenderREADME(t *testing.T) {
+	defaultMetadata := &repoMetadata{
+		NamePretty:       "My API",
+		DistributionName: "com.google.cloud:google-cloud-myapi",
+		Repo:             "googleapis/google-cloud-java",
+		APIShortname:     "myapi",
+		MinJavaVersion:   8,
+	}
+	defaultBOMVersion := "1.0.0-BOM"
+	defaultLibraryVersion := "1.2.3-LIB"
+	for _, test := range []struct {
+		name       string
+		setupFiles func(t *testing.T, dir string)
+		goldenFile string
+	}{
+		{
+			name:       "renders standard README without partials",
+			goldenFile: filepath.Join("testdata", "readme", "standard.golden"),
+		},
+		{
+			name: "renders README with loaded partial overrides",
+			setupFiles: func(t *testing.T, dir string) {
+				path := filepath.Join(dir, readmePartialsFile)
+				content := `about: "This is a great API."`
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if test.setupFiles != nil {
+				test.setupFiles(t, dir)
+			}
+			params := libraryPostProcessParams{
+				outDir: dir,
+				library: &config.Library{
+					Version: defaultLibraryVersion,
+				},
+				cfg: &config.Config{
+					Default: &config.Default{
+						Java: &config.JavaDefault{
+							LibrariesBOMVersion: defaultBOMVersion,
+						},
+					},
+				},
+				metadata: defaultMetadata,
+			}
+			if err := renderREADME(params, nil); err != nil {
+				t.Fatal(err)
+			}
+			outputPath := filepath.Join(dir, "README.md")
+			outputBytes, err := os.ReadFile(outputPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if *update {
+				if err := os.MkdirAll(filepath.Dir(test.goldenFile), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(test.goldenFile, outputBytes, 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			wantBytes, err := os.ReadFile(test.goldenFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(string(wantBytes), string(outputBytes)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestRenderREADME_KeepSet(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "README.md")
+	wantContent := "Custom README content"
+	if err := os.WriteFile(path, []byte(wantContent), 0644); err != nil {
+		t.Fatal(err)
+	}
+	params := libraryPostProcessParams{outDir: dir}
+	if err := renderREADME(params, map[string]bool{readmeFile: true}); err != nil {
+		t.Fatal(err)
+	}
+	gotBytes, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if diff := cmp.Diff(wantContent, string(gotBytes)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRenderREADME_Error(t *testing.T) {
+	validMeta := &repoMetadata{Repo: "repo", DistributionName: "com.google.cloud:google-cloud-foo"}
+	validLib := &config.Library{Version: "1.2.3"}
+	validCfg := &config.Config{Default: &config.Default{Java: &config.JavaDefault{LibrariesBOMVersion: "1.0.0"}}}
+	for _, test := range []struct {
+		name    string
+		params  libraryPostProcessParams
+		keepSet map[string]bool
+		wantErr error
+	}{
+		{
+			name:    "empty directory returns error",
+			params:  libraryPostProcessParams{outDir: "", metadata: validMeta, library: validLib, cfg: validCfg},
+			wantErr: errEmptyDir,
+		},
+		{
+			name:    "nil metadata returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: nil, library: validLib, cfg: validCfg},
+			wantErr: errNilMetadata,
+		},
+		{
+			name:    "nil library returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: validMeta, library: nil, cfg: validCfg},
+			wantErr: errNilLibrary,
+		},
+		{
+			name:    "nil config returns error",
+			params:  libraryPostProcessParams{outDir: "dir", metadata: validMeta, library: validLib, cfg: nil},
+			wantErr: errNilConfig,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := renderREADME(test.params, test.keepSet)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("renderREADME() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

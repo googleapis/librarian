@@ -59,7 +59,7 @@ func TestPostGenerate(t *testing.T) {
 	if !strings.Contains(rootPOMContent, "<version>0.201.0</version>") {
 		t.Errorf("root pom.xml missing correct version, got:\n%s", rootPOMContent)
 	}
-	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification"}
+	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification", "java-logging-logback"}
 	for _, mod := range modules {
 		if !strings.Contains(rootPOMContent, "<module>"+mod+"</module>") {
 			t.Errorf("root pom.xml missing module %s", mod)
@@ -71,6 +71,7 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.area120", ArtifactID: "google-area120-tables-bom", Version: "0.92.0", Type: "pom", Scope: "import"},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-aiplatform-bom", Version: "3.89.0", Type: "pom", Scope: "import"},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-dns", Version: "2.86.0", Type: "", Scope: ""},
+		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-logging-logback", Version: "0.143.0-alpha-SNAPSHOT", Type: "", Scope: ""},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
