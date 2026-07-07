@@ -40,8 +40,8 @@ var errNoToolsSpecified = errors.New("no tools specified in configuration")
 
 // Install installs Java tool dependencies.
 // It creates two sibling directories:
-// - bin/ ($HOME/java_tools/bin) stores the generated executable wrapper scripts.
-// - lib/ ($HOME/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
+// - bin/ ($LIBRARIAN_BIN/java_tools/bin) stores the generated executable wrapper scripts.
+// - lib/ ($LIBRARIAN_BIN/java_tools/lib) isolates the downloaded compiled .jar/.exe files.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if tools == nil || (len(tools.Maven) == 0 && len(tools.Pip) == 0) {
 		return errNoToolsSpecified
@@ -82,6 +82,15 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	return nil
+}
+
+// InstallDir returns the absolute path of the installation directory for Java tools.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
@@ -233,18 +242,9 @@ func buildLocalMavenProject(ctx context.Context, localPath string) error {
 	return nil
 }
 
-// getInstallDir returns the absolute path of the installation directory for Java tools.
-func getInstallDir() (string, error) {
-	dir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
-}
-
 // getBinDir returns the absolute path of the directory where Java tool wrapper scripts are stored.
 func getBinDir() (string, error) {
-	installDir, err := getInstallDir()
+	installDir, err := InstallDir()
 	if err != nil {
 		return "", err
 	}
@@ -254,7 +254,7 @@ func getBinDir() (string, error) {
 // getLibDir returns the absolute path of the directory where Java tool library files (such as .jar
 // or .exe files) are stored.
 func getLibDir() (string, error) {
-	installDir, err := getInstallDir()
+	installDir, err := InstallDir()
 	if err != nil {
 		return "", err
 	}

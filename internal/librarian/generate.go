@@ -25,6 +25,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -158,6 +159,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = java.Clean(library)
 		case config.LanguageNodejs:
 			err = nodejs.Clean(library)
+		case config.LanguagePhp:
+			err = php.Clean(library)
 		case config.LanguagePython:
 			err = python.Clean(library)
 		case config.LanguageRust:
@@ -233,7 +236,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 	case config.LanguageJava:
 		var allMissingArtifacts []java.MissingArtifact
 		for _, library := range libraries {
-			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output, src)
+			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output)
 			if err != nil {
 				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
 			}
@@ -255,6 +258,20 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 			g.Go(func() error {
 				if err := nodejs.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
+	case config.LanguagePhp:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := php.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				if err := php.Format(gctx, library); err != nil {
+					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
 			})

@@ -37,10 +37,6 @@ func fetchGoogleapisWithCommit(ctx context.Context, endpoints *fetch.Endpoints, 
 	return fetchRepoWithCommit(ctx, endpoints, "googleapis", "googleapis", googleapisRepo, commitish)
 }
 
-func fetchShowcaseWithCommit(ctx context.Context, endpoints *fetch.Endpoints, commitish string) (*config.Source, error) {
-	return fetchRepoWithCommit(ctx, endpoints, "googleapis", "gapic-showcase", "github.com/googleapis/gapic-showcase", commitish)
-}
-
 func fetchRepoWithCommit(ctx context.Context, endpoints *fetch.Endpoints, org, name, repoURL, commitish string) (*config.Source, error) {
 	repo := &fetch.RepoRef{
 		Org:    org,

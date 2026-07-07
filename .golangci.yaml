@@ -38,9 +38,6 @@ linters:
           length: 120
   exclusions:
     rules:
-      - path: internal/legacylibrarian/
-        linters:
-          - godoclint
       - path: _test\.go$
         linters:
           - godoclint

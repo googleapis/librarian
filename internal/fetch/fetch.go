@@ -146,7 +146,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
 	}
-	if err := download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
+	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
 		return "", err
 	}
 	if err := extractTarball(tgz, outDir); err != nil {
@@ -286,14 +286,14 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
-// download downloads a file from the given url to the target path, verifying
-// its SHA256 checksum matches expectedSha256. It retries up to
+// Download downloads a file from the given url to the target path, verifying
+// its SHA256 checksum matches expectedSHA256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
-func download(ctx context.Context, target, url, expectedSha256 string) error {
+func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if fileExists(target) {
 		return nil
 	}
-	if expectedSha256 == "" {
+	if expectedSHA256 == "" {
 		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
@@ -319,8 +319,8 @@ func download(ctx context.Context, target, url, expectedSha256 string) error {
 	if err != nil {
 		return err
 	}
-	if sha != expectedSha256 {
-		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSha256, sha)
+	if sha != expectedSHA256 {
+		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
 	}
 	return os.Rename(tempPath, target)
 }
@@ -416,7 +416,6 @@ func extractTarball(tarballPath, destDir string) error {
 		if err != nil {
 			return err
 		}
-
 		// When GitHub creates a tarball archive of a repository, it wraps all
 		// the files in a top-level directory named in the format
 		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"

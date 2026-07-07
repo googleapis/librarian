@@ -52,7 +52,7 @@ func TestModelAnnotations(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, model.Codec, cmpopts.IgnoreFields(modelAnnotations{}, "BoilerPlate")); diff != "" {
-		t.Errorf("mismatch in model annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -88,7 +88,7 @@ func TestServiceAnnotations(t *testing.T) {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows")
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {
-		t.Errorf("mismatch in service annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -130,6 +130,6 @@ func TestMethodAnnotations(t *testing.T) {
 		t.Fatalf("cannot find service %s", ".google.cloud.workflows.v1.Workflows.GetWorkflow")
 	}
 	if diff := cmp.Diff(want, got.Codec); diff != "" {
-		t.Errorf("mismatch in method annotations (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

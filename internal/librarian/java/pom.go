@@ -26,7 +26,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
 const (
@@ -49,30 +48,31 @@ const (
 
 // grpcProtoPOMData holds the data for rendering POM templates.
 type gRPCProtoPOMData struct {
-	Proto          Coordinate
-	GRPC           Coordinate
-	Parent         Coordinate
+	Proto          coordinate
+	GRPC           coordinate
+	Parent         coordinate
 	Version        string
 	MainArtifactID string
 }
 
 // clientPOMData holds the data for rendering the client library POM template.
 type clientPOMData struct {
-	Client       Coordinate
+	Client       coordinate
 	Version      string
 	Name         string
 	Description  string
-	Parent       Coordinate
-	ProtoModules []Coordinate
-	GRPCModules  []Coordinate
+	Parent       coordinate
+	ProtoModules []coordinate
+	GRPCModules  []coordinate
 }
 
 // bomParentPOMData holds the data for rendering the BOM and Parent library POM template.
 type bomParentPOMData struct {
-	MainModule      Coordinate
+	MainModule      coordinate
 	Name            string
 	MonorepoVersion string
-	Modules         []Coordinate
+	ParentVersion   string
+	Modules         []coordinate
 }
 
 // javaModule represents a Maven module and its POM generation state.
@@ -82,6 +82,15 @@ type javaModule struct {
 	isMissing    bool
 	templateData any
 	template     string
+}
+
+type syncPOMsParams struct {
+	library         *config.Library
+	libraryDir      string
+	monorepoVersion string
+	parentVersion   string
+	metadata        *repoMetadata
+	transports      map[string]serviceconfig.Transport
 }
 
 type moduleKind int
@@ -99,18 +108,18 @@ type expectedModule struct {
 	Dir        string
 	Kind       moduleKind
 	IsMissing  bool
-	Coordinate Coordinate
-	APICoords  *APICoordinate
+	Coordinate coordinate
+	APICoords  *apiCoordinate
 }
 
-func loadTransports(library *config.Library, googleapisDir string) (map[string]serviceconfig.Transport, error) {
+func loadTransports(library *config.Library) (map[string]serviceconfig.Transport, error) {
 	transports := make(map[string]serviceconfig.Transport)
 	for _, api := range library.APIs {
-		apiCfg, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageJava)
+		transport, err := serviceconfig.FindTransport(api.Path, config.LanguageJava)
 		if err != nil {
-			return nil, fmt.Errorf("failed to find api config for %s: %w", api.Path, err)
+			return nil, err
 		}
-		transports[api.Path] = apiCfg.Transport(config.LanguageJava)
+		transports[api.Path] = transport
 	}
 	return transports, nil
 }
@@ -120,7 +129,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 		return nil, nil
 	}
 	var modules []expectedModule
-	libCoord := DeriveLibraryCoordinates(library)
+	libCoord := deriveLibraryCoordinates(library)
 	var shouldGenerateClient bool
 	for _, api := range library.APIs {
 		javaAPI := api.Java
@@ -128,7 +137,7 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 			shouldGenerateClient = true
 		}
 		apiBase := deriveAPIBase(library, api.Path)
-		apiCoord := DeriveAPICoordinates(libCoord, apiBase, javaAPI)
+		apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
 		// Proto module
 		if shouldGenerateProto(javaAPI) {
@@ -216,8 +225,8 @@ func discoverModules(library *config.Library, libraryDir string, transports map[
 // and parent POMs when new proto or gRPC modules are added. It returns a list
 // of newly created artifact version entries to be added to versions.txt.
 // TODO(https://github.com/googleapis/librarian/issues/5529): remove returning version entries.
-func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) error {
-	modules, err := collectModules(library, libraryDir, monorepoVersion, metadata, transports)
+func syncPOMs(params syncPOMsParams) error {
+	modules, err := collectModules(params)
 	if err != nil {
 		return err
 	}
@@ -263,10 +272,8 @@ func syncPOMs(library *config.Library, libraryDir, monorepoVersion string, metad
 // IdentifyMissingModules identifies all expected proto-*, grpc-*, client, BOM and Parent modules
 // for the given library based on its configuration and checks for pom.xml presence
 // on the filesystem. It returns a list of artifact IDs for the missing modules.
-func IdentifyMissingModules(library *config.Library, libraryDir string, srcs *sources.Sources) ([]string, error) {
-	srcCfg := sources.NewSourceConfig(srcs, library.Roots)
-	primaryDir := srcCfg.Root(srcCfg.ActiveRoots[0])
-	transports, err := loadTransports(library, primaryDir)
+func IdentifyMissingModules(library *config.Library, libraryDir string) ([]string, error) {
+	transports, err := loadTransports(library)
 	if err != nil {
 		return nil, err
 	}
@@ -396,16 +403,16 @@ func detectIndentation(content string, index int) string {
 // All expected modules are collected (even if they exist) because the client
 // module's POM requires a full list of all proto and gRPC dependencies
 // to ensure its dependency list is fully synchronized.
-func collectModules(library *config.Library, libraryDir, monorepoVersion string, metadata *repoMetadata, transports map[string]serviceconfig.Transport) ([]javaModule, error) {
-	expectedModules, err := discoverModules(library, libraryDir, transports)
+func collectModules(params syncPOMsParams) ([]javaModule, error) {
+	expectedModules, err := discoverModules(params.library, params.libraryDir, params.transports)
 	if err != nil {
 		return nil, err
 	}
-	libCoord := DeriveLibraryCoordinates(library)
-	protoModules := make([]Coordinate, 0, len(library.APIs))
-	gRPCModules := make([]Coordinate, 0, len(library.APIs))
+	libCoord := deriveLibraryCoordinates(params.library)
+	protoModules := make([]coordinate, 0, len(params.library.APIs))
+	gRPCModules := make([]coordinate, 0, len(params.library.APIs))
 	// At most one client module per library; slice used for variadic append.
-	var clientModule []Coordinate
+	var clientModule []coordinate
 	for _, m := range expectedModules {
 		switch m.Kind {
 		case kindProto:
@@ -417,7 +424,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		}
 	}
 
-	var allModules []Coordinate
+	var allModules []coordinate
 	allModules = append(allModules, clientModule...)
 	allModules = append(allModules, gRPCModules...)
 	allModules = append(allModules, protoModules...)
@@ -433,7 +440,7 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 				GRPC:           m.APICoords.GRPC,
 				Parent:         libCoord.Parent,
 				MainArtifactID: libCoord.GAPIC.ArtifactID,
-				Version:        library.Version,
+				Version:        params.library.Version,
 			}
 			if m.Kind == kindProto {
 				template = protoPOMTemplateName
@@ -443,9 +450,9 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		case kindClient:
 			templateData = clientPOMData{
 				Client:       m.Coordinate,
-				Version:      library.Version,
-				Name:         metadata.NamePretty,
-				Description:  metadata.APIDescription,
+				Version:      params.library.Version,
+				Name:         params.metadata.NamePretty,
+				Description:  params.metadata.APIDescription,
 				Parent:       libCoord.Parent,
 				ProtoModules: protoModules,
 				GRPCModules:  gRPCModules,
@@ -454,16 +461,18 @@ func collectModules(library *config.Library, libraryDir, monorepoVersion string,
 		case kindBOM:
 			templateData = bomParentPOMData{
 				MainModule:      libCoord.GAPIC,
-				Name:            metadata.NamePretty,
-				MonorepoVersion: monorepoVersion,
+				Name:            params.metadata.NamePretty,
+				MonorepoVersion: params.monorepoVersion,
+				ParentVersion:   params.parentVersion,
 				Modules:         allModules,
 			}
 			template = bomPOMTemplateName
 		case kindParent:
 			templateData = bomParentPOMData{
 				MainModule:      libCoord.GAPIC,
-				Name:            metadata.NamePretty,
-				MonorepoVersion: monorepoVersion,
+				Name:            params.metadata.NamePretty,
+				MonorepoVersion: params.monorepoVersion,
+				ParentVersion:   params.parentVersion,
 				Modules:         allModules,
 			}
 			template = parentPOMTemplateName
@@ -521,4 +530,15 @@ func findMonorepoVersion(cfg *config.Config) (string, error) {
 		}
 	}
 	return "", errMonorepoVersion
+}
+
+// TODO(https://github.com/googleapis/librarian/issues/6411):
+// Simplify logic here and check at validate step.
+func findParentPOMVersion(cfg *config.Config) (string, error) {
+	for _, lib := range cfg.Libraries {
+		if lib.Name == parentPOM {
+			return lib.Version, nil
+		}
+	}
+	return "", errParentVersion
 }

@@ -56,7 +56,8 @@ func TestInstall(t *testing.T) {
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
 # Assert that transient environmental variables are set dynamically for process lifetime
-if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ]; then
+if [ -z "$PNPM_HOME" ] || [ -z "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -z "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -z "$PNPM_CONFIG_STORE_DIR" ] || \
+   [ -z "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" ]; then
     echo "Error: Required transient PNPM environment variables are missing!" >&2
     exit 1
 fi

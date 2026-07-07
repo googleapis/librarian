@@ -458,6 +458,11 @@ type DartPackage struct {
 
 // JavaDefault contains Java-specific default configuration.
 type JavaDefault struct {
+	// CustomGroupIDs maps API path prefixes (e.g., "google/shopping") to their
+	// corresponding Maven Group IDs (e.g., "com.google.shopping").
+	// Use this to override the default "com.google.cloud" Group ID for specific API
+	// paths (e.g., maps, ads, shopping).
+	CustomGroupIDs map[string]string `yaml:"custom_group_ids,omitempty"`
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 }
@@ -511,9 +516,6 @@ type JavaModule struct {
 	// IssueTrackerOverride allows the "issue_tracker" field in .repo-metadata.json
 	// to be overridden.
 	IssueTrackerOverride string `yaml:"issue_tracker_override,omitempty"`
-
-	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
-	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 
 	// ReleasedVersion is the last released version of the library.
 	// If omitted, it will be derived from the library version.
@@ -777,6 +779,12 @@ type NodejsPackage struct {
 	// ClientDocumentationOverride allows the client_documentation field in
 	// .repo-metadata.json to be overridden from the default that's inferred.
 	ClientDocumentationOverride string `yaml:"client_documentation_override,omitempty"`
+
+	// MetadataNameOverride allows the name field in .repo-metadata.json to be overridden.
+	MetadataNameOverride string `yaml:"metadata_name_override,omitempty"`
+
+	// NamePrettyOverride allows the name_pretty field in .repo-metadata.json to be overridden.
+	NamePrettyOverride string `yaml:"name_pretty_override,omitempty"`
 }
 
 // NodejsAPI represents configuration for a single API within a Node.js package.

@@ -97,17 +97,20 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Go defines tools to install via go.
+	Go []*GoTool `yaml:"go,omitempty"`
+
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
-
-	// PNPM defines tools to install via pnpm.
-	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
 
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
 
-	// Go defines tools to install via go.
-	Go []*GoTool `yaml:"go,omitempty"`
+	// PNPM defines tools to install via pnpm.
+	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
+
+	// Protoc defines the protoc installation.
+	Protoc *Protoc `yaml:"protoc,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -119,22 +122,13 @@ type CargoTool struct {
 	Version string `yaml:"version"`
 }
 
-// PNPMTool defines a tool to install via pnpm.
-type PNPMTool struct {
-	// Name is the pnpm package name.
+// GoTool defines a tool to install via go.
+type GoTool struct {
+	// Name is the go module name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
-	Version string `yaml:"version"`
-
-	// Package is the URL or path of the package to install.
-	Package string `yaml:"package,omitempty"`
-
-	// Checksum is the SHA256 checksum of the package.
-	Checksum string `yaml:"checksum,omitempty"`
-
-	// Build defines the commands to run to build the tool after installation.
-	Build []string `yaml:"build,omitempty"`
+	Version string `yaml:"version,omitempty"`
 }
 
 // MavenTool defines a tool to install via Maven.
@@ -182,13 +176,31 @@ type PipTool struct {
 	LocalPath string `yaml:"local_path,omitempty"`
 }
 
-// GoTool defines a tool to install via go.
-type GoTool struct {
-	// Name is the go module name.
+// PNPMTool defines a tool to install via pnpm.
+type PNPMTool struct {
+	// Name is the pnpm package name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the URL or path of the package to install.
+	Package string `yaml:"package,omitempty"`
+
+	// Checksum is the SHA256 checksum of the package.
+	Checksum string `yaml:"checksum,omitempty"`
+
+	// Build defines the commands to run to build the tool after installation.
+	Build []string `yaml:"build,omitempty"`
+}
+
+// Protoc defines the configuration for installing the protoc compiler.
+type Protoc struct {
+	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
+
+	// SHA256 is the SHA256 checksum of the tarball.
+	SHA256 string `yaml:"checksum,omitempty"`
 }
 
 // Default contains default settings for all libraries.
@@ -285,6 +297,9 @@ type Library struct {
 	// Default.Output.
 	Output string `yaml:"output,omitempty"`
 
+	// Postprocess contains post-processing operations executed after code generation.
+	Postprocess *Postprocess `yaml:"postprocess,omitempty"`
+
 	// Roots specifies the source roots to use for generation. Defaults to googleapis.
 	Roots []string `yaml:"roots,omitempty"`
 
@@ -323,6 +338,75 @@ type Library struct {
 
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`
+}
+
+// Postprocess represents post-processing configuration options integrated into librarian.yaml.
+type Postprocess struct {
+	// Replace contains literal string replacement rules.
+	Replace []ReplaceConfig `yaml:"replace,omitempty"`
+
+	// ReplaceRegex contains regular expression replacement rules.
+	ReplaceRegex []ReplaceRegexConfig `yaml:"replace_regex,omitempty"`
+
+	// CopyFile contains file copy rules.
+	CopyFile []CopyConfig `yaml:"copy_file,omitempty"`
+
+	// RemoveFile contains glob patterns of files to remove.
+	RemoveFile []string `yaml:"remove_file,omitempty"`
+
+	// MethodOperations contains method-level operations (`delete`, `duplicate`, `deprecate`).
+	MethodOperations []MethodOperation `yaml:"method_operations,omitempty"`
+}
+
+// MethodOperation represents a method-level operation like delete, duplicate, or deprecate.
+type MethodOperation struct {
+	// Path specifies the relative file path to modify.
+	Path string `yaml:"path"`
+
+	// Action specifies the operation (`delete`, `duplicate`, or `deprecate`).
+	Action string `yaml:"action"`
+
+	// FuncName specifies the target method name.
+	FuncName string `yaml:"func_name"`
+
+	// NewName specifies the new method name for duplicate operations.
+	NewName string `yaml:"new_name,omitempty"`
+
+	// DeprecationMessage specifies the deprecation message for deprecate operations.
+	DeprecationMessage string `yaml:"deprecation_message,omitempty"`
+}
+
+// ReplaceConfig represents a replacement rule.
+type ReplaceConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Original specifies the exact string to find.
+	Original string `yaml:"original"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// ReplaceRegexConfig represents a regex replacement rule.
+type ReplaceRegexConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Pattern specifies the regular expression pattern to find.
+	Pattern string `yaml:"pattern"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// CopyConfig represents a file copy rule.
+type CopyConfig struct {
+	// Src specifies the source file path relative to the staging directory.
+	Src string `yaml:"src"`
+
+	// Dst specifies the destination file path relative to the library root.
+	Dst string `yaml:"dst"`
 }
 
 // API describes an API to include in a library.

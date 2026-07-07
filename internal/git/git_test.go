@@ -110,7 +110,7 @@ func TestFilesChangedSuccess(t *testing.T) {
 	}
 	want := []string{path.Join("src", "storage", "src", "lib.rs")}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -137,7 +137,7 @@ func TestFilterNoFilter(t *testing.T) {
 	got := filesFilter(nil, input)
 	want := input
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -163,7 +163,7 @@ func TestFilterBasic(t *testing.T) {
 		"src/generated/cloud/secretmanager/v1/src/model.rs",
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -181,7 +181,7 @@ func TestFilterSomeGlobs(t *testing.T) {
 	}, input)
 	want := []string{}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -263,7 +263,7 @@ func TestShowFileAtRemoteBranch(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(testhelper.ReadmeContents, got); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -315,7 +315,7 @@ func TestShowFileAtRevision(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want, +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

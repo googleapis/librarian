@@ -56,7 +56,7 @@ func TestFormatDocumentation(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("formatDocumentation() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -83,6 +83,6 @@ func TestFormatDocumentationWithLinks(t *testing.T) {
 		t.Fatal(err)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("formatDocumentation() mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

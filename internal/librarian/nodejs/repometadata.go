@@ -35,8 +35,16 @@ func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapi
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/nodejs/docs/reference/%s/latest", pkgSuffix)
 	}
 
-	if library.Nodejs != nil && library.Nodejs.ClientDocumentationOverride != "" {
-		metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
+	if library.Nodejs != nil {
+		if library.Nodejs.ClientDocumentationOverride != "" {
+			metadata.ClientDocumentation = library.Nodejs.ClientDocumentationOverride
+		}
+		if library.Nodejs.MetadataNameOverride != "" {
+			metadata.Name = library.Nodejs.MetadataNameOverride
+		}
+		if library.Nodejs.NamePrettyOverride != "" {
+			metadata.NamePretty = library.Nodejs.NamePrettyOverride
+		}
 	}
 
 	if strings.HasPrefix(metadata.ProductDocumentation, "https://cloud.google.com/") {

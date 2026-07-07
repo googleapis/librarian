@@ -38,10 +38,11 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
-| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
-| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
-| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
+| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
+| `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
 
 ## CargoTool Configuration
 
@@ -50,15 +51,12 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
 
-## PNPMTool Configuration
+## GoTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the pnpm package name. |
+| `name` | string | Is the go module name. |
 | `version` | string | Is the version to install. |
-| `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
-| `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## MavenTool Configuration
 
@@ -82,12 +80,22 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
 | `local_path` | string | Is the path to a local Python package to install. |
 
-## GoTool Configuration
+## PNPMTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the go module name. |
+| `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
+| `package` | string | Is the URL or path of the package to install. |
+| `checksum` | string | Is the SHA256 checksum of the package. |
+| `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## Protoc Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `version` | string | Is the version to install. |
+| `checksum` | string | Is the SHA256 checksum of the tarball. |
 
 ## Default Configuration
 
@@ -117,6 +125,7 @@ This document describes the schema for the librarian.yaml.
 | `title_override` | string | Overrides the title used in README generation. |
 | `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
+| `postprocess` | [Postprocess](#postprocess-configuration) (optional) | Contains post-processing operations executed after code generation. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
@@ -129,6 +138,49 @@ This document describes the schema for the librarian.yaml.
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
+
+## Postprocess Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `replace` | list of [ReplaceConfig](#replaceconfig-configuration) | Contains literal string replacement rules. |
+| `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
+| `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
+| `remove_file` | list of string | Contains glob patterns of files to remove. |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `duplicate`, `deprecate`). |
+
+## MethodOperation Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path to modify. |
+| `action` | string | Specifies the operation (`delete`, `duplicate`, or `deprecate`). |
+| `func_name` | string | Specifies the target method name. |
+| `new_name` | string | Specifies the new method name for duplicate operations. |
+| `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
+
+## ReplaceConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `original` | string | Specifies the exact string to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## ReplaceRegexConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `pattern` | string | Specifies the regular expression pattern to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## CopyConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `src` | string | Specifies the source file path relative to the staging directory. |
+| `dst` | string | Specifies the destination file path relative to the library root. |
 
 ## API Configuration
 
@@ -299,6 +351,7 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `custom_group_ids` | map[string]string | Maps API path prefixes (e.g., "google/shopping") to their corresponding Maven Group IDs (e.g., "com.google.shopping"). Use this to override the default "com.google.cloud" Group ID for specific API paths (e.g., maps, ads, shopping). |
 | `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
 
 ## JavaFileCopy Configuration
@@ -325,7 +378,6 @@ This document describes the schema for the librarian.yaml.
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
-| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
 | `released_version` | string | Is the last released version of the library. If omitted, it will be derived from the library version. Note: It assumes a minor bump from the previous '.0' version (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support deriving previous patch releases (e.g., '1.1.1'). |
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
@@ -364,6 +416,8 @@ This document describes the schema for the librarian.yaml.
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
+| `metadata_name_override` | string | Allows the name field in .repo-metadata.json to be overridden. |
+| `name_pretty_override` | string | Allows the name_pretty field in .repo-metadata.json to be overridden. |
 
 ## PythonDefault Configuration
 

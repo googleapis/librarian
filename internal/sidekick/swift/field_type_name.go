@@ -146,6 +146,9 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	name := pascalCase(m.Name)
+	if m.ServicePlaceholder {
+		name = pascalCase(m.Name + "Client")
+	}
 	if m.Parent == nil {
 		prefix, err := c.externalTypePrefix(m.Package)
 		if err != nil {

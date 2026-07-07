@@ -35,6 +35,6 @@ func TestWalkDir(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); len(diff) != 0 {
-		t.Errorf("mismatched config from LoadConfig (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

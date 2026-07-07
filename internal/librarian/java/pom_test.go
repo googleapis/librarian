@@ -25,7 +25,6 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
-	"github.com/googleapis/librarian/internal/sources"
 )
 
 // update is used to refresh the golden files in testdata/ when template
@@ -68,11 +67,18 @@ func TestSyncPOMs_Golden(t *testing.T) {
 		NamePretty:     "Secret Manager",
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
-	gotVersions, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+	gotVersions, err := IdentifyMissingModules(library, tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
-	err = syncPOMs(library, tmpDir, "1.2.3", metadata, transports)
+	err = syncPOMs(syncPOMsParams{
+		library:         library,
+		libraryDir:      tmpDir,
+		monorepoVersion: "1.2.3",
+		parentVersion:   "1.2.3",
+		metadata:        metadata,
+		transports:      transports,
+	})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -206,7 +212,14 @@ func TestSyncPOMs_Update(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(syncPOMsParams{
+		library:         library,
+		libraryDir:      tmpDir,
+		monorepoVersion: "1.2.3",
+		parentVersion:   "1.2.3",
+		metadata:        metadata,
+		transports:      transports,
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -272,7 +285,14 @@ func TestSyncPOMs_NoUpdate(t *testing.T) {
 		APIDescription: "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 	}
 
-	if err := syncPOMs(library, tmpDir, "1.2.3", metadata, transports); err != nil {
+	if err := syncPOMs(syncPOMsParams{
+		library:         library,
+		libraryDir:      tmpDir,
+		monorepoVersion: "1.2.3",
+		parentVersion:   "1.2.3",
+		metadata:        metadata,
+		transports:      transports,
+	}); err != nil {
 		t.Fatal(err)
 	}
 
@@ -577,7 +597,14 @@ func TestCollectModules(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, tmpDir)
 			}
-			got, err := collectModules(test.library, tmpDir, test.monorepoVersion, test.metadata, test.transports)
+			got, err := collectModules(syncPOMsParams{
+				library:         test.library,
+				libraryDir:      tmpDir,
+				monorepoVersion: test.monorepoVersion,
+				parentVersion:   test.monorepoVersion,
+				metadata:        test.metadata,
+				transports:      test.transports,
+			})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -751,7 +778,7 @@ func TestIdentifyMissingModules(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, tmpDir)
 			}
-			got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+			got, err := IdentifyMissingModules(library, tmpDir)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -777,7 +804,7 @@ func TestIdentifyMissingModules_SkipPOMUpdates(t *testing.T) {
 		},
 	}
 	tmpDir := t.TempDir()
-	got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: "invalid-dir"})
+	got, err := IdentifyMissingModules(library, tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -815,7 +842,7 @@ func TestIdentifyMissingModules_ExcludedPOMs(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+	got, err := IdentifyMissingModules(library, tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -861,7 +888,7 @@ func TestIdentifyMissingModules_GenerateProtoFalse(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+	got, err := IdentifyMissingModules(library, tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -907,7 +934,7 @@ func TestIdentifyMissingModules_GenerateGAPICFalse(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	got, err := IdentifyMissingModules(library, tmpDir, &sources.Sources{Googleapis: googleapisDir})
+	got, err := IdentifyMissingModules(library, tmpDir)
 	if err != nil {
 		t.Fatal(err)
 	}

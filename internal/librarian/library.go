@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -28,6 +29,10 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/swift"
 )
 
+var (
+	errNoExplicitOutput = errors.New("library requires an explicit output path")
+)
+
 // fillDefaults populates empty library fields from the provided defaults.
 func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if d == nil {
@@ -39,22 +44,22 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if d.Go != nil {
+	switch {
+	case d.Go != nil:
 		return fillGo(lib, d)
-	}
-	if d.Rust != nil {
+	case d.Java != nil:
+		return fillJava(lib, d)
+	case d.Rust != nil:
 		return fillRust(lib, d)
-	}
-	if d.Dart != nil {
+	case d.Dart != nil:
 		return fillDart(lib, d)
-	}
-	if d.Python != nil {
+	case d.Python != nil:
 		return fillPython(lib, d)
-	}
-	if d.Swift != nil {
+	case d.Swift != nil:
 		return fillSwift(lib, d)
+	default:
+		return lib
 	}
-	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
@@ -90,6 +95,32 @@ func union(a, b []string) []string {
 		}
 	}
 	return res
+}
+
+// fillJava populates empty Java-specific fields in lib from the provided default.
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	fillGroupIDIfEmpty(lib, d)
+	return lib
+}
+
+// fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
+// It matches the library's API paths against the custom group ID prefixes in default
+// and assigns the first matching group ID.
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
+	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
+		return
+	}
+	for _, api := range lib.APIs {
+		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
+			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
+				lib.Java.GroupID = groupID
+				return
+			}
+		}
+	}
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
@@ -288,13 +319,17 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 	}
 	if lib.Output == "" {
 		if isMixedLibrary(language, lib) {
-			return nil, fmt.Errorf("library %q requires an explicit output path", lib.Name)
+			return nil, fmt.Errorf("%s: %w", lib.Name, errNoExplicitOutput)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
 			apiPath = lib.APIs[0].Path
 		}
-		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
+		var defaultOut string
+		if defaults != nil {
+			defaultOut = defaults.Output
+		}
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
@@ -591,9 +626,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.IssueTrackerOverride != "" {
 		res.IssueTrackerOverride = src.IssueTrackerOverride
 	}
-	if src.LibrariesBOMVersion != "" {
-		res.LibrariesBOMVersion = src.LibrariesBOMVersion
-	}
 	if src.ReleasedVersion != "" {
 		res.ReleasedVersion = src.ReleasedVersion
 	}
@@ -664,6 +696,12 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	}
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
+	}
+	if src.MetadataNameOverride != "" {
+		res.MetadataNameOverride = src.MetadataNameOverride
+	}
+	if src.NamePrettyOverride != "" {
+		res.NamePrettyOverride = src.NamePrettyOverride
 	}
 	return &res
 }

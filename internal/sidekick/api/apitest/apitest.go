@@ -28,15 +28,15 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 	t.Helper()
 	// Checking Parent, Messages, Fields, and OneOfs requires special handling.
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Message{}, "Fields", "OneOfs", "Parent", "Messages", "Enums", "Resource")); diff != "" {
-		t.Errorf("message attributes mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Field) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Fields, got.Fields, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("field mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Ignore parent because types are cyclic
 	if diff := cmp.Diff(want.OneOfs, got.OneOfs, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("oneofs mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -44,11 +44,11 @@ func CheckMessage(t *testing.T, got *api.Message, want *api.Message) {
 func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 	t.Helper()
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Enum{}, "Values", "UniqueNumberValues", "Parent")); diff != "" {
-		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Values, got.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("method mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -56,11 +56,11 @@ func CheckEnum(t *testing.T, got api.Enum, want api.Enum) {
 func CheckService(t *testing.T, got *api.Service, want *api.Service) {
 	t.Helper()
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Service{}, "Methods")); diff != "" {
-		t.Errorf("mismatched service attributes (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	less := func(a, b *api.Method) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(want.Methods, got.Methods, cmpopts.SortSlices(less)); diff != "" {
-		t.Errorf("method mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -80,6 +80,6 @@ func CheckMethod(t *testing.T, service *api.Service, name string, want *api.Meth
 		t.Errorf("missing method %s", name)
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatched data for method %s (-want, +got):\n%s", name, diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

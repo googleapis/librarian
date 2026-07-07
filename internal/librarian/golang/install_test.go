@@ -96,7 +96,7 @@ func TestGetInstallDir(t *testing.T) {
 			for k, v := range test.env {
 				t.Setenv(k, v)
 			}
-			got, err := getInstallDir()
+			got, err := InstallDir()
 			if err != nil {
 				t.Fatal(err)
 			}

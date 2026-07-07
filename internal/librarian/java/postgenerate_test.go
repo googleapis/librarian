@@ -41,6 +41,7 @@ func TestPostGenerate(t *testing.T) {
 		Language: "java",
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 			{Name: "analytics-admin", Version: "0.98.0"},
 			{Name: "area120-tables", Version: "0.92.0"},
 			{Name: "aiplatform", Version: "3.89.0"},
@@ -126,16 +127,15 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Verify that libraries like java-maps-places are excluded because their
-	// GroupID (com.google.maps) is not in the allowed groupInclusions list.
-	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
-		return d.ArtifactID == "google-maps-places-bom"
-	}) {
-		t.Errorf("%s should NOT contain google-maps-places-bom", path)
-	}
-	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
-		return d.ArtifactID == "google-cloud-bigtable-deps-bom"
-	}) {
-		t.Errorf("%s should NOT contain google-cloud-bigtable-deps-bom", path)
+	// GroupID (com.google.maps) is not in the allowed groupInclusions list, and
+	// other BOMs explicitly excluded in excludedBOMs are also absent.
+	for _, excluded := range []string{"google-maps-places-bom",
+		"google-cloud-bigtable-deps-bom", "google-cloud-bom", "libraries-bom"} {
+		if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
+			return d.ArtifactID == excluded
+		}) {
+			t.Errorf("%s should NOT contain %s", path, excluded)
+		}
 	}
 }
 
@@ -196,6 +196,7 @@ func TestPostGenerate_SearchError(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
@@ -215,6 +216,7 @@ func TestPostGenerate_Error(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
 	err := PostGenerate(t.Context(), tmpDir, cfg, nil)

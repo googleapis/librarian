@@ -38,234 +38,97 @@ import {{.}}
 {{/Codec.DocLines}}
 ///
 /// @Snippet(path: "{{Name}}Quickstart")
-public protocol {{Codec.Name}} {
+public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
+  let inner: any Clients.{{Codec.StubPrefix}}Stub
+
+  /// Creates a new `{{Codec.ClientName}}` instance.
+  public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
+    var inner: any Clients.{{Codec.StubPrefix}}Stub = try Clients.{{Codec.StubPrefix}}Transport(options)
+    inner = Clients.{{Codec.StubPrefix}}Retry(inner, options: options)
+    if let logger = options.logger {
+      inner = Clients.{{Codec.StubPrefix}}Logging(inner, logger: logger)
+    }
+    self.inner = inner
+  }
   {{#Codec.RestMethods}}
+
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
-  func {{> /templates/common/method_signature/request}}
-  {{#Codec.PlainRPC}}
-  {{#Signatures}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/overload}}
-  {{/Signatures}}
-  {{/Codec.PlainRPC}}
-  {{#Codec.Pagination}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/pagination}}
-  {{#Signatures}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/pagination_overload}}
-  {{/Signatures}}
-  {{/Codec.Pagination}}
-  {{#Codec.LRO}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/lro}}
-  {{#Signatures}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/lro_overload}}
-  {{/Signatures}}
-  {{/Codec.LRO}}
-  {{/Codec.RestMethods}}
-
-  {{#Codec.RestMethods}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  ///
-  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
-  func {{> /templates/common/method_signature/request_options}}
-  {{#Codec.Pagination}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/pagination_options}}
-  {{/Codec.Pagination}}
-  {{#Codec.LRO}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  func {{> /templates/common/method_signature/lro_options}}
-  {{/Codec.LRO}}
-  {{/Codec.RestMethods}}
-}
-
-extension Clients {
-  /// The recommended implementation for ``{{Codec.Name}}``.
-  public class {{Codec.ClientName}}: {{Codec.Name}} {
-    let inner: any {{Codec.StubPrefix}}Stub
-
-    /// Creates a new `{{Codec.ClientName}}` instance.
-    public init(_ options: GoogleCloudGax.ClientOptions = .init()) throws {
-      var inner: any {{Codec.StubPrefix}}Stub = try {{Codec.StubPrefix}}Transport(options)
-      inner = {{Codec.StubPrefix}}Retry(inner, options: options)
-      if let logger = options.logger {
-        inner = {{Codec.StubPrefix}}Logging(inner, logger: logger)
-      }
-      self.inner = inner
-    }
-    {{#Codec.RestMethods}}
-
-    /// See `{{Service.Codec.Name}}.{{Codec.Name}}`
-    public func {{> /templates/common/method_signature/request_options}} {
-        try await self.inner.{{Codec.Name}}(request: request, options: options)
-    }
-    {{#Codec.Pagination}}
-
-    {{#Codec.DocLines}}
-    /// {{{.}}}
-    {{/Codec.DocLines}}
-    public func {{> /templates/common/method_signature/pagination_options}} {
-      let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
-        var request = byItem
-        request.pageToken = token
-        return try await self.{{Codec.Name}}(request: request, options: options)
-      }
-      return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
-    }
-    {{/Codec.Pagination}}
-    {{#Codec.LRO}}
-
-    {{#Codec.DocLines}}
-    /// {{{.}}}
-    {{/Codec.DocLines}}
-    public func {{> /templates/common/method_signature/lro_options}} {
-      let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-        guard op.done else {
-          return .init(done: false, result: nil)
-        }
-
-        switch op.result {
-        {{#Codec.LRO.ResponseIsEmpty}}
-        case .response:
-          return .init(done: true, result: .success(()))
-        {{/Codec.LRO.ResponseIsEmpty}}
-        {{^Codec.LRO.ResponseIsEmpty}}
-        case .response(let anyValue):
-          guard let anyValueUnwrapped = anyValue else {
-            return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but response value was missing")))
-          }
-          let response = try {{Codec.LRO.ReturnType}}(fromAny: anyValueUnwrapped)
-          return .init(done: true, result: .success(response))
-        {{/Codec.LRO.ResponseIsEmpty}}
-        case .error(let status):
-          guard let statusUnwrapped = status else {
-            return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but error value was missing")))
-          }
-          let error = GoogleCloudGax.RequestError.service(
-            GoogleCloudGax.ServiceError(code: GoogleRpc.Code(intValue: Int(statusUnwrapped.code)), message: statusUnwrapped.message))
-          return .init(done: true, result: .failure(error))
-        case .none:
-          return .init(
-            done: true,
-            result: .failure(
-              GoogleCloudGax.RequestError.binding("Operation completed but result was missing")))
-        }
-      }
-      let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
-      let initialState = try extractStatus(rawOp)
-      let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-        let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
-        return try extractStatus(op)
-      }
-      return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)
-    }
-    {{/Codec.LRO}}
-    {{/Codec.RestMethods}}
-  }
-}
-
-// Default implementations
-extension {{Codec.Name}} {
-  {{#Codec.RestMethods}}
-
-  public func {{> /templates/common/method_signature/request}} {
-    try await self.{{Codec.Name}}(request: request, options: .init())
-  }
-
   public func {{> /templates/common/method_signature/request_options}} {
-    throw GoogleCloudGax.RequestError.unimplemented
+      try await self.inner.{{Codec.Name}}(request: request, options: options)
   }
-  {{#Codec.PlainRPC}}
-  {{#Signatures}}
-
-  public func {{> /templates/common/method_signature/overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
-    }
-    {{#Method.ReturnsEmpty}}
-    try await self.{{Method.Codec.Name}}(request: request)
-    {{/Method.ReturnsEmpty}}
-    {{^Method.ReturnsEmpty}}
-    return try await self.{{Method.Codec.Name}}(request: request)
-    {{/Method.ReturnsEmpty}}
-  }
-  {{/Signatures}}
-  {{/Codec.PlainRPC}}
   {{#Codec.Pagination}}
 
-  public func {{> /templates/common/method_signature/pagination}} {
-    try self.{{Codec.Name}}(byItem: byItem, options: .init())
-  }
-
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
-      throw GoogleCloudGax.RequestError.unimplemented
+      var request = byItem
+      request.pageToken = token
+      return try await self.{{Codec.Name}}(request: request, options: options)
     }
     return GoogleCloudGax.PaginatedResponseSequence(listRpc: listRpc)
   }
-  {{#Signatures}}
-
-  public func {{> /templates/common/method_signature/pagination_overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
-    }
-    return try self.{{Codec.Name}}(byItem: request)
-  }
-  {{/Signatures}}
   {{/Codec.Pagination}}
   {{#Codec.LRO}}
 
-  public func {{> /templates/common/method_signature/lro}} {
-    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
-  }
-
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
   public func {{> /templates/common/method_signature/lro_options}} {
-    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
-      throw GoogleCloudGax.RequestError.unimplemented
-    }
-    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
-  }
-  {{#Signatures}}
+    let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      guard op.done else {
+        return .init(done: false, result: nil)
+      }
 
-  public func {{> /templates/common/method_signature/lro_overload}} {
-    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
-      {{#Fields}}
-      $0.{{Codec.Name}} = {{Codec.Name}}
-      {{/Fields}}
+      switch op.result {
+      {{#Codec.LRO.ResponseIsEmpty}}
+      case .response:
+        return .init(done: true, result: .success(()))
+      {{/Codec.LRO.ResponseIsEmpty}}
+      {{^Codec.LRO.ResponseIsEmpty}}
+      case .response(let anyValue):
+        guard let anyValueUnwrapped = anyValue else {
+          return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but response value was missing")))
+        }
+        let response = try {{Codec.LRO.ReturnType}}(fromAny: anyValueUnwrapped)
+        return .init(done: true, result: .success(response))
+      {{/Codec.LRO.ResponseIsEmpty}}
+      case .error(let status):
+        guard let statusUnwrapped = status else {
+          return .init(done: true, result: .failure(GoogleCloudGax.RequestError.binding("Operation completed but error value was missing")))
+        }
+        let error = GoogleCloudGax.RequestError.service(
+          GoogleCloudGax.ServiceError(code: GoogleRpc.Code(intValue: Int(statusUnwrapped.code)), message: statusUnwrapped.message))
+        return .init(done: true, result: .failure(error))
+      case .none:
+        return .init(
+          done: true,
+          result: .failure(
+            GoogleCloudGax.RequestError.binding("Operation completed but result was missing")))
+      }
     }
-    return try await self.{{Codec.Name}}(withPolling: request)
+    let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+    let initialState = try extractStatus(rawOp)
+    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
+      let op = try await self.getOperation(request: .init().with { $0.name = rawOp.name }, options: options)
+      return try extractStatus(op)
+    }
+    return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)
   }
-  {{/Signatures}}
   {{/Codec.LRO}}
   {{/Codec.RestMethods}}
 }
+
+{{> /templates/common/client_protocol}}
 {{#Codec.IsGated}}
 #endif
 {{/Codec.IsGated}}
