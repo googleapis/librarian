@@ -51,7 +51,7 @@ type repoMetadata struct {
 	APIReference string `json:"api_reference,omitempty"`
 	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
-	IssueTracker string `json:"issue_tracker,omitempty"`
+	IssueTracker  string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
 	RestDocumentation string `json:"rest_documentation,omitempty"`
 	// Java-specific field.
