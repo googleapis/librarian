@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestCopyFile(t *testing.T) {
@@ -407,4 +408,163 @@ func readDirFiles(t *testing.T, dir string) map[string]string {
 		t.Fatal(err)
 	}
 	return gotFiles
+}
+
+func TestReplaceAll(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		files     map[string]string
+		replaces  []config.ReplaceConfig
+		wantFiles map[string]string
+	}{
+		{
+			name:  "single file replacement",
+			files: map[string]string{"Test.java": "old text"},
+			replaces: []config.ReplaceConfig{
+				{Path: "*.java", Original: "old", Replacement: "new"},
+			},
+			wantFiles: map[string]string{"Test.java": "new text"},
+		},
+		{
+			name: "multiple files across subdirectories and untouched files",
+			files: map[string]string{
+				"src/A.java":     "package foo; class A {}",
+				"sub/B.java":     "package foo; class B {}",
+				"doc/readme.txt": "package foo description",
+			},
+			replaces: []config.ReplaceConfig{
+				{Path: "*/*.java", Original: "package foo;", Replacement: "package bar;"},
+			},
+			wantFiles: map[string]string{
+				"src/A.java":     "package bar; class A {}",
+				"sub/B.java":     "package bar; class B {}",
+				"doc/readme.txt": "package foo description",
+			},
+		},
+		{
+			name:  "sequential replacement configs",
+			files: map[string]string{"Test.java": "alpha beta"},
+			replaces: []config.ReplaceConfig{
+				{Path: "*.java", Original: "alpha", Replacement: "gamma"},
+				{Path: "*.java", Original: "beta", Replacement: "delta"},
+			},
+			wantFiles: map[string]string{"Test.java": "gamma delta"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := ReplaceAll(dir, test.replaces); err != nil {
+				t.Fatalf("ReplaceAll() unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestReplaceAll_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		files    map[string]string
+		replaces []config.ReplaceConfig
+		wantErr  error
+	}{
+		{
+			name:     "no files match pattern",
+			files:    map[string]string{"foo.txt": "hello"},
+			replaces: []config.ReplaceConfig{{Path: "*.java", Original: "old", Replacement: "new"}},
+			wantErr:  fs.ErrNotExist,
+		},
+		{
+			name:     "text not found in file",
+			files:    map[string]string{"Test.java": "hello world"},
+			replaces: []config.ReplaceConfig{{Path: "*.java", Original: "missing", Replacement: "new"}},
+			wantErr:  errTextNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			err := ReplaceAll(dir, test.replaces)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ReplaceAll() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestReplaceRegexAll(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		files     map[string]string
+		regexes   []config.ReplaceRegexConfig
+		wantFiles map[string]string
+	}{
+		{
+			name:  "single file regex replacement",
+			files: map[string]string{"Test.java": "version 1.2.3"},
+			regexes: []config.ReplaceRegexConfig{
+				{Path: "*.java", Pattern: `version \d+\.\d+\.\d+`, Replacement: "version 2.0.0"},
+			},
+			wantFiles: map[string]string{"Test.java": "version 2.0.0"},
+		},
+		{
+			name: "multiline replacement and capture groups",
+			files: map[string]string{
+				"src/A.java": "import com.old.Foo;\nimport com.old.Bar;",
+				"sub/B.txt":  "import com.old.Baz;",
+			},
+			regexes: []config.ReplaceRegexConfig{
+				{Path: "*/*.java", Pattern: `import com\.old\.(\w+);`, Replacement: "import com.new.${1};"},
+			},
+			wantFiles: map[string]string{
+				"src/A.java": "import com.new.Foo;\nimport com.new.Bar;",
+				"sub/B.txt":  "import com.old.Baz;",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := ReplaceRegexAll(dir, test.regexes); err != nil {
+				t.Fatalf("ReplaceRegexAll() unexpected error: %v", err)
+			}
+			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestReplaceRegexAll_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		regexes []config.ReplaceRegexConfig
+		wantErr error
+	}{
+		{
+			name:    "no files match pattern",
+			files:   map[string]string{"foo.txt": "hello"},
+			regexes: []config.ReplaceRegexConfig{{Path: "*.java", Pattern: "old", Replacement: "new"}},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:    "pattern not found in file",
+			files:   map[string]string{"Test.java": "version 1.0.0"},
+			regexes: []config.ReplaceRegexConfig{{Path: "*.java", Pattern: `\d{3}`, Replacement: "2.0.0"}},
+			wantErr: errTextNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			err := ReplaceRegexAll(dir, test.regexes)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ReplaceRegexAll() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
 }
