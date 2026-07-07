@@ -43,7 +43,9 @@ const (
 	versionsFileName       = "versions.txt"
 )
 
-// Add initializes a new Java library with default values and registers its modules in versions.txt.
+// Add initializes a new Java library with default values, or extends an
+// existing library with a new API path, and registers the appropriate
+// modules in versions.txt.
 func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 	if lib.Version == "" {
 		lib.Version = defaultVersion
@@ -55,7 +57,7 @@ func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 	if lib.Java == nil {
 		lib.Java = &config.JavaModule{}
 	}
-	if lib.Java.ReleasedVersion == "" {
+	if lib.Java.ReleasedVersion == "" && addedAPI == nil {
 		lib.Java.ReleasedVersion = defaultReleasedVersion
 	}
 

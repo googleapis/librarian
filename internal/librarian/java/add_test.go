@@ -202,11 +202,11 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 	t.Chdir(tmpDir)
 	// Write initial versions
 	initial := []string{
-		"google-cloud-secretmanager-parent:0.0.0:0.1.0-SNAPSHOT",
-		"google-cloud-secretmanager-bom:0.0.0:0.1.0-SNAPSHOT",
-		"proto-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
-		"grpc-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
-		"google-cloud-secretmanager:0.0.0:0.1.0-SNAPSHOT",
+		"google-cloud-secretmanager-parent:1.0.0:1.1.0-SNAPSHOT",
+		"google-cloud-secretmanager-bom:1.0.0:1.1.0-SNAPSHOT",
+		"proto-google-cloud-secretmanager-v1:1.0.0:1.1.0-SNAPSHOT",
+		"grpc-google-cloud-secretmanager-v1:1.0.0:1.1.0-SNAPSHOT",
+		"google-cloud-secretmanager:1.0.0:1.1.0-SNAPSHOT",
 	}
 	if err := os.WriteFile(versionsFileName, []byte(strings.Join(initial, "\n")+"\n"), 0644); err != nil {
 		t.Fatal(err)
@@ -214,13 +214,10 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 
 	lib := &config.Library{
 		Name:    "secretmanager",
-		Version: "0.1.0-SNAPSHOT",
+		Version: "1.1.0-SNAPSHOT",
 		APIs: []*config.API{
 			{Path: "google/cloud/secretmanager/v1"},
 			{Path: "google/cloud/secretmanager/v1beta1"},
-		},
-		Java: &config.JavaModule{
-			ReleasedVersion: "0.0.0",
 		},
 	}
 	addedAPI := &config.API{Path: "google/cloud/secretmanager/v1beta1"}
@@ -229,8 +226,8 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Add() error = %v", err)
 	}
-	if got.Version != "0.1.0-SNAPSHOT" {
-		t.Errorf("version = %q, want %q", got.Version, "0.1.0-SNAPSHOT")
+	if got.Version != "1.1.0-SNAPSHOT" {
+		t.Errorf("version = %q, want %q", got.Version, "1.1.0-SNAPSHOT")
 	}
 
 	content, err := os.ReadFile(versionsFileName)
@@ -245,7 +242,7 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 		}
 	}
 
-	wantVersions := append(initial, "proto-google-cloud-secretmanager-v1beta1:0.0.0:0.1.0-SNAPSHOT", "grpc-google-cloud-secretmanager-v1beta1:0.0.0:0.1.0-SNAPSHOT")
+	wantVersions := append(initial, "proto-google-cloud-secretmanager-v1beta1:1.0.0:1.1.0-SNAPSHOT", "grpc-google-cloud-secretmanager-v1beta1:1.0.0:1.1.0-SNAPSHOT")
 	if diff := cmp.Diff(wantVersions, gotVersions); diff != "" {
 		t.Errorf("versions mismatch (-want +got):\n%s", diff)
 	}
