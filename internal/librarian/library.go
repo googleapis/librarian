@@ -411,6 +411,9 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 	if p.Output != "" {
 		res.Output = p.Output
 	}
+	if p.RequiresBilling != nil {
+		res.RequiresBilling = p.RequiresBilling
+	}
 	if p.Roots != nil {
 		res.Roots = p.Roots
 	}
