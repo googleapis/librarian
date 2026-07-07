@@ -1090,6 +1090,7 @@ func TestResolvePreview(t *testing.T) {
 				SkipGenerate:        false,
 				SkipRelease:         false,
 				SpecificationFormat: "protobuf",
+				RequiresBilling:     func() *bool { b := true; return &b }(),
 				Go: &config.GoModule{
 					ModulePathVersion: "v1",
 				},
@@ -1104,6 +1105,7 @@ func TestResolvePreview(t *testing.T) {
 					SkipGenerate:        true,
 					SkipRelease:         true,
 					SpecificationFormat: "discovery",
+					RequiresBilling:     func() *bool { b := false; return &b }(),
 					Go: &config.GoModule{
 						NestedModule: "v2",
 					},
@@ -1120,6 +1122,7 @@ func TestResolvePreview(t *testing.T) {
 				SkipGenerate:        true,
 				SkipRelease:         true,
 				SpecificationFormat: "discovery",
+				RequiresBilling:     func() *bool { b := false; return &b }(),
 				Go: &config.GoModule{
 					ModulePathVersion: "v1",
 					NestedModule:      "v2",
