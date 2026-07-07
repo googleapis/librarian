@@ -137,7 +137,20 @@ func TestSyncToReleasePlease(t *testing.T) {
 				},
 			},
 			wantManifest: `{"secretmanager":"1.0.0"}`,
-			wantConfig:   `{"packages":{"secretmanager":{"component":"secretmanager"}}}`,
+			wantConfig: `{
+				"packages": {
+					"secretmanager": {
+						"component": "secretmanager",
+						"extra-files": [
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "examples/apiv1/snippet_metadata.google.cloud.secretmanager.v1.json",
+								"type": "json"
+							}
+						]
+					}
+				}
+			}`,
 		},
 		{
 			name:            "new nodejs library",
@@ -263,7 +276,14 @@ func TestSyncToReleasePlease(t *testing.T) {
 				"packages": {
 					"secretmanager": {
 						"component": "secretmanager",
-						"extra-files": ["some/manual/file.txt"]
+						"extra-files": [
+							"some/manual/file.txt",
+							{
+								"jsonpath": "$.clientLibrary.version",
+								"path": "examples/apiv1/snippet_metadata.google.cloud.secretmanager.v1.json",
+								"type": "json"
+							}
+						]
 					}
 				}
 			}`,
