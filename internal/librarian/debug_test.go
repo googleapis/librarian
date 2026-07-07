@@ -37,7 +37,7 @@ func TestRunEnv(t *testing.T) {
 		fmt.Sprintf("LIBRARIAN_BIN=%s", binDir),
 		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
 		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
-		fmt.Sprintf("nodejs: %s", binDir),
+		fmt.Sprintf("nodejs: %s", filepath.Join(binDir, "nodejs_tools")),
 	}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {

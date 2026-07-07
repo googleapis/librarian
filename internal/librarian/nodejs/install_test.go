@@ -243,8 +243,9 @@ func TestInstallDir(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != binDir {
-		t.Errorf("InstallDir() = %q, want %q", got, binDir)
+	want := filepath.Join(binDir, "nodejs_tools")
+	if got != want {
+		t.Errorf("InstallDir() = %q, want %q", got, want)
 	}
 }
 
@@ -255,7 +256,8 @@ func TestGetToolsEnv(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := env["PATH"]; got != binDir {
-		t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, binDir)
+	want := filepath.Join(binDir, "nodejs_tools")
+	if got := env["PATH"]; got != want {
+		t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
 	}
 }

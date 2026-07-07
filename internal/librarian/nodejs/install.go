@@ -33,6 +33,8 @@ const (
 	// google-cloud-node repo that contains the gapic-generator-typescript
 	// source.
 	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
+
+	toolsDir = "nodejs_tools"
 )
 
 var (
@@ -80,7 +82,11 @@ func Install(ctx context.Context, tools *config.Tools) error {
 
 // InstallDir gets the directory where tools should be installed.
 func InstallDir() (string, error) {
-	return cache.BinDirectory()
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
 // getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.
@@ -110,7 +116,7 @@ func getPNPMEnv() ([]string, error) {
 	}
 
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+filepath.Dir(binDir))
+	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
