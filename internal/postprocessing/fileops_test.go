@@ -156,6 +156,7 @@ func TestReplace_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
@@ -202,6 +203,7 @@ func TestReplaceRegex_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "nonexistent.txt")
 			if test.content != "" {
@@ -219,6 +221,7 @@ func TestReplaceRegex_Error(t *testing.T) {
 }
 
 func TestApplyToFiles(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		files   map[string]string
@@ -236,6 +239,7 @@ func TestApplyToFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			if err := applyToFiles(dir, test.pattern, func(string) error { return nil }); err != nil {
@@ -246,6 +250,7 @@ func TestApplyToFiles(t *testing.T) {
 }
 
 func TestApplyToFiles_Error(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name    string
 		files   map[string]string
@@ -281,6 +286,7 @@ func TestApplyToFiles_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			err := applyToFiles(dir, test.pattern, test.action)
@@ -292,6 +298,7 @@ func TestApplyToFiles_Error(t *testing.T) {
 }
 
 func TestRemoveFiles(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name      string
 		files     map[string]string
@@ -330,6 +337,7 @@ func TestRemoveFiles(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
 			if err := RemoveFiles(dir, test.patterns); err != nil {
@@ -343,6 +351,7 @@ func TestRemoveFiles(t *testing.T) {
 }
 
 func TestRemoveFiles_Error(t *testing.T) {
+	t.Parallel()
 	for _, test := range []struct {
 		name     string
 		setup    func(t *testing.T, dir string)
@@ -371,6 +380,7 @@ func TestRemoveFiles_Error(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			if test.setup != nil {
 				test.setup(t, dir)
