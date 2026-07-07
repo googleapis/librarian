@@ -57,7 +57,7 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
-  public func {{> /templates/common/method_signature/request_options}} {
+  {{^IsLroPoller}}public {{/IsLroPoller}}func {{> /templates/common/method_signature/request_options}} {
       try await self.inner.{{Codec.Name}}(request: request, options: options)
   }
   {{#Codec.Pagination}}
@@ -125,6 +125,17 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
     return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)
   }
   {{/Codec.LRO}}
+  {{#Codec.DiscoveryLRO}}
+
+  {{#Codec.DocLines}}
+  /// {{{.}}}
+  {{/Codec.DocLines}}
+  ///
+  /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  public func {{> /templates/common/method_signature/discovery_lro_options}} {
+    {{> /templates/common/method_body/discovery_lro}}
+  }
+  {{/Codec.DiscoveryLRO}}
   {{/Codec.RestMethods}}
 }
 

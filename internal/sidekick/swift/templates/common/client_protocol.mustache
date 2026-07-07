@@ -21,6 +21,7 @@ extension Clients {
   /// and pass a mock implementation in your tests.
   public protocol {{Codec.StubPrefix}}Protocol {
     {{#Codec.RestMethods}}
+    {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     func {{> /templates/common/method_signature/request}}
     {{#Codec.PlainRPC}}
@@ -45,9 +46,11 @@ extension Clients {
     func {{> /templates/common/method_signature/lro_overload}}
     {{/Signatures}}
     {{/Codec.LRO}}
+    {{/IsLroPoller}}
     {{/Codec.RestMethods}}
 
     {{#Codec.RestMethods}}
+    {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     func {{> /templates/common/method_signature/request_options}}
     {{#Codec.Pagination}}
@@ -58,6 +61,7 @@ extension Clients {
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
     func {{> /templates/common/method_signature/lro_options}}
     {{/Codec.LRO}}
+    {{/IsLroPoller}}
     {{/Codec.RestMethods}}
   }
 }
@@ -139,5 +143,29 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
   }
   {{/Signatures}}
   {{/Codec.LRO}}
+  {{#Codec.DiscoveryLRO}}
+
+  public func {{> /templates/common/method_signature/discovery_lro}} {
+    try await self.{{Codec.Name}}(withPolling: withPolling, options: .init())
+  }
+
+  public func {{> /templates/common/method_signature/discovery_lro_options}} {
+    let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+      throw GoogleCloudGax.RequestError.unimplemented
+    }
+    return GoogleCloudGax._PollableOperationImpl(initialState: .init(done: false, result: nil), poll: poll)
+  }
+  {{#Signatures}}
+
+  public func {{> /templates/common/method_signature/discovery_lro_overload}} {
+    let request = {{Method.InputType.Codec.ParameterTypeName}}().with {
+      {{#Fields}}
+      $0.{{Codec.Name}} = {{Codec.Name}}
+      {{/Fields}}
+    }
+    return try await self.{{Codec.Name}}(withPolling: request)
+  }
+  {{/Signatures}}
+  {{/Codec.DiscoveryLRO}}
   {{/Codec.RestMethods}}
 }
