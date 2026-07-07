@@ -25,6 +25,7 @@ import (
 	"sort"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 )
 
@@ -102,6 +103,8 @@ func syncToReleasePlease(dir string, cfg *config.Config, name string) error {
 	case config.LanguagePython:
 		pkgPath = python.ReleasePleasePkgPrefix + lib.Name
 		extraFiles = python.ReleasePleaseExtraFiles(lib)
+	case config.LanguageGo:
+		extraFiles = golang.ReleasePleaseExtraFiles(lib)
 	case config.LanguageNodejs:
 		pkgPath = "packages/" + lib.Name
 	}

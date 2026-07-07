@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
+	"github.com/googleapis/librarian/internal/librarian/ruby"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/sources"
@@ -163,6 +164,8 @@ func cleanLibraries(language string, libraries []*config.Library) error {
 			err = php.Clean(library)
 		case config.LanguagePython:
 			err = python.Clean(library)
+		case config.LanguageRuby:
+			err = ruby.Clean(library)
 		case config.LanguageRust:
 			keep, keepErr := rust.Keep(library)
 			if keepErr != nil {
@@ -276,6 +279,20 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				// separate generation and formatting for Python.
 				if err := python.Generate(gctx, cfg, library, src); err != nil {
 					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				return nil
+			})
+		}
+		return g.Wait()
+	case config.LanguageRuby:
+		g, gctx := errgroup.WithContext(ctx)
+		for _, library := range libraries {
+			g.Go(func() error {
+				if err := ruby.Generate(gctx, cfg, library, src); err != nil {
+					return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
+				}
+				if err := ruby.Format(gctx, library); err != nil {
+					return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 				}
 				return nil
 			})
