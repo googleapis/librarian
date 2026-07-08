@@ -611,9 +611,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.CodeownerTeam != "" {
 		res.CodeownerTeam = src.CodeownerTeam
 	}
-	if src.ExcludedDependencies != "" {
-		res.ExcludedDependencies = src.ExcludedDependencies
-	}
 	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
