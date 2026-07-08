@@ -109,6 +109,14 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 	}
 
+	if library.RequiresBilling != nil {
+		metadata.RequiresBilling = *library.RequiresBilling
+	} else if library.Java != nil {
+		metadata.RequiresBilling = !library.Java.BillingNotRequired
+	} else {
+		metadata.RequiresBilling = true
+	}
+
 	// Java-specific overrides and optional fields
 	if library.Java != nil {
 		if library.Java.APIShortnameOverride != "" {
