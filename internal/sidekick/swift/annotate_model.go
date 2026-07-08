@@ -37,7 +37,11 @@ type modelAnnotations struct {
 
 // traitDefinition provides information about each package trait.
 //
-// In Swift, we define a package trait per-service
+// In Swift, a library may be configured to generate a package trait
+// per-service. Some services depend on request types that are only available if
+// other services are enabled. In other words, if the trait for service A is
+// defined, then the trait for service B may need to be defined because A uses
+// types from B.
 type traitDefinition struct {
 	// The name of this trait.
 	Name string
