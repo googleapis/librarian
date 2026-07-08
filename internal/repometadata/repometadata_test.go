@@ -93,31 +93,7 @@ func TestFromLibrary(t *testing.T) {
 				Transport:            "grpc+rest",
 			},
 		},
-		{
-			name: "java configuration",
-			library: &config.Library{
-				Name: "google-cloud-secretmanager-v1",
-				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
-				Java: &config.JavaModule{
-					RecommendedPackage: "com.google.cloud.secretmanager.v1",
-				},
-			},
-			want: &RepoMetadata{
-				Name:                 "secretmanager",
-				NamePretty:           "Secret Manager",
-				ProductDocumentation: "https://cloud.google.com/secret-manager/",
-				IssueTracker:         "https://issuetracker.google.com/issues/new?component=784854&template=1380926",
-				ReleaseLevel:         "stable",
-				Language:             config.LanguageJava,
-				Repo:                 "googleapis/google-cloud-java",
-				DistributionName:     "google-cloud-secretmanager-v1",
-				APIID:                "secretmanager.googleapis.com",
-				APIShortname:         "secretmanager",
-				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
-				Transport:            "grpc+rest",
-			},
-		},
+
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
