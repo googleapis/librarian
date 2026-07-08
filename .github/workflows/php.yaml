@@ -24,6 +24,11 @@ jobs:
       - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6
         with:
           persist-credentials: false
+      - name: Setup PHP
+        uses: shivammathur/setup-php@44454db4f0199b8b9685a5d763dc37cbf79108e1 # v2.31.1
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, bcmath
       - uses: ./.github/actions/setup-librarian
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/php
