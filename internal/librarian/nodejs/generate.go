@@ -119,8 +119,12 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if err != nil {
 		return err
 	}
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
 	cmdArgs := append(args[1:], protos...)
-	return command.RunInDir(ctx, googleapisDir, args[0], cmdArgs...)
+	return command.RunInDirWithEnv(ctx, googleapisDir, toolsEnv, args[0], cmdArgs...)
 }
 
 // resolveNodejsAPI returns the Node.js-specific configuration for the given API,
@@ -292,7 +296,12 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	}
 	runArgs := append([]string{protoDir}, compileArgs...)
 
-	if err := command.RunInDir(ctx, outDir, "compileProtos", runArgs...); err != nil {
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
+
+	if err := command.RunInDirWithEnv(ctx, outDir, toolsEnv, "compileProtos", runArgs...); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 
@@ -304,7 +313,7 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// of the gapic-generator-typescript
 	librarianScript := filepath.Join(outDir, "librarian.js")
 	if _, err := os.Stat(librarianScript); err == nil {
-		if err := command.RunInDir(ctx, repoRoot, "node", librarianScript); err != nil {
+		if err := command.RunInDirWithEnv(ctx, repoRoot, toolsEnv, "node", librarianScript); err != nil {
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
@@ -354,7 +363,11 @@ func movePackageFromStaging(ctx context.Context, library *config.Library, repoRo
 	if library.Nodejs != nil && library.Nodejs.ESM {
 		combineArgs = append(combineArgs, "--is-esm")
 	}
-	if err := command.Run(ctx, "gapic-node-processing", combineArgs...); err != nil {
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
+	if err := command.RunWithEnv(ctx, toolsEnv, "gapic-node-processing", combineArgs...); err != nil {
 		return fmt.Errorf("combine-library: %w", err)
 	}
 	// Restore keep files.

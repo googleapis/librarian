@@ -501,9 +501,6 @@ type JavaModule struct {
 	// CodeownerTeam is the GitHub team that owns the code.
 	CodeownerTeam string `yaml:"codeowner_team,omitempty"`
 
-	// ExcludedDependencies is a list of dependencies to exclude.
-	ExcludedDependencies string `yaml:"excluded_dependencies,omitempty"`
-
 	// ExcludedPOMs is a list of artifact ids, whose module should be excluded
 	// when updating pom.xml and are omitted when counting new modules.
 	ExcludedPOMs []string `yaml:"excluded_poms,omitempty"`
@@ -807,4 +804,14 @@ type NodejsAPI struct {
 
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
+}
+
+// PHPPackage contains PHP-specific library configuration.
+type PHPPackage struct {
+}
+
+// PHPAPI represents configuration for a single API within a PHP package.
+type PHPAPI struct {
+	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
+	MigrationMode string `yaml:"migration_mode,omitempty"`
 }
