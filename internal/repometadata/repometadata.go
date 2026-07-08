@@ -97,6 +97,10 @@ type RepoMetadata struct {
 
 	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
 	Transport string `json:"transport,omitempty"`
+
+	// RecommendedPackage is the recommended package name.
+	// A Java-specific field.
+	RecommendedPackage string `json:"recommended_package,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -135,8 +139,12 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
 	var transport string
+	var recommendedPackage string
 	if cfg.Language == config.LanguageJava {
 		transport = api.RepoMetadataTransport(cfg.Language, library)
+		if library.Java != nil {
+			recommendedPackage = library.Java.RecommendedPackage
+		}
 	}
 
 	var requiresBilling bool
@@ -162,6 +170,7 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		Repo:                 cfg.Repo,
 		RequiresBilling:      requiresBilling,
 		Transport:            transport,
+		RecommendedPackage:   recommendedPackage,
 	}
 }
 
