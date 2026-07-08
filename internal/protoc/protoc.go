@@ -23,12 +23,17 @@ import (
 	"runtime"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
-const githubURLBase = "https://github.com"
+const (
+	githubURLBase = "https://github.com"
+	osWindows     = "windows"
+	protocDir     = "protoc"
+)
 
 var (
 	osMap = map[string]string{
@@ -51,13 +56,26 @@ func Install(ctx context.Context, protoc *config.Protoc) error {
 	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
 }
 
+// Run executes protoc with the given version and arguments.
+func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args ...string) error {
+	dir, err := InstallDir(protoc.Version)
+	if err != nil {
+		return err
+	}
+	protocPath := filepath.Join(dir, "bin", protocDir)
+	if runtime.GOOS == osWindows {
+		protocPath += ".exe"
+	}
+	return command.RunWithEnv(ctx, env, protocPath, args...)
+}
+
 // InstallDir returns the directory where the protoc binary should be installed.
 func InstallDir(version string) (string, error) {
 	binDir, err := cache.BinDirectory()
 	if err != nil {
 		return "", err
 	}
-	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
+	return filepath.Join(binDir, protocDir, fmt.Sprintf("v%s", version)), nil
 }
 
 // downloadAndExtract downloads and installs the protoc binary from the given URL to the given directory.
@@ -78,7 +96,7 @@ func downloadURL(version, os, arch string) string {
 
 // platformSuffix returns the platform suffix for the given OS and architecture.
 func platformSuffix(os, arch string) string {
-	if os == "windows" {
+	if os == osWindows {
 		return "win64"
 	}
 
