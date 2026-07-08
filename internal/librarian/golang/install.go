@@ -18,16 +18,24 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// errMissingToolVersion indicates a go tool entry is missing its version.
-var errMissingToolVersion = errors.New("go tool missing version")
+const (
+	envGoBin = "GOBIN"
+	toolsDir = "go_tools"
+)
 
-// errNoToolsSpecified indicates no Go tools were provided in the configuration.
-var errNoToolsSpecified = errors.New("no tools specified in configuration")
+var (
+	// errMissingToolVersion indicates a go tool entry is missing its version.
+	errMissingToolVersion = errors.New("go tool missing version")
+	// errNoToolsSpecified indicates no Go tools were provided in the configuration.
+	errNoToolsSpecified = errors.New("no tools specified in configuration")
+)
 
 // Install installs the tools required for Go library generation.
 func Install(ctx context.Context, tools *config.Tools) error {
@@ -37,13 +45,27 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return installGoTools(ctx, tools.Go)
 }
 
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
+}
+
 func installGoTools(ctx context.Context, goTools []*config.GoTool) error {
+	installDir, err := InstallDir()
+	if err != nil {
+		return err
+	}
+	env := map[string]string{envGoBin: installDir}
 	for _, tool := range goTools {
 		if tool.Version == "" {
 			return fmt.Errorf("%w: %s", errMissingToolVersion, tool.Name)
 		}
 		toolStr := fmt.Sprintf("%s@%s", tool.Name, tool.Version)
-		if err := command.Run(ctx, command.Go, "install", toolStr); err != nil {
+		if err := runWithEnv(ctx, env, command.Go, "install", toolStr); err != nil {
 			return err
 		}
 	}

@@ -15,6 +15,7 @@
 package java
 
 import (
+	"log"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -30,7 +31,11 @@ var knownPrefixes = []string{
 	"google/",
 }
 
-const defaultVersion = "0.1.0-SNAPSHOT"
+const (
+	defaultVersion         = "0.1.0-SNAPSHOT"
+	defaultReleasedVersion = "0.0.0"
+	fakeGroupID            = "please-configure-java-group-id"
+)
 
 // Add initializes a new Java library with default values.
 func Add(lib *config.Library) *config.Library {
@@ -38,6 +43,37 @@ func Add(lib *config.Library) *config.Library {
 	// Java generation defaults to the system year for license headers,
 	// so we reset it here to avoid redundancy in librarian.yaml.
 	lib.CopyrightYear = ""
+
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	lib.Java.ReleasedVersion = defaultReleasedVersion
+
+	// We use the first API to infer the group ID.
+	// It is unrealistic for a single library to mix cloud and non-cloud APIs.
+	apiPath := lib.APIs[0].Path
+	switch {
+	case strings.HasPrefix(apiPath, "google/shopping/"):
+		return setNonCloudMavenDefaults(lib, "com.google.shopping")
+	case strings.HasPrefix(apiPath, "google/maps/"):
+		return setNonCloudMavenDefaults(lib, "com.google.maps")
+	case strings.HasPrefix(apiPath, "google/ads/"):
+		return setNonCloudMavenDefaults(lib, "com.google.api-ads")
+	}
+	if !strings.HasPrefix(apiPath, "google/cloud/") {
+		log.Printf(
+			"WARNING: unrecognized non-cloud API path %q. Setting fake GroupID %q. "+
+				"Please manually configure java.group_id and java.distribution_name_override in librarian.yaml.",
+			apiPath, fakeGroupID,
+		)
+		setNonCloudMavenDefaults(lib, fakeGroupID)
+	}
+	return lib
+}
+
+func setNonCloudMavenDefaults(lib *config.Library, groupID string) *config.Library {
+	lib.Java.ArtifactID = "google-" + lib.Name
+	lib.Java.GroupID = groupID
 	return lib
 }
 
@@ -50,8 +86,8 @@ func DefaultLibraryName(api string) string {
 		path = api[:idx]
 	}
 	for _, p := range knownPrefixes {
-		if strings.HasPrefix(path, p) {
-			path = strings.TrimPrefix(path, p)
+		if after, ok := strings.CutPrefix(path, p); ok {
+			path = after
 			break
 		}
 	}

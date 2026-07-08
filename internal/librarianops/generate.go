@@ -31,7 +31,7 @@ import (
 
 const (
 	branchPrefix = "librarianops-generateall-"
-	commitTitle  = "chore: run librarian update and generate --all"
+	commitTitle  = "feat: update API sources and regenerate"
 	// librarianImageTemplate is a template string to format a language and
 	// version into the name of a Docker image to run when the --docker flag
 	// has been specified.
@@ -56,7 +56,7 @@ For each repository, librarianops will:
   1. Clone the repository to a temporary directory (or use existing directory with -C)
   2. Create a branch: librarianops-generateall-YYYY-MM-DD
   3. Run librarian tidy
-  4. Run librarian update for configured sources (discovery, googleapis)
+  4. Run librarian update for configured sources (sources.discovery, sources.googleapis)
   5. Run librarian generate --all
   6. Run cargo update --workspace (google-cloud-rust only)
   7. Commit changes
@@ -196,7 +196,7 @@ func createPR(ctx context.Context, repoName string) error {
 	if repoName == repoRust {
 		sources = "googleapis and discovery-artifact-manager"
 	}
-	title := fmt.Sprintf("chore: update %s and regenerate", sources)
+	title := fmt.Sprintf("feat: update %s and regenerate", sources)
 	body := fmt.Sprintf("Update %s to the latest commit and regenerate all client libraries.", sources)
 	return command.Run(ctx, "gh", "pr", "create", "--title", title, "--body", body)
 }
@@ -262,10 +262,10 @@ func sourcesToUpdate(cfg *config.Config) []string {
 	}
 	var sources []string
 	if cfg.Sources.Discovery != nil {
-		sources = append(sources, "discovery")
+		sources = append(sources, "sources.discovery")
 	}
 	if cfg.Sources.Googleapis != nil {
-		sources = append(sources, "googleapis")
+		sources = append(sources, "sources.googleapis")
 	}
 	return sources
 }

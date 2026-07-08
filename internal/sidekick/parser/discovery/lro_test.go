@@ -64,13 +64,14 @@ func TestLroAnnotations(t *testing.T) {
 		DiscoveryLro: &api.DiscoveryLro{
 			PollingPathParameters: []string{"project", "zone"},
 		},
+		Signatures: []*api.MethodSignature{{Names: []string{"project", "zone", "body"}}},
 	}
 	got := model.Method(want.ID)
 	if got == nil {
 		t.Fatalf("missing method %s in model", want.ID)
 	}
 	if diff := cmp.Diff(want, got, cmpopts.IgnoreFields(api.Method{}, "Documentation")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	// The parser should have injected a mixin method.
@@ -79,6 +80,7 @@ func TestLroAnnotations(t *testing.T) {
 		Name:         "getOperation",
 		InputTypeID:  "..zoneOperations.getRequest",
 		OutputTypeID: "..Operation",
+		IsLroPoller:  true,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
@@ -103,7 +105,7 @@ func TestLroAnnotations(t *testing.T) {
 		t.Fatalf("missing method %s in model", wantMixin.ID)
 	}
 	if diff := cmp.Diff(wantMixin, gotMixin, cmpopts.IgnoreFields(api.Method{}, "Documentation", "Service")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

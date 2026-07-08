@@ -44,6 +44,8 @@ type methodAnnotation struct {
 	HasResourceNameGeneration bool
 	ResourceNameTemplateGrpc  string
 	GrpcResourceNameArgs      []string
+	IsLroPoller               bool
+	IsDiscoveryLro            bool
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -113,6 +115,7 @@ func (info *operationInfo) NoneAreEmpty() bool {
 type discoveryLroAnnotations struct {
 	MethodName            string
 	ReturnType            string
+	ServiceNameToPascal   string
 	PollingPathParameters []discoveryLroPathParameter
 }
 
@@ -291,7 +294,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 			Value: m.APIVersion,
 		})
 	}
-	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Service.Scopes())
+	docLines, err := c.formatDocComments(m.Documentation, m.ID, m.Model, m.Scopes())
 	if err != nil {
 		return nil, err
 	}
@@ -311,6 +314,8 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		RoutingRequired:           c.routingRequired,
 		DetailedTracingAttributes: c.detailedTracingAttributes,
 		InternalBuilders:          c.internalBuilders,
+		IsLroPoller:               m.IsLroPoller,
+		IsDiscoveryLro:            isDiscoveryLro(m),
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {
@@ -330,16 +335,19 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		if err != nil {
 			return nil, err
 		}
-		m.OperationInfo.Codec = &operationInfo{
+		opInfo := &operationInfo{
 			MetadataType:     metadataType,
 			ResponseType:     responseType,
 			PackageNamespace: c.rootModuleName(m.Model),
 		}
+		m.OperationInfo.Codec = opInfo
+		annotation.OperationInfo = opInfo
 	}
 	if m.DiscoveryLro != nil {
 		lroAnnotation := &discoveryLroAnnotations{
-			MethodName: annotation.Name,
-			ReturnType: returnType,
+			MethodName:          annotation.Name,
+			ReturnType:          returnType,
+			ServiceNameToPascal: annotation.ServiceNameToPascal,
 		}
 		for _, p := range m.DiscoveryLro.PollingPathParameters {
 			a := discoveryLroPathParameter{
@@ -352,6 +360,18 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 	}
 	m.Codec = annotation
 	return annotation, nil
+}
+
+func isDiscoveryLro(m *api.Method) bool {
+	if !m.IsLroPoller {
+		return false
+	}
+	if m.Service == nil {
+		return false
+	}
+	return slices.ContainsFunc(m.Service.Methods, func(meth *api.Method) bool {
+		return meth.DiscoveryLro != nil
+	})
 }
 
 func (c *codec) annotateRoutingAccessors(variant *api.RoutingInfoVariant, m *api.Method) ([]string, error) {
@@ -593,8 +613,8 @@ func formatResourceNameTemplateFromPath(m *api.Method, b *api.PathBinding) (stri
 		if i > 0 {
 			sb.WriteString("/")
 		}
-		if seg.Literal != nil {
-			sb.WriteString(*seg.Literal)
+		if seg.Literal != "" {
+			sb.WriteString(seg.Literal)
 		} else if seg.Variable != nil {
 			sb.WriteString("{}")
 		}

@@ -11,24 +11,8 @@ This document describes the schema for the librarian.yaml.
 | `repo` | string | Is the repository name, such as "googleapis/google-cloud-python". It is used for:<br>- Providing to the Java GAPIC generator for observability features.<br>- Generating the .repo-metadata.json. |
 | `sources` | [Sources](#sources-configuration) (optional) | References external source repositories. |
 | `tools` | [Tools](#tools-configuration) (optional) | Defines required tools. |
-| `release` | [Release](#release-configuration) (optional) | Holds the configuration parameter for publishing and release subcommands. |
 | `default` | [Default](#default-configuration) (optional) | Contains default settings for all libraries. They apply to all libraries unless overridden. |
 | `libraries` | list of [Library](#library-configuration) (optional) | Contains configuration overrides for libraries that need special handling, and differ from default settings. |
-
-## Release Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `ignored_changes` | list of string | Defines globs that are ignored in change analysis. |
-| `preinstalled` | map[string]string | Tools defines the list of tools that must be preinstalled.<br><br>This is indexed by the well-known name of the tool vs. its path, e.g. [preinstalled] cargo = /usr/bin/cargo |
-| `tools` | map[string][]Tool | Defines the list of tools to install, indexed by installer. |
-
-## Tool Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `name` | string | Is the name of the tool e.g. nox. |
-| `version` | string | Is the version of the tool e.g. 1.2.4. |
 
 ## Sources Configuration
 
@@ -54,9 +38,11 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
-| `npm` | list of [NPMTool](#npmtool-configuration) (optional) | Defines tools to install via npm. |
-| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
+| `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
+| `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
+| `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
 
 ## CargoTool Configuration
 
@@ -65,15 +51,25 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the cargo package name. |
 | `version` | string | Is the version to install. |
 
-## NPMTool Configuration
+## GoTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the npm package name. |
+| `name` | string | Is the go module name. |
 | `version` | string | Is the version to install. |
-| `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
-| `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## MavenTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the Maven tool name. It is used as the filename for the generated executable wrapper script. |
+| `version` | string | Is the version to install. |
+| `group_id` | string | Is the Maven artifact group ID. |
+| `artifact_id` | string | Is the Maven artifact ID. |
+| `classifier` | string | Is the classifier of the Maven artifact. |
+| `packaging` | string | Is the Maven packaging. Acceptable values are lowercase "jar" and "exe". If the packaging is "exe", the wrapper script executes it directly. Otherwise, it executes the tool using "java -jar". |
+| `local_path` | string | Is the path to a local Maven project directory containing a pom.xml file. When present, version, group_id, artifact_id are ignored. |
+| `main_class` | string | Is the fully qualified main class name to execute (used with -cp). |
 
 ## PipTool Configuration
 
@@ -82,24 +78,36 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pip package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the pip install specifier (e.g., "pkg@git+https://..."). |
+| `local_path` | string | Is the path to a local Python package to install. |
 
-## GoTool Configuration
+## PNPMTool Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `name` | string | Is the go module name. |
+| `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
+| `package` | string | Is the URL or path of the package to install. |
+| `checksum` | string | Is the SHA256 checksum of the package. |
+| `build` | list of string | Defines the commands to run to build the tool after installation. |
+
+## Protoc Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `version` | string | Is the version to install. |
+| `sha256` | string | Is the SHA256 checksum of the tarball. |
 
 ## Default Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `keep` | list of string | Lists files and directories to preserve during regeneration. |
+| `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. For example, for Rust this is src/generated. |
 | `tag_format` | string | Is the template for git tags, such as "{name}/v{version}". |
-| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
 | `dart` | [DartPackage](#dartpackage-configuration) (optional) | Contains Dart-specific default configuration. |
-| `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific default configuration. |
+| `dotnet` | [DotnetPackage](#dotnetpackage-configuration) (optional) | Contains .NET-specific default configuration. |
+| `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
+| `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
@@ -114,10 +122,10 @@ This document describes the schema for the librarian.yaml.
 | `preview` | [Library](#library-configuration) (optional) | Signifies that this API has a preview variant, and it contains overrides specific to the preview API variant. This is merged with the containing [Library], preferring those [Library.Preview] values that are set over their counterpart in the containing configuration.<br><br>The most common overrides are [Library.Version] and [Library.APIs], with the former containing a pre-release version based on the containing version of the stable client, and the latter being a subset of APIs, typically omitting alpha and beta paths.<br><br>The [Library.Output] may be a different location and derived on a per-language basis, but will not be serialized in the configuration.<br><br>Important: The boolean fields [Library.SkipRelease] and [Library.SkipGenerate] set in the containing config will always be applied to the Preview library as well, because previews are related to the stable library and should be managed identically. |
 | `apis` | list of [API](#api-configuration) (optional) | API specifies which googleapis API to generate from (for generated libraries). |
 | `copyright_year` | string | Is the copyright year for the library. |
-| `description_override` | string | Overrides the library description. |
 | `title_override` | string | Overrides the title used in README generation. |
-| `keep` | list of string | Lists files and directories to preserve during regeneration. |
+| `keep` | list of string | Lists files and directories to preserve during regeneration. These represent critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests) and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml) that are not natively generated from proto schemas but are strictly required by the post-processor's markdown generation and release tracking passes. |
 | `output` | string | Is the directory where code is written. This overrides Default.Output. |
+| `postprocess` | [Postprocess](#postprocess-configuration) (optional) | Contains post-processing operations executed after code generation. |
 | `roots` | list of string | Specifies the source roots to use for generation. Defaults to googleapis. |
 | `skip_generate` | bool | Disables code generation for this library. |
 | `skip_release` | bool | Disables release for this library. |
@@ -127,16 +135,92 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
+| `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
-| `surfer` | [Surfer](#surfer-configuration) (optional) | Contains gcloud-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
+
+## Postprocess Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `replace` | list of [ReplaceConfig](#replaceconfig-configuration) | Contains literal string replacement rules. |
+| `replace_regex` | list of [ReplaceRegexConfig](#replaceregexconfig-configuration) | Contains regular expression replacement rules. |
+| `copy_file` | list of [CopyConfig](#copyconfig-configuration) | Contains file copy rules. |
+| `remove_file` | list of string | Contains glob patterns of files to remove. |
+| `method_operations` | list of [MethodOperation](#methodoperation-configuration) | Contains method-level operations (`delete`, `duplicate`, `deprecate`). |
+
+## MethodOperation Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path to modify. |
+| `action` | string | Specifies the operation (`delete`, `duplicate`, or `deprecate`). |
+| `func_name` | string | Specifies the target method name. |
+| `new_name` | string | Specifies the new method name for duplicate operations. |
+| `deprecation_message` | string | Specifies the deprecation message for deprecate operations. |
+
+## ReplaceConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `original` | string | Specifies the exact string to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## ReplaceRegexConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Specifies the relative file path or glob pattern to modify. |
+| `pattern` | string | Specifies the regular expression pattern to find. |
+| `replacement` | string | Specifies the replacement string. |
+
+## CopyConfig Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `src` | string | Specifies the source file path relative to the staging directory. |
+| `dst` | string | Specifies the destination file path relative to the library root. |
 
 ## API Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `path` | string | Specifies which googleapis Path to generate from (for generated libraries). |
+| `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
+| `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
+| `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
+| `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
+
+## GoDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `toolchain` | string | Is the desired Go toolchain version (e.g., "go1.25.0"). |
+| `default_enabled_generator_features` | list of string | Lists the generator features enabled by default for all APIs. These default features are appended AFTER any features explicitly declared in individual APIs. |
+
+## AdditionalProto Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `path` | string | Is the path to the proto file, relative to the googleapis root. |
+| `generate_proto_classes` | bool | Indicates whether to include this proto in standard Protocol Buffer Java classes generation. |
+| `copy_to_output` | bool | Indicates whether to copy this proto to the output directory. |
+
+## CommonDiscovery Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
+| `pollers` | list of [CommonPoller](#commonpoller-configuration) | Is a list of LRO polling configurations. |
+
+## CommonPoller Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
+| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
 
 ## DartPackage Configuration
 
@@ -223,34 +307,18 @@ This document describes the schema for the librarian.yaml.
 | `to` | string |  |
 | `wire_name` | string |  |
 
-## GcloudHelpTextRule Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `selector` | string | Is a qualified name of the element (e.g., "google.cloud.foo.v1.Bar.Method"). |
-| `brief` | string | Is a concise, single-line summary of the help text. |
-| `description` | string | Provides a detailed, multi-line description. |
-| `examples` | list of string | Provides a list of examples illustrating how to use the element. |
-
-## GcloudHelpTextRules Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `method_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for API methods (commands). |
-| `field_rules` | list of [GcloudHelpTextRule](#gcloudhelptextrule-configuration) (optional) | Defines help text rules specifically for individual fields (flags/arguments). |
-
 ## GoAPI Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `client_package` | string | Is the package name of the generated client. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `disabled_generator_features` | list of string | Provides a mechanism for disabling generator features at the API level. These features will be disabled if both specified in EnabledGeneratorFeatures and DisabledGeneratorFeatures. |
 | `enabled_generator_features` | list of string | Provides a mechanism for enabling generator features at the API level. |
 | `import_path` | string | Is the Go import path for the API. |
 | `nested_protos` | list of string | Is a list of nested proto files. |
 | `no_metadata` | bool | Indicates whether to skip generating gapic_metadata.json. This is typically false. |
 | `no_snippets` | bool | Indicates whether to skip generating snippets. This is typically false. |
-| `path` | string | Is the source path. |
 | `proto_only` | bool | Determines whether to generate a Proto-only client. A proto-only client does not define a service in the proto files. |
 | `proto_package` | string | Is the proto package name. |
 
@@ -259,7 +327,6 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `delete_generation_output_paths` | list of string | Is a list of paths to delete before generation. |
-| `go_apis` | list of [GoAPI](#goapi-configuration) (optional) | Is a list of Go-specific API configurations. |
 | `module_path_version` | string | Is the version of the Go module path. |
 | `nested_module` | string | Is the name of a nested module directory. |
 
@@ -267,18 +334,27 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string | Is the source path. |
 | `monolithic` | bool | Indicates whether to merge all modules (proto, grpc, gapic) into a single directory. This is currently only used for the grafeas library to maintain its legacy code structure. |
-| `additional_protos` | list of string | Is a list of additional proto files to include in generation. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
+| `additional_protos` | list of [AdditionalProto](#additionalproto-configuration) (optional) | Is a list of additional proto files to include in generation. By default, these files are used purely as compilation dependencies for the GAPIC generator. Note: google/cloud/common_resources.proto is included by default unless OmitCommonResources is set to true. |
 | `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `excluded_protos` | list of string | Is a list of proto files to exclude from generation. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1/schema/io_format.proto"). |
 | `skip_proto_class_generation` | list of string | Is a list of proto files to exclude from generating proto module, but included in generating gRPC or GAPIC modules and packaged proto files. It expects the full path starting from the root of the googleapis directory (e.g., "google/cloud/aiplatform/v1beta1/schema/geometry.proto"). TODO(https://github.com/googleapis/librarian/issues/5661): remove after migration. |
 | `gapic_artifact_id_override` | string | Overrides the artifact ID for the GAPIC module. It determines the module's directory name and is used to derive proto and gRPC artifact IDs if they are not explicitly overridden. |
 | `grpc_artifact_id_override` | string | Overrides the artifact ID for the gRPC module. The artifact ID is also used as the name for the module's directory. |
 | `proto_artifact_id_override` | string | Overrides the artifact ID for the proto module. The artifact ID is also used as the name for the module's directory. |
-| `proto_grpc_only` | bool | Determines whether to skip GAPIC client generation. It is usually used for proto-only clients that do not define a service in the proto files, with the exception of google/cloud/location. |
+| `generate_gapic` | bool (optional) | Indicates whether to generate the GAPIC client surface. Defaults to true. |
+| `generate_proto` | bool (optional) | Indicates whether to generate proto module. Defaults to true. If set to false, should also set generate_resource_names to false. |
+| `generate_grpc` | bool (optional) | Indicates whether to generate grpc module. Defaults to true. TODO(https://github.com/googleapis/librarian/issues/6066): remove after this is resolved |
+| `generate_resource_names` | bool (optional) | Indicates whether to extract resource names from the GAPIC phase. Defaults to true. |
 | `copy_files` | list of [JavaFileCopy](#javafilecopy-configuration) (optional) | Is a list of file copies to perform after generation. It applies to files in the GAPIC module. |
 | `samples` | bool (optional) | Determines whether to generate samples for the API, default is true when omitted. |
+
+## JavaDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `custom_group_ids` | map[string]string | Maps API path prefixes (e.g., "google/shopping") to their corresponding Maven Group IDs (e.g., "com.google.shopping"). Use this to override the default "com.google.cloud" Group ID for specific API paths (e.g., maps, ads, shopping). |
+| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
 
 ## JavaFileCopy Configuration
 
@@ -291,24 +367,22 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `alternate_headers` | string | Is the path to a file containing alternate license header text. |
 | `api_id_override` | string | Is the ID of the API (e.g., "pubsub.googleapis.com"), allows the "api_id" field in .repo-metadata.json to be overridden. Defaults to "{library.api_shortname}.googleapis.com". |
 | `api_reference` | string | Is the URL for the API reference documentation. |
 | `api_description_override` | string | Allows the "api_description" field in .repo-metadata.json to be overridden. |
 | `api_shortname_override` | string | Allows the "api_shortname" field in .repo-metadata.json to be overridden. |
+| `artifact_id` | string | Is the Maven artifact ID. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
-| `non_cloud_api` | bool | Indicates whether the API is NOT a Google Cloud API. Defaults to false. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
-| `distribution_name_override` | string | Allows the "distribution_name" field in .repo-metadata.json to be overridden. |
-| `excluded_dependencies` | string | Is a list of dependencies to exclude. |
-| `excluded_poms` | string | Is a list of POM files to exclude. |
+| `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
 | `issue_tracker_override` | string | Allows the "issue_tracker" field in .repo-metadata.json to be overridden. |
-| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
+| `released_version` | string | Is the last released version of the library. If omitted, it will be derived from the library version. Note: It assumes a minor bump from the previous '.0' version (e.g., '1.2.0-SNAPSHOT' -> '1.1.0') and does not support deriving previous patch releases (e.g., '1.1.1'). |
 | `library_type_override` | string | Allows the "library_type" field in .repo-metadata.json to be overridden. |
 | `min_java_version` | int | Is the minimum Java version required. |
 | `name_pretty_override` | string | Allows the "name_pretty" field in .repo-metadata.json to be overridden. |
-| `java_apis` | list of [JavaAPI](#javaapi-configuration) (optional) | Is a list of Java-specific API configurations. |
 | `product_documentation_override` | string | Allows the "product_documentation" field in .repo-metadata.json to be overridden. |
 | `recommended_package` | string | Is the recommended package name. |
 | `billing_not_required` | bool | Indicates whether the API does NOT require billing. This is typically false. |
@@ -324,6 +398,8 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `diregapic` | bool | Indicates whether generation uses DIREGAPIC (Discovery REST GAPICs). This is typically false. Used for the GCE (compute) client. |
+| `mixins` | string | Controls mixin behavior for this API (e.g., "none" to disable). When set, this overrides the package-level mixins setting. |
+| `omit_common_resources` | bool | Indicates whether to omit the default inclusion of google/cloud/common_resources.proto. |
 | `path` | string | Is the source path. |
 
 ## NodejsPackage Configuration
@@ -332,18 +408,34 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 | `bundle_config` | string | Is the path to a GAPIC bundle config file. |
+| `default_version` | string | Is the default version of the API to use. When omitted, the version in the first API path is used. |
 | `dependencies` | map[string]string | Maps npm package names to version constraints. |
+| `esm` | bool | Indicates that generation should produce ES Modules (ESM) outputs. |
 | `extra_protoc_parameters` | list of string | Is a list of extra parameters to pass to protoc. |
 | `handwritten_layer` | bool | Indicates the library has a handwritten layer on top of the generated code. |
 | `main_service` | string | Is the name of the main service for libraries with a handwritten layer. |
-| `mixins` | string | Controls mixin behavior (e.g., "none" to disable). |
 | `nodejs_apis` | list of [NodejsAPI](#nodejsapi-configuration) (optional) | Is a list of Node.js-specific API configurations. |
 | `package_name` | string | Is the npm package name (e.g., "@google-cloud/access-approval"). |
+| `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
+| `metadata_name_override` | string | Allows the name field in .repo-metadata.json to be overridden. |
+| `name_pretty_override` | string | Allows the name_pretty field in .repo-metadata.json to be overridden. |
+
+## PHPAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
+
+## PHPPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
 
 ## PythonDefault Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `allowed_namespaces` | list of string | Contains the list of allowed GAPIC namespaces. If empty, all namespaces are allowed. |
 | `common_gapic_paths` | list of string | Contains paths which are generated for any package containing a GAPIC API. These are relative to the package's output directory, and the string "{neutral-source}" is replaced with the path to the version-neutral source code (e.g. "google/cloud/run"). If a library defines its own common_gapic_paths, they will be appended to the defaults. |
 | `library_type` | string | Is the type to emit in .repo-metadata.json. |
 
@@ -383,7 +475,7 @@ This document describes the schema for the librarian.yaml.
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `pagination_overrides` | list of [RustPaginationOverride](#rustpaginationoverride-configuration) | Contains overrides for pagination configuration. |
 | `name_overrides` | string | Contains codec-level overrides for type and service names. |
-| `discovery` | [RustDiscovery](#rustdiscovery-configuration) (optional) | Contains discovery-specific configuration for LRO polling. |
+| `discovery` | RustDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |
 | `quickstart_service_override` | string | Overrides the default heuristically selected service for the package-level quickstart. |
 
 ## RustDefault Configuration
@@ -395,14 +487,8 @@ This document describes the schema for the librarian.yaml.
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
 | `generate_rpc_samples` | string | Indicates whether to generate RPC samples. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. |
+| `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. |
 | `resource_name_heuristic` | bool (optional) | Indicates whether to apply heuristics to identify and generate resource names. |
-
-## RustDiscovery Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `operation_id` | string | Is the ID of the LRO operation type (e.g., ".google.cloud.compute.v1.Operation"). |
-| `pollers` | list of [RustPoller](#rustpoller-configuration) | Is a list of LRO polling configurations. |
 
 ## RustDocumentationOverride Configuration
 
@@ -418,6 +504,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `disabled_rustdoc_warnings` | yaml.StringSlice | Specifies rustdoc lints to disable. An empty slice explicitly enables all warnings. |
 | `detailed_tracing_attributes` | bool (optional) | Indicates whether to include detailed tracing attributes. This overrides the crate-level setting. |
+| `lro_stub_options` | bool (optional) | Indicates whether to include LRO poller options in generated stub traits. This overrides the crate-level setting. |
 | `documentation_overrides` | list of [RustDocumentationOverride](#rustdocumentationoverride-configuration) | Contains overrides for element documentation. |
 | `extend_grpc_transport` | bool | Indicates whether the transport stub can be extended (in order to support streams). |
 | `generate_setter_samples` | string | Indicates whether to generate setter samples. |
@@ -461,19 +548,6 @@ This document describes the schema for the librarian.yaml.
 | `id` | string | Is the fully qualified method ID (e.g., .google.cloud.sql.v1.Service.Method). |
 | `item_field` | string | Is the name of the field used for items. |
 
-## RustPoller Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `prefix` | string | Is an acceptable prefix for the URL path (e.g., "compute/v1/projects/{project}/zones/{zone}"). |
-| `method_id` | string | Is the corresponding method ID (e.g., ".google.cloud.compute.v1.zoneOperations.get"). |
-
-## Surfer Configuration
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `help_text` | [GcloudHelpTextRules](#gcloudhelptextrules-configuration) (optional) | Contains help text overrides for the surface. |
-
 ## SwiftDefault Configuration
 
 | Field | Type | Description |
@@ -505,3 +579,6 @@ This document describes the schema for the librarian.yaml.
 | (embedded) | [SwiftDefault](#swiftdefault-configuration) |  |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include (e.g., ["date.proto", "expr.proto"]). |
 | `modules` | list of [SwiftModule](#swiftmodule-configuration) (optional) | Specifies generation targets for veneers and test packages.<br><br>Each module defines a source proto path, and output location. |
+| `per_service_traits` | bool | Enables per-service compile-time flags. |
+| `default_traits` | list of string | Is a list of compile-time traits enabled by default. |
+| `discovery` | SwiftDiscovery (optional) | Contains discovery-specific configuration for LRO polling. |

@@ -548,10 +548,10 @@ func TestProtobuf_UniqueEnumValues(t *testing.T) {
 
 	less := func(a, b *api.EnumValue) bool { return a.Name < b.Name }
 	if diff := cmp.Diff(fullList, withAlias.Values, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("enum values mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	if diff := cmp.Diff(uniqueList, withAlias.UniqueNumberValues, cmpopts.SortSlices(less), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("enum values mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -913,6 +913,7 @@ func TestProtobuf_Service(t *testing.T) {
 					},
 					BodyFieldPath: "",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 			},
 			{
 				Name:            "CreateFoo",
@@ -936,6 +937,7 @@ func TestProtobuf_Service(t *testing.T) {
 					},
 					BodyFieldPath: "foo",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "foo"}}},
 			},
 			{
 				Name:            "DeleteFoo",
@@ -1049,6 +1051,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					},
 					BodyFieldPath: "bar",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent", "foo_id", "bar"}}},
 			},
 			{
 				Name:            "AddBar",
@@ -1074,6 +1077,7 @@ func TestProtobuf_QueryParameters(t *testing.T) {
 					},
 					BodyFieldPath: "*",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent", "payload"}}},
 			},
 		},
 	})
@@ -1128,7 +1132,7 @@ func TestProtobuf_TrimLeadingSpacesInDocumentation(t *testing.T) {
 
 	got := trimLeadingSpacesInDocumentation(input)
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in trimLeadingSpacesInDocumentation (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1176,6 +1180,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsInt32",
@@ -1204,6 +1209,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsUInt32",
@@ -1232,6 +1238,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsUInt32Value",
@@ -1260,6 +1267,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsInt32Value",
@@ -1288,6 +1296,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 					JSONName: "pageToken",
 					Behavior: []api.FieldBehavior{api.FieldBehaviorOptional},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooWithMaxResultsIncorrectMessageType",
@@ -1309,6 +1318,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingNextPageToken",
@@ -1330,6 +1340,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingPageSize",
@@ -1351,6 +1362,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingPageToken",
@@ -1372,6 +1384,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 			{
 				Name:            "ListFooMissingRepeatedItemToken",
@@ -1393,6 +1406,7 @@ func TestProtobuf_Pagination(t *testing.T) {
 						},
 					},
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"parent"}}},
 			},
 		},
 	})
@@ -1569,6 +1583,7 @@ func TestProtobuf_OperationInfo(t *testing.T) {
 					},
 					BodyFieldPath: "*",
 				},
+				Signatures: []*api.MethodSignature{{Names: []string{"name"}}},
 			},
 		},
 	})
@@ -1740,7 +1755,7 @@ func TestProtobuf_AutoPopulated(t *testing.T) {
 	}
 	want := []*api.Field{request_id, request_id_optional, request_id_with_field_behavior}
 	if diff := cmp.Diff(want, method.AutoPopulated); diff != "" {
-		t.Errorf("incorrect auto-populated fields on method (-want, +got)\n:%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -1904,7 +1919,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 			t.Fatalf("Expected ResourceDefinition for 'library.googleapis.com/Shelf' not found")
 		}
 		if diff := cmp.Diff(shelfResourceDef, foundShelf, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec", "Plural", "Singular")); diff != "" {
-			t.Errorf("ResourceDefinition (Shelf) mismatch (-want +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 		// Verify Book
@@ -1937,7 +1952,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		// Note: Book resource has 'Self' populated because it's a message resource.
 		// Ignoring Self/Codec for comparison.
 		if diff := cmp.Diff(bookResourceDef, foundBook, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
-			t.Errorf("ResourceDefinition (Book) mismatch (-want +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 	})
 
@@ -1982,7 +1997,7 @@ func TestProtobuf_ResourceAnnotations(t *testing.T) {
 		}
 
 		if diff := cmp.Diff(wantBookResource, bookMessage.Resource, cmpopts.IgnoreFields(api.Resource{}, "Self", "Codec")); diff != "" {
-			t.Errorf("Book message Resource mismatch (-want +got):\n%s", diff)
+			t.Errorf("mismatch (-want +got):\n%s", diff)
 		}
 
 		apitest.CheckMessage(t, bookMessage, &api.Message{

@@ -79,25 +79,6 @@ func TestLibrarianopsUsage(t *testing.T) {
 	}
 }
 
-func TestSurferUsage(t *testing.T) {
-	const bin = "github.com/googleapis/librarian/cmd/surfer"
-	for _, test := range []struct {
-		desc string
-		args []string
-		want string
-	}{
-		{"root", nil, "surfer [command]"},
-		{"generate", []string{"generate"}, "surfer generate <path to gcloud.yaml> --googleapis <path>"},
-	} {
-		t.Run(test.desc, func(t *testing.T) {
-			got := runUsage(t, bin, test.args)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestToolUsage(t *testing.T) {
 	for _, test := range []struct {
 		desc string
@@ -106,7 +87,6 @@ func TestToolUsage(t *testing.T) {
 		want string
 	}{
 		{"import-configs root", "github.com/googleapis/librarian/tool/cmd/importconfigs", nil, "import-configs [command]"},
-		{"import-metadata", "github.com/googleapis/librarian/tool/cmd/importmetadata", nil, "import-metadata --python-repo <path> --librarian-repo <path>"},
 	} {
 		t.Run(test.desc, func(t *testing.T) {
 			got := runUsage(t, test.bin, test.args)

@@ -25,7 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-const fakePublishedFile = "PUBLISHED"
 const fakeVersionFile = "VERSION"
 
 func fakeBumpLibrary(output, version string) error {
@@ -66,12 +65,6 @@ func fakeFormat(library *config.Library) error {
 
 func fakePostGenerate() error {
 	return os.WriteFile("POST_GENERATE_README.md", []byte("PostGenerated\n"), 0644)
-}
-
-func fakePublish(libraries []string, execute bool) error {
-	content := fmt.Sprintf("libraries=%s; execute=%v",
-		strings.Join(libraries, ","), execute)
-	return os.WriteFile(fakePublishedFile, []byte(content), 0644)
 }
 
 func fakeCreateSkeleton(library *config.Library) error {

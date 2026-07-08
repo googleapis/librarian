@@ -16,7 +16,7 @@ package main
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"os"
 
 	"github.com/googleapis/librarian/internal/librarian"
@@ -25,6 +25,7 @@ import (
 func main() {
 	ctx := context.Background()
 	if err := librarian.Run(ctx, os.Args...); err != nil {
-		log.Fatalf("librarian: %v", err)
+		fmt.Fprintf(os.Stderr, "librarian: %v\n", err)
+		os.Exit(1)
 	}
 }

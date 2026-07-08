@@ -16,6 +16,8 @@ package filesystem
 
 import (
 	"archive/zip"
+	"errors"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"testing"
@@ -166,6 +168,91 @@ func TestMoveAndMerge_SameSourceAndTarget(t *testing.T) {
 	}
 }
 
+func TestMoveAndMergeWithKeep(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name         string
+		srcFiles     map[string]string
+		dstFiles     map[string]string
+		keepFunc     func(string) bool
+		wantDstFiles map[string]string
+	}{
+		{
+			name:     "overwrite when keepFunc nil",
+			srcFiles: map[string]string{"file.txt": "new content", "sub/new.txt": "sub content"},
+			dstFiles: map[string]string{"file.txt": "old content"},
+			keepFunc: nil,
+			wantDstFiles: map[string]string{
+				"file.txt":    "new content",
+				"sub/new.txt": "sub content",
+			},
+		},
+		{
+			name:     "preserve when keepFunc true",
+			srcFiles: map[string]string{"README.md": "new readme", "code.go": "new code"},
+			dstFiles: map[string]string{"README.md": "custom readme", "old.go": "old code"},
+			keepFunc: func(rel string) bool { return rel == "README.md" },
+			wantDstFiles: map[string]string{
+				"README.md": "custom readme",
+				"code.go":   "new code",
+				"old.go":    "old code",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			src, dst := filepath.Join(root, "src"), filepath.Join(root, "dst")
+			writeTestFiles(t, src, test.srcFiles)
+			writeTestFiles(t, dst, test.dstFiles)
+
+			if err := MoveAndMergeWithKeep(src, dst, dst, test.keepFunc); err != nil {
+				t.Fatal(err)
+			}
+			checkDir(t, dst, test.wantDstFiles)
+			checkDir(t, src, map[string]string{})
+		})
+	}
+}
+
+func TestMoveAndMergeWithKeep_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		setupFunc func(t *testing.T, root string) (src, dst string)
+		wantErr   error
+	}{
+		{
+			name: "non-existent source directory",
+			setupFunc: func(t *testing.T, root string) (string, string) {
+				return "/non/existent/path", filepath.Join(root, "dst")
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "read-only destination directory",
+			setupFunc: func(t *testing.T, root string) (string, string) {
+				src, dst := filepath.Join(root, "src"), filepath.Join(root, "dst")
+				writeTestFiles(t, src, map[string]string{"file.txt": "content"})
+				if err := os.MkdirAll(dst, 0444); err != nil {
+					t.Fatal(err)
+				}
+				return src, dst
+			},
+			wantErr: fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			root := t.TempDir()
+			src, dst := test.setupFunc(t, root)
+			if err := MoveAndMergeWithKeep(src, dst, dst, nil); !errors.Is(err, test.wantErr) {
+				t.Errorf("MoveAndMergeWithKeep() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestCopyFile_Success(t *testing.T) {
 	t.Parallel()
 	tmp := t.TempDir()
@@ -288,5 +375,46 @@ func createZip(t *testing.T, path string, files map[string]string, modes map[str
 		if _, err := w.Write([]byte(content)); err != nil {
 			t.Fatal(err)
 		}
+	}
+}
+
+// writeTestFiles creates directories and writes files to dir.
+func writeTestFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	for path, content := range files {
+		full := filepath.Join(dir, path)
+		if err := os.MkdirAll(filepath.Dir(full), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(full, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+// checkDir verifies that the files inside dir exactly match want using go-cmp.
+func checkDir(t *testing.T, dir string, want map[string]string) {
+	t.Helper()
+	got := make(map[string]string)
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil || d.IsDir() {
+			return err
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			t.Fatalf("failed to get relative path for %s: %v", path, err)
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("failed to read file %s: %v", path, err)
+		}
+		got[filepath.ToSlash(rel)] = string(b)
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("failed to walk directory %s: %v", dir, err)
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch in %s (-want +got):\n%s", dir, diff)
 	}
 }

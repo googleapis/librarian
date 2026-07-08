@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -225,6 +226,217 @@ func TestFillDefaults(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := fillDefaults(test.lib, test.defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillDefaults_Java(t *testing.T) {
+	defaults := &config.Default{
+		Java: &config.JavaDefault{
+			CustomGroupIDs: map[string]string{
+				"google/shopping":  "com.google.shopping",
+				"google/exact/v1":  "com.google.exact",
+				"google/maps":      "com.google.maps",
+				"google/ads":       "com.google.api-ads",
+				"google/analytics": "com.google.analytics",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.Default
+		want     *config.Library
+	}{
+		{
+			name: "shopping library",
+			lib: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.shopping",
+				},
+			},
+		},
+		{
+			name: "do not override custom artifact id",
+			lib: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+					GroupID:    "com.google.shopping",
+				},
+			},
+		},
+		{
+			name: "maps library",
+			lib: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+				Java: &config.JavaModule{
+					GroupID: "com.google.maps",
+				},
+			},
+		},
+		{
+			name: "ads library",
+			lib: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api-ads",
+				},
+			},
+		},
+		{
+			name: "analytics library",
+			lib: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.analytics",
+				},
+			},
+		},
+		{
+			name: "do not fill if group id already set",
+			lib: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api.grpc",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api.grpc",
+				},
+			},
+		},
+		{
+			name: "prefix match respects path segment boundaries",
+			lib: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "no matching api prefix leaves group id empty",
+			lib: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "library does not change with nil map",
+			lib: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+			},
+			defaults: &config.Default{
+				Java: &config.JavaDefault{},
+			},
+			want: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "api path exact match",
+			lib: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.exact",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := fillJava(test.lib, test.defaults)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -502,7 +714,131 @@ func TestFillDefaults_Python(t *testing.T) {
 	}
 }
 
-func TestPrepareLibrary(t *testing.T) {
+func TestFillDefaults_Go(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.GoDefault
+		want     *config.Library
+	}{
+		{
+			name: "default features populated when GoAPI is nil",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default features populated when GoAPI has empty features",
+			lib: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							ImportPath: "foo/apiv1",
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							ImportPath:               "foo/apiv1",
+							EnabledGeneratorFeatures: []string{"F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "existing features union-ed with defaults",
+			lib: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_custom"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				Go: &config.GoModule{},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_custom", "F_one", "F_two"},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "duplicates are de-duplicated in union. The defaults come at the end.",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom"},
+						},
+					},
+				},
+			},
+			defaults: &config.GoDefault{
+				DefaultEnabledGeneratorFeatures: []string{"F_one", "F_two"},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/foo/v1",
+						Go: &config.GoAPI{
+							EnabledGeneratorFeatures: []string{"F_one", "F_custom", "F_two"},
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Go: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyDefaults(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		language    string
@@ -510,8 +846,8 @@ func TestPrepareLibrary(t *testing.T) {
 		rust        *config.RustCrate
 		apis        []*config.API
 		wantOutput  string
-		wantErr     bool
 		wantAPIPath string
+		nilDefaults bool
 	}{
 		{
 			name:       "empty output derives path from api",
@@ -548,12 +884,6 @@ func TestPrepareLibrary(t *testing.T) {
 			wantOutput: "src/storage/test/v1",
 		},
 		{
-			name:     "veneer without output returns error",
-			language: config.LanguageRust,
-			rust:     &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
-			wantErr:  true,
-		},
-		{
 			name:       "veneer with explicit output succeeds",
 			language:   config.LanguageRust,
 			rust:       &config.RustCrate{Modules: []*config.RustModule{{APIPath: "google/storage/v2"}}},
@@ -572,6 +902,12 @@ func TestPrepareLibrary(t *testing.T) {
 			language:   config.LanguageGo,
 			wantOutput: "src/generated/google-cloud-secretmanager-v1",
 		},
+		{
+			name:        "nil defaults is handled safely",
+			language:    config.LanguageGo,
+			nilDefaults: true,
+			wantOutput:  "google-cloud-secretmanager-v1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
@@ -580,16 +916,13 @@ func TestPrepareLibrary(t *testing.T) {
 				APIs:   test.apis,
 				Rust:   test.rust,
 			}
-			defaults := &config.Default{
-				Output: "src/generated",
+			var defaults *config.Default
+			if !test.nilDefaults {
+				defaults = &config.Default{
+					Output: "src/generated",
+				}
 			}
 			got, err := applyDefaults(test.language, lib, defaults)
-			if test.wantErr {
-				if err == nil {
-					t.Fatal("expected error, got nil")
-				}
-				return
-			}
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -601,6 +934,37 @@ func TestPrepareLibrary(t *testing.T) {
 				if test.wantAPIPath != "" && ch.Path != test.wantAPIPath {
 					t.Errorf("got %q, want %q", ch.Path, test.wantAPIPath)
 				}
+			}
+		})
+	}
+}
+
+func TestApplyDefaults_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		language string
+		lib      *config.Library
+		wantErr  error
+	}{
+		{
+			name:     "veneer without output returns error",
+			language: config.LanguageRust,
+			lib: &config.Library{
+				Name: "storage",
+				Rust: &config.RustCrate{
+					Modules: []*config.RustModule{{APIPath: "google/storage/v2"}},
+				},
+			},
+			wantErr: errNoExplicitOutput,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				Output: "src/generated",
+			}
+			_, err := applyDefaults(test.language, test.lib, defaults)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("got error %v, want %v", err, test.wantErr)
 			}
 		})
 	}
@@ -622,8 +986,16 @@ func TestCanDeriveAPIPath(t *testing.T) {
 			language: config.LanguageGo,
 		},
 		{
+			name:     "java",
+			language: config.LanguageJava,
+		},
+		{
 			name:     "python",
 			language: config.LanguagePython,
+		},
+		{
+			name:     "nodejs",
+			language: config.LanguageNodejs,
 		},
 		{
 			name:     "rust",
@@ -640,7 +1012,7 @@ func TestCanDeriveAPIPath(t *testing.T) {
 	}
 }
 
-func TestIsVeneer(t *testing.T) {
+func TestIsMixedLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name     string
 		language string
@@ -648,7 +1020,7 @@ func TestIsVeneer(t *testing.T) {
 		want     bool
 	}{
 		{
-			name:     "rust is veneer",
+			name:     "rust is mixed library",
 			language: config.LanguageRust,
 			lib: &config.Library{
 				Rust: &config.RustCrate{
@@ -658,13 +1030,13 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "rust is not veneer",
+			name:     "rust is not mixed library",
 			language: config.LanguageRust,
 			lib:      &config.Library{},
 			want:     false,
 		},
 		{
-			name:     "nodejs handwritten tool is veneer",
+			name:     "nodejs handwritten tool is mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/typeless-sample-bot",
@@ -673,7 +1045,7 @@ func TestIsVeneer(t *testing.T) {
 			want: true,
 		},
 		{
-			name:     "nodejs gapic lib is not veneer",
+			name:     "nodejs gapic lib is not mixed library",
 			language: config.LanguageNodejs,
 			lib: &config.Library{
 				Output: "packages/gapic-lib",
@@ -683,8 +1055,8 @@ func TestIsVeneer(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			if got := isVeneer(test.language, test.lib); got != test.want {
-				t.Errorf("isVeneer(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
+			if got := isMixedLibrary(test.language, test.lib); got != test.want {
+				t.Errorf("isMixedLibrary(%q, %+v) = %v, want %v", test.language, test.lib, got, test.want)
 			}
 		})
 	}
@@ -712,7 +1084,6 @@ func TestResolvePreview(t *testing.T) {
 				Name:                "base-name",
 				Version:             "1.0.0",
 				CopyrightYear:       "2024",
-				DescriptionOverride: "base desc",
 				Keep:                []string{"base-keep"},
 				Output:              "base-out",
 				Roots:               []string{"base-root"},
@@ -727,7 +1098,6 @@ func TestResolvePreview(t *testing.T) {
 					Version:             "1.1.0-alpha",
 					APIs:                []*config.API{{Path: "preview/api"}},
 					CopyrightYear:       "2025",
-					DescriptionOverride: "preview desc",
 					Keep:                []string{"preview-keep"},
 					Output:              "preview-out",
 					Roots:               []string{"preview-root"},
@@ -744,7 +1114,6 @@ func TestResolvePreview(t *testing.T) {
 				Version:             "1.1.0-alpha",
 				APIs:                []*config.API{{Path: "preview/api"}},
 				CopyrightYear:       "2025",
-				DescriptionOverride: "preview desc",
 				Keep:                []string{"preview-keep"},
 				Output:              "preview-out",
 				Roots:               []string{"preview-root"},
@@ -1050,13 +1419,11 @@ func TestMergeGo(t *testing.T) {
 			dst:  &config.GoModule{ModulePathVersion: "v1"},
 			src: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
 			want: &config.GoModule{
 				DeleteGenerationOutputPaths: []string{"p"},
-				GoAPIs:                      []*config.GoAPI{{Path: "foo"}},
 				ModulePathVersion:           "v2",
 				NestedModule:                "nested",
 			},
@@ -1097,49 +1464,49 @@ func TestMergeJava(t *testing.T) {
 				APIIDOverride:                "id",
 				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
+				APIShortnameOverride:         "short",
+				ArtifactID:                   "new-artifact",
 				ClientDocumentationOverride:  "doc",
-				NonCloudAPI:                  true,
 				CodeownerTeam:                "team",
-				DistributionNameOverride:     "dist",
-				ExcludedDependencies:         "ex-dep",
-				ExcludedPOMs:                 "ex-pom",
+				ExcludedPOMs:                 []string{"ex-pom"},
 				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
-				LibrariesBOMVersion:          "bom",
 				LibraryTypeOverride:          "type",
 				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
-				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
 				BillingNotRequired:           true,
 				RestDocumentation:            "rest",
 				RpcDocumentation:             "rpc",
+				TransportOverride:            "grpc",
+				SkipPOMUpdates:               true,
+				SkipAPIID:                    true,
 			},
 			want: &config.JavaModule{
 				APIIDOverride:                "id",
 				APIReference:                 "ref",
 				APIDescriptionOverride:       "desc",
+				APIShortnameOverride:         "short",
+				ArtifactID:                   "new-artifact",
 				ClientDocumentationOverride:  "doc",
-				NonCloudAPI:                  true,
 				CodeownerTeam:                "team",
-				DistributionNameOverride:     "dist",
-				ExcludedDependencies:         "ex-dep",
-				ExcludedPOMs:                 "ex-pom",
+				ExcludedPOMs:                 []string{"ex-pom"},
 				ExtraVersionedModules:        "extra",
 				GroupID:                      "com.new",
 				IssueTrackerOverride:         "issue",
-				LibrariesBOMVersion:          "bom",
 				LibraryTypeOverride:          "type",
 				MinJavaVersion:               11,
 				NamePrettyOverride:           "pretty",
-				JavaAPIs:                     []*config.JavaAPI{{Path: "p"}},
 				ProductDocumentationOverride: "prod-doc",
 				RecommendedPackage:           "rec",
 				BillingNotRequired:           true,
 				RestDocumentation:            "rest",
 				RpcDocumentation:             "rpc",
+				TransportOverride:            "grpc",
+				SkipPOMUpdates:               true,
+				SkipAPIID:                    true,
 			},
 		},
 	} {
@@ -1175,22 +1542,22 @@ func TestMergeNodejs(t *testing.T) {
 			name: "merges all fields",
 			dst:  &config.NodejsPackage{PackageName: "foo"},
 			src: &config.NodejsPackage{
-				BundleConfig:          "bundle",
-				Dependencies:          map[string]string{"d": "v"},
-				ExtraProtocParameters: []string{"p"},
-				HandwrittenLayer:      true,
-				MainService:           "service",
-				Mixins:                "mixin",
-				PackageName:           "bar",
+				BundleConfig:                "bundle",
+				Dependencies:                map[string]string{"d": "v"},
+				ExtraProtocParameters:       []string{"p"},
+				HandwrittenLayer:            true,
+				MainService:                 "service",
+				PackageName:                 "bar",
+				ClientDocumentationOverride: "doc",
 			},
 			want: &config.NodejsPackage{
-				BundleConfig:          "bundle",
-				Dependencies:          map[string]string{"d": "v"},
-				ExtraProtocParameters: []string{"p"},
-				HandwrittenLayer:      true,
-				MainService:           "service",
-				Mixins:                "mixin",
-				PackageName:           "bar",
+				BundleConfig:                "bundle",
+				Dependencies:                map[string]string{"d": "v"},
+				ExtraProtocParameters:       []string{"p"},
+				HandwrittenLayer:            true,
+				MainService:                 "service",
+				PackageName:                 "bar",
+				ClientDocumentationOverride: "doc",
 			},
 		},
 	} {

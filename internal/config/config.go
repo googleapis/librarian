@@ -49,42 +49,12 @@ type Config struct {
 	// Tools defines required tools.
 	Tools *Tools `yaml:"tools,omitempty"`
 
-	// Release holds the configuration parameter for publishing and release subcommands.
-	Release *Release `yaml:"release,omitempty"`
-
 	// Default contains default settings for all libraries. They apply to all libraries unless overridden.
 	Default *Default `yaml:"default,omitempty"`
 
 	// Libraries contains configuration overrides for libraries that need
 	// special handling, and differ from default settings.
 	Libraries []*Library `yaml:"libraries,omitempty"`
-}
-
-// Release holds the configuration parameter for publish command.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4910): delete Release.
-type Release struct {
-	// IgnoredChanges defines globs that are ignored in change analysis.
-	IgnoredChanges []string `yaml:"ignored_changes,omitempty"`
-
-	// Preinstalled tools defines the list of tools that must be preinstalled.
-	//
-	// This is indexed by the well-known name of the tool vs. its path, e.g.
-	// [preinstalled]
-	// cargo = /usr/bin/cargo
-	Preinstalled map[string]string `yaml:"preinstalled,omitempty"`
-
-	// Tools defines the list of tools to install, indexed by installer.
-	Tools map[string][]Tool `yaml:"tools,omitempty"`
-}
-
-// Tool defines the configuration required to install helper tools.
-type Tool struct {
-	// Name is the name of the tool e.g. nox.
-	Name string `yaml:"name"`
-
-	// Version is the version of the tool e.g. 1.2.4.
-	Version string `yaml:"version,omitempty"`
 }
 
 // Sources references external source repositories.
@@ -127,14 +97,20 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
-	// NPM defines tools to install via npm.
-	NPM []*NPMTool `yaml:"npm,omitempty"`
+	// Go defines tools to install via go.
+	Go []*GoTool `yaml:"go,omitempty"`
+
+	// Maven defines tools to install via Maven.
+	Maven []*MavenTool `yaml:"maven,omitempty"`
 
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
 
-	// Go defines tools to install via go.
-	Go []*GoTool `yaml:"go,omitempty"`
+	// PNPM defines tools to install via pnpm.
+	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
+
+	// Protoc defines the protoc installation.
+	Protoc *Protoc `yaml:"protoc,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
@@ -146,9 +122,63 @@ type CargoTool struct {
 	Version string `yaml:"version"`
 }
 
-// NPMTool defines a tool to install via npm.
-type NPMTool struct {
-	// Name is the npm package name.
+// GoTool defines a tool to install via go.
+type GoTool struct {
+	// Name is the go module name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version,omitempty"`
+}
+
+// MavenTool defines a tool to install via Maven.
+type MavenTool struct {
+	// Name is the Maven tool name. It is used as the filename for the generated executable wrapper script.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version,omitempty"`
+
+	// GroupID is the Maven artifact group ID.
+	GroupID string `yaml:"group_id,omitempty"`
+
+	// ArtifactID is the Maven artifact ID.
+	ArtifactID string `yaml:"artifact_id,omitempty"`
+
+	// Classifier is the classifier of the Maven artifact.
+	Classifier string `yaml:"classifier,omitempty"`
+
+	// Packaging is the Maven packaging. Acceptable values are lowercase "jar" and "exe".
+	// If the packaging is "exe", the wrapper script executes it directly.
+	// Otherwise, it executes the tool using "java -jar".
+	Packaging string `yaml:"packaging,omitempty"`
+
+	// LocalPath is the path to a local Maven project directory containing a pom.xml file.
+	// When present, version, group_id, artifact_id are ignored.
+	LocalPath string `yaml:"local_path,omitempty"`
+
+	// MainClass is the fully qualified main class name to execute (used with -cp).
+	MainClass string `yaml:"main_class,omitempty"`
+}
+
+// PipTool defines a tool to install via pip.
+type PipTool struct {
+	// Name is the pip package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the pip install specifier (e.g., "pkg@git+https://...").
+	Package string `yaml:"package,omitempty"`
+
+	// LocalPath is the path to a local Python package to install.
+	LocalPath string `yaml:"local_path,omitempty"`
+}
+
+// PNPMTool defines a tool to install via pnpm.
+type PNPMTool struct {
+	// Name is the pnpm package name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -164,30 +194,22 @@ type NPMTool struct {
 	Build []string `yaml:"build,omitempty"`
 }
 
-// PipTool defines a tool to install via pip.
-type PipTool struct {
-	// Name is the pip package name.
-	Name string `yaml:"name"`
-
-	// Version is the version to install.
-	Version string `yaml:"version"`
-
-	// Package is the pip install specifier (e.g., "pkg@git+https://...").
-	Package string `yaml:"package,omitempty"`
-}
-
-// GoTool defines a tool to install via go.
-type GoTool struct {
-	// Name is the go module name.
-	Name string `yaml:"name"`
-
+// Protoc defines the configuration for installing the protoc compiler.
+type Protoc struct {
 	// Version is the version to install.
 	Version string `yaml:"version,omitempty"`
+
+	// SHA256 is the SHA256 checksum of the tarball.
+	SHA256 string `yaml:"sha256,omitempty"`
 }
 
 // Default contains default settings for all libraries.
 type Default struct {
-	// Keep lists files and directories to preserve during regeneration.
+	// Keep lists files and directories to preserve during regeneration. These represent
+	// critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests)
+	// and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml)
+	// that are not natively generated from proto schemas but are strictly required by the post-processor's
+	// markdown generation and release tracking passes.
 	Keep []string `yaml:"keep,omitempty"`
 	// Output is the directory where code is written. For example, for Rust
 	// this is src/generated.
@@ -198,14 +220,17 @@ type Default struct {
 
 	// Language-specific fields are below.
 
-	// Dotnet contains .NET-specific default configuration.
-	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
-
 	// Dart contains Dart-specific default configuration.
 	Dart *DartPackage `yaml:"dart,omitempty"`
 
+	// Dotnet contains .NET-specific default configuration.
+	Dotnet *DotnetPackage `yaml:"dotnet,omitempty"`
+
+	// Go contains Go-specific default configuration.
+	Go *GoDefault `yaml:"go,omitempty"`
+
 	// Java contains Java-specific default configuration.
-	Java *JavaModule `yaml:"java,omitempty"`
+	Java *JavaDefault `yaml:"java,omitempty"`
 
 	// Nodejs contains Node.js-specific default configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
@@ -258,18 +283,22 @@ type Library struct {
 	// CopyrightYear is the copyright year for the library.
 	CopyrightYear string `yaml:"copyright_year,omitempty"`
 
-	// DescriptionOverride overrides the library description.
-	DescriptionOverride string `yaml:"description_override,omitempty"`
-
 	// TitleOverride overrides the title used in README generation.
 	TitleOverride string `yaml:"title_override,omitempty"`
 
-	// Keep lists files and directories to preserve during regeneration.
+	// Keep lists files and directories to preserve during regeneration. These represent
+	// critical custom handwritten files (e.g., package.json, custom configs, and handwritten tests)
+	// and semi-handmade documentation files (README.md, CHANGELOG.md, .readme-partials.yaml)
+	// that are not natively generated from proto schemas but are strictly required by the post-processor's
+	// markdown generation and release tracking passes.
 	Keep []string `yaml:"keep,omitempty"`
 
 	// Output is the directory where code is written. This overrides
 	// Default.Output.
 	Output string `yaml:"output,omitempty"`
+
+	// Postprocess contains post-processing operations executed after code generation.
+	Postprocess *Postprocess `yaml:"postprocess,omitempty"`
 
 	// Roots specifies the source roots to use for generation. Defaults to googleapis.
 	Roots []string `yaml:"roots,omitempty"`
@@ -301,17 +330,86 @@ type Library struct {
 	// Nodejs contains Node.js-specific library configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
+	// PHP contains PHP-specific library configuration.
+	PHP *PHPPackage `yaml:"php,omitempty"`
+
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
 
 	// Rust contains Rust-specific library configuration.
 	Rust *RustCrate `yaml:"rust,omitempty"`
 
-	// Surfer contains gcloud-specific library configuration.
-	Surfer *Surfer `yaml:"surfer,omitempty"`
-
 	// Swift contains Swift-specific library configuration.
 	Swift *SwiftPackage `yaml:"swift,omitempty"`
+}
+
+// Postprocess represents post-processing configuration options integrated into librarian.yaml.
+type Postprocess struct {
+	// Replace contains literal string replacement rules.
+	Replace []ReplaceConfig `yaml:"replace,omitempty"`
+
+	// ReplaceRegex contains regular expression replacement rules.
+	ReplaceRegex []ReplaceRegexConfig `yaml:"replace_regex,omitempty"`
+
+	// CopyFile contains file copy rules.
+	CopyFile []CopyConfig `yaml:"copy_file,omitempty"`
+
+	// RemoveFile contains glob patterns of files to remove.
+	RemoveFile []string `yaml:"remove_file,omitempty"`
+
+	// MethodOperations contains method-level operations (`delete`, `duplicate`, `deprecate`).
+	MethodOperations []MethodOperation `yaml:"method_operations,omitempty"`
+}
+
+// MethodOperation represents a method-level operation like delete, duplicate, or deprecate.
+type MethodOperation struct {
+	// Path specifies the relative file path to modify.
+	Path string `yaml:"path"`
+
+	// Action specifies the operation (`delete`, `duplicate`, or `deprecate`).
+	Action string `yaml:"action"`
+
+	// FuncName specifies the target method name.
+	FuncName string `yaml:"func_name"`
+
+	// NewName specifies the new method name for duplicate operations.
+	NewName string `yaml:"new_name,omitempty"`
+
+	// DeprecationMessage specifies the deprecation message for deprecate operations.
+	DeprecationMessage string `yaml:"deprecation_message,omitempty"`
+}
+
+// ReplaceConfig represents a replacement rule.
+type ReplaceConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Original specifies the exact string to find.
+	Original string `yaml:"original"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// ReplaceRegexConfig represents a regex replacement rule.
+type ReplaceRegexConfig struct {
+	// Path specifies the relative file path or glob pattern to modify.
+	Path string `yaml:"path"`
+
+	// Pattern specifies the regular expression pattern to find.
+	Pattern string `yaml:"pattern"`
+
+	// Replacement specifies the replacement string.
+	Replacement string `yaml:"replacement"`
+}
+
+// CopyConfig represents a file copy rule.
+type CopyConfig struct {
+	// Src specifies the source file path relative to the staging directory.
+	Src string `yaml:"src"`
+
+	// Dst specifies the destination file path relative to the library root.
+	Dst string `yaml:"dst"`
 }
 
 // API describes an API to include in a library.
@@ -319,4 +417,25 @@ type API struct {
 	// Path specifies which googleapis Path to generate from (for generated
 	// libraries).
 	Path string `yaml:"path,omitempty"`
+
+	// Go contains Go-specific API configuration.
+	Go *GoAPI `yaml:"go,omitempty"`
+
+	// Java contains Java-specific API configuration.
+	Java *JavaAPI `yaml:"java,omitempty"`
+
+	// Nodejs contains Node.js-specific API configuration.
+	Nodejs *NodejsAPI `yaml:"nodejs,omitempty"`
+
+	// PHP contains PHP-specific API configuration.
+	PHP *PHPAPI `yaml:"php,omitempty"`
+}
+
+// GoDefault defines Go-specific default configuration.
+type GoDefault struct {
+	// Toolchain is the desired Go toolchain version (e.g., "go1.25.0").
+	Toolchain string `yaml:"toolchain,omitempty"`
+	// DefaultEnabledGeneratorFeatures lists the generator features enabled by default for all APIs.
+	// These default features are appended AFTER any features explicitly declared in individual APIs.
+	DefaultEnabledGeneratorFeatures []string `yaml:"default_enabled_generator_features,omitempty"`
 }

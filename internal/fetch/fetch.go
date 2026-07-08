@@ -29,20 +29,24 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/googleapis/librarian/internal/cache"
 )
 
 const (
 	// DefaultBranchMaster represents the default git branch "master".
 	DefaultBranchMaster = "master"
+	maxDownloadRetries  = 3
 )
 
 var (
-	errChecksumMismatch = errors.New("checksum mismatch")
-	errMissingSHA256    = errors.New("must provide expected SHA256")
-	defaultBackoff      = 10 * time.Second
+	errAbsSymlinks         = errors.New("absolute symlinks are not allowed")
+	errChecksumMismatch    = errors.New("checksum mismatch")
+	errMissingSHA256       = errors.New("must provide expected SHA256")
+	errSymlinkEscape       = errors.New("symlinks are not allowed to escape destination")
+	errUnsupportedFileType = errors.New("unsupported file type")
+	defaultBackoff         = 10 * time.Second
 )
-
-const maxDownloadRetries = 3
 
 // Endpoints defines the endpoints used to access GitHub.
 type Endpoints struct {
@@ -63,6 +67,135 @@ type RepoRef struct {
 
 	// Name is the name of the repository, such as `googleapis` or `google-cloud-rust`.
 	Name string
+}
+
+// Repo downloads a repository tarball and returns the path to the extracted
+// directory.
+//
+// The cache directory is determined by LIBRARIAN_CACHE environment variable,
+// or defaults to $HOME/.cache/librarian if not set.
+//
+// The diagrams below explains the structure of the librarian cache. For each
+// path, $repo is a repository path (i.e. github.com/googleapis/googleapis),
+// and $commit is a commit hash in that repository.
+//
+// Cache structure:
+//
+//	$LIBRARIAN_CACHE/
+//	├── download/                    # Downloaded artifacts
+//	│   └── $repo@$commit.tar.gz     # Source tarball (kept for re-extraction)
+//	└── $repo@$commit/               # Extracted source files
+//	    └── {files...}
+//
+// Example for github.com/googleapis/googleapis at commit abc123:
+//
+//	$HOME/.cache/librarian/
+//	├── download/
+//	│   └── github.com/googleapis/googleapis@abc123.tar.gz
+//	└── github.com/googleapis/googleapis@abc123/
+//	    └── google/
+//	        └── api/
+//	            └── annotations.proto
+//
+// Cache lookup order:
+//  1. Check if extracted directory exists and contains files. If so, return it.
+//  2. Check if tarball exists. Verify its SHA256 matches expectedSHA256. If yes,
+//     extract tarball and return the directory. If the hash mismatches, fall
+//     through to step 3.
+//  3. Download tarball, compute SHA256, verify it matches expectedSHA256 from
+//     librarian.yaml, extract, and return the path.
+func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, error) {
+	cacheDir, err := cache.Directory()
+	if err != nil {
+		return "", err
+	}
+
+	tgz := tarballPath(cacheDir, repo, commit)
+	outDir := filepath.Join(cacheDir, fmt.Sprintf("%s@%s", repo, commit))
+
+	// Step 1: Check if extracted directory exists and contains files.
+	if cached, err := extractedDir(cacheDir, repo, commit); err == nil {
+		return cached, nil
+	}
+
+	// Step 2: Check if tarball exists. Verify its SHA256 matches expectedSHA256.
+	// If hash doesn't match or any error happens during the extraction, delete
+	// the tarball and fall through to re-download.
+	if _, err := os.Stat(tgz); err == nil {
+		sha, err := computeSHA256(tgz)
+		if err == nil {
+			if sha == expectedSHA256 {
+				if err := os.MkdirAll(outDir, 0755); err != nil {
+					return "", fmt.Errorf("failed creating %q: %w", outDir, err)
+				}
+				if err := extractTarball(tgz, outDir); err == nil {
+					return outDir, nil
+				}
+			}
+			if err := os.Remove(tgz); err != nil {
+				return "", fmt.Errorf("failed to remove %q: %w", tgz, err)
+			}
+		}
+	}
+
+	// Step 3: Download tarball, compute SHA256, verify against expected, extract.
+	sourceURL := fmt.Sprintf("https://%s/archive/%s.tar.gz", repo, commit)
+	if err := os.MkdirAll(filepath.Dir(tgz), 0755); err != nil {
+		return "", fmt.Errorf("failed creating %q: %w", filepath.Dir(tgz), err)
+	}
+	if err := os.MkdirAll(outDir, 0755); err != nil {
+		return "", fmt.Errorf("failed creating %q: %w", outDir, err)
+	}
+	if err := Download(ctx, tgz, sourceURL, expectedSHA256); err != nil {
+		return "", err
+	}
+	if err := extractTarball(tgz, outDir); err != nil {
+		return "", fmt.Errorf("failed to extract tarball: %w", err)
+	}
+	return outDir, nil
+}
+
+// tarballPath returns the path to a cached tarball for the given repo and
+// commit.
+//
+// The returned path has the format
+// $LIBRARIAN_CACHE/download/$repo@$commit.tar.gz.
+func tarballPath(cacheDir, repo, commit string) string {
+	downloadDir := filepath.Join(cacheDir, "download", filepath.Dir(repo))
+	return filepath.Join(downloadDir, fmt.Sprintf("%s@%s.tar.gz", filepath.Base(repo), commit))
+}
+
+// extractedDir returns the directory containing the extracted files for the
+// given repo and commit. It validates that the directory exists and contains
+// files.
+//
+// The returned path has the format $LIBRARIAN_CACHE/$repo@$commit/.
+func extractedDir(cacheDir, repo, commit string) (string, error) {
+	dir := filepath.Join(cacheDir, fmt.Sprintf("%s@%s", repo, commit))
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return "", fmt.Errorf("directory %q does not exist or is empty: %w", dir, err)
+	}
+	if len(entries) == 0 {
+		return "", fmt.Errorf("directory %q does not exist or is empty", dir)
+	}
+	return dir, nil
+}
+
+// computeSHA256 computes the SHA256 checksum of a file and returns it as a hex
+// string.
+func computeSHA256(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
 
 // repoFromArchiveLink extracts the GitHub account and repository (such as
@@ -153,14 +286,14 @@ func tarballLink(githubDownload string, repo *RepoRef, sha string) string {
 	return fmt.Sprintf("%s/%s/%s/archive/%s.tar.gz", githubDownload, repo.Org, repo.Name, sha)
 }
 
-// download downloads a file from the given url to the target path, verifying
-// its SHA256 checksum matches expectedSha256. It retries up to
+// Download downloads a file from the given url to the target path, verifying
+// its SHA256 checksum matches expectedSHA256. It retries up to
 // maxDownloadRetries times with exponential backoff on failure.
-func download(ctx context.Context, target, url, expectedSha256 string) error {
+func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if fileExists(target) {
 		return nil
 	}
-	if expectedSha256 == "" {
+	if expectedSHA256 == "" {
 		return errMissingSHA256
 	}
 	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
@@ -186,8 +319,8 @@ func download(ctx context.Context, target, url, expectedSha256 string) error {
 	if err != nil {
 		return err
 	}
-	if sha != expectedSha256 {
-		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSha256, sha)
+	if sha != expectedSHA256 {
+		return fmt.Errorf("%w: expected=%s, got=%s", errChecksumMismatch, expectedSHA256, sha)
 	}
 	return os.Rename(tempPath, target)
 }
@@ -283,7 +416,6 @@ func extractTarball(tarballPath, destDir string) error {
 		if err != nil {
 			return err
 		}
-
 		// When GitHub creates a tarball archive of a repository, it wraps all
 		// the files in a top-level directory named in the format
 		// "{repo}-{commit}/". Remove the GitHub top-level "repo-<commit>/"
@@ -316,6 +448,26 @@ func extractTarball(tarballPath, destDir string) error {
 				return err
 			}
 			out.Close()
+		case tar.TypeSymlink:
+			// Ensure the symlink target does not escape the destination directory.
+			linkTarget := hdr.Linkname
+			if filepath.IsAbs(linkTarget) {
+				return fmt.Errorf("%w: %s", errAbsSymlinks, linkTarget)
+			}
+			var resolvedTarget string
+			resolvedTarget = filepath.Join(filepath.Dir(target), linkTarget)
+			relLink, err := filepath.Rel(destDir, resolvedTarget)
+			if err != nil || strings.Contains(relLink, "..") {
+				return fmt.Errorf("%w: symlink target %q escapes destination directory %q", errSymlinkEscape, linkTarget, destDir)
+			}
+			if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+				return err
+			}
+			if err := os.Symlink(linkTarget, target); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("%w: %v", errUnsupportedFileType, hdr.Typeflag)
 		}
 	}
 }

@@ -20,12 +20,15 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.Model.BoilerPlate}}
 
+{{#Codec.IsGated}}
+#if {{Codec.GateExpression}}
+{{/Codec.IsGated}}
 import Foundation
-{{#Codec.Model.HasMessageImports}}
-
-{{/Codec.Model.HasMessageImports}}
-{{#Codec.Model.MessageImports}}
+{{#Codec.MessageImports}}
 import {{.}}
-{{/Codec.Model.MessageImports}}
+{{/Codec.MessageImports}}
 
 {{> /templates/common/message}}
+{{#Codec.IsGated}}
+#endif
+{{/Codec.IsGated}}

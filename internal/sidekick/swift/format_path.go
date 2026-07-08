@@ -25,17 +25,16 @@ func pathExpression(t *api.PathTemplate) string {
 	count := 0
 	var pathComponents []string
 	for _, segment := range t.Segments {
-		if segment.Literal != nil {
-			pathComponents = append(pathComponents, *segment.Literal)
+		if segment.Literal != "" {
+			pathComponents = append(pathComponents, segment.Literal)
 		} else if segment.Variable != nil {
 			pathComponents = append(pathComponents, fmt.Sprintf(`\(pathVariable%d)`, count))
 			count += 1
 		}
 	}
 	path := "/" + strings.Join(pathComponents, "/")
-	if t.Verb != nil {
-		// t.Verb cannot be an empty string, the parsers reject empty verbs.
-		path += ":" + *t.Verb
+	if t.Verb != "" {
+		path += ":" + t.Verb
 	}
 	return path
 }

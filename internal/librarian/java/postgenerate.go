@@ -15,6 +15,7 @@
 package java
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"errors"
@@ -31,10 +32,15 @@ const (
 	// rootLibrary is the name of the monorepo library used to identify
 	// the version for all libraries in the repository.
 	rootLibrary = "google-cloud-java"
+	// parentPOM is the name of the parent POM library.
+	parentPOM = "google-cloud-pom-parent"
 	// gapicBOM is the name of the directory and artifact ID for the
 	// generated Bill of Materials (BOM) for all GAPIC libraries.
 	gapicBOM  = "gapic-libraries-bom"
 	bomSuffix = "-bom"
+	// versionsFileName is the name of the  manifest file that keeps track of
+	// artifact versions for release-please.
+	versionsFileName = "versions.txt"
 )
 
 var (
@@ -42,6 +48,24 @@ var (
 	errRootPOMGeneration    = errors.New("failed to generate root pom.xml")
 	errInvalidBOMArtifactID = errors.New("invalid BOM artifact ID")
 	errMalformedBOM         = errors.New("malformed BOM")
+	// excludedBOMs is a set of artifact IDs to exclude from the generated GAPIC BOM.
+	excludedBOMs = map[string]bool{
+		"google-cloud-bigtable-deps-bom": true,
+		"google-cloud-bom":               true,
+		"libraries-bom":                  true,
+	}
+	ignoredDirs = map[string]bool{
+		gapicBOM:                   true,
+		"google-cloud-jar-parent":  true,
+		"google-cloud-pom-parent":  true,
+		"google-cloud-shared-deps": true,
+	}
+	legacyBOMs = []legacyBOM{
+		{"java-dns", "com.google.cloud", "google-cloud-dns"},
+		{"java-notification", "com.google.cloud", "google-cloud-notification"},
+		{"java-logging-logback", "com.google.cloud", "google-cloud-logging-logback"},
+		{"java-grafeas", "io.grafeas", "grafeas"},
+	}
 )
 
 // legacyBOM represents a library that does not have a -bom module
@@ -52,14 +76,30 @@ type legacyBOM struct {
 	artifactID string
 }
 
-var (
-	dnsBOM          = legacyBOM{"java-dns", "com.google.cloud", "google-cloud-dns"}
-	notificationBOM = legacyBOM{"java-notification", "com.google.cloud", "google-cloud-notification"}
-	grafeasBOM      = legacyBOM{"java-grafeas", "io.grafeas", "grafeas"}
-)
+// MissingArtifact pairs an artifact ID with the library it was generated from.
+type MissingArtifact struct {
+	ID      string
+	Library *config.Library
+}
+
+type bomConfig struct {
+	GroupID           string
+	ArtifactID        string
+	Version           string
+	VersionAnnotation string
+	IsImport          bool
+}
+
+// mavenProject represents a minimal Maven pom.xml for discovery.
+type mavenProject struct {
+	XMLName    xml.Name `xml:"http://maven.apache.org/POM/4.0.0 project"`
+	GroupID    string   `xml:"groupId"`
+	ArtifactID string   `xml:"artifactId"`
+	Version    string   `xml:"version"`
+}
 
 // PostGenerate performs repository-level actions after all individual Java libraries have been generated.
-func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) error {
+func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config, missingArtifacts []MissingArtifact) error {
 	monorepoVersion, err := findMonorepoVersion(cfg)
 	if err != nil {
 		return err
@@ -67,6 +107,20 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if monorepoVersion == "" {
 		return fmt.Errorf("%s library not found in librarian.yaml", rootLibrary)
 	}
+	parentVersion, err := findParentPOMVersion(cfg)
+	if err != nil {
+		return err
+	}
+	if parentVersion == "" {
+		return fmt.Errorf("%s library not found in librarian.yaml", parentPOM)
+	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/5529): remove appending to versions.txt.
+	versions := constructVersionLines(missingArtifacts)
+	if err := appendVersions(repoPath, versions); err != nil {
+		return err
+	}
+
 	modules, err := searchForJavaModules(repoPath)
 	if err != nil {
 		return fmt.Errorf("%w: %w", errModuleDiscovery, err)
@@ -78,17 +132,51 @@ func PostGenerate(ctx context.Context, repoPath string, cfg *config.Config) erro
 	if err != nil {
 		return fmt.Errorf("failed to search for BOM artifacts: %w", err)
 	}
-	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, bomConfigs); err != nil {
+	if err := generateGAPICLibrariesBOM(repoPath, monorepoVersion, parentVersion, bomConfigs); err != nil {
 		return fmt.Errorf("failed to generate %s: %w", gapicBOM, err)
 	}
 	return nil
 }
 
-var ignoredDirs = map[string]bool{
-	gapicBOM:                   true,
-	"google-cloud-jar-parent":  true,
-	"google-cloud-pom-parent":  true,
-	"google-cloud-shared-deps": true,
+func constructVersionLines(missingArtifacts []MissingArtifact) []string {
+	var lines []string
+	for _, ma := range missingArtifacts {
+		releasedVersion := ma.Library.Java.ReleasedVersion
+		lines = append(lines, fmt.Sprintf("%s:%s:%s", ma.ID, releasedVersion, ma.Library.Version))
+	}
+	return lines
+}
+
+func appendVersions(repoPath string, versions []string) error {
+	versionsPath := filepath.Join(repoPath, versionsFileName)
+	if err := appendLines(versionsPath, versions); err != nil {
+		return fmt.Errorf("failed to update %s: %w", versionsFileName, err)
+	}
+	return nil
+}
+
+// appendLines appends the given lines to an existing file, ensuring that it
+// ends with a newline character before appending. It returns an error if the
+// file does not exist.
+func appendLines(path string, lines []string) error {
+	if len(lines) == 0 {
+		return nil
+	}
+	existing, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	var buf bytes.Buffer
+	buf.Write(existing)
+	// Ensure the file ends with a newline before appending.
+	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
+		buf.WriteByte('\n')
+	}
+	for _, line := range lines {
+		buf.WriteString(line)
+		buf.WriteByte('\n')
+	}
+	return os.WriteFile(path, buf.Bytes(), 0644)
 }
 
 // searchForJavaModules scans top-level subdirectories in the repoPath for those that
@@ -112,22 +200,6 @@ func searchForJavaModules(repoPath string) ([]string, error) {
 	return names, nil
 }
 
-type bomConfig struct {
-	GroupID           string
-	ArtifactID        string
-	Version           string
-	VersionAnnotation string
-	IsImport          bool
-}
-
-// mavenProject represents a minimal Maven pom.xml for discovery.
-type mavenProject struct {
-	XMLName    xml.Name `xml:"http://maven.apache.org/POM/4.0.0 project"`
-	GroupID    string   `xml:"groupId"`
-	ArtifactID string   `xml:"artifactId"`
-	Version    string   `xml:"version"`
-}
-
 // searchForBOMArtifacts scans the repoPath for subdirectories that contain a -bom subdirectory
 // with a pom.xml file. It also includes specific special-case modules like dns, notification, and grafeas.
 // It returns a list of bomConfig objects sorted by ArtifactID.
@@ -136,7 +208,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	if err != nil {
 		return nil, err
 	}
-	configs := make([]*bomConfig, 0, len(modules)+3)
+	configs := make([]*bomConfig, 0, len(modules)+len(legacyBOMs))
 	for _, module := range modules {
 		if !module.IsDir() || module.Name() == gapicBOM {
 			continue
@@ -148,7 +220,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 		configs = append(configs, moduleConfigs...)
 	}
 
-	legacies, err := collectLegacyBOMs(repoPath, dnsBOM, notificationBOM)
+	legacies, err := collectLegacyBOMs(repoPath, legacyBOMs...)
 	if err != nil {
 		return nil, err
 	}
@@ -156,13 +228,7 @@ func searchForBOMArtifacts(repoPath string) ([]*bomConfig, error) {
 	sort.Slice(configs, func(i, j int) bool {
 		return configs[i].ArtifactID < configs[j].ArtifactID
 	})
-	// Add Grafeas last. This is done after sorting to match the current order in google-cloud-java.
-	// TODO(https://github.com/googleapis/librarian/issues/4706): Move this prior to sort.
-	grafeas, err := collectLegacyBOMs(repoPath, grafeasBOM)
-	if err != nil {
-		return nil, err
-	}
-	return append(configs, grafeas...), nil
+	return configs, nil
 }
 
 // searchModuleForBOM scans a specific module's directory for submodules that end in "-bom"
@@ -184,6 +250,9 @@ func searchModuleForBOM(repoPath, moduleName string) ([]*bomConfig, error) {
 		conf, err := extractBOMConfig(repoPath, moduleName, submodule.Name())
 		if err != nil {
 			return nil, fmt.Errorf("failed to extract BOM config from %s: %w", pomPath, err)
+		}
+		if excludedBOMs[conf.ArtifactID] {
+			continue
 		}
 		if groupInclusions[conf.GroupID] {
 			configs = append(configs, conf)
@@ -264,17 +333,19 @@ func generateRootPOM(repoPath string, modules []string) error {
 
 // generateGAPICLibrariesBOM writes the gapic-libraries-bom/pom.xml file, which manages
 // versions for all individual library BOMs in the monorepo.
-func generateGAPICLibrariesBOM(repoPath, version string, bomConfigs []*bomConfig) error {
+func generateGAPICLibrariesBOM(repoPath, version, parentVersion string, bomConfigs []*bomConfig) error {
 	bomDir := filepath.Join(repoPath, gapicBOM)
 	if err := os.MkdirAll(bomDir, 0755); err != nil {
 		return err
 	}
 	data := struct {
-		Version    string
-		BOMConfigs []*bomConfig
+		Version       string
+		ParentVersion string
+		BOMConfigs    []*bomConfig
 	}{
-		Version:    version,
-		BOMConfigs: bomConfigs,
+		Version:       version,
+		ParentVersion: parentVersion,
+		BOMConfigs:    bomConfigs,
 	}
 	return writePOM(filepath.Join(bomDir, "pom.xml"), "gapic-libraries-bom.xml.tmpl", data)
 }

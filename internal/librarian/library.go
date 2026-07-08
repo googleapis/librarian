@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"errors"
 	"fmt"
 	"maps"
 	"strings"
@@ -22,9 +23,14 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
+)
+
+var (
+	errNoExplicitOutput = errors.New("library requires an explicit output path")
 )
 
 // fillDefaults populates empty library fields from the provided defaults.
@@ -38,19 +44,83 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Output == "" {
 		lib.Output = d.Output
 	}
-	if d.Rust != nil {
+	switch {
+	case d.Go != nil:
+		return fillGo(lib, d)
+	case d.Java != nil:
+		return fillJava(lib, d)
+	case d.Rust != nil:
 		return fillRust(lib, d)
-	}
-	if d.Dart != nil {
+	case d.Dart != nil:
 		return fillDart(lib, d)
-	}
-	if d.Python != nil {
+	case d.Python != nil:
 		return fillPython(lib, d)
-	}
-	if d.Swift != nil {
+	case d.Swift != nil:
 		return fillSwift(lib, d)
+	default:
+		return lib
+	}
+}
+
+// fillGo populates empty Go-specific fields in lib from the provided default.
+func fillGo(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.Go == nil {
+		return lib
+	}
+	for _, api := range lib.APIs {
+		if api.Go == nil {
+			api.Go = &config.GoAPI{}
+		}
+		api.Go.EnabledGeneratorFeatures = union(api.Go.EnabledGeneratorFeatures, d.Go.DefaultEnabledGeneratorFeatures)
 	}
 	return lib
+}
+
+// union returns the union of two string slices, de-duplicating elements
+// while preserving their original insertion order. Go standard library does
+// not provide a built-in order-preserving de-duplication helper.
+func union(a, b []string) []string {
+	seen := make(map[string]bool)
+	var res []string
+	for _, item := range a {
+		if !seen[item] {
+			seen[item] = true
+			res = append(res, item)
+		}
+	}
+	for _, item := range b {
+		if !seen[item] {
+			seen[item] = true
+			res = append(res, item)
+		}
+	}
+	return res
+}
+
+// fillJava populates empty Java-specific fields in lib from the provided default.
+func fillJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	fillGroupIDIfEmpty(lib, d)
+	return lib
+}
+
+// fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
+// It matches the library's API paths against the custom group ID prefixes in default
+// and assigns the first matching group ID.
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
+	if lib.Java.GroupID != "" || d.Java.CustomGroupIDs == nil {
+		return
+	}
+	for _, api := range lib.APIs {
+		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
+			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
+				lib.Java.GroupID = groupID
+				return
+			}
+		}
+	}
 }
 
 // fillRust populates empty Rust-specific fields in lib from the provided default.
@@ -67,6 +137,9 @@ func fillRust(lib *config.Library, d *config.Default) *config.Library {
 	}
 	if lib.Rust.DetailedTracingAttributes == nil {
 		lib.Rust.DetailedTracingAttributes = d.Rust.DetailedTracingAttributes
+	}
+	if lib.Rust.LroStubOptions == nil {
+		lib.Rust.LroStubOptions = d.Rust.LroStubOptions
 	}
 	if lib.Rust.ResourceNameHeuristic == nil {
 		lib.Rust.ResourceNameHeuristic = d.Rust.ResourceNameHeuristic
@@ -193,16 +266,16 @@ func mergePackageDependencies(defaults, lib []*config.RustPackageDependency) []*
 	return result
 }
 
-// isVeneer reports whether the library has handwritten code wrapping generated
-// code.
-func isVeneer(language string, lib *config.Library) bool {
+// isMixedLibrary reports whether the library is composed of both handwritten
+// and librarian-generated code.
+func isMixedLibrary(language string, lib *config.Library) bool {
 	switch language {
 	case config.LanguageRust:
-		return rust.IsVeneer(lib)
+		return rust.IsMixedLibrary(lib)
 	case config.LanguageSwift:
-		return swift.IsModule(lib)
+		return swift.IsMixedLibrary(lib)
 	case config.LanguageNodejs:
-		return lib.Output != "" && len(lib.APIs) == 0
+		return nodejs.IsMixedLibrary(lib)
 	default:
 		return false
 	}
@@ -215,8 +288,8 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 	if lib.Output != "" {
 		return lib.Output
 	}
-	if isVeneer(language, lib) {
-		// Veneers require explicit output, so return empty if not set.
+	if isMixedLibrary(language, lib) {
+		// Mixed or non-generated libraries require explicit output, so return empty if not set.
 		return ""
 	}
 	apiPath := deriveAPIPath(language, lib.Name)
@@ -232,10 +305,10 @@ func libraryOutput(language string, lib *config.Library, defaults *config.Defaul
 
 // applyDefaults applies language-specific derivations and fills defaults.
 func applyDefaults(language string, lib *config.Library, defaults *config.Default) (*config.Library, error) {
-	if !isVeneer(language, lib) {
+	if !isMixedLibrary(language, lib) {
 		if len(lib.APIs) == 0 && canDeriveAPIPath(language) {
-			// Do not derive API path for Go because the library name
-			// doesn't contain relevant info.
+			// Do not derive API path for some languages because the library
+			// name doesn't contain all the required info.
 			lib.APIs = append(lib.APIs, &config.API{})
 		}
 		for _, api := range lib.APIs {
@@ -245,14 +318,18 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 		}
 	}
 	if lib.Output == "" {
-		if isVeneer(language, lib) {
-			return nil, fmt.Errorf("veneer %q requires an explicit output path", lib.Name)
+		if isMixedLibrary(language, lib) {
+			return nil, fmt.Errorf("%s: %w", lib.Name, errNoExplicitOutput)
 		}
 		var apiPath string
 		if len(lib.APIs) > 0 {
 			apiPath = lib.APIs[0].Path
 		}
-		lib.Output = defaultOutput(language, lib.Name, apiPath, defaults.Output)
+		var defaultOut string
+		if defaults != nil {
+			defaultOut = defaults.Output
+		}
+		lib.Output = defaultOutput(language, lib.Name, apiPath, defaultOut)
 	}
 	return fillLibraryDefaults(language, fillDefaults(lib, defaults))
 }
@@ -261,7 +338,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava:
 		return false
 	default:
 		return true
@@ -327,9 +404,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 	}
 	if p.CopyrightYear != "" {
 		res.CopyrightYear = p.CopyrightYear
-	}
-	if p.DescriptionOverride != "" {
-		res.DescriptionOverride = p.DescriptionOverride
 	}
 	if p.Keep != nil {
 		res.Keep = p.Keep
@@ -499,9 +573,6 @@ func mergeGo(dst, src *config.GoModule) *config.GoModule {
 	if src.DeleteGenerationOutputPaths != nil {
 		res.DeleteGenerationOutputPaths = src.DeleteGenerationOutputPaths
 	}
-	if src.GoAPIs != nil {
-		res.GoAPIs = src.GoAPIs
-	}
 	if src.ModulePathVersion != "" {
 		res.ModulePathVersion = src.ModulePathVersion
 	}
@@ -522,28 +593,25 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.APIIDOverride != "" {
 		res.APIIDOverride = src.APIIDOverride
 	}
+	if src.ArtifactID != "" {
+		res.ArtifactID = src.ArtifactID
+	}
 	if src.APIReference != "" {
 		res.APIReference = src.APIReference
 	}
 	if src.APIDescriptionOverride != "" {
 		res.APIDescriptionOverride = src.APIDescriptionOverride
 	}
+	if src.APIShortnameOverride != "" {
+		res.APIShortnameOverride = src.APIShortnameOverride
+	}
 	if src.ClientDocumentationOverride != "" {
 		res.ClientDocumentationOverride = src.ClientDocumentationOverride
-	}
-	if src.NonCloudAPI {
-		res.NonCloudAPI = src.NonCloudAPI
 	}
 	if src.CodeownerTeam != "" {
 		res.CodeownerTeam = src.CodeownerTeam
 	}
-	if src.DistributionNameOverride != "" {
-		res.DistributionNameOverride = src.DistributionNameOverride
-	}
-	if src.ExcludedDependencies != "" {
-		res.ExcludedDependencies = src.ExcludedDependencies
-	}
-	if src.ExcludedPOMs != "" {
+	if src.ExcludedPOMs != nil {
 		res.ExcludedPOMs = src.ExcludedPOMs
 	}
 	if src.ExtraVersionedModules != "" {
@@ -555,8 +623,8 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	if src.IssueTrackerOverride != "" {
 		res.IssueTrackerOverride = src.IssueTrackerOverride
 	}
-	if src.LibrariesBOMVersion != "" {
-		res.LibrariesBOMVersion = src.LibrariesBOMVersion
+	if src.ReleasedVersion != "" {
+		res.ReleasedVersion = src.ReleasedVersion
 	}
 	if src.LibraryTypeOverride != "" {
 		res.LibraryTypeOverride = src.LibraryTypeOverride
@@ -566,9 +634,6 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.NamePrettyOverride != "" {
 		res.NamePrettyOverride = src.NamePrettyOverride
-	}
-	if src.JavaAPIs != nil {
-		res.JavaAPIs = src.JavaAPIs
 	}
 	if src.ProductDocumentationOverride != "" {
 		res.ProductDocumentationOverride = src.ProductDocumentationOverride
@@ -584,6 +649,15 @@ func mergeJava(dst, src *config.JavaModule) *config.JavaModule {
 	}
 	if src.RpcDocumentation != "" {
 		res.RpcDocumentation = src.RpcDocumentation
+	}
+	if src.TransportOverride != "" {
+		res.TransportOverride = src.TransportOverride
+	}
+	if src.SkipPOMUpdates {
+		res.SkipPOMUpdates = src.SkipPOMUpdates
+	}
+	if src.SkipAPIID {
+		res.SkipAPIID = src.SkipAPIID
 	}
 	return &res
 }
@@ -602,6 +676,9 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.Dependencies != nil {
 		res.Dependencies = src.Dependencies
 	}
+	if src.ESM {
+		res.ESM = src.ESM
+	}
 	if src.ExtraProtocParameters != nil {
 		res.ExtraProtocParameters = src.ExtraProtocParameters
 	}
@@ -611,11 +688,17 @@ func mergeNodejs(dst, src *config.NodejsPackage) *config.NodejsPackage {
 	if src.MainService != "" {
 		res.MainService = src.MainService
 	}
-	if src.Mixins != "" {
-		res.Mixins = src.Mixins
-	}
 	if src.PackageName != "" {
 		res.PackageName = src.PackageName
+	}
+	if src.ClientDocumentationOverride != "" {
+		res.ClientDocumentationOverride = src.ClientDocumentationOverride
+	}
+	if src.MetadataNameOverride != "" {
+		res.MetadataNameOverride = src.MetadataNameOverride
+	}
+	if src.NamePrettyOverride != "" {
+		res.NamePrettyOverride = src.NamePrettyOverride
 	}
 	return &res
 }
@@ -677,6 +760,9 @@ func mergeRust(dst, src *config.RustCrate) *config.RustCrate {
 	}
 	if src.DetailedTracingAttributes != nil {
 		res.DetailedTracingAttributes = src.DetailedTracingAttributes
+	}
+	if src.LroStubOptions != nil {
+		res.LroStubOptions = src.LroStubOptions
 	}
 	if src.ResourceNameHeuristic != nil {
 		res.ResourceNameHeuristic = src.ResourceNameHeuristic

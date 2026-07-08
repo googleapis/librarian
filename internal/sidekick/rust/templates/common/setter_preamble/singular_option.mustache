@@ -20,7 +20,15 @@ limitations under the License.
 /// ```ignore,no_run
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{#Codec.FormattedResource}}
+{{#FormatArgs}}
+/// # let {{.}} = "{{.}}";
+{{/FormatArgs}}
+/// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some(format!("{{FormatString}}")));
+{{/Codec.FormattedResource}}
+{{^Codec.FormattedResource}}
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(Some("example"));
+{{/Codec.FormattedResource}}
 /// let x = {{Parent.Codec.Name}}::new().set_or_clear_{{Codec.SetterName}}(None::<String>);
 {{/IsString}}
 {{#IsBytes}}

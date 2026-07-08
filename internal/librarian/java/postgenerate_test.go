@@ -41,12 +41,13 @@ func TestPostGenerate(t *testing.T) {
 		Language: "java",
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 			{Name: "analytics-admin", Version: "0.98.0"},
 			{Name: "area120-tables", Version: "0.92.0"},
 			{Name: "aiplatform", Version: "3.89.0"},
 		},
 	}
-	if err := PostGenerate(t.Context(), tmpDir, cfg); err != nil {
+	if err := PostGenerate(t.Context(), tmpDir, cfg, nil); err != nil {
 		t.Fatal(err)
 	}
 	// Verify root pom.xml
@@ -58,7 +59,7 @@ func TestPostGenerate(t *testing.T) {
 	if !strings.Contains(rootPOMContent, "<version>0.201.0</version>") {
 		t.Errorf("root pom.xml missing correct version, got:\n%s", rootPOMContent)
 	}
-	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification"}
+	modules := []string{"java-analytics-admin", "java-area120-tables", "java-aiplatform", "java-grafeas", "java-dns", "java-notification", "java-logging-logback"}
 	for _, mod := range modules {
 		if !strings.Contains(rootPOMContent, "<module>"+mod+"</module>") {
 			t.Errorf("root pom.xml missing module %s", mod)
@@ -70,6 +71,7 @@ func TestPostGenerate(t *testing.T) {
 		{GroupID: "com.google.area120", ArtifactID: "google-area120-tables-bom", Version: "0.92.0", Type: "pom", Scope: "import"},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-aiplatform-bom", Version: "3.89.0", Type: "pom", Scope: "import"},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-dns", Version: "2.86.0", Type: "", Scope: ""},
+		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-logging-logback", Version: "0.143.0-alpha-SNAPSHOT", Type: "", Scope: ""},
 		{GroupID: "com.google.cloud", ArtifactID: "google-cloud-notification", Version: "0.206.0", Type: "", Scope: ""},
 		{GroupID: "io.grafeas", ArtifactID: "grafeas", Version: "1.2.3", Type: "", Scope: ""},
 	}
@@ -126,11 +128,15 @@ func verifyBOM(t *testing.T, path string, wantVersion string, wantDeps []bomDepe
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	// Verify that libraries like java-maps-places are excluded because their
-	// GroupID (com.google.maps) is not in the allowed groupInclusions list.
-	if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
-		return d.ArtifactID == "google-maps-places-bom"
-	}) {
-		t.Errorf("%s should NOT contain google-maps-places-bom", path)
+	// GroupID (com.google.maps) is not in the allowed groupInclusions list, and
+	// other BOMs explicitly excluded in excludedBOMs are also absent.
+	for _, excluded := range []string{"google-maps-places-bom",
+		"google-cloud-bigtable-deps-bom", "google-cloud-bom", "libraries-bom"} {
+		if slices.ContainsFunc(p.Dependencies, func(d bomDependency) bool {
+			return d.ArtifactID == excluded
+		}) {
+			t.Errorf("%s should NOT contain %s", path, excluded)
+		}
 	}
 }
 
@@ -191,9 +197,10 @@ func TestPostGenerate_SearchError(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
 	if !errors.Is(err, errModuleDiscovery) {
 		t.Errorf("got error %v, want %v", err, errModuleDiscovery)
 	}
@@ -210,9 +217,10 @@ func TestPostGenerate_Error(t *testing.T) {
 	cfg := &config.Config{
 		Libraries: []*config.Library{
 			{Name: rootLibrary, Version: "1.2.3"},
+			{Name: parentPOM, Version: "1.2.3"},
 		},
 	}
-	err := PostGenerate(t.Context(), tmpDir, cfg)
+	err := PostGenerate(t.Context(), tmpDir, cfg, nil)
 	if !errors.Is(err, errRootPOMGeneration) {
 		t.Errorf("got error %v, want %v", err, errRootPOMGeneration)
 	}
@@ -282,4 +290,108 @@ func copyDir(src, dest string) error {
 		}
 		return filesystem.CopyFile(path, target)
 	})
+}
+
+func TestAppendVersions(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		initial string
+		lines   []string
+		want    string
+	}{
+		{
+			name:    "empty file",
+			initial: "",
+			lines:   []string{"a:1.0.0"},
+			want:    "a:1.0.0\n",
+		},
+		{
+			name:    "already has newline",
+			initial: "a:1.0.0\n",
+			lines:   []string{"b:2.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\n",
+		},
+		{
+			name:    "missing newline",
+			initial: "a:1.0.0",
+			lines:   []string{"b:2.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\n",
+		},
+		{
+			name:    "multiple lines missing newline",
+			initial: "a:1.0.0",
+			lines:   []string{"b:2.0.0", "c:3.0.0"},
+			want:    "a:1.0.0\nb:2.0.0\nc:3.0.0\n",
+		},
+		{
+			name:    "no lines does nothing",
+			initial: "a:1.0.0\n",
+			lines:   nil,
+			want:    "a:1.0.0\n",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			versionsPath := filepath.Join(tmpDir, versionsFileName)
+			if err := os.WriteFile(versionsPath, []byte(test.initial), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := appendVersions(tmpDir, test.lines); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(versionsPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAppendVersions_Error(t *testing.T) {
+	t.Parallel()
+	if err := appendVersions("/non/existent/path", []string{"line"}); err == nil {
+		t.Error("appendVersions() expected error for non-existent file, got nil")
+	}
+}
+
+func TestDeriveVersionLines(t *testing.T) {
+	library := &config.Library{
+		Name:    "secretmanager",
+		Version: "1.2.3",
+		Java: &config.JavaModule{
+			ReleasedVersion: "1.2.3",
+		},
+	}
+	for _, test := range []struct {
+		name             string
+		missingArtifacts []MissingArtifact
+		want             []string
+	}{
+		{
+			name:             "empty input",
+			missingArtifacts: nil,
+			want:             nil,
+		},
+		{
+			name: "valid artifact IDs",
+			missingArtifacts: []MissingArtifact{
+				{ID: "proto-google-cloud-secretmanager-v1", Library: library},
+				{ID: "google-cloud-secretmanager", Library: library},
+			},
+			want: []string{
+				"proto-google-cloud-secretmanager-v1:1.2.3:1.2.3",
+				"google-cloud-secretmanager:1.2.3:1.2.3",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := constructVersionLines(test.missingArtifacts)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
 }

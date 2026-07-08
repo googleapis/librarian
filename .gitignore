@@ -14,7 +14,6 @@ cmd/legacylibrarian/legacylibrarian
 cmd/librarian/librarian
 cmd/librarianops/librarianops
 cmd/sidekick/sidekick
-cmd/surfer/surfer
 tool/cmd/builddockerimages/builddockerimages
 tool/cmd/configcheck/configcheck
 tool/cmd/importconfigs/importconfigs
@@ -31,7 +30,6 @@ tool/cmd/syncversion/syncversion
 /librarian
 /librarianops
 /sidekick
-/surfer
 /builddockerimages
 /configcheck
 /importconfigs

@@ -25,7 +25,6 @@ import (
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
-	"github.com/googleapis/librarian/internal/config"
 )
 
 const (
@@ -115,43 +114,38 @@ func TestOutput_Error(t *testing.T) {
 }
 
 func TestGetExecutablePath(t *testing.T) {
-	tests := []struct {
-		name           string
-		releaseConfig  *config.Release
-		executableName string
-		want           string
+	for _, test := range []struct {
+		name             string
+		commandOverrides map[string]string
+		executableName   string
+		want             string
 	}{
 		{
 			name: "Preinstalled tool found",
-			releaseConfig: &config.Release{
-				Preinstalled: map[string]string{
-					"cargo": "/usr/bin/cargo",
-					"git":   "/usr/bin/git",
-				},
+			commandOverrides: map[string]string{
+				"cargo": "/usr/bin/cargo",
+				"git":   "/usr/bin/git",
 			},
 			executableName: "cargo",
 			want:           "/usr/bin/cargo",
 		},
 		{
 			name: "Preinstalled tool not found",
-			releaseConfig: &config.Release{
-				Preinstalled: map[string]string{
-					"git": "/usr/bin/git",
-				},
+			commandOverrides: map[string]string{
+				"git": "/usr/bin/git",
 			},
 			executableName: "cargo",
 			want:           "cargo",
 		},
 		{
-			name:           "No preinstalled section",
-			releaseConfig:  &config.Release{},
-			executableName: "cargo",
-			want:           "cargo",
+			name:             "No preinstalled section",
+			commandOverrides: nil,
+			executableName:   "cargo",
+			want:             "cargo",
 		},
-	}
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := GetExecutablePath(test.releaseConfig.Preinstalled, test.executableName)
+			got := GetExecutablePath(test.commandOverrides, test.executableName)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -236,10 +230,10 @@ func TestRunStreaming(t *testing.T) {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantOut, outBuf.String()); diff != "" {
-				t.Errorf("mismatch of stdout (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantErr, errBuf.String()); diff != "" {
-				t.Errorf("mismatch of stderr (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -257,5 +251,90 @@ func TestRunStreaming_Error(t *testing.T) {
 	}
 	if !strings.Contains(string(err.Error()), invalidSubcommand) {
 		t.Errorf("err.Error() should mention the invalid subcommand; got %q", err.Error())
+	}
+}
+
+func TestLookPath(t *testing.T) {
+	tmpDir := t.TempDir()
+	exeName := "test-exe"
+	exePath := filepath.Join(tmpDir, exeName)
+	if err := os.WriteFile(exePath, []byte("dummy binary content"), 0755); err != nil {
+		t.Fatal(err)
+	}
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+		want    string
+	}{
+		{
+			name:    "absolute path bypasses search",
+			cmdName: exePath,
+			pathEnv: "/dummy/path",
+			want:    exePath,
+		},
+		{
+			name:    "relative path bypasses search",
+			cmdName: "./" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "./" + exeName,
+		},
+		{
+			name:    "parent path bypasses search",
+			cmdName: "../" + exeName,
+			pathEnv: "/dummy/path",
+			want:    "../" + exeName,
+		},
+		{
+			name:    "found in custom pathEnv",
+			cmdName: exeName,
+			pathEnv: "/another/path:" + tmpDir + ":/yet/another/path",
+			want:    exePath,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := lookPath(test.cmdName, test.pathEnv)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestLookPath_Error(t *testing.T) {
+	tmpDir := t.TempDir()
+	dirName := "test-dir"
+	if err := os.WriteFile(filepath.Join(tmpDir, dirName), []byte("non-executable file"), 0644); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name    string
+		cmdName string
+		pathEnv string
+		wantErr error
+	}{
+		{
+			name:    "not found in custom pathEnv",
+			cmdName: "test-exe",
+			pathEnv: "/another/path:/yet/another/path",
+			wantErr: exec.ErrNotFound,
+		},
+		{
+			name:    "matching path is a directory (non-executable)",
+			cmdName: dirName,
+			pathEnv: tmpDir,
+			wantErr: exec.ErrNotFound,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := lookPath(test.cmdName, test.pathEnv)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("lookPath() error = %v, want %v", err, test.wantErr)
+			}
+		})
 	}
 }

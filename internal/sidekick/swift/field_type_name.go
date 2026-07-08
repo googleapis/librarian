@@ -20,103 +20,125 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
-// fieldTypeName returns the Swift type name for a field.
-//
-// The implementation is pretty simple for primitive types. For message and enum fields it may get more
-// difficult as the name may be in a separate package.
-func (c *codec) fieldTypeName(field *api.Field) (string, error) {
-	baseFieldType, err := c.baseFieldTypeName(field)
-	if err != nil {
-		return "", err
-	}
-	if field.Optional {
-		return fmt.Sprintf("%s?", baseFieldType), nil
-	}
-	if field.Repeated {
-		return fmt.Sprintf("[%s]", baseFieldType), nil
-	}
-	return baseFieldType, nil
+type fieldTypeNames struct {
+	Full  string
+	Base  string
+	Key   string
+	Value string
 }
 
-// baseFieldTypeName returns the basic Swift type used for a field, excluding "optional" and "repeated" decorations.
-func (c *codec) baseFieldTypeName(field *api.Field) (string, error) {
+func (c *codec) fieldTypeName(field *api.Field) (*fieldTypeNames, error) {
+	names, err := c.fieldTypeBase(field)
+	if err != nil {
+		return nil, err
+	}
+	if field.Optional {
+		names.Full = fmt.Sprintf("%s?", names.Base)
+		return names, nil
+	}
+	if field.Repeated {
+		names.Full = fmt.Sprintf("[%s]", names.Base)
+		return names, nil
+	}
+	names.Full = names.Base
+	return names, nil
+}
+
+func (c *codec) fieldTypeBase(field *api.Field) (*fieldTypeNames, error) {
 	switch field.Typez {
 	case api.TypezMessage:
 		m, err := lookupMessage(c.Model, field.TypezID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if m.IsMap {
-			return c.mapFieldTypeName(m)
+			return c.mapFieldTypeNames(m)
 		}
-		return c.messageTypeName(m)
+		base, err := c.messageTypeName(m)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	case api.TypezEnum:
 		e, err := lookupEnum(c.Model, field.TypezID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
-		return c.enumTypeName(e)
+		base, err := c.enumTypeName(e)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	default:
-		return scalarFieldTypeName(field)
+		base, err := scalarFieldTypeName(field)
+		if err != nil {
+			return nil, err
+		}
+		return &fieldTypeNames{Base: base}, nil
 	}
 }
 
-func (c *codec) mapFieldTypeName(m *api.Message) (string, error) {
-	var keyField, valueField *api.Field
-	for _, f := range m.Fields {
-		switch f.Name {
-		case "key":
-			keyField = f
-		case "value":
-			valueField = f
-		}
-	}
-	if keyField == nil || valueField == nil {
-		return "", fmt.Errorf("map message %q missing key or value field", m.ID)
-	}
-	keyType, err := c.baseFieldTypeName(keyField)
+func (c *codec) mapFieldTypeNames(m *api.Message) (*fieldTypeNames, error) {
+	keyType, valueType, err := c.mapFieldTypeComponents(m)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	valueType, err := c.baseFieldTypeName(valueField)
+	base := fmt.Sprintf("[%s: %s]", keyType, valueType)
+	return &fieldTypeNames{
+		Base:  base,
+		Key:   keyType,
+		Value: valueType,
+	}, nil
+}
+
+func (c *codec) mapFieldTypeComponents(m *api.Message) (string, string, error) {
+	kv, err := decomposeMap(m)
 	if err != nil {
-		return "", err
+		return "", "", err
 	}
-	return fmt.Sprintf("[%s: %s]", keyType, valueType), nil
+	key, err := c.fieldTypeBase(kv.Key)
+	if err != nil {
+		return "", "", err
+	}
+	value, err := c.fieldTypeBase(kv.Value)
+	if err != nil {
+		return "", "", err
+	}
+	return key.Base, value.Base, nil
 }
 
 func scalarFieldTypeName(field *api.Field) (string, error) {
 	switch field.Typez {
 	case api.TypezDouble:
-		return "Double", nil
+		return "Swift.Double", nil
 	case api.TypezFloat:
-		return "Float", nil
+		return "Swift.Float", nil
 	case api.TypezInt64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezUint64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezInt32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezFixed64:
-		return "UInt64", nil
+		return "Swift.UInt64", nil
 	case api.TypezFixed32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezBool:
-		return "Bool", nil
+		return "Swift.Bool", nil
 	case api.TypezString:
-		return "String", nil
+		return "Swift.String", nil
 	case api.TypezBytes:
-		return "Data", nil
+		return "Foundation.Data", nil
 	case api.TypezUint32:
-		return "UInt32", nil
+		return "Swift.UInt32", nil
 	case api.TypezSfixed32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSfixed64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	case api.TypezSint32:
-		return "Int32", nil
+		return "Swift.Int32", nil
 	case api.TypezSint64:
-		return "Int64", nil
+		return "Swift.Int64", nil
 	default:
 		return "", fmt.Errorf("unexpected Typez (%s) for scalar field %q", field.Typez.String(), field.ID)
 	}
@@ -124,6 +146,9 @@ func scalarFieldTypeName(field *api.Field) (string, error) {
 
 func (c *codec) messageTypeName(m *api.Message) (string, error) {
 	name := pascalCase(m.Name)
+	if m.ServicePlaceholder {
+		name = pascalCase(m.Name + "Client")
+	}
 	if m.Parent == nil {
 		prefix, err := c.externalTypePrefix(m.Package)
 		if err != nil {
@@ -135,6 +160,30 @@ func (c *codec) messageTypeName(m *api.Message) (string, error) {
 		return name, nil
 	}
 	parent, err := c.messageTypeName(m.Parent)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%s.%s", parent, name), nil
+}
+
+func (c *codec) fullyQualifiedMessageTypeName(m *api.Message) (string, error) {
+	name := pascalCase(m.Name)
+	if m.Parent == nil {
+		if m.Package == "" {
+			// there is no package, so return the bare type name
+			return name, nil
+		}
+		if m.Package == c.Model.PackageName {
+			// this is the current package
+			return fmt.Sprintf("%s.%s", c.PackageName, name), nil
+		}
+		dep, ok := c.ApiPackages[m.Package]
+		if !ok {
+			return "", fmt.Errorf("package %q not found in ApiPackages", m.Package)
+		}
+		return fmt.Sprintf("%s.%s", dep.Name, name), nil
+	}
+	parent, err := c.fullyQualifiedMessageTypeName(m.Parent)
 	if err != nil {
 		return "", err
 	}
@@ -168,6 +217,5 @@ func (c *codec) externalTypePrefix(packageName string) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("package %q not found in ApiPackages", packageName)
 	}
-	dep.Required = true
 	return dep.Name, nil
 }

@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/api-allowlist-schema.md -root API -root-title API -title "API Allowlist"
+//go:generate go run -tags configdocgen ../../cmd/config_doc_generate.go -input . -output ../../doc/sdk-yaml-schema.md -root API -root-title API -title "SDK YAML"
 
 package serviceconfig
 
@@ -88,11 +88,12 @@ type API struct {
 	// ReleaseLevels is the release level per language.
 	// Map key is the language name (e.g., "python", "rust").
 	// Optional. If omitted, the generator default is used.
-	//
-	// TODO(https://github.com/googleapis/librarian/issues/4834): Go uses
-	// "alpha", "beta", and "ga" instead of "preview" and "stable". We should
-	// standardize release level vocabulary across languages.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
+
+	// SampleURIs is the documentation URI for code samples per language.
+	// Map key is the language name (e.g., "go", "python").
+	// Optional. If omitted, a default URI for the language is used.
+	SampleURIs map[string]string `yaml:"sample_uris,omitempty"`
 
 	// ShortName overrides the API short name from the service config's
 	// publishing section.
@@ -162,58 +163,14 @@ func (api *API) ReleaseLevel(language, version string) string {
 	if isAlpha || isBeta || strings.HasPrefix(version, "0.") {
 		level = "preview"
 	}
-
-	// TODO(https://github.com/googleapis/librarian/issues/4834): standardize
-	// release level vocabulary across languages.
-	if language == config.LanguageGo {
-		if isAlpha {
-			return "alpha"
-		}
-		if isBeta || level == "preview" {
-			return "beta"
-		}
-		if level == "stable" {
-			return "ga"
-		}
-	}
 	return level
 }
 
-// RepoMetadataReleaseLevel returns the release level for repo metadata.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4834): delete this
-// function once the issue is resolved.
-// For Go, it maps the raw release level to "stable" or "preview".
-// For other languages, it returns the raw release level.
-func (api *API) RepoMetadataReleaseLevel(language, version string) string {
-	if language == config.LanguageGo {
-		if api.ReleaseLevel(language, version) == "ga" {
-			return "stable"
-		}
-		return "preview"
-	}
-	return api.ReleaseLevel(language, version)
-}
-
 // RepoMetadataTransport returns the transport for repo metadata.
-//
-// TODO(https://github.com/googleapis/librarian/issues/4854): delete
-// once the issue is resolved.
-// For Java, it maps the transport to "grpc", "http", or "both".
 func (api *API) RepoMetadataTransport(language string, library *config.Library) string {
 	transport := api.Transport(language)
-	if language == config.LanguageJava {
-		if library != nil && library.Java != nil && library.Java.TransportOverride != "" {
-			transport = Transport(library.Java.TransportOverride)
-		}
-		switch transport {
-		case GRPC:
-			return "grpc"
-		case Rest:
-			return "http"
-		default:
-			return "both"
-		}
+	if language == config.LanguageJava && library != nil && library.Java != nil && library.Java.TransportOverride != "" {
+		transport = Transport(library.Java.TransportOverride)
 	}
 	return string(transport)
 }
@@ -255,6 +212,18 @@ func HasAPIPath(path, language string) bool {
 		return false
 	}
 	return slices.Contains(api.Languages, config.LanguageAll) || slices.Contains(api.Languages, language)
+}
+
+// FindTransport looks up the API by path in sdk.yaml, validates that it is
+// allowed for the specified language, and returns its configured transport.
+// If the API is not explicitly configured in sdk.yaml, it is assumed to be
+// allowed and defaults to GRPCRest.
+func FindTransport(path, language string) (Transport, error) {
+	api, err := findAPI(path, language)
+	if err != nil {
+		return "", err
+	}
+	return api.Transport(language), nil
 }
 
 func unmarshalAPIsOrPanic() []API {

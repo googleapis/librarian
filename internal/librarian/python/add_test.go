@@ -66,7 +66,7 @@ func TestAdd(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotLib, err := Add(test.lib)
+			gotLib, err := Add(nil, test.lib)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -81,6 +81,7 @@ func TestAdd_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
+		cfg     *config.Config
 		lib     *config.Library
 		wantErr error
 	}{
@@ -103,20 +104,77 @@ func TestAdd_Error(t *testing.T) {
 			wantErr: errNewLibraryMustHaveOneAPI,
 		},
 		{
-			name: "API in unapproved namespace",
+			name: "unallowed namespace",
+			cfg: &config.Config{
+				Default: &config.Default{
+					Python: &config.PythonDefault{
+						AllowedNamespaces: []string{"google.custom"},
+					},
+				},
+			},
 			lib: &config.Library{
-				Name: "google-unapproved-bad",
+				Name: "google-other-foo",
 				APIs: []*config.API{
-					{Path: "google/unapproved/bad/v1"},
+					{Path: "google/other/foo/v1"},
 				},
 			},
 			wantErr: errNewLibraryBadNamespace,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			_, gotErr := Add(test.lib)
+			_, gotErr := Add(test.cfg, test.lib)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestValidateNamespace(t *testing.T) {
+	t.Parallel()
+	customCfg := &config.Config{
+		Default: &config.Default{
+			Python: &config.PythonDefault{
+				AllowedNamespaces: []string{"google.custom"},
+			},
+		},
+	}
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		apiPath string
+		wantErr error
+	}{
+		{
+			name:    "no config - allow everything",
+			cfg:     nil,
+			apiPath: "google/cloud/foo/v1",
+		},
+		{
+			name: "empty allowed namespaces - allow everything",
+			cfg: &config.Config{
+				Default: &config.Default{
+					Python: &config.PythonDefault{},
+				},
+			},
+			apiPath: "google/cloud/foo/v1",
+		},
+		{
+			name:    "allowed namespace matches",
+			cfg:     customCfg,
+			apiPath: "google/custom/foo/v1",
+		},
+		{
+			name:    "unallowed namespace triggers error",
+			cfg:     customCfg,
+			apiPath: "google/other/foo/v1",
+			wantErr: errNewLibraryBadNamespace,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotErr := validateNamespace(test.cfg, test.apiPath)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("validateNamespace(%+v, %q) error = %v, wantErr %v", test.cfg, test.apiPath, gotErr, test.wantErr)
 			}
 		})
 	}
@@ -279,6 +337,57 @@ func TestFindExistingLibraryForNewAPI(t *testing.T) {
 			},
 			apiPath: "google/cloud/xyz/admin/v2",
 		},
+		{
+			name: "does not prefix match CORE library type",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/v1"},
+						{Path: "google/cloud/other/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: libraryTypeCore,
+						},
+					},
+				},
+			},
+			apiPath: "google/cloud/speech/v1",
+		},
+		{
+			name: "prefix match non-CORE library type",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+					Python: &config.PythonPackage{
+						PythonDefault: config.PythonDefault{
+							LibraryType: "GAPIC",
+						},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/speech/v1",
+			wantName: "google-cloud-shared",
+		},
+		{
+			name: "prefix match when python options are nil",
+			libraries: []*config.Library{
+				{
+					Name: "google-cloud-shared",
+					APIs: []*config.API{
+						{Path: "google/cloud/test/v1"},
+						{Path: "google/cloud/test/other/v1"},
+					},
+				},
+			},
+			apiPath:  "google/cloud/test/speech/v1",
+			wantName: "google-cloud-shared",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := FindExistingLibraryForNewAPI(test.libraries, test.apiPath)
@@ -287,6 +396,80 @@ func TestFindExistingLibraryForNewAPI(t *testing.T) {
 				gotName = got.Name
 			}
 			if diff := cmp.Diff(gotName, test.wantName); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestReleasePleaseExtraFiles(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name string
+		lib  *config.Library
+		want []any
+	}{
+		{
+			name: "single versioned API",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/gapic_version.py",
+				"google/cloud/foo_v1/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v1.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "versionless API",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/type"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/type/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.type.json",
+					"type":     "json",
+				},
+			},
+		},
+		{
+			name: "multiple APIs sharing versionless path",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{Path: "google/cloud/foo/v1"},
+					{Path: "google/cloud/foo/v2"},
+				},
+			},
+			want: []any{
+				"google/cloud/foo/gapic_version.py",
+				"google/cloud/foo_v1/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v1.json",
+					"type":     "json",
+				},
+				"google/cloud/foo_v2/gapic_version.py",
+				map[string]any{
+					"jsonpath": "$.clientLibrary.version",
+					"path":     "samples/generated_samples/snippet_metadata_google.cloud.foo.v2.json",
+					"type":     "json",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ReleasePleaseExtraFiles(test.lib)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})

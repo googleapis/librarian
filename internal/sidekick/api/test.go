@@ -23,42 +23,46 @@ import (
 
 // NewTestAPI creates a new test API.
 func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
-	packageName := ""
-	state := &state{
-		MessageByID:    make(map[string]*Message),
-		MethodByID:     make(map[string]*Method),
-		EnumByID:       make(map[string]*Enum),
-		ServiceByID:    make(map[string]*Service),
-		ResourceByType: make(map[string]*Resource),
+	model := &API{
+		Name:           "Test",
+		Messages:       messages,
+		Enums:          enums,
+		Services:       services,
+		messageByID:    make(map[string]*Message),
+		methodByID:     make(map[string]*Method),
+		enumByID:       make(map[string]*Enum),
+		serviceByID:    make(map[string]*Service),
+		resourceByType: make(map[string]*Resource),
 	}
+
 	for _, m := range messages {
-		packageName = m.Package
-		state.MessageByID[m.ID] = m
+		model.PackageName = m.Package
+		model.messageByID[m.ID] = m
 		if m.Resource != nil {
-			state.ResourceByType[m.Resource.Type] = m.Resource
+			model.resourceByType[m.Resource.Type] = m.Resource
 		}
 	}
 	for _, e := range enums {
-		packageName = e.Package
-		state.EnumByID[e.ID] = e
+		model.PackageName = e.Package
+		model.enumByID[e.ID] = e
 	}
 	for _, s := range services {
-		packageName = s.Package
-		state.ServiceByID[s.ID] = s
+		model.PackageName = s.Package
+		model.serviceByID[s.ID] = s
 		for _, m := range s.Methods {
-			state.MethodByID[m.ID] = m
+			model.methodByID[m.ID] = m
 		}
 	}
 	for _, m := range messages {
 		parentID := parentName(m.ID)
-		parent := state.MessageByID[parentID]
+		parent := model.messageByID[parentID]
 		if parent != nil {
 			m.Parent = parent
 			parent.Messages = append(parent.Messages, m)
 		}
 	}
 	for _, e := range enums {
-		parent := state.MessageByID[parentName(e.ID)]
+		parent := model.messageByID[parentName(e.ID)]
 		if parent != nil {
 			e.Parent = parent
 			parent.Enums = append(parent.Enums, e)
@@ -68,14 +72,6 @@ func NewTestAPI(messages []*Message, enums []*Enum, services []*Service) *API {
 		}
 	}
 
-	model := &API{
-		Name:        "Test",
-		PackageName: packageName,
-		Messages:    messages,
-		Enums:       enums,
-		Services:    services,
-		state:       state,
-	}
 	model.LoadWellKnownTypes()
 	return model
 }
@@ -282,21 +278,21 @@ func (r *Resource) WithSingular(singular string) *Resource {
 // ParseTemplateForTest converts a string literal into a []PathSegment slice for testing purposes.
 func ParseTemplateForTest(template string) []PathSegment {
 	var segments []PathSegment
-	parts := strings.Split(strings.TrimPrefix(template, "//"), "/")
+	trimmed, hasDoubleSlash := strings.CutPrefix(template, "//")
+	parts := strings.Split(trimmed, "/")
 
 	host := parts[0]
-	if strings.HasPrefix(template, "//") {
+	if hasDoubleSlash {
 		host = "//" + parts[0]
 	}
-	segments = append(segments, PathSegment{Literal: &host})
+	segments = append(segments, PathSegment{Literal: host})
 
 	for _, part := range parts[1:] {
 		if strings.HasPrefix(part, "{") && strings.HasSuffix(part, "}") {
 			fieldPath := strings.Split(part[1:len(part)-1], ".")
 			segments = append(segments, PathSegment{Variable: &PathVariable{FieldPath: fieldPath}})
 		} else {
-			l := part
-			segments = append(segments, PathSegment{Literal: &l})
+			segments = append(segments, PathSegment{Literal: part})
 		}
 	}
 	return segments

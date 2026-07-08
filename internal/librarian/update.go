@@ -30,15 +30,13 @@ import (
 var (
 	githubAPI      = "https://api.github.com"
 	githubDownload = "https://github.com"
-
-	sourceRepos = map[string]fetch.RepoRef{
-		"conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
-		"discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
-		"googleapis":  {Org: "googleapis", Name: "googleapis", Branch: fetch.DefaultBranchMaster},
-		"protobuf":    {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
-		"showcase":    {Org: "googleapis", Name: "gapic-showcase", Branch: config.BranchMain},
+	sourceRepos    = map[string]fetch.RepoRef{
+		"sources.conformance": {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
+		"sources.discovery":   {Org: "googleapis", Name: "discovery-artifact-manager", Branch: fetch.DefaultBranchMaster},
+		"sources.googleapis":  {Org: "googleapis", Name: "googleapis", Branch: fetch.DefaultBranchMaster},
+		"sources.protobuf":    {Org: "protocolbuffers", Name: "protobuf", Branch: config.BranchMain},
+		"sources.showcase":    {Org: "googleapis", Name: "gapic-showcase", Branch: config.BranchMain},
 	}
-
 	errNoSourcesProvided = errors.New("at least one source must be provided")
 	errUnknownSource     = errors.New("unknown source")
 	errEmptySources      = errors.New("sources required in librarian.yaml")
@@ -55,25 +53,25 @@ SHAs in librarian.yaml accordingly. It also supports updating the librarian vers
 
 Supported targets:
 
-  - conformance: protocolbuffers/protobuf conformance tests
-  - discovery: googleapis/discovery-artifact-manager
-  - googleapis: googleapis/googleapis (the API definitions)
-  - protobuf: protocolbuffers/protobuf
-  - showcase: googleapis/gapic-showcase
+  - sources.conformance: protocolbuffers/protobuf conformance tests
+  - sources.discovery: googleapis/discovery-artifact-manager
+  - sources.googleapis: googleapis/googleapis (the API definitions)
+  - sources.protobuf: protocolbuffers/protobuf
+  - sources.showcase: googleapis/gapic-showcase
   - version: the librarian tool version
 
 At least one target must be specified.
 
 Examples:
 
-	librarian update googleapis
-	librarian update googleapis protobuf
+	librarian update sources.googleapis
+	librarian update sources.googleapis sources.protobuf
 	librarian update version
 
 A typical librarian workflow for regenerating every library against the
 latest API definitions is:
 
-	librarian update googleapis
+	librarian update sources.googleapis
 	librarian generate --all`,
 		UsageText: "librarian update <version | source>...",
 		Action: func(ctx context.Context, cmd *cli.Command) error {
@@ -102,23 +100,8 @@ latest API definitions is:
 	}
 }
 
+// runUpdate refreshes the configured targets in Config.
 func runUpdate(ctx context.Context, cfg *config.Config, targets []string) (*config.Config, error) {
-	endpoints := &fetch.Endpoints{
-		API:      githubAPI,
-		Download: githubDownload,
-	}
-
-	sourcesMap := map[string]*config.Source{}
-	if cfg.Sources != nil {
-		sourcesMap = map[string]*config.Source{
-			"conformance": cfg.Sources.Conformance,
-			"discovery":   cfg.Sources.Discovery,
-			"googleapis":  cfg.Sources.Googleapis,
-			"protobuf":    cfg.Sources.ProtobufSrc,
-			"showcase":    cfg.Sources.Showcase,
-		}
-	}
-
 	for _, target := range targets {
 		if target == "version" {
 			env := map[string]string{"GOPROXY": "direct"}
@@ -131,36 +114,19 @@ func runUpdate(ctx context.Context, cfg *config.Config, targets []string) (*conf
 				return nil, err
 			}
 		} else {
-			// TODO(https://github.com/googleapis/librarian/issues/5075): change the update command to use hierarchical dot notation for sources.
 			if cfg.Sources == nil {
 				return nil, errEmptySources
 			}
-			source := sourcesMap[target]
-			repo := sourceRepos[target]
-			if err := updateSource(endpoints, repo, source); err != nil {
+			repo, ok := sourceRepos[target]
+			if !ok {
+				return nil, fmt.Errorf("%w: %s", errUnknownSource, target)
+			}
+			var err error
+			cfg, err = setConfigValue(cfg, target+".commit", repo.Branch)
+			if err != nil {
 				return nil, err
 			}
 		}
 	}
 	return cfg, nil
-}
-
-func updateSource(endpoints *fetch.Endpoints, repo fetch.RepoRef, source *config.Source) error {
-	if source == nil {
-		return nil
-	}
-
-	oldCommit := source.Commit
-	oldSHA256 := source.SHA256
-
-	commit, sha256, err := fetch.LatestCommitAndChecksum(endpoints, &repo)
-	if err != nil {
-		return err
-	}
-
-	if oldCommit != commit || oldSHA256 != sha256 {
-		source.Commit = commit
-		source.SHA256 = sha256
-	}
-	return nil
 }

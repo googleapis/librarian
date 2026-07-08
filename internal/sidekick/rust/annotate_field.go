@@ -80,7 +80,7 @@ type fieldAnnotations struct {
 
 // FormattedResource contain the format string and the format arguments of a resource name.
 type FormattedResource struct {
-	// The Rust format string, e.g., "projects/{}/secrets/{}"
+	// The Rust format string, e.g., "projects/{project_id}/secrets/{secret_id}"
 	FormatString string
 	// The variables used in the format string.
 	FormatArgs []string
@@ -183,7 +183,7 @@ func (c *codec) annotateField(field *api.Field, message *api.Message, model *api
 	if err != nil {
 		return nil, err
 	}
-	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, message.Scopes())
+	docLines, err := c.formatDocComments(field.Documentation, field.ID, model, field.Scopes())
 	if err != nil {
 		return nil, err
 	}

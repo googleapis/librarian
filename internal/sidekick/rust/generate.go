@@ -75,6 +75,75 @@ type storageAnnotations struct {
 	Control *api.API
 }
 
+// GenerateBigQueryBuilder generates Rust code for the bigquery query builder.
+func GenerateBigQueryBuilder(ctx context.Context, outdir string, model *api.API, cfg *parser.ModelConfig) error {
+	c, err := newCodec(cfg.SpecificationFormat, cfg.Codec)
+	if err != nil {
+		return err
+	}
+	if _, err := annotateModel(model, c); err != nil {
+		return err
+	}
+
+	// TODO(googleapis/google-cloud-rust#5844): move this list to come from librarian.yaml
+	skippedFields := []string{
+		"copy", "load", "extract", // skip non job types
+		"format_options",   // we want to control format options on veneer
+		"kind", "job_type", // output only but not properly marked on protos
+	}
+	runQuery, err := newRunQuery(c, model, skippedFields)
+	if err != nil {
+		return err
+	}
+
+	runQueryMsg, err := runQueryBuilder(runQuery)
+	if err != nil {
+		return err
+	}
+	runQueryRequestMsg, err := runQuery.createSyntheticMessage("RunQueryRequest")
+	if err != nil {
+		return err
+	}
+
+	// TODO(googleapis/google-cloud-rust#5844): move this list to come from librarian.yaml
+	skippedFields = []string{
+		"rows", // skip rows since it takes a lot of memory
+	}
+	queryMetadata, err := newQueryMetadata(c, model, skippedFields)
+	if err != nil {
+		return err
+	}
+
+	queryMetadataMsg, err := queryMetadata.createSyntheticMessage("QueryMetadata")
+	if err != nil {
+		return err
+	}
+
+	model = &api.API{
+		Codec: &bigQueryAnnotations{
+			Model:               model,
+			RunQueryFields:      runQuery.fieldGroupList(),
+			RunQueryMsg:         runQueryMsg,
+			RunQueryRequestMsg:  runQueryRequestMsg,
+			QueryMetadataFields: queryMetadata.fieldGroupList(),
+			QueryMetadataMsg:    queryMetadataMsg,
+		},
+	}
+
+	provider := templatesProvider()
+	generatedFiles := language.WalkTemplatesDir(templates, "templates/bigquery")
+	return language.GenerateFromModel(outdir, model, provider, generatedFiles)
+}
+
+type bigQueryAnnotations struct {
+	Model               *api.API
+	RunQueryFields      []*fieldGroup
+	RunQueryMsg         *api.Message
+	RunQueryRequestMsg  *api.Message
+	QueryMetadataFields []*fieldGroup
+	QueryMetadataMsg    *api.Message
+}
+
 func templatesProvider() language.TemplateProvider {
 	return func(name string) (string, error) {
 		contents, err := templates.ReadFile(filepath.ToSlash(name))

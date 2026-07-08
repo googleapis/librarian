@@ -36,7 +36,8 @@ const (
 )
 
 var (
-	errNoAPIs = errors.New("library has no APIs from which to get metadata")
+	// ErrNoAPIs indicates that a library has no APIs configured.
+	ErrNoAPIs = errors.New("library has no APIs from which to get metadata")
 )
 
 // RepoMetadata represents the .repo-metadata.json file structure.
@@ -90,6 +91,13 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
+
+	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
+	Transport string `json:"transport,omitempty"`
+
+	// RecommendedPackage is the recommended package name.
+	// A Java-specific field.
+	RecommendedPackage string `json:"recommended_package,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -106,6 +114,7 @@ type RepoMetadata struct {
 // - ProductDocumentation
 // - ReleaseLevel
 // - Repo
+// - Transport (Java only)
 //
 // Any other fields required by the caller's language should be populated by the
 // caller before writing to disk.
@@ -114,7 +123,7 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 	// Compute the default version, potentially with an override, instead of
 	// taking it as a parameter.
 	if len(library.APIs) == 0 {
-		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, errNoAPIs)
+		return nil, fmt.Errorf("failed to generate metadata for %s: %w", library.Name, ErrNoAPIs)
 	}
 	firstAPIPath := library.APIs[0].Path
 	api, err := serviceconfig.Find(googleapisDir, firstAPIPath, cfg.Language)
@@ -125,23 +134,29 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 }
 
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
-func fromAPI(config *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
-	apiDescription := api.Description
-	if library.DescriptionOverride != "" {
-		apiDescription = library.DescriptionOverride
+func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
+	var transport string
+	var recommendedPackage string
+	if cfg.Language == config.LanguageJava {
+		transport = api.RepoMetadataTransport(cfg.Language, library)
+		if library.Java != nil {
+			recommendedPackage = library.Java.RecommendedPackage
+		}
 	}
 	return &RepoMetadata{
-		APIDescription:       apiDescription,
+		APIDescription:       api.Description,
 		APIID:                api.ServiceName,
 		APIShortname:         api.ShortName,
 		DistributionName:     library.Name,
 		IssueTracker:         api.NewIssueURI,
-		Language:             config.Language,
+		Language:             cfg.Language,
 		Name:                 api.ShortName,
 		NamePretty:           cleanTitle(api.Title),
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
-		ReleaseLevel:         api.ReleaseLevel(config.Language, library.Version),
-		Repo:                 config.Repo,
+		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
+		Repo:                 cfg.Repo,
+		Transport:            transport,
+		RecommendedPackage:   recommendedPackage,
 	}
 }
 

@@ -17,8 +17,10 @@ package filesystem
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
 	"os"
 	"path/filepath"
 
@@ -29,6 +31,8 @@ import (
 // It merges directories recursively if they exist in both source and target.
 // If an entry in sourceDir is a file that already exists in targetDir, it returns an error
 // instead of overwriting it. It also returns an error if sourceDir and targetDir are the same.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Deprecate and
+// remove MoveAndMerge after MoveAndMergeWithKeep is in production across all generators.
 func MoveAndMerge(sourceDir, targetDir string) error {
 	entries, err := os.ReadDir(sourceDir)
 	if err != nil {
@@ -52,6 +56,59 @@ func MoveAndMerge(sourceDir, targetDir string) error {
 		}
 		if _, err := os.Stat(newPath); err == nil {
 			return fmt.Errorf("entry %q already exists in %q", entry.Name(), targetDir)
+		}
+		if err := os.Rename(oldPath, newPath); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// MoveAndMergeWithKeep moves entries from sourceDir to targetDir.
+// It merges directories recursively if they exist in both source and target.
+// Existing target files are preserved if keepFunc returns true, otherwise they are overwritten.
+func MoveAndMergeWithKeep(sourceDir, targetDir, libraryRoot string, keepFunc func(string) bool) error {
+	entries, err := os.ReadDir(sourceDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		oldPath := filepath.Join(sourceDir, entry.Name())
+		newPath := filepath.Join(targetDir, entry.Name())
+		// If target does not exist, move the entire file or directory directly.
+		if _, err := os.Stat(newPath); err != nil {
+			if !errors.Is(err, fs.ErrNotExist) {
+				return err
+			}
+			if err := os.Rename(oldPath, newPath); err != nil {
+				return err
+			}
+			continue
+		}
+		// If both source and target are directories, recurse to merge contents.
+		if entry.IsDir() {
+			if err := MoveAndMergeWithKeep(oldPath, newPath, libraryRoot, keepFunc); err != nil {
+				return err
+			}
+			if err := os.Remove(oldPath); err != nil {
+				return err
+			}
+			continue
+		}
+		rel, err := filepath.Rel(libraryRoot, newPath)
+		if err != nil {
+			return err
+		}
+		// If target file exists and matches keepFunc, preserve it by discarding source.
+		if keepFunc != nil && keepFunc(filepath.ToSlash(rel)) {
+			if err := os.Remove(oldPath); err != nil {
+				return err
+			}
+			continue
+		}
+		// Otherwise overwrite target file with the new source file.
+		if err := os.Remove(newPath); err != nil {
+			return err
 		}
 		if err := os.Rename(oldPath, newPath); err != nil {
 			return err

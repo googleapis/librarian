@@ -17,6 +17,7 @@ package python
 import (
 	"errors"
 	"fmt"
+	"path"
 	"slices"
 	"strings"
 
@@ -24,18 +25,20 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-// defaultVersion is the first version used for a new library.
-// This is set on the initial `librarian add` for a new API.
-const defaultVersion = "0.0.0"
+const (
+	// defaultVersion is the first version used for a new library.
+	// This is set on the initial `librarian add` for a new API.
+	defaultVersion = "0.0.0"
+
+	// ReleasePleasePkgPrefix is the release-please package prefix for Python libraries.
+	ReleasePleasePkgPrefix = "packages/"
+)
+
+// libraryTypeCore is used in [config.PythonDefault.LibraryType] to signify that
+// the entry is a core library, not an individual API client library.
+const libraryTypeCore = "CORE"
 
 var (
-	approvedGAPICNamespaces = []string{
-		"google.ads",
-		"google.apps",
-		"google.cloud",
-		"google.maps",
-		"google.shopping",
-	}
 	errNewLibraryMustHaveOneAPI          = errors.New("a newly added library (in Python) must have exactly one API so that the default version can be populated")
 	errNewLibraryBadNamespace            = errors.New("derived GAPIC namespace would not match any approved namespace; consult with the Python team to determine whether the namespace should be approved, or whether GAPIC options should be specified for this API in librarian.yaml. See go/clientlibs-python-registered-namespaces for more details")
 	errExistingLibraryNoDefaultVersion   = errors.New("new APIs cannot be automatically added to a library without a default version")
@@ -43,7 +46,7 @@ var (
 )
 
 // Add initializes a new Python library with default values.
-func Add(lib *config.Library) (*config.Library, error) {
+func Add(cfg *config.Config, lib *config.Library) (*config.Library, error) {
 	lib.Version = defaultVersion
 	if len(lib.APIs) != 1 {
 		return nil, errNewLibraryMustHaveOneAPI
@@ -54,11 +57,21 @@ func Add(lib *config.Library) (*config.Library, error) {
 			DefaultVersion: packageDefaultVersion,
 		}
 	}
-	namespace := deriveGAPICNamespace(apiPath)
-	if !slices.Contains(approvedGAPICNamespaces, namespace) {
-		return nil, fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	if err := validateNamespace(cfg, apiPath); err != nil {
+		return nil, err
 	}
 	return lib, nil
+}
+
+func validateNamespace(cfg *config.Config, apiPath string) error {
+	if cfg == nil || cfg.Default == nil || cfg.Default.Python == nil || len(cfg.Default.Python.AllowedNamespaces) == 0 {
+		return nil
+	}
+	namespace := deriveGAPICNamespace(apiPath)
+	if !slices.Contains(cfg.Default.Python.AllowedNamespaces, namespace) {
+		return fmt.Errorf("%w: unapproved namespace %s derived from API path %s", errNewLibraryBadNamespace, namespace, apiPath)
+	}
+	return nil
 }
 
 // ValidateNewAPIs validates that new APIs can be added to an existing library.
@@ -99,6 +112,12 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 		}
 	}
 	for _, lib := range libraries {
+		// In order to avoid a CORE library like googleapis-common-proto from
+		// matching on all API paths starting with google/cloud, we do not
+		// automatically add to existing libraries with the CORE library type.
+		if lib.Python != nil && lib.Python.LibraryType == libraryTypeCore {
+			continue
+		}
 		set := make(map[string]struct{})
 		for _, api := range lib.APIs {
 			set[versionless(api.Path)] = struct{}{}
@@ -120,4 +139,39 @@ func FindExistingLibraryForNewAPI(libraries []*config.Library, apiPath string) *
 func versionless(apiPath string) string {
 	version := serviceconfig.ExtractVersion(apiPath)
 	return strings.TrimSuffix(apiPath, version)
+}
+
+// ReleasePleaseExtraFiles returns the extra-files tracked by release-please for Python libraries.
+func ReleasePleaseExtraFiles(lib *config.Library) []any {
+	var extraFiles []any
+	addedVersionless := make(map[string]bool)
+
+	for _, api := range lib.APIs {
+		protoPackage := strings.ReplaceAll(api.Path, "/", ".")
+		version := serviceconfig.ExtractVersion(api.Path)
+
+		versionlessPath := api.Path
+		if version != "" {
+			versionlessPath = path.Dir(api.Path)
+		}
+
+		if !addedVersionless[versionlessPath] {
+			addedVersionless[versionlessPath] = true
+			extraFiles = append(extraFiles, versionlessPath+"/gapic_version.py")
+		}
+
+		if version != "" {
+			extraFiles = append(extraFiles, versionlessPath+"_"+version+"/gapic_version.py")
+		}
+
+		// https://github.com/googleapis/release-please/blob/main/docs/customizing.md#updating-arbitrary-files
+		snippetMetadata := map[string]any{
+			"jsonpath": "$.clientLibrary.version",
+			"path":     "samples/generated_samples/snippet_metadata_" + protoPackage + ".json",
+			"type":     "json",
+		}
+		extraFiles = append(extraFiles, snippetMetadata)
+	}
+
+	return extraFiles
 }

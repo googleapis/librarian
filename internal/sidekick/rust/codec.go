@@ -15,7 +15,6 @@
 package rust
 
 import (
-	"bytes"
 	"fmt"
 	"log/slog"
 	"maps"
@@ -147,6 +146,12 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 				return nil, fmt.Errorf("cannot convert `detailed-tracing-attributes` value %q to boolean: %w", definition, err)
 			}
 			codec.detailedTracingAttributes = value
+		case key == "lro-stub-options":
+			value, err := strconv.ParseBool(definition)
+			if err != nil {
+				return nil, fmt.Errorf("cannot convert `lro-stub-options` value %q to boolean: %w", definition, err)
+			}
+			codec.lroStubOptions = value
 		case key == "has-veneer":
 			value, err := strconv.ParseBool(definition)
 			if err != nil {
@@ -311,6 +316,8 @@ type codec struct {
 	// TODO(https://github.com/googleapis/google-cloud-rust/issues/3239) -
 	//   remove this flag once we switch the default.
 	detailedTracingAttributes bool
+	// If true, the generated code includes LRO poller options in generated stub traits.
+	lroStubOptions bool
 	// If true, there is a handwritten client surface.
 	hasVeneer bool
 	// Additional modules, maybe with hand-crafted code.
@@ -378,7 +385,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.DiscoveryLro != nil {
+			if m.OperationInfo != nil || m.IsLroPoller {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {
@@ -724,14 +731,12 @@ func enumValueVariantName(e *api.EnumValue) string {
 	// transformation would map it as `INSTANCE_PRIVATE_IPV_6_GOOGLE_ACCESS`.
 	// Note the extra `_` in `IPV_6` in the second case.
 	prefix := toScreamingSnake(e.Parent.Name) + "_"
-	trimmed := strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	trimNumbers := regexp.MustCompile(`_([0-9])`)
 	prefix = trimNumbers.ReplaceAllString(prefix, `$1`)
-	trimmed = strings.TrimPrefix(e.Name, prefix)
-	if strings.HasPrefix(e.Name, prefix) && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
+	if trimmed, ok := strings.CutPrefix(e.Name, prefix); ok && strings.IndexFunc(trimmed, unicode.IsLetter) == 0 {
 		return toPascal(trimmed)
 	}
 	return toPascal(e.Name)
@@ -759,14 +764,14 @@ func bodyAccessor(m *api.Method) string {
 func httpPathFmt(t *api.PathTemplate) string {
 	fmt := ""
 	for _, segment := range t.Segments {
-		if segment.Literal != nil {
-			fmt = fmt + "/" + *segment.Literal
+		if segment.Literal != "" {
+			fmt = fmt + "/" + segment.Literal
 		} else if segment.Variable != nil {
 			fmt = fmt + "/{}"
 		}
 	}
-	if t.Verb != nil {
-		fmt = fmt + ":" + *t.Verb
+	if t.Verb != "" {
+		fmt = fmt + ":" + t.Verb
 	}
 	return fmt
 }
@@ -942,7 +947,7 @@ func (c *codec) formatDocComments(
 		return ast.WalkContinue, nil
 	})
 
-	for _, link := range protobufLinkMapping(doc, documentationBytes) {
+	for _, link := range language.ExtractCrossReferenceLinks(doc, documentationBytes) {
 		rusty, err := c.docLink(link, model, scopes)
 		if err != nil {
 			return nil, err
@@ -960,79 +965,6 @@ func (c *codec) formatDocComments(
 		results[i] = strings.TrimRightFunc(fmt.Sprintf("/// %s", line), unicode.IsSpace)
 	}
 	return results, nil
-}
-
-// protobufLinkMapping returns additional comment lines to map protobuf links
-// to Rustdoc links.
-//
-// Protobuf comments include links in the form `[Title][Definition]` where
-// `Title` is the text that should appear in the documentation and `Definition`
-// is the name of a Protobuf entity, e.g., `google.longrunning.Operation`.
-//
-// We need to map these references from Protobuf names to the corresponding
-// entity in the generated code. We do this by appending a number of link
-// definitions to the comments, e.g.
-//
-//	//// [google.longrunning.Operation]: google_cloud_longrunning::model::Operation
-func protobufLinkMapping(doc ast.Node, source []byte) []string {
-	protobufLinks := map[string]bool{}
-	ast.Walk(doc, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
-		switch node.Kind() {
-		case ast.KindParagraph:
-			text := node.Lines().Value(source)
-			extractProtoLinks(text, protobufLinks)
-			return ast.WalkContinue, nil
-		case ast.KindTextBlock:
-			text := node.Lines().Value(source)
-			extractProtoLinks(text, protobufLinks)
-			return ast.WalkContinue, nil
-		default:
-			return ast.WalkContinue, nil
-		}
-	})
-	var sortedLinks []string
-	for link := range protobufLinks {
-		sortedLinks = append(sortedLinks, link)
-	}
-	sort.Strings(sortedLinks)
-	return sortedLinks
-}
-
-// commentCrossReferenceLink  is a regular expression to find cross links in
-// comments.
-//
-// The Google API documentation (typically in protos) include links to code
-// elements in the form `[Thing][google.package.blah.v1.Thing.SubThing]`.
-// This regular expression captures the `][...]` part. There is a lot of scaping
-// because the brackets are metacharacters in regex.
-var commentCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\]` + // The closing bracket for the `[Thing]`
-		`\[` + // The opening bracket for the code element.
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.` + // Followed by (maybe a dot)
-		`[A-Za-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`)*` + // zero or more times
-		`\]`) // The closing bracket
-
-// commentImpliedCrossReferenceLink is a regular expression to find implied
-// cross reference links.
-var commentImpliedCrossReferenceLink = regexp.MustCompile(
-	`` + // `go fmt` is annoying
-		`\[` +
-		`[A-Z-a-z][A-Za-z0-9_]*` + // A thing that looks like a Protobuf identifier
-		`(\.[A-Za-z][A-Za-z0-9_]*)*` + // Followed by more identifiers
-		`\]\[\]`) // The closing bracket followed by an empty link label
-
-func extractProtoLinks(paragraph []byte, links map[string]bool) {
-	for _, match := range commentCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("][")), []byte("]"))
-		links[string(match)] = true
-	}
-	for _, match := range commentImpliedCrossReferenceLink.FindAll(paragraph, -1) {
-		match = bytes.TrimSuffix(bytes.TrimPrefix(match, []byte("[")), []byte("][]"))
-		links[string(match)] = true
-	}
 }
 
 func processCommentLine(node ast.Node, line text.Segment, documentationBytes []byte) string {

@@ -15,6 +15,7 @@
 package serviceconfig
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -48,8 +49,8 @@ func TestHasAPIPath(t *testing.T) {
 		language string
 		want     bool
 	}{
-		{"matching path and language", "google/api", config.LanguageRust, true},
-		{"matching path but not language", "google/ads/admanager/v1", config.LanguageRust, false},
+		{"matching path and language", "google/cloud/accessapproval/v1", config.LanguageRust, true},
+		{"matching path but not language", "google/ads/admanager/v1", config.LanguageFake, false},
 		{"unknown path", "google/does/not/exist/v1", config.LanguageRust, false},
 		{"empty path", "", config.LanguageRust, false},
 	} {
@@ -77,10 +78,10 @@ func TestReleaseLevel(t *testing.T) {
 			want:     "stable",
 		},
 		{
-			name:     "go defaults to ga",
+			name:     "go defaults to stable",
 			sc:       &API{},
 			language: config.LanguageGo,
-			want:     "ga",
+			want:     "stable",
 		},
 		{
 			name: "language-specific level",
@@ -137,121 +138,70 @@ func TestReleaseLevel(t *testing.T) {
 			want:     "preview",
 		},
 		{
-			name:     "go alpha due to alpha path",
+			name:     "go preview due to alpha path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1alpha"},
 			language: config.LanguageGo,
-			want:     "alpha",
+			want:     "preview",
 		},
 		{
-			name:     "go beta due to beta path",
+			name:     "go preview due to beta path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1beta"},
 			language: config.LanguageGo,
-			want:     "beta",
+			want:     "preview",
 		},
 		{
-			name:     "go ga for stable path",
+			name:     "go stable for stable path",
 			sc:       &API{Path: "google/cloud/secretmanager/v1"},
 			language: config.LanguageGo,
 			version:  "1.0.0",
-			want:     "ga",
+			want:     "stable",
 		},
 		{
-			name:     "go beta for stable path with 0.x version",
+			name:     "go preview for stable path with 0.x version",
 			sc:       &API{Path: "google/cloud/secretmanager/v1"},
 			language: config.LanguageGo,
 			version:  "0.1.0",
-			want:     "beta",
+			want:     "preview",
+		},
+		{
+			name: "go preview explicitly set",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageGo: "preview"},
+			},
+			language: config.LanguageGo,
+			want:     "preview",
+		},
+		{
+			name: "go stable explicitly set",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageGo: "stable"},
+			},
+			language: config.LanguageGo,
+			want:     "stable",
+		},
+		{
+			name: "all preview set maps to preview for go",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageAll: "preview"},
+			},
+			language: config.LanguageGo,
+			want:     "preview",
+		},
+		{
+			name: "all stable set maps to stable for go",
+			sc: &API{
+				Path:          "google/cloud/secretmanager/v1",
+				ReleaseLevels: map[string]string{config.LanguageAll: "stable"},
+			},
+			language: config.LanguageGo,
+			want:     "stable",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.ReleaseLevel(test.language, test.version)
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
-func TestRepoMetadataReleaseLevel(t *testing.T) {
-	for _, test := range []struct {
-		name     string
-		sc       *API
-		language string
-		version  string
-		want     string
-	}{
-		{
-			name: "go, stable",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1",
-			},
-			language: config.LanguageGo,
-			version:  "1.0.0",
-			want:     "stable",
-		},
-		{
-			name:     "go, stable empty path",
-			sc:       &API{},
-			language: config.LanguageGo,
-			version:  "1.0.0",
-			want:     "stable",
-		},
-		{
-			name: "go, preview alpha api path",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1alpha",
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview alpha release level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "alpha"},
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview beta api path",
-			sc: &API{
-				Path: "google/cloud/secretmanager/v1beta",
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name: "go, preview beta release level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageGo: "beta"},
-			},
-			language: config.LanguageGo,
-			want:     "preview",
-		},
-		{
-			name:     "go, preview due to version 0.x",
-			sc:       &API{Path: "google/cloud/secretmanager/v1"},
-			language: config.LanguageGo,
-			version:  "0.1.0",
-			want:     "preview",
-		},
-		{
-			name:     "non-go returns raw release level",
-			sc:       &API{},
-			language: config.LanguageRust,
-			want:     "stable",
-		},
-		{
-			name: "non-go returns language-specific level",
-			sc: &API{
-				ReleaseLevels: map[string]string{config.LanguageRust: "beta"},
-			},
-			language: config.LanguageRust,
-			want:     "beta",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got := test.sc.RepoMetadataReleaseLevel(test.language, test.version)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -381,7 +331,13 @@ func TestRepoMetadataTransport(t *testing.T) {
 				Transports: map[string]Transport{config.LanguageJava: Rest},
 			},
 			language: config.LanguageJava,
-			want:     "http",
+			want:     "rest",
+		},
+		{
+			name:     "java, default",
+			sc:       &API{},
+			language: config.LanguageJava,
+			want:     "grpc+rest",
 		},
 		{
 			name:     "non-java, default",
@@ -416,13 +372,80 @@ func TestRepoMetadataTransport(t *testing.T) {
 					TransportOverride: "rest",
 				},
 			},
-			want: "http",
+			want: "rest",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got := test.sc.RepoMetadataTransport(test.language, test.library)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFindTransport(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		want     Transport
+	}{
+		{
+			name:     "matching path and allowed language with custom transport",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageJava,
+			want:     Rest,
+		},
+		{
+			name:     "matching path and allowed language with default transport",
+			path:     "google/ads/datamanager/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "unknown path defaults to GRPCRest",
+			path:     "google/does/not/exist/v1",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+		{
+			name:     "empty path defaults to GRPCRest",
+			path:     "",
+			language: config.LanguageGo,
+			want:     GRPCRest,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := FindTransport(test.path, test.language)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("FindTransport(%q, %q) = %q, want %q", test.path, test.language, got, test.want)
+			}
+		})
+	}
+}
+
+func TestFindTransport_Error(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		path     string
+		language string
+		want     error
+	}{
+		{
+			name:     "matching path but not allowed language",
+			path:     "google/ads/admanager/v1",
+			language: config.LanguageGo,
+			want:     errNotAllowed,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := FindTransport(test.path, test.language)
+			if !errors.Is(err, test.want) {
+				t.Errorf("FindTransport(%q, %q) expected %v, got %v", test.path, test.language, test.want, err)
 			}
 		})
 	}

@@ -16,32 +16,106 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public enum {{Codec.Name}}: Int, Codable, Equatable, Sendable {
+public enum {{Codec.Name}}: Codable, Equatable, Sendable {
+  {{#UniqueNumberValues}}
+  {{#DocLines}}
+  /// {{{.}}}
+  {{/DocLines}}
+  case {{Codec.CaseName}}
+  {{/UniqueNumberValues}}
+  /// Encodes an unknown integer value.
+  ///
+  /// The most common cause for an unknown values is for the service to send
+  /// a value unknown to the library. We recommend you update your library to
+  /// the latest version.
+  case {{Codec.UnknownIntName}}(Int)
+  /// Encodes an unknown string value.
+  ///
+  /// The most common cause for an unknown values is for the service to send
+  /// a value unknown to the library. We recommend you update your library to
+  /// the latest version.
+  case {{Codec.UnknownStringName}}(String)
+
+  public init() {
+    self = .{{Codec.DefaultCaseName}}
+  }
+
+  /// Returns the integer value associated with the enumeration.
+  ///
+  /// If the enumeration was initialized with an unknown string value, this returns `nil`.
+  public var intValue: Int? {
+    switch self {
     {{#UniqueNumberValues}}
-    {{#DocLines}}
-    /// {{{.}}}
-    {{/DocLines}}
-    case {{Codec.CaseName}} = {{Number}}
+    case .{{Codec.CaseName}}: return {{Number}}
     {{/UniqueNumberValues}}
-
-    public init() {
-        self = .{{Codec.DefaultCaseName}}
+    case .{{Codec.UnknownIntName}}(let v): return v
+    case .{{Codec.UnknownStringName}}: return nil
     }
+  }
 
-    public var stringValue: String {
-        switch self {
-        {{#UniqueNumberValues}}
-        case .{{Codec.CaseName}}: return "{{Name}}"
-        {{/UniqueNumberValues}}
-        }
+  /// Returns the string value (or name) associated with the enumeration.
+  ///
+  /// If the enumeration was initialized with an unknown integer value, this returns `nil`.
+  public var stringValue: String? {
+    switch self {
+    {{#UniqueNumberValues}}
+    case .{{Codec.CaseName}}: return "{{Name}}"
+    {{/UniqueNumberValues}}
+    case .{{Codec.UnknownIntName}}: return nil
+    case .{{Codec.UnknownStringName}}(let v): return v
     }
+  }
 
-    public init?(stringValue: String) {
-        switch stringValue {
-        {{#Values}}
-        case "{{Name}}": self = .{{Codec.CaseName}}
-        {{/Values}}
-        default: return nil
-        }
+  /// Initialize from a string value.
+  ///
+  /// If the value is unknown, this initializes to ``.{{Codec.UnknownStringName}}(_:)``.
+  public init(stringValue: String) {
+    switch stringValue {
+    {{#Values}}
+    case "{{Name}}": self = .{{Codec.CaseName}}
+    {{/Values}}
+    default: self = .{{Codec.UnknownStringName}}(stringValue)
     }
+  }
+
+  /// Initialize from an integer value.
+  ///
+  /// If the value is unknown, this initializes to ``.{{Codec.UnknownIntName}}(_:)``.
+  public init(intValue: Int) {
+    switch intValue {
+    {{#Values}}
+    case {{Number}}: self = .{{Codec.CaseName}}
+    {{/Values}}
+    default: self = .{{Codec.UnknownIntName}}(intValue)
+    }
+  }
+
+  public init(from decoder: Decoder) throws {
+    let container = try decoder.singleValueContainer()
+    if let v = try? container.decode(Int.self) {
+      self.init(intValue: v)
+      return
+    }
+    if let s = try? container.decode(String.self) {
+      if let v = Int(s) {
+        self.init(intValue: v)
+      } else {
+        self.init(stringValue: s)
+      }
+      return
+    }
+    throw DecodingError.dataCorruptedError(
+      in: container, debugDescription: "Expected enum value, must be integer or string.")
+  }
+
+  public func encode(to encoder: Encoder) throws {
+    var container = encoder.singleValueContainer()
+    switch self {
+    {{#UniqueNumberValues}}
+    case .{{Codec.CaseName}}: return try container.encode({{Number}})
+    {{/UniqueNumberValues}}
+    case .{{Codec.UnknownIntName}}(let v): return try container.encode(v)
+    case .{{Codec.UnknownStringName}}(let v): return try container.encode(v)
+    }
+  }
 }

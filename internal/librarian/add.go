@@ -18,7 +18,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"path/filepath"
 	"slices"
 	"sort"
 	"strconv"
@@ -26,14 +25,15 @@ import (
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/legacylibrarian/legacyconfig"
 	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
+	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
 	"github.com/googleapis/librarian/internal/semver"
+	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -60,6 +60,10 @@ derived from the first API path using language-specific rules.
 If the API path should naturally be included in an existing library, and if the
 language supports doing so, that library is modified. Otherwise, a new library
 is created.
+
+While release-please is responsible for library releases, the relevant
+release-please configuration will be updated as necessary to onboard any new
+library.
 
 To add a preview client of an existing library, prefix the API path with
 "preview/".
@@ -96,11 +100,11 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 	if err != nil {
 		return err
 	}
-	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython {
-		// TODO(https://github.com/googleapis/librarian/issues/5029): Remove this function after
-		// fully migrating off legacylibrarian.
-		if err := syncToStateYAML(".", cfg); err != nil {
-			return err
+	if cfg.Language == config.LanguageGo || cfg.Language == config.LanguagePython || cfg.Language == config.LanguageNodejs {
+		if hasBulkReleasePleaseConfigs(".", cfg) {
+			if err := syncToReleasePlease(".", cfg, name); err != nil {
+				return err
+			}
 		}
 	}
 	return RunTidyOnConfig(ctx, ".", cfg)
@@ -108,12 +112,14 @@ func runAdd(ctx context.Context, cfg *config.Config, api string) error {
 
 func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (*config.Config, error) {
 	switch cfg.Language {
-	case config.LanguageRust:
-		lib, err := FindLibrary(cfg, name)
+	case config.LanguageJava:
+		lib, sources, err := setupResolve(ctx, cfg, name)
 		if err != nil {
 			return nil, err
 		}
-		sources, err := LoadSources(ctx, cfg.Sources)
+		return java.ResolveMixinDependencies(cfg, lib, sources)
+	case config.LanguageRust:
+		lib, sources, err := setupResolve(ctx, cfg, name)
 		if err != nil {
 			return nil, err
 		}
@@ -121,6 +127,18 @@ func resolveDependencies(ctx context.Context, cfg *config.Config, name string) (
 	default:
 		return cfg, nil
 	}
+}
+
+func setupResolve(ctx context.Context, cfg *config.Config, name string) (*config.Library, *sources.Sources, error) {
+	lib, err := FindLibrary(cfg, name)
+	if err != nil {
+		return nil, nil, err
+	}
+	sources, err := LoadSources(ctx, cfg.Sources)
+	if err != nil {
+		return nil, nil, err
+	}
+	return lib, sources, nil
 }
 
 // deriveLibraryName derives a library name from an API path.
@@ -135,6 +153,8 @@ func deriveLibraryName(language string, api string) string {
 		return golang.DefaultLibraryName(api)
 	case config.LanguageJava:
 		return java.DefaultLibraryName(api)
+	case config.LanguageNodejs:
+		return nodejs.DefaultLibraryName(api)
 	case config.LanguagePython:
 		return python.DefaultLibraryName(api)
 	case config.LanguageRust:
@@ -147,46 +167,53 @@ func deriveLibraryName(language string, api string) string {
 }
 
 // addLibrary adds a new library to the config based on the provided API.
-// It returns the name of the new library, the updated config, and an error
-// if the library already exists.
+// It returns the name of the new or updated library, the updated config, and an
+// error if the API cannot be added (e.g. because it already exists, or the new
+// API is a preview and there is no corresponding stable library).
 func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
-	isPreview := strings.HasPrefix(apiPath, "preview/")
-
-	stablePath := apiPath
-	if isPreview {
-		stablePath = strings.TrimPrefix(apiPath, "preview/")
-	}
-	name := deriveLibraryName(cfg.Language, stablePath)
+	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib, err := FindLibrary(cfg, name)
-	var exists bool
-	switch {
-	case err == nil:
-		exists = true
-	case errors.Is(err, ErrLibraryNotFound):
-		exists = false
-	default:
-		return "", nil, err
-	}
+	existingLib := findExistingLibraryForNewAPI(cfg, stablePath)
 	if isPreview {
-		if !exists {
-			return "", nil, fmt.Errorf("%s: %w", name, errPreviewRequiresLibrary)
+		if existingLib == nil {
+			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
 		}
-		return addPreviewLibrary(cfg, existingLib, api, name)
+		return addPreviewLibrary(cfg, existingLib, api)
 	}
-	if exists {
-		if cfg.Language != config.LanguageGo && cfg.Language != config.LanguagePython {
-			return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, name)
-		}
+	if existingLib != nil {
 		return updateExistingLibrary(cfg, existingLib, api)
 	}
-	return addNewLibrary(cfg, api, name)
+	return addNewLibrary(cfg, api)
+}
+
+// findExistingLibraryForNewAPI determines if an existing library in cfg is
+// the natural library to contain apiPath, and returns it if so. If no existing
+// library is found, nil is returned. In most languages this check is performed
+// by deriving the library name from the API path and seeing if that library
+// already exists. In Python the mapping from API path to library name isn't
+// always as simple for historical reasons.
+func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
+	switch cfg.Language {
+	case config.LanguageNodejs:
+		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+	case config.LanguagePython:
+		return python.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
+	default:
+		name := deriveLibraryName(cfg.Language, apiPath)
+		// Not using FindLibrary as the error handling becomes awkward.
+		for _, library := range cfg.Libraries {
+			if library.Name == name {
+				return library
+			}
+		}
+		return nil
+	}
 }
 
 // addPreviewLibrary adds a new preview library to the config.
-func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API, name string) (string, *config.Config, error) {
+func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API) (string, *config.Config, error) {
 	if lib.Preview != nil {
-		return "", nil, fmt.Errorf("%s: %w", name, errPreviewAlreadyExists)
+		return "", nil, fmt.Errorf("%w: %s", errPreviewAlreadyExists, lib.Name)
 	}
 	// Derive an initial version for the preview client, starting from the
 	// containing stable client's version as if it were a preview, then
@@ -201,11 +228,12 @@ func addPreviewLibrary(cfg *config.Config, lib *config.Library, api *config.API,
 		Version: v,
 		APIs:    []*config.API{api},
 	}
-	return name, cfg, nil
+	return lib.Name, cfg, nil
 }
 
 // addNewLibrary adds a new library to the config.
-func addNewLibrary(cfg *config.Config, api *config.API, name string) (string, *config.Config, error) {
+func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config, error) {
+	name := deriveLibraryName(cfg.Language, api.Path)
 	lib := &config.Library{
 		Name:          name,
 		CopyrightYear: strconv.Itoa(time.Now().Year()),
@@ -218,7 +246,7 @@ func addNewLibrary(cfg *config.Config, api *config.API, name string) (string, *c
 		lib = java.Add(lib)
 	case config.LanguagePython:
 		var err error
-		lib, err = python.Add(lib)
+		lib, err = python.Add(cfg, lib)
 		if err != nil {
 			return "", nil, err
 		}
@@ -238,85 +266,19 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	if slices.ContainsFunc(existingLib.APIs, func(a *config.API) bool { return api.Path == a.Path }) {
 		return "", nil, fmt.Errorf("%w: %s in library %s", errAPIAlreadyExists, api.Path, existingLib.Name)
 	}
-	if cfg.Language == config.LanguagePython {
+	switch cfg.Language {
+	case config.LanguagePython:
 		if err := python.ValidateNewAPIs(existingLib); err != nil {
 			return "", nil, err
 		}
-	}
-	existingLib.APIs = append(existingLib.APIs, api)
-	return existingLib.Name, cfg, nil
-}
-
-// syncToStateYAML updates the .librarian/state.yaml with any new libraries.
-func syncToStateYAML(repoDir string, cfg *config.Config) error {
-	stateFile := filepath.Join(repoDir, legacyconfig.LibrarianDir, legacyconfig.LibrarianStateFile)
-	state, err := yaml.Read[legacyconfig.LibrarianState](stateFile)
-	if err != nil {
-		return err
-	}
-	for _, lib := range cfg.Libraries {
-		legacyLib := state.LibraryByID(lib.Name)
-		if legacyLib == nil {
-			// Add a new library
-			state.Libraries = append(state.Libraries, createLegacyLibrary(cfg.Language, lib))
-			continue
-		}
-		existingAPIs := make(map[string]bool)
-		for _, api := range legacyLib.APIs {
-			existingAPIs[api.Path] = true
-		}
-		for _, api := range lib.APIs {
-			if !existingAPIs[api.Path] {
-				legacyLib.APIs = append(legacyLib.APIs, &legacyconfig.API{Path: api.Path})
-			}
-		}
-	}
-	sort.Slice(state.Libraries, func(i, j int) bool {
-		return state.Libraries[i].ID < state.Libraries[j].ID
-	})
-	return yaml.Write(stateFile, state)
-}
-
-func createLegacyLibrary(language string, lib *config.Library) *legacyconfig.LibraryState {
-	libAPIs := make([]*legacyconfig.API, 0, len(lib.APIs))
-	for _, api := range lib.APIs {
-		libAPIs = append(libAPIs, &legacyconfig.API{Path: api.Path})
-	}
-	legacyLib := &legacyconfig.LibraryState{
-		ID:      lib.Name,
-		Version: lib.Version,
-		APIs:    libAPIs,
-		SourceRoots: []string{
-			lib.Name,
-			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
-		},
-		ReleaseExcludePaths: []string{
-			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
-		},
-		TagFormat: "{id}/v{version}",
-	}
-	switch language {
+		existingLib.APIs = append(existingLib.APIs, api)
 	case config.LanguageGo:
-		legacyLib.SourceRoots = []string{
-			lib.Name,
-			fmt.Sprintf("internal/generated/snippets/%s", lib.Name),
-		}
-		legacyLib.ReleaseExcludePaths = []string{
-			fmt.Sprintf("internal/generated/snippets/%s/", lib.Name),
-		}
-		legacyLib.TagFormat = "{id}/v{version}"
-	case config.LanguagePython:
-		legacyLib.SourceRoots = []string{
-			fmt.Sprintf("packages/%s", lib.Name),
-		}
-		legacyLib.ReleaseExcludePaths = []string{
-			fmt.Sprintf("packages/%s/.repo-metadata.json", lib.Name),
-			fmt.Sprintf("packages/%s/noxfile.py", lib.Name),
-			fmt.Sprintf("packages/%s/tests/", lib.Name),
-			fmt.Sprintf("packages/%s/README.rst", lib.Name),
-			fmt.Sprintf("packages/%s/docs/", lib.Name),
-		}
-		legacyLib.TagFormat = "{id}-v{version}"
+		existingLib.APIs = append(existingLib.APIs, api)
+		existingLib = golang.Add(existingLib)
+	case config.LanguageJava, config.LanguageNodejs:
+		existingLib.APIs = append(existingLib.APIs, api)
+	default:
+		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}
-	return legacyLib
+	return existingLib.Name, cfg, nil
 }

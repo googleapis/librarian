@@ -128,7 +128,7 @@ func TestSourcesToUpdate(t *testing.T) {
 					Googleapis: &config.Source{Commit: "def"},
 				},
 			},
-			want: []string{"discovery", "googleapis"},
+			want: []string{"sources.discovery", "sources.googleapis"},
 		},
 		{
 			name: "only googleapis",
@@ -137,7 +137,7 @@ func TestSourcesToUpdate(t *testing.T) {
 					Googleapis: &config.Source{Commit: "def"},
 				},
 			},
-			want: []string{"googleapis"},
+			want: []string{"sources.googleapis"},
 		},
 		{
 			name: "only discovery",
@@ -146,7 +146,7 @@ func TestSourcesToUpdate(t *testing.T) {
 					Discovery: &config.Source{Commit: "abc"},
 				},
 			},
-			want: []string{"discovery"},
+			want: []string{"sources.discovery"},
 		},
 		{
 			name: "no sources configured",

@@ -23,6 +23,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
+	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
 	"github.com/googleapis/librarian/internal/sources"
@@ -31,7 +32,7 @@ import (
 
 // Generate generates a Swift client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) error {
-	if IsModule(library) {
+	if IsMixedLibrary(library) {
 		return generateModule(ctx, library, src)
 	}
 	if len(library.APIs) != 1 {
@@ -56,11 +57,11 @@ func Format(ctx context.Context, library *config.Library) error {
 // DefaultLibraryName derives a library name from an API path.
 // For example: google/cloud/secretmanager/v1 -> GoogleCloudSecretmanagerV1.
 func DefaultLibraryName(api string) string {
-	if strings.HasPrefix(api, "google/cloud/") {
-		return "GoogleCloud" + camelLibraryName(strings.TrimPrefix(api, "google/cloud/"))
+	if clean, ok := strings.CutPrefix(api, "google/cloud/"); ok {
+		return "GoogleCloud" + camelLibraryName(clean)
 	}
-	if strings.HasPrefix(api, "google/") {
-		return "Google" + camelLibraryName(strings.TrimPrefix(api, "google/"))
+	if clean, ok := strings.CutPrefix(api, "google/"); ok {
+		return "Google" + camelLibraryName(clean)
 	}
 	return "Google" + camelLibraryName(api)
 }
@@ -74,8 +75,8 @@ func camelLibraryName(api string) string {
 	return name.String()
 }
 
-func libraryToModelConfig(library *config.Library, api *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
-	svcConfig, err := serviceconfig.Find(src.Googleapis, api.Path, config.LanguageSwift)
+func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sources.Sources) (*parser.ModelConfig, error) {
+	svcConfig, err := serviceconfig.Find(src.Googleapis, apiCfg.Path, config.LanguageSwift)
 	if err != nil {
 		return nil, err
 	}
@@ -84,15 +85,34 @@ func libraryToModelConfig(library *config.Library, api *config.API, src *sources
 	if library.Swift != nil && len(library.Swift.IncludeList) > 0 {
 		sourceConfig.IncludeList = library.Swift.IncludeList
 	}
+	specFormat := config.SpecProtobuf
+	if library.SpecificationFormat != "" {
+		specFormat = library.SpecificationFormat
+	}
 
-	return &parser.ModelConfig{
-		SpecificationFormat: config.SpecProtobuf,
+	modelCfg := &parser.ModelConfig{
+		Language:            config.LanguageSwift,
+		SpecificationFormat: specFormat,
 		ServiceConfig:       svcConfig.ServiceConfig,
-		SpecificationSource: api.Path,
+		SpecificationSource: apiCfg.Path,
 		Source:              sourceConfig,
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,
 		},
-	}, nil
+	}
+	if library.Swift != nil && library.Swift.Discovery != nil {
+		pollers := make([]*api.Poller, len(library.Swift.Discovery.Pollers))
+		for i, poller := range library.Swift.Discovery.Pollers {
+			pollers[i] = &api.Poller{
+				Prefix:   poller.Prefix,
+				MethodID: poller.MethodID,
+			}
+		}
+		modelCfg.Discovery = &api.Discovery{
+			OperationID: library.Swift.Discovery.OperationID,
+			Pollers:     pollers,
+		}
+	}
+	return modelCfg, nil
 }

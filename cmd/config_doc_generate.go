@@ -314,10 +314,8 @@ func getTypeName(expr ast.Expr) string {
 }
 
 func (d *docData) formatType(typeName string) string {
-	isSlice := strings.HasPrefix(typeName, "[]")
-	cleanType := strings.TrimPrefix(typeName, "[]")
-	isPointer := strings.HasPrefix(cleanType, "*")
-	cleanType = strings.TrimPrefix(cleanType, "*")
+	cleanType, isSlice := strings.CutPrefix(typeName, "[]")
+	cleanType, isPointer := strings.CutPrefix(cleanType, "*")
 	res := cleanType
 	// If it's one of our structs, link it
 	if _, ok := d.structs[cleanType]; ok {

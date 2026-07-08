@@ -16,7 +16,7 @@ package swift
 
 import (
 	"cmp"
-	"fmt"
+	"log/slog"
 	"maps"
 	"slices"
 
@@ -24,14 +24,15 @@ import (
 )
 
 type modelAnnotations struct {
-	CopyrightYear  string
-	BoilerPlate    []string
-	PackageName    string
-	MonorepoRoot   string
-	DependsOn      map[string]*Dependency
-	WktPackage     string
-	ServiceImports []string
-	MessageImports []string
+	CopyrightYear    string
+	BoilerPlate      []string
+	PackageName      string
+	MonorepoRoot     string
+	DependsOn        map[string]*Dependency
+	WktPackage       string
+	PerServiceTraits bool
+	DefaultTraits    []string
+	AllTraits        []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -49,11 +50,8 @@ func (ann *modelAnnotations) Dependencies() []*Dependency {
 	return deps
 }
 
-// HasMessageImports returns true if the package needs imports for the methods.
-//
-// The mustache templates use this to format the generated code.
-func (ann *modelAnnotations) HasMessageImports() bool {
-	return len(ann.MessageImports) != 0
+func (ann *modelAnnotations) HasTraits() bool {
+	return len(ann.AllTraits) != 0
 }
 
 func (c *codec) annotateModel() error {
@@ -64,6 +62,7 @@ func (c *codec) annotateModel() error {
 		MonorepoRoot:  c.MonorepoRoot,
 		DependsOn:     map[string]*Dependency{},
 		WktPackage:    wellKnownSwiftPackage,
+		DefaultTraits: c.DefaultTraits,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name
@@ -79,37 +78,49 @@ func (c *codec) annotateModel() error {
 			return err
 		}
 	}
-	// If there is at least one message, the generated library depends on `GoogleCloudWkt` because
-	// the generated messages must conform to the `GoogleCloudWkt._AnyPackable` protocol.
-	if len(c.Model.Messages) != 0 {
-		if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
-			dep.Required = true
-		} else {
-			return fmt.Errorf("missing dependency for %q; required to generate Any extensions", wellKnownProtobufPackage)
-		}
-	}
+	// The services are annotated last because the annotation assumes messages
+	// and enums are already annotated.
+	allTraits := make([]string, 0, len(c.Model.Services))
 	for _, service := range c.Model.Services {
 		if err := c.annotateService(service, annotations); err != nil {
 			return err
 		}
+		allTraits = append(allTraits, c.traitName(service))
 	}
-	var serviceImports []string
-	var messageImports []string
-	for _, p := range c.Dependencies {
-		if p.ApiPackage == c.Model.PackageName || p.Name == c.PackageName {
+	if !c.PerServiceTraits {
+		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
+		// the time, only a handful of packages exceeded this number of services.
+		if len(c.Model.Services) > 15 {
+			slog.Warn("package has more than 15 services, consider enabling per-service features", "package", c.PackageName, "count", len(c.Model.Services))
+		}
+		return nil
+	}
+	// Rarely, some messages and enums are not used by any service. These
+	// will lack any feature gates, but may depend on messages that do.
+	// Change them to work only if all features are enabled.
+	slices.Sort(allTraits)
+	annotations.AllTraits = allTraits
+	for msg := range c.Model.AllMessages() {
+		if msg.Codec == nil {
 			continue
 		}
-		if p.RequiredByServices && len(c.Model.Services) != 0 {
-			serviceImports = append(serviceImports, p.Name)
-			annotations.DependsOn[p.Name] = p
-		} else if p.Required {
-			messageImports = append(messageImports, p.Name)
-			annotations.DependsOn[p.Name] = p
+		annotation := msg.Codec.(*messageAnnotations)
+		if len(annotation.GatedBy) > 0 {
+			continue
 		}
+		annotation.GatedOp = " && "
+		annotation.GatedBy = allTraits
 	}
-	slices.Sort(serviceImports)
-	slices.Sort(messageImports)
-	annotations.ServiceImports = serviceImports
-	annotations.MessageImports = messageImports
+	for enum := range c.Model.AllEnums() {
+		if enum.Codec == nil {
+			continue
+		}
+		annotation := enum.Codec.(*enumAnnotations)
+		if len(annotation.GatedBy) > 0 {
+			continue
+		}
+		annotation.GatedOp = " && "
+		annotation.GatedBy = allTraits
+	}
 	return nil
 }

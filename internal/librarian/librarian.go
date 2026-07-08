@@ -20,13 +20,17 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"os"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian/golang"
+	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
+	"github.com/googleapis/librarian/internal/protoc"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -49,6 +53,7 @@ func Run(ctx context.Context, args ...string) error {
 		},
 		Before: func(ctx context.Context, cmd *cli.Command) (context.Context, error) {
 			command.Verbose = cmd.Bool("verbose")
+			setupLogger(command.Verbose)
 			return ctx, nil
 		},
 		Commands: []*cli.Command{
@@ -62,6 +67,7 @@ func Run(ctx context.Context, args ...string) error {
 			publishCommand(),
 			tagCommand(),
 			versionCommand(),
+			debugCommand(),
 		},
 	}
 	return cmd.Run(ctx, args)
@@ -96,14 +102,22 @@ Examples:
 			if cfg != nil {
 				tools = cfg.Tools
 			}
-
+			// TODO(https://github.com/googleapis/librarian/issues/6558): Remove this check after adding protoc
+			// in librarian.yaml.
+			if tools != nil && tools.Protoc != nil {
+				if err := protoc.Install(ctx, tools.Protoc); err != nil {
+					return fmt.Errorf("failed to install protoc: %w", err)
+				}
+			}
 			switch lang {
 			case config.LanguageFake:
 				return nil
 			case config.LanguageGo:
 				return golang.Install(ctx, tools)
+			case config.LanguageJava:
+				return java.Install(ctx, tools)
 			case config.LanguageNodejs:
-				return nodejs.Install(ctx)
+				return nodejs.Install(ctx, tools)
 			case config.LanguagePython:
 				return python.Install(ctx)
 			case config.LanguageRust:
@@ -129,4 +143,19 @@ https://go.dev/ref/mod#versions.`,
 			return nil
 		},
 	}
+}
+
+// setupLogger configures the default slog logger.
+// It uses a text handler writing to stderr at LevelWarn and above by default.
+// If verbose is true, the log level is set to LevelDebug.
+// Source information (file name and line number) is included in each log entry.
+func setupLogger(verbose bool) {
+	level := slog.LevelWarn
+	if verbose {
+		level = slog.LevelDebug
+	}
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		Level:     level,
+		AddSource: true,
+	})))
 }

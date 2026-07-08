@@ -16,14 +16,36 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
-public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable, Sendable {
+public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
+  {{#Codec.IsPaginatedResponse}}
+  GoogleCloudGax._PaginatedResponse,
+  {{/Codec.IsPaginatedResponse}}
+  Sendable {
   {{#Fields}}
   {{^IsOneOf}}
 
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public var {{Codec.Name}}: {{Codec.FieldType}}
+  {{#Singular}}
+  {{#Codec.Recursive}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
+  {{/Codec.Recursive}}
+  {{^Codec.Recursive}}
+  {{^Optional}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = {{{Codec.FieldType}}}()
+  {{/Optional}}
+  {{#Optional}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
+  {{/Optional}}
+  {{/Codec.Recursive}}
+  {{/Singular}}
+  {{#Repeated}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = []
+  {{/Repeated}}
+  {{#Map}}
+  public var {{Codec.Name}}: {{{Codec.FieldType}}} = [:]
+  {{/Map}}
   {{/IsOneOf}}
   {{/Fields}}
   {{#OneOfs}}
@@ -31,43 +53,24 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
-  public var {{Codec.PropertyName}}: {{Codec.Name}}?
+  public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
   {{/OneOfs}}
 
-  {{! Provide a memberwise initializer, with defaults for each field. }}
   /// Initialize a new instance of `{{Codec.Name}}`.
-  public init(
-    {{#Fields}}
-    {{^IsOneOf}}
-    {{! Recall that fields can be Singular (and then Optional or not) or Repeated or Map }}
-    {{#Singular}}
-    {{^Optional}}
-    {{Codec.Name}}: {{Codec.FieldType}} = {{Codec.FieldType}}(),
-    {{/Optional}}
-    {{#Optional}}
-    {{Codec.Name}}: {{Codec.FieldType}} = nil,
-    {{/Optional}}
-    {{/Singular}}
-    {{#Repeated}}
-    {{Codec.Name}}: {{Codec.FieldType}} = [],
-    {{/Repeated}}
-    {{#Map}}
-    {{Codec.Name}}: {{Codec.FieldType}} = [:],
-    {{/Map}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    {{Codec.PropertyName}}: {{Codec.Name}}? = nil,
-    {{/OneOfs}}
-  ) {
-    {{#Fields}}
-    {{^IsOneOf}}
-    self.{{Codec.Name}} = {{Codec.Name}}
-    {{/IsOneOf}}
-    {{/Fields}}
-    {{#OneOfs}}
-    self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
-    {{/OneOfs}}
+  public init() {}
+
+  /// Use `config` to return a new instance of this object, with some fields updated.
+  ///
+  /// Commonly used to initialize the value, for example:
+  ///
+  /// ```
+  /// let value = {{Codec.Name}}().with { $0.{{{Codec.SampleField}}} = ... }
+  /// ```
+  {{! Using `with` for the name does not conflict with field name: https://godbolt.org/z/bxbsdfhfo }}
+  public func with(_ config: (inout Self) throws -> Swift.Void) rethrows -> Self {
+    var copy = self
+    try config(&copy)
+    return copy
   }
 
   {{#Codec.CustomSerialization}}
@@ -81,26 +84,26 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     let container = try decoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
-    {{#Optional}}
-    self.{{Codec.Name}} = try container.decodeIfPresent({{Codec.BaseFieldType}}.self, forKey: .{{Codec.Name}})
-    {{/Optional}}
-    {{^Optional}}
-    self.{{Codec.Name}} = try container.decode({{Codec.FieldType}}.self, forKey: .{{Codec.Name}})
-    {{/Optional}}
+    {{^Codec.UrlSafeValue}}
+    {{> /templates/common/field_decode}}
+    {{/Codec.UrlSafeValue}}
+    {{#Codec.UrlSafeValue}}
+    {{> /templates/common/field_decode_url_safe}}
+    {{/Codec.UrlSafeValue}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
 
     var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
-    let {{Codec.PropertyName}}CheckAndSet = { (value: {{Codec.Name}}) throws in
+    let {{Codec.Checker}} = {
       if {{Codec.PropertyName}} != nil {
         throw DecodingError.dataCorrupted(DecodingError.Context(codingPath: decoder.codingPath, debugDescription: "Multiple values set for oneof '{{Codec.PropertyName}}'"))
       }
-      {{Codec.PropertyName}} = value
+      {{Codec.PropertyName}} = $0
     }
     {{#Fields}}
-    if let {{Codec.Name}} = try container.decodeIfPresent({{Codec.FieldType}}.self, forKey: .{{Codec.Name}}) {
-      try {{Codec.OneOfPropertyName}}CheckAndSet(.{{Codec.Name}}({{Codec.Name}}))
+    if let {{Codec.Name}} = try container.decodeIfPresent({{{Codec.FieldType}}}.self, forKey: .{{Codec.Name}}) {
+      try {{Codec.OneOfChecker}}(.{{Codec.Name}}({{Codec.Name}}))
     }
     {{/Fields}}
     self.{{Codec.PropertyName}} = {{Codec.PropertyName}}
@@ -111,7 +114,12 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
     var container = encoder.container(keyedBy: CodingKeys.self)
     {{#Fields}}
     {{^IsOneOf}}
-    try container.encode(self.{{Codec.Name}}, forKey: .{{Codec.Name}})
+    {{^Codec.UrlSafeValue}}
+    {{> /templates/common/field_encode}}
+    {{/Codec.UrlSafeValue}}
+    {{#Codec.UrlSafeValue}}
+    {{> /templates/common/field_encode_url_safe}}
+    {{/Codec.UrlSafeValue}}
     {{/IsOneOf}}
     {{/Fields}}
     {{#OneOfs}}
@@ -148,4 +156,24 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   public func _pack() throws -> {{Codec.Model.WktPackage}}.Struct {
     return try {{Codec.Model.WktPackage}}._slowAnySerialize(message: self)
   }
+  {{#Codec.IsPaginatedResponse}}
+
+  public func _getPaginatedItems() -> [{{Codec.PageableItemType}}] {
+    {{^Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}
+    {{/Pagination.PageableItem.Map}}
+    {{#Pagination.PageableItem.Map}}
+    return self.{{Codec.PageableItemField}}.map { ($0, $1) }
+    {{/Pagination.PageableItem.Map}}
+  }
+
+  public func _nextPageToken() -> Swift.String {
+    {{#Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}} ?? ""
+    {{/Pagination.NextPageToken.Optional}}
+    {{^Pagination.NextPageToken.Optional}}
+    return self.{{Pagination.NextPageToken.Codec.Name}}
+    {{/Pagination.NextPageToken.Optional}}
+  }
+  {{/Codec.IsPaginatedResponse}}
 }

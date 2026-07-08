@@ -73,6 +73,16 @@ func CrossReference(model *API) error {
 		if m.OperationInfo != nil {
 			m.OperationInfo.Method = m
 		}
+		for _, signature := range m.Signatures {
+			signature.Method = m
+			for _, name := range signature.Names {
+				idx := slices.IndexFunc(input.Fields, func(f *Field) bool { return f.Name == name })
+				if idx == -1 {
+					return fmt.Errorf("cannot find field %s in method signature for method %s", name, m.ID)
+				}
+				signature.Fields = append(signature.Fields, input.Fields[idx])
+			}
+		}
 	}
 	for s := range model.AllServices() {
 		s.Model = model
@@ -351,21 +361,25 @@ func sortOneOfFieldForExamples(f1, f2 *Field) int {
 }
 
 func enrichMethodSamples(m *Method) {
-	m.IsSimple = m.Pagination == nil &&
-		!m.ClientSideStreaming && !m.ServerSideStreaming &&
-		m.OperationInfo == nil && m.DiscoveryLro == nil
+	// Methods with AIP-151 LRO annotations *OR* discovery LRO annotations are LROs.
+	m.IsLRO = m.OperationInfo != nil || m.DiscoveryLro != nil
+	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
+	// A simple method is not paginated, not streaming and not an LRO.
+	m.IsSimple = m.Pagination == nil && !m.IsStreaming && !m.IsLRO
 
-	m.IsLRO = m.OperationInfo != nil
+	if m.SourceServiceID == ".google.longrunning.Operations" &&
+		m.Name == "GetOperation" &&
+		m.Service != nil && m.Service.Package != "google.longrunning" {
+		m.IsLroPoller = true
+	}
 
-	if m.OperationInfo != nil && m.Model != nil && m.Model.state != nil {
+	if m.OperationInfo != nil && m.Model != nil {
 		m.LongRunningResponseType = m.Model.Message(m.OperationInfo.ResponseTypeID)
 	}
 
 	m.LongRunningReturnsEmpty = m.LongRunningResponseType != nil && m.LongRunningResponseType.ID == ".google.protobuf.Empty"
 
 	m.IsList = m.OutputType != nil && m.OutputType.Pagination != nil
-
-	m.IsStreaming = m.ClientSideStreaming || m.ServerSideStreaming
 
 	if m.SampleInfo = aipStandardGetInfo(m); m.SampleInfo != nil {
 		m.IsAIPStandardGet = true
@@ -411,12 +425,11 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 	var segments []ResourceNameSegment
 	for i := 0; i < len(pattern); i++ {
 		s := pattern[i]
-		if s.Literal != nil && strings.HasPrefix(*s.Literal, "//") {
+		if strings.HasPrefix(s.Literal, "//") {
 			continue
 		}
-		seg := ResourceNameSegment{}
-		if s.Literal != nil {
-			seg.Literal = *s.Literal
+		seg := ResourceNameSegment{
+			Literal: s.Literal,
 		}
 		if s.Variable != nil && len(s.Variable.FieldPath) > 0 {
 			// The parser used for parsing resource name patterns is the same used for
@@ -429,7 +442,7 @@ func toResourceNamePattern(pattern ResourcePattern, skipLast bool) *ResourceName
 		}
 
 		// Try to combine with next segment if this is a literal and next is variable
-		if s.Literal != nil && i+1 < len(pattern) && pattern[i+1].Variable != nil {
+		if s.Literal != "" && i+1 < len(pattern) && pattern[i+1].Variable != nil {
 			if len(pattern[i+1].Variable.FieldPath) > 0 {
 				seg.Variable = pattern[i+1].Variable.FieldPath[0]
 			}

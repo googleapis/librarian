@@ -31,15 +31,21 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
 const (
-	commonProtos = "google/cloud/common_resources.proto"
+	cloudCommonResourcesProto = "google/cloud/common_resources.proto"
+	protosPathPrefix          = "protos/"
 )
+
+// IsMixedLibrary reports whether the library has handwritten code wrapping
+// generated or librarian-managed code.
+func IsMixedLibrary(lib *config.Library) bool {
+	return lib.Output != "" && len(lib.APIs) == 0
+}
 
 // Generate generates a Node.js client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, srcs *sources.Sources) error {
@@ -98,46 +104,76 @@ func generateAPI(ctx context.Context, api *config.API, library *config.Library, 
 	if len(protos) == 0 {
 		return fmt.Errorf("no protos found in api %q", api.Path)
 	}
+	for index := range protos {
+		rel, err := filepath.Rel(googleapisDir, protos[index])
+		if err != nil {
+			return fmt.Errorf("failed to make path %s relative: %w", protos[index], err)
+		}
+		protos[index] = rel
+	}
 
 	// Add additional protos from configuration.
-	for _, p := range nodejsAPI.AdditionalProtos {
-		protos = append(protos, filepath.Join(googleapisDir, p))
-	}
+	protos = append(protos, nodejsAPI.AdditionalProtos...)
 
 	args, err := buildGeneratorArgs(api, library, googleapisDir, stagingDir, nodejsAPI)
 	if err != nil {
 		return err
 	}
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
 	cmdArgs := append(args[1:], protos...)
-	return command.Run(ctx, args[0], cmdArgs...)
+	return command.RunInDirWithEnv(ctx, googleapisDir, toolsEnv, args[0], cmdArgs...)
 }
 
 // resolveNodejsAPI returns the Node.js-specific configuration for the given API,
 // applying default values if no explicit configuration is found in the library.
 func resolveNodejsAPI(library *config.Library, api *config.API) *config.NodejsAPI {
 	res := &config.NodejsAPI{
-		Path:             api.Path,
-		AdditionalProtos: []string{commonProtos},
-	}
-	if library.Nodejs == nil {
-		return res
+		Path: api.Path,
 	}
 
-	// Always include commonProtos as a base.
-	protos := []string{commonProtos}
+	var apiConfig *config.NodejsAPI
+	if api.Nodejs != nil {
+		apiConfig = api.Nodejs
+	} else if library.Nodejs != nil {
+		for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
+			if nodejsAPI.Path == api.Path {
+				apiConfig = nodejsAPI
+				break
+			}
+		}
+	}
+
+	omitCommon := false
+	if apiConfig != nil {
+		omitCommon = apiConfig.OmitCommonResources
+		res.DIREGAPIC = apiConfig.DIREGAPIC
+		if apiConfig.Mixins != "" {
+			res.Mixins = apiConfig.Mixins
+		}
+		res.OmitCommonResources = apiConfig.OmitCommonResources
+	}
+
+	var protos []string
+	if !omitCommon {
+		protos = append(protos, cloudCommonResourcesProto)
+	}
+
+	if library.Nodejs == nil {
+		res.AdditionalProtos = protos
+		return res
+	}
 
 	// Add package-level additional protos.
 	protos = append(protos, library.Nodejs.AdditionalProtos...)
 
-	for _, nodejsAPI := range library.Nodejs.NodejsAPIs {
-		if nodejsAPI.Path != api.Path {
-			continue
-		}
-		// Add API-level additional protos.
-		protos = append(protos, nodejsAPI.AdditionalProtos...)
-		res.DIREGAPIC = nodejsAPI.DIREGAPIC
-		break
+	// Add API-level additional protos.
+	if apiConfig != nil {
+		protos = append(protos, apiConfig.AdditionalProtos...)
 	}
+
 	res.AdditionalProtos = unique(protos)
 	return res
 }
@@ -165,8 +201,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 	args := []string{
 		"gapic-generator-typescript",
 		"--protoc=" + protocPath,
-		"--common-proto-path=" + googleapisDir,
-		"-I", googleapisDir,
+		"--common-proto-path=.",
+		"-I", ".",
 		"--output-dir", stagingDir,
 	}
 
@@ -175,7 +211,7 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if grpcConfigPath != "" {
-		args = append(args, "--grpc-service-config", filepath.Join(googleapisDir, grpcConfigPath))
+		args = append(args, "--grpc-service-config", grpcConfigPath)
 	}
 
 	apiMetadata, err := serviceconfig.Find(googleapisDir, api.Path, config.LanguageNodejs)
@@ -183,10 +219,10 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		return nil, err
 	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
-		args = append(args, "--service-yaml", filepath.Join(googleapisDir, apiMetadata.ServiceConfig))
+		args = append(args, "--service-yaml", apiMetadata.ServiceConfig)
 	}
 
-	args = append(args, "--package-name", DerivePackageName(library))
+	args = append(args, "--package-name", derivePackageName(library))
 	args = append(args, "--metadata")
 
 	// Only pass --transport for non-default values (default is grpc+rest).
@@ -207,12 +243,12 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 
 	if library.Nodejs != nil {
 		if library.Nodejs.BundleConfig != "" {
-			args = append(args, "--bundle-config", filepath.Join(googleapisDir, library.Nodejs.BundleConfig))
+			args = append(args, "--bundle-config", library.Nodejs.BundleConfig)
+		}
+		if library.Nodejs.ESM {
+			args = append(args, "--format=esm")
 		}
 		for _, param := range library.Nodejs.ExtraProtocParameters {
-			if param == "metadata" {
-				continue
-			}
 			args = append(args, "--"+param)
 		}
 		if library.Nodejs.HandwrittenLayer {
@@ -221,8 +257,8 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 		if library.Nodejs.MainService != "" {
 			args = append(args, "--main-service", library.Nodejs.MainService)
 		}
-		if library.Nodejs.Mixins != "" {
-			args = append(args, "--mixins", library.Nodejs.Mixins)
+		if nodejsAPI.Mixins != "" {
+			args = append(args, "--mixins", nodejsAPI.Mixins)
 		}
 	}
 	return args, nil
@@ -231,79 +267,9 @@ func buildGeneratorArgs(api *config.API, library *config.Library, googleapisDir,
 // runPostProcessor combines versioned API outputs from owl-bot-staging/ into
 // the output directory using gapic-node-processing, then compiles protos.
 func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.Library, googleapisDir, repoRoot, outDir string) error {
-	owlbotPath := filepath.Join(outDir, "owlbot.py")
-	if _, err := os.Stat(owlbotPath); err == nil {
-		// Old way: use synthtool
-		if err := command.RunInDir(ctx, outDir, "python3", "owlbot.py"); err != nil {
-			return fmt.Errorf("owlbot.py failed: %w", err)
-		}
-		return nil
-	} else if !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to check for owlbot.py: %w", err)
+	if err := movePackageFromStaging(ctx, library, repoRoot, outDir); err != nil {
+		return err
 	}
-
-	// Template generation and exclusions are handled at the generator level.
-	// Synthtool is only used for post-processing handled by standalone scripts
-	// like librarian.js and owlbot.py. (Note: librarian.js is unrelated to the
-	// Librarian CLI tool).
-
-	// combine-library wipes the destination directory before writing generated
-	// files (src/, protos/). Save the keep files it would delete, then restore
-	// them afterward.
-	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
-	if err != nil {
-		return fmt.Errorf("failed to create backup dir: %w", err)
-	}
-	defer os.RemoveAll(backupDir)
-	for _, name := range library.Keep {
-		src := filepath.Join(outDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue // file doesn't exist, nothing to save
-		}
-		dst := filepath.Join(backupDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create backup subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to save %s: %w", name, err)
-		}
-	}
-
-	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
-	if err := command.Run(ctx, "gapic-node-processing",
-		"combine-library",
-		"--source-path", stagingDir,
-		"--destination-path", outDir,
-	); err != nil {
-		return fmt.Errorf("combine-library: %w", err)
-	}
-
-	// Restore keep files.
-	for _, name := range library.Keep {
-		src := filepath.Join(backupDir, name)
-		if _, err := os.Stat(src); err != nil {
-			continue
-		}
-		dst := filepath.Join(outDir, name)
-		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
-			return fmt.Errorf("failed to create output subdir for %s: %w", name, err)
-		}
-		if err := os.Rename(src, dst); err != nil {
-			return fmt.Errorf("failed to restore %s: %w", name, err)
-		}
-	}
-
-	// Copy generated samples from staging into the output directory.
-	// combine-library only handles src/ and protos/; samples are generated
-	// by gapic-generator-typescript but left in staging.
-	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
-		return fmt.Errorf("failed to copy samples from staging: %w", err)
-	}
-
-	if err := updateSnippetMetadataVersion(outDir, library.Version); err != nil {
-		return fmt.Errorf("failed to update snippet metadata version: %w", err)
-	}
-
 	// Remove .OwlBot.yaml produced by the generator. Librarian replaces
 	// OwlBot so this file is no longer needed.
 	if err := os.Remove(filepath.Join(outDir, ".OwlBot.yaml")); err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -318,10 +284,24 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 			return fmt.Errorf("failed to write repo metadata: %w", err)
 		}
 	}
+
 	if err := copyMissingProtos(googleapisDir, outDir); err != nil {
 		return fmt.Errorf("failed to copy missing protos: %w", err)
 	}
-	if err := command.RunInDir(ctx, outDir, "compileProtos", "src"); err != nil {
+	protoDir := "src"
+	var compileArgs []string
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		protoDir = "esm/src"
+		compileArgs = []string{"--esm"}
+	}
+	runArgs := append([]string{protoDir}, compileArgs...)
+
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
+
+	if err := command.RunInDirWithEnv(ctx, outDir, toolsEnv, "compileProtos", runArgs...); err != nil {
 		return fmt.Errorf("failed to compile protos: %w", err)
 	}
 
@@ -333,40 +313,108 @@ func runPostProcessor(ctx context.Context, cfg *config.Config, library *config.L
 	// of the gapic-generator-typescript
 	librarianScript := filepath.Join(outDir, "librarian.js")
 	if _, err := os.Stat(librarianScript); err == nil {
-		if err := command.RunInDir(ctx, repoRoot, "node", librarianScript); err != nil {
+		if err := command.RunInDirWithEnv(ctx, repoRoot, toolsEnv, "node", librarianScript); err != nil {
 			return fmt.Errorf("librarian.js failed: %w", err)
 		}
 	}
-
-	readmePartials := filepath.Join(outDir, ".readme-partials.yaml")
-	if _, err := os.Stat(readmePartials); err == nil {
-		type partials struct {
-			Introduction string `yaml:"introduction"`
-			Body         string `yaml:"body"`
-		}
-		p, err := yaml.Read[partials](readmePartials)
-		if err != nil {
-			return fmt.Errorf("failed to parse %s: %w", readmePartials, err)
-		}
-		for name, replacement := range map[string]string{
-			"introduction": p.Introduction,
-			"body":         p.Body,
-		} {
-			if replacement == "" {
-				continue
-			}
-			if err := command.RunInDir(ctx, outDir, "npx", "gapic-node-processing", "generate-readme",
-				fmt.Sprintf("--source-path=%s", outDir),
-				fmt.Sprintf("--string-to-replace=[//]: # \"partials.%s\"", name),
-				fmt.Sprintf("--replacement-string=%s", replacement),
-			); err != nil {
-				return fmt.Errorf("generate-readme (%s) failed: %w", name, err)
-			}
+	// TODO(https://github.com/googleapis/librarian/issues/6442): remove this if block
+	// once all readme are generated in google-cloud-node.
+	if !slices.Contains(library.Keep, "README.md") {
+		if err := generateReadme(cfg, library, googleapisDir, outDir); err != nil {
+			return fmt.Errorf("failed to generate README.md: %w", err)
 		}
 	}
+	if err := removeRedundantLinterFiles(library, outDir); err != nil {
+		return fmt.Errorf("failed to remove redundant linter files: %w", err)
+	}
 
-	if err := os.RemoveAll(filepath.Join(repoRoot, "owl-bot-staging")); err != nil && !errors.Is(err, fs.ErrNotExist) {
-		return fmt.Errorf("failed to remove owl-bot-staging: %w", err)
+	// Remove google/cloud/common_resources.proto from the protos directory.
+	// We don't need it in the repo (it isn't in googleapis-gen) and we don't
+	// want it to be in the diff.
+	if err := os.Remove(filepath.Join(outDir, "protos", cloudCommonResourcesProto)); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove %s: %w", cloudCommonResourcesProto, err)
+	}
+	return nil
+}
+
+// movePackageFromStaging moves the generated code for a single package from
+// owl-bot-staging (in the repo root) to the package-specific directory.
+func movePackageFromStaging(ctx context.Context, library *config.Library, repoRoot, outDir string) error {
+	// combine-library wipes the destination directory before writing generated
+	// files (src/, protos/). Save the keep files it would delete, then restore
+	// them afterward.
+	backupDir, err := os.MkdirTemp(filepath.Dir(outDir), "librarian-backup-*")
+	if err != nil {
+		return fmt.Errorf("failed to create backup dir: %w", err)
+	}
+	defer os.RemoveAll(backupDir)
+	// Backup keep files.
+	if err := moveKeep(library.Keep, outDir, backupDir); err != nil {
+		return err
+	}
+
+	stagingDir := filepath.Join(repoRoot, "owl-bot-staging", library.Name)
+	combineArgs := []string{
+		"combine-library",
+		"--source-path", stagingDir,
+		"--destination-path", outDir,
+		"--default-version", resolveDefaultVersion(library),
+	}
+	if library.Nodejs != nil && library.Nodejs.ESM {
+		combineArgs = append(combineArgs, "--is-esm")
+	}
+	toolsEnv, err := getToolsEnv()
+	if err != nil {
+		return err
+	}
+	if err := command.RunWithEnv(ctx, toolsEnv, "gapic-node-processing", combineArgs...); err != nil {
+		return fmt.Errorf("combine-library: %w", err)
+	}
+	// Restore keep files.
+	if err := moveKeep(library.Keep, backupDir, outDir); err != nil {
+		return err
+	}
+	// Copy generated samples from staging into the output directory.
+	// combine-library only handles src/ and protos/; samples are generated
+	// by gapic-generator-typescript but left in staging.
+	if err := copySamplesFromStaging(stagingDir, outDir); err != nil {
+		return fmt.Errorf("failed to copy samples from staging: %w", err)
+	}
+	if err := os.RemoveAll(stagingDir); err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to remove package staging: %w", err)
+	}
+	return nil
+}
+
+// TODO(https://github.com/googleapis/google-cloud-node/issues/8286): gapic-generator-typescript
+// unconditionally generates redundant linter configuration files (.eslintignore, .eslintrc.json, etc.).
+// This post-processing cleanup function removes them unless explicitly kept in librarian.yaml.
+// Once gapic-generator-typescript is updated to stop generating them, this function must be removed.
+func removeRedundantLinterFiles(library *config.Library, outDir string) error {
+	keepSet := make(map[string]bool)
+	for _, k := range library.Keep {
+		keepSet[filepath.Clean(k)] = true
+	}
+
+	linterFiles := []string{
+		".eslintignore",
+		".eslintrc.json",
+		".prettierignore",
+		".prettierrc.js",
+		".prettierrc.cjs",
+	}
+
+	for _, lf := range linterFiles {
+		if keepSet[lf] {
+			continue
+		}
+		path := filepath.Join(outDir, lf)
+		if err := os.Remove(path); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
+			}
+			return fmt.Errorf("failed to remove redundant linter file %s: %w", path, err)
+		}
 	}
 	return nil
 }
@@ -420,19 +468,30 @@ func replaceCopyrightInDir(dir string, re *regexp.Regexp, replacement []byte) er
 	})
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6340): Remove this function
+// and all .repo-metadata.json generation once the documentation pipeline is
+// migrated to read from librarian.yaml directly.
 // writeRepoMetadata generates .repo-metadata.json for the library.
 func writeRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir, outDir string) error {
 	if len(library.APIs) == 0 {
 		return nil
 	}
-	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
+	metadata, err := generateRepoMetadata(cfg, library, googleapisDir)
 	if err != nil {
 		return err
 	}
-	metadata.DistributionName = DerivePackageName(library)
-	metadata.DefaultVersion = filepath.Base(library.APIs[0].Path)
-	metadata.LibraryType = repometadata.GAPICAutoLibraryType
-	return metadata.Write(outDir)
+	if err := metadata.Write(outDir); err != nil {
+		return err
+	}
+	// Go's json.MarshalIndent escapes HTML characters by default, but we want a
+	// literal ampersand in the .repo-metadata.json.
+	path := filepath.Join(outDir, ".repo-metadata.json")
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	content = bytes.ReplaceAll(content, []byte(`\u0026`), []byte(`&`))
+	return os.WriteFile(path, content, 0644)
 }
 
 // copyMissingProtos reads *_proto_list.json files under outDir/src/ and copies
@@ -444,12 +503,10 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 	if err != nil {
 		return fmt.Errorf("failed to resolve googleapis directory: %w", err)
 	}
-
 	lists, err := filepath.Glob(filepath.Join(outDir, "src", "*", "*_proto_list.json"))
 	if err != nil {
 		return fmt.Errorf("failed to glob proto list files: %w", err)
 	}
-
 	for _, listPath := range lists {
 		data, err := os.ReadFile(listPath)
 		if err != nil {
@@ -459,33 +516,23 @@ func copyMissingProtos(googleapisDir, outDir string) error {
 		if err := json.Unmarshal(data, &entries); err != nil {
 			return fmt.Errorf("failed to parse %s: %w", listPath, err)
 		}
-
 		listDir := filepath.Dir(listPath)
 		for _, entry := range entries {
-			absPath := filepath.Join(listDir, entry)
-			absPath = filepath.Clean(absPath)
+			absPath := filepath.Clean(filepath.Join(listDir, entry))
 			if _, err := os.Stat(absPath); err == nil {
 				continue
 			}
-
 			// Extract the proto-relative path after "protos/".
-			const protosPrefix = "protos/"
-			idx := strings.Index(entry, protosPrefix)
-			if idx < 0 {
+			_, relPath, ok := strings.Cut(entry, protosPathPrefix)
+			if !ok {
 				continue
-			}
-			relPath := entry[idx+len(protosPrefix):]
-
-			srcPath := filepath.Join(googleapisDir, relPath)
-			content, err := os.ReadFile(srcPath)
-			if err != nil {
-				return fmt.Errorf("failed to read source proto %s: %w", srcPath, err)
 			}
 			if err := os.MkdirAll(filepath.Dir(absPath), 0755); err != nil {
 				return fmt.Errorf("failed to create directory for %s: %w", absPath, err)
 			}
-			if err := os.WriteFile(absPath, content, 0644); err != nil {
-				return fmt.Errorf("failed to write proto %s: %w", absPath, err)
+			srcPath := filepath.Join(googleapisDir, relPath)
+			if err := filesystem.CopyFile(srcPath, absPath); err != nil {
+				return fmt.Errorf("failed to copy %s to %s: %w", srcPath, absPath, err)
 			}
 		}
 	}
@@ -542,74 +589,10 @@ func copySamplesFromStaging(stagingDir, outDir string) error {
 	return nil
 }
 
-// updateSnippetMetadataVersion updates the clientLibrary.version field in
-// snippet metadata JSON files under outDir/samples/generated/. The
-// gapic-generator-typescript hardcodes version "0.1.0"; this function replaces
-// it with the library's actual version.
-func updateSnippetMetadataVersion(outDir, version string) error {
-	if version == "" {
-		return nil
-	}
-	pattern := filepath.Join(outDir, "samples", "generated", "*", "snippet_metadata*.json")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return fmt.Errorf("failed to glob snippet metadata files: %w", err)
-	}
-	for _, path := range matches {
-		// TODO(https://github.com/googleapis/google-cloud-node/issues/8149): Do not
-		// update v1small. This package is not meant to be used and will be
-		// deprecated and removed in a future major release. Remove this workaround once resolved.
-		if filepath.Base(filepath.Dir(path)) == "v1small" {
-			continue
-		}
-		if err := updateVersionInFile(path, version); err != nil {
-			return fmt.Errorf("failed to update %s: %w", path, err)
-		}
-	}
-	return nil
-}
-
-// snippetMetadata is a minimal representation of a snippet metadata JSON file.
-// The Snippets field uses [json.RawMessage] to avoid reformatting the array.
-type snippetMetadata struct {
-	ClientLibrary snippetClientLibrary `json:"clientLibrary"`
-	Snippets      json.RawMessage      `json:"snippets"`
-}
-
-type snippetClientLibrary struct {
-	Name     string          `json:"name"`
-	Version  string          `json:"version"`
-	Language string          `json:"language"`
-	APIs     json.RawMessage `json:"apis"`
-}
-
-// updateVersionInFile reads a snippet metadata JSON file, sets the
-// clientLibrary.version field to version, and writes it back.
-func updateVersionInFile(path, version string) error {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	var metadata snippetMetadata
-	if err := json.Unmarshal(data, &metadata); err != nil {
-		return err
-	}
-	metadata.ClientLibrary.Version = version
-
-	// Re-marshal with 2-space indent to match generator output.
-	out, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil {
-		return err
-	}
-	// Append trailing newline to match convention.
-	out = append(out, '\n')
-	return os.WriteFile(path, out, 0644)
-}
-
-// DerivePackageName returns the npm package name for a library. It uses
-// nodejs.package_name if set, otherwise derives it by splitting the library
-// name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
-func DerivePackageName(library *config.Library) string {
+// derivePackageName returns the npm package name for a library.
+// It uses nodejs.package_name if set, otherwise derives it by splitting the
+// library name on the second dash (e.g. "google-cloud-batch" → "@google-cloud/batch").
+func derivePackageName(library *config.Library) string {
 	if library.Nodejs != nil && library.Nodejs.PackageName != "" {
 		return library.Nodejs.PackageName
 	}
@@ -634,6 +617,21 @@ func derivePackageNameFromLibraryName(name string) string {
 // DefaultOutput returns the output path for a library.
 func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
+}
+
+// resolveDefaultVersion returns the default API version (v1, v1beta etc) for
+// a library, using the Node-specific override if present, or the path of the
+// first API otherwise. If the library has no override and no APIs, an empty
+// string is returned.
+// TODO(https://github.com/googleapis/librarian/issues/6357): remove default version.
+func resolveDefaultVersion(library *config.Library) string {
+	if library.Nodejs != nil && library.Nodejs.DefaultVersion != "" {
+		return library.Nodejs.DefaultVersion
+	}
+	if len(library.APIs) == 0 {
+		return ""
+	}
+	return filepath.Base(library.APIs[0].Path)
 }
 
 // TODO(https://github.com/googleapis/google-cloud-node/issues/8149):
@@ -669,4 +667,21 @@ func injectV1SmallExports(outDir string) error {
 	content = updated
 
 	return os.WriteFile(indexPath, []byte(content), 0644)
+}
+
+func moveKeep(files []string, srcDir, dstDir string) error {
+	for _, name := range files {
+		src := filepath.Join(srcDir, name)
+		if _, err := os.Stat(src); err != nil {
+			continue // file doesn't exist, nothing to save
+		}
+		dst := filepath.Join(dstDir, name)
+		if err := os.MkdirAll(filepath.Dir(dst), 0755); err != nil {
+			return fmt.Errorf("failed to create destination subdirectory for %s: %w", name, err)
+		}
+		if err := os.Rename(src, dst); err != nil {
+			return fmt.Errorf("failed to move %s: %w", name, err)
+		}
+	}
+	return nil
 }

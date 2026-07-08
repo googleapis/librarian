@@ -23,7 +23,6 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/sample"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -52,28 +51,17 @@ func TestValidateLibraries(t *testing.T) {
 			wantErr: errDuplicateLibraryName,
 		},
 		{
-			name: "invalid distribution name override for java",
-			libraries: []*config.Library{
-				{
-					Name: "lib",
-					Java: &config.JavaModule{
-						DistributionNameOverride: "invalid-name",
-					},
-				},
-			},
-			language: config.LanguageJava,
-			wantErr:  java.ErrInvalidDistributionName,
-		},
-		{
 			name: "skipped duplicate api paths",
 			libraries: []*config.Library{
 				{
 					Name: "lib1",
 					APIs: []*config.API{{Path: "google/iam/v1"}},
+					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
 				},
 				{
 					Name: "lib2",
 					APIs: []*config.API{{Path: "google/iam/v1"}},
+					Java: &config.JavaModule{ReleasedVersion: "1.0.0"},
 				},
 			},
 			language: config.LanguageJava,
@@ -334,10 +322,10 @@ func TestFormatConfig(t *testing.T) {
 			want: []string{"cargo-semver-checks", "taplo-cli"},
 		},
 		{
-			name: "sorts npm tools by name",
+			name: "sorts pnpm tools by name",
 			input: &config.Config{
 				Tools: &config.Tools{
-					NPM: []*config.NPMTool{
+					PNPM: []*config.PNPMTool{
 						{Name: "gapic-tools", Version: "1.0.5"},
 						{Name: "gapic-generator-typescript", Version: "1.0.0"},
 						{Name: "gapic-node-processing", Version: "0.1.7"},
@@ -346,7 +334,7 @@ func TestFormatConfig(t *testing.T) {
 			},
 			got: func(c *config.Config) []string {
 				var names []string
-				for _, tool := range c.Tools.NPM {
+				for _, tool := range c.Tools.PNPM {
 					names = append(names, tool.Name)
 				}
 				return names
@@ -615,24 +603,26 @@ func TestTidy_DerivableOutput(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
+			lib := &config.Library{
+				Name:   test.libName,
+				Output: test.output,
+				Roots:  []string{"googleapis"},
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			}
+			if test.language == config.LanguageJava {
+				lib.Java = &config.JavaModule{ReleasedVersion: "1.0.0"}
+			}
 			cfg := &config.Config{
 				Language: test.language,
 				Default: &config.Default{
 					Output: "generated/",
 				},
-				Sources: googleapisSource,
-				Libraries: []*config.Library{
-					{
-						Name:   test.libName,
-						Output: test.output,
-						Roots:  []string{"googleapis"},
-						APIs: []*config.API{
-							{
-								Path: "google/cloud/secretmanager/v1",
-							},
-						},
-					},
-				},
+				Sources:   googleapisSource,
+				Libraries: []*config.Library{lib},
 			}
 			if err := RunTidyOnConfig(t.Context(), tempDir, cfg); err != nil {
 				t.Fatal(err)
@@ -731,108 +721,12 @@ func TestTidy_DerivableRoots(t *testing.T) {
 	}
 }
 
-func TestTidyLanguageConfig_Rust(t *testing.T) {
-	for _, test := range []struct {
-		name        string
-		cfg         *config.Config
-		wantNumLibs int
-		wantNumMods int
-	}{
-		{
-			name: "empty_module_removed",
-			cfg: &config.Config{
-				Language: config.LanguageRust,
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
-						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
-					},
-				},
-				Default: &config.Default{
-					Output: "generated/",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:   "google-cloud-storage",
-						Output: "src/storage",
-						Rust: &config.RustCrate{
-							Modules: []*config.RustModule{
-								{
-									Output:   "src/storage/src/generated/protos/storage",
-									APIPath:  "google/storage/v2",
-									Template: "prost",
-								},
-								{
-									Output: "src/storage/control",
-								},
-							},
-						},
-					},
-				},
-			},
-			wantNumLibs: 1,
-			wantNumMods: 1, // Modules should be removed
-		},
-		{
-			name: "storage_module_not_removed",
-			cfg: &config.Config{
-				Language: config.LanguageRust,
-				Sources: &config.Sources{
-					Googleapis: &config.Source{
-						Commit: "94ccedca05acb0bb60780789e93371c9e4100ddc",
-						SHA256: "fff40946e897d96bbdccd566cb993048a87029b7e08eacee3fe99eac792721ba",
-					},
-				},
-				Default: &config.Default{
-					Output: "generated/",
-				},
-				Libraries: []*config.Library{
-					{
-						Name:   "google-cloud-storage",
-						Output: "src/storage",
-						Rust: &config.RustCrate{
-							Modules: []*config.RustModule{
-								{
-									Output:   "src/storage/src/generated/protos/storage",
-									Template: "storage",
-								},
-							},
-						},
-					},
-				},
-			},
-			wantNumLibs: 1,
-			wantNumMods: 1, // Rust storage module should NOT be removed
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			tempDir := t.TempDir()
-
-			RunTidyOnConfig(t.Context(), tempDir, test.cfg)
-
-			cfg, err := yaml.Read[config.Config](filepath.Join(tempDir, config.LibrarianYAML))
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			if len(cfg.Libraries) != test.wantNumLibs {
-				t.Fatalf("wrong number of libraries")
-			}
-			lib := cfg.Libraries[0]
-			if len(lib.Rust.Modules) != test.wantNumMods {
-				t.Fatalf("wrong number of modules")
-			}
-		})
-	}
-}
-
 func TestTidy_UnusedSections(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		cfg         *config.Config
-		wantRelease bool
-		wantTools   bool
-		wantDefault bool
+		wantTools   *config.Tools
+		wantDefault *config.Default
 	}{
 		{
 			name: "empty sections removed",
@@ -841,13 +735,11 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Release: &config.Release{},
 				Tools:   &config.Tools{},
 				Default: &config.Default{},
 			},
-			wantRelease: false,
-			wantTools:   false,
-			wantDefault: false,
+			wantTools:   nil,
+			wantDefault: nil,
 		},
 		{
 			name: "non-empty sections preserved",
@@ -856,13 +748,37 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Release: &config.Release{IgnoredChanges: []string{"foo"}},
 				Tools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
 				Default: &config.Default{Output: "output"},
 			},
-			wantRelease: true,
-			wantTools:   true,
-			wantDefault: true,
+			wantTools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
+			wantDefault: &config.Default{Output: "output"},
+		},
+		{
+			name: "maven preserved",
+			cfg: &config.Config{
+				Language: config.LanguageJava,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+			wantDefault: nil,
+		},
+		{
+			name: "protoc preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
+			wantDefault: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -874,14 +790,11 @@ func TestTidy_UnusedSections(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if (got.Release != nil) != test.wantRelease {
-				t.Errorf("Release present = %v, want %v", got.Release != nil, test.wantRelease)
+			if diff := cmp.Diff(test.wantTools, got.Tools); diff != "" {
+				t.Errorf("Tools mismatch (-want +got):\n%s", diff)
 			}
-			if (got.Tools != nil) != test.wantTools {
-				t.Errorf("Tools present = %v, want %v", got.Tools != nil, test.wantTools)
-			}
-			if (got.Default != nil) != test.wantDefault {
-				t.Errorf("Default present = %v, want %v", got.Default != nil, test.wantDefault)
+			if diff := cmp.Diff(test.wantDefault, got.Default); diff != "" {
+				t.Errorf("Default mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

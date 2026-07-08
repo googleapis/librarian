@@ -24,12 +24,11 @@ import (
 // PackageName returns the package name for the API.
 func PackageName(api *api.API) string {
 	var name string
-	switch {
-	case strings.HasPrefix(api.PackageName, "google.cloud."):
-		name = "Cloud" + pascalPackageName(strings.TrimPrefix(api.PackageName, "google.cloud."))
-	case strings.HasPrefix(api.PackageName, "google."):
-		name = pascalPackageName(strings.TrimPrefix(api.PackageName, "google."))
-	default:
+	if suffix, ok := strings.CutPrefix(api.PackageName, "google.cloud."); ok {
+		name = "Cloud" + pascalPackageName(suffix)
+	} else if suffix, ok := strings.CutPrefix(api.PackageName, "google."); ok {
+		name = pascalPackageName(suffix)
+	} else {
 		name = pascalPackageName(api.PackageName)
 	}
 	return "Google" + name

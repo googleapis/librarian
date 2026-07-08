@@ -462,19 +462,19 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name      string
-		setup     func(t *testing.T, repoRoot, outputDir string)
+		setup     func(t *testing.T, generationRoot, outputDir string)
 		wantFiles []string
 	}{
 		{
 			name: "no staging dir or scripts dir",
-			setup: func(t *testing.T, repoRoot, outputDir string) {
+			setup: func(t *testing.T, generationRoot, outputDir string) {
 				// No setup needed
 			},
 		},
 		{
 			name: "staging dir exists",
-			setup: func(t *testing.T, repoRoot, outputDir string) {
-				stagingDir := filepath.Join(repoRoot, "owl-bot-staging")
+			setup: func(t *testing.T, generationRoot, outputDir string) {
+				stagingDir := filepath.Join(generationRoot, "owl-bot-staging")
 				if err := os.MkdirAll(stagingDir, 0755); err != nil {
 					t.Fatal(err)
 				}
@@ -485,7 +485,7 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 		},
 		{
 			name: "scripts dir exists",
-			setup: func(t *testing.T, repoRoot, outputDir string) {
+			setup: func(t *testing.T, generationRoot, outputDir string) {
 				scriptsDir := filepath.Join(outputDir, "scripts")
 				if err := os.MkdirAll(scriptsDir, 0755); err != nil {
 					t.Fatal(err)
@@ -500,8 +500,12 @@ func TestCleanUpFilesAfterPostProcessing(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
 			outputDir := filepath.Join(repoRoot, "packages", "pkg")
-			test.setup(t, repoRoot, outputDir)
-			err := cleanUpFilesAfterPostProcessing(repoRoot, outputDir)
+			generationRoot, err := prepareGenerationRoot(outputDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			test.setup(t, generationRoot, outputDir)
+			err = cleanUpFilesAfterPostProcessing(generationRoot, outputDir)
 			if err != nil {
 				t.Fatalf("cleanUpFilesAfterPostProcessing() error = %v", err)
 			}
@@ -593,13 +597,16 @@ func TestRunPostProcessor(t *testing.T) {
 	if err := os.MkdirAll(outdir, 0755); err != nil {
 		t.Fatal(err)
 	}
-
+	generationRoot, err := prepareGenerationRoot(outdir)
+	if err != nil {
+		t.Fatal(err)
+	}
 	// Create minimal .repo-metadata.json that synthtool expects
 	if err := os.WriteFile(filepath.Join(outdir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
 		t.Fatal(err)
 	}
 	createMinimalNoxFile(t, outdir)
-	err := runPostProcessor(t.Context(), repoRoot, outdir)
+	err = runPostProcessor(t.Context(), repoRoot, outdir, generationRoot)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -651,6 +658,10 @@ func TestRunPostProcessor_Error(t *testing.T) {
 			if err := os.MkdirAll(outputDir, 0755); err != nil {
 				t.Fatal(err)
 			}
+			generationRoot, err := prepareGenerationRoot(outputDir)
+			if err != nil {
+				t.Fatal(err)
+			}
 			createReplacementScripts(t, repoRoot)
 			createMinimalNoxFile(t, outputDir)
 			if err := os.WriteFile(filepath.Join(outputDir, ".repo-metadata.json"), []byte(`{"default_version":"v1"}`), 0644); err != nil {
@@ -659,7 +670,7 @@ func TestRunPostProcessor_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t, repoRoot, outputDir)
 			}
-			gotErr := runPostProcessor(t.Context(), repoRoot, outputDir)
+			gotErr := runPostProcessor(t.Context(), repoRoot, outputDir, generationRoot)
 			// Not all errors are easy to specify. (Most come from other
 			// packages, and we're just testing they're propagated.)
 			if test.wantErr != nil && !errors.Is(gotErr, test.wantErr) {
@@ -1027,9 +1038,8 @@ func TestGenerate(t *testing.T) {
 	}
 
 	library := &config.Library{
-		Name:                "google-cloud-secret-manager",
-		Output:              outdir,
-		DescriptionOverride: "Stores, manages, and secures access to application secrets.",
+		Name:   "google-cloud-secret-manager",
+		Output: outdir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
@@ -1065,7 +1075,7 @@ func TestGenerate(t *testing.T) {
 		DistributionName:     "google-cloud-secret-manager",
 		APIID:                "secretmanager.googleapis.com",
 		APIShortname:         "secretmanager",
-		APIDescription:       "Stores, manages, and secures access to application secrets.",
+		APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
 		// Fields set by Generate.
 		LibraryType:         "GAPIC_AUTO",
 		ClientDocumentation: "https://cloud.google.com/python/docs/reference/secretmanager/latest",
@@ -1241,10 +1251,9 @@ func TestCreateRepoMetadata(t *testing.T) {
 			},
 		},
 		{
-			name: "all overrides present",
+			name: "other overrides present",
 			library: &config.Library{
-				Name:                "google-cloud-secret-manager",
-				DescriptionOverride: "overridden description",
+				Name: "google-cloud-secret-manager",
 				APIs: []*config.API{
 					{Path: "google/cloud/secretmanager/v1"},
 					{Path: "google/cloud/secrets/v1beta1"},
@@ -1255,7 +1264,7 @@ func TestCreateRepoMetadata(t *testing.T) {
 					ClientDocumentationOverride: "overridden client_documentation",
 					IssueTrackerOverride:        "overridden issue_tracker",
 					PythonDefault: config.PythonDefault{
-						LibraryType: "CORE",
+						LibraryType: libraryTypeCore,
 					},
 				},
 			},
@@ -1270,8 +1279,8 @@ func TestCreateRepoMetadata(t *testing.T) {
 				DistributionName:     "google-cloud-secret-manager",
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
-				APIDescription:       "overridden description",
-				LibraryType:          "CORE",
+				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
+				LibraryType:          libraryTypeCore,
 				ClientDocumentation:  "overridden client_documentation",
 				DefaultVersion:       "v1beta1",
 			},
@@ -1364,10 +1373,10 @@ func TestCreateRepoMetadata_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "invalid API path",
+			name: "python not allowlisted for path",
 			library: &config.Library{
-				Name:   "android-library",
-				APIs:   []*config.API{{Path: "android/notallowed/v1"}},
+				Name:   "google-spanner-executor",
+				APIs:   []*config.API{{Path: "google/spanner/executor/v1"}},
 				Python: &config.PythonPackage{DefaultVersion: "v1"},
 			},
 		},
@@ -1608,6 +1617,45 @@ func TestCreateChangelog_Error(t *testing.T) {
 			output := t.TempDir()
 			test.setup(t, output)
 			gotErr := createChangelog("google-cloud-test", output)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
+// Most of prepareGenerationRoot is effectively tested by testing its callers.
+// This just checks the error paths.
+func TestPrepareGenerationRoot_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		setup   func(t *testing.T, output string)
+		wantErr error
+	}{
+		{
+			name: "tmp is an existing file",
+			setup: func(t *testing.T, output string) {
+				if err := os.WriteFile(filepath.Join(output, "tmp"), []byte{}, 0644); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: syscall.ENOTDIR,
+		},
+		{
+			name: "symlink target already exists",
+			setup: func(t *testing.T, output string) {
+				if err := os.MkdirAll(filepath.Join(output, "tmp", "packages", filepath.Base(output)), 0755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantErr: fs.ErrExist,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			output := t.TempDir()
+			test.setup(t, output)
+			_, gotErr := prepareGenerationRoot(output)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", gotErr, test.wantErr)
 			}

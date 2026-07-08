@@ -15,65 +15,269 @@
 package nodejs
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/yaml"
 )
 
-func TestInstall(t *testing.T) {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
-	if err != nil {
-		t.Fatal(err)
-	}
-	tool := cfg.Tools.NPM[0]
-	repo, err := repoFromPackageURL(tool.Package)
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// Pre-populate the fetch cache so fetch.Repo returns immediately
-	// without downloading the tarball over the network.
-	cache := t.TempDir()
-	t.Setenv("LIBRARIAN_CACHE", cache)
-	genDir := filepath.Join(cache,
-		repo+"@"+tool.Version,
-		gapicGeneratorSubdir)
-	for _, sub := range []string{"templates", "protos"} {
-		if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
-			t.Fatal(err)
-		}
-	}
-
-	// Stub npm so "npm install" and "npm link" are no-ops. The npm stub
-	// also creates node_modules/.bin/tsc in the working directory so the
-	// subsequent "./node_modules/.bin/tsc" build step finds an executable.
-	// Global installs (npm install -g) write into NPM_GLOBAL_PREFIX to
-	// avoid polluting the source tree.
+func stubExecutables(t *testing.T) {
+	t.Helper()
 	bin := t.TempDir()
-	npmGlobalPrefix := t.TempDir()
-	t.Setenv("NPM_GLOBAL_PREFIX", npmGlobalPrefix)
-	npmStub := `#!/bin/sh
-case "$*" in *-g*)
-	mkdir -p "$NPM_GLOBAL_PREFIX/lib"
-	exit 0
-	;;
+	pnpmStub := `#!/bin/sh
+# Assert that transient environmental variables are set dynamically for process lifetime
+if [ -n "$PNPM_HOME" ] && [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] && [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] && [ -n "$PNPM_CONFIG_STORE_DIR" ] && \
+   [ -n "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" ]; then
+    :
+else
+    echo "Error: Required transient PNPM environment variables are missing!" >&2
+    exit 1
+fi
+
+case "$*" in
+    *install*)
+        mkdir -p node_modules/.bin
+        printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
+        chmod +x node_modules/.bin/tsc
+        ;;
+    *add\ -g*)
+        ;;
 esac
-mkdir -p node_modules/.bin
-printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
-chmod +x node_modules/.bin/tsc
+exit 0
 `
-	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
+	nodeStub := `#!/bin/sh
+exit 0
+`
+	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\n"), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+}
 
-	if err := Install(t.Context()); err != nil {
-		t.Fatal(err)
+func TestInstall(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+		setup func(t *testing.T)
+	}{
+		{
+			name: "source build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "gapic-generator-typescript",
+						Version: "4.12.1",
+						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+						Build: []string{
+							"pnpm install",
+							"./node_modules/.bin/tsc",
+							"cp -a templates protos build/",
+						},
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				binDir := t.TempDir()
+				t.Setenv("LIBRARIAN_BIN", binDir)
+				genDir := filepath.Join(cache,
+					"github.com/googleapis/google-cloud-node@4.12.1",
+					gapicGeneratorSubdir)
+				for _, sub := range []string{"templates", "protos"} {
+					if err := os.MkdirAll(filepath.Join(genDir, sub), 0o755); err != nil {
+						t.Fatal(err)
+					}
+				}
+				stubExecutables(t)
+			},
+		},
+		{
+			name: "non-build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "gapic-node-processing",
+						Version: "0.1.8",
+					},
+					{
+						Name:    "custom-pkg",
+						Package: "custom-pkg@1.0.0",
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("LIBRARIAN_CACHE", t.TempDir())
+				t.Setenv("LIBRARIAN_BIN", t.TempDir())
+				stubExecutables(t)
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
+			if err := Install(t.Context(), test.tools); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestInstall_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tools   *config.Tools
+		setup   func(t *testing.T)
+		wantErr error
+	}{
+		{
+			name:    "nil tools",
+			tools:   nil,
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name:    "empty tools",
+			tools:   &config.Tools{},
+			wantErr: errNoToolsSpecified,
+		},
+		{
+			name:  "missing node or pnpm in path",
+			tools: &config.Tools{PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: errMissingExecutable,
+		},
+		{
+			name: "missing package url for build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "tool", Build: []string{"echo 1"}},
+				},
+			},
+			setup: func(t *testing.T) {
+				stubExecutables(t)
+			},
+			wantErr: errMissingPackageURL,
+		},
+		{
+			name: "invalid package url for build tool",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+				},
+			},
+			setup: func(t *testing.T) {
+				stubExecutables(t)
+			},
+			wantErr: errCannotExtractRepo,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
+			err := Install(t.Context(), test.tools)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestRepoFromPackageURL(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		packageURL string
+		want       string
+	}{
+		{
+			name:       "valid archive url",
+			packageURL: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+			want:       "github.com/googleapis/google-cloud-node",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := repoFromPackageURL(test.packageURL)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got != test.want {
+				t.Errorf("repoFromPackageURL(%q) = %q, want %q", test.packageURL, got, test.want)
+			}
+		})
+	}
+}
+
+func TestRepoFromPackageURL_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		packageURL string
+		wantErr    error
+	}{
+		{
+			name:       "invalid archive url",
+			packageURL: "https://github.com/googleapis/google-cloud-node/invalid",
+			wantErr:    errCannotExtractRepo,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := repoFromPackageURL(test.packageURL)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("repoFromPackageURL(%q) error = %v, wantErr = %v", test.packageURL, err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestInstallDir(t *testing.T) {
+	for _, test := range []struct {
+		name string
+	}{
+		{
+			name: "returns nodejs_tools directory under LIBRARIAN_BIN",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			got, err := InstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := filepath.Join(binDir, "nodejs_tools")
+			if got != want {
+				t.Errorf("InstallDir() = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestGetToolsEnv(t *testing.T) {
+	for _, test := range []struct {
+		name string
+	}{
+		{
+			name: "returns PATH with nodejs_tools bin directory",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			env, err := getToolsEnv()
+			if err != nil {
+				t.Fatal(err)
+			}
+			want := filepath.Join(binDir, "nodejs_tools", "bin")
+			if got := env["PATH"]; got != want {
+				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
+			}
+		})
 	}
 }

@@ -19,30 +19,53 @@ import (
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
+	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 func TestAnnotateService(t *testing.T) {
 	for _, test := range []struct {
-		name        string
-		serviceName string
-		doc         string
-		wantName    string
-		wantDocs    []string
+		name            string
+		serviceName     string
+		doc             string
+		wantAnnotations *serviceAnnotations
+		wantImports     []string
 	}{
 		{
 			name:        "IAM service",
 			serviceName: "IAM",
 			doc:         "IAM service documentation.",
-			wantName:    "IAM",
-			wantDocs:    []string{"IAM service documentation."},
+			wantAnnotations: &serviceAnnotations{
+				Name:       "IAM",
+				ClientName: "IAMClient",
+				StubPrefix: "IAM",
+				DocLines:   []string{"IAM service documentation."},
+			},
+			wantImports: []string{"GoogleCloudWkt"},
+		},
+		{
+			name:        "Service with mangled name",
+			serviceName: "Protocol",
+			doc:         "Docs are not relevant.",
+			wantAnnotations: &serviceAnnotations{
+				Name:       "Protocol_",
+				ClientName: "ProtocolClient",
+				StubPrefix: "Protocol",
+				DocLines:   []string{"Docs are not relevant."},
+			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 		{
 			name:        "SecretManagerService",
 			serviceName: "SecretManagerService",
 			doc:         "Secret Manager Service documentation.\nLine 2.",
-			wantName:    "SecretManagerService",
-			wantDocs:    []string{"Secret Manager Service documentation.", "Line 2."},
+			wantAnnotations: &serviceAnnotations{
+				Name:       "SecretManagerService",
+				ClientName: "SecretManagerServiceClient",
+				StubPrefix: "SecretManagerService",
+				DocLines:   []string{"Secret Manager Service documentation.", "Line 2."},
+			},
+			wantImports: []string{"GoogleCloudWkt"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -57,12 +80,12 @@ func TestAnnotateService(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			want := &serviceAnnotations{
-				Name:     test.wantName,
-				DocLines: test.wantDocs,
+			if diff := cmp.Diff(test.wantAnnotations, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model", "DependsOn")); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
-			if diff := cmp.Diff(want, s.Codec, cmpopts.IgnoreFields(serviceAnnotations{}, "PackageName", "QuickstartMethod", "Model")); diff != "" {
+			annotations := s.Codec.(*serviceAnnotations)
+			if diff := cmp.Diff(test.wantImports, annotations.ServiceImports()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -199,5 +222,105 @@ func TestAnnotateService_Quickstart(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestAnnotateService_Gating(t *testing.T) {
+	model := makeGatedTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, service := range model.Services {
+		t.Run(service.Name, func(t *testing.T) {
+			ann, ok := service.Codec.(*serviceAnnotations)
+			if !ok {
+				t.Fatalf("expected service.Codec to be *serviceAnnotations, got %T", service.Codec)
+			}
+			if !ann.IsGated {
+				t.Error("expected IsGated to be true when PerServiceTraits is true")
+			}
+		})
+	}
+}
+
+func TestAnnotateService_LRO(t *testing.T) {
+	inputType := &api.Message{
+		Name:    "Request",
+		Package: "test",
+		ID:      ".test.Request",
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		Package: "google.longrunning",
+		ID:      ".google.longrunning.Operation",
+	}
+	lroResponseType := &api.Message{
+		Name:    "LroResponse",
+		Package: "external",
+		ID:      ".external.LroResponse",
+	}
+	lroMetadataType := &api.Message{
+		Name:    "LroMetadata",
+		Package: "external",
+		ID:      ".external.LroMetadata",
+	}
+
+	method := &api.Method{
+		Name:         "LroMethod",
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "POST", PathTemplate: &api.PathTemplate{}}},
+		},
+		IsLRO: true,
+		OperationInfo: &api.OperationInfo{
+			ResponseTypeID: lroResponseType.ID,
+			MetadataTypeID: lroMetadataType.ID,
+		},
+	}
+
+	service := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType, lroResponseType, lroMetadataType}, nil, []*api.Service{service})
+	model.PackageName = "test"
+	if err := api.CrossReference(model); err != nil {
+		t.Fatal(err)
+	}
+
+	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{
+			ApiPackage: "google.rpc",
+			Name:       "GoogleRpc",
+		},
+		{
+			ApiPackage: "external",
+			Name:       "GoogleCloudExternal",
+		},
+		{
+			ApiPackage: "google.longrunning",
+			Name:       "GoogleLongrunning",
+		},
+	})
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	annotations := service.Codec.(*serviceAnnotations)
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudGax", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
+	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

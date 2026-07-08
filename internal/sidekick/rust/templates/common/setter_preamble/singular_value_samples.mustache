@@ -15,7 +15,15 @@ limitations under the License.
 }}
 {{#IsString}}
 /// # use {{Parent.Codec.NameInExamples}};
+{{#Codec.FormattedResource}}
+{{#FormatArgs}}
+/// # let {{.}} = "{{.}}";
+{{/FormatArgs}}
+/// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}(format!("{{FormatString}}"));
+{{/Codec.FormattedResource}}
+{{^Codec.FormattedResource}}
 /// let x = {{Parent.Codec.Name}}::new().set_{{Codec.SetterName}}("example");
+{{/Codec.FormattedResource}}
 {{/IsString}}
 {{#IsBytes}}
 /// # use {{Parent.Codec.NameInExamples}};

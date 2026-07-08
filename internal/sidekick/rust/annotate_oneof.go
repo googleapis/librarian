@@ -77,7 +77,7 @@ func (c *codec) annotateOneOf(oneof *api.OneOf, message *api.Message, model *api
 		return nil, err
 	}
 	nameInExamples := c.nameInExamplesFromQualifiedName(qualifiedName, model)
-	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, message.Scopes())
+	docLines, err := c.formatDocComments(oneof.Documentation, oneof.ID, model, oneof.Scopes())
 	if err != nil {
 		return nil, err
 	}

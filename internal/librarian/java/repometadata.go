@@ -51,11 +51,7 @@ type repoMetadata struct {
 	APIReference string `json:"api_reference,omitempty"`
 	// Java-specific field.
 	CodeownerTeam string `json:"codeowner_team,omitempty"`
-	// Java-specific field.
-	ExcludedDependencies string `json:"excluded_dependencies,omitempty"`
-	// Java-specific field.
-	ExcludedPOMs string `json:"excluded_poms,omitempty"`
-	IssueTracker string `json:"issue_tracker,omitempty"`
+	IssueTracker  string `json:"issue_tracker,omitempty"`
 	// Java-specific field.
 	RestDocumentation string `json:"rest_documentation,omitempty"`
 	// Java-specific field.
@@ -101,6 +97,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		ProductDocumentation: sharedMetadata.ProductDocumentation,
 		APIDescription:       sharedMetadata.APIDescription,
 		ReleaseLevel:         sharedMetadata.ReleaseLevel,
+		Transport:            sharedMetadata.Transport,
 		Language:             config.LanguageJava,
 		Repo:                 sharedMetadata.Repo,
 		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
@@ -108,6 +105,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		RequiresBilling:      true,
+		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 	}
 
 	// Java-specific overrides and optional fields
@@ -125,9 +123,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		if library.Java.APIDescriptionOverride != "" {
 			metadata.APIDescription = library.Java.APIDescriptionOverride
 		}
-		if library.Java.DistributionNameOverride != "" {
-			metadata.DistributionName = library.Java.DistributionNameOverride
-		}
+		metadata.DistributionName = distributionName(library)
 		if library.Java.IssueTrackerOverride != "" {
 			metadata.IssueTracker = library.Java.IssueTrackerOverride
 		}
@@ -148,29 +144,16 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam
 		metadata.ExtraVersionedModules = library.Java.ExtraVersionedModules
-		metadata.ExcludedDependencies = library.Java.ExcludedDependencies
-		metadata.ExcludedPOMs = library.Java.ExcludedPOMs
 		metadata.MinJavaVersion = library.Java.MinJavaVersion
-		metadata.RecommendedPackage = library.Java.RecommendedPackage
 		metadata.RestDocumentation = library.Java.RestDocumentation
 		metadata.RpcDocumentation = library.Java.RpcDocumentation
 	}
 
-	// distribution_name default for Java is groupId:artifactId
-	if !strings.Contains(metadata.DistributionName, ":") {
-		metadata.DistributionName = DeriveDistributionName(library)
-	}
 	// Default ClientDocumentation uses artifact ID
 	if metadata.ClientDocumentation == "" {
 		parts := strings.Split(metadata.DistributionName, ":")
 		artifactID := parts[len(parts)-1]
 		metadata.ClientDocumentation = fmt.Sprintf("https://cloud.google.com/java/docs/reference/%s/latest/overview", artifactID)
 	}
-	// transport
-	apiCfg, err := serviceconfig.Find(sourceDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-	metadata.Transport = apiCfg.RepoMetadataTransport(config.LanguageJava, library)
 	return metadata, nil
 }

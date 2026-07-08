@@ -20,20 +20,13 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-
-	"github.com/bazelbuild/buildtools/build"
 )
 
 const (
-	librarianDir        = ".librarian"
-	librarianStateFile  = "state.yaml"
-	librarianConfigFile = "config.yaml"
-	defaultTagFormat    = "{name}/v{version}"
-	googleapisRepo      = "github.com/googleapis/googleapis"
+	googleapisRepo = "github.com/googleapis/googleapis"
 )
 
 var (
@@ -53,7 +46,6 @@ func run(ctx context.Context, args []string) error {
 	// TODO(https://github.com/googleapis/librarian/issues/4567): change this
 	// to use github.com/urfave/cli/v3 consistently with other tooling.
 	flagSet := flag.NewFlagSet("migrate", flag.ContinueOnError)
-	insertMarkersFlag := flagSet.Bool("insert-markers", false, "whether to insert markers in Java pom.xml files")
 	if err := flagSet.Parse(args); err != nil {
 		return err
 	}
@@ -68,29 +60,9 @@ func run(ctx context.Context, args []string) error {
 	}
 	base := filepath.Base(abs)
 	switch base {
-	case "google-cloud-java":
-		return runJavaMigration(ctx, abs, *insertMarkersFlag)
-	case "google-cloud-node":
-		return runNodejsMigration(ctx, abs)
 	case "google-cloud-dotnet":
 		return runDotnetMigration(ctx, abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
-}
-
-func parseBazel(googleapisDir, dir string) (*build.File, error) {
-	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
-	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
-		return nil, nil
-	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, err
-	}
-	file, err := build.ParseBuild(path, data)
-	if err != nil {
-		return nil, err
-	}
-	return file, nil
 }

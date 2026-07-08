@@ -25,28 +25,62 @@ import (
 )
 
 func TestParseOptions(t *testing.T) {
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year":        "2038",
-			"package-name-override": "GoogleCloudBigtable",
-			"root-name":             "test-root",
-		},
-	}
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	got, err := newCodec(model, cfg, nil, ".")
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := &codec{
-		GenerationYear: "2038",
-		PackageName:    "GoogleCloudBigtable",
-		MonorepoRoot:   ".",
-		RootName:       "test-root",
-		Model:          model,
-		ApiPackages:    map[string]*Dependency{},
-	}
-	if diff := cmp.Diff(want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
-		t.Errorf("mismatch in codec (-want, +got)\n:%s", diff)
+	for _, test := range []struct {
+		name string
+		cfg  *parser.ModelConfig
+		want *codec
+	}{
+		{
+			name: "baseline",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year":        "2038",
+					"package-name-override": "GoogleCloudBigtable",
+					"root-name":             "test-root",
+				},
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				PackageName:        "GoogleCloudBigtable",
+				MonorepoRoot:       ".",
+				RootName:           "test-root",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+			},
+		},
+		{
+			name: "discovery",
+			cfg: &parser.ModelConfig{
+				Codec: map[string]string{
+					"copyright-year":        "2038",
+					"package-name-override": "GoogleCloudComputeV1",
+					"root-name":             "test-root",
+				},
+				SpecificationFormat: config.SpecDiscovery,
+			},
+			want: &codec{
+				GenerationYear:     "2038",
+				PackageName:        "GoogleCloudComputeV1",
+				MonorepoRoot:       ".",
+				RootName:           "test-root",
+				Model:              model,
+				ApiPackages:        map[string]*Dependency{},
+				DependenciesByName: map[string]*Dependency{},
+				UrlSafeForBytes:    true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := newCodec(model, test.cfg, nil, ".")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got, cmpopts.IgnoreUnexported(api.API{})); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
 
@@ -71,14 +105,14 @@ func TestNewCodec_WithSwiftCfg(t *testing.T) {
 		{SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantDeps, got.Dependencies); diff != "" {
-		t.Errorf("mismatch in Dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	wantApiPackages := map[string]*Dependency{
 		"google.cloud.location": {SwiftDependency: swiftCfg.Dependencies[1]},
 	}
 	if diff := cmp.Diff(wantApiPackages, got.ApiPackages); diff != "" {
-		t.Errorf("mismatch in ApiPackages (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -93,6 +127,7 @@ func newTestCodec(t *testing.T, model *api.API, options map[string]string) *code
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
 				{Name: wellKnownSwiftPackage, ApiPackage: wellKnownProtobufPackage},
+				{Name: paginationSwiftPackage, RequiredByServices: true},
 			},
 		},
 	}
@@ -113,6 +148,61 @@ func (c *codec) withExtraDependencies(t *testing.T, deps []config.SwiftDependenc
 			}
 			c.ApiPackages[d.ApiPackage] = dep
 		}
+		c.DependenciesByName[d.Name] = dep
 		c.Dependencies = append(c.Dependencies, dep)
 	}
+}
+
+func makeGatedTestModel() *api.API {
+	makeEnum := func(name string) *api.Enum {
+		e := &api.Enum{
+			Name: name, ID: ".google.cloud.test.v1." + name, Package: "google.cloud.test.v1",
+			Values: []*api.EnumValue{{Name: "UNSPECIFIED", Number: 0}},
+		}
+		e.UniqueNumberValues = e.Values
+		return e
+	}
+	sharedEnum := makeEnum("SharedEnum")
+	s1Enum := makeEnum("Service1Enum")
+	s2Enum := makeEnum("Service2Enum")
+	unusedEnum := makeEnum("UnusedEnum")
+
+	sharedMessage := &api.Message{
+		Name: "SharedMessage", ID: ".google.cloud.test.v1.SharedMessage", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: sharedEnum.ID}},
+	}
+	s1Message := &api.Message{
+		Name: "Service1Message", ID: ".google.cloud.test.v1.Service1Message", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s1Enum.ID}},
+	}
+	s2Message := &api.Message{
+		Name: "Service2Message", ID: ".google.cloud.test.v1.Service2Message", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: s2Enum.ID}},
+	}
+	unusedMessage := &api.Message{
+		Name: "UnusedMessage", ID: ".google.cloud.test.v1.UnusedMessage", Package: "google.cloud.test.v1",
+		Fields: []*api.Field{{Name: "e", Typez: api.TypezEnum, TypezID: unusedEnum.ID}},
+	}
+
+	s1 := &api.Service{
+		Name: "Service1", ID: ".google.cloud.test.v1.Service1", Package: "google.cloud.test.v1",
+		Methods: []*api.Method{
+			{Name: "M1", ID: ".google.cloud.test.v1.Service1.M1", InputTypeID: sharedMessage.ID, OutputTypeID: s1Message.ID},
+		},
+	}
+	s2 := &api.Service{
+		Name: "Service2", ID: ".google.cloud.test.v1.Service2", Package: "google.cloud.test.v1",
+		Methods: []*api.Method{
+			{Name: "M2", ID: ".google.cloud.test.v1.Service2.M2", InputTypeID: sharedMessage.ID, OutputTypeID: s2Message.ID},
+		},
+	}
+
+	model := api.NewTestAPI(
+		[]*api.Message{sharedMessage, s1Message, s2Message, unusedMessage},
+		[]*api.Enum{sharedEnum, s1Enum, s2Enum, unusedEnum},
+		[]*api.Service{s1, s2},
+	)
+	model.PackageName = "google.cloud.test.v1"
+	api.CrossReference(model)
+	return model
 }

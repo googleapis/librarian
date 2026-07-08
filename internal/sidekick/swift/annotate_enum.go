@@ -16,32 +16,94 @@ package swift
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
 )
 
 type enumAnnotations struct {
-	CopyrightYear   string
-	BoilerPlate     []string
-	Name            string
-	DocLines        []string
-	DefaultCaseName string
+	CopyrightYear     string
+	BoilerPlate       []string
+	Name              string
+	DocLines          []string
+	DefaultCaseName   string
+	UnknownIntName    string
+	UnknownStringName string
+
+	// GatedBy is the list of package traits that enables this enum.
+	//
+	// Empty unless the package is configured with `per_service_traits` enabled.
+	GatedBy []string
+
+	// GatedOp is the operation (&& or ||) to combine all the `GatedBy` traits.
+	//
+	// For most enums, this is " || ", as enums are enabled when any service
+	// that needs them is enabled. Messages that do not map to any service use
+	// " && ".
+	GatedOp string
+}
+
+// IsGated returns true if this message is gated by some package traits.
+func (ann *enumAnnotations) IsGated() bool {
+	return len(ann.GatedBy) != 0
+}
+
+// GateExpression returns the expression for the `#if` directive.
+//
+// In the generated code this is used as:
+//
+// ```
+// #if {{GateExpression}}
+// ... all the normal code ...
+// #endif
+// ```
+//
+// Directing the compiler to enable the code only if GateExpression evaluates to
+// `true` at compile time.
+func (ann *enumAnnotations) GateExpression() string {
+	return strings.Join(ann.GatedBy, ann.GatedOp)
 }
 
 func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
+	// We need to find non-clashing names for the `unknownIntValue` and
+	// `unknownStringvalue` cases. In practice, no enum uses those names, but
+	// if one ever this, this will add enough trailing `_` to make the name
+	// unique.
+	type u struct{}
+	caseNames := make(map[string]u)
+	uniqueCaseName := func(seed string) string {
+		_, ok := caseNames[seed]
+		for ok {
+			seed = seed + "_"
+			_, ok = caseNames[seed]
+		}
+		return seed
+	}
+
 	existing := map[int32]*enumValueAnnotations{}
 	var defaultCaseName string
 	for _, ev := range enum.UniqueNumberValues {
-		c.annotateUniqueEnumValue(ev)
-		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
+		if err := c.annotateUniqueEnumValue(ev); err != nil {
+			return err
+		}
+		ann := ev.Codec.(*enumValueAnnotations)
+		if ann == nil {
+			return fmt.Errorf("unknown annotation format for enum value: %s", ev.ID)
+		}
+		caseNames[ann.CaseName] = u{}
+		existing[ev.Number] = ann
 		if ev.Number == 0 {
-			defaultCaseName = ev.Codec.(*enumValueAnnotations).CaseName
+			defaultCaseName = ann.CaseName
 		}
 	}
 	// Fallback to first case if no 0 value found (should not happen in proto3)
 	if defaultCaseName == "" {
 		if len(enum.UniqueNumberValues) != 0 {
-			defaultCaseName = enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations).CaseName
+			ann := enum.UniqueNumberValues[0].Codec.(*enumValueAnnotations)
+			if ann == nil {
+				panic("mismatched annotation, previously checked, must be a bug")
+			}
+			defaultCaseName = ann.CaseName
 		} else {
 			return fmt.Errorf("cannot determine a default value for enum: %s", enum.ID)
 		}
@@ -53,13 +115,18 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		existing[ev.Number] = ev.Codec.(*enumValueAnnotations)
 	}
 
-	docLines := c.formatDocumentation(enum.Documentation)
+	docLines, err := c.formatDocumentation(enum.Documentation, enum.Scopes())
+	if err != nil {
+		return err
+	}
 	annotations := &enumAnnotations{
-		CopyrightYear:   model.CopyrightYear,
-		BoilerPlate:     model.BoilerPlate,
-		Name:            pascalCase(enum.Name),
-		DocLines:        docLines,
-		DefaultCaseName: defaultCaseName,
+		CopyrightYear:     model.CopyrightYear,
+		BoilerPlate:       model.BoilerPlate,
+		Name:              pascalCase(enum.Name),
+		DocLines:          docLines,
+		DefaultCaseName:   defaultCaseName,
+		UnknownIntName:    uniqueCaseName("unknownIntValue"),
+		UnknownStringName: uniqueCaseName("unknownStringValue"),
 	}
 
 	enum.Codec = annotations

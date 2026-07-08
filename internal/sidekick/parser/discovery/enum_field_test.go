@@ -117,7 +117,7 @@ func TestMakeEnumFields(t *testing.T) {
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -202,7 +202,7 @@ func TestMakeEnumFieldsDeprecated(t *testing.T) {
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -308,7 +308,7 @@ func TestMakeEnumFieldsWithDeprecatedValues(t *testing.T) {
 	apitest.CheckMessage(t, message, want)
 	wantEnums := []*api.Enum{wantEnum}
 	if diff := cmp.Diff(wantEnums, message.Enums, cmpopts.IgnoreFields(api.Enum{}, "Parent"), cmpopts.IgnoreFields(api.EnumValue{}, "Parent")); diff != "" {
-		t.Errorf("mismatch (-want, +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 

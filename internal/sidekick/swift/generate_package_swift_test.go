@@ -49,6 +49,7 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 		SwiftDefault: config.SwiftDefault{
 			Dependencies: []config.SwiftDependency{
 				{Name: "gax", Path: "packages/gax", RequiredByServices: true},
+				{Name: "wkt", ApiPackage: "google.protobuf", Path: "packages/wkt"},
 				{Name: "proto", URL: "https://github.com/apple/swift-protobuf", Version: "1.36.1", RequiredByServices: true},
 			},
 		},
@@ -69,18 +70,20 @@ func TestGeneratePackageSwift_WithDependencies(t *testing.T) {
 	wantPackageDeps := `  dependencies: [
     .package(path: "../../packages/gax"),
     .package(url: "https://github.com/apple/swift-protobuf", from: "1.36.1"),
+    .package(path: "../../packages/wkt"),
   ],`
 	if diff := cmp.Diff(wantPackageDeps, gotPackageDeps); diff != "" {
-		t.Errorf("mismatch in package dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 
 	gotTargetDeps := extractBlock(t, contentStr, "      dependencies: [", "\n      ]")
 	wantTargetDeps := `      dependencies: [
         .product(name: "gax", package: "gax"),
         .product(name: "proto", package: "swift-protobuf"),
+        .product(name: "wkt", package: "wkt"),
       ]`
 	if diff := cmp.Diff(wantTargetDeps, gotTargetDeps); diff != "" {
-		t.Errorf("mismatch in target dependencies (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
 
@@ -88,11 +91,11 @@ func extractBlock(t *testing.T, content, startStr, endStr string) string {
 	t.Helper()
 	startIdx := strings.Index(content, startStr)
 	if startIdx == -1 {
-		t.Fatalf("Package.swift missing expected block start %q", startStr)
+		t.Fatalf("missing expected block start %q\n\n%s", startStr, content)
 	}
 	endIdx := strings.Index(content[startIdx:], endStr)
 	if endIdx == -1 {
-		t.Fatalf("Package.swift missing expected block end %q", endStr)
+		t.Fatalf("missing expected block end %q\n\n%s", endStr, content)
 	}
 	return content[startIdx : startIdx+endIdx+len(endStr)]
 }

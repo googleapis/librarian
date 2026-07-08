@@ -84,11 +84,8 @@ func TestPathVariables(t *testing.T) {
 	}
 	model := api.NewTestAPI([]*api.Message{requestMessage}, nil, []*api.Service{})
 	codec := newTestCodec(t, model, nil)
-
-	for _, f := range requestMessage.Fields {
-		if err := codec.annotateField(f); err != nil {
-			t.Fatal(err)
-		}
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
 	}
 
 	for _, test := range []struct {
@@ -110,7 +107,7 @@ func TestPathVariables(t *testing.T) {
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
-					Expression: ".name as String?",
+					Expression: ".name as Swift.String?",
 					Test:       "!pathVariable0.isEmpty",
 					FieldPath:  "name",
 				},
@@ -126,13 +123,13 @@ func TestPathVariables(t *testing.T) {
 			want: []*pathVariable{
 				{
 					Name:       "pathVariable0",
-					Expression: ".name as String?",
+					Expression: ".name as Swift.String?",
 					Test:       "!pathVariable0.isEmpty",
 					FieldPath:  "name",
 				},
 				{
 					Name:       "pathVariable1",
-					Expression: ".second as String?",
+					Expression: ".second as Swift.String?",
 					Test:       "!pathVariable1.isEmpty",
 					FieldPath:  "second",
 				},
@@ -155,7 +152,7 @@ func TestPathVariables(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("pathVariables() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
@@ -237,7 +234,7 @@ func TestNewPathVariable(t *testing.T) {
 			count: 0,
 			want: &pathVariable{
 				Name:       "pathVariable0",
-				Expression: ".parent as String?",
+				Expression: ".parent as Swift.String?",
 				Test:       "!pathVariable0.isEmpty",
 				FieldPath:  "parent",
 			},
@@ -321,7 +318,7 @@ func TestNewPathVariable(t *testing.T) {
 				return
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("newPathVariable() mismatch (-want +got):\n%s", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

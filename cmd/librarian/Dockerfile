@@ -59,6 +59,26 @@ ARG GO_PROTOC_GRPC_PLUGIN_VERSION=1.3.0
 ARG GO_GAPIC_VERSION=0.59.0
 ARG GO_GOIMPORTS_VERSION=latest
 
+# NodeJS dependency versions
+ARG NODEJS_PROTOC_VERSION=33.2
+ARG NODEJS_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+ARG NODEJS_GAPIC_GENERATOR_VERSION=gapic-generator-v4.12.1
+ARG NODEJS_GAPIC_GENERATOR_CHECKSUM=477e4a9b3442457667846bd5c629d1c059e7caf2d5a3ebce95da626a2d42ea80
+ARG NODEJS_GAPIC_NODE_PROCESSING_VERSION=0.1.8
+ARG NODEJS_GAPIC_TOOLS_VERSION=1.0.6
+ARG NODEJS_PROTOBUFJS_CLI_VERSION=1.2.0
+ARG NODEJS_PROTOBUFJS_VERSION=7.5.8
+
+# Java dependency versions
+ARG JAVA_PROTOC_VERSION=33.2
+ARG JAVA_PROTOC_CHECKSUM=8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5
+ARG JAVA_VERSION=17
+ARG JAVA_PYTHON_VERSION=3.12
+ARG NODEJS_NVM_VERSION=0.40.4
+ARG NODEJS_NVM_CHECKSUM=a8e082d8d1a9b61a09e5d3e1902d2930e5b1b84a86f9777c7d2eb50ea204c0141f6a97c54a860bc3282e7b000f1c669c755f5e0db7bd6d492072744c302c0a21
+ARG NODEJS_NODE_VERSION=22
+ARG NODEJS_PNPM_VERSION=11.7.0
+
 # ============== Build Stage ==============
 # Use the MOSS-compliant base image.
 FROM marketplace.gcr.io/google/debian12@sha256:326ccf35aa72f7cc8cbd25b69e819a81c5fd9ed675c6c9ffb51f3214a64f23cf AS build
@@ -146,12 +166,6 @@ ENV HOME=/root
 FROM base AS python
 ARG PYTHON_PROTOC_VERSION
 ARG PYTHON_PROTOC_CHECKSUM
-ARG PYTHON_GAPIC_VERSION
-ARG NOX_VERSION
-ARG RUFF_VERSION
-ARG ISORT_VERSION
-ARG BLACK_VERSION
-ARG SYNTHTOOL_COMMIT
 ARG PANDOC_VERSION
 ARG PANDOC_CHECKSUM
 
@@ -229,3 +243,157 @@ RUN chmod a+rx /root/go/bin/* && \
     chmod a+x /root && \
     chmod a+x /root/go && \
     chmod a+x /root/go/bin
+
+# ============== Node Stage ==============
+FROM base AS nodejs
+ARG NODEJS_PROTOC_VERSION
+ARG NODEJS_PROTOC_CHECKSUM
+ARG NODEJS_NVM_VERSION
+ARG NODEJS_NVM_CHECKSUM
+ARG NODEJS_NODE_VERSION
+ARG NODEJS_PNPM_VERSION
+ARG NODEJS_GAPIC_GENERATOR_VERSION
+ARG NODEJS_GAPIC_GENERATOR_CHECKSUM
+ARG NODEJS_GAPIC_NODE_PROCESSING_VERSION
+ARG NODEJS_GAPIC_TOOLS_VERSION
+ARG NODEJS_PROTOBUFJS_CLI_VERSION
+ARG NODEJS_PROTOBUFJS_VERSION
+
+# Node requires libatomic but doesn't install it.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libatomic1 \
+    && rm -rf /var/lib/apt/lists/*
+
+# See https://github.com/nvm-sh/nvm
+# Create a script file sourced by both interactive and non-interactive bash shells;
+# this is required for nvm installation.
+SHELL ["/bin/bash", "-o", "pipefail", "-c"]
+ENV BASH_ENV="/root/.bash_env"
+RUN touch "${BASH_ENV}"
+RUN echo '. "${BASH_ENV}"' >> ~/.bashrc
+
+# Download and install nvm
+ENV NVM_DIR=/root/.nvm
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/nvm-install.sh \
+        https://raw.githubusercontent.com/nvm-sh/nvm/v${NODEJS_NVM_VERSION}/install.sh && \
+    echo "${NODEJS_NVM_CHECKSUM} /tmp/nvm-install.sh" | sha512sum -c - && \
+    chmod +x /tmp/nvm-install.sh && \
+    PROFILE="${BASH_ENV}" /tmp/nvm-install.sh && \
+    rm /tmp/nvm-install.sh
+RUN echo node > .nvmrc
+
+# Use nvm to install and use the specified version of node by default.
+RUN nvm install ${NODEJS_NODE_VERSION} && nvm alias default ${NODEJS_NODE_VERSION}
+
+# Install pnpm
+RUN npm install --global corepack@latest && \
+    corepack enable && \
+    corepack prepare pnpm@${NODEJS_PNPM_VERSION} --activate
+
+# Install Node-specific protoc version
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${NODEJS_PROTOC_VERSION}/protoc-${NODEJS_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${NODEJS_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
+# Allow normal users to read /root (as the generator is installed
+# in /root/.cache, for example)
+RUN chmod a+x /root
+
+# Put the installed version of Node on the path, by using
+# the version reported by "nvm current" to find the appropriate directory,
+# and creating a symlink. The Dockerfile "ENV" instruction cannot use the output
+# of a shell command.
+#
+# We need to get node and other installed binaries on the path separately from
+# what nvm provides in nvm.sh because we'll be running librarian directly (not
+# in bash); we don't need all of nvm to be available, because we're not calling
+# nvm from Librarian. We're only using it to set up the right version of Node.
+RUN ln -s /root/.nvm/versions/node/$(nvm current) /root/.nvm/versions/node/current 
+ENV PATH=$PATH:/root/.nvm/versions/node/current/bin
+ENV PNPM_HOME=/root/.nvm/versions/node/current
+ENV PNPM_CONFIG_GLOBAL_BIN_DIR=/root/.nvm/versions/node/current/bin
+ENV PNPM_CONFIG_GLOBAL_DIR=/root/.nvm/versions/node/current/pnpm-global
+ENV PNPM_CONFIG_STORE_DIR=/root/.nvm/versions/node/current/pnpm-store
+ENV PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true
+
+# Install Node generation tools
+RUN pnpm add -g \
+        gapic-node-processing@${NODEJS_GAPIC_NODE_PROCESSING_VERSION} \
+        gapic-tools@${NODEJS_GAPIC_TOOLS_VERSION} \
+        protobufjs-cli@${NODEJS_PROTOBUFJS_CLI_VERSION} \
+        protobufjs@${NODEJS_PROTOBUFJS_VERSION} && \
+    curl -fsSL --retry 5 --retry-delay 15 -o /tmp/generator.tar.gz \
+        https://github.com/googleapis/google-cloud-node/archive/${NODEJS_GAPIC_GENERATOR_VERSION}.tar.gz && \
+    echo "${NODEJS_GAPIC_GENERATOR_CHECKSUM} /tmp/generator.tar.gz" | sha256sum -c - && \
+    # The generator is installed in /opt (rather than a transient /tmp) and linked via
+    # `pnpm add -g` to preserve its node_modules. This is necessary because google-gax is
+    # defined as a devDependency in the generator but is required at startup. Deleting the
+    # source directory would break the global installation with MODULE_NOT_FOUND.
+    mkdir -p /opt/gapic-generator-typescript && \
+    tar -xzf /tmp/generator.tar.gz -C /opt/gapic-generator-typescript --strip-components=4 google-cloud-node-${NODEJS_GAPIC_GENERATOR_VERSION}/core/generator/gapic-generator-typescript && \
+    rm /tmp/generator.tar.gz && \
+    cd /opt/gapic-generator-typescript && \
+    pnpm install && \
+    ./node_modules/.bin/tsc && \
+    cp -a templates protos build/ && \
+    pnpm add -g "$PWD"
+
+# ============== Java Stage ==============
+ARG JAVA_PYTHON_VERSION
+FROM python:${JAVA_PYTHON_VERSION}-slim AS java
+ARG JAVA_PROTOC_VERSION
+ARG JAVA_PROTOC_CHECKSUM
+ARG JAVA_VERSION
+
+# Copy librarian from build stage
+COPY --from=build /go/bin/librarian /app/librarian
+
+WORKDIR /app
+ENTRYPOINT ["/app/librarian"]
+
+# Configure Adoptium APT repository and install Temurin 17 JDK, Maven, and runtime tools
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    unzip \
+    curl \
+    git \
+    ca-certificates \
+    gnupg \
+    apt-transport-https \
+    && curl -fsSL https://packages.adoptium.net/artifactory/api/gpg/key/public | gpg --dearmor | tee /etc/apt/trusted.gpg.d/adoptium.gpg > /dev/null \
+    && echo "deb https://packages.adoptium.net/artifactory/deb $(. /etc/os-release && echo "$VERSION_CODENAME") main" | tee /etc/apt/sources.list.d/adoptium.list \
+    && apt-get update && apt-get install -y --no-install-recommends \
+    temurin-${JAVA_VERSION}-jdk \
+    maven \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install Java-specific protoc version
+RUN curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip \
+        https://github.com/protocolbuffers/protobuf/releases/download/v${JAVA_PROTOC_VERSION}/protoc-${JAVA_PROTOC_VERSION}-linux-x86_64.zip && \
+    echo "${JAVA_PROTOC_CHECKSUM} /tmp/protoc.zip" | sha512sum -c - && \
+    cd /usr/local && unzip -o /tmp/protoc.zip && rm /tmp/protoc.zip
+
+# Configure pip for external sources (PyPI) globally
+RUN pip config set global.extra-index-url https://pypi.org/simple
+
+# Setup dynamic target directories inside the persistent volume.
+# This ensures that Python packages are persisted alongside Java tools,
+# while completely bypassing dynamic caller permissions.
+ENV LIBRARIAN_INSTALL_DIR=/usr/local/java_tools/bin
+ENV PATH=${LIBRARIAN_INSTALL_DIR}:${PATH}
+
+# Redirect all pip installations to be stored directly inside the volume
+ENV PYTHONPATH=/usr/local/java_tools/python-packages
+ENV PATH=${PYTHONPATH}/bin:${PATH}
+ENV PIP_TARGET=${PYTHONPATH}
+ENV PIP_NO_CACHE_DIR=1
+
+# Persist repository downloads inside the volume cache to save bandwidth and build time
+ENV LIBRARIAN_CACHE=/usr/local/java_tools/cache
+
+# Create java_tools directory and grant broad write permissions.
+# This allows any arbitrary UID running the container (like librarianops) to
+# execute `librarian install java` and write tools and packages to the global path.
+RUN mkdir -p /usr/local/java_tools && \
+    chmod -R a+rwx /usr/local/java_tools
+

@@ -12,12 +12,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 name: Install protoc
+inputs:
+  version:
+    description: "The version of protoc to install"
+    required: false
+  checksum:
+    description: "The SHA512 checksum of the protoc zip file. Required if version is specified."
+    required: false
 runs:
   using: composite
   steps:
     - name: Install protoc
       run: |
         set -e
+        VERSION="${VERSION:-33.2}"
+        CHECKSUM="${CHECKSUM:-8c0a8577311720cc83488f813aeb5046d69cb9824cbf39cb7447e0c5132d677952d5bb7c1130d9df381835eee7352828878d409873ebb407d7a4649ea2a4aee5}"
         curl -fsSL --retry 5 --retry-delay 15 -o /tmp/protoc.zip https://github.com/protocolbuffers/protobuf/releases/download/v$VERSION/protoc-$VERSION-linux-x86_64.zip
         sha512sum -c <(echo "$CHECKSUM /tmp/protoc.zip")
         cd /usr/local
@@ -25,5 +34,5 @@ runs:
         protoc --version
       shell: bash
       env:
-        VERSION: "31.0"
-        CHECKSUM: 45776e351baa6c2a9ba3b05a20d5302c5226db0579a6279a540592244d9de9b5f80c9905e90b6a1cebda12c3f8a2bd15450b46d967ba2e80dfc26fb246a84654
+        VERSION: ${{ inputs.version }}
+        CHECKSUM: ${{ inputs.checksum }}

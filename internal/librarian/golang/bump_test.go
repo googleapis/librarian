@@ -77,89 +77,76 @@ func TestBump(t *testing.T) {
 		{
 			name: "bump snippet metadata",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
 			},
 			library: &config.Library{
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
 						Path: "google/test-lib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/test-lib/v1",
 						},
 					},
 				},
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
 			},
 		},
 		{
 			name: "ignore nested module snippets",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json":           "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
-				"internal/generated/snippets/test-lib/v2/apiv1/nested/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json":        "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"test-lib/nested/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 			},
 			library: &config.Library{
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
 						Path: "google/test-lib/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/test-lib/v1",
 						},
 					},
 				},
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json":           "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
-				"internal/generated/snippets/test-lib/v2/apiv1/nested/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json":        "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"test-lib/nested/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 			},
 		},
 		{
 			name: "module path version",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/dataproc/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"dataproc/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
 			},
 			library: &config.Library{
 				Name: "dataproc",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/dataproc/v1",
+						Go: &config.GoAPI{
+							ImportPath: "dataproc/v2/apiv1",
+						},
 					},
 				},
 				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
-							ImportPath: "dataproc/v2/apiv1",
-							Path:       "google/cloud/dataproc/v1",
-						},
-					},
 					ModulePathVersion: "v2",
 				},
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"internal/generated/snippets/dataproc/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"dataproc/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
 			},
 		},
 		{
 			name: "library without Library.Go field for overrides",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/secretmanager/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
-				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.1.0\"\n",
+				"secretmanager/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}",
+				"secretmanager/internal/version.go":                      "package internal\n\nconst Version = \"0.1.0\"\n",
 			},
 			library: &config.Library{
 				Name: "secretmanager",
@@ -171,8 +158,8 @@ func TestBump(t *testing.T) {
 			},
 			version: "0.2.0",
 			wantFiles: map[string]string{
-				"internal/generated/snippets/secretmanager/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
-				"secretmanager/internal/version.go":                                         "package internal\n\nconst Version = \"0.2.0\"\n",
+				"secretmanager/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.2.0\"\n  }\n}",
+				"secretmanager/internal/version.go":                      "package internal\n\nconst Version = \"0.2.0\"\n",
 			},
 		},
 		{
@@ -199,7 +186,7 @@ func TestBump(t *testing.T) {
 					},
 				},
 				Go: &config.GoModule{
-					DeleteGenerationOutputPaths: []string{"../internal/generated/snippets/secretmanager/apiv1"},
+					DeleteGenerationOutputPaths: []string{"examples/apiv1"},
 				},
 			},
 			version: "0.2.0",
@@ -214,11 +201,6 @@ func TestBump(t *testing.T) {
 			if err := os.MkdirAll(libraryDir, 0755); err != nil {
 				t.Fatal(err)
 			}
-			snippetsDir := filepath.Join(output, "internal", "generated", "snippets", test.library.Name)
-			if err := os.MkdirAll(snippetsDir, 0755); err != nil {
-				t.Fatal(err)
-			}
-
 			for path, content := range test.initialFiles {
 				fullPath := filepath.Join(output, path)
 				if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
@@ -274,27 +256,22 @@ func TestBump_Error(t *testing.T) {
 		{
 			name: "snippet metadata is read-only",
 			initialFiles: map[string]string{
-				"internal/generated/snippets/test-lib/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
+				"test-lib/examples/apiv1/snippet_metadata_foo.json": "{\n  \"clientLibrary\": {\n    \"version\": \"0.1.0\"\n  }\n}\n",
 			},
 			library: &config.Library{
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
 						Path: "google/example/v1",
-					},
-				},
-				Go: &config.GoModule{
-					GoAPIs: []*config.GoAPI{
-						{
+						Go: &config.GoAPI{
 							ImportPath: "test-lib/apiv1",
-							Path:       "google/example/v1",
 						},
 					},
 				},
 			},
 			version: "0.2.0",
 			setup: func(t *testing.T, dir string) {
-				if err := os.Chmod(filepath.Join(dir, "internal", "generated", "snippets", "test-lib", "apiv1", "snippet_metadata_foo.json"), 0444); err != nil {
+				if err := os.Chmod(filepath.Join(dir, "test-lib", "examples", "apiv1", "snippet_metadata_foo.json"), 0444); err != nil {
 					t.Fatal(err)
 				}
 			},
@@ -306,7 +283,7 @@ func TestBump_Error(t *testing.T) {
 				Name: "test-lib",
 				APIs: []*config.API{
 					{
-						Path: "google/example/common",
+						Path: "google/v1",
 					},
 				},
 			},
