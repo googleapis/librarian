@@ -91,7 +91,7 @@ type API struct {
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
 	// RequiresBilling indicates whether the API requires billing.
-	// If left unset, the API requires billing.
+	// Defaults to true.
 	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
 
 	// SampleURIs is the documentation URI for code samples per language.
