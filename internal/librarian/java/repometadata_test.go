@@ -172,6 +172,31 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				RequiresBilling:      true,
 			},
 		},
+		{
+			name: "recommended package",
+			java: &config.JavaModule{
+				ArtifactID:         "google-cloud-secretmanager",
+				GroupID:            "com.google.cloud",
+				RecommendedPackage: "com.google.cloud.secretmanager.v1",
+			},
+			want: &repoMetadata{
+				APIShortname:         "secretmanager",
+				NamePretty:           wantNamePretty,
+				ProductDocumentation: wantProductDoc,
+				APIDescription:       wantAPIDescription,
+				ClientDocumentation:  "https://cloud.google.com/java/docs/reference/google-cloud-secretmanager/latest/overview",
+				ReleaseLevel:         "stable",
+				Transport:            "grpc+rest",
+				Language:             "java",
+				Repo:                 "googleapis/google-cloud-java",
+				RepoShort:            "java-secretmanager",
+				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
+				APIID:                "secretmanager.googleapis.com",
+				LibraryType:          "GAPIC_AUTO",
+				RequiresBilling:      true,
+				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			library := &config.Library{

@@ -27,6 +27,7 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )
@@ -48,12 +49,15 @@ var (
 		"google/cloud": true,
 		"google/rpc":   true,
 	}
-	runProtoc = func(ctx context.Context, args []string) error {
+	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
 		env, err := getToolsEnv()
 		if err != nil {
 			return err
 		}
-		return command.RunWithEnv(ctx, env, "protoc", args...)
+		if pc == nil {
+			return command.RunWithEnv(ctx, env, "protoc", args...)
+		}
+		return protoc.Run(ctx, env, pc, args...)
 	}
 )
 
@@ -169,20 +173,23 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if err != nil {
 		return err
 	}
-
+	var pc *config.Protoc
+	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
+		pc = params.cfg.Tools.Protoc
+	}
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
-		if err := runProtoc(ctx, args); err != nil {
+		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		if err := runProtoc(ctx, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
+		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
@@ -193,7 +200,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
 		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
-		if err := runProtoc(ctx, args); err != nil {
+		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}

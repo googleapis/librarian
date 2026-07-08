@@ -95,7 +95,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `version` | string | Is the version to install. |
-| `checksum` | string | Is the SHA256 checksum of the tarball. |
+| `sha256` | string | Is the SHA256 checksum of the tarball. |
 
 ## Default Configuration
 
@@ -135,6 +135,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
+| `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
@@ -190,6 +191,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 | `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
+| `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -373,7 +375,6 @@ This document describes the schema for the librarian.yaml.
 | `artifact_id` | string | Is the Maven artifact ID. |
 | `client_documentation_override` | string | Allows the "client_documentation" field in .repo-metadata.json to be overridden. |
 | `codeowner_team` | string | Is the GitHub team that owns the code. |
-| `excluded_dependencies` | string | Is a list of dependencies to exclude. |
 | `excluded_poms` | list of string | Is a list of artifact ids, whose module should be excluded when updating pom.xml and are omitted when counting new modules. |
 | `extra_versioned_modules` | string | Is a list of extra versioned modules. |
 | `group_id` | string | Is the Maven group ID, defaults to "com.google.cloud". |
@@ -418,6 +419,17 @@ This document describes the schema for the librarian.yaml.
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
 | `metadata_name_override` | string | Allows the name field in .repo-metadata.json to be overridden. |
 | `name_pretty_override` | string | Allows the name_pretty field in .repo-metadata.json to be overridden. |
+
+## PHPAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
+
+## PHPPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
 
 ## PythonDefault Configuration
 

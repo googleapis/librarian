@@ -725,8 +725,8 @@ func TestTidy_UnusedSections(t *testing.T) {
 	for _, test := range []struct {
 		name        string
 		cfg         *config.Config
-		wantTools   bool
-		wantDefault bool
+		wantTools   *config.Tools
+		wantDefault *config.Default
 	}{
 		{
 			name: "empty sections removed",
@@ -738,8 +738,8 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Tools:   &config.Tools{},
 				Default: &config.Default{},
 			},
-			wantTools:   false,
-			wantDefault: false,
+			wantTools:   nil,
+			wantDefault: nil,
 		},
 		{
 			name: "non-empty sections preserved",
@@ -751,8 +751,34 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Tools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
 				Default: &config.Default{Output: "output"},
 			},
-			wantTools:   true,
-			wantDefault: true,
+			wantTools:   &config.Tools{Cargo: []*config.CargoTool{{Name: "taplo", Version: "1.0"}}},
+			wantDefault: &config.Default{Output: "output"},
+		},
+		{
+			name: "maven preserved",
+			cfg: &config.Config{
+				Language: config.LanguageJava,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+			wantDefault: nil,
+		},
+		{
+			name: "protoc preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRust,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
+			wantDefault: nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -764,11 +790,11 @@ func TestTidy_UnusedSections(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if (got.Tools != nil) != test.wantTools {
-				t.Errorf("Tools present = %v, want %v", got.Tools != nil, test.wantTools)
+			if diff := cmp.Diff(test.wantTools, got.Tools); diff != "" {
+				t.Errorf("Tools mismatch (-want +got):\n%s", diff)
 			}
-			if (got.Default != nil) != test.wantDefault {
-				t.Errorf("Default present = %v, want %v", got.Default != nil, test.wantDefault)
+			if diff := cmp.Diff(test.wantDefault, got.Default); diff != "" {
+				t.Errorf("Default mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
