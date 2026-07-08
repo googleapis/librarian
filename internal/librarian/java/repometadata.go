@@ -107,19 +107,7 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		LibraryType:          repometadata.GAPICAutoLibraryType,
 		RequiresBilling:      sharedMetadata.RequiresBilling,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
-	}
-
-	apiCfg, err := serviceconfig.Find(sourceDir, library.APIs[0].Path, config.LanguageJava)
-	if err != nil {
-		return nil, fmt.Errorf("failed to find api config: %w", err)
-	}
-
-	if apiCfg.RequiresBilling != nil {
-		metadata.RequiresBilling = *apiCfg.RequiresBilling
-	} else if library.Java != nil {
-		metadata.RequiresBilling = !library.Java.BillingNotRequired
-	} else {
-		metadata.RequiresBilling = true
+		RequiresBilling:      sharedMetadata.RequiresBilling,
 	}
 
 	// Java-specific overrides and optional fields
