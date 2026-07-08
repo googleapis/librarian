@@ -226,7 +226,11 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Librar
 
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
-	return len(tools.Cargo) == 0 && len(tools.PNPM) == 0 && len(tools.Pip) == 0 && len(tools.Go) == 0
+	return len(tools.Cargo) == 0 &&
+		len(tools.PNPM) == 0 &&
+		len(tools.Pip) == 0 &&
+		len(tools.Go) == 0 &&
+		tools.Protoc == nil
 }
 
 // isDefaultEmpty returns true if the default configuration is empty.
