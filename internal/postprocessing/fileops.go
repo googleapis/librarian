@@ -47,6 +47,29 @@ var (
 	errSameSourceAndDestination = errors.New("src and dst must be different")
 )
 
+// Apply executes all configured post-processing operations against outDir in sequential order.
+func Apply(outDir string, cfg *config.Postprocess) error {
+	if cfg == nil {
+		return nil
+	}
+	if err := CopyFiles(outDir, cfg.CopyFile); err != nil {
+		return fmt.Errorf("failed to copy files: %w", err)
+	}
+	if err := RemoveFiles(outDir, cfg.RemoveFile); err != nil {
+		return fmt.Errorf("failed to remove files: %w", err)
+	}
+	if err := ReplaceAll(outDir, cfg.Replace); err != nil {
+		return fmt.Errorf("failed to replace all: %w", err)
+	}
+	if err := ReplaceRegexAll(outDir, cfg.ReplaceRegex); err != nil {
+		return fmt.Errorf("failed to replace regex all: %w", err)
+	}
+	if err := ApplyMethodOperations(outDir, cfg.MethodOperations); err != nil {
+		return fmt.Errorf("failed to apply method operations: %w", err)
+	}
+	return nil
+}
+
 // Replace finds and replaces exact text in a file.
 // It returns an error if the target file does not exist or if the text is not found.
 func Replace(path, original, replacement string) error {
