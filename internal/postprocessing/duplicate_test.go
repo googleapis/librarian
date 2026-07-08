@@ -125,7 +125,7 @@ public class TestClass {
 			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			if err := DuplicateMethod(t.Context(), path, test.funcName, test.newName, "java"); err != nil {
+			if err := DuplicateMethod(path, test.funcName, test.newName, "java"); err != nil {
 				t.Fatal(err)
 			}
 			gotBytes, err := os.ReadFile(path)
@@ -240,7 +240,7 @@ public class TestClass {
 			if err := os.WriteFile(path, []byte(test.content), 0644); err != nil {
 				t.Fatal(err)
 			}
-			err := DuplicateMethod(t.Context(), path, test.funcName, test.newName, test.language)
+			err := DuplicateMethod(path, test.funcName, test.newName, test.language)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("DuplicateMethod() error = %v, wantErr %v", err, test.wantErr)
 			}
