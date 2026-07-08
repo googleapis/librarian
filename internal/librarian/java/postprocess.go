@@ -569,3 +569,83 @@ func ToKeepSet(keep []string) map[string]bool {
 	}
 	return keepSet
 }
+
+// RestructureToLibrary moves all generated source code to the library root directories.
+// It also removes conflicting files, and copies public proto files to the library.
+func RestructureToLibrary(params postProcessParams, destRoot string, keepSet map[string]bool) error {
+	tempProtoSrcDir := params.protoDir()
+	isCommonProtos := params.library != nil && params.library.Name == commonProtosLibrary
+	if !isCommonProtos {
+		if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
+			return err
+		}
+	}
+	if err := moveSourcesToLibrary(params, destRoot, keepSet); err != nil {
+		return err
+	}
+	if err := copyProtoFilesToLibrary(params, destRoot); err != nil {
+		return err
+	}
+	return nil
+}
+
+// moveSourcesToLibrary relocates the generated Java source files (GAPIC, proto,
+// gRPC, resource names, and samples) to their repository destinations.
+func moveSourcesToLibrary(params postProcessParams, destRoot string, keepSet map[string]bool) error {
+	coords := params.coords()
+	isMonolithic := params.javaAPI.Monolithic
+	var protoDest, grpcDest, gapicMainDest, gapicTestDest string
+	// Determine target repository subdirectories based on library structure.
+	if isMonolithic {
+		protoDest = filepath.Join(destRoot, "src", "main", "java")
+		grpcDest = filepath.Join(destRoot, "src", "main", "java")
+		gapicMainDest = filepath.Join(destRoot, "src", "main")
+		gapicTestDest = filepath.Join(destRoot, "src", "test")
+	} else {
+		protoDest = filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "java")
+		grpcDest = filepath.Join(destRoot, coords.GRPC.ArtifactID, "src", "main", "java")
+		gapicMainDest = filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "main")
+		gapicTestDest = filepath.Join(destRoot, coords.GAPIC.ArtifactID, "src", "test")
+	}
+	var actions []moveAction
+	// Collect generated source directories to relocate.
+	if shouldGenerateProto(params.javaAPI) {
+		actions = append(actions, moveAction{src: params.protoDir(), dest: protoDest, description: "proto main source files"})
+	}
+	if shouldGenerateGRPC(params.javaAPI) {
+		actions = append(actions, moveAction{src: params.gRPCDir(), dest: grpcDest, description: "gRPC main source files"})
+	}
+	if shouldGenerateGAPIC(params.javaAPI) {
+		actions = append(actions,
+			moveAction{src: filepath.Join(params.gapicDir(), "src", "main"), dest: gapicMainDest, description: "GAPIC main source files"},
+			moveAction{src: filepath.Join(params.gapicDir(), "src", "test"), dest: gapicTestDest, description: "GAPIC test source files"},
+		)
+	}
+	if shouldGenerateResourceNames(params.javaAPI) {
+		actions = append(actions, moveAction{src: filepath.Join(params.gapicDir(), "proto", "src", "main", "java"), dest: protoDest, description: "resource name source files"})
+	}
+	if params.includeSamples && shouldGenerateGAPIC(params.javaAPI) {
+		actions = append(actions, moveAction{src: filepath.Join(params.gapicDir(), "samples", "snippets", "generated", "src", "main", "java"), dest: filepath.Join(destRoot, "samples", "snippets", "generated"), description: "samples"})
+	}
+	// Relocate all collected source files to their destinations.
+	return ApplyMoveActionsToLibrary(actions, destRoot, keepSet)
+}
+
+// copyProtoFilesToLibrary copies public proto definition (.proto) files from the
+// generator inputs to their target directory structure.
+func copyProtoFilesToLibrary(params postProcessParams, destRoot string) error {
+	if !shouldGenerateProto(params.javaAPI) {
+		return nil
+	}
+	coords := params.coords()
+	var destProtoDir string
+	if params.javaAPI.Monolithic {
+		destProtoDir = filepath.Join(destRoot, "src", "main", "proto")
+	} else {
+		destProtoDir = filepath.Join(destRoot, coords.Proto.ArtifactID, "src", "main", "proto")
+	}
+	if err := copyProtos(params.protosToCopy, destProtoDir); err != nil {
+		return fmt.Errorf("failed to copy proto files: %w", err)
+	}
+	return nil
+}
