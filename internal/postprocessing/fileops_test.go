@@ -646,3 +646,91 @@ func TestReplaceRegexAll_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestApplyMethodOperations(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		files     map[string]string
+		ops       []config.MethodOperation
+		wantFiles map[string]string
+	}{
+		{
+			name: "single file sequential operations",
+			files: map[string]string{
+				"Test.java": "package com.example;\n\npublic class Test {\n\tpublic void toDelete() {}\n\tpublic void newFunc() {}\n}",
+			},
+			ops: []config.MethodOperation{
+				{Path: "*.java", Action: "delete", FuncName: "public void toDelete()"},
+				{Path: "*.java", Action: "duplicate", FuncName: "public void newFunc()", NewName: "newFuncCopy"},
+				{Path: "*.java", Action: "deprecate", FuncName: "public void newFuncCopy()", DeprecationMessage: "Use newFunc instead."},
+			},
+			wantFiles: map[string]string{
+				"Test.java": "package com.example;\n\npublic class Test {\n\tpublic void newFunc() {}\n\n\t/**\n\t * @deprecated Use newFunc instead.\n\t */\n\t@Deprecated\n\tpublic void newFuncCopy() {}\n}",
+			},
+		},
+		{
+			name: "batch execution across subdirectories ignoring non-matching files",
+			files: map[string]string{
+				"src/A.java":     "public class A {\n\tpublic void removeMe() {}\n}",
+				"sub/B.java":     "public class B {\n\tpublic void removeMe() {}\n}",
+				"doc/readme.txt": "public class C {\n\tpublic void removeMe() {}\n}",
+			},
+			ops: []config.MethodOperation{
+				{Path: "*/*.java", Action: "delete", FuncName: "public void removeMe()"},
+			},
+			wantFiles: map[string]string{
+				"src/A.java":     "public class A {\n}",
+				"sub/B.java":     "public class B {\n}",
+				"doc/readme.txt": "public class C {\n\tpublic void removeMe() {}\n}",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			if err := ApplyMethodOperations(dir, test.ops); err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyMethodOperations_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		ops     []config.MethodOperation
+		wantErr error
+	}{
+		{
+			name:    "no files match pattern",
+			files:   map[string]string{"foo.txt": "hello"},
+			ops:     []config.MethodOperation{{Path: "*.java", Action: "delete", FuncName: "public void foo()"}},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:    "method not found in file",
+			files:   map[string]string{"Test.java": "public class Test {}"},
+			ops:     []config.MethodOperation{{Path: "*.java", Action: "delete", FuncName: "public void missing()"}},
+			wantErr: errMethodNotFound,
+		},
+		{
+			name:    "unsupported action",
+			files:   map[string]string{"Test.java": "public class Test {}"},
+			ops:     []config.MethodOperation{{Path: "*.java", Action: "invalid_action", FuncName: "public void foo()"}},
+			wantErr: errUnsupportedMethodAction,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			err := ApplyMethodOperations(dir, test.ops)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ApplyMethodOperations() error = %v, want %v", err, test.wantErr)
+			}
+		})
+	}
+}

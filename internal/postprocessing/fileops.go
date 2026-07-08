@@ -40,6 +40,9 @@ var (
 	// errEmptyPattern is returned when the regex pattern to replace is empty.
 	errEmptyPattern = errors.New("regex pattern cannot be empty")
 
+	// errUnsupportedMethodAction is returned when a method operation action is not supported.
+	errUnsupportedMethodAction = errors.New("unsupported method operation action")
+
 	// errSameSourceAndDestination is returned when Src and Dst resolve to the same path.
 	errSameSourceAndDestination = errors.New("src and dst must be different")
 )
@@ -150,6 +153,34 @@ func ReplaceRegexAll(outDir string, replaceRegexConfigs []config.ReplaceRegexCon
 			}
 			if err := ReplaceRegex(file, r.Pattern, r.Replacement); err != nil {
 				return fmt.Errorf("failed to apply regex replacement in %s: %w", file, err)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ApplyMethodOperations executes method operations across matching files in outDir.
+func ApplyMethodOperations(outDir string, methodOperations []config.MethodOperation) error {
+	for _, mo := range methodOperations {
+		if err := applyToFiles(outDir, mo.Path, func(file string) error {
+			switch mo.Action {
+			case "delete":
+				if err := DeleteMethod(file, mo.FuncName, "java"); err != nil {
+					return fmt.Errorf("failed to delete method %q in %s: %w", mo.FuncName, file, err)
+				}
+			case "duplicate":
+				if err := DuplicateMethod(file, mo.FuncName, mo.NewName, "java"); err != nil {
+					return fmt.Errorf("failed to duplicate method %q in %s: %w", mo.FuncName, file, err)
+				}
+			case "deprecate":
+				if err := DeprecateMethod(file, mo.FuncName, mo.DeprecationMessage, "java"); err != nil {
+					return fmt.Errorf("failed to deprecate method %q in %s: %w", mo.FuncName, file, err)
+				}
+			default:
+				return fmt.Errorf("%w: %q", errUnsupportedMethodAction, mo.Action)
 			}
 			return nil
 		}); err != nil {
