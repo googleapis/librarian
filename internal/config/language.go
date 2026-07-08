@@ -804,3 +804,18 @@ type NodejsAPI struct {
 	// Path is the source path.
 	Path string `yaml:"path,omitempty"`
 }
+
+// PHPPackage contains PHP-specific library configuration.
+type PHPPackage struct {
+	// PHPAPIs is a list of PHP-specific API configurations.
+	PHPAPIs []*PHPAPI `yaml:"php_apis,omitempty"`
+}
+
+// PHPAPI represents configuration for a single API within a PHP package.
+type PHPAPI struct {
+	// Path is the source path.
+	Path string `yaml:"path,omitempty"`
+
+	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
+	MigrationMode string `yaml:"migration_mode,omitempty"`
+}
