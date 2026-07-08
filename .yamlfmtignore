@@ -1,5 +1,0 @@
-# The PHP generator (gapic-generator-php) has a preprocessor bug (fixYaml)
-# that incorrectly indents top-level keys if they immediately follow indented blocks.
-# The workaround requires keeping blank lines between top-level keys,
-# which the default yamlfmt settings would otherwise strip.
-internal/testdata/googleapis/google/cloud/secretmanager/v1/secretmanager_v1.yaml
