@@ -411,10 +411,6 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 	if p.Output != "" {
 		res.Output = p.Output
 	}
-<<<<<<< HEAD
-=======
-
->>>>>>> b7dd0acb (fix: move RequiresBilling from config.Library to serviceconfig.API)
 	if p.Roots != nil {
 		res.Roots = p.Roots
 	}
