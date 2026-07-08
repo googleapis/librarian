@@ -135,6 +135,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoModule](#gomodule-configuration) (optional) | Contains Go-specific library configuration. |
 | `java` | [JavaModule](#javamodule-configuration) (optional) | Contains Java-specific library configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific library configuration. |
+| `php` | [PHPPackage](#phppackage-configuration) (optional) | Contains PHP-specific library configuration. |
 | `python` | [PythonPackage](#pythonpackage-configuration) (optional) | Contains Python-specific library configuration. |
 | `rust` | [RustCrate](#rustcrate-configuration) (optional) | Contains Rust-specific library configuration. |
 | `swift` | [SwiftPackage](#swiftpackage-configuration) (optional) | Contains Swift-specific library configuration. |
@@ -190,6 +191,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoAPI](#goapi-configuration) (optional) | Contains Go-specific API configuration. |
 | `java` | [JavaAPI](#javaapi-configuration) (optional) | Contains Java-specific API configuration. |
 | `nodejs` | [NodejsAPI](#nodejsapi-configuration) (optional) | Contains Node.js-specific API configuration. |
+| `php` | [PHPAPI](#phpapi-configuration) (optional) | Contains PHP-specific API configuration. |
 
 ## GoDefault Configuration
 
@@ -417,6 +419,17 @@ This document describes the schema for the librarian.yaml.
 | `client_documentation_override` | string | Allows the client_documentation field in .repo-metadata.json to be overridden from the default that's inferred. |
 | `metadata_name_override` | string | Allows the name field in .repo-metadata.json to be overridden. |
 | `name_pretty_override` | string | Allows the name_pretty field in .repo-metadata.json to be overridden. |
+
+## PHPAPI Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
+
+## PHPPackage Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
 
 ## PythonDefault Configuration
 
