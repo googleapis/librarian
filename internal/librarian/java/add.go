@@ -110,55 +110,57 @@ func Add(lib *config.Library, addedAPI *config.API) (*config.Library, error) {
 
 func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string, error) {
 	libCoord := deriveLibraryCoordinates(lib)
-	var artifacts []string
-
-	addAPIArtifacts := func(api *config.API) error {
-		javaAPI := api.Java
-		if javaAPI == nil {
-			javaAPI = &config.JavaAPI{}
-		}
-		apiBase := deriveAPIBase(lib, api.Path)
-		apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
-
-		if shouldGenerateProto(javaAPI) {
-			artifacts = append(artifacts, apiCoord.Proto.ArtifactID)
-		}
-		if shouldGenerateGRPC(javaAPI) {
-			transport, err := serviceconfig.FindTransport(api.Path, config.LanguageJava)
-			if err != nil {
-				return err
-			}
-			if transport != serviceconfig.Rest {
-				artifacts = append(artifacts, apiCoord.GRPC.ArtifactID)
-			}
-		}
-		return nil
-	}
+	var modules []expectedModule
 
 	if addedAPI != nil {
-		if err := addAPIArtifacts(addedAPI); err != nil {
+		transport, err := serviceconfig.FindTransport(addedAPI.Path, config.LanguageJava)
+		if err != nil {
 			return nil, err
 		}
+		modules = expectedAPIModules(lib, addedAPI, libCoord, transport)
 	} else {
-		artifacts = append(artifacts, libCoord.Parent.ArtifactID)
-		artifacts = append(artifacts, libCoord.BOM.ArtifactID)
+		transports, err := loadTransports(lib)
+		if err != nil {
+			return nil, err
+		}
+		modules = expectedModules(lib, transports)
 
-		var shouldGenerateClient bool
-		for _, api := range lib.APIs {
-			javaAPI := api.Java
-			if javaAPI == nil {
-				javaAPI = &config.JavaAPI{}
-			}
-			if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
-				shouldGenerateClient = true
-			}
-			if err := addAPIArtifacts(api); err != nil {
-				return nil, err
+		// Reorder modules to match versions.txt expectation: Parent, BOM, APIs, Client.
+		var parent *expectedModule
+		var bom *expectedModule
+		var client *expectedModule
+		var apis []expectedModule
+
+		for _, m := range modules {
+			switch m.Kind {
+			case kindParent:
+				parent = &m
+			case kindBOM:
+				bom = &m
+			case kindClient:
+				client = &m
+			default: // kindProto, kindGRPC
+				apis = append(apis, m)
 			}
 		}
-		if shouldGenerateClient {
-			artifacts = append(artifacts, libCoord.GAPIC.ArtifactID)
+
+		var ordered []expectedModule
+		if parent != nil {
+			ordered = append(ordered, *parent)
 		}
+		if bom != nil {
+			ordered = append(ordered, *bom)
+		}
+		ordered = append(ordered, apis...)
+		if client != nil {
+			ordered = append(ordered, *client)
+		}
+		modules = ordered
+	}
+
+	var artifacts []string
+	for _, m := range modules {
+		artifacts = append(artifacts, m.ArtifactID)
 	}
 
 	if lib.Java != nil && len(lib.Java.ExcludedPOMs) > 0 {
