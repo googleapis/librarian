@@ -15,19 +15,55 @@
 package php
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/testhelper"
 )
 
 func TestGenerate(t *testing.T) {
-	ctx := t.Context()
-	cfg := &config.Config{}
-	lib := &config.Library{}
-	src := &sources.Sources{}
+	if testing.Short() {
+		t.Skip("skipping slow integration test")
+	}
+	testhelper.RequireCommand(t, "php")
+	testhelper.RequireCommand(t, "protoc")
 
-	if err := Generate(ctx, cfg, lib, src); err != nil {
-		t.Errorf("Generate() returned error: %v", err)
+	// Use mock googleapis checked in as test data
+	googleapisDir := "../../testdata/googleapis"
+	absGoogleapis, err := filepath.Abs(googleapisDir)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	repoRoot := t.TempDir()
+	library := &config.Library{
+		Name:   "secretmanager",
+		Output: filepath.Join(repoRoot, "output"),
+		APIs: []*config.API{
+			{
+				Path: "google/cloud/secretmanager/v1",
+			},
+		},
+	}
+
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+	}
+
+	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
+	if err != nil {
+		t.Fatalf("Generate failed: %v", err)
+	}
+
+	// Verify output
+	outputDirs := []string{"src", "tests", "samples", "fragments"}
+	for _, dir := range outputDirs {
+		p := filepath.Join(library.Output, dir)
+		if stat, err := os.Stat(p); err != nil || !stat.IsDir() {
+			t.Errorf("expected directory %s to exist and be a directory", p)
+		}
 	}
 }
