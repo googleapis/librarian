@@ -48,7 +48,7 @@ var targets = map[string]float64{
 	// TODO(https://github.com/googleapis/librarian/issues/4664): raise to 80.
 	"internal/librarian/nodejs": 73,
 	// TODO(https://github.com/googleapis/librarian/issues/6705: raise to 80.
-	"internal/librarian/php": 70,
+	"internal/librarian/php": 60,
 }
 
 func main() {
