@@ -85,7 +85,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (
 				return nil, err
 			}
 			restMethods = append(restMethods, method)
-			if method.IsLroPoller {
+			if method.IsLroPoller && method.SourceService != nil {
 				requiredServices[method.SourceService.ID] = method.SourceService
 			}
 		}

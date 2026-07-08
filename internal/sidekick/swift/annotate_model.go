@@ -19,7 +19,6 @@ import (
 	"log/slog"
 	"maps"
 	"slices"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/license"
 )
@@ -107,11 +106,11 @@ func (c *codec) annotateModel() error {
 			enabledTraits = append(enabledTraits, c.traitName(svc))
 		}
 		slices.Sort(enabledTraits)
-		new := &traitDefinition{
+		trait := &traitDefinition{
 			Name:          c.traitName(service),
 			EnabledTraits: enabledTraits,
 		}
-		allTraits = append(allTraits, new)
+		allTraits = append(allTraits, trait)
 	}
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
@@ -125,7 +124,7 @@ func (c *codec) annotateModel() error {
 	// will lack any feature gates, but may depend on messages that do.
 	// Change them to work only if all features are enabled.
 	slices.SortFunc(allTraits, func(a, b *traitDefinition) int {
-		return strings.Compare(a.Name, b.Name)
+		return cmp.Compare(a.Name, b.Name)
 	})
 	annotations.AllTraits = allTraits
 	allTraitNames := make([]string, 0, len(allTraits))
