@@ -76,11 +76,12 @@ func TestLroAnnotations(t *testing.T) {
 
 	// The parser should have injected a mixin method.
 	wantMixin := &api.Method{
-		ID:           "..instances.getOperation",
-		Name:         "getOperation",
-		InputTypeID:  "..zoneOperations.getRequest",
-		OutputTypeID: "..Operation",
-		IsLroPoller:  true,
+		ID:              "..instances.getOperation",
+		Name:            "getOperation",
+		InputTypeID:     "..zoneOperations.getRequest",
+		OutputTypeID:    "..Operation",
+		SourceServiceID: "..zoneOperations",
+		IsLroPoller:     true,
 		PathInfo: &api.PathInfo{
 			Bindings: []*api.PathBinding{
 				{
