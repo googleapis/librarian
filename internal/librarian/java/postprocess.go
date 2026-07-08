@@ -67,6 +67,8 @@ type libraryPostProcessParams struct {
 	transports map[string]serviceconfig.Transport
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
+// postprocessing execution once native Go postprocessing is enabled.
 func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) error {
 	if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
 		return err
@@ -117,6 +119,8 @@ func (params postProcessParams) coords() apiCoordinate {
 	return deriveAPICoordinates(deriveLibraryCoordinates(params.library), params.apiBase, params.javaAPI)
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove owl-bot-staging
+// directory path helper after eliminating legacy owlbot.py staging.
 func stagingDir(outDir string) string { return filepath.Join(outDir, owlbotStagingDir) }
 
 func postProcessAPI(ctx context.Context, params postProcessParams) error {
@@ -269,6 +273,9 @@ func removeConflictingFiles(protoSrcDir string) error {
 // that matches the structure expected by owlbot.py. It nests modules under the
 // {apiBase} directory (e.g., owl-bot-staging/v1/proto-google-cloud-chat-v1) to
 // ensure synthtool preserves the module structure.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy
+// owl-bot-staging directory creation and module nesting once native Go
+// postprocessing is enabled.
 func restructureToStaging(params postProcessParams) error {
 	stagingDir := stagingDir(params.outDir)
 	destRoot := filepath.Join(stagingDir, params.apiBase)
@@ -286,6 +293,8 @@ type moveAction struct {
 	description string
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy staging
+// move action executor once native Go postprocessing is enabled.
 func restructure(actions []moveAction) error {
 	for _, action := range actions {
 		if _, err := os.Stat(action.src); err == nil {
@@ -303,6 +312,8 @@ func restructure(actions []moveAction) error {
 // restructureModules moves the generated code from the temporary versioned directory
 // tree into the destination root directory for GAPIC, Proto, gRPC, and samples.
 // It also copies the relevant proto files into the proto module.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy module
+// restructuring to staging directory once native Go postprocessing is enabled.
 func restructureModules(params postProcessParams, destRoot string) error {
 	coords := params.coords()
 	tempProtoSrcDir := params.protoDir()
@@ -392,6 +403,9 @@ func restructureModules(params postProcessParams, destRoot string) error {
 //     directory in google-cloud-java/sdk-platform-java.
 //  4. python3 is available on the system PATH and has the synthtool package
 //     installed (from google-cloud-java/sdk-platform-java).
+//
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove python3
+// owlbot.py script runner once native Go postprocessing is active.
 func runOwlBot(ctx context.Context, library *config.Library, outDir, bomVersion string) (retErr error) {
 	// Clean up the staging directory on failure to avoid leaving dirty leftovers.
 	// If owlbot.py completes successfully, it is expected to clean it up.
@@ -441,6 +455,9 @@ func copyProtos(protos []protoFileToCopy, destDir string) error {
 // It strips this first component (the API base like "v1") from the relative
 // path to reconstruct the expected path relative to the library root, which is
 // then matched against the library's Keep configuration.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy
+// keep-file removal from staging directory once native Go postprocessing is
+// enabled.
 func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 	stagingDir := stagingDir(outDir)
 	if _, err := os.Stat(stagingDir); os.IsNotExist(err) {
@@ -494,6 +511,9 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 // in the library's output directory. If it is missing (which is typical for newly added
 // client libraries), it automatically creates it from an embedded template to allow
 // OwlBot post-processing and README generation to complete successfully.
+// TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
+// template creation and fallback script generation once native Go
+// postprocessing is enabled.
 func createOrVerifyOwlbotPy(outDir string) (err error) {
 	owlbotPath := filepath.Join(outDir, "owlbot.py")
 	// Open with O_EXCL to atomically ensure we only create the script if it does not exist.
