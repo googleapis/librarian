@@ -33,7 +33,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			}
 		case "convert-swift":
 			return fmt.Errorf("module type %q is not yet supported", module.ModuleType)
-		case "":
+		case "", "default":
 			modelConfig := moduleToModelConfig(library, module, src)
 			model, err := parser.CreateModel(modelConfig)
 			if err != nil {
@@ -48,8 +48,6 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 	}
 	return nil
 }
-
-
 
 func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)

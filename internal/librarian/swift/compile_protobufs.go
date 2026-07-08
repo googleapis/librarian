@@ -68,10 +68,6 @@ func compileProtobufs(ctx context.Context, library *config.Library, module *conf
 	for _, r := range sourceConfig.ActiveRoots {
 		addImport(sourceConfig.Root(r))
 	}
-	addImport(src.Googleapis)
-	addImport(src.ProtobufSrc)
-	addImport(src.Showcase)
-	addImport(src.Conformance)
 
 	args := []string{
 		"--swift_out=Visibility=Public:" + module.Output,

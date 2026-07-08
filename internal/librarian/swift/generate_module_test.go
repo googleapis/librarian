@@ -46,6 +46,11 @@ func TestGenerateModule(t *testing.T) {
 			APIPath: "google/type",
 			Output:  filepath.Join(outDir, "ProtoJSON"),
 		},
+		{
+			APIPath:    "google/type",
+			Output:     filepath.Join(outDir, "ProtoJSONDefault"),
+			ModuleType: "default",
+		},
 	}
 	src := &sources.Sources{
 		Googleapis: googleapisDir,
@@ -58,6 +63,11 @@ func TestGenerateModule(t *testing.T) {
 
 	expectedFile := filepath.Join(outDir, "ProtoJSON", "Expr.swift")
 	if _, err := os.Stat(expectedFile); err != nil {
+		t.Error(err)
+	}
+
+	expectedDefaultFile := filepath.Join(outDir, "ProtoJSONDefault", "Expr.swift")
+	if _, err := os.Stat(expectedDefaultFile); err != nil {
 		t.Error(err)
 	}
 }
