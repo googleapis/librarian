@@ -27,7 +27,7 @@ import (
 
 var errInvalidSpecificationFormat = errors.New("dart generation requires protobuf specification format")
 
-func toModelConfig(cfg *config.Config, library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
+func toModelConfig(library *config.Library, ch *config.API, srcs *sources.Sources) (*parser.ModelConfig, error) {
 	if library.SpecificationFormat != "" && library.SpecificationFormat != config.SpecProtobuf {
 		return nil, fmt.Errorf("%w, got %q", errInvalidSpecificationFormat, library.SpecificationFormat)
 	}
@@ -61,17 +61,17 @@ func toModelConfig(cfg *config.Config, library *config.Library, ch *config.API, 
 		ServiceConfig:       svcConfig.ServiceConfig,
 		SpecificationSource: ch.Path,
 		Source:              src,
-		Codec:               buildCodec(cfg, library),
+		Codec:               buildCodec(library),
 		Override: api.ModelOverride{
 			Name:        name,
-			Description: library.DescriptionOverride,
+			Description: svcConfig.Description,
 			Title:       title,
 		},
 	}
 	return modelConfig, nil
 }
 
-func buildCodec(cfg *config.Config, library *config.Library) map[string]string {
+func buildCodec(library *config.Library) map[string]string {
 	codec := make(map[string]string)
 	if library.CopyrightYear != "" {
 		codec["copyright-year"] = library.CopyrightYear
@@ -81,17 +81,6 @@ func buildCodec(cfg *config.Config, library *config.Library) map[string]string {
 	}
 	if library.SkipRelease {
 		codec["not-for-publication"] = "true"
-	}
-	if cfg != nil {
-		for _, otherLib := range cfg.Libraries {
-			v := otherLib.Version
-			if v == "" && cfg.Default != nil && cfg.Default.Dart != nil {
-				v = cfg.Default.Dart.Version
-			}
-			if v != "" {
-				codec["package:"+otherLib.Name] = "^" + v
-			}
-		}
 	}
 	if library.Dart == nil {
 		return codec

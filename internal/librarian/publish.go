@@ -20,8 +20,6 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/git"
-	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -30,46 +28,25 @@ import (
 func publishCommand() *cli.Command {
 	return &cli.Command{
 		Name:      "publish",
+		Hidden:    true,
 		Usage:     "publish client libraries",
 		UsageText: "librarian publish",
 		Description: `publish releases the libraries that were updated in a release commit
 prepared by librarian bump.
 
-By default, publish performs a dry run that prints the actions it would
-take. Pass --execute to actually publish. By default, the most recent
-release commit reachable from HEAD is used; --release-commit overrides
-this with a specific commit.
-
-The --dry-run, --dry-run-keep-going, and --skip-semver-checks flags are
-only honored when the workspace language is Rust; they are retained for
-backwards compatibility with the legacy Rust release jobs and will be
-removed once Rust migrates to the unified flow.
-
-Examples:
-
-	librarian publish                          # dry run
-	librarian publish --execute                # publish for real
-	librarian publish --release-commit=<sha>   # publish a specific commit`,
+Only Rust is supported.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
-				Name:  "execute",
-				Usage: "fully publish (default is to only perform a dry run)",
-			},
-			&cli.StringFlag{
-				Name:  "release-commit",
-				Usage: "the release commit to publish; default finds latest release commit",
-			},
-			&cli.BoolFlag{
 				Name:  "dry-run",
-				Usage: "print commands without executing (legacy Rust-only flag)",
+				Usage: "print commands without executing",
 			},
 			&cli.BoolFlag{
 				Name:  "dry-run-keep-going",
-				Usage: "print commands without executing, don't stop on error (legacy Rust-only flag)",
+				Usage: "print commands without executing, don't stop on error",
 			},
 			&cli.BoolFlag{
 				Name:  "skip-semver-checks",
-				Usage: "skip semantic versioning checks (legacy Rust-only flag)",
+				Usage: "skip semantic versioning checks",
 			},
 			&cli.BoolFlag{
 				Name:    "verbose",
@@ -83,83 +60,25 @@ Examples:
 				return err
 			}
 			if cfg.Language == config.LanguageRust {
-				return legacyRustPublish(ctx, cfg, cmd)
+				return rustPublish(ctx, cfg, cmd)
 			}
-			return publish(ctx, cfg, cmd.String("release-commit"), cmd.Bool("execute"))
+			return fmt.Errorf("publish is not supported for %q", cfg.Language)
 		},
 	}
 }
 
-// legacyRustPublish implements the legacy publish behavior while new publish
-// behavior is being implemented.
-// TODO(https://github.com/googleapis/librarian/issues/3600): align flags
-// with new design and remove this function once Rust has migrated.
-func legacyRustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {
+func rustPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) error {
 	dryRun := cmd.Bool("dry-run")
 	skipSemverChecks := cmd.Bool("skip-semver-checks")
 	dryRunKeepGoing := cmd.Bool("dry-run-keep-going")
 	verbose := cmd.Bool("verbose")
 	command.Verbose = verbose
-	return rust.Publish(ctx, cfg, dryRun, dryRunKeepGoing, skipSemverChecks, verbose, IgnoredChanges)
-}
-
-// publish implements the publish command. It is provided with the configuration
-// at HEAD, just to find the git executable to use, after which it finds the
-// release commit to publish. The configuration at the release commit is used
-// for all further operations (and the repo will be checked out at that commit).
-// The releaseCommit flag allows a user to identify a specific release commit to
-// publish, in case of overlapping releases being performed. The execute flag
-// says whether to actually publish (true) or just perform a dry run (false).
-func publish(ctx context.Context, cfg *config.Config, releaseCommit string, execute bool) error {
-	gitExe := command.Git
-	if cfg.Release != nil {
-		gitExe = command.GetExecutablePath(cfg.Release.Preinstalled, command.Git)
-	}
-	if err := git.AssertGitStatusClean(ctx, gitExe); err != nil {
-		return err
-	}
-	var err error
-	if releaseCommit == "" {
-		releaseCommit, err = findLatestReleaseCommitHash(ctx, gitExe)
-		if err != nil {
-			return err
-		}
-	}
-	if err := git.Checkout(ctx, gitExe, releaseCommit); err != nil {
-		return err
-	}
-	// Reload the config after checking out the release commit.
-	cfg, err = yaml.Read[config.Config](config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	// Load the immediately-preceding config so we can find all libraries that
-	// were released by that commit. (This duplicates work done in
-	// findLatestReleaseCommitHash, but keeps the interface simple - and means
-	// that if we want to be able to specify the release commit directly, we
-	// can skip findLatestReleaseCommitHash entirely.)
-	cfgContentBeforeCommit, err := git.ShowFileAtRevision(ctx, gitExe, "HEAD~", config.LibrarianYAML)
-	if err != nil {
-		return err
-	}
-	cfgBeforeReleaseCommit, err := yaml.Unmarshal[config.Config]([]byte(cfgContentBeforeCommit))
-	if err != nil {
-		return err
-	}
-	librariesToPublish, err := findReleasedLibraries(cfgBeforeReleaseCommit, cfg)
-	if err != nil {
-		return err
-	}
-	if len(librariesToPublish) == 0 {
-		return fmt.Errorf("error publishing %s: %w", releaseCommit, errNoLibrariesAtReleaseCommit)
-	}
-
-	switch cfg.Language {
-	case config.LanguageFake:
-		return fakePublish(librariesToPublish, execute)
-	case config.LanguageDart:
-		return dart.Publish(ctx, cfg, librariesToPublish, execute)
-	default:
-		return fmt.Errorf("%q does not support publish", cfg.Language)
-	}
+	return rust.Publish(ctx, rust.PublishParams{
+		Config:           cfg,
+		DryRun:           dryRun,
+		DryRunKeepGoing:  dryRunKeepGoing,
+		SkipSemverChecks: skipSemverChecks,
+		Verbose:          verbose,
+		IgnoredChanges:   IgnoredChanges,
+	})
 }

@@ -283,7 +283,7 @@ func TestBuildCodec(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			got := buildCodec(nil, test.library)
+			got := buildCodec(test.library)
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
@@ -335,30 +335,7 @@ func TestToModelConfig(t *testing.T) {
 				Override: api.ModelOverride{},
 			},
 		},
-		{
-			name: "with description-override",
-			library: &config.Library{
-				DescriptionOverride: "this is a description override",
-			},
-			channel: &config.API{
-				Path: "google/cloud/functions/v2",
-			},
-			googleapisDir: googleapisDir,
-			want: &parser.ModelConfig{
-				SpecificationFormat: config.SpecProtobuf,
-				SpecificationSource: "google/cloud/functions/v2",
-				Source: &sources.SourceConfig{
-					Sources: &sources.Sources{
-						Googleapis: googleapisDir,
-					},
-					ActiveRoots: []string{"googleapis"},
-				},
-				Codec: map[string]string{},
-				Override: api.ModelOverride{
-					Description: "this is a description override",
-				},
-			},
-		},
+
 		{
 			name: "with name override",
 			library: &config.Library{
@@ -559,7 +536,7 @@ func TestToModelConfig(t *testing.T) {
 			if test.showcaseDir != "" {
 				sources.Showcase = test.showcaseDir
 			}
-			got, err := toModelConfig(nil, test.library, test.channel, sources)
+			got, err := toModelConfig(test.library, test.channel, sources)
 			if test.wantErr != nil {
 				if !errors.Is(err, test.wantErr) {
 					t.Errorf("toModelConfig() error: %v, wantErr: %v", err, test.wantErr)

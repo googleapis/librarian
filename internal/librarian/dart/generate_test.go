@@ -70,11 +70,8 @@ func TestGenerate(t *testing.T) {
 	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	cfg := &config.Config{
-		Libraries: libraries,
-	}
 	for _, library := range libraries {
-		if err := Generate(t.Context(), cfg, library, sources); err != nil {
+		if err := Generate(t.Context(), library, sources); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -108,7 +105,7 @@ func TestGenerate_Error(t *testing.T) {
 	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	gotErr := Generate(t.Context(), nil, libraries[0], sources)
+	gotErr := Generate(t.Context(), libraries[0], sources)
 	wantErr := errInvalidSpecificationFormat
 	if !errors.Is(gotErr, wantErr) {
 		t.Errorf("Generate error = %v, wantErr %v", gotErr, wantErr)
@@ -155,10 +152,7 @@ func TestGenerateLibrary(t *testing.T) {
 	sources := &sources.Sources{
 		Googleapis: googleapisDir,
 	}
-	cfg := &config.Config{
-		Libraries: []*config.Library{library},
-	}
-	if err := Generate(t.Context(), cfg, library, sources); err != nil {
+	if err := Generate(t.Context(), library, sources); err != nil {
 		t.Fatal(err)
 	}
 	if err := Format(t.Context(), library); err != nil {
