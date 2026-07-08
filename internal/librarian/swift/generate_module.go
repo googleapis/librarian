@@ -16,6 +16,7 @@ package swift
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,12 +31,7 @@ import (
 func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
 	for _, module := range library.Swift.Modules {
 		switch module.Template {
-		case "swift-protobuf":
-			if err := compileProtobufs(ctx, library, module, src); err != nil {
-				return err
-			}
-		default:
-			// Fall back to standard GAPIC generation
+		case "", "gapic":
 			modelConfig := moduleToModelConfig(library, module, src)
 			model, err := parser.CreateModel(modelConfig)
 			if err != nil {
@@ -44,6 +40,12 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 			if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
 				return err
 			}
+		case "swift-protobuf":
+			if err := compileProtobufs(ctx, library, module, src); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unsupported template %q for module %q", module.Template, module.Output)
 		}
 	}
 	return nil
