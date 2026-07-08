@@ -330,8 +330,8 @@ type Library struct {
 	// Nodejs contains Node.js-specific library configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
-	// Php contains PHP-specific library configuration.
-	Php *PHPPackage `yaml:"php,omitempty"`
+	// PHP contains PHP-specific library configuration.
+	PHP *PHPPackage `yaml:"php,omitempty"`
 
 	// Python contains Python-specific library configuration.
 	Python *PythonPackage `yaml:"python,omitempty"`
@@ -427,8 +427,8 @@ type API struct {
 	// Nodejs contains Node.js-specific API configuration.
 	Nodejs *NodejsAPI `yaml:"nodejs,omitempty"`
 
-	// Php contains PHP-specific API configuration.
-	Php *PHPAPI `yaml:"php,omitempty"`
+	// PHP contains PHP-specific API configuration.
+	PHP *PHPAPI `yaml:"php,omitempty"`
 }
 
 // GoDefault defines Go-specific default configuration.
