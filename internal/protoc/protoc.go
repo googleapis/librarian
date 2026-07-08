@@ -23,12 +23,17 @@ import (
 	"runtime"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
 )
 
-const githubURLBase = "https://github.com"
+const (
+	githubURLBase = "https://github.com"
+	osWindows     = "windows"
+	protocDir     = "protoc"
+)
 
 var (
 	osMap = map[string]string{
@@ -44,11 +49,33 @@ var (
 // Install installs the protoc tool.
 func Install(ctx context.Context, protoc *config.Protoc) error {
 	url := downloadURL(protoc.Version, runtime.GOOS, runtime.GOARCH)
-	dir, err := installDir(protoc.Version)
+	dir, err := InstallDir(protoc.Version)
 	if err != nil {
 		return err
 	}
 	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
+}
+
+// Run executes protoc with the given version and arguments.
+func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args ...string) error {
+	dir, err := InstallDir(protoc.Version)
+	if err != nil {
+		return err
+	}
+	protocPath := filepath.Join(dir, "bin", protocDir)
+	if runtime.GOOS == osWindows {
+		protocPath += ".exe"
+	}
+	return command.RunWithEnv(ctx, env, protocPath, args...)
+}
+
+// InstallDir returns the directory where the protoc binary should be installed.
+func InstallDir(version string) (string, error) {
+	binDir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(binDir, protocDir, fmt.Sprintf("v%s", version)), nil
 }
 
 // downloadAndExtract downloads and installs the protoc binary from the given URL to the given directory.
@@ -67,18 +94,9 @@ func downloadURL(version, os, arch string) string {
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
 }
 
-// installDir returns the directory where the protoc binary should be installed.
-func installDir(version string) (string, error) {
-	binDir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(binDir, "protoc", fmt.Sprintf("v%s", version)), nil
-}
-
 // platformSuffix returns the platform suffix for the given OS and architecture.
 func platformSuffix(os, arch string) string {
-	if os == "windows" {
+	if os == osWindows {
 		return "win64"
 	}
 
