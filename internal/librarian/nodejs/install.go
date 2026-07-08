@@ -15,7 +15,6 @@
 package nodejs
 
 import (
-	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -24,16 +23,26 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-// gapicGeneratorSubdir is the sub-directory within the
-// google-cloud-node repo that contains the gapic-generator-typescript
-// source.
-const gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
+const (
+	// gapicGeneratorSubdir is the sub-directory within the
+	// google-cloud-node repo that contains the gapic-generator-typescript
+	// source.
+	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
 
-var errNoToolsSpecified = errors.New("no tools.pnpm field specified in configuration")
+	toolsDir = "nodejs_tools"
+)
+
+var (
+	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
+	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
+	errMissingPackageURL = errors.New("has build steps but no package URL")
+)
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
@@ -43,11 +52,11 @@ func Install(ctx context.Context, tools *config.Tools) error {
 
 	for _, cmd := range []string{"node", "pnpm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
-			return fmt.Errorf("%s is not installed or not in PATH, which is required for Node.js tool installation: %w", cmd, err)
+			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
 		}
 	}
 
-	env, err := getPNPMEnv(ctx)
+	env, err := getPNPMEnv()
 	if err != nil {
 		return err
 	}
@@ -71,32 +80,61 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return nil
 }
 
-// getPNPMEnv resolves Node's global installation bin prefix path dynamically
-// and constructs a transient environment variable block to configure pnpm.
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
+}
+
+// getBinDir returns the directory where Node.js tool executables are stored.
+func getBinDir() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, "bin"), nil
+}
+
+// getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.
+func getToolsEnv() (map[string]string, error) {
+	binDir, err := getBinDir()
+	if err != nil {
+		return nil, err
+	}
+	return map[string]string{"PATH": binDir}, nil
+}
+
+// getPNPMEnv constructs a transient environment variable block to configure pnpm.
 //
-// This redirects all globally-installed pnpm binaries, virtual stores, and
-// content-addressable storage caches to be nested under the Node prefix folder.
+// This redirects all globally-installed pnpm binaries to LIBRARIAN_BIN, and
+// virtual stores / content-addressable storage caches to LIBRARIAN_CACHE.
 // This enables complete environment caching and restore on CI runners,
 // while permanently avoiding persistent side-effects on the host machine
 // (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv(ctx context.Context) ([]string, error) {
-	binOut, err := commandOutput(ctx, "node", "-e", "console.log(require('path').dirname(process.execPath))")
+func getPNPMEnv() ([]string, error) {
+	cacheDir, err := cache.Directory()
 	if err != nil {
-		return nil, fmt.Errorf("failed to resolve node bin directory: %w", err)
+		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	globalBin := strings.TrimSpace(binOut)
-
-	// In pnpm v11+, globally installed binaries are stored in PNPM_HOME/bin.
-	// We want them to be stored directly in globalBin (node's bin directory).
-	// See https://pnpm.io/blog/releases/11.0#isolated-global-virtual-store-global-installs
-	pnpmHome := filepath.Dir(globalBin)
+	installDir, err := InstallDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve librarian install directory: %w", err)
+	}
+	binDir, err := getBinDir()
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
+	}
 
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+pnpmHome)
-	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+globalBin)
-	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(globalBin, "pnpm-global"))
-	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(globalBin, "pnpm-store"))
+	env = append(env, "PNPM_HOME="+installDir)
+	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
+	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
+	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
+	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
 }
 
@@ -118,17 +156,9 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 	return cmd.Run()
 }
 
-func commandOutput(ctx context.Context, name string, args ...string) (string, error) {
-	cmd := exec.CommandContext(ctx, name, args...)
-	var out bytes.Buffer
-	cmd.Stdout = &out
-	err := cmd.Run()
-	return out.String(), err
-}
-
 func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
-		return fmt.Errorf("pnpm tool %s has build steps but no package URL", tool.Name)
+		return fmt.Errorf("pnpm tool %s %w", tool.Name, errMissingPackageURL)
 	}
 	repo, err := repoFromPackageURL(tool.Package)
 	if err != nil {
@@ -155,7 +185,7 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {
-		return "", fmt.Errorf("cannot extract repo from package URL %q", packageURL)
+		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
 	}
 	return strings.TrimPrefix(parts[0], "https://"), nil
 }
