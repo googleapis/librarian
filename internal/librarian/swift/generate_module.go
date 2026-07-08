@@ -79,7 +79,7 @@ func compileProtobufs(ctx context.Context, library *config.Library, module *conf
 	}
 
 	if len(protoFiles) == 0 {
-		return nil
+		return fmt.Errorf("no proto files found in %s", apiPathAbs)
 	}
 
 	importsMap := make(map[string]bool)

@@ -17,6 +17,7 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -241,5 +242,39 @@ func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 	expectedErr := `module type "convert-swift" is not yet supported`
 	if err.Error() != expectedErr {
 		t.Errorf("got error %q, want %q", err.Error(), expectedErr)
+	}
+}
+
+func TestGenerateModule_NoProtos(t *testing.T) {
+	library := &config.Library{
+		Name:          "NoProtosModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        t.TempDir(),
+	}
+	googleapisDir := t.TempDir()
+	emptyAPIPath := "google/empty"
+	if err := os.MkdirAll(filepath.Join(googleapisDir, emptyAPIPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:    emptyAPIPath,
+			Output:     filepath.Join(library.Output, "ProtoJSON"),
+			ModuleType: "swift-protobuf",
+		},
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	err := Generate(t.Context(), cfg, library, src)
+	if err == nil {
+		t.Fatal("Generate did not return an error when no proto files were found")
+	}
+	if !strings.Contains(err.Error(), "no proto files found in") {
+		t.Errorf("got error %q, want it to contain 'no proto files found in'", err.Error())
 	}
 }
