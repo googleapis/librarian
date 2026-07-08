@@ -93,7 +93,6 @@ func TestFromLibrary(t *testing.T) {
 				Transport:            "grpc+rest",
 			},
 		},
-
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
