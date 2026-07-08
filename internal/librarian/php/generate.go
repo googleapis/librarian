@@ -225,7 +225,10 @@ func installGenerator(ctx context.Context) (string, error) {
 	}
 	// Ensure Composer dependencies are installed
 	vendorDir := filepath.Join(generatorDir, "vendor")
-	if _, err := os.Stat(vendorDir); os.IsNotExist(err) {
+	if _, err := os.Stat(vendorDir); err != nil {
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
 		composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
 		if _, err := os.Stat(composerPhar); err == nil {
 			if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
