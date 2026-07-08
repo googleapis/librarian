@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/command"
@@ -189,6 +190,7 @@ func setup(t *testing.T, opts SetupOptions) {
 	if len(opts.WithChanges) > 0 {
 		for _, srcPath := range opts.WithChanges {
 			touchFile(t, srcPath)
+			RunGit(t, "add", srcPath)
 		}
 		RunGit(t, "commit", "-m", "feat: changed file(s)", ".")
 	}
@@ -202,6 +204,9 @@ func setup(t *testing.T, opts SetupOptions) {
 
 func touchFile(t *testing.T, path string) {
 	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		t.Fatal(err)

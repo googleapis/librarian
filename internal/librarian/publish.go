@@ -21,6 +21,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
@@ -156,6 +157,8 @@ func publish(ctx context.Context, cfg *config.Config, releaseCommit string, exec
 	switch cfg.Language {
 	case config.LanguageFake:
 		return fakePublish(librariesToPublish, execute)
+	case config.LanguageDart:
+		return dart.Publish(ctx, cfg, librariesToPublish, execute)
 	default:
 		return fmt.Errorf("%q does not support publish", cfg.Language)
 	}

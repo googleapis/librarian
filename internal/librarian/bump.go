@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/git"
+	"github.com/googleapis/librarian/internal/librarian/dart"
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
@@ -118,6 +119,9 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 	}
 	if cfg.Language == config.LanguageRust {
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride, gitExe)
+	}
+	if cfg.Language == config.LanguageDart {
+		return dart.Bump(ctx, cfg, all, libraryName, versionOverride, gitExe)
 	}
 
 	librariesToBump, err := findLibrariesToBump(ctx, cfg, gitExe, all, libraryName)
