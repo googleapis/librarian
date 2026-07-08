@@ -17,11 +17,7 @@ package swift
 import (
 	"context"
 	"fmt"
-	"os"
-	"path/filepath"
-	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	sidekickswift "github.com/googleapis/librarian/internal/sidekick/swift"
@@ -53,62 +49,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 	return nil
 }
 
-func compileProtobufs(ctx context.Context, library *config.Library, module *config.SwiftModule, src *sources.Sources) error {
-	if err := os.MkdirAll(module.Output, 0755); err != nil {
-		return err
-	}
 
-	sourceConfig := sources.NewSourceConfig(src, library.Roots)
-	apiPathAbs := sourceConfig.ResolveDir(module.APIPath)
-
-	var protoFiles []string
-	if len(module.IncludeList) > 0 {
-		for _, file := range module.IncludeList {
-			protoFiles = append(protoFiles, filepath.Join(apiPathAbs, file))
-		}
-	} else {
-		entries, err := os.ReadDir(apiPathAbs)
-		if err != nil {
-			return err
-		}
-		for _, entry := range entries {
-			if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".proto") {
-				protoFiles = append(protoFiles, filepath.Join(apiPathAbs, entry.Name()))
-			}
-		}
-	}
-
-	if len(protoFiles) == 0 {
-		return fmt.Errorf("no proto files found in %s", apiPathAbs)
-	}
-
-	importsMap := make(map[string]bool)
-	var protoImports []string
-
-	addImport := func(path string) {
-		if path != "" && !importsMap[path] {
-			importsMap[path] = true
-			protoImports = append(protoImports, "-I", path)
-		}
-	}
-
-	for _, r := range sourceConfig.ActiveRoots {
-		addImport(sourceConfig.Root(r))
-	}
-	addImport(src.Googleapis)
-	addImport(src.ProtobufSrc)
-	addImport(src.Showcase)
-	addImport(src.Conformance)
-
-	args := []string{
-		"--swift_out=Visibility=Public:" + module.Output,
-		"--grpc-swift_out=Visibility=Public:" + module.Output,
-	}
-	args = append(args, protoImports...)
-	args = append(args, protoFiles...)
-
-	return command.Run(ctx, "protoc", args...)
-}
 
 func moduleToModelConfig(library *config.Library, module *config.SwiftModule, src *sources.Sources) *parser.ModelConfig {
 	sourceConfig := sources.NewSourceConfig(src, library.Roots)
