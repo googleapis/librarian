@@ -473,9 +473,9 @@ func TestParseRequiresBilling(t *testing.T) {
 			want: &falsePtr,
 		},
 		{
-			name: "unspecified",
+			name:    "unspecified",
 			content: `- path: "unspecified"`,
-			want: nil,
+			want:    nil,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
