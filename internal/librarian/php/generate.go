@@ -27,15 +27,9 @@ import (
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
-)
-
-const (
-	generatorVersion = "v1.21.2"
-	generatorSHA256  = "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"
 )
 
 // Generate generates a PHP client library.
@@ -208,52 +202,4 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigPath s
 	}
 
 	return opts
-}
-
-// installGenerator fetches the PHP generator and installs its Composer dependencies.
-// TODO(https://github.com/googleapis/librarian/issues/6630): remove after install command is ready.
-func installGenerator(ctx context.Context) (string, error) {
-	phpPath, err := exec.LookPath("php")
-	if err != nil {
-		return "", fmt.Errorf("php is required on host to run PHP generator: %w", err)
-	}
-
-	repo := "github.com/googleapis/gapic-generator-php"
-	generatorDir, err := fetch.Repo(ctx, repo, generatorVersion, generatorSHA256)
-	if err != nil {
-		return "", fmt.Errorf("failed to fetch PHP generator: %w", err)
-	}
-	// Ensure Composer dependencies are installed
-	vendorDir := filepath.Join(generatorDir, "vendor")
-	if _, err := os.Stat(vendorDir); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		if _, err := exec.LookPath("composer"); err == nil {
-			if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
-				return "", fmt.Errorf("failed to run composer install: %w", err)
-			}
-		} else {
-			composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
-			if _, err := os.Stat(composerPhar); err == nil {
-				if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
-					return "", fmt.Errorf("failed to run composer.phar install: %w", err)
-				}
-			} else {
-				return "", fmt.Errorf("neither system composer nor composer.phar was found")
-			}
-		}
-	}
-
-	// Write wrapper script
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
-	wrapperContent := fmt.Sprintf(`#!/bin/bash
-exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
-`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
-
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
-		return "", fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return generatorDir, nil
 }
