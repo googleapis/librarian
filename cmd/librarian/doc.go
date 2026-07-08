@@ -114,24 +114,94 @@ latest API definitions is:
 	librarian update googleapis
 	librarian generate --all
 
-#
+# Install tool dependencies for a language
 
 Usage:
 
-#
+	librarian install [language]
+
+install installs the language-specific tools that librarian uses to
+generate and build client libraries (for example, language SDKs and code
+generators).
+
+If [language] is omitted, the language is read from librarian.yaml in the
+current directory.
+
+Examples:
+
+	librarian install              # use language from librarian.yaml
+	librarian install go           # install Go-specific tools
+
+# Tidy and validate librarian.yaml
 
 Usage:
 
-#
+	librarian tidy
+
+tidy reads librarian.yaml, validates its contents, applies any
+language-specific defaults and normalization, and writes the file back
+with a canonical formatting.
+
+Run tidy after editing librarian.yaml by hand, or as a quick check that
+the configuration is well-formed.
+
+# Update sources or version to the latest version
 
 Usage:
 
-#
+	librarian update <version | source>...
+
+update refreshes the upstream source repositories declared in
+librarian.yaml to their latest commits and updates the recorded commit
+SHAs in librarian.yaml accordingly. It also supports updating the librarian version.
+
+Supported targets:
+
+  - sources.conformance: protocolbuffers/protobuf conformance tests
+  - sources.discovery: googleapis/discovery-artifact-manager
+  - sources.googleapis: googleapis/googleapis (the API definitions)
+  - sources.protobuf: protocolbuffers/protobuf
+  - sources.showcase: googleapis/gapic-showcase
+  - version: the librarian tool version
+
+At least one target must be specified.
+
+Examples:
+
+	librarian update sources.googleapis
+	librarian update sources.googleapis sources.protobuf
+	librarian update version
+
+A typical librarian workflow for regenerating every library against the
+latest API definitions is:
+
+	librarian update sources.googleapis
+	librarian generate --all
+
+# Print the binary version
 
 Usage:
 
-#
+	librarian version
+
+version prints the librarian binary version and exits. The version is
+embedded at build time and follows the conventions described at
+https://go.dev/ref/mod#versions.
+
+# Various debugging commands
 
 Usage:
+
+	librarian debug [command]
+
+# Print environment variables for the librarian command line interface.
+
+Usage:
+
+	librarian debug env
+
+env prints the librarian interpretation of the environment it is run in.
+This includes the resolved LIBRARIAN_CACHE and LIBRARIAN_BIN paths,
+as well as the language-specific tool installation directories.
 */
 package main
