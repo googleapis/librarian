@@ -424,14 +424,12 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `path` | string | Is the source path. |
 | `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
 
 ## PHPPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `php_apis` | list of [PHPAPI](#phpapi-configuration) (optional) | Is a list of PHP-specific API configurations. |
 
 ## PythonDefault Configuration
 
