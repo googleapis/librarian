@@ -19,7 +19,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 	"github.com/googleapis/librarian/internal/testhelper"
 )
@@ -79,5 +81,106 @@ func requirePHPGenerator(t *testing.T) {
 	wrapperPath := filepath.Join(genDir, "wrapper.sh")
 	if _, err := os.Stat(wrapperPath); err != nil {
 		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
+	}
+}
+
+func TestGatherProtos(t *testing.T) {
+	tmp := t.TempDir()
+	files := []struct {
+		path    string
+		isProto bool
+	}{
+		{"a.proto", true},
+		{"sub/b.proto", true},
+		{"c.txt", false},
+		{"sub/d.proto", true},
+	}
+	for _, f := range files {
+		p := filepath.Join(tmp, f.path)
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	got, err := gatherProtos(tmp)
+	if err != nil {
+		t.Fatalf("gatherProtos failed: %v", err)
+	}
+
+	want := []string{
+		filepath.Join(tmp, "a.proto"),
+		filepath.Join(tmp, "sub/b.proto"),
+		filepath.Join(tmp, "sub/d.proto"),
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestGapicOpts(t *testing.T) {
+	tests := []struct {
+		name           string
+		api            *config.API
+		apiMetadata    *serviceconfig.API
+		grpcConfigPath string
+		want           []string
+	}{
+		{
+			name: "defaults",
+			api:  &config.API{},
+			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
+		},
+		{
+			name: "custom migration mode",
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					MigrationMode: "MIGRATING",
+				},
+			},
+			want: []string{"metadata", "transport=grpc+rest", "migration-mode=MIGRATING", "generate-snippets"},
+		},
+		{
+			name: "with grpc config and service yaml",
+			api:  &config.API{},
+			apiMetadata: &serviceconfig.API{
+				ServiceConfig: "service.yaml",
+			},
+			grpcConfigPath: "grpc_config.json",
+			want: []string{
+				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "rest-numeric-enums", "generate-snippets",
+				"grpc_service_config=grpc_config.json",
+				"service_yaml=service.yaml",
+			},
+		},
+		{
+			name: "skip rest numeric enums",
+			api:  &config.API{},
+			apiMetadata: &serviceconfig.API{
+				SkipRESTNumericEnums: []string{"php"},
+			},
+			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
+		},
+		{
+			name: "custom transport",
+			api:  &config.API{},
+			apiMetadata: &serviceconfig.API{
+				Transports: map[string]serviceconfig.Transport{
+					"php": serviceconfig.Transport("rest"),
+				},
+			},
+			want: []string{"metadata", "transport=rest", "migration-mode=NEW_SURFACE_ONLY", "rest-numeric-enums", "generate-snippets"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := gapicOpts(tt.api, tt.apiMetadata, tt.grpcConfigPath)
+			if diff := cmp.Diff(tt.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }
