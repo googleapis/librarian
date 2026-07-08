@@ -229,17 +229,18 @@ func installGenerator(ctx context.Context) (string, error) {
 		if !errors.Is(err, os.ErrNotExist) {
 			return "", err
 		}
-		composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
-		if _, err := os.Stat(composerPhar); err == nil {
-			if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
-				return "", fmt.Errorf("failed to run composer.phar install: %w", err)
-			}
-		} else {
-			if _, err := exec.LookPath("composer"); err != nil {
-				return "", fmt.Errorf("neither composer.phar nor system composer was found: %w", err)
-			}
+		if _, err := exec.LookPath("composer"); err == nil {
 			if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
 				return "", fmt.Errorf("failed to run composer install: %w", err)
+			}
+		} else {
+			composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
+			if _, err := os.Stat(composerPhar); err == nil {
+				if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
+					return "", fmt.Errorf("failed to run composer.phar install: %w", err)
+				}
+			} else {
+				return "", fmt.Errorf("neither system composer nor composer.phar was found")
 			}
 		}
 	}
