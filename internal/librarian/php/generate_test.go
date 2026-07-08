@@ -39,7 +39,6 @@ func TestGenerate(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	repoRoot := t.TempDir()
 	library := &config.Library{
 		Name:   "secretmanager",
@@ -50,16 +49,13 @@ func TestGenerate(t *testing.T) {
 			},
 		},
 	}
-
 	cfg := &config.Config{
 		Language: config.LanguagePhp,
 	}
-
 	err = Generate(t.Context(), cfg, library, &sources.Sources{Googleapis: absGoogleapis})
 	if err != nil {
-		t.Fatalf("Generate failed: %v", err)
+		t.Fatal(err)
 	}
-
 	// Verify output
 	outputDirs := []string{"src", "tests", "samples", "fragments"}
 	for _, dir := range outputDirs {
@@ -73,7 +69,6 @@ func TestGenerate(t *testing.T) {
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
 	testhelper.RequireCommand(t, "php")
-
 	genDir, err := generatorDir(t.Context())
 	if err != nil {
 		t.Skipf("skipping test: failed to locate PHP generator: %v", err)
@@ -104,12 +99,10 @@ func TestGatherProtos(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-
 	got, err := gatherProtos(tmp)
 	if err != nil {
 		t.Fatalf("gatherProtos failed: %v", err)
 	}
-
 	want := []string{
 		filepath.Join(tmp, "a.proto"),
 		filepath.Join(tmp, "sub/b.proto"),
@@ -174,11 +167,10 @@ func TestGapicOpts(t *testing.T) {
 			want: []string{"metadata", "transport=rest", "migration-mode=NEW_SURFACE_ONLY", "rest-numeric-enums", "generate-snippets"},
 		},
 	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := gapicOpts(tt.api, tt.apiMetadata, tt.grpcConfigPath)
-			if diff := cmp.Diff(tt.want, got); diff != "" {
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			got := gapicOpts(test.api, test.apiMetadata, test.grpcConfigPath)
+			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
