@@ -397,7 +397,7 @@ func TestGenerateAPI_NoTools(t *testing.T) {
 	defer func() { runProtoc = oldRunProtoc }()
 	// Capture all calls to runProtoc to verify arguments without executing the command.
 	var calls [][]string
-	runProtoc = func(ctx context.Context, protocVersion string, args []string) error {
+	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
 		calls = append(calls, args)
 		return nil
 	}
@@ -626,8 +626,7 @@ func TestGenerateLibrary_Error(t *testing.T) {
 			// Temporarily mock runProtoc to avoid external tool requirements.
 			oldRunProtoc := runProtoc
 			defer func() { runProtoc = oldRunProtoc }()
-			runProtoc = func(ctx context.Context, protocVersion string, args []string) error { return nil }
-
+			runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error { return nil }
 			if test.setup != nil {
 				test.setup(t, test.library)
 			}
@@ -652,8 +651,7 @@ func TestGenerate_Logic(t *testing.T) {
 	// Tests the orchestration logic, temporarily mock runProtoc to avoid external tool requirements.
 	oldRunProtoc := runProtoc
 	defer func() { runProtoc = oldRunProtoc }()
-	runProtoc = func(ctx context.Context, protocVersion string, args []string) error { return nil }
-
+	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error { return nil }
 	outdir := t.TempDir()
 	library := &config.Library{
 		Name:    "secretmanager",

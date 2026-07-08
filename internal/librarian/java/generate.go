@@ -22,7 +22,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"runtime"
 	"sort"
 	"strings"
 
@@ -50,23 +49,15 @@ var (
 		"google/cloud": true,
 		"google/rpc":   true,
 	}
-	runProtoc = func(ctx context.Context, protocVersion string, args []string) error {
+	runProtoc = func(ctx context.Context, pc *config.Protoc, args []string) error {
 		env, err := getToolsEnv()
 		if err != nil {
 			return err
 		}
-		protocCmd := "protoc"
-		if protocVersion != "" {
-			protocInstallDir, err := protoc.InstallDir(protocVersion)
-			if err != nil {
-				return fmt.Errorf("failed to get protoc install dir %s: %w", protocVersion, err)
-			}
-			protocCmd = filepath.Join(protocInstallDir, "bin", "protoc")
-			if runtime.GOOS == "windows" {
-				protocCmd += ".exe"
-			}
+		if pc == nil {
+			return command.RunWithEnv(ctx, env, "protoc", args...)
 		}
-		return command.RunWithEnv(ctx, env, protocCmd, args...)
+		return protoc.Run(ctx, env, pc, args...)
 	}
 )
 
@@ -182,23 +173,23 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 	if err != nil {
 		return err
 	}
-	var protocVersion string
+	var pc *config.Protoc
 	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
-		protocVersion = params.cfg.Tools.Protoc.Version
+		pc = params.cfg.Tools.Protoc
 	}
 	// 1. Generate standard Protocol Buffer Java classes.
 	if shouldGenerateProto(javaAPI) {
 		protoProtos := filterProtos(apiProtos, javaAPI.SkipProtoClassGeneration, primaryDir)
 		protoProtos = append(protoProtos, additionalProtosToGenerateAbs...)
 		args := protoProtocArgs(protoProtos, params.srcCfg, protoDir)
-		if err := runProtoc(ctx, protocVersion, args); err != nil {
+		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate proto: %w", err)
 		}
 	}
 	// 2. Generate gRPC service stubs (skipped if transport is rest).
 	transport := params.apiCfg.Transport(config.LanguageJava)
 	if shouldGenerateGRPC(javaAPI) && transport != "rest" {
-		if err := runProtoc(ctx, protocVersion, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
+		if err := runProtoc(ctx, pc, gRPCProtocArgs(apiProtos, params.srcCfg, gRPCDir)); err != nil {
 			return fmt.Errorf("failed to generate gRPC module: %w", err)
 		}
 	}
@@ -209,7 +200,7 @@ func generateAPI(ctx context.Context, params generateAPIParams) error {
 			return fmt.Errorf("failed to resolve gapic options: %w", err)
 		}
 		args := gapicProtocArgs(apiProtos, allAdditionalProtosAbs, params.srcCfg, gapicDir, gapicOpts)
-		if err := runProtoc(ctx, protocVersion, args); err != nil {
+		if err := runProtoc(ctx, pc, args); err != nil {
 			return fmt.Errorf("failed to generate gapic: %w", err)
 		}
 	}
