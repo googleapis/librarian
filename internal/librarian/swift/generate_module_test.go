@@ -216,3 +216,30 @@ func TestModuleToModelConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestGenerateModule_UnsupportedTemplate(t *testing.T) {
+	library := &config.Library{
+		Name:          "UnsupportedModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        t.TempDir(),
+	}
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:  "google/type",
+			Output:   filepath.Join(library.Output, "ProtoJSON"),
+			Template: "convert-swift",
+		},
+	}
+	src := &sources.Sources{}
+	cfg := &config.Config{}
+
+	err := Generate(t.Context(), cfg, library, src)
+	if err == nil {
+		t.Fatal("Generate did not return an error for unsupported template 'convert-swift'")
+	}
+	expectedErr := `template "convert-swift" is not yet supported`
+	if err.Error() != expectedErr {
+		t.Errorf("got error %q, want %q", err.Error(), expectedErr)
+	}
+}
