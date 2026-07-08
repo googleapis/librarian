@@ -28,8 +28,8 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
 	}
-	testhelper.RequireCommand(t, "php")
 	testhelper.RequireCommand(t, "protoc")
+	requirePHPGenerator(t)
 
 	// Use mock googleapis checked in as test data
 	googleapisDir := "../../testdata/googleapis"
@@ -65,5 +65,19 @@ func TestGenerate(t *testing.T) {
 		if stat, err := os.Stat(p); err != nil || !stat.IsDir() {
 			t.Errorf("expected directory %s to exist and be a directory", p)
 		}
+	}
+}
+
+func requirePHPGenerator(t *testing.T) {
+	t.Helper()
+	testhelper.RequireCommand(t, "php")
+
+	genDir, err := generatorDir(t.Context())
+	if err != nil {
+		t.Skipf("skipping test: failed to locate PHP generator: %v", err)
+	}
+	wrapperPath := filepath.Join(genDir, "wrapper.sh")
+	if _, err := os.Stat(wrapperPath); err != nil {
+		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
 	}
 }

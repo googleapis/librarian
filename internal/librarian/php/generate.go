@@ -42,11 +42,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		return fmt.Errorf("failed to find protoc: %w", err)
 	}
 
-	// Fetch PHP generator and install dependencies
-	// Temp step, remove once install is ready
-	generatorDir, err := installGenerator(ctx)
+	// Locate PHP generator
+	generatorDir, err := generatorDir(ctx)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to locate PHP generator: %w", err)
+	}
+	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
+	if _, err := os.Stat(wrapperPath); err != nil {
+		return fmt.Errorf("PHP generator wrapper not found (did you run 'librarian install'?): %w", err)
 	}
 
 	// Setup sandbox staging dir
@@ -60,7 +63,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		}
 	}()
 
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
 	outputZipPath := filepath.Join(tempDir, "output.zip")
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {

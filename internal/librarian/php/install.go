@@ -41,6 +41,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return err
 }
 
+func generatorDir(ctx context.Context) (string, error) {
+	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+}
+
 // installGenerator is a temp function for testing purposes.
 // TODO(https://github.com/googleapis/librarian/issues/6630): remove after install command is ready.
 func installGenerator(ctx context.Context) (string, error) {
@@ -49,10 +53,9 @@ func installGenerator(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("failed to find php: %w", err)
 	}
 
-	repo := "github.com/googleapis/gapic-generator-php"
-	generatorDir, err := fetch.Repo(ctx, repo, generatorVersion, generatorSHA256)
+	generatorDir, err := generatorDir(ctx)
 	if err != nil {
-		return "", fmt.Errorf("failed to fetch PHP generator: %w", err)
+		return "", err
 	}
 	// Ensure Composer dependencies are installed
 	vendorDir := filepath.Join(generatorDir, "vendor")
@@ -75,5 +78,15 @@ func installGenerator(ctx context.Context) (string, error) {
 			}
 		}
 	}
+	// Write wrapper script
+	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
+	wrapperContent := fmt.Sprintf(`#!/bin/bash
+exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
+`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
+
+	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
+		return "", fmt.Errorf("failed to write wrapper script: %w", err)
+	}
+
 	return generatorDir, nil
 }
