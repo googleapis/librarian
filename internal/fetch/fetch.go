@@ -122,7 +122,7 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	// If hash doesn't match or any error happens during the extraction, delete
 	// the tarball and fall through to re-download.
 	if _, err := os.Stat(tgz); err == nil {
-		sha, err := computeSHA256(tgz)
+		sha, err := ComputeSHA256(tgz)
 		if err == nil {
 			if sha == expectedSHA256 {
 				if err := os.MkdirAll(outDir, 0755); err != nil {
@@ -155,6 +155,22 @@ func Repo(ctx context.Context, repo, commit, expectedSHA256 string) (string, err
 	return outDir, nil
 }
 
+// ComputeSHA256 computes the SHA256 checksum of a file and returns it as a hex
+// string.
+func ComputeSHA256(filePath string) (string, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+
+	hasher := sha256.New()
+	if _, err := io.Copy(hasher, f); err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
+}
+
 // tarballPath returns the path to a cached tarball for the given repo and
 // commit.
 //
@@ -180,22 +196,6 @@ func extractedDir(cacheDir, repo, commit string) (string, error) {
 		return "", fmt.Errorf("directory %q does not exist or is empty", dir)
 	}
 	return dir, nil
-}
-
-// computeSHA256 computes the SHA256 checksum of a file and returns it as a hex
-// string.
-func computeSHA256(filePath string) (string, error) {
-	f, err := os.Open(filePath)
-	if err != nil {
-		return "", err
-	}
-	defer f.Close()
-
-	hasher := sha256.New()
-	if _, err := io.Copy(hasher, f); err != nil {
-		return "", err
-	}
-	return fmt.Sprintf("%x", hasher.Sum(nil)), nil
 }
 
 // repoFromArchiveLink extracts the GitHub account and repository (such as
@@ -315,7 +315,7 @@ func Download(ctx context.Context, target, url, expectedSHA256 string) error {
 	if err := downloadFile(ctx, tempPath, url); err != nil {
 		return err
 	}
-	sha, err := computeSHA256(tempPath)
+	sha, err := ComputeSHA256(tempPath)
 	if err != nil {
 		return err
 	}
