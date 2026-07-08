@@ -287,7 +287,10 @@ func TestModelAnnotations_Gating(t *testing.T) {
 		t.Fatalf("expected model.Codec to be *modelAnnotations, got %T", model.Codec)
 	}
 
-	wantAllTraits := []string{"Service1", "Service2"}
+	wantAllTraits := []*traitDefinition{
+		{Name: "Service1"},
+		{Name: "Service2"},
+	}
 	if diff := cmp.Diff(wantAllTraits, ann.AllTraits); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
