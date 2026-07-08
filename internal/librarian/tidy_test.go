@@ -755,7 +755,20 @@ func TestTidy_UnusedSections(t *testing.T) {
 			wantDefault: &config.Default{Output: "output"},
 		},
 		{
-			name: "protoc version and sha256 preserved",
+			name: "maven preserved",
+			cfg: &config.Config{
+				Language: config.LanguageJava,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+				Default: &config.Default{},
+			},
+			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+			wantDefault: nil,
+		},
+		{
+			name: "protoc preserved",
 			cfg: &config.Config{
 				Language: config.LanguageRust,
 				Sources: &config.Sources{
