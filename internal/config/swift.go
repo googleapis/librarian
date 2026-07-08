@@ -113,6 +113,8 @@ type SwiftModule struct {
 	ModuleType string `yaml:"module_type,omitempty"`
 
 	// IncludeList is a subset of proto files under the target API path to include.
+	// This is typically reserved for special cases (e.g., resolving dependency issues or
+	// compiling subsets of shared proto namespaces) and should not be used for standard libraries.
 	IncludeList []string `yaml:"include_list,omitempty"`
 
 	// ModulePath is the module import path or target containing stubs (used by convert-swift).
