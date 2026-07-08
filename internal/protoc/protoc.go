@@ -23,6 +23,7 @@ import (
 	"runtime"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/filesystem"
@@ -49,6 +50,18 @@ func Install(ctx context.Context, protoc *config.Protoc) error {
 		return err
 	}
 	return downloadAndExtract(ctx, url, dir, protoc.SHA256)
+}
+
+func Run(ctx context.Context, env map[string]string, version string, args ...string) error {
+	dir, err := InstallDir(version)
+	if err != nil {
+		return err
+	}
+	protocPath := filepath.Join(dir, "bin", "protoc")
+	if runtime.GOOS == "windows" {
+		protocPath += ".exe"
+	}
+	return command.RunWithEnv(ctx, env, protocPath, args...)
 }
 
 // InstallDir returns the directory where the protoc binary should be installed.
