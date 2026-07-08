@@ -16,7 +16,6 @@ package postprocessing
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"os"
@@ -33,7 +32,7 @@ var errAmbiguousDuplication = errors.New("ambiguous duplication")
 // Note: funcName must be the complete, single-line method signature declaration
 // (including modifiers and return type, e.g., "public void foo()"). Matching is
 // done via exact substring search, so any spacing or formatting mismatch will fail.
-func DuplicateMethod(ctx context.Context, path, funcName, newName, language string) error {
+func DuplicateMethod(path, funcName, newName, language string) error {
 	if language != config.LanguageJava {
 		return fmt.Errorf("%w: %s", errUnsupportedLanguage, language)
 	}

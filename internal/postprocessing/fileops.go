@@ -17,7 +17,6 @@ package postprocessing
 
 import (
 	"bytes"
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -164,7 +163,7 @@ func ReplaceRegexAll(outDir string, replaceRegexConfigs []config.ReplaceRegexCon
 }
 
 // ApplyMethodOperations executes method operations across matching files in outDir.
-func ApplyMethodOperations(ctx context.Context, outDir string, methodOperations []config.MethodOperation) error {
+func ApplyMethodOperations(outDir string, methodOperations []config.MethodOperation) error {
 	for _, mo := range methodOperations {
 		if err := applyToFiles(outDir, mo.Path, func(file string) error {
 			switch mo.Action {
@@ -173,7 +172,7 @@ func ApplyMethodOperations(ctx context.Context, outDir string, methodOperations 
 					return fmt.Errorf("failed to delete method %q in %s: %w", mo.FuncName, file, err)
 				}
 			case "duplicate":
-				if err := DuplicateMethod(ctx, file, mo.FuncName, mo.NewName, "java"); err != nil {
+				if err := DuplicateMethod(file, mo.FuncName, mo.NewName, "java"); err != nil {
 					return fmt.Errorf("failed to duplicate method %q in %s: %w", mo.FuncName, file, err)
 				}
 			case "deprecate":

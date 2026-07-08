@@ -688,7 +688,7 @@ func TestApplyMethodOperations(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
-			if err := ApplyMethodOperations(t.Context(), dir, test.ops); err != nil {
+			if err := ApplyMethodOperations(dir, test.ops); err != nil {
 				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.wantFiles, readDirFiles(t, dir)); diff != "" {
@@ -727,7 +727,7 @@ func TestApplyMethodOperations_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			dir := t.TempDir()
 			createFiles(t, dir, test.files)
-			err := ApplyMethodOperations(t.Context(), dir, test.ops)
+			err := ApplyMethodOperations(dir, test.ops)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("ApplyMethodOperations() error = %v, want %v", err, test.wantErr)
 			}
