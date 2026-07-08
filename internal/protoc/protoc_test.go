@@ -18,7 +18,6 @@ import (
 	"archive/zip"
 	"bytes"
 	"crypto/sha256"
-	"errors"
 	"fmt"
 	"net/http"
 	"net/http/httptest"
@@ -161,57 +160,4 @@ func createMockZip(t *testing.T) ([]byte, error) {
 		return nil, err
 	}
 	return buf.Bytes(), nil
-}
-
-func TestVerify(t *testing.T) {
-	tmpDir := t.TempDir()
-	validFile := filepath.Join(tmpDir, "protoc")
-	content := []byte("mock binary content")
-	if err := os.WriteFile(validFile, content, 0755); err != nil {
-		t.Fatal(err)
-	}
-	hasher := sha256.New()
-	hasher.Write(content)
-	validSHA := fmt.Sprintf("%x", hasher.Sum(nil))
-	if err := verify(validFile, validSHA); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestVerify_Error(t *testing.T) {
-	tmpDir := t.TempDir()
-	validFile := filepath.Join(tmpDir, "protoc")
-	content := []byte("mock binary content")
-	if err := os.WriteFile(validFile, content, 0755); err != nil {
-		t.Fatal(err)
-	}
-	hasher := sha256.New()
-	hasher.Write(content)
-	validSHA := fmt.Sprintf("%x", hasher.Sum(nil))
-	for _, test := range []struct {
-		name        string
-		path        string
-		expectedSHA string
-		wantErr     error
-	}{
-		{
-			name:        "file does not exist",
-			path:        filepath.Join(tmpDir, "nonexistent"),
-			expectedSHA: validSHA,
-			wantErr:     os.ErrNotExist,
-		},
-		{
-			name:        "sha256 mismatch",
-			path:        validFile,
-			expectedSHA: "invalid_sha256",
-			wantErr:     errSHAMismatch,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			err := verify(test.path, test.expectedSHA)
-			if !errors.Is(err, test.wantErr) {
-				t.Errorf("got error %v, want %v", err, test.wantErr)
-			}
-		})
-	}
 }

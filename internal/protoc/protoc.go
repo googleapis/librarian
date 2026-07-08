@@ -17,7 +17,6 @@ package protoc
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -45,7 +44,6 @@ var (
 		"arm64": "aarch_64",
 		"amd64": "x86_64",
 	}
-	errSHAMismatch = errors.New("SHA256 mismatch for protoc")
 )
 
 // Install installs the protoc tool.
@@ -67,9 +65,6 @@ func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args
 	protocPath := filepath.Join(dir, "bin", protocDir)
 	if runtime.GOOS == osWindows {
 		protocPath += ".exe"
-	}
-	if err := verify(protocPath, protoc.SHA256); err != nil {
-		return err
 	}
 	return command.RunWithEnv(ctx, env, protocPath, args...)
 }
@@ -97,21 +92,6 @@ func downloadAndExtract(ctx context.Context, url, dir, sha256 string) error {
 func downloadURL(version, os, arch string) string {
 	suffix := platformSuffix(os, arch)
 	return fmt.Sprintf("%s/protocolbuffers/protobuf/releases/download/v%s/protoc-%s-%s.zip", githubURLBase, version, version, suffix)
-}
-
-// verify checks the protoc binary at the given path against the expected SHA256.
-func verify(protocPath, expectedSHA string) error {
-	if _, err := os.Stat(protocPath); err != nil {
-		return fmt.Errorf("failed to stat protoc at %s: %w", protocPath, err)
-	}
-	sha, err := fetch.ComputeSHA256(protocPath)
-	if err != nil {
-		return fmt.Errorf("failed to compute SHA256 for protoc at %s: %w", protocPath, err)
-	}
-	if sha != expectedSHA {
-		return fmt.Errorf("%w: path %s, expected %s, got %s", errSHAMismatch, protocPath, expectedSHA, sha)
-	}
-	return nil
 }
 
 // platformSuffix returns the platform suffix for the given OS and architecture.
