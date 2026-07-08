@@ -79,9 +79,9 @@ func TestGenerateModule_SwiftProtobuf(t *testing.T) {
 	}
 	library.Swift.Modules = []*config.SwiftModule{
 		{
-			APIPath:  "google/type",
-			Output:   filepath.Join(outDir, "ProtoJSON"),
-			Template: "swift-protobuf",
+			APIPath:    "google/type",
+			Output:     filepath.Join(outDir, "ProtoJSON"),
+			ModuleType: "swift-protobuf",
 		},
 	}
 	src := &sources.Sources{
@@ -217,7 +217,7 @@ func TestModuleToModelConfig(t *testing.T) {
 	}
 }
 
-func TestGenerateModule_UnsupportedTemplate(t *testing.T) {
+func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 	library := &config.Library{
 		Name:          "UnsupportedModule",
 		CopyrightYear: "2038",
@@ -226,9 +226,9 @@ func TestGenerateModule_UnsupportedTemplate(t *testing.T) {
 	}
 	library.Swift.Modules = []*config.SwiftModule{
 		{
-			APIPath:  "google/type",
-			Output:   filepath.Join(library.Output, "ProtoJSON"),
-			Template: "convert-swift",
+			APIPath:    "google/type",
+			Output:     filepath.Join(library.Output, "ProtoJSON"),
+			ModuleType: "convert-swift",
 		},
 	}
 	src := &sources.Sources{}
@@ -236,9 +236,9 @@ func TestGenerateModule_UnsupportedTemplate(t *testing.T) {
 
 	err := Generate(t.Context(), cfg, library, src)
 	if err == nil {
-		t.Fatal("Generate did not return an error for unsupported template 'convert-swift'")
+		t.Fatal("Generate did not return an error for unsupported module type 'convert-swift'")
 	}
-	expectedErr := `template "convert-swift" is not yet supported`
+	expectedErr := `module type "convert-swift" is not yet supported`
 	if err.Error() != expectedErr {
 		t.Errorf("got error %q, want %q", err.Error(), expectedErr)
 	}

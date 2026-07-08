@@ -30,13 +30,13 @@ import (
 
 func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
 	for _, module := range library.Swift.Modules {
-		switch module.Template {
+		switch module.ModuleType {
 		case "swift-protobuf":
 			if err := compileProtobufs(ctx, library, module, src); err != nil {
 				return err
 			}
 		case "convert-swift":
-			return fmt.Errorf("template %q is not yet supported", module.Template)
+			return fmt.Errorf("module type %q is not yet supported", module.ModuleType)
 		case "":
 			modelConfig := moduleToModelConfig(library, module, src)
 			model, err := parser.CreateModel(modelConfig)
@@ -47,7 +47,7 @@ func generateModule(ctx context.Context, library *config.Library, src *sources.S
 				return err
 			}
 		default:
-			return fmt.Errorf("unknown template %q", module.Template)
+			return fmt.Errorf("unknown module type %q", module.ModuleType)
 		}
 	}
 	return nil

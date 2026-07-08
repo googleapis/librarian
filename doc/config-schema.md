@@ -571,7 +571,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
-| `template` | string | Is the generation template to use (e.g., "swift-protobuf", "convert-swift", or empty for standard GAPIC). |
+| `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty for standard GAPIC). |
 | `include_list` | list of string | Is a subset of proto files under the target API path to include. |
 | `module_path` | string | Is the module import path or target containing stubs (used by convert-swift). |
 
