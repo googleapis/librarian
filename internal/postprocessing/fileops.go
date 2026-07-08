@@ -115,6 +115,50 @@ func RemoveFiles(outDir string, removePatterns []string) error {
 	return nil
 }
 
+// ReplaceAll applies exact text replacements specified by replaceConfigs across matching files in outDir.
+func ReplaceAll(outDir string, replaceConfigs []config.ReplaceConfig) error {
+	for _, r := range replaceConfigs {
+		if err := applyToFiles(outDir, r.Path, func(file string) error {
+			info, err := os.Stat(file)
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			if err := Replace(file, r.Original, r.Replacement); err != nil {
+				return fmt.Errorf("failed to apply replacement in %s: %w", file, err)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// ReplaceRegexAll applies regex replacements specified by replaceRegexConfigs across matching files in outDir.
+func ReplaceRegexAll(outDir string, replaceRegexConfigs []config.ReplaceRegexConfig) error {
+	for _, r := range replaceRegexConfigs {
+		if err := applyToFiles(outDir, r.Path, func(file string) error {
+			info, err := os.Stat(file)
+			if err != nil {
+				return err
+			}
+			if info.IsDir() {
+				return nil
+			}
+			if err := ReplaceRegex(file, r.Pattern, r.Replacement); err != nil {
+				return fmt.Errorf("failed to apply regex replacement in %s: %w", file, err)
+			}
+			return nil
+		}); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // applyToFiles executes action on files matching pathPattern under outDir.
 // Note: Uses [filepath.Glob] (* only, ** is not supported).
 func applyToFiles(outDir string, pathPattern string, action func(string) error) error {
