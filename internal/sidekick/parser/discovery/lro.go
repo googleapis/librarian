@@ -50,6 +50,10 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 		if svcMixin == nil {
 			continue
 		}
+		sourceID := ""
+		if l := strings.LastIndex(svcMixin.ID, "."); l != -1 {
+			sourceID = svcMixin.ID[0:l]
+		}
 		method := &api.Method{
 			Name:            "getOperation",
 			ID:              fmt.Sprintf("%s.getOperation", svc.ID),
@@ -62,8 +66,7 @@ func lroAnnotations(model *api.API, discoveryConfig *api.Discovery) error {
 			Routing:         svcMixin.Routing,
 			AutoPopulated:   svcMixin.AutoPopulated,
 			Service:         svc,
-			SourceService:   svcMixin.Service,
-			SourceServiceID: svcMixin.SourceServiceID,
+			SourceServiceID: sourceID,
 			IsLroPoller:     true,
 		}
 		svc.Methods = append(svc.Methods, method)
