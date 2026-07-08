@@ -103,7 +103,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
-		RequiresBilling:      sharedMetadata.RequiresBilling,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 		RequiresBilling:      sharedMetadata.RequiresBilling,
 	}
