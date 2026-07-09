@@ -767,7 +767,7 @@ func TestTidy_UnusedSections(t *testing.T) {
 		{
 			name: "maven preserved",
 			cfg: &config.Config{
-				Language: config.LanguageJava,
+				Language: config.LanguageRust,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
