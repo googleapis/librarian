@@ -133,52 +133,41 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
 	defer os.Remove(reportPath)
 
-	var changeLevel semver.ChangeLevel = semver.None
+	var neededVersion string
 	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
-		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "none")
+		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "fully",
+		"--no-set-exit-on-version-check-failure")
 	if err != nil {
 		if strings.Contains(err.Error(), "Package not available") {
 			// First release: no breaking changes to compare against, keep old version.
-			changeLevel = semver.None
+			neededVersion = oldVersion
 		} else {
 			return "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
 		}
 	} else {
 		// Read the report file
 		reportContent, err := os.ReadFile(reportPath)
-		fmt.Printf("reportContent: %s\n", reportContent)
-
 		if err != nil {
 			return "", fmt.Errorf("failed to read API report: %w", err)
 		}
 		var report struct {
-			Report struct {
-				BreakingChanges *struct {
-					Children []interface{} `json:"children"`
-				} `json:"breakingChanges"`
-				NonBreakingChanges *struct {
-					Children []interface{} `json:"children"`
-				} `json:"nonBreakingChanges"`
-			} `json:"report"`
+			Version struct {
+				Needed string `json:"needed"`
+			} `json:"version"`
 		}
 		if err := json.Unmarshal(reportContent, &report); err != nil {
 			return "", fmt.Errorf("failed to parse API report: %w", err)
 		}
-
-		if report.Report.BreakingChanges != nil && len(report.Report.BreakingChanges.Children) > 0 {
-			changeLevel = semver.Major
-		} else if report.Report.NonBreakingChanges != nil && len(report.Report.NonBreakingChanges.Children) > 0 {
-			changeLevel = semver.Minor
+		neededVersion = report.Version.Needed
+		if neededVersion == "" {
+			return "", fmt.Errorf("API report did not contain recommended version")
 		}
 	}
 
-	if changeLevel == semver.None && depsChanged {
-		changeLevel = semver.Patch
-	}
-
-	newVersion := oldVersion
-	if changeLevel != semver.None {
-		bumped, err := semver.DeriveNext(changeLevel, oldVersion, semver.DeriveNextOptions{
+	newVersion := neededVersion
+	if depsChanged && newVersion == oldVersion {
+		// Only dependencies changed, perform a patch bump
+		bumped, err := semver.DeriveNext(semver.Patch, oldVersion, semver.DeriveNextOptions{
 			DowngradePreGAChanges: true,
 		})
 		if err != nil {
