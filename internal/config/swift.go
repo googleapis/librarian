@@ -109,7 +109,7 @@ type SwiftModule struct {
 	// APIPath is the proto path to generate from (e.g., "google/storage/v2").
 	APIPath string `yaml:"api_path"`
 
-	// ModuleType is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty for standard GAPIC).
+	// ModuleType is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC).
 	ModuleType string `yaml:"module_type,omitempty"`
 
 	// IncludeList is a subset of proto files under the target API path to include.
