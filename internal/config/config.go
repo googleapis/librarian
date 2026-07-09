@@ -125,6 +125,7 @@ type CargoTool struct {
 	Version string `yaml:"version"`
 }
 
+// GemTool defines a tool to install via gem.
 type GemTool struct {
 	// Name is the gem name.
 	Name string `yaml:"name"`
