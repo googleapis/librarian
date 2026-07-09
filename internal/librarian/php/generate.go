@@ -25,9 +25,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )
@@ -37,9 +37,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if len(library.APIs) == 0 {
 		return fmt.Errorf("no apis configured for library %q", library.Name)
 	}
-	protocPath, err := exec.LookPath("protoc")
-	if err != nil {
-		return fmt.Errorf("failed to find protoc: %w", err)
+	if cfg.Tools == nil || cfg.Tools.Protoc == nil {
+		if _, err := exec.LookPath("protoc"); err != nil {
+			return fmt.Errorf("failed to find protoc: %w", err)
+		}
 	}
 
 	// Locate PHP generator
@@ -67,12 +68,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	srcCfg := sources.NewSourceConfig(src, library.Roots)
 	for _, api := range library.APIs {
 		params := &generateAPIParams{
+			cfg:           cfg,
 			api:           api,
 			library:       library,
 			srcCfg:        srcCfg,
 			wrapperPath:   wrapperPath,
 			outputZipPath: outputZipPath,
-			protocPath:    protocPath,
 		}
 		if err := generateAPI(ctx, params); err != nil {
 			return err
@@ -85,12 +86,12 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 }
 
 type generateAPIParams struct {
+	cfg           *config.Config
 	api           *config.API
 	library       *config.Library
 	srcCfg        *sources.SourceConfig
 	wrapperPath   string
 	outputZipPath string
-	protocPath    string
 }
 
 // generateAPI generates a single target API by resolving its service config, gathering
@@ -141,7 +142,11 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 	}
 	protocArgs = append(protocArgs, targetProtos...)
 	// Run compilation
-	if err := command.RunWithEnv(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, params.protocPath, protocArgs...); err != nil {
+	var pc *config.Protoc
+	if params.cfg.Tools != nil && params.cfg.Tools.Protoc != nil {
+		pc = params.cfg.Tools.Protoc
+	}
+	if err := protoc.RunOrSystem(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, pc, protocArgs...); err != nil {
 		return fmt.Errorf("failed to generate PHP API %s: %w", params.api.Path, err)
 	}
 

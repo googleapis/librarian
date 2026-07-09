@@ -143,7 +143,8 @@ func TestGapicOpts(t *testing.T) {
 			},
 			grpcConfigPath: "grpc_config.json",
 			want: []string{
-				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "rest-numeric-enums", "generate-snippets",
+				"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
+				"rest-numeric-enums", "generate-snippets",
 				"grpc_service_config=grpc_config.json",
 				"service_yaml=service.yaml",
 			},
@@ -154,7 +155,8 @@ func TestGapicOpts(t *testing.T) {
 			apiMetadata: &serviceconfig.API{
 				SkipRESTNumericEnums: []string{"php"},
 			},
-			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY", "generate-snippets"},
+			want: []string{"metadata", "transport=grpc+rest", "migration-mode=NEW_SURFACE_ONLY",
+				"generate-snippets"},
 		},
 		{
 			name: "custom transport",
