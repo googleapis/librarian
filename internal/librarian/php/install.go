@@ -22,6 +22,7 @@ import (
 	"os/exec"
 	"path/filepath"
 
+	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
@@ -30,6 +31,7 @@ import (
 const (
 	generatorVersion = "v1.21.2"
 	generatorSHA256  = "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"
+	toolsDir         = "php_tools"
 )
 
 // Install installs the PHP generator tool dependencies.
@@ -41,8 +43,22 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return err
 }
 
-func generatorDir(ctx context.Context) (string, error) {
-	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+// InstallDir gets the directory where tools should be installed.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
+}
+
+// getBinDir returns the directory where PHP tool executables are stored.
+func getBinDir() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, "bin"), nil
 }
 
 // installGenerator is a temp function for testing purposes.
@@ -89,4 +105,8 @@ exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir
 	}
 
 	return generatorDir, nil
+}
+
+func generatorDir(ctx context.Context) (string, error) {
+	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
 }
