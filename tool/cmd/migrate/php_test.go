@@ -16,7 +16,6 @@ package main
 
 import (
 	"context"
-	"os"
 	"path/filepath"
 	"testing"
 
@@ -26,7 +25,11 @@ import (
 )
 
 func TestRunPHPMigration(t *testing.T) {
-	wd, err := os.Getwd()
+	oldFetchSource := fetchSource
+	t.Cleanup(func() {
+		fetchSource = oldFetchSource
+	})
+	absGoogleapis, err := filepath.Abs("../../internal/testdata/googleapis")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -35,17 +38,17 @@ func TestRunPHPMigration(t *testing.T) {
 		return &config.Source{
 			Commit: "abcd123",
 			SHA256: "sha123",
-			Dir:    filepath.Join(wd, "../../internal/testdata/googleapis"),
+			Dir:    absGoogleapis,
 		}, nil
 	}
 	dir := t.TempDir()
-	err = runPHPMigration(t.Context(), dir)
+	t.Chdir(dir)
+	err = runPHPMigration(t.Context(), ".")
 	if err != nil {
 		t.Fatal(err)
 	}
 	// Verify librarian.yaml is written and contains the expected content.
-	cfgPath := filepath.Join(dir, config.LibrarianYAML)
-	got, err := yaml.Read[config.Config](cfgPath)
+	got, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
 		t.Fatalf("reading generated librarian.yaml: %v", err)
 	}
