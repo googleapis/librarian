@@ -504,3 +504,50 @@ func TestGenerateMessage_RecursiveChain(t *testing.T) {
 		t.Errorf("nodeA initializer mismatch: want %q; got:\n%s", wantInitC, contentStrC)
 	}
 }
+
+func TestGenerateMessage_DocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	nested := &api.Message{
+		Name:          "NestedMessage",
+		Package:       "google.cloud.test.v1",
+		ID:            ".google.cloud.test.v1.TestMessage.NestedMessage",
+		Documentation: "Documentation for NestedMessage.",
+	}
+	msg := &api.Message{
+		Name:          "TestMessage",
+		Package:       "google.cloud.test.v1",
+		ID:            ".google.cloud.test.v1.TestMessage",
+		Documentation: "Documentation for TestMessage.",
+		Messages:      []*api.Message{nested},
+	}
+
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+	cfg := &parser.ModelConfig{}
+
+	if err := Generate(t.Context(), model, outDir, cfg, swiftConfig(t, nil)); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "TestMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	// Verify top-level message documentation
+	want := "/// Documentation for TestMessage.\npublic struct TestMessage"
+	got := extractBlock(t, contentStr, "/// Documentation for TestMessage.", "public struct TestMessage")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify nested message documentation
+	want = "  /// Documentation for NestedMessage.\n  public struct NestedMessage"
+	got = extractBlock(t, contentStr, "  /// Documentation for NestedMessage.", "public struct NestedMessage")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
