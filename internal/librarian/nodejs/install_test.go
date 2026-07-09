@@ -16,8 +16,10 @@ package nodejs
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -25,8 +27,20 @@ import (
 
 func stubExecutables(t *testing.T) {
 	t.Helper()
+	stubExecutablesWithPNPMVersion(t, "7.33.7")
+}
+
+func stubExecutablesWithPNPMVersion(t *testing.T, pnpmVersion string) {
+	t.Helper()
 	bin := t.TempDir()
-	pnpmStub := `#!/bin/sh
+	pnpmStub := fmt.Sprintf(`#!/bin/sh
+case "$*" in
+    *--version*|-v)
+        echo "%s"
+        exit 0
+        ;;
+esac
+
 # Assert that transient environmental variables are set dynamically for process lifetime
 if [ -n "$PNPM_HOME" ] && [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] && [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] && [ -n "$PNPM_CONFIG_STORE_DIR" ] && \
    [ -n "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" ]; then
@@ -46,7 +60,7 @@ case "$*" in
         ;;
 esac
 exit 0
-`
+`, pnpmVersion)
 	nodeStub := `#!/bin/sh
 exit 0
 `
@@ -280,4 +294,111 @@ func TestGetToolsEnv(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestGetPNPMEnv_PNPMVersion(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		pnpmVersion string
+		wantSubdir  string
+	}{
+		{
+			name:        "pnpm v7",
+			pnpmVersion: "7.33.7",
+			wantSubdir:  "bin",
+		},
+		{
+			name:        "pnpm v11",
+			pnpmVersion: "11.7.0",
+			wantSubdir:  "",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			stubExecutablesWithPNPMVersion(t, test.pnpmVersion)
+
+			env, err := getPNPMEnv(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			installDir, err := InstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantPNPMHome := filepath.Join(installDir, test.wantSubdir)
+
+			var gotPNPMHome string
+			for _, e := range env {
+				if strings.HasPrefix(e, "PNPM_HOME=") {
+					gotPNPMHome = strings.TrimPrefix(e, "PNPM_HOME=")
+					break
+				}
+			}
+
+			if gotPNPMHome != wantPNPMHome {
+				t.Errorf("PNPM_HOME = %q, want %q", gotPNPMHome, wantPNPMHome)
+			}
+		})
+	}
+}
+
+func TestGetPNPMEnv_PNPMVersion_Error(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		pnpmVersion string
+		exitCode    int
+	}{
+		{
+			name:        "pnpm --version command fails",
+			pnpmVersion: "",
+			exitCode:    1,
+		},
+		{
+			name:        "empty pnpm version output",
+			pnpmVersion: "",
+			exitCode:    0,
+		},
+		{
+			name:        "invalid pnpm version output",
+			pnpmVersion: "invalid",
+			exitCode:    0,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := t.TempDir()
+			t.Setenv("LIBRARIAN_BIN", binDir)
+			stubFailingPNPMVersion(t, test.pnpmVersion, test.exitCode)
+
+			_, err := getPNPMEnv(t.Context())
+			if err == nil {
+				t.Fatalf("getPNPMEnv() succeeded, want error")
+			}
+		})
+	}
+}
+
+func stubFailingPNPMVersion(t *testing.T, versionOutput string, exitCode int) {
+	t.Helper()
+	bin := t.TempDir()
+	pnpmStub := fmt.Sprintf(`#!/bin/sh
+case "$*" in
+    *--version*|-v)
+        echo "%s"
+        exit %d
+        ;;
+esac
+exit 0
+`, versionOutput, exitCode)
+	nodeStub := `#!/bin/sh
+exit 0
+`
+	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 }

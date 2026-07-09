@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -56,7 +57,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 
-	env, err := getPNPMEnv()
+	env, err := getPNPMEnv(ctx)
 	if err != nil {
 		return err
 	}
@@ -114,7 +115,7 @@ func getToolsEnv() (map[string]string, error) {
 // This enables complete environment caching and restore on CI runners,
 // while permanently avoiding persistent side-effects on the host machine
 // (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv() ([]string, error) {
+func getPNPMEnv(ctx context.Context) ([]string, error) {
 	cacheDir, err := cache.Directory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
@@ -128,14 +129,44 @@ func getPNPMEnv() ([]string, error) {
 		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
 	}
 
+	major, err := pnpmMajorVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	// In pnpm v11+, globally installed binaries are stored in PNPM_HOME/bin.
+	// In pnpm v7, globally installed binaries are stored directly in PNPM_HOME.
+	// We want global binaries to be installed in binDir.
+	pnpmHome := binDir
+	if major >= 11 {
+		pnpmHome = installDir
+	}
+
 	env := os.Environ()
-	env = append(env, "PNPM_HOME="+installDir)
+	env = append(env, "PNPM_HOME="+pnpmHome)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
+}
+
+func pnpmMajorVersion(ctx context.Context) (int, error) {
+	out, err := exec.CommandContext(ctx, "pnpm", "--version").Output()
+	if err != nil {
+		return 0, fmt.Errorf("failed to get pnpm version: %w", err)
+	}
+	vStr := strings.TrimPrefix(strings.TrimSpace(string(out)), "v")
+	if vStr == "" {
+		return 0, fmt.Errorf("empty pnpm version output")
+	}
+	parts := strings.Split(vStr, ".")
+	major, err := strconv.Atoi(parts[0])
+	if err != nil {
+		return 0, fmt.Errorf("failed to parse pnpm major version from %q: %w", vStr, err)
+	}
+	return major, nil
 }
 
 func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
