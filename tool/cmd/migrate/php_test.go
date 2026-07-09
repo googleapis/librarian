@@ -88,6 +88,6 @@ func TestRunPHPMigration(t *testing.T) {
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch in generated librarian.yaml (-want +got):\n%s", diff)
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
