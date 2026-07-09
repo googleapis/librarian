@@ -30,13 +30,10 @@ import (
 func TestApply(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
-	content := "package com.example;\n\npublic class Foo {\n\tpublic void oldFunc() {}\n}\n"
-	if err := os.WriteFile(filepath.Join(dir, "Foo.java"), []byte(content), 0644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "to_delete.txt"), []byte("delete me"), 0644); err != nil {
-		t.Fatal(err)
-	}
+	createFiles(t, dir, map[string]string{
+		"Foo.java":      "package com.example;\n\npublic class Foo {\n\tpublic void oldFunc() {}\n}\n",
+		"to_delete.txt": "delete me",
+	})
 	cfg := &config.Postprocess{
 		CopyFile: []config.CopyConfig{
 			{Src: "Foo.java", Dst: "CopiedFoo.java"},
@@ -91,7 +88,7 @@ func TestApply_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
 		name    string
-		setup   func(t *testing.T, dir string)
+		files   map[string]string
 		cfg     *config.Postprocess
 		wantErr error
 	}{
@@ -112,12 +109,8 @@ func TestApply_Error(t *testing.T) {
 			wantErr: fs.ErrNotExist,
 		},
 		{
-			name: "replace fails - text not found",
-			setup: func(t *testing.T, dir string) {
-				if err := os.WriteFile(filepath.Join(dir, "file.txt"), []byte("hello"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
+			name:  "replace fails - text not found",
+			files: map[string]string{"file.txt": "hello"},
 			cfg: &config.Postprocess{
 				Replace: []config.ReplaceConfig{
 					{Path: "file.txt", Original: "missing", Replacement: "world"},
@@ -126,12 +119,8 @@ func TestApply_Error(t *testing.T) {
 			wantErr: errTextNotFound,
 		},
 		{
-			name: "replace regex fails - pattern not matched",
-			setup: func(t *testing.T, dir string) {
-				if err := os.WriteFile(filepath.Join(dir, "file.txt"), []byte("hello"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
+			name:  "replace regex fails - pattern not matched",
+			files: map[string]string{"file.txt": "hello"},
 			cfg: &config.Postprocess{
 				ReplaceRegex: []config.ReplaceRegexConfig{
 					{Path: "file.txt", Pattern: `\d+`, Replacement: "123"},
@@ -140,12 +129,8 @@ func TestApply_Error(t *testing.T) {
 			wantErr: errTextNotFound,
 		},
 		{
-			name: "method operation fails - unsupported action",
-			setup: func(t *testing.T, dir string) {
-				if err := os.WriteFile(filepath.Join(dir, "Test.java"), []byte("class Test {}"), 0644); err != nil {
-					t.Fatal(err)
-				}
-			},
+			name:  "method operation fails - unsupported action",
+			files: map[string]string{"Test.java": "class Test {}"},
 			cfg: &config.Postprocess{
 				MethodOperations: []config.MethodOperation{
 					{Path: "Test.java", Action: "invalid_action", FuncName: "void foo()"},
@@ -157,9 +142,7 @@ func TestApply_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 			dir := t.TempDir()
-			if test.setup != nil {
-				test.setup(t, dir)
-			}
+			createFiles(t, dir, test.files)
 			gotErr := Apply(dir, test.cfg)
 			if !errors.Is(gotErr, test.wantErr) {
 				t.Errorf("Apply() error = %v, wantErr %v", gotErr, test.wantErr)
