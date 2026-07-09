@@ -36,6 +36,10 @@ import (
 func TestPostProcessAPI(t *testing.T) {
 	t.Parallel()
 	outdir := t.TempDir()
+	// Force routing to the legacy owlbot.py postprocessor.
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("# dummy"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	libraryName := "secretmanager"
 	apiBase := "v1"
 	gapicDir := filepath.Join(outdir, apiBase, "gapic")
@@ -1412,6 +1416,89 @@ func TestRestructureToLibrary_CommonProtos(t *testing.T) {
 		"proto-google-common-protos/src/main/java/com/google/cloud/location/LocationsProto.java": "class LocationsProto {}",
 	}
 	if diff := cmp.Diff(wantFiles, gotFiles); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestPostProcessAPI_Go verifies that Go-native postprocessor correctly restructures
+// generated Java files to their target directories and cleans up intermediate files.
+func TestPostProcessAPI_Go(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeFiles(t, dir, map[string]string{
+		"v1/gapic/src/main/java/Foo.java": "class Foo {}",
+		"v1/grpc/dummy":                   "",
+		"v1/proto/dummy":                  "",
+	})
+	library := &config.Library{
+		Name: "test-lib",
+		APIs: []*config.API{{Path: "google/cloud/test/v1", Java: &config.JavaAPI{}}},
+		Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-test", ReleasedVersion: "1.2.3"},
+	}
+	postParams := postProcessParams{
+		cfg:            &config.Config{},
+		library:        library,
+		javaAPI:        library.APIs[0].Java,
+		outDir:         dir,
+		includeSamples: true,
+		apiBase:        "v1",
+	}
+	if err := postProcessAPI(t.Context(), postParams); err != nil {
+		t.Fatal(err)
+	}
+	// Verify that files are relocated directly to target paths and staging is skipped.
+	want := map[string]string{
+		"google-cloud-test/src/main/java/Foo.java":       "class Foo {}",
+		"proto-google-cloud-test-v1/src/main/java/dummy": "",
+		"grpc-google-cloud-test-v1/src/main/java/dummy":  "",
+	}
+	got := readDirFiles(t, dir)
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+// TestPostProcessLibrary_Go verifies that library-level postprocessing tasks
+// (such as text replacements, POM updates, and README generation) execute
+// correctly in the Go-native flow.
+func TestPostProcessLibrary_Go(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	writeFiles(t, dir, map[string]string{"google-cloud-test/src/main/java/Foo.java": "class Foo {}"})
+	library := &config.Library{
+		Name: "test-lib",
+		Java: &config.JavaModule{
+			GroupID:    "com.google.cloud",
+			ArtifactID: "google-cloud-test",
+			// Disable syncPOMs to simplify config requirements.
+			SkipPOMUpdates: true,
+		},
+		// Disable renderREADME to simplify config requirements.
+		Keep: []string{"README.md"},
+		Postprocess: &config.Postprocess{
+			Replace: []config.ReplaceConfig{
+				{Path: "google-cloud-test/src/main/java/Foo.java", Original: "class Foo", Replacement: "class RenamedFoo"},
+			},
+		},
+	}
+	params := libraryPostProcessParams{
+		cfg: &config.Config{
+			Libraries: []*config.Library{
+				{Name: "google-cloud-java", Version: "1.2.3"},
+				{Name: "google-cloud-pom-parent", Version: "1.2.3"},
+			},
+		},
+		library:  library,
+		outDir:   dir,
+		metadata: &repoMetadata{},
+	}
+	if err := postProcessLibrary(t.Context(), params); err != nil {
+		t.Fatal(err)
+	}
+	// Verify postprocessing rules were applied.
+	want := map[string]string{"google-cloud-test/src/main/java/Foo.java": "class RenamedFoo {}"}
+	got := readDirFiles(t, dir)
+	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

@@ -29,6 +29,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
 	"github.com/googleapis/librarian/internal/license"
+	"github.com/googleapis/librarian/internal/postprocessing"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
@@ -70,18 +71,37 @@ type libraryPostProcessParams struct {
 // TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
 // postprocessing execution once native Go postprocessing is enabled.
 func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) error {
-	if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
-		return err
-	}
-	bomVersion, err := findBOMVersion(params.cfg)
-	if err != nil {
-		return err
-	}
-	if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
-		return fmt.Errorf("failed to remove kept files from staging: %w", err)
-	}
-	if err := runOwlBot(ctx, params.library, params.outDir, bomVersion); err != nil {
-		return fmt.Errorf("%w: %w", errRunOwlBot, err)
+	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
+	_, err := os.Stat(owlbotPath)
+	owlbotExists := err == nil
+
+	if owlbotExists {
+		if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
+			return err
+		}
+		bomVersion, err := findBOMVersion(params.cfg)
+		if err != nil {
+			return err
+		}
+		if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
+			return fmt.Errorf("failed to remove kept files from staging: %w", err)
+		}
+		if err := runOwlBot(ctx, params.library, params.outDir, bomVersion); err != nil {
+			return fmt.Errorf("%w: %w", errRunOwlBot, err)
+		}
+	} else {
+		if params.library != nil && params.library.Postprocess != nil {
+			if err := postprocessing.Apply(params.outDir, params.library.Postprocess); err != nil {
+				return err
+			}
+		}
+		var keepSet map[string]bool
+		if params.library != nil {
+			keepSet = ToKeepSet(params.library.Keep)
+		}
+		if err := renderREADME(params, keepSet); err != nil {
+			return fmt.Errorf("failed to render README: %w", err)
+		}
 	}
 
 	monorepoVersion, err := findMonorepoVersion(params.cfg)
@@ -140,23 +160,51 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	if err := copyFiles(params); err != nil {
 		return fmt.Errorf("failed to copy files: %w", err)
 	}
-	if err := restructureToStaging(params); err != nil {
-		return fmt.Errorf("failed to restructure to staging: %w", err)
-	}
 
-	// Generate clirr-ignored-differences.xml for the proto module.
-	// We target the staging directory because runOwlBot hasn't moved the files
-	// to their final destination yet.
-	coords := params.coords()
-	protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
-	shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
-	if err != nil {
-		return fmt.Errorf("failed to check for clirr ignore file: %w", err)
-	}
-	if shouldGenerate {
-		protoModuleStagingRoot := filepath.Join(stagingDir(params.outDir), params.apiBase, coords.Proto.ArtifactID)
-		if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
-			return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
+	_, err := os.Stat(owlbotPath)
+	owlbotExists := err == nil
+
+	if !owlbotExists {
+		var keepSet map[string]bool
+		if params.library != nil {
+			keepSet = ToKeepSet(params.library.Keep)
+		}
+		if err := RestructureToLibrary(params, params.outDir, keepSet); err != nil {
+			return fmt.Errorf("failed to restructure to library root: %w", err)
+		}
+
+		coords := params.coords()
+		// Generate clirr-ignored-differences.xml for the proto module.
+		protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
+		shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
+		if err != nil {
+			return fmt.Errorf("failed to check for clirr ignore file: %w", err)
+		}
+		if shouldGenerate {
+			if err := generateClirrIgnore(protoModuleRepoRoot); err != nil {
+				return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+			}
+		}
+	} else {
+		if err := restructureToStaging(params); err != nil {
+			return fmt.Errorf("failed to restructure to staging: %w", err)
+		}
+
+		// Generate clirr-ignored-differences.xml for the proto module.
+		// We target the staging directory because runOwlBot hasn't moved the files
+		// to their final destination yet.
+		coords := params.coords()
+		protoModuleRepoRoot := filepath.Join(params.outDir, coords.Proto.ArtifactID)
+		shouldGenerate, err := clirrIgnoreShouldGenerate(coords.Proto.ArtifactID, protoModuleRepoRoot, params.javaAPI.Monolithic)
+		if err != nil {
+			return fmt.Errorf("failed to check for clirr ignore file: %w", err)
+		}
+		if shouldGenerate {
+			protoModuleStagingRoot := filepath.Join(stagingDir(params.outDir), params.apiBase, coords.Proto.ArtifactID)
+			if err := generateClirrIgnore(protoModuleStagingRoot); err != nil {
+				return fmt.Errorf("failed to generate clirr ignore file: %w", err)
+			}
 		}
 	}
 
