@@ -41,6 +41,18 @@ func configCommand() *cli.Command {
 				Name:      "get",
 				Usage:     "get a configuration value",
 				UsageText: "librarian config get [path] [value]",
+				Description: `get retrieves configuration values from librarian.yaml.
+
+Supported cases:
+
+  - Librarian version:
+    librarian config get version
+
+  - Library name for a given API path:
+    librarian config get libraries [api-path]
+
+  - Source repository field (e.g., commit, sha256, dir, subpath):
+    librarian config get sources.[source-name].[field-name]`,
 				Action: func(ctx context.Context, cmd *cli.Command) error {
 					return runConfigGet(cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
 				},

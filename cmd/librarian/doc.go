@@ -44,6 +44,19 @@ Usage:
 
 	librarian config get [path] [value]
 
+get retrieves configuration values from librarian.yaml.
+
+Supported cases:
+
+  - Librarian version:
+    librarian config get version
+
+  - Library name for a given API path:
+    librarian config get libraries [api-path]
+
+  - Source repository field (e.g., commit, sha256, dir, subpath):
+    librarian config get sources.[source-name].[field-name]
+
 # Set a configuration value
 
 Usage:
