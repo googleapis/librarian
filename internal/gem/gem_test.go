@@ -51,7 +51,7 @@ echo "gem $@" >> %q
 			tools: []*config.GemTool{
 				{Name: "rubocop", Version: "1.50.0"},
 			},
-			wantLog: "gem install rubocop -v 1.50.0",
+			wantLog: "gem install rubocop -v 1.50.0 --no-document",
 		},
 		{
 			name: "install multiple gems",
@@ -59,7 +59,7 @@ echo "gem $@" >> %q
 				{Name: "rubocop", Version: "1.50.0"},
 				{Name: "rake", Version: "13.0.6"},
 			},
-			wantLog: "gem install rubocop -v 1.50.0\ngem install rake -v 13.0.6",
+			wantLog: "gem install rubocop -v 1.50.0 --no-document\ngem install rake -v 13.0.6 --no-document",
 		},
 		{
 			name:    "empty or nil tools",

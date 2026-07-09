@@ -26,17 +26,20 @@ import (
 
 var (
 	// errInstall indicates a failure to install gem packages.
-	errInstall    = errors.New("failed to install ruby gems")
+	errInstall = errors.New("failed to install ruby gems")
+	// errInvalidGem indicates an invalid gem tool.
 	errInvalidGem = errors.New("invalid gem tool")
 )
 
 // Install installs a list of gem tools into the environment.
 func Install(ctx context.Context, tools []*config.GemTool) error {
 	for _, tool := range tools {
-		if tool == nil || tool.Name == "" || tool.Version == "" {
-			return fmt.Errorf("%w: missing name or version", errInvalidGem)
+		if tool.Name == "" || tool.Version == "" {
+			return fmt.Errorf("%w: name and version must be specified: %+v", errInvalidGem, tool)
 		}
-		args := []string{"install", tool.Name, "-v", tool.Version}
+		// Skip the generation of the local documentation to make installation faster
+		// and use less disk space.
+		args := []string{"install", tool.Name, "-v", tool.Version, "--no-document"}
 		if err := command.RunStreaming(ctx, "gem", args...); err != nil {
 			return fmt.Errorf("%w: %w", errInstall, err)
 		}
