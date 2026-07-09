@@ -87,3 +87,73 @@ func TestGenerateField_InitFromDecoder(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestGenerateField_DocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:          "normal_field",
+		Documentation: "Documentation for normal_field.",
+		ID:            ".google.cloud.test.v1.TestMessage.normal_field",
+		Typez:         api.TypezString,
+	}
+
+	field2 := &api.Field{
+		Name:          "oneof_field",
+		Documentation: "Documentation for oneof_field.",
+		ID:            ".google.cloud.test.v1.TestMessage.oneof_field",
+		Typez:         api.TypezString,
+		IsOneOf:       true,
+	}
+
+	oneof := &api.OneOf{
+		Name:          "my_oneof",
+		Documentation: "Documentation for my_oneof.",
+		Fields:        []*api.Field{field2},
+	}
+	field2.Group = oneof
+
+	msg := &api.Message{
+		Name:    "TestMessage",
+		Package: "google.cloud.test.v1",
+		ID:      ".google.cloud.test.v1.TestMessage",
+		Fields:  []*api.Field{field1, field2},
+		OneOfs:  []*api.OneOf{oneof},
+	}
+
+	model := api.NewTestAPI([]*api.Message{msg}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+	cfg := &parser.ModelConfig{}
+
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "TestMessage.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	// Verify normal field documentation
+	want := "  /// Documentation for normal_field.\n  public var normalField: Swift.String"
+	got := extractBlock(t, contentStr, "  /// Documentation for normal_field.", "public var normalField: Swift.String")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify oneof documentation in the message
+	want = "  /// Documentation for my_oneof.\n  public var myOneof: OneOf_MyOneof?"
+	got = extractBlock(t, contentStr, "  /// Documentation for my_oneof.", "public var myOneof: OneOf_MyOneof?")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	// Verify field documentation in the oneof enum
+	want = "    /// Documentation for oneof_field.\n    case oneofField(Swift.String)"
+	got = extractBlock(t, contentStr, "    /// Documentation for oneof_field.", "case oneofField(Swift.String)")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}

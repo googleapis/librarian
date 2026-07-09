@@ -19,6 +19,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
@@ -66,5 +67,51 @@ func TestGenerateEnum_Files(t *testing.T) {
 		if _, err := os.Stat(filename); err != nil {
 			t.Error(err)
 		}
+	}
+}
+
+func TestGenerateEnum_DocComments(t *testing.T) {
+	outDir := t.TempDir()
+
+	color := &api.Enum{
+		Name:          "Color",
+		Package:       "google.cloud.test.v1",
+		ID:            ".google.cloud.test.v1.Color",
+		Documentation: "Documentation for the Color enum.",
+	}
+	color.Values = []*api.EnumValue{
+		{
+			Name:          "COLOR_UNSPECIFIED",
+			Number:        0,
+			Parent:        color,
+			Documentation: "Documentation for the COLOR_UNSPECIFIED value.",
+		},
+	}
+	color.UniqueNumberValues = color.Values
+
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{color}, []*api.Service{})
+	model.PackageName = "google.cloud.test.v1"
+	cfg := &parser.ModelConfig{}
+	if err := Generate(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Sources", "GoogleCloudTestV1", "Color.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	want := "/// Documentation for the Color enum.\npublic enum Color"
+	got := extractBlock(t, contentStr, "/// Documentation for the Color enum.", "public enum Color")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+
+	want = "/// Documentation for the COLOR_UNSPECIFIED value.\n  case unspecified"
+	got = extractBlock(t, contentStr, "/// Documentation for the COLOR_UNSPECIFIED value.", "case unspecified")
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

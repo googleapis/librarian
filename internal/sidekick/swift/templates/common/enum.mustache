@@ -18,9 +18,9 @@ limitations under the License.
 {{/Codec.DocLines}}
 public enum {{Codec.Name}}: Codable, Equatable, Sendable {
   {{#UniqueNumberValues}}
-  {{#DocLines}}
+  {{#Codec.DocLines}}
   /// {{{.}}}
-  {{/DocLines}}
+  {{/Codec.DocLines}}
   case {{Codec.CaseName}}
   {{/UniqueNumberValues}}
   /// Encodes an unknown integer value.
