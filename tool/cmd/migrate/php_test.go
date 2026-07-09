@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -42,6 +43,25 @@ func TestRunPHPMigration(t *testing.T) {
 		}, nil
 	}
 	dir := t.TempDir()
+	// Create a fake library SecretManager.
+	libDir := filepath.Join(dir, "SecretManager")
+	if err := os.Mkdir(libDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(libDir, "VERSION"), []byte("2.3.0\n"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(libDir, "composer.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	// Create a fake non-library directory to ensure it is ignored.
+	ignoredDir := filepath.Join(dir, "dev")
+	if err := os.Mkdir(ignoredDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(ignoredDir, "composer.json"), []byte("{}"), 0644); err != nil {
+		t.Fatal(err)
+	}
 	t.Chdir(dir)
 	err = runPHPMigration(t.Context(), ".")
 	if err != nil {
@@ -60,8 +80,14 @@ func TestRunPHPMigration(t *testing.T) {
 				SHA256: "sha123",
 			},
 		},
+		Libraries: []*config.Library{
+			{
+				Name:    "SecretManager",
+				Version: "2.3.0",
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
+		t.Errorf("mismatch in generated librarian.yaml (-want +got):\n%s", diff)
 	}
 }
