@@ -25,7 +25,6 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -54,10 +53,7 @@ var (
 		if err != nil {
 			return err
 		}
-		if pc == nil {
-			return command.RunWithEnv(ctx, env, "protoc", args...)
-		}
-		return protoc.Run(ctx, env, pc, args...)
+		return protoc.RunOrSystem(ctx, env, pc, args...)
 	}
 )
 
