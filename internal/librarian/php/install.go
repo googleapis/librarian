@@ -49,7 +49,11 @@ func InstallDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
+	absDir, err := filepath.Abs(filepath.Join(dir, toolsDir))
+	if err != nil {
+		return "", fmt.Errorf("failed to get install directory: %w", err)
+	}
+	return absDir, nil
 }
 
 // binDir gets the directory where PHP tool executables are stored.
