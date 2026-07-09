@@ -52,8 +52,8 @@ func InstallDir() (string, error) {
 	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
-// getBinDir returns the directory where PHP tool executables are stored.
-func getBinDir() (string, error) {
+// binDir gets the directory where PHP tool executables are stored.
+func binDir() (string, error) {
 	installDir, err := InstallDir()
 	if err != nil {
 		return "", err
