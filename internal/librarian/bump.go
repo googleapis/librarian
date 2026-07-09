@@ -117,7 +117,10 @@ func runBump(ctx context.Context, cfg *config.Config, all bool, libraryName, ver
 		return legacyRustBump(ctx, cfg, all, libraryName, versionOverride)
 	}
 	if cfg.Language == config.LanguageDart {
-		return dart.Bump(ctx, cfg, all, libraryName, versionOverride)
+		if err := dart.Bump(ctx, cfg, all, libraryName, versionOverride); err != nil {
+			return err
+		}
+		return RunTidyOnConfig(ctx, ".", cfg)
 	}
 
 	librariesToBump, err := findLibrariesToBump(ctx, cfg, all, libraryName)

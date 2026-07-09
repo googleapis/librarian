@@ -18,20 +18,15 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/semver"
 )
-
-const defaultVersion = "0.1.0"
-
-type Library struct {
-	Lib        *config.Library
-	CloudDeps  []string
-	NewVersion string
-}
 
 // IgnoredChanges is a list of files that are to be ignored as changes during the bump command.
 var IgnoredChanges = []string{
@@ -119,15 +114,85 @@ func sortLibraries(libraryByName map[string]*config.Library, deps map[string][]s
 	return sorted, nil
 }
 
-func hasBreakingChanges(ctx context.Context, lib *config.Library, defaults *config.Default) (bool, error) {
-	packageDir := libraryOutput(lib, defaults)
-	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
-		"--report-format", "json", "--report-file-path", "/tmp/foo.json")
-	if err != nil {
-		return false, err
+func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string]string, lib *config.Library, defaults *config.Default) (string, error) {
+	oldVersion := lib.Version
+	if oldVersion == "" {
+		return "", fmt.Errorf("version not set for library %s", lib.Name)
 	}
-	fmt.Print(output)
-	return true, nil
+
+	depsChanged := false
+	newDeps := make(map[string]string)
+	for _, dep := range cloudDeps {
+		if v, ok := newVersions[dep]; ok && v != "" {
+			depsChanged = true
+			newDeps["package:"+dep] = "^" + v
+		}
+	}
+
+	packageDir := libraryOutput(lib, defaults)
+	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
+	defer os.Remove(reportPath)
+
+	var changeLevel semver.ChangeLevel = semver.None
+	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
+		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "none")
+	if err != nil {
+		if strings.Contains(err.Error(), "Package not available") {
+			// First release: no breaking changes to compare against, keep old version.
+			changeLevel = semver.None
+		} else {
+			return "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
+		}
+	} else {
+		// Read the report file
+		reportContent, err := os.ReadFile(reportPath)
+		fmt.Printf("reportContent: %s\n", reportContent)
+
+		if err != nil {
+			return "", fmt.Errorf("failed to read API report: %w", err)
+		}
+		var report struct {
+			Report struct {
+				BreakingChanges *struct {
+					Children []interface{} `json:"children"`
+				} `json:"breakingChanges"`
+				NonBreakingChanges *struct {
+					Children []interface{} `json:"children"`
+				} `json:"nonBreakingChanges"`
+			} `json:"report"`
+		}
+		if err := json.Unmarshal(reportContent, &report); err != nil {
+			return "", fmt.Errorf("failed to parse API report: %w", err)
+		}
+
+		if report.Report.BreakingChanges != nil && len(report.Report.BreakingChanges.Children) > 0 {
+			changeLevel = semver.Major
+		} else if report.Report.NonBreakingChanges != nil && len(report.Report.NonBreakingChanges.Children) > 0 {
+			changeLevel = semver.Minor
+		}
+	}
+
+	if changeLevel == semver.None && depsChanged {
+		changeLevel = semver.Patch
+	}
+
+	newVersion := oldVersion
+	if changeLevel != semver.None {
+		bumped, err := semver.DeriveNext(changeLevel, oldVersion, semver.DeriveNextOptions{
+			DowngradePreGAChanges: true,
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to derive next version: %w", err)
+		}
+		newVersion = bumped
+	}
+
+	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
+	if err := updatePubspecFile(pubspecPath, newVersion, newDeps); err != nil {
+		return "", err
+	}
+
+	return newVersion, nil
 }
 
 func libraryOutput(lib *config.Library, defaults *config.Default) string {
@@ -139,6 +204,43 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 		defaultOut = defaults.Output
 	}
 	return filepath.Join(defaultOut, lib.Name)
+}
+
+func updatePubspecFile(path string, newVersion string, newDeps map[string]string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	inDeps := false
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "version:") {
+			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
+			continue
+		}
+		if strings.HasPrefix(line, "dependencies:") {
+			inDeps = true
+			newLines = append(newLines, line)
+			continue
+		} else if inDeps && len(line) > 0 && !strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "#") {
+			inDeps = false
+		}
+		if inDeps && strings.HasPrefix(line, "  ") {
+			parts := strings.SplitN(trimmed, ":", 2)
+			if len(parts) == 2 {
+				depName := strings.TrimSpace(parts[0])
+				if constraint, ok := newDeps["package:"+depName]; ok {
+					indent := line[:len(line)-len(trimmed)]
+					newLines = append(newLines, fmt.Sprintf("%s%s: %s", indent, depName, constraint))
+					continue
+				}
+			}
+		}
+		newLines = append(newLines, line)
+	}
+	return os.WriteFile(path, []byte(strings.Join(newLines, "\n")), 0644)
 }
 
 // Bump updates the version number and dependencies of Dart packages in the workspace.
@@ -165,11 +267,15 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 	}
 	fmt.Printf("sorted libraries: %v\n", sorted)
 
-	for _, lib := range libraryByName {
-		_, err := hasBreakingChanges(ctx, lib, cfg.Default)
+	newVersions := make(map[string]string)
+
+	for _, lib := range sorted {
+		newVersion, err := bumpLibrary(ctx, deps[lib], newVersions, libraryByName[lib], cfg.Default)
 		if err != nil {
 			return err
 		}
+		newVersions[lib] = newVersion
+		libraryByName[lib].Version = newVersion
 	}
 
 	return nil
@@ -335,41 +441,4 @@ func libraryChanged(cfg *config.Config, library *config.Library, filesChanged []
 	return false
 }
 
-
-func updatePubspecFile(path string, newVersion string, newDeps map[string]string) error {
-	content, err := os.ReadFile(path)
-	if err != nil {
-		return err
-	}
-	lines := strings.Split(string(content), "\n")
-	var newLines []string
-	inDeps := false
-	for _, line := range lines {
-		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "version:") {
-			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
-			continue
-		}
-		if strings.HasPrefix(line, "dependencies:") {
-			inDeps = true
-			newLines = append(newLines, line)
-			continue
-		} else if inDeps && len(line) > 0 && !strings.HasPrefix(line, "  ") && !strings.HasPrefix(line, "#") {
-			inDeps = false
-		}
-		if inDeps && strings.HasPrefix(line, "  ") {
-			parts := strings.SplitN(trimmed, ":", 2)
-			if len(parts) == 2 {
-				depName := strings.TrimSpace(parts[0])
-				if constraint, ok := newDeps["package:"+depName]; ok {
-					indent := line[:len(line)-len(trimmed)]
-					newLines = append(newLines, fmt.Sprintf("%s%s: %s", indent, depName, constraint))
-					continue
-				}
-			}
-		}
-		newLines = append(newLines, line)
-	}
-	return os.WriteFile(path, []byte(strings.Join(newLines, "\n")), 0644)
-}
 */
