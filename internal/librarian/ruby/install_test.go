@@ -32,15 +32,15 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
-func TestGetBinDir(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", binDir)
-	got, err := getBinDir()
+func TestBinDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", dir)
+	got, err := binDir()
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := filepath.Join(binDir, "ruby_tools", "bin")
+	want := filepath.Join(dir, "ruby_tools", "bin")
 	if got != want {
-		t.Errorf("getBinDir() = %q, want %q", got, want)
+		t.Errorf("binDir() = %q, want %q", got, want)
 	}
 }
