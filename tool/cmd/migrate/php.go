@@ -16,9 +16,30 @@ package main
 
 import (
 	"context"
+	"fmt"
+	"log"
+
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/librarian"
 )
 
 func runPHPMigration(ctx context.Context, repoPath string) error {
-	// TODO(https://github.com/googleapis/librarian/issues/6628): implement php migration
+	src, err := fetchSource(ctx)
+	if err != nil {
+		return errFetchSource
+	}
+	cfg := &config.Config{
+		Language: config.LanguagePhp,
+		Sources: &config.Sources{
+			Googleapis: src,
+		},
+	}
+	// The directory name in Googleapis is present for migration code to look
+	// up API details. It shouldn't be persisted.
+	cfg.Sources.Googleapis.Dir = ""
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
+	}
+	log.Println("Successfully migrated PHP libraries configuration skeleton")
 	return nil
 }
