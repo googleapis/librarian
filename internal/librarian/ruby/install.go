@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"fmt"
 	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/cache"
@@ -28,7 +29,11 @@ func InstallDir() (string, error) {
 	if err != nil {
 		return "", err
 	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
+	absDir, err := filepath.Abs(filepath.Join(dir, toolsDir))
+	if err != nil {
+		return "", fmt.Errorf("failed to get install directory: %w", err)
+	}
+	return filepath.Join(absDir, toolsDir), nil
 }
 
 // binDir returns the directory where Ruby tool executables are stored.
