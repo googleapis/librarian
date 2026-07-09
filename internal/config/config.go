@@ -97,6 +97,9 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Composer defines tools to install via Composer.
+	Composer []*ComposerTool `yaml:"composer,omitempty"`
+
 	// Go defines tools to install via go.
 	Go []*GoTool `yaml:"go,omitempty"`
 
@@ -120,6 +123,24 @@ type CargoTool struct {
 
 	// Version is the version to install.
 	Version string `yaml:"version"`
+}
+
+// ComposerTool defines a tool to install via Composer.
+type ComposerTool struct {
+	// Name is the composer package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the URL or path of the package to install.
+	Package string `yaml:"package,omitempty"`
+
+	// Checksum is the SHA256 checksum of the package.
+	Checksum string `yaml:"checksum,omitempty"`
+
+	// Build defines the commands to run to build the tool after installation.
+	Build []string `yaml:"build,omitempty"`
 }
 
 // GoTool defines a tool to install via go.

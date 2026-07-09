@@ -15,6 +15,7 @@
 package librarian
 
 import (
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -227,6 +228,7 @@ func tidyLanguageConfig(lib *config.Library, cfg *config.Config) (*config.Librar
 // isToolsEmpty returns true if the tools configuration is empty.
 func isToolsEmpty(tools *config.Tools) bool {
 	return len(tools.Cargo) == 0 &&
+		len(tools.Composer) == 0 &&
 		len(tools.Go) == 0 &&
 		len(tools.Maven) == 0 &&
 		len(tools.Pip) == 0 &&
@@ -265,6 +267,9 @@ func formatConfig(cfg *config.Config) *config.Config {
 	if cfg.Tools != nil {
 		slices.SortFunc(cfg.Tools.Cargo, func(a, b *config.CargoTool) int {
 			return strings.Compare(a.Name, b.Name)
+		})
+		slices.SortFunc(cfg.Tools.Composer, func(a, b *config.ComposerTool) int {
+			return cmp.Compare(a.Name, b.Name)
 		})
 		slices.SortFunc(cfg.Tools.PNPM, func(a, b *config.PNPMTool) int {
 			return strings.Compare(a.Name, b.Name)
