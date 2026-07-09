@@ -80,7 +80,6 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		// Cleanup output zip for subsequent APIs in the same library package
 		_ = os.Remove(outputZipPath)
 	}
-
 	return nil
 }
 
@@ -108,13 +107,26 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 		return err
 	}
 	opts := gapicOpts(params.api, apiMetadata, grpcConfigPath)
-
-	// Gather target protos
-	var targetProtos []string
-	apiDir := filepath.Join(googleapisDir, params.api.Path)
-	protos, err := gatherProtos(apiDir)
+	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path)
 	if err != nil {
 		return err
+	}
+	protocArgs := buildProtocArgs(params, opts, targetProtos)
+	// Run compilation
+	if err := command.RunWithEnv(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, params.protocPath, protocArgs...); err != nil {
+		return fmt.Errorf("failed to generate PHP API %s: %w", params.api.Path, err)
+	}
+	return extractOutput(ctx, params.outputZipPath, params.library.Output)
+}
+
+// gatherTargetProtos collects all proto files inside the target API directory
+// and appends common resources.
+func gatherTargetProtos(googleapisDir, apiPath string) ([]string, error) {
+	var targetProtos []string
+	apiDir := filepath.Join(googleapisDir, apiPath)
+	protos, err := gatherProtos(apiDir)
+	if err != nil {
+		return nil, err
 	}
 	targetProtos = append(targetProtos, protos...)
 	// Always include common resources if present
@@ -123,37 +135,34 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 		targetProtos = append(targetProtos, commonResources)
 	}
 	if len(targetProtos) == 0 {
-		return fmt.Errorf("no target protos found for API %s", params.api.Path)
+		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
 	}
-	// Build protoc command arguments
+	return targetProtos, nil
+}
+
+func buildProtocArgs(params *generateAPIParams, opts []string, targetProtos []string) []string {
 	gapicOutArg := fmt.Sprintf("--gapic_out=%s:%s", strings.Join(opts, ","), params.outputZipPath)
 	protocArgs := []string{
 		"--experimental_allow_proto3_optional",
 		"--plugin=protoc-gen-gapic=" + params.wrapperPath,
 		gapicOutArg,
 	}
-
 	// Append active root directories as include paths (-I) to resolve proto imports.
 	for _, root := range params.srcCfg.ActiveRoots {
 		if r := params.srcCfg.Root(root); r != "" {
 			protocArgs = append(protocArgs, "-I", r)
 		}
 	}
-	protocArgs = append(protocArgs, targetProtos...)
-	// Run compilation
-	if err := command.RunWithEnv(ctx, map[string]string{"GOOGLEAPIS_DIR": googleapisDir}, params.protocPath, protocArgs...); err != nil {
-		return fmt.Errorf("failed to generate PHP API %s: %w", params.api.Path, err)
-	}
+	return append(protocArgs, targetProtos...)
+}
 
-	// Extract output
-	outDir := params.library.Output
+func extractOutput(ctx context.Context, zipPath, outDir string) error {
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory %s: %w", outDir, err)
 	}
-	if err := filesystem.Unzip(ctx, params.outputZipPath, outDir); err != nil {
+	if err := filesystem.Unzip(ctx, zipPath, outDir); err != nil {
 		return fmt.Errorf("failed to extract generated output to %s: %w", outDir, err)
 	}
-
 	return nil
 }
 
@@ -195,13 +204,11 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigPath s
 		opts = append(opts, "rest-numeric-enums")
 	}
 	opts = append(opts, "generate-snippets")
-
 	if grpcConfigPath != "" {
 		opts = append(opts, "grpc_service_config="+grpcConfigPath)
 	}
 	if apiMetadata != nil && apiMetadata.ServiceConfig != "" {
 		opts = append(opts, "service_yaml="+apiMetadata.ServiceConfig)
 	}
-
 	return opts
 }
