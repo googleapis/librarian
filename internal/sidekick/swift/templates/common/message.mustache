@@ -16,6 +16,9 @@ limitations under the License.
 {{#Codec.DocLines}}
 /// {{{.}}}
 {{/Codec.DocLines}}
+{{#Deprecated}}
+@available(*, deprecated)
+{{/Deprecated}}
 public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._AnyPackable,
   {{#Codec.IsPaginatedResponse}}
   GoogleCloudGax._PaginatedResponse,
@@ -27,6 +30,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   {{#Singular}}
   {{#Codec.Recursive}}
   public var {{Codec.Name}}: {{{Codec.FieldType}}} = nil
@@ -53,6 +59,9 @@ public struct {{Codec.Name}}: Codable, Equatable, {{Codec.Model.WktPackage}}._An
   {{#Codec.DocLines}}
   /// {{{.}}}
   {{/Codec.DocLines}}
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   public var {{Codec.PropertyName}}: {{Codec.Name}}? = nil
   {{/OneOfs}}
 
