@@ -17,6 +17,7 @@ package swift
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -45,6 +46,11 @@ func TestGenerateModule(t *testing.T) {
 			APIPath: "google/type",
 			Output:  filepath.Join(outDir, "ProtoJSON"),
 		},
+		{
+			APIPath:    "google/type",
+			Output:     filepath.Join(outDir, "ProtoJSONDefault"),
+			ModuleType: "default",
+		},
 	}
 	src := &sources.Sources{
 		Googleapis: googleapisDir,
@@ -56,6 +62,49 @@ func TestGenerateModule(t *testing.T) {
 	}
 
 	expectedFile := filepath.Join(outDir, "ProtoJSON", "Expr.swift")
+	if _, err := os.Stat(expectedFile); err != nil {
+		t.Error(err)
+	}
+
+	expectedDefaultFile := filepath.Join(outDir, "ProtoJSONDefault", "Expr.swift")
+	if _, err := os.Stat(expectedDefaultFile); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestGenerateModule_SwiftProtobuf(t *testing.T) {
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "protoc-gen-swift")
+	testhelper.RequireCommand(t, "protoc-gen-grpc-swift")
+
+	googleapisDir, err := filepath.Abs("../../testdata/googleapis")
+	if err != nil {
+		t.Fatal(err)
+	}
+	outDir := t.TempDir()
+	library := &config.Library{
+		Name:          "GoogleTypeModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        outDir,
+	}
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:    "google/type",
+			Output:     filepath.Join(outDir, "ProtoJSON"),
+			ModuleType: "swift-protobuf",
+		},
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	if err := Generate(t.Context(), cfg, library, src); err != nil {
+		t.Fatal(err)
+	}
+
+	expectedFile := filepath.Join(outDir, "ProtoJSON", "google", "type", "expr.pb.swift")
 	if _, err := os.Stat(expectedFile); err != nil {
 		t.Error(err)
 	}
@@ -176,5 +225,66 @@ func TestModuleToModelConfig(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
+	library := &config.Library{
+		Name:          "UnsupportedModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        t.TempDir(),
+	}
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:    "google/type",
+			Output:     filepath.Join(library.Output, "ProtoJSON"),
+			ModuleType: "convert-swift",
+		},
+	}
+	src := &sources.Sources{}
+	cfg := &config.Config{}
+
+	err := Generate(t.Context(), cfg, library, src)
+	if err == nil {
+		t.Fatal("Generate did not return an error for unsupported module type 'convert-swift'")
+	}
+	expectedErr := `module type "convert-swift" is not yet supported`
+	if err.Error() != expectedErr {
+		t.Errorf("got error %q, want %q", err.Error(), expectedErr)
+	}
+}
+
+func TestGenerateModule_NoProtos(t *testing.T) {
+	library := &config.Library{
+		Name:          "NoProtosModule",
+		CopyrightYear: "2038",
+		Swift:         defaultSwiftConfig(t),
+		Output:        t.TempDir(),
+	}
+	googleapisDir := t.TempDir()
+	emptyAPIPath := "google/empty"
+	if err := os.MkdirAll(filepath.Join(googleapisDir, emptyAPIPath), 0755); err != nil {
+		t.Fatal(err)
+	}
+
+	library.Swift.Modules = []*config.SwiftModule{
+		{
+			APIPath:    emptyAPIPath,
+			Output:     filepath.Join(library.Output, "ProtoJSON"),
+			ModuleType: "swift-protobuf",
+		},
+	}
+	src := &sources.Sources{
+		Googleapis: googleapisDir,
+	}
+	cfg := &config.Config{}
+
+	err := Generate(t.Context(), cfg, library, src)
+	if err == nil {
+		t.Fatal("Generate did not return an error when no proto files were found")
+	}
+	if !strings.Contains(err.Error(), "no proto files found in") {
+		t.Errorf("got error %q, want it to contain 'no proto files found in'", err.Error())
 	}
 }

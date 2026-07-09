@@ -27,6 +27,130 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestApply(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	createFiles(t, dir, map[string]string{
+		"Foo.java":      "package com.example;\n\npublic class Foo {\n\tpublic void oldFunc() {}\n}\n",
+		"to_delete.txt": "delete me",
+	})
+	cfg := &config.Postprocess{
+		CopyFile: []config.CopyConfig{
+			{Src: "Foo.java", Dst: "CopiedFoo.java"},
+		},
+		RemoveFile: []string{"to_delete.txt"},
+		Replace: []config.ReplaceConfig{
+			{Path: "Foo.java", Original: "oldFunc", Replacement: "newFunc"},
+		},
+		ReplaceRegex: []config.ReplaceRegexConfig{
+			{Path: "Foo.java", Pattern: `public class (\w+)`, Replacement: "public class Bar"},
+		},
+		MethodOperations: []config.MethodOperation{
+			{Path: "Foo.java", Action: "delete", FuncName: "public void newFunc()"},
+		},
+	}
+	if err := Apply(dir, cfg); err != nil {
+		t.Fatal(err)
+	}
+	wantFiles := map[string]string{
+		"CopiedFoo.java": "package com.example;\n\npublic class Foo {\n\tpublic void oldFunc() {}\n}\n",
+		"Foo.java":       "package com.example;\n\npublic class Bar {\n}\n",
+	}
+	if diff := cmp.Diff(wantFiles, readDirFiles(t, dir)); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestApply_NilOrEmptyConfig(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		cfg  *config.Postprocess
+	}{
+		{
+			name: "nil config",
+			cfg:  nil,
+		},
+		{
+			name: "empty config",
+			cfg:  &config.Postprocess{},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			if err := Apply(dir, test.cfg); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestApply_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name    string
+		files   map[string]string
+		cfg     *config.Postprocess
+		wantErr error
+	}{
+		{
+			name: "copy fails - nonexistent source",
+			cfg: &config.Postprocess{
+				CopyFile: []config.CopyConfig{
+					{Src: "nonexistent.txt", Dst: "dst.txt"},
+				},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name: "remove fails - pattern matches no files",
+			cfg: &config.Postprocess{
+				RemoveFile: []string{"nonexistent/*.java"},
+			},
+			wantErr: fs.ErrNotExist,
+		},
+		{
+			name:  "replace fails - text not found",
+			files: map[string]string{"file.txt": "hello"},
+			cfg: &config.Postprocess{
+				Replace: []config.ReplaceConfig{
+					{Path: "file.txt", Original: "missing", Replacement: "world"},
+				},
+			},
+			wantErr: errTextNotFound,
+		},
+		{
+			name:  "replace regex fails - pattern not matched",
+			files: map[string]string{"file.txt": "hello"},
+			cfg: &config.Postprocess{
+				ReplaceRegex: []config.ReplaceRegexConfig{
+					{Path: "file.txt", Pattern: `\d+`, Replacement: "123"},
+				},
+			},
+			wantErr: errTextNotFound,
+		},
+		{
+			name:  "method operation fails - unsupported action",
+			files: map[string]string{"Test.java": "class Test {}"},
+			cfg: &config.Postprocess{
+				MethodOperations: []config.MethodOperation{
+					{Path: "Test.java", Action: "invalid_action", FuncName: "void foo()"},
+				},
+			},
+			wantErr: errUnsupportedMethodAction,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			createFiles(t, dir, test.files)
+			gotErr := Apply(dir, test.cfg)
+			if !errors.Is(gotErr, test.wantErr) {
+				t.Errorf("Apply() error = %v, wantErr %v", gotErr, test.wantErr)
+			}
+		})
+	}
+}
+
 func TestReplace(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "test.txt")
