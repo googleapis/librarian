@@ -103,7 +103,7 @@ func runConfigSet(path, value string) error {
 }
 
 func libraryName(cfg *config.Config, apiPath string) (string, error) {
-	if library := findExistingLibraryForNewAPI(cfg, apiPath); library != nil {
+	if library := findExistingLibraryForAPI(cfg, apiPath); library != nil {
 		return library.Name, nil
 	}
 	return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
