@@ -248,16 +248,14 @@ pub mod {{Codec.ModuleName}} {
             };
 
             {{#Model.Codec.LroStubOptions}}
-            {
-                use google_cloud_lro::internal::PollerExt;
-                google_cloud_lro::internal::new_discovery_poller(
-                    polling_error_policy,
-                    polling_backoff_policy,
-                    start,
-                    query,
-                )
-                .with_options(poller_options)
-            }
+            use google_cloud_lro::internal::PollerExt;
+            google_cloud_lro::internal::new_discovery_poller(
+                polling_error_policy,
+                polling_backoff_policy,
+                start,
+                query,
+            )
+            .with_options(poller_options)
             {{/Model.Codec.LroStubOptions}}
             {{^Model.Codec.LroStubOptions}}
             google_cloud_lro::internal::new_discovery_poller(
@@ -324,24 +322,22 @@ pub mod {{Codec.ModuleName}} {
             };
 
             {{#Model.Codec.LroStubOptions}}
+            use google_cloud_lro::internal::PollerExt;
             {
-                use google_cloud_lro::internal::PollerExt;
-                {
-                    {{#Codec.NoneAreEmpty}}
-                    google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
-                    {{/Codec.NoneAreEmpty}}
-                    {{#Codec.OnlyResponseIsEmpty}}
-                    google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
-                    {{/Codec.OnlyResponseIsEmpty}}
-                    {{#Codec.OnlyMetadataIsEmpty}}
-                    google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
-                    {{/Codec.OnlyMetadataIsEmpty}}
-                    {{#Codec.BothAreEmpty}}
-                    google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
-                    {{/Codec.BothAreEmpty}}
-                }
-                .with_options(poller_options)
+                {{#Codec.NoneAreEmpty}}
+                google_cloud_lro::internal::new_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.NoneAreEmpty}}
+                {{#Codec.OnlyResponseIsEmpty}}
+                google_cloud_lro::internal::new_unit_response_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.OnlyResponseIsEmpty}}
+                {{#Codec.OnlyMetadataIsEmpty}}
+                google_cloud_lro::internal::new_unit_metadata_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.OnlyMetadataIsEmpty}}
+                {{#Codec.BothAreEmpty}}
+                google_cloud_lro::internal::new_unit_poller(polling_error_policy, polling_backoff_policy, start, query)
+                {{/Codec.BothAreEmpty}}
             }
+            .with_options(poller_options)
             {{/Model.Codec.LroStubOptions}}
             {{^Model.Codec.LroStubOptions}}
             {{#Codec.NoneAreEmpty}}
