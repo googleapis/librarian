@@ -33,7 +33,7 @@ func InstallDir() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("failed to get install directory: %w", err)
 	}
-	return filepath.Join(absDir, toolsDir), nil
+	return absDir, nil
 }
 
 // binDir returns the directory where Ruby tool executables are stored.
