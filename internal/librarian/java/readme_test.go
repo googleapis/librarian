@@ -919,6 +919,7 @@ func TestRenderREADME(t *testing.T) {
 				outDir: dir,
 				library: &config.Library{
 					Version: defaultLibraryVersion,
+					Java:    &config.JavaModule{},
 				},
 				cfg: &config.Config{
 					Default: &config.Default{
@@ -978,7 +979,7 @@ func TestRenderREADME_KeepSet(t *testing.T) {
 
 func TestRenderREADME_Error(t *testing.T) {
 	validMeta := &repoMetadata{Repo: "repo", DistributionName: "com.google.cloud:google-cloud-foo"}
-	validLib := &config.Library{Version: "1.2.3"}
+	validLib := &config.Library{Version: "1.2.3", Java: &config.JavaModule{}}
 	validCfg := &config.Config{Default: &config.Default{Java: &config.JavaDefault{LibrariesBOMVersion: "1.0.0"}}}
 	for _, test := range []struct {
 		name    string

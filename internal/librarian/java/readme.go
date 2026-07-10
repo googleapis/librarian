@@ -134,14 +134,12 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 
 	apiRequiresBilling := false
 	if len(params.library.APIs) > 0 {
-		apiRequiresBilling = true
-		if api, err := serviceconfig.Find(params.primaryDir, params.library.APIs[0].Path, params.cfg.Language); err == nil {
-			if api.RequiresBilling != nil {
-				apiRequiresBilling = *api.RequiresBilling
-			} else if params.library.Java != nil {
-				// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
-				apiRequiresBilling = !params.library.Java.BillingNotRequired
-			}
+		api, err := serviceconfig.Find(params.primaryDir, params.library.APIs[0].Path, params.cfg.Language)
+		if err == nil && api.RequiresBilling != nil {
+			apiRequiresBilling = *api.RequiresBilling
+		} else {
+			// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+			apiRequiresBilling = !params.library.Java.BillingNotRequired
 		}
 	}
 
