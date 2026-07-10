@@ -86,8 +86,8 @@ func Fill(library *config.Library) (*config.Library, error) {
 }
 
 // FillDefaultJava populates empty Java-specific fields in lib from the
-// [config.Default][], specifically from [config.JavaDefault][].
-// This is typically called in sequence with [Fill][], which populates the
+// [config.Default], specifically from [config.JavaDefault].
+// This is typically called in sequence with [Fill], which populates the
 // derived default values.
 func FillDefaultJava(lib *config.Library, d *config.Default) *config.Library {
 	if lib.Java == nil {
