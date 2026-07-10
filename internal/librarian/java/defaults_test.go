@@ -748,6 +748,10 @@ func TestValidate_ConfigError(t *testing.T) {
 			got := Validate(cfg)
 			if !errors.Is(got, test.wantErr) {
 				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)
+			}
+		})
+	}
+}
 
 func TestDefaultOutput(t *testing.T) {
 	for _, test := range []struct {
