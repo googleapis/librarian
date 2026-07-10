@@ -698,7 +698,6 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 	}
 }
 
-
 func TestValidate_Config(t *testing.T) {
 	for _, test := range []struct {
 		name string
