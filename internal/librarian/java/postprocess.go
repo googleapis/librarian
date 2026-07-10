@@ -540,16 +540,20 @@ func createOrVerifyOwlbotPy(outDir string) (err error) {
 // structure, merging directories and preserving files matching the keepSet.
 func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet map[string]bool) error {
 	for _, action := range actions {
-		if _, err := os.Stat(action.src); err == nil {
-			if err := os.MkdirAll(action.dest, 0755); err != nil {
-				return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
+		if _, err := os.Stat(action.src); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				continue
 			}
-			err := filesystem.MoveAndMergeWithKeep(action.src, action.dest, destRoot, func(rel string) bool {
-				return shouldPreserve(rel, keepSet)
-			})
-			if err != nil {
-				return fmt.Errorf("failed to move %s: %w", action.description, err)
-			}
+			return fmt.Errorf("failed to check source directory %s: %w", action.src, err)
+		}
+		if err := os.MkdirAll(action.dest, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
+		}
+		err := filesystem.MoveAndMergeWithKeep(action.src, action.dest, destRoot, func(rel string) bool {
+			return shouldPreserve(rel, keepSet)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to move %s: %w", action.description, err)
 		}
 	}
 	return nil

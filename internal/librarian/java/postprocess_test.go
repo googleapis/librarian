@@ -1214,17 +1214,47 @@ func TestApplyMoveActionsToLibrary_NonExistentSource(t *testing.T) {
 
 func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 	t.Parallel()
-	dir := t.TempDir()
-	srcDir := filepath.Join(dir, "src")
-	destDir := filepath.Join(dir, "dest")
-	writeFiles(t, srcDir, map[string]string{"mismatch/file.txt": "content"})
-	writeFiles(t, destDir, map[string]string{"mismatch": "content"})
-	actions := []moveAction{
-		{src: srcDir, dest: destDir, description: "test files"},
-	}
-	err := ApplyMoveActionsToLibrary(actions, destDir, nil)
-	if !errors.Is(err, syscall.ENOTDIR) {
-		t.Errorf("ApplyMoveActionsToLibrary() error = %v, wantErr %v", err, syscall.ENOTDIR)
+	for _, test := range []struct {
+		name              string
+		files             map[string]string
+		destFiles         map[string]string
+		readOnlySrcParent bool
+		wantErr           error
+	}{
+		{
+			name:      "directory to file type mismatch",
+			files:     map[string]string{"mismatch/file.txt": "content"},
+			destFiles: map[string]string{"mismatch": "content"},
+			wantErr:   syscall.ENOTDIR,
+		},
+		{
+			name:              "source parent directory inaccessible",
+			readOnlySrcParent: true,
+			wantErr:           fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			srcParent := filepath.Join(dir, "src_parent")
+			srcDir := filepath.Join(srcParent, "src")
+			destDir := filepath.Join(dir, "dest")
+			writeFiles(t, srcDir, test.files)
+			writeFiles(t, destDir, test.destFiles)
+			if test.readOnlySrcParent {
+				if err := os.Chmod(srcParent, 0000); err != nil {
+					t.Fatal(err)
+				}
+				defer os.Chmod(srcParent, 0755)
+			}
+			actions := []moveAction{
+				{src: srcDir, dest: destDir, description: "test files"},
+			}
+			err := ApplyMoveActionsToLibrary(actions, destDir, nil)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ApplyMoveActionsToLibrary() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
