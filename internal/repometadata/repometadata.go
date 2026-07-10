@@ -153,6 +153,7 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		if api.RequiresBilling != nil {
 			rb = *api.RequiresBilling
 		} else if library.Java != nil {
+			// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
 			rb = !library.Java.BillingNotRequired
 		}
 		requiresBilling = &rb
