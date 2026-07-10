@@ -40,6 +40,7 @@ This document describes the schema for the librarian.yaml.
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `composer` | list of [ComposerTool](#composertool-configuration) (optional) | Defines tools to install via Composer. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `gem` | list of [GemTool](#gemtool-configuration) (optional) | Defines tools to install via gem. |
 | `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
@@ -61,6 +62,12 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the URL or path of the package to install. |
 | `sha256` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+## GemTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the gem name. |
+| `version` | string | Is the version to install. |
 
 ## GoTool Configuration
 

@@ -103,6 +103,9 @@ type Tools struct {
 	// Go defines tools to install via go.
 	Go []*GoTool `yaml:"go,omitempty"`
 
+	// Gem defines tools to install via gem.
+	Gem []*GemTool `yaml:"gem,omitempty"`
+
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
 
@@ -128,6 +131,9 @@ type CargoTool struct {
 // ComposerTool defines a tool to install via Composer.
 type ComposerTool struct {
 	// Name is the composer package name.
+// GemTool defines a tool to install via gem.
+type GemTool struct {
+	// Name is the gem name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
