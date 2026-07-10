@@ -124,101 +124,96 @@ func loadTransports(library *config.Library) (map[string]serviceconfig.Transport
 	return transports, nil
 }
 
-func discoverModules(library *config.Library, libraryDir string, transports map[string]serviceconfig.Transport) ([]expectedModule, error) {
-	if library.Java != nil && library.Java.SkipPOMUpdates {
-		return nil, nil
+func expectedAPIModules(library *config.Library, api *config.API, libCoord libraryCoordinate, transport serviceconfig.Transport) []expectedModule {
+	javaAPI := api.Java
+	if javaAPI == nil {
+		javaAPI = &config.JavaAPI{}
 	}
+	apiBase := deriveAPIBase(library, api.Path)
+	apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
+
+	var modules []expectedModule
+	if shouldGenerateProto(javaAPI) {
+		modules = append(modules, expectedModule{
+			ArtifactID: apiCoord.Proto.ArtifactID,
+			Kind:       kindProto,
+			Coordinate: apiCoord.Proto,
+			APICoords:  &apiCoord,
+		})
+	}
+	if shouldGenerateGRPC(javaAPI) && transport != serviceconfig.Rest {
+		modules = append(modules, expectedModule{
+			ArtifactID: apiCoord.GRPC.ArtifactID,
+			Kind:       kindGRPC,
+			Coordinate: apiCoord.GRPC,
+			APICoords:  &apiCoord,
+		})
+	}
+	return modules
+}
+
+func expectedModules(library *config.Library, transports map[string]serviceconfig.Transport) []expectedModule {
 	var modules []expectedModule
 	libCoord := deriveLibraryCoordinates(library)
 	var shouldGenerateClient bool
+
 	for _, api := range library.APIs {
 		javaAPI := api.Java
 		if shouldGenerateGAPIC(javaAPI) || shouldGenerateResourceNames(javaAPI) {
 			shouldGenerateClient = true
 		}
-		apiBase := deriveAPIBase(library, api.Path)
-		apiCoord := deriveAPICoordinates(libCoord, apiBase, javaAPI)
 		transport := transports[api.Path]
-		// Proto module
-		if shouldGenerateProto(javaAPI) {
-			protoDir := filepath.Join(libraryDir, apiCoord.Proto.ArtifactID)
-			isProtoMissing, err := isPOMMissing(protoDir)
-			if err != nil {
-				return nil, err
-			}
-			modules = append(modules, expectedModule{
-				ArtifactID: apiCoord.Proto.ArtifactID,
-				Dir:        protoDir,
-				Kind:       kindProto,
-				IsMissing:  isProtoMissing,
-				Coordinate: apiCoord.Proto,
-				APICoords:  &apiCoord,
-			})
-		}
-		// gRPC module
-		if shouldGenerateGRPC(javaAPI) && transport != serviceconfig.Rest {
-			gRPCDir := filepath.Join(libraryDir, apiCoord.GRPC.ArtifactID)
-			isGRPCMissing, err := isPOMMissing(gRPCDir)
-			if err != nil {
-				return nil, err
-			}
-			modules = append(modules, expectedModule{
-				ArtifactID: apiCoord.GRPC.ArtifactID,
-				Dir:        gRPCDir,
-				Kind:       kindGRPC,
-				IsMissing:  isGRPCMissing,
-				Coordinate: apiCoord.GRPC,
-				APICoords:  &apiCoord,
-			})
-		}
+		modules = append(modules, expectedAPIModules(library, api, libCoord, transport)...)
 	}
+
 	// Client module
 	if shouldGenerateClient {
-		clientDir := filepath.Join(libraryDir, libCoord.GAPIC.ArtifactID)
-		isClientMissing, err := isPOMMissing(clientDir)
-		if err != nil {
-			return nil, err
-		}
 		modules = append(modules, expectedModule{
 			ArtifactID: libCoord.GAPIC.ArtifactID,
-			Dir:        clientDir,
 			Kind:       kindClient,
-			IsMissing:  isClientMissing,
 			Coordinate: libCoord.GAPIC,
 		})
 	}
 	// BOM module
-	bomDir := filepath.Join(libraryDir, libCoord.BOM.ArtifactID)
-	isBOMMissing, err := isPOMMissing(bomDir)
-	if err != nil {
-		return nil, err
-	}
 	modules = append(modules, expectedModule{
 		ArtifactID: libCoord.BOM.ArtifactID,
-		Dir:        bomDir,
 		Kind:       kindBOM,
-		IsMissing:  isBOMMissing,
 		Coordinate: libCoord.BOM,
 	})
 	// Parent module
-	parentDir := libraryDir
-	isParentMissing, err := isPOMMissing(parentDir)
-	if err != nil {
-		return nil, err
-	}
 	modules = append(modules, expectedModule{
 		ArtifactID: libCoord.Parent.ArtifactID,
-		Dir:        parentDir,
 		Kind:       kindParent,
-		IsMissing:  isParentMissing,
 		Coordinate: libCoord.Parent,
 	})
+
 	if library.Java == nil || len(library.Java.ExcludedPOMs) == 0 {
-		return modules, nil
+		return modules
 	}
 	return slices.DeleteFunc(modules, func(m expectedModule) bool {
 		return slices.Contains(library.Java.ExcludedPOMs, m.ArtifactID)
-	}), nil
+	})
+}
+
+func discoverModules(library *config.Library, libraryDir string, transports map[string]serviceconfig.Transport) ([]expectedModule, error) {
+	if library.Java != nil && library.Java.SkipPOMUpdates {
+		return nil, nil
+	}
+	modules := expectedModules(library, transports)
+	for i := range modules {
+		m := &modules[i]
+		if m.Kind == kindParent {
+			m.Dir = libraryDir
+		} else {
+			m.Dir = filepath.Join(libraryDir, m.ArtifactID)
+		}
+		isMissing, err := isPOMMissing(m.Dir)
+		if err != nil {
+			return nil, err
+		}
+		m.IsMissing = isMissing
+	}
+	return modules, nil
 }
 
 // syncPOMs generates missing POMs and surgically updates existing client, BOM,

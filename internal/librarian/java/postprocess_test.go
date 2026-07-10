@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"testing"
@@ -1130,6 +1131,168 @@ func TestCreateOrVerifyOwlbotPy_Error(t *testing.T) {
 	if !errors.Is(err, fs.ErrPermission) {
 		t.Errorf("error = %v, wantErr %v", err, fs.ErrPermission)
 	}
+}
+
+func TestApplyMoveActionsToLibrary(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name      string
+		srcFiles  map[string]string
+		destFiles map[string]string
+		keepSet   map[string]bool
+		wantFiles map[string]string
+	}{
+		{
+			name:      "new file",
+			srcFiles:  map[string]string{"file.txt": "content"},
+			keepSet:   nil,
+			wantFiles: map[string]string{"file.txt": "content"},
+		},
+		{
+			name:      "overwrite",
+			srcFiles:  map[string]string{"file.txt": "new content"},
+			destFiles: map[string]string{"file.txt": "old content"},
+			keepSet:   nil,
+			wantFiles: map[string]string{"file.txt": "new content"},
+		},
+		{
+			name:      "keepset preserve",
+			srcFiles:  map[string]string{"file.txt": "new content"},
+			destFiles: map[string]string{"file.txt": "old content"},
+			keepSet:   map[string]bool{"file.txt": true},
+			wantFiles: map[string]string{"file.txt": "old content"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			srcDir := filepath.Join(dir, "src")
+			destDir := filepath.Join(dir, "dest")
+			writeFiles(t, srcDir, test.srcFiles)
+			writeFiles(t, destDir, test.destFiles)
+			actions := []moveAction{
+				{src: srcDir, dest: destDir, description: "test files"},
+			}
+			if err := ApplyMoveActionsToLibrary(actions, destDir, test.keepSet); err != nil {
+				t.Fatal(err)
+			}
+			got := readDirFiles(t, destDir)
+			if diff := cmp.Diff(test.wantFiles, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
+	t.Parallel()
+	for _, test := range []struct {
+		name              string
+		files             map[string]string
+		destFiles         map[string]string
+		readOnlySrcParent bool
+		missingSrc        bool
+		wantErr           error
+	}{
+		{
+			name:      "directory to file type mismatch",
+			files:     map[string]string{"mismatch/file.txt": "content"},
+			destFiles: map[string]string{"mismatch": "content"},
+			wantErr:   syscall.ENOTDIR,
+		},
+		{
+			name:              "source parent directory inaccessible",
+			readOnlySrcParent: true,
+			wantErr:           fs.ErrPermission,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			srcParent := filepath.Join(dir, "src_parent")
+			srcDir := filepath.Join(srcParent, "src")
+			destDir := filepath.Join(dir, "dest")
+			if !test.missingSrc {
+				writeFiles(t, srcDir, test.files)
+			}
+			writeFiles(t, destDir, test.destFiles)
+			if test.readOnlySrcParent {
+				if err := os.Chmod(srcParent, 0000); err != nil {
+					t.Fatal(err)
+				}
+				defer os.Chmod(srcParent, 0755)
+			}
+			actions := []moveAction{
+				{src: srcDir, dest: destDir, description: "test files"},
+			}
+			err := ApplyMoveActionsToLibrary(actions, destDir, nil)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("ApplyMoveActionsToLibrary() error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestApplyMoveActionsToLibrary_NonExistentSource(t *testing.T) {
+	t.Parallel()
+	dir := t.TempDir()
+	srcDir := filepath.Join(dir, "src")
+	destDir := filepath.Join(dir, "dest")
+	writeFiles(t, destDir, nil)
+	actions := []moveAction{
+		{src: srcDir, dest: destDir, description: "non-existent src"},
+	}
+	if err := ApplyMoveActionsToLibrary(actions, destDir, nil); err != nil {
+		t.Fatal(err)
+	}
+	got := readDirFiles(t, destDir)
+	want := map[string]string{}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func writeFiles(t *testing.T, dir string, files map[string]string) {
+	t.Helper()
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	for rel, content := range files {
+		p := filepath.Join(dir, rel)
+		if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(p, []byte(content), 0644); err != nil {
+			t.Fatal(err)
+		}
+	}
+}
+
+func readDirFiles(t *testing.T, dir string) map[string]string {
+	t.Helper()
+	got := make(map[string]string)
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(dir, path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		b, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got[filepath.ToSlash(rel)] = string(b)
+		return nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	return got
 }
 
 func TestToKeepSet(t *testing.T) {

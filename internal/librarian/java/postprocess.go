@@ -533,6 +533,30 @@ func createOrVerifyOwlbotPy(outDir string) (err error) {
 	return nil
 }
 
+// ApplyMoveActionsToLibrary moves generated code to the repository directory
+// structure, merging directories and preserving files matching the keepSet.
+func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet map[string]bool) error {
+	for _, action := range actions {
+		if _, err := os.Stat(action.src); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				// TODO(https://github.com/googleapis/librarian/issues/6752): Return an error here once owlbot.py is removed.
+				continue
+			}
+			return fmt.Errorf("failed to check source directory %s: %w", action.src, err)
+		}
+		if err := os.MkdirAll(action.dest, 0755); err != nil {
+			return fmt.Errorf("failed to create directory %s: %w", action.dest, err)
+		}
+		err := filesystem.MoveAndMergeWithKeep(action.src, action.dest, destRoot, func(rel string) bool {
+			return shouldPreserve(rel, keepSet)
+		})
+		if err != nil {
+			return fmt.Errorf("failed to move %s: %w", action.description, err)
+		}
+	}
+	return nil
+}
+
 // ToKeepSet normalizes a list of keep paths into a lookup map.
 func ToKeepSet(keep []string) map[string]bool {
 	keepSet := make(map[string]bool, len(keep))
