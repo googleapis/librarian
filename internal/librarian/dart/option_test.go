@@ -18,8 +18,70 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
+
+func TestNewOption(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		want    *Option
+	}{
+		{
+			name: "valid configuration",
+			library: &config.Library{
+				Name:                "google_cloud_secretmanager_v1",
+				Version:             "0.1.0",
+				Output:              "packages/",
+				SpecificationFormat: config.SpecProtobuf,
+				CopyrightYear:       "2026",
+				SkipRelease:         true,
+			},
+			want: &Option{
+				Name:                "google_cloud_secretmanager_v1",
+				Version:             "0.1.0",
+				Output:              "packages/",
+				SpecificationFormat: config.SpecProtobuf,
+				CopyrightYear:       "2026",
+				SkipRelease:         true,
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := NewOption(test.library)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestNewOption_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
+		{
+			name: "invalid configuration returns error",
+			library: &config.Library{
+				SpecificationFormat: "openapi",
+			},
+			wantErr: errInvalidSpecificationFormat,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := NewOption(test.library)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("NewOption() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
 
 func TestVerify(t *testing.T) {
 	for _, test := range []struct {
