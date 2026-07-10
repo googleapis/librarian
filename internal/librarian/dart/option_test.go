@@ -25,22 +25,34 @@ func TestVerify(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		wantErr error
 	}{
 		{
 			name: "empty specification format is valid",
 			library: &config.Library{
 				SpecificationFormat: "",
 			},
-			wantErr: nil,
 		},
 		{
 			name: "protobuf specification format is valid",
 			library: &config.Library{
 				SpecificationFormat: config.SpecProtobuf,
 			},
-			wantErr: nil,
 		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := verify(test.library); err != nil {
+				t.Fatalf("verify() = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		wantErr error
+	}{
 		{
 			name: "unsupported specification format returns error",
 			library: &config.Library{
