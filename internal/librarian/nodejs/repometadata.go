@@ -20,9 +20,21 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/repometadata"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 )
 
-func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repometadata.RepoMetadata, error) {
+// repoMetadata defines Node-specific metadata which extends the shared RepoMetadata.
+type repoMetadata struct {
+	*repometadata.RepoMetadata
+	RequiresBilling *bool `json:"requires_billing,omitempty"`
+}
+
+// Write writes the given repoMetadata into libraryOutputDir/.repo-metadata.json.
+func (metadata *repoMetadata) Write(libraryOutputDir string) error {
+	return repometadata.WriteJSON(metadata, "    ", libraryOutputDir, ".repo-metadata.json")
+}
+
+func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapisDir string) (*repoMetadata, error) {
 	metadata, err := repometadata.FromLibrary(cfg, library, googleapisDir)
 	if err != nil {
 		return nil, err
@@ -53,5 +65,19 @@ func generateRepoMetadata(cfg *config.Config, library *config.Library, googleapi
 			metadata.ProductDocumentation = trimmed + "/docs"
 		}
 	}
-	return metadata, nil
+
+	api, err := serviceconfig.Find(googleapisDir, library.APIs[0].Path, cfg.Language)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load serviceconfig for API: %w", err)
+	}
+
+	apiRequiresBilling := true
+	if api.RequiresBilling != nil {
+		apiRequiresBilling = *api.RequiresBilling
+	}
+
+	return &repoMetadata{
+		RepoMetadata:    metadata,
+		RequiresBilling: &apiRequiresBilling,
+	}, nil
 }

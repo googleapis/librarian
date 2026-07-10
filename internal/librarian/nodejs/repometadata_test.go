@@ -37,7 +37,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		library *config.Library
-		want    func() *repometadata.RepoMetadata
+		want    func() *repoMetadata
 	}{
 		{
 			name: "no overrides",
@@ -45,14 +45,15 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				APIs: []*config.API{{Path: "google/cloud/secretmanager/v1"}},
 			},
-			want: func() *repometadata.RepoMetadata {
+			want: func() *repoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
 				w.Language = cfg.Language
 				w.Repo = cfg.Repo
 				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
 				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
-				return w
+				b := true
+				return &repoMetadata{RepoMetadata: w, RequiresBilling: &b}
 			},
 		},
 		{
@@ -64,14 +65,15 @@ func TestGenerateRepoMetadata(t *testing.T) {
 					ClientDocumentationOverride: "https://custom.docs.com/ref",
 				},
 			},
-			want: func() *repometadata.RepoMetadata {
+			want: func() *repoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
 				w.Language = cfg.Language
 				w.Repo = cfg.Repo
 				w.ClientDocumentation = "https://custom.docs.com/ref"
 				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
-				return w
+				b := true
+				return &repoMetadata{RepoMetadata: w, RequiresBilling: &b}
 			},
 		},
 		{
@@ -86,7 +88,7 @@ func TestGenerateRepoMetadata(t *testing.T) {
 					DefaultVersion: "v1beta",
 				},
 			},
-			want: func() *repometadata.RepoMetadata {
+			want: func() *repoMetadata {
 				w := sample.RepoMetadata()
 				w.DistributionName = "@google-cloud/secretmanager"
 				w.Language = cfg.Language
@@ -94,7 +96,8 @@ func TestGenerateRepoMetadata(t *testing.T) {
 				w.ClientDocumentation = "https://cloud.google.com/nodejs/docs/reference/secretmanager/latest"
 				w.ProductDocumentation = "https://cloud.google.com/secret-manager/docs"
 				w.DefaultVersion = "v1beta"
-				return w
+				b := true
+				return &repoMetadata{RepoMetadata: w, RequiresBilling: &b}
 			},
 		},
 	} {

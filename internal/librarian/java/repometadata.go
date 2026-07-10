@@ -90,21 +90,40 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		return nil, err
 	}
 
+	api, err := serviceconfig.Find(sourceDir, library.APIs[0].Path, cfg.Language)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load serviceconfig for API: %w", err)
+	}
+
+	transport := api.RepoMetadataTransport(cfg.Language, library)
+	var recommendedPackage string
+	if library.Java != nil {
+		recommendedPackage = library.Java.RecommendedPackage
+	}
+
+	apiRequiresBilling := true
+	if api.RequiresBilling != nil {
+		apiRequiresBilling = *api.RequiresBilling
+	} else if library.Java != nil {
+		// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+		apiRequiresBilling = !library.Java.BillingNotRequired
+	}
+
 	metadata := &repoMetadata{
 		APIShortname:         sharedMetadata.APIShortname,
 		NamePretty:           sharedMetadata.NamePretty,
 		ProductDocumentation: sharedMetadata.ProductDocumentation,
 		APIDescription:       sharedMetadata.APIDescription,
 		ReleaseLevel:         sharedMetadata.ReleaseLevel,
-		Transport:            sharedMetadata.Transport,
+		Transport:            transport,
 		Language:             config.LanguageJava,
 		Repo:                 sharedMetadata.Repo,
 		RepoShort:            fmt.Sprintf("%s-%s", config.LanguageJava, library.Name),
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
-		RecommendedPackage:   sharedMetadata.RecommendedPackage,
-		RequiresBilling:      sharedMetadata.RequiresBilling != nil && *sharedMetadata.RequiresBilling,
+		RecommendedPackage:   recommendedPackage,
+		RequiresBilling:      apiRequiresBilling,
 	}
 
 	// Java-specific overrides and optional fields

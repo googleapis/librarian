@@ -25,10 +25,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func boolPtr(b bool) *bool {
-	return &b
-}
-
 func TestFromLibrary(t *testing.T) {
 	for _, test := range []struct {
 		name    string
@@ -53,7 +49,6 @@ func TestFromLibrary(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				RequiresBilling:      boolPtr(true),
 			},
 		},
 		{
@@ -91,9 +86,6 @@ func TestFromLibrary(t *testing.T) {
 				APIID:                "secretmanager.googleapis.com",
 				APIShortname:         "secretmanager",
 				APIDescription:       "Stores sensitive data such as API keys, passwords, and certificates.\nProvides convenience while improving security.",
-				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
-				RequiresBilling:      boolPtr(true),
-				Transport:            "grpc+rest",
 			},
 		},
 	} {

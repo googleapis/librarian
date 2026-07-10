@@ -91,16 +91,6 @@ type RepoMetadata struct {
 
 	// Repo is the repository name (e.g., "googleapis/google-cloud-rust").
 	Repo string `json:"repo,omitempty"`
-
-	// RequiresBilling indicates whether the API requires billing.
-	RequiresBilling *bool `json:"requires_billing,omitempty"`
-
-	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
-	Transport string `json:"transport,omitempty"`
-
-	// RecommendedPackage is the recommended package name.
-	// A Java-specific field.
-	RecommendedPackage string `json:"recommended_package,omitempty"`
 }
 
 // FromLibrary creates a RepoMetadata from a specific library in a
@@ -138,26 +128,6 @@ func FromLibrary(cfg *config.Config, library *config.Library, googleapisDir stri
 
 // fromAPI generates the .repo-metadata.json file from a serviceconfig.API and library information.
 func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library) *RepoMetadata {
-	var transport string
-	var recommendedPackage string
-	if cfg.Language == config.LanguageJava {
-		transport = api.RepoMetadataTransport(cfg.Language, library)
-		if library.Java != nil {
-			recommendedPackage = library.Java.RecommendedPackage
-		}
-	}
-
-	var requiresBilling *bool
-	if cfg.Language == config.LanguageJava || cfg.Language == config.LanguageNodejs {
-		rb := true
-		if api.RequiresBilling != nil {
-			rb = *api.RequiresBilling
-		} else if library.Java != nil {
-			// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
-			rb = !library.Java.BillingNotRequired
-		}
-		requiresBilling = &rb
-	}
 
 	return &RepoMetadata{
 		APIDescription:       api.Description,
@@ -171,9 +141,6 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		ProductDocumentation: extractBaseProductURL(api.DocumentationURI),
 		ReleaseLevel:         api.ReleaseLevel(cfg.Language, library.Version),
 		Repo:                 cfg.Repo,
-		RequiresBilling:      requiresBilling,
-		Transport:            transport,
-		RecommendedPackage:   recommendedPackage,
 	}
 }
 
