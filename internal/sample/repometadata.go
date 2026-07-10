@@ -18,6 +18,10 @@ import (
 	"github.com/googleapis/librarian/internal/repometadata"
 )
 
+func boolPtr(b bool) *bool {
+	return &b
+}
+
 // RepoMetadata returns a sample [repometadata.RepoMetadata]. The Language
 // field is left empty so callers can set it for their specific language.
 func RepoMetadata() *repometadata.RepoMetadata {
@@ -32,6 +36,6 @@ func RepoMetadata() *repometadata.RepoMetadata {
 		NamePretty:           "Secret Manager",
 		ProductDocumentation: "https://cloud.google.com/secret-manager/",
 		ReleaseLevel:         "stable",
-		RequiresBilling:      true,
+		RequiresBilling:      boolPtr(true),
 	}
 }

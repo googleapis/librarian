@@ -93,7 +93,7 @@ type RepoMetadata struct {
 	Repo string `json:"repo,omitempty"`
 
 	// RequiresBilling indicates whether the API requires billing.
-	RequiresBilling bool `json:"requires_billing"`
+	RequiresBilling *bool `json:"requires_billing,omitempty"`
 
 	// Transport is the transport protocol used by the library (e.g. "grpc", "rest").
 	Transport string `json:"transport,omitempty"`
@@ -147,13 +147,15 @@ func fromAPI(cfg *config.Config, api *serviceconfig.API, library *config.Library
 		}
 	}
 
-	var requiresBilling bool
-	if api.RequiresBilling != nil {
-		requiresBilling = *api.RequiresBilling
-	} else if library.Java != nil {
-		requiresBilling = !library.Java.BillingNotRequired
-	} else {
-		requiresBilling = true
+	var requiresBilling *bool
+	if cfg.Language == config.LanguageJava || cfg.Language == config.LanguageNodejs {
+		rb := true
+		if api.RequiresBilling != nil {
+			rb = *api.RequiresBilling
+		} else if library.Java != nil {
+			rb = !library.Java.BillingNotRequired
+		}
+		requiresBilling = &rb
 	}
 
 	return &RepoMetadata{
