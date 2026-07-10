@@ -574,7 +574,7 @@ func ToKeepSet(keep []string) map[string]bool {
 // It also removes conflicting files, and copies public proto files to the library.
 func RestructureToLibrary(params postProcessParams, destRoot string, keepSet map[string]bool) error {
 	tempProtoSrcDir := params.protoDir()
-	isCommonProtos := params.library != nil && params.library.Name == commonProtosLibrary
+	isCommonProtos := params.library.Name == commonProtosLibrary
 	if !isCommonProtos {
 		if err := removeConflictingFiles(tempProtoSrcDir); err != nil {
 			return err
