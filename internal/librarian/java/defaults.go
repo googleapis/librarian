@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -38,7 +39,7 @@ func deriveArtifactID(name string) string {
 
 // DefaultOutput derives the default output directory name for a Java library.
 func DefaultOutput(name, defaultOutput string) string {
-	return filepath.Join(defaultOutput, javaPrefix+name)
+	return path.Join(defaultOutput, javaPrefix+name)
 }
 
 // Fill populates Java-specific default values for the library.
