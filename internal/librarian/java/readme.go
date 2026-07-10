@@ -30,6 +30,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
@@ -99,6 +100,7 @@ type readmeData struct {
 	MigratedSplitRepo bool
 	Monorepo          bool
 	BOMVersion        string
+	RequiresBilling   bool
 }
 
 // renderREADME generates README.md using the embedded Markdown template.
@@ -129,6 +131,20 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return fmt.Errorf("failed to extract samples: %w", err)
 	}
+
+	apiRequiresBilling := false
+	if len(params.library.APIs) > 0 {
+		apiRequiresBilling = true
+		if api, err := serviceconfig.Find(params.primaryDir, params.library.APIs[0].Path, params.cfg.Language); err == nil {
+			if api.RequiresBilling != nil {
+				apiRequiresBilling = *api.RequiresBilling
+			} else if params.library.Java != nil {
+				// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+				apiRequiresBilling = !params.library.Java.BillingNotRequired
+			}
+		}
+	}
+
 	data := readmeData{
 		Repo:              params.metadata,
 		Samples:           samples,
@@ -141,6 +157,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		MigratedSplitRepo: false,
 		Monorepo:          true,
 		BOMVersion:        bomVersion,
+		RequiresBilling:   apiRequiresBilling,
 	}
 	var buf bytes.Buffer
 	if err := readmeTmplParsed.Execute(&buf, data); err != nil {
