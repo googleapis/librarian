@@ -53,7 +53,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -86,7 +86,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -114,7 +114,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.custom",
@@ -127,7 +127,7 @@ func TestFill(t *testing.T) {
 				Name: "secretmanager",
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -143,7 +143,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "custom-secretmanager",
 					GroupID:    "com.google.cloud",
