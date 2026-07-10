@@ -890,9 +890,10 @@ func TestRenderREADME(t *testing.T) {
 	defaultBOMVersion := "1.0.0-BOM"
 	defaultLibraryVersion := "1.2.3-LIB"
 	for _, test := range []struct {
-		name       string
-		setupFiles func(t *testing.T, dir string)
-		goldenFile string
+		name        string
+		setupFiles  func(t *testing.T, dir string)
+		setupParams func(p *libraryPostProcessParams)
+		goldenFile  string
 	}{
 		{
 			name:       "renders standard README without partials",
@@ -908,6 +909,13 @@ func TestRenderREADME(t *testing.T) {
 				}
 			},
 			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
+		},
+		{
+			name: "renders README with billing required",
+			setupParams: func(p *libraryPostProcessParams) {
+				p.library.APIs = []*config.API{{Path: "foo"}}
+			},
+			goldenFile: filepath.Join("testdata", "readme", "billing.golden"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -929,6 +937,9 @@ func TestRenderREADME(t *testing.T) {
 					},
 				},
 				metadata: defaultMetadata,
+			}
+			if test.setupParams != nil {
+				test.setupParams(&params)
 			}
 			if err := renderREADME(params, nil); err != nil {
 				t.Fatal(err)
