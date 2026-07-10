@@ -541,6 +541,10 @@ func createOrVerifyOwlbotPy(outDir string) (err error) {
 func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet map[string]bool) error {
 	for _, action := range actions {
 		if _, err := os.Stat(action.src); err != nil {
+			if errors.Is(err, fs.ErrNotExist) {
+				// TODO(https://github.com/googleapis/librarian/issues/6752): Return an error here once owlbot.py is removed.
+				continue
+			}
 			return fmt.Errorf("failed to check source directory %s: %w", action.src, err)
 		}
 		if err := os.MkdirAll(action.dest, 0755); err != nil {
