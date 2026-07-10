@@ -247,6 +247,77 @@ func TestAnnotateService_Gating(t *testing.T) {
 	}
 }
 
+func TestAnnotateService_RequiredServices(t *testing.T) {
+	inputType := &api.Message{
+		Name:    "GetOperationRequest",
+		ID:      ".test.GetOperationRequest",
+		Package: "test",
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		ID:      ".test.Operation",
+		Package: "test",
+	}
+	sourceMethod := &api.Method{
+		Name:         "GetOperation",
+		ID:           ".test.zoneOperations",
+		IsLroPoller:  true,
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+		},
+	}
+	sourceService := &api.Service{
+		Name:    "zoneOperations",
+		ID:      ".test.zoneOperations",
+		Package: "test",
+		Methods: []*api.Method{sourceMethod},
+	}
+	sourceMethod.Service = sourceService
+	method := &api.Method{
+		Name:            sourceMethod.Name,
+		ID:              ".test.TestService",
+		IsLroPoller:     true,
+		SourceService:   sourceService,
+		SourceServiceID: sourceService.ID,
+		PathInfo:        sourceMethod.PathInfo,
+		InputTypeID:     sourceMethod.InputTypeID,
+		InputType:       sourceMethod.InputType,
+		OutputTypeID:    sourceMethod.OutputTypeID,
+		OutputType:      sourceMethod.OutputType,
+	}
+	targetService := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	method.Service = targetService
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{sourceService, targetService})
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	targetCodec, ok := targetService.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec)
+	}
+
+	wantRequired := map[string]*api.Service{
+		sourceService.ID: sourceService,
+	}
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestAnnotateService_LRO(t *testing.T) {
 	inputType := &api.Message{
 		Name:    "Request",
