@@ -64,6 +64,8 @@ func run(ctx context.Context, args []string) error {
 		return runDotnetMigration(ctx, abs)
 	case "google-cloud-php":
 		return runPHPMigration(ctx, abs)
+	case "google-cloud-ruby":
+		return runRubyMigration(ctx, abs)
 	default:
 		return fmt.Errorf("invalid path: %q", repoPath)
 	}
