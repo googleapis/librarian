@@ -97,24 +97,11 @@ func TestVerify(t *testing.T) {
 }
 
 func TestVerify_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		wantErr error
-	}{
-		{
-			name: "unsupported specification format returns error",
-			library: &config.Library{
-				SpecificationFormat: "openapi",
-			},
-			wantErr: errInvalidSpecificationFormat,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			err := verify(test.library)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("verify() error = %v, wantErr = %v", err, test.wantErr)
-			}
-		})
+	library := &config.Library{
+		SpecificationFormat: "openapi",
+	}
+	err := verify(library)
+	if !errors.Is(err, errInvalidSpecificationFormat) {
+		t.Fatalf("verify() error = %v, wantErr = %v", err, errInvalidSpecificationFormat)
 	}
 }
