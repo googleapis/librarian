@@ -698,7 +698,7 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 	}
 }
 
-func TestValidate_Config(t *testing.T) {
+func TestValidate_GlobalConfig(t *testing.T) {
 	for _, test := range []struct {
 		name string
 		def  *config.Default
@@ -721,7 +721,7 @@ func TestValidate_Config(t *testing.T) {
 	}
 }
 
-func TestValidate_ConfigError(t *testing.T) {
+func TestValidate_GlobalConfigError(t *testing.T) {
 	for _, test := range []struct {
 		name    string
 		def     *config.Default
