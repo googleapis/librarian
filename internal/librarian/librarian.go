@@ -31,7 +31,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/protoc"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
