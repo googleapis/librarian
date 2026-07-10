@@ -139,7 +139,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
       $0.{{Codec.Name}} = {{Codec.Name}}
       {{/Fields}}
     }
-    return try await self.{{Codec.Name}}(withPolling: request)
+    return try await self.{{Method.Codec.Name}}(withPolling: request)
   }
   {{/Signatures}}
   {{/Codec.LRO}}
@@ -163,7 +163,7 @@ extension Clients.{{Codec.StubPrefix}}Protocol {
       $0.{{Codec.Name}} = {{Codec.Name}}
       {{/Fields}}
     }
-    return try await self.{{Codec.Name}}(withPolling: request)
+    return try await self.{{Method.Codec.Name}}(withPolling: request)
   }
   {{/Signatures}}
   {{/Codec.DiscoveryLRO}}
