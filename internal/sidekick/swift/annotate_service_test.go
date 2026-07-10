@@ -247,6 +247,36 @@ func TestAnnotateService_Gating(t *testing.T) {
 	}
 }
 
+func TestAnnotateService_RequiredServices(t *testing.T) {
+	model := makeRequiredServicesTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	targetService := model.Service(".test.TestService")
+	if targetService == nil {
+		t.Fatalf("missing target service .test.zoneOperations")
+	}
+	targetCodec, ok := targetService.Codec.(*serviceAnnotations)
+	if !ok {
+		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec)
+	}
+
+	sourceService := model.Service(".test.zoneOperations")
+	if sourceService == nil {
+		t.Fatalf("missing source service .test.zoneOperations")
+	}
+	wantRequired := map[string]*api.Service{
+		sourceService.ID: sourceService,
+	}
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func TestAnnotateService_LRO(t *testing.T) {
 	inputType := &api.Message{
 		Name:    "Request",

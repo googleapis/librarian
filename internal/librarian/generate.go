@@ -344,8 +344,12 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 		return dart.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
 		return golang.DefaultOutput(name, defaultOut)
+	case config.LanguageJava:
+		return java.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
 		return nodejs.DefaultOutput(name, defaultOut)
+	case config.LanguagePhp:
+		return php.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
 		return python.DefaultOutput(name, defaultOut)
 	case config.LanguageRust:

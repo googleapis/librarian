@@ -908,6 +908,17 @@ func TestApplyDefaults(t *testing.T) {
 			nilDefaults: true,
 			wantOutput:  "google-cloud-secretmanager-v1",
 		},
+		{
+			name:       "java empty output derives path",
+			language:   config.LanguageJava,
+			wantOutput: "src/generated/java-google-cloud-secretmanager-v1",
+		},
+		{
+			name:        "java nil defaults is handled safely",
+			language:    config.LanguageJava,
+			nilDefaults: true,
+			wantOutput:  "java-google-cloud-secretmanager-v1",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			lib := &config.Library{
