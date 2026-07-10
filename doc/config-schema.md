@@ -62,6 +62,7 @@ This document describes the schema for the librarian.yaml.
 | `package` | string | Is the URL or path of the package to install. |
 | `sha256` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
+
 ## GemTool Configuration
 
 | Field | Type | Description |

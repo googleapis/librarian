@@ -131,9 +131,6 @@ type CargoTool struct {
 // ComposerTool defines a tool to install via Composer.
 type ComposerTool struct {
 	// Name is the composer package name.
-// GemTool defines a tool to install via gem.
-type GemTool struct {
-	// Name is the gem name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -147,6 +144,15 @@ type GemTool struct {
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`
+}
+
+// GemTool defines a tool to install via gem.
+type GemTool struct {
+	// Name is the gem name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
 }
 
 // GoTool defines a tool to install via go.
