@@ -93,7 +93,7 @@ func TestRunPHPMigration(t *testing.T) {
 }
 
 func TestExtractAPIPath(t *testing.T) {
-	tests := []struct {
+	for _, test := range []struct {
 		name     string
 		source   string
 		wantPath string
@@ -123,9 +123,7 @@ func TestExtractAPIPath(t *testing.T) {
 			wantPath: "grafeas/v1",
 			wantOk:   true,
 		},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
 			gotPath, gotOk := extractAPIPath(test.source)
 			if gotOk != test.wantOk {
@@ -149,7 +147,7 @@ func TestExtractAPIsFromOwlBot(t *testing.T) {
 			setupFile: func(dir string) string {
 				return filepath.Join(dir, "missing.yaml")
 			},
-			want:    nil,
+			want: nil,
 		},
 		{
 			name: "valid file",

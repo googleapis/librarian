@@ -59,12 +59,12 @@ var (
 	owlbotSourceWithoutVersionRegexp = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/.*-php/.*$`)
 )
 
-type OwlBotConfig struct {
-	DeepCopyRegex []DeepCopyRegexSpec `yaml:"deep-copy-regex"`
+type owlBotConfig struct {
+	DeepCopyRegex []deepCopyRegexSpec `yaml:"deep-copy-regex"`
 	APIName       string              `yaml:"api-name"`
 }
 
-type DeepCopyRegexSpec struct {
+type deepCopyRegexSpec struct {
 	Source string `yaml:"source"`
 	Dest   string `yaml:"dest"`
 }
@@ -83,7 +83,7 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 	if !fileExists(owlbotPath) {
 		return nil, nil
 	}
-	owlbot, err := yaml.Read[OwlBotConfig](owlbotPath)
+	owlbot, err := yaml.Read[owlBotConfig](owlbotPath)
 	if err != nil {
 		return nil, err
 	}
