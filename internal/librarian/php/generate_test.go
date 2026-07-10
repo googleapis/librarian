@@ -269,3 +269,32 @@ func TestBuildProtocArgs(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "standard",
+			libName:       "Ces",
+			defaultOutput: "packages",
+			want:          "packages/Ces",
+		},
+		{
+			name:          "empty default",
+			libName:       "Ces",
+			defaultOutput: "",
+			want:          "Ces",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}

@@ -217,3 +217,9 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigPath s
 	}
 	return opts
 }
+
+// DefaultOutput derives an output path from a library name and a default
+// output directory.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
+}
