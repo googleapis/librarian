@@ -896,7 +896,7 @@ func TestRenderREADME(t *testing.T) {
 		goldenFile  string
 	}{
 		{
-			name:       "renders standard README without partials",
+			name: "renders standard README without partials",
 			setupParams: func(p *libraryPostProcessParams) {
 				p.library.APIs = []*config.API{{Path: "foo"}}
 			},
