@@ -136,8 +136,8 @@ type ComposerTool struct {
 	// Package is the URL or path of the package to install.
 	Package string `yaml:"package,omitempty"`
 
-	// Checksum is the SHA256 checksum of the package.
-	Checksum string `yaml:"checksum,omitempty"`
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`
@@ -208,8 +208,8 @@ type PNPMTool struct {
 	// Package is the URL or path of the package to install.
 	Package string `yaml:"package,omitempty"`
 
-	// Checksum is the SHA256 checksum of the package.
-	Checksum string `yaml:"checksum,omitempty"`
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`

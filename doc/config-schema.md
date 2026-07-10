@@ -59,7 +59,7 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the composer package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
+| `sha256` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## GoTool Configuration
@@ -98,7 +98,7 @@ This document describes the schema for the librarian.yaml.
 | `name` | string | Is the pnpm package name. |
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
-| `checksum` | string | Is the SHA256 checksum of the package. |
+| `sha256` | string | Is the SHA256 checksum of the package. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## Protoc Configuration
