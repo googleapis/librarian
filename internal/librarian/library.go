@@ -338,7 +338,7 @@ func applyDefaults(language string, lib *config.Library, defaults *config.Defaul
 // derive the API path.
 func canDeriveAPIPath(language string) bool {
 	switch language {
-	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava:
+	case config.LanguageGo, config.LanguagePython, config.LanguageNodejs, config.LanguageJava, config.LanguagePhp:
 		return false
 	default:
 		return true
