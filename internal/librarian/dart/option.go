@@ -20,6 +20,7 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+// Option represents the configuration options for generating a Dart library.
 type Option struct {
 	Name                        string
 	Version                     string
@@ -46,10 +47,12 @@ type Option struct {
 	Protos                      map[string]string
 }
 
+// API represents the details of a generated API endpoint.
 type API struct {
 	Path string
 }
 
+// NewOption creates a new Option based on the configuration of the library.
 func NewOption(library *config.Library) (*Option, error) {
 	if err := verify(library); err != nil {
 		return nil, err
