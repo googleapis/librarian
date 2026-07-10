@@ -25,10 +25,9 @@ import (
 
 func TestAdd(t *testing.T) {
 	for _, test := range []struct {
-		name         string
-		lib          *config.Library
-		want         *config.Library
-		wantVersions []string
+		name string
+		lib  *config.Library
+		want *config.Library
 	}{
 		{
 			name: "standard cloud API",
@@ -45,13 +44,6 @@ func TestAdd(t *testing.T) {
 				},
 				Version:       defaultVersion,
 				CopyrightYear: "",
-			},
-			wantVersions: []string{
-				"google-cloud-secretmanager-parent:0.0.0:0.1.0-SNAPSHOT",
-				"google-cloud-secretmanager-bom:0.0.0:0.1.0-SNAPSHOT",
-				"proto-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
-				"grpc-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
-				"google-cloud-secretmanager:0.0.0:0.1.0-SNAPSHOT",
 			},
 		},
 		{
@@ -74,13 +66,6 @@ func TestAdd(t *testing.T) {
 					GroupID:    "com.google.shopping",
 				},
 			},
-			wantVersions: []string{
-				"google-shopping-css-parent:0.0.0:0.1.0-SNAPSHOT",
-				"google-shopping-css-bom:0.0.0:0.1.0-SNAPSHOT",
-				"proto-google-shopping-css-v1:0.0.0:0.1.0-SNAPSHOT",
-				"grpc-google-shopping-css-v1:0.0.0:0.1.0-SNAPSHOT",
-				"google-shopping-css:0.0.0:0.1.0-SNAPSHOT",
-			},
 		},
 		{
 			name: "maps API",
@@ -101,13 +86,6 @@ func TestAdd(t *testing.T) {
 					ArtifactID: "google-maps-routing",
 					GroupID:    "com.google.maps",
 				},
-			},
-			wantVersions: []string{
-				"google-maps-routing-parent:0.0.0:0.1.0-SNAPSHOT",
-				"google-maps-routing-bom:0.0.0:0.1.0-SNAPSHOT",
-				"proto-google-maps-routing-v1:0.0.0:0.1.0-SNAPSHOT",
-				"grpc-google-maps-routing-v1:0.0.0:0.1.0-SNAPSHOT",
-				"google-maps-routing:0.0.0:0.1.0-SNAPSHOT",
 			},
 		},
 		{
@@ -130,13 +108,6 @@ func TestAdd(t *testing.T) {
 					GroupID:    "please-configure-java-group-id",
 				},
 			},
-			wantVersions: []string{
-				"google-foo-bar-parent:0.0.0:0.1.0-SNAPSHOT",
-				"google-foo-bar-bom:0.0.0:0.1.0-SNAPSHOT",
-				"proto-google-foo-bar-v1:0.0.0:0.1.0-SNAPSHOT",
-				"grpc-google-foo-bar-v1:0.0.0:0.1.0-SNAPSHOT",
-				"google-foo-bar:0.0.0:0.1.0-SNAPSHOT",
-			},
 		},
 		{
 			name: "ads API",
@@ -158,12 +129,6 @@ func TestAdd(t *testing.T) {
 					GroupID:    "com.google.api-ads",
 				},
 			},
-			wantVersions: []string{
-				"google-ads-admanager-parent:0.0.0:0.1.0-SNAPSHOT",
-				"google-ads-admanager-bom:0.0.0:0.1.0-SNAPSHOT",
-				"proto-google-ads-admanager-v1:0.0.0:0.1.0-SNAPSHOT",
-				"google-ads-admanager:0.0.0:0.1.0-SNAPSHOT",
-			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -178,6 +143,106 @@ func TestAdd(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestAdd_VersionsTxt(t *testing.T) {
+	for _, test := range []struct {
+		name         string
+		lib          *config.Library
+		wantVersions []string
+	}{
+		{
+			name: "standard cloud API",
+			lib: &config.Library{
+				Name: "secretmanager",
+				APIs: []*config.API{
+					{Path: "google/cloud/secretmanager/v1"},
+				},
+			},
+			wantVersions: []string{
+				"google-cloud-secretmanager-parent:0.0.0:0.1.0-SNAPSHOT",
+				"google-cloud-secretmanager-bom:0.0.0:0.1.0-SNAPSHOT",
+				"proto-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
+				"grpc-google-cloud-secretmanager-v1:0.0.0:0.1.0-SNAPSHOT",
+				"google-cloud-secretmanager:0.0.0:0.1.0-SNAPSHOT",
+			},
+		},
+		{
+			name: "shopping API",
+			lib: &config.Library{
+				Name: "shopping-css",
+				APIs: []*config.API{
+					{Path: "google/shopping/css/v1"},
+				},
+			},
+			wantVersions: []string{
+				"google-shopping-css-parent:0.0.0:0.1.0-SNAPSHOT",
+				"google-shopping-css-bom:0.0.0:0.1.0-SNAPSHOT",
+				"proto-google-shopping-css-v1:0.0.0:0.1.0-SNAPSHOT",
+				"grpc-google-shopping-css-v1:0.0.0:0.1.0-SNAPSHOT",
+				"google-shopping-css:0.0.0:0.1.0-SNAPSHOT",
+			},
+		},
+		{
+			name: "maps API",
+			lib: &config.Library{
+				Name: "maps-routing",
+				APIs: []*config.API{
+					{Path: "google/maps/routing/v1"},
+				},
+			},
+			wantVersions: []string{
+				"google-maps-routing-parent:0.0.0:0.1.0-SNAPSHOT",
+				"google-maps-routing-bom:0.0.0:0.1.0-SNAPSHOT",
+				"proto-google-maps-routing-v1:0.0.0:0.1.0-SNAPSHOT",
+				"grpc-google-maps-routing-v1:0.0.0:0.1.0-SNAPSHOT",
+				"google-maps-routing:0.0.0:0.1.0-SNAPSHOT",
+			},
+		},
+		{
+			name: "unrecognized non-cloud API",
+			lib: &config.Library{
+				Name: "foo-bar",
+				APIs: []*config.API{
+					{Path: "google/foo/bar/v1"},
+				},
+			},
+			wantVersions: []string{
+				"google-foo-bar-parent:0.0.0:0.1.0-SNAPSHOT",
+				"google-foo-bar-bom:0.0.0:0.1.0-SNAPSHOT",
+				"proto-google-foo-bar-v1:0.0.0:0.1.0-SNAPSHOT",
+				"grpc-google-foo-bar-v1:0.0.0:0.1.0-SNAPSHOT",
+				"google-foo-bar:0.0.0:0.1.0-SNAPSHOT",
+			},
+		},
+		{
+			name: "ads API",
+			lib: &config.Library{
+				Name: "ads-admanager",
+				APIs: []*config.API{
+					{Path: "google/ads/admanager/v1"},
+				},
+			},
+			wantVersions: []string{
+				"google-ads-admanager-parent:0.0.0:0.1.0-SNAPSHOT",
+				"google-ads-admanager-bom:0.0.0:0.1.0-SNAPSHOT",
+				"proto-google-ads-admanager-v1:0.0.0:0.1.0-SNAPSHOT",
+				"google-ads-admanager:0.0.0:0.1.0-SNAPSHOT",
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tmpDir := t.TempDir()
+			t.Chdir(tmpDir)
+			if err := os.WriteFile(versionsFileName, nil, 0644); err != nil {
+				t.Fatal(err)
+			}
+			_, err := Add(test.lib, nil)
+			if err != nil {
+				t.Fatalf("Add() error = %v", err)
 			}
 			content, err := os.ReadFile(versionsFileName)
 			if err != nil {
