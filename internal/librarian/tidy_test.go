@@ -767,15 +767,23 @@ func TestTidy_UnusedSections(t *testing.T) {
 		{
 			name: "maven preserved",
 			cfg: &config.Config{
-				Language: config.LanguageRust,
+				Language: config.LanguageJava,
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
 				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
-				Default: &config.Default{},
+				Default: &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.0",
+					},
+				},
 			},
 			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
-			wantDefault: nil,
+			wantDefault: &config.Default{
+				Java: &config.JavaDefault{
+					LibrariesBOMVersion: "1.0",
+				},
+			},
 		},
 		{
 			name: "protoc preserved",
