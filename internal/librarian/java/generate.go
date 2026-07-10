@@ -26,7 +26,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/protoc"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
 )

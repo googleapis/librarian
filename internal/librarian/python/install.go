@@ -20,7 +20,7 @@ import (
 	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/pip"
+	"github.com/googleapis/librarian/internal/tool/pip"
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
