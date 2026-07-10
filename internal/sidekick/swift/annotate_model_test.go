@@ -273,10 +273,10 @@ func TestModelAnnotations_Pagination(t *testing.T) {
 }
 
 func TestModelAnnotations_Gating(t *testing.T) {
-	model := makeGatedTestModel()
+	model := makeRequiredServicesTestModel()
 	codec := newTestCodec(t, model, nil)
 	codec.PerServiceTraits = true
-	codec.DefaultTraits = []string{"Service1"}
+	codec.DefaultTraits = []string{"TestService"}
 
 	if err := codec.annotateModel(); err != nil {
 		t.Fatal(err)
@@ -288,8 +288,8 @@ func TestModelAnnotations_Gating(t *testing.T) {
 	}
 
 	wantAllTraits := []*traitDefinition{
-		{Name: "Service1"},
-		{Name: "Service2"},
+		{Name: "TestService", EnabledTraits: []string{"ZoneOperations"}},
+		{Name: "ZoneOperations"},
 	}
 	if diff := cmp.Diff(wantAllTraits, ann.AllTraits); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
@@ -299,7 +299,7 @@ func TestModelAnnotations_Gating(t *testing.T) {
 		t.Error("expected HasTraits() to be true")
 	}
 
-	if diff := cmp.Diff([]string{"Service1"}, ann.DefaultTraits); diff != "" {
+	if diff := cmp.Diff([]string{"TestService"}, ann.DefaultTraits); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }

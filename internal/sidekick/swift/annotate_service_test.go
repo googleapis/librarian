@@ -248,56 +248,7 @@ func TestAnnotateService_Gating(t *testing.T) {
 }
 
 func TestAnnotateService_RequiredServices(t *testing.T) {
-	inputType := &api.Message{
-		Name:    "GetOperationRequest",
-		ID:      ".test.GetOperationRequest",
-		Package: "test",
-	}
-	outputType := &api.Message{
-		Name:    "Operation",
-		ID:      ".test.Operation",
-		Package: "test",
-	}
-	sourceMethod := &api.Method{
-		Name:         "GetOperation",
-		ID:           ".test.zoneOperations",
-		IsLroPoller:  true,
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-		},
-	}
-	sourceService := &api.Service{
-		Name:    "zoneOperations",
-		ID:      ".test.zoneOperations",
-		Package: "test",
-		Methods: []*api.Method{sourceMethod},
-	}
-	sourceMethod.Service = sourceService
-	method := &api.Method{
-		Name:            sourceMethod.Name,
-		ID:              ".test.TestService",
-		IsLroPoller:     true,
-		SourceService:   sourceService,
-		SourceServiceID: sourceService.ID,
-		PathInfo:        sourceMethod.PathInfo,
-		InputTypeID:     sourceMethod.InputTypeID,
-		InputType:       sourceMethod.InputType,
-		OutputTypeID:    sourceMethod.OutputTypeID,
-		OutputType:      sourceMethod.OutputType,
-	}
-	targetService := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
-	method.Service = targetService
-
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{sourceService, targetService})
+	model := makeRequiredServicesTestModel()
 	codec := newTestCodec(t, model, nil)
 	codec.PerServiceTraits = true
 
@@ -305,15 +256,23 @@ func TestAnnotateService_RequiredServices(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	targetService := model.Service(".test.TestService")
+	if targetService == nil {
+		t.Fatalf("missing target service .test.zoneOperations")
+	}
 	targetCodec, ok := targetService.Codec.(*serviceAnnotations)
 	if !ok {
 		t.Fatalf("expected targetService.Codec to be *serviceAnnotations, got %T", targetService.Codec)
 	}
 
+	sourceService := model.Service(".test.zoneOperations")
+	if sourceService == nil {
+		t.Fatalf("missing source service .test.zoneOperations")
+	}
 	wantRequired := map[string]*api.Service{
 		sourceService.ID: sourceService,
 	}
-	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices); diff != "" {
+	if diff := cmp.Diff(wantRequired, targetCodec.RequiredServices, cmpopts.IgnoreFields(api.Method{}, "Model"), cmpopts.IgnoreFields(api.Service{}, "Model")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
