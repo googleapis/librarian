@@ -1192,26 +1192,6 @@ func TestApplyMoveActionsToLibrary(t *testing.T) {
 	}
 }
 
-func TestApplyMoveActionsToLibrary_NonExistentSource(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	srcDir := filepath.Join(dir, "src")
-	destDir := filepath.Join(dir, "dest")
-	// srcDir is not created on disk to test that non-existent source directories are skipped.
-	writeFiles(t, destDir, nil)
-	actions := []moveAction{
-		{src: srcDir, dest: destDir, description: "non-existent src"},
-	}
-	if err := ApplyMoveActionsToLibrary(actions, destDir, nil); err != nil {
-		t.Fatal(err)
-	}
-	got := readDirFiles(t, destDir)
-	want := map[string]string{}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
 func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 	t.Parallel()
 	for _, test := range []struct {
@@ -1219,6 +1199,7 @@ func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 		files             map[string]string
 		destFiles         map[string]string
 		readOnlySrcParent bool
+		missingSrc        bool
 		wantErr           error
 	}{
 		{
@@ -1232,6 +1213,11 @@ func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 			readOnlySrcParent: true,
 			wantErr:           fs.ErrPermission,
 		},
+		{
+			name:       "source directory does not exist",
+			missingSrc: true,
+			wantErr:    fs.ErrNotExist,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
@@ -1239,7 +1225,9 @@ func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 			srcParent := filepath.Join(dir, "src_parent")
 			srcDir := filepath.Join(srcParent, "src")
 			destDir := filepath.Join(dir, "dest")
-			writeFiles(t, srcDir, test.files)
+			if !test.missingSrc {
+				writeFiles(t, srcDir, test.files)
+			}
 			writeFiles(t, destDir, test.destFiles)
 			if test.readOnlySrcParent {
 				if err := os.Chmod(srcParent, 0000); err != nil {
@@ -1278,8 +1266,11 @@ func readDirFiles(t *testing.T, dir string) map[string]string {
 	t.Helper()
 	got := make(map[string]string)
 	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-		if err != nil || d.IsDir() {
+		if err != nil {
 			return err
+		}
+		if d.IsDir() {
+			return nil
 		}
 		rel, err := filepath.Rel(dir, path)
 		if err != nil {
