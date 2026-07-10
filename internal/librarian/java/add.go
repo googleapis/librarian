@@ -119,43 +119,11 @@ func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string
 		}
 		modules = expectedAPIModules(lib, addedAPI, libCoord, transport)
 	} else {
-		transports, err := loadTransports(lib)
+		var err error
+		modules, err = expectedNewLibraryModules(lib)
 		if err != nil {
 			return nil, err
 		}
-		modules = expectedModules(lib, transports)
-
-		// Reorder modules to match versions.txt expectation: Parent, BOM, APIs, Client.
-		var parent *expectedModule
-		var bom *expectedModule
-		var client *expectedModule
-		var apis []expectedModule
-
-		for _, m := range modules {
-			switch m.Kind {
-			case kindParent:
-				parent = &m
-			case kindBOM:
-				bom = &m
-			case kindClient:
-				client = &m
-			default: // kindProto, kindGRPC
-				apis = append(apis, m)
-			}
-		}
-
-		var ordered []expectedModule
-		if parent != nil {
-			ordered = append(ordered, *parent)
-		}
-		if bom != nil {
-			ordered = append(ordered, *bom)
-		}
-		ordered = append(ordered, apis...)
-		if client != nil {
-			ordered = append(ordered, *client)
-		}
-		modules = ordered
 	}
 
 	var artifacts []string
@@ -176,6 +144,50 @@ func deriveAddedArtifactIDs(lib *config.Library, addedAPI *config.API) ([]string
 	return artifacts, nil
 }
 
+// expectedNewLibraryModules returns all expected modules for a new library,
+// ordered to match the versions.txt expectation: Parent, BOM, APIs, Client.
+func expectedNewLibraryModules(lib *config.Library) ([]expectedModule, error) {
+	transports, err := loadTransports(lib)
+	if err != nil {
+		return nil, err
+	}
+	modules := expectedModules(lib, transports)
+
+	// Reorder modules to match versions.txt expectation: Parent, BOM, APIs, Client.
+	var parent *expectedModule
+	var bom *expectedModule
+	var client *expectedModule
+	var apis []expectedModule
+
+	for _, m := range modules {
+		switch m.Kind {
+		case kindParent:
+			parent = &m
+		case kindBOM:
+			bom = &m
+		case kindClient:
+			client = &m
+		default: // kindProto, kindGRPC
+			apis = append(apis, m)
+		}
+	}
+
+	var ordered []expectedModule
+	if parent != nil {
+		ordered = append(ordered, *parent)
+	}
+	if bom != nil {
+		ordered = append(ordered, *bom)
+	}
+	ordered = append(ordered, apis...)
+	if client != nil {
+		ordered = append(ordered, *client)
+	}
+	return ordered, nil
+}
+
+// readExistingModules reads and parses the versions file at the given path,
+// returning a map of existing module artifact IDs to true.
 func readExistingModules(path string) (map[string]bool, error) {
 	content, err := os.ReadFile(path)
 	if err != nil {
@@ -230,7 +242,8 @@ func appendLines(path string, lines []string) error {
 	}
 	var buf bytes.Buffer
 	buf.Write(existing)
-	// Ensure the file ends with a newline before appending.
+	// Ensure the file ends with a newline before appending so that we
+	// do not concatenate lines instead of appending them.
 	if len(existing) > 0 && existing[len(existing)-1] != '\n' {
 		buf.WriteByte('\n')
 	}
