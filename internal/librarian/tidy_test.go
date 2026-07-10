@@ -771,14 +771,14 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+				Tools: &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
 				Default: &config.Default{
 					Java: &config.JavaDefault{
 						LibrariesBOMVersion: "1.0",
 					},
 				},
 			},
-			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+			wantTools: &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
 			wantDefault: &config.Default{
 				Java: &config.JavaDefault{
 					LibrariesBOMVersion: "1.0",
