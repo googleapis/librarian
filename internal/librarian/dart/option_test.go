@@ -61,25 +61,12 @@ func TestNewOption(t *testing.T) {
 }
 
 func TestNewOption_Error(t *testing.T) {
-	for _, test := range []struct {
-		name    string
-		library *config.Library
-		wantErr error
-	}{
-		{
-			name: "invalid configuration returns error",
-			library: &config.Library{
-				SpecificationFormat: "openapi",
-			},
-			wantErr: errInvalidSpecificationFormat,
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := NewOption(test.library)
-			if !errors.Is(err, test.wantErr) {
-				t.Fatalf("NewOption() error = %v, wantErr = %v", err, test.wantErr)
-			}
-		})
+	library := &config.Library{
+		SpecificationFormat: "openapi",
+	}
+	_, err := NewOption(library)
+	if !errors.Is(err, errInvalidSpecificationFormat) {
+		t.Fatalf("NewOption() error = %v, wantErr = %v", err, errInvalidSpecificationFormat)
 	}
 }
 
