@@ -20,10 +20,12 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
 func runPHPMigration(ctx context.Context, repoPath string) error {
@@ -52,10 +54,57 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 	return nil
 }
 
+var (
+	owlbotSourceWithVersionRegexp    = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/\((v[0-9a-zA-Z]+)\)/.*-php/.*$`)
+	owlbotSourceWithoutVersionRegexp = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/.*-php/.*$`)
+)
+
+type OwlBotConfig struct {
+	DeepCopyRegex []DeepCopyRegexSpec `yaml:"deep-copy-regex"`
+	APIName       string              `yaml:"api-name"`
+}
+
+type DeepCopyRegexSpec struct {
+	Source string `yaml:"source"`
+	Dest   string `yaml:"dest"`
+}
+
+func extractAPIPath(source string) (string, bool) {
+	if matches := owlbotSourceWithVersionRegexp.FindStringSubmatch(source); len(matches) == 3 {
+		return matches[1] + "/" + matches[2], true
+	}
+	if matches := owlbotSourceWithoutVersionRegexp.FindStringSubmatch(source); len(matches) == 2 {
+		return matches[1], true
+	}
+	return "", false
+}
+
+func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
+	if !fileExists(owlbotPath) {
+		return nil, nil
+	}
+	owlbot, err := yaml.Read[OwlBotConfig](owlbotPath)
+	if err != nil {
+		return nil, err
+	}
+	var apis []*config.API
+	seenAPIs := make(map[string]bool)
+	for _, spec := range owlbot.DeepCopyRegex {
+		if path, ok := extractAPIPath(spec.Source); ok {
+			if !seenAPIs[path] {
+				seenAPIs[path] = true
+				apis = append(apis, &config.API{Path: path})
+			}
+		}
+	}
+	return apis, nil
+}
+
 // findPHPLibraries scans the repository root directory for subdirectories containing
 // both a VERSION file and a composer.json file. It assumes each matching subdirectory
 // represents a PHP library, where the library name is the subdirectory's name and
 // the version is extracted from the VERSION file.
+// It also attempts to parse .OwlBot.yaml to extract API paths.
 func findPHPLibraries(repoPath string) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
@@ -78,9 +127,16 @@ func findPHPLibraries(repoPath string) ([]*config.Library, error) {
 			return nil, fmt.Errorf("reading version for %s: %w", name, err)
 		}
 		version := strings.TrimSpace(string(versionBytes))
+
+		apis, err := extractAPIsFromOwlBot(filepath.Join(repoPath, name, ".OwlBot.yaml"))
+		if err != nil {
+			return nil, fmt.Errorf("extracting APIs from OwlBot config for %s: %w", name, err)
+		}
+
 		libs = append(libs, &config.Library{
 			Name:    name,
 			Version: version,
+			APIs:    apis,
 		})
 	}
 	return libs, nil
