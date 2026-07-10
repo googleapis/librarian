@@ -23,6 +23,37 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
+func TestInstall(t *testing.T) {
+	stubDir := t.TempDir()
+	gemStubPath := filepath.Join(stubDir, "gem")
+	recordFile := filepath.Join(t.TempDir(), "calls.txt")
+	stubContent := "#!/bin/sh\necho \"$*\" >> \"" + recordFile + "\"\nexit 0\n"
+	if err := os.WriteFile(gemStubPath, []byte(stubContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir+string(filepath.ListSeparator)+os.Getenv("PATH"))
+	tools := &config.Tools{
+		Gem: []*config.GemTool{
+			{
+				Name:    "gapic-generator",
+				Version: "1.2.3",
+			},
+		},
+	}
+	if err := Install(t.Context(), tools); err != nil {
+		t.Fatalf("Install() returned unexpected error: %v", err)
+	}
+	data, err := os.ReadFile(recordFile)
+	if err != nil {
+		t.Fatalf("failed to read call records: %v", err)
+	}
+	got := string(data)
+	want := "install gapic-generator -v 1.2.3 --no-document\n"
+	if got != want {
+		t.Errorf("gem called with = %q, want %q", got, want)
+	}
+}
+
 func TestInstallDir(t *testing.T) {
 	binDir := t.TempDir()
 	t.Setenv("LIBRARIAN_BIN", binDir)
