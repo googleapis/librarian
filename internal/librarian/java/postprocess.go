@@ -555,3 +555,13 @@ func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet ma
 	}
 	return nil
 }
+
+// ToKeepSet normalizes a list of keep paths into a lookup map.
+func ToKeepSet(keep []string) map[string]bool {
+	keepSet := make(map[string]bool, len(keep))
+	for _, k := range keep {
+		normalized := strings.TrimSuffix(filepath.ToSlash(k), "/")
+		keepSet[normalized] = true
+	}
+	return keepSet
+}

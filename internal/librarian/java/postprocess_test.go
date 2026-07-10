@@ -1288,3 +1288,18 @@ func readDirFiles(t *testing.T, dir string) map[string]string {
 	}
 	return got
 }
+
+func TestToKeepSet(t *testing.T) {
+	t.Parallel()
+	input := []string{"foo/", "bar/baz", "qux/", ""}
+	got := ToKeepSet(input)
+	want := map[string]bool{
+		"foo":     true,
+		"bar/baz": true,
+		"qux":     true,
+		"":        true,
+	}
+	if diff := cmp.Diff(want, got); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
