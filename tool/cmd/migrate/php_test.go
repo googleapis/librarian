@@ -89,11 +89,11 @@ func TestRunPHPMigration(t *testing.T) {
 		Tools: &config.Tools{
 			Composer: []*config.ComposerTool{
 				{
-					Name:     "google/gapic-generator-php",
-					Version:  "v1.21.2",
-					Package:  "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
-					SHA256:   "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-					Build:    []string{"composer install"},
+					Name:    "google/gapic-generator-php",
+					Version: "v1.21.2",
+					Package: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
+					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					Build:   []string{"composer install"},
 				},
 			},
 		},
