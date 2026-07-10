@@ -34,6 +34,7 @@ var (
 	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Ruby tool installation")
 )
 
+// Install installs Ruby gem dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
 	if err := verify(tools); err != nil {
 		return err

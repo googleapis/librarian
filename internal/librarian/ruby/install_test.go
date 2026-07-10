@@ -15,8 +15,11 @@
 package ruby
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestInstallDir(t *testing.T) {
@@ -42,5 +45,28 @@ func TestBinDir(t *testing.T) {
 	want := filepath.Join(dir, "ruby_tools", "bin")
 	if got != want {
 		t.Errorf("binDir() = %q, want %q", got, want)
+	}
+}
+
+func TestVerify(t *testing.T) {
+	stubDir := t.TempDir()
+	gemStubPath := filepath.Join(stubDir, "gem")
+	// Create a simple shell script stub for "gem".
+	stubContent := "#!/bin/sh\nexit 0\n"
+	if err := os.WriteFile(gemStubPath, []byte(stubContent), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", stubDir+string(filepath.ListSeparator)+os.Getenv("PATH"))
+	tools := &config.Tools{
+		Gem: []*config.GemTool{
+			{
+				Name:    "a-gem-tool",
+				Version: "1.0",
+			},
+		},
+	}
+
+	if err := verify(tools); err != nil {
+		t.Errorf("verify() returned unexpected error: %v", err)
 	}
 }
