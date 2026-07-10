@@ -897,6 +897,9 @@ func TestRenderREADME(t *testing.T) {
 	}{
 		{
 			name:       "renders standard README without partials",
+			setupParams: func(p *libraryPostProcessParams) {
+				p.library.APIs = []*config.API{{Path: "foo"}}
+			},
 			goldenFile: filepath.Join("testdata", "readme", "standard.golden"),
 		},
 		{
@@ -909,13 +912,6 @@ func TestRenderREADME(t *testing.T) {
 				}
 			},
 			goldenFile: filepath.Join("testdata", "readme", "partials.golden"),
-		},
-		{
-			name: "renders README with billing required",
-			setupParams: func(p *libraryPostProcessParams) {
-				p.library.APIs = []*config.API{{Path: "foo"}}
-			},
-			goldenFile: filepath.Join("testdata", "readme", "billing.golden"),
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
