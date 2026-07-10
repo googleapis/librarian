@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"path/filepath"
@@ -47,10 +48,9 @@ func TestInstall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to read call records: %v", err)
 	}
-	got := string(data)
-	want := "install gapic-generator -v 1.2.3 --no-document\n"
-	if got != want {
-		t.Errorf("gem called with = %q, want %q", got, want)
+	want := []byte("install gapic-generator -v 1.2.3 --no-document\n")
+	if !bytes.Equal(data, want) {
+		t.Errorf("gem called with = %q, want %q", data, want)
 	}
 }
 
