@@ -15,6 +15,7 @@
 package ruby
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -68,5 +69,50 @@ func TestVerify(t *testing.T) {
 
 	if err := verify(tools); err != nil {
 		t.Errorf("verify() returned unexpected error: %v", err)
+	}
+}
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		tools   *config.Tools
+		setup   func(t *testing.T)
+		wantErr error
+	}{
+		{
+			name:    "nil tools",
+			tools:   nil,
+			wantErr: errNoGems,
+		},
+		{
+			name:    "empty tools",
+			tools:   &config.Tools{},
+			wantErr: errNoGems,
+		},
+		{
+			name: "missing gem in path",
+			tools: &config.Tools{
+				Gem: []*config.GemTool{
+					{
+						Name:    "a-gem-tool",
+						Version: "1.0",
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				t.Setenv("PATH", t.TempDir())
+			},
+			wantErr: errMissingExecutable,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if test.setup != nil {
+				test.setup(t)
+			}
+			err := verify(test.tools)
+			if !errors.Is(err, test.wantErr) {
+				t.Fatalf("verify() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
 	}
 }
