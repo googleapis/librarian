@@ -206,3 +206,59 @@ func makeGatedTestModel() *api.API {
 	api.CrossReference(model)
 	return model
 }
+
+func makeRequiredServicesTestModel() *api.API {
+	inputType := &api.Message{
+		Name:    "GetOperationRequest",
+		ID:      ".test.GetOperationRequest",
+		Package: "test",
+	}
+	outputType := &api.Message{
+		Name:    "Operation",
+		ID:      ".test.Operation",
+		Package: "test",
+	}
+	sourceMethod := &api.Method{
+		Name:         "GetOperation",
+		ID:           ".test.zoneOperations.GetOperation",
+		IsLroPoller:  false,
+		InputTypeID:  inputType.ID,
+		InputType:    inputType,
+		OutputTypeID: outputType.ID,
+		OutputType:   outputType,
+		PathInfo: &api.PathInfo{
+			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
+		},
+	}
+	sourceService := &api.Service{
+		Name:    "zoneOperations",
+		ID:      ".test.zoneOperations",
+		Package: "test",
+		Methods: []*api.Method{sourceMethod},
+	}
+	sourceMethod.Service = sourceService
+	method := &api.Method{
+		Name:            sourceMethod.Name,
+		ID:              ".test.TestService.GetOperation",
+		IsLroPoller:     true,
+		SourceService:   sourceService,
+		SourceServiceID: sourceService.ID,
+		PathInfo:        sourceMethod.PathInfo,
+		InputTypeID:     sourceMethod.InputTypeID,
+		InputType:       sourceMethod.InputType,
+		OutputTypeID:    sourceMethod.OutputTypeID,
+		OutputType:      sourceMethod.OutputType,
+	}
+	targetService := &api.Service{
+		Name:    "TestService",
+		ID:      ".test.TestService",
+		Package: "test",
+		Methods: []*api.Method{method},
+	}
+	method.Service = targetService
+
+	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{sourceService, targetService})
+	model.PackageName = "test"
+	api.CrossReference(model)
+	return model
+}
