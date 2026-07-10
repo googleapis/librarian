@@ -27,9 +27,9 @@ import (
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/sources"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 // Generate generates a PHP client library.
@@ -216,4 +216,10 @@ func gapicOpts(api *config.API, apiMetadata *serviceconfig.API, grpcConfigPath s
 		opts = append(opts, "service_yaml="+apiMetadata.ServiceConfig)
 	}
 	return opts
+}
+
+// DefaultOutput derives an output path from a library name and a default
+// output directory.
+func DefaultOutput(name, defaultOutput string) string {
+	return filepath.Join(defaultOutput, name)
 }

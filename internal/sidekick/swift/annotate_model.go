@@ -32,7 +32,21 @@ type modelAnnotations struct {
 	WktPackage       string
 	PerServiceTraits bool
 	DefaultTraits    []string
-	AllTraits        []string
+	AllTraits        []*traitDefinition
+}
+
+// traitDefinition provides information about each package trait.
+//
+// In Swift, a library may be configured to generate a package trait
+// per-service. Some services depend on request types that are only available if
+// other services are enabled. In other words, if the trait for service A is
+// defined, then the trait for service B may need to be defined because A uses
+// types from B.
+type traitDefinition struct {
+	// The name of this trait.
+	Name string
+	// The set of additional traits enabled by the service's trait.
+	EnabledTraits []string
 }
 
 // HasDependencies returns true if the package has dependencies on other packages.
@@ -41,6 +55,11 @@ type modelAnnotations struct {
 // dependencies.
 func (ann *modelAnnotations) HasDependencies() bool {
 	return len(ann.DependsOn) != 0
+}
+
+// EnablesOtherTraits returns true if this service's trait enables other traits too.
+func (ann *traitDefinition) EnablesOtherTraits() bool {
+	return len(ann.EnabledTraits) != 0
 }
 
 // Dependencies returns the list of dependencies for this package.
@@ -80,12 +99,22 @@ func (c *codec) annotateModel() error {
 	}
 	// The services are annotated last because the annotation assumes messages
 	// and enums are already annotated.
-	allTraits := make([]string, 0, len(c.Model.Services))
+	allTraits := make([]*traitDefinition, 0, len(c.Model.Services))
 	for _, service := range c.Model.Services {
-		if err := c.annotateService(service, annotations); err != nil {
+		ann, err := c.annotateService(service, annotations)
+		if err != nil {
 			return err
 		}
-		allTraits = append(allTraits, c.traitName(service))
+		var enabledTraits []string
+		for _, svc := range ann.RequiredServices {
+			enabledTraits = append(enabledTraits, c.traitName(svc))
+		}
+		slices.Sort(enabledTraits)
+		trait := &traitDefinition{
+			Name:          c.traitName(service),
+			EnabledTraits: enabledTraits,
+		}
+		allTraits = append(allTraits, trait)
 	}
 	if !c.PerServiceTraits {
 		// The maximum (15) was chosen more or less arbitrarily circa 2026-05. At
@@ -98,8 +127,14 @@ func (c *codec) annotateModel() error {
 	// Rarely, some messages and enums are not used by any service. These
 	// will lack any feature gates, but may depend on messages that do.
 	// Change them to work only if all features are enabled.
-	slices.Sort(allTraits)
+	slices.SortFunc(allTraits, func(a, b *traitDefinition) int {
+		return cmp.Compare(a.Name, b.Name)
+	})
 	annotations.AllTraits = allTraits
+	allTraitNames := make([]string, 0, len(allTraits))
+	for _, t := range allTraits {
+		allTraitNames = append(allTraitNames, t.Name)
+	}
 	for msg := range c.Model.AllMessages() {
 		if msg.Codec == nil {
 			continue
@@ -109,7 +144,7 @@ func (c *codec) annotateModel() error {
 			continue
 		}
 		annotation.GatedOp = " && "
-		annotation.GatedBy = allTraits
+		annotation.GatedBy = allTraitNames
 	}
 	for enum := range c.Model.AllEnums() {
 		if enum.Codec == nil {
@@ -120,7 +155,7 @@ func (c *codec) annotateModel() error {
 			continue
 		}
 		annotation.GatedOp = " && "
-		annotation.GatedBy = allTraits
+		annotation.GatedBy = allTraitNames
 	}
 	return nil
 }

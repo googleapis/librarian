@@ -598,7 +598,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			name:     "java derivable output",
 			language: config.LanguageJava,
 			libName:  "secretmanager",
-			output:   "java-secretmanager",
+			output:   "generated/java-secretmanager",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

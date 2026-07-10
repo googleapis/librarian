@@ -91,3 +91,127 @@ func TestRunPHPMigration(t *testing.T) {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 }
+
+func TestExtractAPIPath(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		source   string
+		wantPath string
+		wantOk   bool
+	}{
+		{
+			name:     "versioned api",
+			source:   "/google/cloud/ces/(v1)/.*-php/(.*)",
+			wantPath: "google/cloud/ces/v1",
+			wantOk:   true,
+		},
+		{
+			name:     "unversioned api",
+			source:   "/google/identity/accesscontextmanager/type/.*-php/(.*)",
+			wantPath: "google/identity/accesscontextmanager/type",
+			wantOk:   true,
+		},
+		{
+			name:     "non-matching path",
+			source:   "/some/other/path",
+			wantPath: "",
+			wantOk:   false,
+		},
+		{
+			name:     "grafeas versioned",
+			source:   "/grafeas/(v1)/.*-php/(.*)",
+			wantPath: "grafeas/v1",
+			wantOk:   true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotPath, gotOk := extractAPIPath(test.source)
+			if gotOk != test.wantOk {
+				t.Fatal("extractAPIPath ok =", gotOk, ", want", test.wantOk)
+			}
+			if gotPath != test.wantPath {
+				t.Error("extractAPIPath path =", gotPath, ", want", test.wantPath)
+			}
+		})
+	}
+}
+
+func TestExtractAPIsFromOwlBot(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setupFile func(dir string) string
+		want      []*config.API
+	}{
+		{
+			name: "missing owlbot.yaml",
+			setupFile: func(dir string) string {
+				return filepath.Join(dir, "missing.yaml")
+			},
+			want: nil,
+		},
+		{
+			name: "valid file",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/Ces/$1/$2
+  - source: /google/identity/accesscontextmanager/type/.*-php/(.*)
+    dest: /owl-bot-staging/AccessContextManager/type-protos/$1
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/Ces/$1/$2
+api-name: Ces
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{Path: "google/cloud/ces/v1"},
+				{Path: "google/identity/accesscontextmanager/type"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := test.setupFile(dir)
+			got, err := extractAPIsFromOwlBot(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setupFile func(dir string) string
+	}{
+		{
+			name: "invalid file",
+			setupFile: func(dir string) string {
+				content := `{invalid`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := test.setupFile(dir)
+			_, err := extractAPIsFromOwlBot(path)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
