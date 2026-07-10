@@ -15,7 +15,6 @@
 package librarian
 
 import (
-	"cmp"
 	"context"
 	"errors"
 	"fmt"
@@ -269,7 +268,7 @@ func formatConfig(cfg *config.Config) *config.Config {
 			return strings.Compare(a.Name, b.Name)
 		})
 		slices.SortFunc(cfg.Tools.Composer, func(a, b *config.ComposerTool) int {
-			return cmp.Compare(a.Name, b.Name)
+			return strings.Compare(a.Name, b.Name)
 		})
 		slices.SortFunc(cfg.Tools.PNPM, func(a, b *config.PNPMTool) int {
 			return strings.Compare(a.Name, b.Name)
