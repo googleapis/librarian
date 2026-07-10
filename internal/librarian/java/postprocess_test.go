@@ -1241,7 +1241,6 @@ func TestApplyMoveActionsToLibrary_Error(t *testing.T) {
 	}
 }
 
-
 func TestApplyMoveActionsToLibrary_NonExistentSource(t *testing.T) {
 	t.Parallel()
 	dir := t.TempDir()
