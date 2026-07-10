@@ -12,29 +12,34 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package python
+package main
 
 import (
 	"context"
-	_ "embed"
 	"fmt"
+	"log"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/tool/pip"
-	"github.com/googleapis/librarian/internal/yaml"
+	"github.com/googleapis/librarian/internal/librarian"
 )
 
-//go:embed librarian.yaml
-var librarianYAML []byte
-
-// Install installs Python pip tool dependencies.
-func Install(ctx context.Context) error {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+func runRubyMigration(ctx context.Context, repoPath string) error {
+	src, err := fetchSource(ctx)
 	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
+		return errFetchSource
 	}
-	if len(cfg.Tools.Pip) == 0 {
-		return nil
+	cfg := &config.Config{
+		Language: config.LanguageRuby,
+		Sources: &config.Sources{
+			Googleapis: src,
+		},
 	}
-	return pip.Install(ctx, cfg.Tools.Pip)
+	// The directory name in Googleapis is present for migration code to look
+	// up API details. It shouldn't be persisted.
+	cfg.Sources.Googleapis.Dir = ""
+	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
+		return fmt.Errorf("%w: %w", errTidyFailed, err)
+	}
+	log.Printf("Successfully migrated Ruby libraries configuration skeleton")
+	return nil
 }

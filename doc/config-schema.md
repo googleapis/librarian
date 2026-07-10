@@ -39,6 +39,7 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `cargo` | list of [CargoTool](#cargotool-configuration) (optional) | Defines tools to install via cargo. |
 | `go` | list of [GoTool](#gotool-configuration) (optional) | Defines tools to install via go. |
+| `gem` | list of [GemTool](#gemtool-configuration) (optional) | Defines tools to install via gem. |
 | `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
@@ -49,6 +50,13 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `name` | string | Is the cargo package name. |
+| `version` | string | Is the version to install. |
+
+## GemTool Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `name` | string | Is the gem name. |
 | `version` | string | Is the version to install. |
 
 ## GoTool Configuration
@@ -571,6 +579,9 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `output` | string | Is the directory where generated code is written (e.g., "Tests/ProtoJSON/generated"). |
 | `api_path` | string | Is the proto path to generate from (e.g., "google/storage/v2"). |
+| `module_type` | string | Is the type of module to generate (e.g., "swift-protobuf", "convert-swift", or empty/"default" for standard GAPIC). |
+| `include_list` | list of string | Is a subset of proto files under the target API path to include. This is typically reserved for special cases to avoid generating unused/dead code. For example, in Storage we need Protobuf gencode for a subset of the protos in the google/type directory. This code is private to the package (google-cloud-storage in Rust, GoogleCloudStorage in Swift). All other files in google/type would be dead code. |
+| `module_path` | string | Is the module import path or target containing stubs (used by convert-swift). |
 
 ## SwiftPackage Configuration
 

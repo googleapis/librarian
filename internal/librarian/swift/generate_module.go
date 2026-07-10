@@ -16,6 +16,7 @@ package swift
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
@@ -25,13 +26,24 @@ import (
 
 func generateModule(ctx context.Context, library *config.Library, src *sources.Sources) error {
 	for _, module := range library.Swift.Modules {
-		modelConfig := moduleToModelConfig(library, module, src)
-		model, err := parser.CreateModel(modelConfig)
-		if err != nil {
-			return err
-		}
-		if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
-			return err
+		switch module.ModuleType {
+		case "swift-protobuf":
+			if err := compileProtobufs(ctx, library, module, src); err != nil {
+				return err
+			}
+		case "convert-swift":
+			return fmt.Errorf("module type %q is not yet supported", module.ModuleType)
+		case "", "default":
+			modelConfig := moduleToModelConfig(library, module, src)
+			model, err := parser.CreateModel(modelConfig)
+			if err != nil {
+				return err
+			}
+			if err := sidekickswift.Generate(ctx, model, module.Output, modelConfig, library.Swift); err != nil {
+				return err
+			}
+		default:
+			return fmt.Errorf("unknown module type %q", module.ModuleType)
 		}
 	}
 	return nil

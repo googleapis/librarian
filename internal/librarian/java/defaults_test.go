@@ -30,20 +30,6 @@ func TestFill(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "fill output from name",
-			lib: &config.Library{
-				Name: "secretmanager",
-			},
-			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
-				Java: &config.JavaModule{
-					ArtifactID: "google-cloud-secretmanager",
-					GroupID:    "com.google.cloud",
-				},
-			},
-		},
-		{
 			name: "do not overwrite output",
 			lib: &config.Library{
 				Name:   "secretmanager",
@@ -67,8 +53,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -101,8 +86,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -130,8 +114,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.custom",
@@ -144,8 +127,7 @@ func TestFill(t *testing.T) {
 				Name: "secretmanager",
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -161,8 +143,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "custom-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -178,7 +159,6 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.0-SNAPSHOT",
-				Output:  "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID:      "google-cloud-secretmanager",
 					GroupID:         "com.google.cloud",
@@ -197,7 +177,6 @@ func TestFill(t *testing.T) {
 				Name:         "secretmanager",
 				Version:      "1.2.0-SNAPSHOT",
 				SkipGenerate: true,
-				Output:       "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -216,7 +195,6 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.0-SNAPSHOT",
-				Output:  "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID:      "google-cloud-secretmanager",
 					GroupID:         "com.google.cloud",
@@ -243,17 +221,6 @@ func TestTidy(t *testing.T) {
 		lib  *config.Library
 		want *config.Library
 	}{
-		{
-			name: "tidy default output",
-			lib: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
-			},
-			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "",
-			},
-		},
 		{
 			name: "do not tidy custom output",
 			lib: &config.Library{
@@ -731,6 +698,7 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 	}
 }
 
+
 func TestValidate_Config(t *testing.T) {
 	for _, test := range []struct {
 		name string
@@ -780,6 +748,31 @@ func TestValidate_ConfigError(t *testing.T) {
 			got := Validate(cfg)
 			if !errors.Is(got, test.wantErr) {
 				t.Errorf("Validate() error = %v, wantErr %v", got, test.wantErr)
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "standard",
+			libName:       "secretmanager",
+			defaultOutput: "packages",
+			want:          "packages/java-secretmanager",
+		},
+		{
+			name:          "empty default",
+			libName:       "secretmanager",
+			defaultOutput: "",
+			want:          "java-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

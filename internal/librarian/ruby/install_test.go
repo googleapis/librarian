@@ -12,29 +12,35 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package python
+package ruby
 
 import (
-	"context"
-	_ "embed"
-	"fmt"
-
-	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/tool/pip"
-	"github.com/googleapis/librarian/internal/yaml"
+	"path/filepath"
+	"testing"
 )
 
-//go:embed librarian.yaml
-var librarianYAML []byte
-
-// Install installs Python pip tool dependencies.
-func Install(ctx context.Context) error {
-	cfg, err := yaml.Unmarshal[config.Config](librarianYAML)
+func TestInstallDir(t *testing.T) {
+	binDir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", binDir)
+	got, err := InstallDir()
 	if err != nil {
-		return fmt.Errorf("parsing embedded librarian.yaml: %w", err)
+		t.Fatal(err)
 	}
-	if len(cfg.Tools.Pip) == 0 {
-		return nil
+	want := filepath.Join(binDir, "ruby_tools")
+	if got != want {
+		t.Errorf("InstallDir() = %q, want %q", got, want)
 	}
-	return pip.Install(ctx, cfg.Tools.Pip)
+}
+
+func TestBinDir(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("LIBRARIAN_BIN", dir)
+	got, err := binDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(dir, "ruby_tools", "bin")
+	if got != want {
+		t.Errorf("binDir() = %q, want %q", got, want)
+	}
 }

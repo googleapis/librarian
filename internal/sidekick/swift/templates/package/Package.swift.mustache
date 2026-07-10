@@ -33,7 +33,16 @@ let package = Package(
   {{#Codec.HasTraits}}
   traits: [
     {{#Codec.AllTraits}}
-    .trait(name: "{{{.}}}"),
+    .trait(
+      name: "{{Name}}",
+      {{#EnablesOtherTraits}}
+      enabledTraits: [
+        {{#EnabledTraits}}
+        "{{{.}}}",
+        {{/EnabledTraits}}
+      ]
+      {{/EnablesOtherTraits}}
+    ),
     {{/Codec.AllTraits}}
     .default(enabledTraits: [
         {{#Codec.DefaultTraits}}

@@ -28,9 +28,10 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
-	"github.com/googleapis/librarian/internal/protoc"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 	"github.com/googleapis/librarian/internal/yaml"
 	"github.com/urfave/cli/v3"
 )
@@ -118,6 +119,8 @@ Examples:
 				return java.Install(ctx, tools)
 			case config.LanguageNodejs:
 				return nodejs.Install(ctx, tools)
+			case config.LanguagePhp:
+				return php.Install(ctx, tools)
 			case config.LanguagePython:
 				return python.Install(ctx)
 			case config.LanguageRust:

@@ -69,6 +69,15 @@ func Run(ctx context.Context, env map[string]string, protoc *config.Protoc, args
 	return command.RunWithEnv(ctx, env, protocPath, args...)
 }
 
+// RunOrSystem executes the configured protoc tool if pc is non-nil,
+// or falls back to executing system "protoc".
+func RunOrSystem(ctx context.Context, env map[string]string, pc *config.Protoc, args ...string) error {
+	if pc != nil {
+		return Run(ctx, env, pc, args...)
+	}
+	return command.RunWithEnv(ctx, env, "protoc", args...)
+}
+
 // InstallDir returns the directory where the protoc binary should be installed.
 func InstallDir(version string) (string, error) {
 	binDir, err := cache.BinDirectory()
