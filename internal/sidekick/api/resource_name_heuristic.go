@@ -88,8 +88,7 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 			}
 
 			// Iterate backwards.
-			for i, v := range slices.Backward(tmpl.Segments) {
-				seg := v
+			for i, seg := range slices.Backward(tmpl.Segments) {
 				if seg.Variable != nil {
 					if i > 0 && tmpl.Segments[i-1].Literal != "" {
 						token := tmpl.Segments[i-1].Literal
