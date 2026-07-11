@@ -32,6 +32,8 @@ var (
 )
 
 // Install installs a list of gem tools into the environment.
+// TODO(https://github.com/googleapis/librarian/issues/6762): Verify gem, bin, and lib
+// are valid before installation.
 func Install(ctx context.Context, tools []*config.GemTool, binDir, libDir string) error {
 	for _, tool := range tools {
 		if tool.Name == "" || tool.Version == "" {
