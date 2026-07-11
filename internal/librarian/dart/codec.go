@@ -17,6 +17,7 @@ package dart
 import (
 	"errors"
 	"fmt"
+	"maps"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -120,14 +121,8 @@ func buildCodec(library *config.Library) map[string]string {
 	if dart.SupportsSSE {
 		codec["supports-sse"] = "true"
 	}
-	for key, value := range dart.Packages {
-		codec[key] = value
-	}
-	for key, value := range dart.Prefixes {
-		codec[key] = value
-	}
-	for key, value := range dart.Protos {
-		codec[key] = value
-	}
+	maps.Copy(codec, dart.Packages)
+	maps.Copy(codec, dart.Prefixes)
+	maps.Copy(codec, dart.Protos)
 	return codec
 }
