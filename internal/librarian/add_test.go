@@ -16,6 +16,7 @@ package librarian
 
 import (
 	"errors"
+	"os"
 	"path/filepath"
 	"sort"
 	"strconv"
@@ -165,6 +166,9 @@ func TestAddCommand(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+				t.Fatal(err)
+			}
 
 			cfg := sample.Config()
 			cfg.Default.Output = "output"
@@ -220,6 +224,9 @@ func TestAddLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+				t.Fatal(err)
+			}
 
 			cfg := sample.Config()
 			cfg.Libraries = []*config.Library{
@@ -395,6 +402,7 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 							{Path: "google/cloud/secretmanager/v1"},
 							{Path: "google/cloud/secretmanager/v1beta2"},
 						},
+						Java: &config.JavaModule{ReleasedVersion: "1.2.3"},
 					},
 				},
 			},
@@ -403,6 +411,9 @@ func TestAddLibrary_ExistingLibrary(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+				t.Fatal(err)
+			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -449,6 +460,9 @@ func TestAddLibrary_ExistingLibrary_Error(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			tmpDir := t.TempDir()
 			t.Chdir(tmpDir)
+			if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+				t.Fatal(err)
+			}
 			if err := yaml.Write(config.LibrarianYAML, test.cfg); err != nil {
 				t.Fatal(err)
 			}
@@ -593,6 +607,9 @@ func TestAddLibraryCommand_Java(t *testing.T) {
 	}
 	tmpDir := t.TempDir()
 	t.Chdir(tmpDir)
+	if err := os.WriteFile(filepath.Join(tmpDir, "versions.txt"), nil, 0644); err != nil {
+		t.Fatal(err)
+	}
 
 	cfg := sample.Config()
 	cfg.Language = config.LanguageJava

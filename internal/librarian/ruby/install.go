@@ -15,13 +15,35 @@
 package ruby
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
+	"context"
+
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/tool/gem"
 )
 
 const toolsDir = "ruby_tools"
+
+var (
+	errNoGems            = errors.New("no gem tools specified")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Ruby tool installation")
+)
+
+// Install installs Ruby gem dependencies.
+func Install(ctx context.Context, tools *config.Tools) error {
+	if err := verify(tools); err != nil {
+		return err
+	}
+	if err := gem.Install(ctx, tools.Gem); err != nil {
+		return err
+	}
+	return nil
+}
 
 // InstallDir gets the directory where tools should be installed.
 func InstallDir() (string, error) {
@@ -43,4 +65,17 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
+}
+
+func verify(tools *config.Tools) error {
+	if tools == nil || len(tools.Gem) == 0 {
+		return errNoGems
+	}
+
+	for _, cmd := range []string{"gem"} {
+		if _, err := exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
+		}
+	}
+	return nil
 }
