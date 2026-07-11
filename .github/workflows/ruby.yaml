@@ -26,4 +26,4 @@ jobs:
           persist-credentials: false
       - uses: ./.github/actions/setup-librarian
       - name: Run tests
-        run: go run ./tool/cmd/coverage ./internal/librarian/ruby
+        run: go run ./tool/cmd/coverage -target=60 ./internal/librarian/ruby
