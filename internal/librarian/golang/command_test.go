@@ -15,9 +15,11 @@
 package golang
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -95,46 +97,56 @@ func TestRunProtoc(t *testing.T) {
 	}
 	for _, test := range []struct {
 		name  string
-		setup func(t *testing.T) *config.Protoc
+		setup func(t *testing.T, recordFile string) (*config.Protoc, string)
 	}{
 		{
 			name: "nil config uses system protoc in PATH",
-			setup: func(t *testing.T) *config.Protoc {
+			setup: func(t *testing.T, recordFile string) (*config.Protoc, string) {
 				stubDir := t.TempDir()
-				createStubExecutable(t, filepath.Join(stubDir, stubName))
+				path := filepath.Join(stubDir, stubName)
+				createStubExecutable(t, path, recordFile)
 				t.Setenv(envPath, stubDir+string(filepath.ListSeparator)+os.Getenv(envPath))
-				return nil
+				return nil, path
 			},
 		},
 		{
 			name: "configured protoc uses installed tool",
-			setup: func(t *testing.T) *config.Protoc {
+			setup: func(t *testing.T, recordFile string) (*config.Protoc, string) {
 				binDir := t.TempDir()
 				t.Setenv(cache.EnvLibrarianBin, binDir)
 				version := "25.1"
 				protocPath := filepath.Join(binDir, "protoc", "v"+version, "bin", stubName)
-				createStubExecutable(t, protocPath)
-				return &config.Protoc{Version: version}
+				createStubExecutable(t, protocPath, recordFile)
+				return &config.Protoc{Version: version}, protocPath
 			},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			pc := test.setup(t)
+			recordFile := filepath.Join(t.TempDir(), "calls.txt")
+			pc, want := test.setup(t, recordFile)
 			if err := runProtoc(t.Context(), pc, "--version"); err != nil {
-				t.Fatalf("runProtoc() error = %v, want nil", err)
+				t.Fatal(err)
+			}
+			data, err := os.ReadFile(recordFile)
+			if err != nil {
+				t.Fatal(err)
+			}
+			got := strings.TrimSpace(string(data))
+			if diff := cmp.Diff(want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
 }
 
-func createStubExecutable(t *testing.T, path string) {
+func createStubExecutable(t *testing.T, path, recordFile string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
 		t.Fatal(err)
 	}
-	content := "#!/bin/sh\nexit 0\n"
+	content := fmt.Sprintf("#!/bin/sh\necho \"$0\" >> %q\nexit 0\n", recordFile)
 	if runtime.GOOS == "windows" {
-		content = "@echo off\r\nexit /b 0\r\n"
+		content = fmt.Sprintf("@echo off\r\necho %%0 >> %q\r\nexit /b 0\r\n", recordFile)
 	}
 	if err := os.WriteFile(path, []byte(content), 0755); err != nil {
 		t.Fatal(err)
