@@ -30,6 +30,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
@@ -74,7 +75,10 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if isPreview(outDir) {
 		googleapisDir = filepath.Join(googleapisDir, "preview")
 	}
-
+	var pc *config.Protoc
+	if cfg.Tools != nil {
+		pc = cfg.Tools.Protoc
+	}
 	var fallbackTitle string
 	var customSampleURI string
 	for i, api := range library.APIs {
@@ -83,7 +87,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 			return fmt.Errorf("error finding goAPI associated with API %s: %w", api.Path, errGoAPINotFound)
 		}
 
-		if err := generateAPI(ctx, api.Path, goAPI, googleapisDir, library.Version, tempDir); err != nil {
+		if err := generateAPI(ctx, api.Path, goAPI, pc, googleapisDir, library.Version, tempDir); err != nil {
 			return fmt.Errorf("api %q: %w", api.Path, err)
 		}
 		if err := moveGeneratedFiles(library, goAPI, tempDir, outDir); err != nil {
@@ -139,10 +143,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	return runInDirWithEnv(ctx, outDir, env, command.Go, "mod", "tidy")
 }
 
-func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googleapisDir, version, outDir string) error {
+func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *config.Protoc, googleapisDir, version, outDir string) error {
 	nestedProtos := goAPI.NestedProtos
 	args := []string{
-		"protoc",
 		"--experimental_allow_proto3_optional",
 		"--go_out=" + outDir,
 		"-I=" + googleapisDir,
@@ -165,7 +168,10 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, googl
 		return err
 	}
 	args = append(args, protoFiles...)
-	return runWithEnv(ctx, nil, args[0], args[1:]...)
+	if pc == nil {
+		return runWithEnv(ctx, nil, "protoc", args...)
+	}
+	return protoc.Run(ctx, nil, pc, args...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {
