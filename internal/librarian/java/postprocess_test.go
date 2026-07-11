@@ -1260,6 +1260,162 @@ func TestApplyMoveActionsToLibrary_NonExistentSource(t *testing.T) {
 	}
 }
 
+func TestRestructureToLibrary(t *testing.T) {
+	t.Parallel()
+	for _, tc := range []struct {
+		name           string
+		monolithic     bool
+		includeSamples bool
+		filesToWrite   map[string]string
+		wantFiles      map[string]string
+	}{
+		{
+			name:           "standard multi-module",
+			monolithic:     false,
+			includeSamples: true,
+			filesToWrite: map[string]string{
+				"v1/gapic/src/main/java/Foo.java":                               "class Foo {}",
+				"v1/gapic/src/test/FooTest.java":                                "class FooTest {}",
+				"v1/proto/com/google/cloud/test/v1/BarProto.java":               "class BarProto {}",
+				"v1/grpc/com/google/cloud/test/v1/BarGrpc.java":                 "class BarGrpc {}",
+				"v1/gapic/proto/src/main/java/Resource.java":                    "class Resource {}",
+				"v1/gapic/samples/snippets/generated/src/main/java/Sample.java": "class Sample {}",
+			},
+			wantFiles: map[string]string{
+				"proto-google-cloud-test-v1/src/main/java/com/google/cloud/test/v1/BarProto.java": "class BarProto {}",
+				"grpc-google-cloud-test-v1/src/main/java/com/google/cloud/test/v1/BarGrpc.java":   "class BarGrpc {}",
+				"proto-google-cloud-test-v1/src/main/java/Resource.java":                          "class Resource {}",
+				"google-cloud-test/src/main/java/Foo.java":                                        "class Foo {}",
+				"google-cloud-test/src/test/FooTest.java":                                         "class FooTest {}",
+				"samples/snippets/generated/Sample.java":                                          "class Sample {}",
+			},
+		},
+		{
+			name:           "monolithic library",
+			monolithic:     true,
+			includeSamples: false,
+			filesToWrite: map[string]string{
+				"v1/gapic/src/main/java/Gapic.java": "class Gapic {}",
+				"v1/grpc/Grpc.java":                 "class Grpc {}",
+				"v1/proto/Proto.java":               "class Proto {}",
+			},
+			wantFiles: map[string]string{
+				"src/main/java/Gapic.java": "class Gapic {}",
+				"src/main/java/Grpc.java":  "class Grpc {}",
+				"src/main/java/Proto.java": "class Proto {}",
+			},
+		},
+		{
+			name:           "samples disabled",
+			monolithic:     false,
+			includeSamples: false,
+			filesToWrite: map[string]string{
+				"v1/gapic/src/main/java/Foo.java":                               "class Foo {}",
+				"v1/gapic/samples/snippets/generated/src/main/java/Sample.java": "class Sample {}",
+			},
+			wantFiles: map[string]string{
+				"google-cloud-test/src/main/java/Foo.java": "class Foo {}",
+			},
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			srcDir := t.TempDir()
+			destDir := t.TempDir()
+			writeFiles(t, srcDir, tc.filesToWrite)
+			library := &config.Library{
+				Name: "test-lib",
+				APIs: []*config.API{{Path: "google/cloud/test/v1", Java: &config.JavaAPI{Monolithic: tc.monolithic}}},
+				Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-test"},
+			}
+			params := postProcessParams{
+				cfg:            &config.Config{},
+				library:        library,
+				javaAPI:        library.APIs[0].Java,
+				outDir:         srcDir,
+				includeSamples: tc.includeSamples,
+				apiBase:        "v1",
+			}
+			if err := RestructureToLibrary(params, destDir, nil); err != nil {
+				t.Fatal(err)
+			}
+			gotFiles := readDirFiles(t, destDir)
+			if diff := cmp.Diff(tc.wantFiles, gotFiles); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+// TestRestructureToLibrary_OverwritesExistingFiles verifies that existing files in the destination are overwritten.
+func TestRestructureToLibrary_OverwritesExistingFiles(t *testing.T) {
+	t.Parallel()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	writeFiles(t, srcDir, map[string]string{
+		"v1/gapic/src/main/java/Foo.java": "class Foo { /* new content */ }",
+	})
+	writeFiles(t, destDir, map[string]string{
+		"google-cloud-test/src/main/java/Foo.java": "class Foo { /* old content */ }",
+	})
+	library := &config.Library{
+		Name: "test-lib",
+		APIs: []*config.API{{Path: "google/cloud/test/v1", Java: &config.JavaAPI{}}},
+		Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-test"},
+	}
+	params := postProcessParams{
+		cfg:            &config.Config{},
+		library:        library,
+		javaAPI:        library.APIs[0].Java,
+		outDir:         srcDir,
+		includeSamples: false,
+		apiBase:        "v1",
+	}
+	// Pass nil keepSet to expect default overwriting of conflicting files.
+	if err := RestructureToLibrary(params, destDir, nil); err != nil {
+		t.Fatal(err)
+	}
+	gotFiles := readDirFiles(t, destDir)
+	wantFiles := map[string]string{
+		"google-cloud-test/src/main/java/Foo.java": "class Foo { /* new content */ }",
+	}
+	if diff := cmp.Diff(wantFiles, gotFiles); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestRestructureToLibrary_CommonProtos(t *testing.T) {
+	t.Parallel()
+	srcDir := t.TempDir()
+	destDir := t.TempDir()
+	writeFiles(t, srcDir, map[string]string{
+		"v1/proto/com/google/cloud/location/LocationsProto.java": "class LocationsProto {}",
+	})
+	library := &config.Library{
+		Name: commonProtosLibrary,
+		APIs: []*config.API{{Path: "google/cloud/test/v1", Java: &config.JavaAPI{ProtoArtifactIDOverride: "proto-google-common-protos"}}},
+		Java: &config.JavaModule{GroupID: "com.google.cloud", ArtifactID: "google-cloud-" + commonProtosLibrary},
+	}
+	params := postProcessParams{
+		cfg:            &config.Config{},
+		library:        library,
+		javaAPI:        library.APIs[0].Java,
+		outDir:         srcDir,
+		includeSamples: false,
+		apiBase:        "v1",
+	}
+	if err := RestructureToLibrary(params, destDir, nil); err != nil {
+		t.Fatal(err)
+	}
+	gotFiles := readDirFiles(t, destDir)
+	wantFiles := map[string]string{
+		"proto-google-common-protos/src/main/java/com/google/cloud/location/LocationsProto.java": "class LocationsProto {}",
+	}
+	if diff := cmp.Diff(wantFiles, gotFiles); diff != "" {
+		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
 func writeFiles(t *testing.T, dir string, files map[string]string) {
 	t.Helper()
 	if err := os.MkdirAll(dir, 0755); err != nil {
