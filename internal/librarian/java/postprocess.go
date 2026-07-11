@@ -73,6 +73,9 @@ type libraryPostProcessParams struct {
 func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) error {
 	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
 	_, err := os.Stat(owlbotPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to check for owlbot.py: %w", err)
+	}
 	owlbotExists := err == nil
 
 	if owlbotExists {
@@ -163,6 +166,9 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 
 	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
 	_, err := os.Stat(owlbotPath)
+	if err != nil && !errors.Is(err, fs.ErrNotExist) {
+		return fmt.Errorf("failed to check for owlbot.py: %w", err)
+	}
 	owlbotExists := err == nil
 
 	if !owlbotExists {
