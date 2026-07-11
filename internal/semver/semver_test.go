@@ -21,11 +21,6 @@ import (
 	"github.com/google/go-cmp/cmp"
 )
 
-//go:fix inline
-func ptr(i int) *int {
-	return new(i)
-}
-
 func TestParse(t *testing.T) {
 	for _, test := range []struct {
 		name    string

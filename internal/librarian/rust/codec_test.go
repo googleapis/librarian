@@ -44,13 +44,6 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
-// ptr() makes it easier to define test data where the values are literals but the required type is a pointer.
-//
-//go:fix inline
-func ptr[T any](v T) *T {
-	return new(v)
-}
-
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name             string
