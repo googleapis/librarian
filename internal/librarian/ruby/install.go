@@ -39,7 +39,15 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := verify(tools); err != nil {
 		return err
 	}
-	if err := gem.Install(ctx, tools.Gem); err != nil {
+	binDir, err := binDir()
+	if err != nil {
+		return err
+	}
+	libDir, err := libDir()
+	if err != nil {
+		return err
+	}
+	if err := gem.Install(ctx, tools.Gem, binDir, libDir); err != nil {
 		return err
 	}
 	return nil
@@ -65,6 +73,15 @@ func binDir() (string, error) {
 		return "", err
 	}
 	return filepath.Join(installDir, "bin"), nil
+}
+
+// libDir returns the directory where gem assets are stored.
+func libDir() (string, error) {
+	installDir, err := InstallDir()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(installDir, "lib"), nil
 }
 
 func verify(tools *config.Tools) error {
