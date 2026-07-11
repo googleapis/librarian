@@ -33,7 +33,6 @@ import (
 	"github.com/googleapis/librarian/internal/serviceconfig"
 	"github.com/googleapis/librarian/internal/snippetmetadata"
 	"github.com/googleapis/librarian/internal/sources"
-	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 const defaultSampleURI = "https://cloud.google.com/docs/samples?l=go"
@@ -168,10 +167,7 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *c
 		return err
 	}
 	args = append(args, protoFiles...)
-	if pc == nil {
-		return runWithEnv(ctx, nil, "protoc", args...)
-	}
-	return protoc.Run(ctx, nil, pc, args...)
+	return runProtoc(ctx, pc, args...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {
