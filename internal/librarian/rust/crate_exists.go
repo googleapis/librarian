@@ -48,6 +48,8 @@ func crateExists(output string) (bool, error) {
 	if err != nil {
 		return false, err
 	}
+	// The production version of `Cargo.toml` is always formatted with `taplo
+	// fmt`. That guarantees the entries will follow this strict format.
 	hasCargoEntry := bytes.Contains(contents, fmt.Appendf(nil, "\n  \"%s\",\n", output))
 	if !hasCargoEntry && hasDirectory {
 		return false, fmt.Errorf("inconsistent repository state, crate missing in Cargo.toml, but the directory exists: %s", output)
