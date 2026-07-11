@@ -76,7 +76,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		googleapisDir = filepath.Join(googleapisDir, "preview")
 	}
 	var pc *config.Protoc
-	if cfg.Tools != nil {
+	if cfg != nil && cfg.Tools != nil {
 		pc = cfg.Tools.Protoc
 	}
 	var fallbackTitle string
