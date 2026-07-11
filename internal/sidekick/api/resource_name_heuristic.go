@@ -14,9 +14,10 @@
 
 package api
 
-import "slices"
-
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // BuildHeuristicVocabulary builds the vocabulary of valid resource tokens
 // based on the last literal before a variable in Get/List methods.
