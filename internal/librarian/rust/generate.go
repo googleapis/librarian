@@ -16,10 +16,8 @@ package rust
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
-	"os"
 	"path/filepath"
 	"strings"
 
@@ -73,12 +71,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	if err != nil {
 		return err
 	}
-	exists := true
-	if _, err := os.Stat(library.Output); err != nil {
-		if !errors.Is(err, fs.ErrNotExist) {
-			return fmt.Errorf("cannot access output directory %q: %w", library.Output, err)
-		}
-		exists = false
+	exists, err := crateExists(library.Output)
+	if err != nil {
+		return err
 	}
 	if !exists {
 		if err := create(ctx, library.Output); err != nil {
