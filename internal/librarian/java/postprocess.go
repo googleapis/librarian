@@ -477,12 +477,12 @@ func removeKeptFilesFromStaging(library *config.Library, outDir string) error {
 			return err
 		}
 		relSlash := filepath.ToSlash(relToStaging)
-		i := strings.Index(relSlash, "/")
-		if i == -1 {
+		_, after, ok := strings.Cut(relSlash, "/")
+		if !ok {
 			// Skip the staging root "." and API base directories (e.g., "v1").
 			return nil
 		}
-		keepPath := relSlash[i+1:]
+		keepPath := after
 		if d.IsDir() {
 			if keepSet[keepPath] {
 				destPath := filepath.Join(outDir, keepPath)

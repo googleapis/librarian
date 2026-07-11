@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"os"
 	"regexp"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -64,8 +65,8 @@ func DeleteMethod(path, funcName, language string) error {
 	if err != nil {
 		return fmt.Errorf("deleting method %s in %s: %w", funcName, path, err)
 	}
-	for i := len(boundsList) - 1; i >= 0; i-- {
-		b := boundsList[i]
+	for _, v := range slices.Backward(boundsList) {
+		b := v
 		data = append(data[:b.start], data[b.end:]...)
 	}
 	return os.WriteFile(path, data, 0644)

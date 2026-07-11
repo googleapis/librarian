@@ -84,7 +84,7 @@ func newCodec(specificationFormat string, options map[string]string) (*codec, er
 			codec.packageNameOverride = definition
 		case key == "name-overrides":
 			codec.nameOverrides = make(map[string]string)
-			for _, override := range strings.Split(definition, ",") {
+			for override := range strings.SplitSeq(definition, ",") {
 				tokens := strings.Split(override, "=")
 				if len(tokens) != 2 {
 					return nil, fmt.Errorf("cannot parse `name-overrides`. Expected input in the form of: 'n1=r1,n2=r2': %q", definition)
@@ -218,7 +218,7 @@ func parsePackageOption(key, definition string) (*packageOption, error) {
 	pkg := &packagez{
 		name: strings.TrimPrefix(key, "package:"),
 	}
-	for _, element := range strings.Split(definition, ",") {
+	for element := range strings.SplitSeq(definition, ",") {
 		s := strings.SplitN(element, "=", 2)
 		if len(s) != 2 {
 			return nil, fmt.Errorf("the definition for package %q should be a comma-separated list of key=value pairs, got=%q", key, definition)
@@ -1062,8 +1062,8 @@ func escapeUrls(line string) string {
 			lastIndex = match[1]
 		} else {
 			escapedLine.WriteString(line[lastIndex:match[0]])
-			if strings.HasSuffix(url, ".") {
-				fmt.Fprintf(&escapedLine, "<%s>.", strings.TrimSuffix(url, "."))
+			if before, ok := strings.CutSuffix(url, "."); ok {
+				fmt.Fprintf(&escapedLine, "<%s>.", before)
 			} else {
 				fmt.Fprintf(&escapedLine, "<%s>", url)
 			}

@@ -559,8 +559,8 @@ func deriveGAPICName(path string) string {
 func findOption(options []string, name string) (string, bool) {
 	prefix := name + "="
 	for _, candidate := range options {
-		if strings.HasPrefix(candidate, prefix) {
-			return strings.TrimPrefix(candidate, prefix), true
+		if after, ok := strings.CutPrefix(candidate, prefix); ok {
+			return after, true
 		}
 	}
 	return "", false

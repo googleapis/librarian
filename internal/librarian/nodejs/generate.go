@@ -426,7 +426,7 @@ func restoreCopyrightYear(outDir, year string) error {
 		return nil
 	}
 	re := regexp.MustCompile(`Copyright \d{4} Google`)
-	replacement := []byte(fmt.Sprintf("Copyright %s Google", year))
+	replacement := fmt.Appendf(nil, "Copyright %s Google", year)
 	for _, dir := range []string{"src", "test"} {
 		d := filepath.Join(outDir, dir)
 		if _, err := os.Stat(d); err != nil {
