@@ -15,11 +15,14 @@
 package golang
 
 import (
+	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
 )
 
 func TestMergeEnv(t *testing.T) {
@@ -82,5 +85,58 @@ func TestMergeEnv(t *testing.T) {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
+	}
+}
+
+func TestRunProtoc(t *testing.T) {
+	stubName := "protoc"
+	if runtime.GOOS == "windows" {
+		stubName += ".exe"
+	}
+	for _, test := range []struct {
+		name  string
+		setup func(t *testing.T) *config.Protoc
+	}{
+		{
+			name: "nil config uses system protoc in PATH",
+			setup: func(t *testing.T) *config.Protoc {
+				stubDir := t.TempDir()
+				createStubExecutable(t, filepath.Join(stubDir, stubName))
+				t.Setenv(envPath, stubDir+string(filepath.ListSeparator)+os.Getenv(envPath))
+				return nil
+			},
+		},
+		{
+			name: "configured protoc uses installed tool",
+			setup: func(t *testing.T) *config.Protoc {
+				binDir := t.TempDir()
+				t.Setenv(cache.EnvLibrarianBin, binDir)
+				version := "25.1"
+				protocPath := filepath.Join(binDir, "protoc", "v"+version, "bin", stubName)
+				createStubExecutable(t, protocPath)
+				return &config.Protoc{Version: version}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			pc := test.setup(t)
+			if err := runProtoc(t.Context(), pc, "--version"); err != nil {
+				t.Fatalf("runProtoc() error = %v, want nil", err)
+			}
+		})
+	}
+}
+
+func createStubExecutable(t *testing.T, path string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+		t.Fatal(err)
+	}
+	content := "#!/bin/sh\nexit 0\n"
+	if runtime.GOOS == "windows" {
+		content = "@echo off\r\nexit /b 0\r\n"
+	}
+	if err := os.WriteFile(path, []byte(content), 0755); err != nil {
+		t.Fatal(err)
 	}
 }
