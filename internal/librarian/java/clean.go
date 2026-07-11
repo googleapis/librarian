@@ -143,9 +143,9 @@ func cleanPath(targetPath, root string, keepSet map[string]bool, useMarker bool)
 		return err
 	}
 	// Remove empty directories in reverse order (bottom-up).
-	for i := len(dirs) - 1; i >= 0; i-- {
-		d := dirs[i]
-		rel, err := filepath.Rel(root, d)
+	for _, v := range slices.Backward(dirs) {
+		d := v
+		rel, err := filepath.Rel(root, v)
 		if err != nil {
 			return err
 		}

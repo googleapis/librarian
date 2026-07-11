@@ -249,7 +249,7 @@ func TestAdd_VersionsTxt(t *testing.T) {
 				t.Fatal(err)
 			}
 			var gotVersions []string
-			for _, line := range strings.Split(string(content), "\n") {
+			for line := range strings.SplitSeq(string(content), "\n") {
 				line = strings.TrimSpace(line)
 				if line != "" {
 					gotVersions = append(gotVersions, line)
@@ -300,7 +300,7 @@ func TestAdd_ExistingLibrary(t *testing.T) {
 		t.Fatal(err)
 	}
 	var gotVersions []string
-	for _, line := range strings.Split(string(content), "\n") {
+	for line := range strings.SplitSeq(string(content), "\n") {
 		line = strings.TrimSpace(line)
 		if line != "" {
 			gotVersions = append(gotVersions, line)

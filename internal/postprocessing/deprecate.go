@@ -130,8 +130,8 @@ func addJavadocTag(lines [][]byte, indentation []byte, header methodHeader, tagN
 		return slices.Insert(lines, header.firstAnnotationIdx, newJavadoc...)
 	}
 	line := bytes.TrimSpace(lines[header.javadocEndIdx])
-	if bytes.HasPrefix(line, []byte("/**")) {
-		inner := bytes.TrimSpace(bytes.TrimSuffix(bytes.TrimPrefix(line, []byte("/**")), []byte("*/")))
+	if after, ok := bytes.CutPrefix(line, []byte("/**")); ok {
+		inner := bytes.TrimSpace(bytes.TrimSuffix(after, []byte("*/")))
 		newJavadoc := makeNewJavadoc(indentation, tagName, tagMessage, inner)
 		return slices.Replace(lines, header.javadocEndIdx, header.javadocEndIdx+1, newJavadoc...)
 	}
