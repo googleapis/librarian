@@ -14,7 +14,10 @@
 
 package api
 
-import "strings"
+import (
+	"slices"
+	"strings"
+)
 
 // BuildHeuristicVocabulary builds the vocabulary of valid resource tokens
 // based on the last literal before a variable in Get/List methods.
@@ -85,8 +88,8 @@ func BuildHeuristicVocabulary(model *API) map[string]bool {
 			}
 
 			// Iterate backwards.
-			for i := len(tmpl.Segments) - 1; i >= 0; i-- {
-				seg := tmpl.Segments[i]
+			for i, v := range slices.Backward(tmpl.Segments) {
+				seg := v
 				if seg.Variable != nil {
 					if i > 0 && tmpl.Segments[i-1].Literal != "" {
 						token := tmpl.Segments[i-1].Literal

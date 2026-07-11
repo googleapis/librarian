@@ -20,6 +20,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -384,13 +385,7 @@ func makeMessageFields(model *api.API, packageName, messageName string, message 
 		if err != nil {
 			return nil, err
 		}
-		optional := true
-		for _, r := range message.Required {
-			if name == r {
-				optional = false
-				break
-			}
-		}
+		optional := !slices.Contains(message.Required, name)
 		field, err := makeField(model, packageName, messageName, name, optional, schema)
 		if err != nil {
 			return nil, err

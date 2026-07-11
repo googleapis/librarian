@@ -203,7 +203,7 @@ func mergeSwiftDependencies(defaults, lib []config.SwiftDependency) []config.Swi
 func mergeDartDependencies(libDeps, defaultDeps string) string {
 	seen := make(map[string]bool)
 	var deps []string
-	for _, dep := range strings.Split(libDeps, ",") {
+	for dep := range strings.SplitSeq(libDeps, ",") {
 		dep = strings.TrimSpace(dep)
 		if dep == "" {
 			continue
@@ -211,7 +211,7 @@ func mergeDartDependencies(libDeps, defaultDeps string) string {
 		seen[dep] = true
 		deps = append(deps, dep)
 	}
-	for _, dep := range strings.Split(defaultDeps, ",") {
+	for dep := range strings.SplitSeq(defaultDeps, ",") {
 		dep = strings.TrimSpace(dep)
 		if dep == "" || seen[dep] {
 			continue

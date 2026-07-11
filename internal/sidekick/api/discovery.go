@@ -70,7 +70,7 @@ func (d *Discovery) LroServices() map[string]bool {
 // poll the operation. This method returns that subset.
 func (p *Poller) PathParameters() []string {
 	var parameters []string
-	for _, segment := range strings.Split(p.Prefix, "/") {
+	for segment := range strings.SplitSeq(p.Prefix, "/") {
 		if strings.HasPrefix(segment, "{") && strings.HasSuffix(segment, "}") {
 			parameters = append(parameters, segment[1:len(segment)-1])
 		}

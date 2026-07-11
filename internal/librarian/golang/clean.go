@@ -20,6 +20,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -171,10 +172,8 @@ func cleanGeneratedClientFiles(clientPath, libraryDir string, keepSet map[string
 		if keepSet[relPath] {
 			return nil
 		}
-		for _, file := range generatedClientFiles {
-			if d.Name() == file {
-				return os.Remove(path)
-			}
+		if slices.Contains(generatedClientFiles, d.Name()) {
+			return os.Remove(path)
 		}
 		for _, file := range generatedClientFileSuffixes {
 			if strings.HasSuffix(filepath.Base(path), file) {
