@@ -1340,7 +1340,7 @@ func TestRestructureToLibrary(t *testing.T) {
 				includeSamples: tc.includeSamples,
 				apiBase:        "v1",
 			}
-			if err := RestructureToLibrary(params, destDir, nil); err != nil {
+			if err := restructureToLibrary(params, destDir, nil); err != nil {
 				t.Fatal(err)
 			}
 			gotFiles := readDirFiles(t, destDir)
@@ -1351,7 +1351,7 @@ func TestRestructureToLibrary(t *testing.T) {
 	}
 }
 
-// TestRestructureToLibrary_OverwritesExistingFiles verifies that existing files in the destination are overwritten.
+// TestRestructureToLibrary_OverwritesExistingFiles verifies that restructureToLibrary overwrites existing files in the destination.
 func TestRestructureToLibrary_OverwritesExistingFiles(t *testing.T) {
 	t.Parallel()
 	srcDir := t.TempDir()
@@ -1376,7 +1376,7 @@ func TestRestructureToLibrary_OverwritesExistingFiles(t *testing.T) {
 		apiBase:        "v1",
 	}
 	// Pass nil keepSet to expect default overwriting of conflicting files.
-	if err := RestructureToLibrary(params, destDir, nil); err != nil {
+	if err := restructureToLibrary(params, destDir, nil); err != nil {
 		t.Fatal(err)
 	}
 	gotFiles := readDirFiles(t, destDir)
@@ -1408,7 +1408,7 @@ func TestRestructureToLibrary_CommonProtos(t *testing.T) {
 		includeSamples: false,
 		apiBase:        "v1",
 	}
-	if err := RestructureToLibrary(params, destDir, nil); err != nil {
+	if err := restructureToLibrary(params, destDir, nil); err != nil {
 		t.Fatal(err)
 	}
 	gotFiles := readDirFiles(t, destDir)
@@ -1549,7 +1549,7 @@ func readDirFiles(t *testing.T, dir string) map[string]string {
 func TestToKeepSet(t *testing.T) {
 	t.Parallel()
 	input := []string{"foo/", "bar/baz", "qux/", ""}
-	got := ToKeepSet(input)
+	got := toKeepSet(input)
 	want := map[string]bool{
 		"foo":     true,
 		"bar/baz": true,

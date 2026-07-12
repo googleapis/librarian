@@ -100,7 +100,7 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 		}
 		var keepSet map[string]bool
 		if params.library != nil {
-			keepSet = ToKeepSet(params.library.Keep)
+			keepSet = toKeepSet(params.library.Keep)
 		}
 		if err := renderREADME(params, keepSet); err != nil {
 			return fmt.Errorf("failed to render README: %w", err)
@@ -174,9 +174,9 @@ func postProcessAPI(ctx context.Context, params postProcessParams) error {
 	if !owlbotExists {
 		var keepSet map[string]bool
 		if params.library != nil {
-			keepSet = ToKeepSet(params.library.Keep)
+			keepSet = toKeepSet(params.library.Keep)
 		}
-		if err := RestructureToLibrary(params, params.outDir, keepSet); err != nil {
+		if err := restructureToLibrary(params, params.outDir, keepSet); err != nil {
 			return fmt.Errorf("failed to restructure to library root: %w", err)
 		}
 
@@ -614,8 +614,8 @@ func ApplyMoveActionsToLibrary(actions []moveAction, destRoot string, keepSet ma
 	return nil
 }
 
-// ToKeepSet normalizes a list of keep paths into a lookup map.
-func ToKeepSet(keep []string) map[string]bool {
+// toKeepSet normalizes a list of keep paths into a lookup map.
+func toKeepSet(keep []string) map[string]bool {
 	keepSet := make(map[string]bool, len(keep))
 	for _, k := range keep {
 		normalized := strings.TrimSuffix(filepath.ToSlash(k), "/")
@@ -624,9 +624,9 @@ func ToKeepSet(keep []string) map[string]bool {
 	return keepSet
 }
 
-// RestructureToLibrary moves all generated source code to the library root directories.
+// restructureToLibrary moves all generated source code to the library root directories.
 // It also removes conflicting files, and copies public proto files to the library.
-func RestructureToLibrary(params postProcessParams, destRoot string, keepSet map[string]bool) error {
+func restructureToLibrary(params postProcessParams, destRoot string, keepSet map[string]bool) error {
 	tempProtoSrcDir := params.protoDir()
 	isCommonProtos := params.library.Name == commonProtosLibrary
 	if !isCommonProtos {
