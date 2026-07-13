@@ -96,6 +96,9 @@ func TestRunPHPMigration(t *testing.T) {
 					Build:   []string{"composer install"},
 				},
 			},
+			Protoc: &config.Protoc{
+				Version: "31.0",
+			},
 		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
