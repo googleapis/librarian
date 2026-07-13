@@ -25,6 +25,9 @@ const (
 	// LibrarianYAML is the filename for the librarian configuration file.
 	LibrarianYAML = "librarian.yaml"
 
+	// ReleasePleaseManifest is the filename for the release-please manifest file.
+	ReleasePleaseManifest = ".release-please-manifest.json"
+
 	// RemoteUpstream is the default git remote name.
 	RemoteUpstream = "upstream"
 )

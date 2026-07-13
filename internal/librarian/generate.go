@@ -100,6 +100,11 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return err
 	}
 
+	manifest, err := loadReleasePleaseManifest(config.ReleasePleaseManifest)
+	if err != nil {
+		return fmt.Errorf("loading release-please manifest: %w", err)
+	}
+
 	isPreview := isPreviewName(libraryName)
 	baseName := trimPreviewName(libraryName)
 
@@ -116,6 +121,9 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		prepared, err := applyDefaults(cfg.Language, lib, cfg.Default)
 		if err != nil {
 			return err
+		}
+		if v := resolveVersion(prepared, manifest); v != "" {
+			prepared.Version = v
 		}
 		if !all && isPreview {
 			prepared = ResolvePreview(prepared, cfg.Language)
