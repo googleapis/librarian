@@ -443,12 +443,14 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
 
 ## PHPPackage Configuration
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
+| `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 
 ## PythonDefault Configuration
 
