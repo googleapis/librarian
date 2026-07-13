@@ -15,32 +15,90 @@
 package php
 
 import (
-	"path/filepath"
+	"errors"
 	"testing"
+
+	"github.com/google/go-cmp/cmp"
+	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestInstallDir(t *testing.T) {
-	binDir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", binDir)
-	got, err := InstallDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	want := filepath.Join(binDir, "php_tools")
-	if got != want {
-		t.Errorf("InstallDir() = %q, want %q", got, want)
+func TestInstall_Error(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		tools *config.Tools
+	}{
+		{"nil tools", nil},
+		{"empty tools", &config.Tools{}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Install(t.Context(), test.tools); !errors.Is(err, errNoToolsSpecified) {
+				t.Fatalf("Install() error = %v, want %v", err, errNoToolsSpecified)
+			}
+		})
 	}
 }
 
-func TestBinDir(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", dir)
-	got, err := binDir()
-	if err != nil {
-		t.Fatal(err)
+func TestInstallDir(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		env  map[string]string
+		want string
+	}{
+		{
+			name: "LIBRARIAN_BIN set",
+			env:  map[string]string{cache.EnvLibrarianBin: "/custom/install/dir"},
+			want: "/custom/install/dir/php_tools",
+		},
+		{
+			name: "LIBRARIAN_BIN empty",
+			env:  map[string]string{cache.EnvLibrarianCache: "/my/home/cache"},
+			want: "/my/home/cache/bin/php_tools",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			for k, v := range test.env {
+				t.Setenv(k, v)
+			}
+			got, err := InstallDir()
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
-	want := filepath.Join(dir, "php_tools", "bin")
-	if got != want {
-		t.Errorf("binDir() = %q, want %q", got, want)
+}
+
+func TestRepoFromPackageURL(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		packageURL string
+		want       string
+		wantErr    bool
+	}{
+		{
+			name:       "success",
+			packageURL: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
+			want:       "github.com/googleapis/gapic-generator-php",
+			wantErr:    false,
+		},
+		{
+			name:       "invalid URL",
+			packageURL: "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2",
+			want:       "",
+			wantErr:    true,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got, err := repoFromPackageURL(test.packageURL)
+			if (err != nil) != test.wantErr {
+				t.Fatalf("repoFromPackageURL() error = %v, wantErr %v", err, test.wantErr)
+			}
+			if got != test.want {
+				t.Errorf("repoFromPackageURL() = %q, want %q", got, test.want)
+			}
+		})
 	}
 }

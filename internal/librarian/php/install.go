@@ -21,26 +21,115 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/yaml"
 )
 
-const (
-	generatorVersion = "v1.21.2"
-	generatorSHA256  = "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518"
-	toolsDir         = "php_tools"
+const toolsDir = "php_tools"
+
+var (
+	errNoToolsSpecified  = errors.New("no tools.composer field specified in configuration")
+	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for PHP tool installation")
+	errMissingPackageURL = errors.New("has build steps but no package URL")
 )
 
-// Install installs the PHP generator tool dependencies.
+// Install installs PHP tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil {
-		return nil
+	if tools == nil || len(tools.Composer) == 0 {
+		return errNoToolsSpecified
 	}
-	_, err := installGenerator(ctx)
-	return err
+
+	for _, cmd := range []string{"composer", "php"} {
+		if _, err := exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
+		}
+	}
+
+	for _, tool := range tools.Composer {
+		if err := installComposerToolFromSource(ctx, tool); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func installComposerToolFromSource(ctx context.Context, tool *config.ComposerTool) error {
+	if tool.Package == "" {
+		return fmt.Errorf("composer tool %s %w", tool.Name, errMissingPackageURL)
+	}
+	repo, err := repoFromPackageURL(tool.Package)
+	if err != nil {
+		return err
+	}
+	dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+	if err != nil {
+		return fmt.Errorf("fetching %s: %w", tool.Name, err)
+	}
+
+	for _, cmd := range tool.Build {
+		if err := runPHPBuildCmd(ctx, dir, cmd); err != nil {
+			return err
+		}
+	}
+
+	// TODO(https://github.com/googleapis/librarian/issues/6630): Remove this post-processing step
+	// once generate.go is refactored to not rely on wrapper.sh existing globally.
+	if tool.Name == "google/gapic-generator-php" {
+		if err := createLegacyWrapper(dir); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+func createLegacyWrapper(generatorDir string) error {
+	phpPath, err := exec.LookPath("php")
+	if err != nil {
+		return fmt.Errorf("failed to find php: %w", err)
+	}
+	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
+	wrapperContent := fmt.Sprintf(`#!/bin/bash
+exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
+`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
+
+	// Create script atomically
+	f, err := os.OpenFile(wrapperPath, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0755)
+	if err != nil {
+		if errors.Is(err, os.ErrExist) {
+			return nil // Wrapper already exists
+		}
+		return fmt.Errorf("failed to create wrapper script: %w", err)
+	}
+	defer f.Close()
+
+	if _, err := f.Write([]byte(wrapperContent)); err != nil {
+		return fmt.Errorf("failed to write wrapper script: %w", err)
+	}
+	return nil
+}
+
+func runPHPBuildCmd(ctx context.Context, dir string, cmdStr string) error {
+	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
+	cmd.Dir = dir
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
+}
+
+// repoFromPackageURL extracts the repository path (e.g.,
+// "github.com/googleapis/gapic-generator-php") from a GitHub archive URL.
+func repoFromPackageURL(packageURL string) (string, error) {
+	parts := strings.SplitN(packageURL, "/archive/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
+	}
+	return strings.TrimPrefix(parts[0], "https://"), nil
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -56,61 +145,24 @@ func InstallDir() (string, error) {
 	return absDir, nil
 }
 
-// binDir gets the directory where PHP tool executables are stored.
-func binDir() (string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(installDir, "bin"), nil
-}
-
-// installGenerator is a temp function for testing purposes.
-// TODO(https://github.com/googleapis/librarian/issues/6630): remove after install command is ready.
-func installGenerator(ctx context.Context) (string, error) {
-	phpPath, err := exec.LookPath("php")
-	if err != nil {
-		return "", fmt.Errorf("failed to find php: %w", err)
-	}
-
-	generatorDir, err := generatorDir(ctx)
-	if err != nil {
-		return "", err
-	}
-	// Ensure Composer dependencies are installed
-	vendorDir := filepath.Join(generatorDir, "vendor")
-	if _, err := os.Stat(vendorDir); err != nil {
-		if !errors.Is(err, os.ErrNotExist) {
-			return "", err
-		}
-		if _, err := exec.LookPath("composer"); err == nil {
-			if err := command.RunInDir(ctx, generatorDir, "composer", "install"); err != nil {
-				return "", fmt.Errorf("failed to run composer install: %w", err)
-			}
-		} else {
-			composerPhar := filepath.Join(generatorDir, "rules_php_gapic", "resources", "composer.phar")
-			if _, err := os.Stat(composerPhar); err == nil {
-				if err := command.RunInDir(ctx, generatorDir, phpPath, composerPhar, "install"); err != nil {
-					return "", fmt.Errorf("failed to run composer.phar install: %w", err)
-				}
-			} else {
-				return "", fmt.Errorf("neither system composer nor composer.phar was found")
-			}
-		}
-	}
-	// Write wrapper script
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
-	wrapperContent := fmt.Sprintf(`#!/bin/bash
-exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir "$GOOGLEAPIS_DIR" "$@"
-`, phpPath, filepath.Join(generatorDir, "src/Main.php"))
-
-	if err := os.WriteFile(wrapperPath, []byte(wrapperContent), 0755); err != nil {
-		return "", fmt.Errorf("failed to write wrapper script: %w", err)
-	}
-
-	return generatorDir, nil
-}
-
+// generatorDir dynamically locates the gapic-generator-php directory from librarian.yaml.
+// TODO(https://github.com/googleapis/librarian/issues/6630): remove after generate.go is refactored.
 func generatorDir(ctx context.Context) (string, error) {
-	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
+	if err != nil {
+		return "", err
+	}
+	if cfg.Tools == nil {
+		return "", errors.New("no tools specified")
+	}
+	for _, tool := range cfg.Tools.Composer {
+		if tool.Name == "google/gapic-generator-php" {
+			repo, err := repoFromPackageURL(tool.Package)
+			if err != nil {
+				return "", err
+			}
+			return fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+		}
+	}
+	return "", errors.New("google/gapic-generator-php not found in composer tools")
 }
