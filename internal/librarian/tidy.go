@@ -232,6 +232,7 @@ func isToolsEmpty(tools *config.Tools) bool {
 		len(tools.Maven) == 0 &&
 		len(tools.Pip) == 0 &&
 		len(tools.PNPM) == 0 &&
+		len(tools.Gem) == 0 &&
 		tools.Protoc == nil
 }
 

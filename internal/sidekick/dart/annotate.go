@@ -567,8 +567,8 @@ func calculateImports(imports map[string]bool, curPkgName string, curMainFileNam
 			dartImports = append(dartImports, formatImport(imp))
 			continue
 		} else if scheme == "package" {
-			if strings.HasPrefix(body, curPkgName+"/") {
-				pathAndAlias := strings.TrimPrefix(body, curPkgName+"/")
+			if after, ok := strings.CutPrefix(body, curPkgName+"/"); ok {
+				pathAndAlias := after
 
 				pathOnly := strings.Split(pathAndAlias, " ")[0]
 				if pathOnly == curMainFileName {

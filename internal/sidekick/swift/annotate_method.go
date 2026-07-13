@@ -33,6 +33,7 @@ type methodAnnotations struct {
 	QueryParams    []*api.Field
 	Pagination     *paginationAnnotations
 	LRO            *lroAnnotations
+	DiscoveryLRO   *discoveryLroAnnotations
 	ReturnType     string
 }
 
@@ -44,6 +45,21 @@ type lroAnnotations struct {
 	ReturnType      string
 	MetadataType    string
 	ResponseIsEmpty bool
+}
+
+// discoveryLroAnnotations defines the annotations for a discovery-based LRO.
+type discoveryLroAnnotations struct {
+	// The return type for the LRO.
+	//
+	// This is always the operation type (e.g.
+	// `.google.cloud.compute.v1.Operation`) converted to the corresponding
+	// Swift type (e.g. `GoogleCloudComputeV1.Operation`)
+	ReturnType string
+
+	// The names of the path parameters.
+	//
+	// The LRO body must initialize these parameters.
+	PollingPathParameters []string
 }
 
 // pathVariable describes a variable used to build a request URL path.
@@ -158,6 +174,16 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 			ResponseIsEmpty: responseIsEmpty,
 		}
 	}
+
+	var discoveryLRO *discoveryLroAnnotations
+	if method.DiscoveryLro != nil {
+		discoveryLRO = &discoveryLroAnnotations{
+			ReturnType: returnType,
+		}
+		for _, p := range method.DiscoveryLro.PollingPathParameters {
+			discoveryLRO.PollingPathParameters = append(discoveryLRO.PollingPathParameters, camelCase(p))
+		}
+	}
 	method.Codec = &methodAnnotations{
 		Name:           camelCase(method.Name),
 		DocLines:       docLines,
@@ -171,6 +197,7 @@ func (c *codec) annotateMethod(method *api.Method, modelAnn *modelAnnotations) e
 		Pagination:     pagination,
 		LRO:            lro,
 		ReturnType:     returnType,
+		DiscoveryLRO:   discoveryLRO,
 	}
 	if method.SampleInfo != nil {
 		c.annotateSampleInfo(method)

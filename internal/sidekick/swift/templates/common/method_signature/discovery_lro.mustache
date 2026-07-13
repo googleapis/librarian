@@ -13,22 +13,6 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 }}
-{{#Codec.DocLines}}
-/// {{{.}}}
-{{/Codec.DocLines}}
-public enum {{Codec.Name}}: Codable, Equatable, Sendable {
-  {{#Fields}}
-  {{#Codec.DocLines}}
-  /// {{{.}}}
-  {{/Codec.DocLines}}
-  {{#Deprecated}}
-  @available(*, deprecated)
-  {{/Deprecated}}
-  {{^IsObject}}
-  case {{Codec.Name}}({{Codec.FieldType}})
-  {{/IsObject}}
-  {{#IsObject}}
-  indirect case {{Codec.Name}}({{Codec.FieldType}})
-  {{/IsObject}}
-  {{/Fields}}
-}
+{{Codec.Name}}(
+  withPolling: {{InputType.Codec.ParameterTypeName}}
+) async throws -> any GoogleCloudGax.PollableOperation<{{Codec.DiscoveryLRO.ReturnType}}>

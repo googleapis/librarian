@@ -205,11 +205,11 @@ func annotateModel(model *api.API, codec *codec) (*modelAnnotations, error) {
 		return ""
 	}()
 	defaultHostShort := func() string {
-		idx := strings.Index(defaultHost, ".")
-		if idx == -1 {
+		before, _, ok := strings.Cut(defaultHost, ".")
+		if !ok {
 			return defaultHost
 		}
-		return defaultHost[:idx]
+		return before
 	}()
 
 	var quickstartService *api.Service

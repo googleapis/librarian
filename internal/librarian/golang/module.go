@@ -146,11 +146,11 @@ func DefaultLibraryName(api string) string {
 	api = strings.TrimPrefix(api, apiPrefix)
 	api = strings.TrimPrefix(api, devtoolsAPIPrefix)
 	api = strings.TrimPrefix(api, "google/")
-	idx := strings.Index(api, "/")
-	if idx == -1 {
+	before, _, ok := strings.Cut(api, "/")
+	if !ok {
 		return api
 	}
-	return api[:idx]
+	return before
 }
 
 // DefaultOutput returns the default output directory for a Go library.

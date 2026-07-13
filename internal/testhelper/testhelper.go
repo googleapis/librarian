@@ -125,7 +125,7 @@ func addGeneratedCrate(t *testing.T, location, name string) {
 func AddCrate(t *testing.T, location, name string) {
 	t.Helper()
 	_ = os.MkdirAll(path.Join(location, "src"), 0755)
-	contents := []byte(fmt.Sprintf(InitialCargoContents, name))
+	contents := fmt.Appendf(nil, InitialCargoContents, name)
 	if err := os.WriteFile(path.Join(location, "Cargo.toml"), contents, 0644); err != nil {
 		t.Fatal(err)
 	}

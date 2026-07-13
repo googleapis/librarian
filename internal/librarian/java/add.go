@@ -197,8 +197,8 @@ func readExistingModules(path string) (map[string]bool, error) {
 		return nil, err
 	}
 	modules := make(map[string]bool)
-	lines := bytes.Split(content, []byte("\n"))
-	for _, line := range lines {
+	lines := bytes.SplitSeq(content, []byte("\n"))
+	for line := range lines {
 		line = bytes.TrimSpace(line)
 		if len(line) == 0 || bytes.HasPrefix(line, []byte("#")) {
 			continue

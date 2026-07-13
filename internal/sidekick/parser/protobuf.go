@@ -129,7 +129,7 @@ func loadDescriptorSet(descriptorFiles string) ([]*descriptorpb.FileDescriptorPr
 
 func parseCommaSeparatedList(s string) []string {
 	var list []string
-	for _, f := range strings.Split(s, ",") {
+	for f := range strings.SplitSeq(s, ",") {
 		if f = strings.TrimSpace(f); f != "" {
 			list = append(list, f)
 		}
