@@ -103,6 +103,7 @@ func TestResolveVersion(t *testing.T) {
 		"google-cloud-redis-cluster":        "0.12.0",
 		"accessapproval":                    "1.13.0",
 		"agentplatform":                     "0.21.0",
+		"pubsub/v2":                         "2.6.0",
 		".":                                 "1.0.0",
 	}
 
@@ -150,6 +151,18 @@ func TestResolveVersion(t *testing.T) {
 			},
 			manifest: manifest,
 			want:     "0.21.0",
+		},
+		{
+			name: "matches Go major version module subpath",
+			lib: &config.Library{
+				Name: "pubsub",
+				Go: &config.GoModule{
+					ModulePathVersion: "v2",
+				},
+				Version: "2.5.0",
+			},
+			manifest: manifest,
+			want:     "2.6.0",
 		},
 		{
 			name: "matches single component root dot",

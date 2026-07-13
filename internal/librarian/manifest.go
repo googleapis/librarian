@@ -69,10 +69,11 @@ func loadReleasePleaseManifest(pattern string) (map[string]string, error) {
 
 // resolveVersion resolves the version for lib using the provided release-please manifest map.
 // Resolution order:
-// 1. Manifest key matching lib.Output (e.g., "packages/google-cloud-memorystore").
-// 2. Manifest key matching lib.Name (e.g., "google-cloud-memorystore" or "accessapproval").
-// 3. Manifest key matching "." (for single-component repos).
-// 4. Existing lib.Version set in librarian.yaml.
+// 1. Exact match by derived output directory (e.g., Node.js/Python "packages/google-cloud-memorystore").
+// 2. Exact match by library name (e.g., Go standard packages "accessapproval").
+// 3. Match Go major version module subpaths (e.g., "pubsub/v2").
+// 4. Fallback to root "." for single-component repos.
+// 5. Existing lib.Version set in librarian.yaml.
 func resolveVersion(lib *config.Library, manifest map[string]string) string {
 	if len(manifest) > 0 {
 		if v, ok := manifest[lib.Output]; ok && v != "" {
@@ -80,6 +81,11 @@ func resolveVersion(lib *config.Library, manifest map[string]string) string {
 		}
 		if v, ok := manifest[lib.Name]; ok && v != "" {
 			return v
+		}
+		if lib.Go != nil && lib.Go.ModulePathVersion != "" {
+			if v, ok := manifest[lib.Name+"/"+lib.Go.ModulePathVersion]; ok && v != "" {
+				return v
+			}
 		}
 		if v, ok := manifest["."]; ok && v != "" {
 			return v
