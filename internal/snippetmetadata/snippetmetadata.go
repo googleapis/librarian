@@ -58,6 +58,7 @@ func writeMetadata(path string, metadata map[string]any) error {
 		return fmt.Errorf("error encoding snippet metadata file %s: %w", path, err)
 	}
 	content := buf.Bytes()
+	// Trim the trailing newline added by Encode to match the generator's format.
 	if len(content) > 0 && content[len(content)-1] == '\n' {
 		content = content[:len(content)-1]
 	}

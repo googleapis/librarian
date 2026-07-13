@@ -450,6 +450,7 @@ func TestHTMLCharsNoEscape(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
 			dir := t.TempDir()
 			path := filepath.Join(dir, "snippet_metadata.json")
 			if err := os.WriteFile(path, []byte(tc.input), 0644); err != nil {
