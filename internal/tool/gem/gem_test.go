@@ -41,8 +41,8 @@ echo "gem $@" >> %q
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
-	binDir := "/tmp/bin"
-	libDir := "/tmp/lib"
+	binDir := "/tmp/ruby_tools/bin"
+	installDir := "/tmp/ruby_tools"
 	for _, test := range []struct {
 		name    string
 		tools   []*config.GemTool
@@ -53,7 +53,7 @@ echo "gem $@" >> %q
 			tools: []*config.GemTool{
 				{Name: "rubocop", Version: "1.50.0"},
 			},
-			wantLog: "gem install rubocop -v 1.50.0 --bindir /tmp/bin --install-dir /tmp/lib --no-document",
+			wantLog: "gem install rubocop -v 1.50.0 --bindir /tmp/ruby_tools/bin --install-dir /tmp/ruby_tools --no-document",
 		},
 		{
 			name: "install multiple gems",
@@ -61,8 +61,8 @@ echo "gem $@" >> %q
 				{Name: "rubocop", Version: "1.50.0"},
 				{Name: "rake", Version: "13.0.6"},
 			},
-			wantLog: `gem install rubocop -v 1.50.0 --bindir /tmp/bin --install-dir /tmp/lib --no-document
-gem install rake -v 13.0.6 --bindir /tmp/bin --install-dir /tmp/lib --no-document`,
+			wantLog: `gem install rubocop -v 1.50.0 --bindir /tmp/ruby_tools/bin --install-dir /tmp/ruby_tools --no-document
+gem install rake -v 13.0.6 --bindir /tmp/ruby_tools/bin --install-dir /tmp/ruby_tools --no-document`,
 		},
 		{
 			name:    "empty or nil tools",
@@ -72,7 +72,7 @@ gem install rake -v 13.0.6 --bindir /tmp/bin --install-dir /tmp/lib --no-documen
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_ = os.Remove(stubLogPath)
-			if err := Install(t.Context(), test.tools, binDir, libDir); err != nil {
+			if err := Install(t.Context(), test.tools, binDir, installDir); err != nil {
 				t.Fatal(err)
 			}
 			data, _ := os.ReadFile(stubLogPath)
@@ -130,9 +130,72 @@ func TestInstall_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t)
 			}
-			err := Install(t.Context(), test.tools, "", "")
+			err := Install(t.Context(), test.tools, "/tmp/tools/bin", "/tmp/tools")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Install() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestVerify(t *testing.T) {
+	tools := []*config.GemTool{
+		{Name: "rubocop", Version: "1.50.0"},
+	}
+	if err := verify(tools, "/tmp/ruby_tools/bin", "/tmp/ruby_tools"); err != nil {
+		t.Errorf("verify() error = %v, want nil", err)
+	}
+}
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		tools      []*config.GemTool
+		binDir     string
+		installDir string
+		wantErr    error
+	}{
+		{
+			name: "relative binDir",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: "1.50.0"},
+			},
+			binDir:     "relative/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidBinDir,
+		},
+		{
+			name: "relative installDir",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: "1.50.0"},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "relative/install",
+			wantErr:    errInvalidInstallDir,
+		},
+		{
+			name: "missing name",
+			tools: []*config.GemTool{
+				{Name: "", Version: "1.50.0"},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidGem,
+		},
+		{
+			name: "missing version",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: ""},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidGem,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := verify(test.tools, test.binDir, test.installDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

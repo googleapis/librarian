@@ -19,6 +19,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -29,22 +30,24 @@ var (
 	errInstall = errors.New("failed to install ruby gems")
 	// errInvalidGem indicates an invalid gem tool.
 	errInvalidGem = errors.New("invalid gem tool")
+	// errInvalidBinDir indicates an invalid bin directory.
+	errInvalidBinDir = errors.New("bin dir is not an absolute path")
+	// errInvalidInstallDir indicates an invalid install directory.
+	errInvalidInstallDir = errors.New("install dir is not an absolute path")
 )
 
 // Install installs a list of gem tools into the environment.
-// TODO(https://github.com/googleapis/librarian/issues/6762): Verify gem, bin, and lib
-// are valid before installation.
-func Install(ctx context.Context, tools []*config.GemTool, binDir, libDir string) error {
+func Install(ctx context.Context, tools []*config.GemTool, binDir, installDir string) error {
+	if err := verify(tools, binDir, installDir); err != nil {
+		return err
+	}
 	for _, tool := range tools {
-		if tool.Name == "" || tool.Version == "" {
-			return fmt.Errorf("%w: name and version must be specified: %+v", errInvalidGem, tool)
-		}
 		args := []string{
 			"install",
 			tool.Name,
 			"-v", tool.Version,
 			"--bindir", binDir,
-			"--install-dir", libDir,
+			"--install-dir", installDir,
 			// Skip the generation of the local documentation to make installation faster
 			// and use less disk space.
 			"--no-document",
@@ -52,6 +55,22 @@ func Install(ctx context.Context, tools []*config.GemTool, binDir, libDir string
 		if err := command.RunStreaming(ctx, "gem", args...); err != nil {
 			return fmt.Errorf("%w: %w", errInstall, err)
 		}
+	}
+	return nil
+}
+
+func verify(tools []*config.GemTool, binDir, installDir string) error {
+	if !filepath.IsAbs(binDir) {
+		return fmt.Errorf("%w: Ruby bin directory %q is not an absolute path", errInvalidBinDir, binDir)
+	}
+	if !filepath.IsAbs(installDir) {
+		return fmt.Errorf("%w: Ruby install directory %q is not an absolute path", errInvalidInstallDir, installDir)
+	}
+	for _, tool := range tools {
+		if tool.Name == "" || tool.Version == "" {
+			return fmt.Errorf("%w: name and version must be specified: %+v", errInvalidGem, tool)
+		}
+
 	}
 	return nil
 }
