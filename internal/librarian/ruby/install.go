@@ -39,10 +39,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := verify(tools); err != nil {
 		return err
 	}
-	if err := gem.Install(ctx, tools.Gem); err != nil {
+	installDir, err := InstallDir()
+	if err != nil {
 		return err
 	}
-	return nil
+	binDir := filepath.Join(installDir, "bin")
+	return gem.Install(ctx, tools.Gem, binDir, installDir)
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -56,15 +58,6 @@ func InstallDir() (string, error) {
 		return "", fmt.Errorf("failed to get install directory: %w", err)
 	}
 	return absDir, nil
-}
-
-// binDir returns the directory where Ruby tool executables are stored.
-func binDir() (string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(installDir, "bin"), nil
 }
 
 func verify(tools *config.Tools) error {

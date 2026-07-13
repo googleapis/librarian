@@ -60,6 +60,22 @@ func TestRunRubyMigration(t *testing.T) {
 				SHA256: "sha123",
 			},
 		},
+		Tools: &config.Tools{
+			Gem: []*config.GemTool{
+				{
+					Name:    "gapic-generator",
+					Version: "0.49.0",
+				},
+				{
+					Name:    "grpc",
+					Version: "1.78.1",
+				},
+			},
+			Protoc: &config.Protoc{
+				Version: "33.2",
+				SHA256:  "b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf",
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)

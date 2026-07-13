@@ -17,6 +17,7 @@
 package snippetmetadata
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -49,9 +50,17 @@ func readMetadata(path string) (map[string]any, error) {
 // writeMetadata formats and writes the given metadata as a JSON file at the
 // given path.
 func writeMetadata(path string, metadata map[string]any) error {
-	content, err := json.MarshalIndent(metadata, "", "  ")
-	if err != nil {
+	var buf bytes.Buffer
+	enc := json.NewEncoder(&buf)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("", "  ")
+	if err := enc.Encode(metadata); err != nil {
 		return fmt.Errorf("error encoding snippet metadata file %s: %w", path, err)
+	}
+	content := buf.Bytes()
+	// Trim the trailing newline added by Encode to match the generator's format.
+	if len(content) > 0 && content[len(content)-1] == '\n' {
+		content = content[:len(content)-1]
 	}
 	if err := os.WriteFile(path, content, 0644); err != nil {
 		return fmt.Errorf("error writing snippet metadata file %s: %w", path, err)

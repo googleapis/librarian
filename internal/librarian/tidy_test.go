@@ -780,6 +780,41 @@ func TestTidy_UnusedSections(t *testing.T) {
 			wantTools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
 			wantDefault: nil,
 		},
+		{
+			name: "gems preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools: &config.Tools{
+					Gem: []*config.GemTool{
+						{
+							Name:    "gapic-generator",
+							Version: "0.49.0",
+						},
+						{
+							Name:    "grpc",
+							Version: "1.78.1",
+						},
+					},
+				},
+				Default: &config.Default{},
+			},
+			wantTools: &config.Tools{
+				Gem: []*config.GemTool{
+					{
+						Name:    "gapic-generator",
+						Version: "0.49.0",
+					},
+					{
+						Name:    "grpc",
+						Version: "1.78.1",
+					},
+				},
+			},
+			wantDefault: nil,
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()

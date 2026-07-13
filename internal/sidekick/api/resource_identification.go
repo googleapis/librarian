@@ -83,8 +83,7 @@ func identifyHeuristicTarget(method *Method, binding *PathBinding, vocabulary ma
 	}
 
 	// Iterate backwards over segments
-	for i := len(tmpl.Segments) - 1; i >= 0; i-- {
-		seg := tmpl.Segments[i]
+	for i, seg := range slices.Backward(tmpl.Segments) {
 		if seg.Variable == nil || i == 0 || tmpl.Segments[i-1].Literal == "" {
 			continue
 		}

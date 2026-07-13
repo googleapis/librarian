@@ -593,7 +593,7 @@ func TestLoadReadmePartials(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		setupFiles func(t *testing.T, dir string)
-		want       map[string]interface{}
+		want       map[string]any
 	}{
 		{
 			name: "loads yaml partials with camel case conversion",
@@ -604,7 +604,7 @@ func TestLoadReadmePartials(t *testing.T) {
 					t.Fatal(err)
 				}
 			},
-			want: map[string]interface{}{"AboutText": "Custom about"},
+			want: map[string]any{"AboutText": "Custom about"},
 		},
 		{
 			name: "missing partials file returns nil",

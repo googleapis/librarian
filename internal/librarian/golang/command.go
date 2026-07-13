@@ -21,9 +21,21 @@ import (
 	"os"
 
 	"github.com/googleapis/librarian/internal/command"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
 const envPath = "PATH"
+
+// runProtoc runs the protoc command with the given environment variable and arguments.
+func runProtoc(ctx context.Context, pc *config.Protoc, env map[string]string, args ...string) error {
+	// Ensure that the toolchain environment variables are set before calling protoc.
+	env, err := mergeEnv(env)
+	if err != nil {
+		return err
+	}
+	return protoc.RunOrSystem(ctx, env, pc, args...)
+}
 
 // runWithEnv runs a command with the given environment.
 func runWithEnv(ctx context.Context, env map[string]string, cmd string, args ...string) error {
