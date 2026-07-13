@@ -7,7 +7,9 @@ This directory contains the PHP generator implementation for Librarian. This gui
 Before starting, ensure you have the following installed and available on your system `PATH`:
 * **Go** (to build the Librarian CLI)
 * **PHP** and **Composer** (required to install and run the PHP generator plugin)
-* **protoc** (Protocol Buffers compiler, version 3+). If `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian falls back to using the system-installed `protoc`.
+  * On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli composer`
+* **protoc** (Protocol Buffers compiler, version 33.2 is recommended). If `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian falls back to using the system-installed `protoc`.
+  * See the [GitHub Actions install-protoc setup](../../../.github/actions/install-protoc/action.yaml) for installation details.
 
 ## Local Workspace Layout
 
@@ -15,7 +17,6 @@ To test changes locally, you should set up a workspace containing the following 
 
 * `librarian/`: This repository.
 * `google-cloud-php/`: The target PHP monorepo where generated client libraries reside.
-* `googleapis/`: The proto sources repository.
 
 ## Local Development Workflow
 
