@@ -1,5 +1,55 @@
 # Changelog
 
+## [0.26.0](https://github.com/googleapis/librarian/compare/v0.25.0...v0.26.0) (2026-07-13)
+
+
+### Features
+
+* **internal/gem:** add gem package to install Ruby gem tools ([#6724](https://github.com/googleapis/librarian/issues/6724)) ([40ba6df](https://github.com/googleapis/librarian/commit/40ba6dffd7c0d48792d7c1fdaac4fd7646881103))
+* **internal/librarian/java:** add ApplyMoveActionsToLibrary helper and unit tests ([#6731](https://github.com/googleapis/librarian/issues/6731)) ([f25bd33](https://github.com/googleapis/librarian/commit/f25bd339cee587043ec4f7ef54478eadc7c5d9a9))
+* **internal/librarian/java:** add RestructureToLibrary helper and unit tests ([#6757](https://github.com/googleapis/librarian/issues/6757)) ([b2ff68c](https://github.com/googleapis/librarian/commit/b2ff68c80cd763ae4eebd56fda0c8b40ca1200cc)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/librarian/java:** add ToKeepSet helper and unit tests ([#6730](https://github.com/googleapis/librarian/issues/6730)) ([df99304](https://github.com/googleapis/librarian/commit/df99304a051796b6808f3ed3c1d93be3d2644eed)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/librarian/java:** integrate native Go postprocessor into Java generator ([#6768](https://github.com/googleapis/librarian/issues/6768)) ([074059d](https://github.com/googleapis/librarian/commit/074059de0c7d06b417d42cf8ef975c19eac23f5b)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/librarian/java:** mark legacy postprocessing for deprecation ([#6716](https://github.com/googleapis/librarian/issues/6716)) ([78a4ab6](https://github.com/googleapis/librarian/commit/78a4ab65d9fff5b7e31f5069e0ee24c005921de7)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/librarian/nodejs:** use cache and bin directories for nodejs install ([#6680](https://github.com/googleapis/librarian/issues/6680)) ([7f88869](https://github.com/googleapis/librarian/commit/7f8886914595192f0c75eeeffd1d319faa2ed780))
+* **internal/librarian/php:** add inital PHP client library generator ([#6703](https://github.com/googleapis/librarian/issues/6703)) ([9a45ab1](https://github.com/googleapis/librarian/commit/9a45ab13b3f65d5f655e4f1a531cd7906a1b10f1))
+* **internal/librarian/php:** add tool installation directory helpers ([#6717](https://github.com/googleapis/librarian/issues/6717)) ([9cdf0b5](https://github.com/googleapis/librarian/commit/9cdf0b5aa31e1dadfb89481bc1ca8b440f2d6855)), closes [#6630](https://github.com/googleapis/librarian/issues/6630)
+* **internal/librarian/ruby:** support installing Ruby gem dependencies ([#6751](https://github.com/googleapis/librarian/issues/6751)) ([bbce2c4](https://github.com/googleapis/librarian/commit/bbce2c444450041618c560d677cedb814b0ad517)), closes [#6634](https://github.com/googleapis/librarian/issues/6634)
+* **internal/librarian:** add ruby tools directory to env output ([#6781](https://github.com/googleapis/librarian/issues/6781)) ([c220d71](https://github.com/googleapis/librarian/commit/c220d71060fb25e8fcb03f95046c19089ce8c39d))
+* **internal/postprocessing:** add Apply pipeline runner and tests ([#6714](https://github.com/googleapis/librarian/issues/6714)) ([5cb8f66](https://github.com/googleapis/librarian/commit/5cb8f66b3fcc7d4e44e4f8e6a516e4eb29be3448)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/postprocessing:** add ApplyMethodOperations batch runner and tests ([#6698](https://github.com/googleapis/librarian/issues/6698)) ([8377d53](https://github.com/googleapis/librarian/commit/8377d530f1a2da8f36347fb2b1155220aa0f7c4d)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/postprocessing:** add applyToFiles and RemoveFiles ([#6673](https://github.com/googleapis/librarian/issues/6673)) ([2f4b437](https://github.com/googleapis/librarian/commit/2f4b43763d21de94bcd3c6601f7fe2ac10a76f7a)), closes [#6516](https://github.com/googleapis/librarian/issues/6516)
+* **internal/postprocessing:** add CopyFiles batch runner and tests ([#6686](https://github.com/googleapis/librarian/issues/6686)) ([20c3a1a](https://github.com/googleapis/librarian/commit/20c3a1a51727c8219335b83358544981f5da57f3))
+* **internal/postprocessing:** add ReplaceAll and ReplaceRegexAll batch runners and tests ([#6688](https://github.com/googleapis/librarian/issues/6688)) ([bb18f06](https://github.com/googleapis/librarian/commit/bb18f06485b1b1f791f1a3a136e57e998e4185c5))
+* **internal/protoc:** add protoc installation and use installed `protoc` in Java generation ([#6622](https://github.com/googleapis/librarian/issues/6622)) ([00ee24d](https://github.com/googleapis/librarian/commit/00ee24d1705d19b32fc49dc14df9d59c601c1ba6))
+* **internal/protoc:** add Run function ([#6699](https://github.com/googleapis/librarian/issues/6699)) ([cd8a1d4](https://github.com/googleapis/librarian/commit/cd8a1d4bd53b8d5185e21c2a28f6897e755f28ac)), closes [#6558](https://github.com/googleapis/librarian/issues/6558)
+* **internal/serviceconfig:** allowlist API paths for php ([#6789](https://github.com/googleapis/librarian/issues/6789)) ([7907686](https://github.com/googleapis/librarian/commit/790768673d7f7cfafbe53e19ab759810d6ef6dff)), closes [#6629](https://github.com/googleapis/librarian/issues/6629)
+* **internal/tool/gem:** verify input directories and tools before installation ([#6778](https://github.com/googleapis/librarian/issues/6778)) ([3086d63](https://github.com/googleapis/librarian/commit/3086d632d01845d9e16f4701300d738406590a40))
+* **java:** append versions.txt on add ([#6653](https://github.com/googleapis/librarian/issues/6653)) ([9e9e645](https://github.com/googleapis/librarian/commit/9e9e645c66706119ac7f89dacc7dc62a5ef9de92))
+* **librarian/internal/config:** add php config ([#6701](https://github.com/googleapis/librarian/issues/6701)) ([939ae6f](https://github.com/googleapis/librarian/commit/939ae6f16e82cadcdd09aa111d7f71a0e81062da))
+* **migrate:** discover and list PHP libraries during migration ([#6728](https://github.com/googleapis/librarian/issues/6728)) ([e552b89](https://github.com/googleapis/librarian/commit/e552b8998ead1cc36413abd660d4f4510c1b4ae7))
+* **sidekick/parser:** correct LRO poller service ([#6704](https://github.com/googleapis/librarian/issues/6704)) ([1d4b2d1](https://github.com/googleapis/librarian/commit/1d4b2d14fedeeccfa3dd0f310c63cc249d5c1d7c))
+* **sidekick/rust:** remove unstable gate for LRO tracing ([#6459](https://github.com/googleapis/librarian/issues/6459)) ([8266ce3](https://github.com/googleapis/librarian/commit/8266ce39cdfc9505a161b75110a6dd086d3739cb))
+* **sidekick/swift:** discovery LROs ([#6738](https://github.com/googleapis/librarian/issues/6738)) ([c294d15](https://github.com/googleapis/librarian/commit/c294d15ed1d188375857f901c5f5d1dafdc6caea))
+* **sidekick/swift:** generate deprecation attributes ([#6750](https://github.com/googleapis/librarian/issues/6750)) ([145e8ae](https://github.com/googleapis/librarian/commit/145e8aec839d6e728a50e1eb1b9c0b152f9ba138))
+* **sidekick/swift:** traits with dependencies ([#6709](https://github.com/googleapis/librarian/issues/6709)) ([e8389f2](https://github.com/googleapis/librarian/commit/e8389f2a0461940be716856b720c215e9693c566))
+* **swift:** add protobuf generation support ([#6697](https://github.com/googleapis/librarian/issues/6697)) ([3bebf26](https://github.com/googleapis/librarian/commit/3bebf26b420aa0b565d48164c24270b3b6d684d6))
+* **tool/cmd/migrate/php:** scaffold composer tools for php ([#6736](https://github.com/googleapis/librarian/issues/6736)) ([f23b451](https://github.com/googleapis/librarian/commit/f23b451f39f022b3a8322d1577a0b04a289295ec))
+* **tool/cmd/migrate:** add support to php ([#6726](https://github.com/googleapis/librarian/issues/6726)) ([586bac0](https://github.com/googleapis/librarian/commit/586bac0d5e5b4d7205e391ee4fbf9681144ac100)), closes [#6723](https://github.com/googleapis/librarian/issues/6723)
+* **tool/cmd/migrate:** support union versions in PHP OwlBot configs ([#6782](https://github.com/googleapis/librarian/issues/6782)) ([7690206](https://github.com/googleapis/librarian/commit/76902068190a4e0566142b1e6fb03a35457aeae0)), closes [#6779](https://github.com/googleapis/librarian/issues/6779)
+
+
+### Bug Fixes
+
+* **internal/librarian/java:** remove excluded_poms from repometadata ([#6676](https://github.com/googleapis/librarian/issues/6676)) ([5e0f7f2](https://github.com/googleapis/librarian/commit/5e0f7f2e441ad1f913ffe037aad12ea0fa5e48a9))
+* **internal/librarian/php:** enforce explicit API paths and add default output path ([#6740](https://github.com/googleapis/librarian/issues/6740)) ([347bbd6](https://github.com/googleapis/librarian/commit/347bbd6ba352ad4a29d75d591e2f26d060e88dcc))
+* **internal/librarian:** preserve gem tools during tidy ([#6783](https://github.com/googleapis/librarian/issues/6783)) ([0150007](https://github.com/googleapis/librarian/commit/015000745c768d86290c04994d08416efc0521d1))
+* **internal/librarian:** preserve maven and protoc configuration during tidy ([#6702](https://github.com/googleapis/librarian/issues/6702)) ([b439528](https://github.com/googleapis/librarian/commit/b4395280963cbd381125a8843cc94b75ed437e48)), closes [#6558](https://github.com/googleapis/librarian/issues/6558)
+* **internal/snippetmetadata:** disable HTML escaping in JSON output ([#6777](https://github.com/googleapis/librarian/issues/6777)) ([4da5e28](https://github.com/googleapis/librarian/commit/4da5e283a04a91f64b993a65d0fb0155a063752a)), closes [#6776](https://github.com/googleapis/librarian/issues/6776)
+* **librarian/rust:** detect inconsistent repos ([#6766](https://github.com/googleapis/librarian/issues/6766)) ([82ce5a9](https://github.com/googleapis/librarian/commit/82ce5a93457f1b47d8725f824e0af71d38dcd908))
+* **sidekick/swift:** missing enum value docs ([#6727](https://github.com/googleapis/librarian/issues/6727)) ([e9020d2](https://github.com/googleapis/librarian/commit/e9020d2bf19886493aa74fa3618699072a1eaeb4))
+* **tool/cmd/migrate:** populate API paths from .OwlBot.yaml during migrate for php ([#6739](https://github.com/googleapis/librarian/issues/6739)) ([6a15260](https://github.com/googleapis/librarian/commit/6a1526065a6739d6417bf97d429e9038d7c77757))
+
 ## [0.25.0](https://github.com/googleapis/librarian/compare/v0.24.0...v0.25.0) (2026-07-07)
 
 
