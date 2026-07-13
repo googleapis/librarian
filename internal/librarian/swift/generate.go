@@ -90,6 +90,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
+	releaseLevel := svcConfig.ReleaseLevel(config.LanguageRust, library.Version)
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
@@ -99,6 +100,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		Codec: map[string]string{
 			"copyright-year": library.CopyrightYear,
 			"version":        library.Version,
+			"release-level":  releaseLevel,
 		},
 	}
 	if library.Swift != nil && library.Swift.Discovery != nil {

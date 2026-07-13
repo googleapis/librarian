@@ -43,6 +43,8 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				PackageName:        "GoogleCloudBigtable",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
 				RootName:           "test-root",
 				Model:              model,
@@ -63,6 +65,8 @@ func TestParseOptions(t *testing.T) {
 			want: &codec{
 				GenerationYear:     "2038",
 				PackageName:        "GoogleCloudComputeV1",
+				PackageVersion:     "0.0.0",
+				ReleaseLevel:       "preview",
 				MonorepoRoot:       ".",
 				RootName:           "test-root",
 				Model:              model,
