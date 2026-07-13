@@ -167,6 +167,8 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *c
 		return err
 	}
 	args = append(args, protoFiles...)
+	// We don't have other environment variables to set here; the toolchain is set
+	// in the call to runProtoc.
 	return runProtoc(ctx, pc, nil, args...)
 }
 
