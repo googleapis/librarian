@@ -107,6 +107,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
 | `sha256` | string | Is the SHA256 checksum of the package. |
+| `checksum` | string | Is a deprecated alias for SHA256. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## Protoc Configuration
