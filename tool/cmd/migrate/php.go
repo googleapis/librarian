@@ -53,6 +53,9 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 					Build:   []string{"composer install"},
 				},
 			},
+			Protoc: &config.Protoc{
+				Version: "31.0",
+			},
 		},
 	}
 	// The directory name in Googleapis is present for migration code to look
