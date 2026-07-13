@@ -205,7 +205,7 @@ func enumValueCaseName(e *api.EnumValue) string {
 }
 
 // ProtoPackagePrefix returns the SwiftProtobuf prefix for a given protobuf package name.
-// E.g., google.storage.control.v2 -> Google_Storage_Control_V2_
+// E.g., google.storage.control.v2 -> Google_Storage_Control_V2_.
 func ProtoPackagePrefix(packageName string) string {
 	if packageName == "" {
 		return ""
