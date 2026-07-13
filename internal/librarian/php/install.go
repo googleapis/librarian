@@ -27,6 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 const (
@@ -42,7 +43,7 @@ var (
 
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil && len(tools.Composer) > 0 {
+	if tools != nil && (len(tools.Composer) > 0 || len(tools.Pip) > 0) {
 		for _, tool := range tools.Composer {
 			if tool.Package == "" {
 				return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
@@ -60,6 +61,11 @@ func Install(ctx context.Context, tools *config.Tools) error {
 				if err := command.RunInDir(ctx, dir, "sh", "-c", cmdStr); err != nil {
 					return err
 				}
+			}
+		}
+		if len(tools.Pip) > 0 {
+			if err := pip.Install(ctx, tools.Pip); err != nil {
+				return err
 			}
 		}
 		return nil
