@@ -124,7 +124,7 @@ func TestRunProtoc(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			recordFile := filepath.Join(t.TempDir(), "calls.txt")
 			pc, want := test.setup(t, recordFile)
-			if err := runProtoc(t.Context(), pc, "--version"); err != nil {
+			if err := runProtoc(t.Context(), pc, nil, "--version"); err != nil {
 				t.Fatal(err)
 			}
 			data, err := os.ReadFile(recordFile)

@@ -27,11 +27,13 @@ import (
 
 const envPath = "PATH"
 
-func runProtoc(ctx context.Context, pc *config.Protoc, args ...string) error {
+func runProtoc(ctx context.Context, pc *config.Protoc, env map[string]string, args ...string) error {
 	if pc == nil {
-		return runWithEnv(ctx, nil, "protoc", args...)
+		// Fallback to global protoc if no tool configured.
+		return runWithEnv(ctx, env, "protoc", args...)
 	}
-	env, err := mergeEnv(nil)
+	// Ensure that the toolchain environment variables are set before calling protoc.
+	env, err := mergeEnv(env)
 	if err != nil {
 		return err
 	}

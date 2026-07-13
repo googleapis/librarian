@@ -167,7 +167,7 @@ func generateAPI(ctx context.Context, apiPath string, goAPI *config.GoAPI, pc *c
 		return err
 	}
 	args = append(args, protoFiles...)
-	return runProtoc(ctx, pc, args...)
+	return runProtoc(ctx, pc, nil, args...)
 }
 
 func buildGAPICOpts(apiPath string, goAPI *config.GoAPI, version, googleapisDir string) ([]string, error) {
