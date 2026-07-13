@@ -38,6 +38,9 @@ import {{.}}
 {{/Codec.DocLines}}
 ///
 /// @Snippet(path: "{{Name}}Quickstart")
+{{#Deprecated}}
+@available(*, deprecated)
+{{/Deprecated}}
 public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   let inner: any Clients.{{Codec.StubPrefix}}Stub
 
@@ -57,6 +60,9 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   {{^IsLroPoller}}public {{/IsLroPoller}}func {{> /templates/common/method_signature/request_options}} {
       try await self.inner.{{Codec.Name}}(request: request, options: options)
   }
@@ -67,6 +73,9 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   public func {{> /templates/common/method_signature/pagination_options}} {
     let listRpc = { (token: String) async throws -> {{Codec.ReturnType}} in
       var request = byItem
@@ -83,6 +92,9 @@ public class {{Codec.ClientName}}: Clients.{{Codec.StubPrefix}}Protocol {
   {{/Codec.DocLines}}
   ///
   /// @Snippet(path: "{{Service.Name}}_{{Name}}")
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   public func {{> /templates/common/method_signature/lro_options}} {
     let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.LRO.ReturnType}}>.State in
       guard op.done else {

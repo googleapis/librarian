@@ -19,30 +19,51 @@ extension Clients {
   /// To mock `{{Codec.ClientName}}` change your functions to receive
   /// `some {{Codec.StubPrefix}}Protocol` or `any {{Codec.StubPrefix}}Protocol`
   /// and pass a mock implementation in your tests.
+  {{#Deprecated}}
+  @available(*, deprecated)
+  {{/Deprecated}}
   public protocol {{Codec.StubPrefix}}Protocol {
     {{#Codec.RestMethods}}
     {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/request}}
     {{#Codec.PlainRPC}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/overload}}
     {{/Signatures}}
     {{/Codec.PlainRPC}}
     {{#Codec.Pagination}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination_overload}}
     {{/Signatures}}
     {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro}}
     {{#Signatures}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro_overload}}
     {{/Signatures}}
     {{/Codec.LRO}}
@@ -52,13 +73,22 @@ extension Clients {
     {{#Codec.RestMethods}}
     {{^IsLroPoller}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/request_options}}
     {{#Codec.Pagination}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/pagination_options}}
     {{/Codec.Pagination}}
     {{#Codec.LRO}}
     /// See `{{Service.Codec.ClientName}}.{{Codec.Name}}`.
+    {{#Deprecated}}
+    @available(*, deprecated)
+    {{/Deprecated}}
     func {{> /templates/common/method_signature/lro_options}}
     {{/Codec.LRO}}
     {{/IsLroPoller}}
