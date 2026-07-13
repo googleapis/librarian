@@ -456,16 +456,17 @@ func makeBindingSubstitution(v *api.PathVariable, m *api.Method) (*bindingSubsti
 	if err != nil {
 		return nil, err
 	}
-	fieldAccessor := "Some(&req)"
+	var fieldAccessor strings.Builder
+	fieldAccessor.WriteString("Some(&req)")
 	for _, a := range accessors {
-		fieldAccessor += a
+		fieldAccessor.WriteString(a)
 	}
 	var rustNames []string
 	for _, n := range v.FieldPath {
 		rustNames = append(rustNames, toSnakeNoMangling(n))
 	}
 	binding := &bindingSubstitution{
-		FieldAccessor: fieldAccessor,
+		FieldAccessor: fieldAccessor.String(),
 		FieldName:     strings.Join(rustNames, "."),
 		Template:      v.Segments,
 	}
@@ -571,11 +572,12 @@ func (c *codec) annotateResourceNameGeneration(m *api.Method, annotation *method
 				if err != nil {
 					return err
 				}
-				fieldAccessor := "Some(&req)"
+				var fieldAccessor strings.Builder
+				fieldAccessor.WriteString("Some(&req)")
 				for _, a := range accessors {
-					fieldAccessor += a
+					fieldAccessor.WriteString(a)
 				}
-				grpcArgs = append(grpcArgs, fieldAccessor)
+				grpcArgs = append(grpcArgs, fieldAccessor.String())
 			}
 			annotation.GrpcResourceNameArgs = grpcArgs
 

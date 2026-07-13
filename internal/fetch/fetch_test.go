@@ -533,7 +533,7 @@ func makeTestContents(t *testing.T) *contents {
 	hasher := sha256.New()
 	var data []byte
 	for i := range 10 {
-		line := []byte(fmt.Sprintf("%08d the quick brown fox jumps over the lazy dog\n", i))
+		line := fmt.Appendf(nil, "%08d the quick brown fox jumps over the lazy dog\n", i)
 		data = append(data, line...)
 		hasher.Write(line)
 	}

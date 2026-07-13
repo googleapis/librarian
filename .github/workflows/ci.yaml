@@ -34,7 +34,7 @@ jobs:
       - name: Run tests and check coverage
         run: |
           go run ./tool/cmd/coverage -target=80 \
-            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|php|python|rust|swift)|internal/sidekick|internal/sample|internal/testhelper')
+            $(go list ./... | grep -v -E 'github.com/googleapis/librarian$|internal/librarian/(dart|golang|java|nodejs|php|python|ruby|rust|swift)|internal/sidekick|internal/sample|internal/testhelper')
   create-issue-on-failure:
     runs-on: ubuntu-24.04
     permissions:

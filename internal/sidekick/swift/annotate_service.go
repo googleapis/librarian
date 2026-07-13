@@ -34,6 +34,12 @@ type serviceAnnotations struct {
 	Model            *modelAnnotations
 	DependsOn        map[string]*Dependency
 	IsGated          bool
+
+	// Any additional services required by this service.
+	//
+	// Typically this happens on discovery-based APIs where services with LROs
+	// depend on request messages provided by the service that can poll the LRO.
+	RequiredServices map[string]*api.Service
 }
 
 // ServiceImports returns the list of dependencies for this service.
@@ -66,18 +72,22 @@ func (ann *serviceAnnotations) SnippetImports() []string {
 	return result
 }
 
-func (c *codec) annotateService(service *api.Service, model *modelAnnotations) error {
+func (c *codec) annotateService(service *api.Service, model *modelAnnotations) (*serviceAnnotations, error) {
 	docLines, err := c.formatDocumentation(service.Documentation, service.Scopes())
 	if err != nil {
-		return err
+		return nil, err
 	}
+	requiredServices := make(map[string]*api.Service)
 	var restMethods []*api.Method
 	for _, method := range service.Methods {
 		if isGeneratedMethod(method) {
 			if err := c.annotateMethod(method, model); err != nil {
-				return err
+				return nil, err
 			}
 			restMethods = append(restMethods, method)
+			if method.IsLroPoller && method.SourceService != nil {
+				requiredServices[method.SourceService.ID] = method.SourceService
+			}
 		}
 	}
 	var quickstartMethod *api.Method
@@ -85,8 +95,9 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		quickstartMethod = service.QuickstartMethod
 	}
 
+	name := pascalCase(service.Name)
 	annotations := &serviceAnnotations{
-		Name:             pascalCase(service.Name),
+		Name:             name,
 		ClientName:       pascalCase(service.Name + "Client"),
 		StubPrefix:       pascalCaseNoMangling(service.Name),
 		HostnameShort:    strings.TrimSuffix(service.DefaultHost, ".googleapis.com"),
@@ -96,7 +107,10 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		QuickstartMethod: quickstartMethod,
 		Model:            model,
 		DependsOn:        map[string]*Dependency{},
-		IsGated:          c.PerServiceTraits,
+	}
+	if c.PerServiceTraits {
+		annotations.IsGated = true
+		annotations.RequiredServices = requiredServices
 	}
 
 	// Iterate through the list of all dependencies declared in librarian.yaml
@@ -108,7 +122,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 		}
 		if p.RequiredByServices {
 			if _, err := c.addDependency(p); err != nil {
-				return err
+				return nil, err
 			}
 			annotations.DependsOn[p.Name] = p
 		}
@@ -117,7 +131,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	// Services always depend on well known types
 	wktDep, err := c.addApiPackageDependency(wellKnownProtobufPackage)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	annotations.DependsOn[wktDep.Name] = wktDep
 
@@ -126,7 +140,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			if method.InputType.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(method.InputType.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
@@ -137,7 +151,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			if method.OutputType.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(method.OutputType.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
@@ -148,7 +162,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			// LROs depend on PollableOperation package
 			lroDep, err := c.addPackageDependency(lroSwiftPackage)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if lroDep != nil {
 				annotations.DependsOn[lroDep.Name] = lroDep
@@ -157,7 +171,7 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			// LRO error mapping relies on GoogleRpc.Code, so we depend on GoogleRpc package
 			rpcDep, err := c.addApiPackageDependency("google.rpc")
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if rpcDep != nil {
 				annotations.DependsOn[rpcDep.Name] = rpcDep
@@ -166,12 +180,12 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			// Ensure we have the necessary dependencies for the LRO response and metadata types.
 			respMsg, err := lookupMessage(c.Model, method.OperationInfo.ResponseTypeID)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if respMsg.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(respMsg.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
@@ -179,12 +193,12 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 			}
 			metaMsg, err := lookupMessage(c.Model, method.OperationInfo.MetadataTypeID)
 			if err != nil {
-				return err
+				return nil, err
 			}
 			if metaMsg.Package != c.Model.PackageName {
 				dep, err := c.addApiPackageDependency(metaMsg.Package)
 				if err != nil {
-					return err
+					return nil, err
 				}
 				if dep != nil {
 					annotations.DependsOn[dep.Name] = dep
@@ -194,7 +208,10 @@ func (c *codec) annotateService(service *api.Service, model *modelAnnotations) e
 	}
 
 	service.Codec = annotations
-	return c.addFeatureAnnotations(service)
+	if err := c.addFeatureAnnotations(service); err != nil {
+		return nil, err
+	}
+	return annotations, nil
 }
 
 func isGeneratedMethod(method *api.Method) bool {
@@ -231,8 +248,12 @@ func (c *codec) addFeatureAnnotations(
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
-		annotation.GatedOp = " || "
+		if !msg.ServicePlaceholder {
+			// Messages that are placeholders for services just get the same
+			// gating traits as the service.
+			annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
+			annotation.GatedOp = " || "
+		}
 	}
 	return nil
 }

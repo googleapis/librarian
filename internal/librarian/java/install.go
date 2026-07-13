@@ -27,7 +27,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/filesystem"
-	"github.com/googleapis/librarian/internal/pip"
+	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 const (

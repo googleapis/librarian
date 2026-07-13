@@ -30,20 +30,6 @@ func TestFill(t *testing.T) {
 		want *config.Library
 	}{
 		{
-			name: "fill output from name",
-			lib: &config.Library{
-				Name: "secretmanager",
-			},
-			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
-				Java: &config.JavaModule{
-					ArtifactID: "google-cloud-secretmanager",
-					GroupID:    "com.google.cloud",
-				},
-			},
-		},
-		{
 			name: "do not overwrite output",
 			lib: &config.Library{
 				Name:   "secretmanager",
@@ -67,8 +53,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -101,8 +86,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
@@ -130,8 +114,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.custom",
@@ -144,8 +127,7 @@ func TestFill(t *testing.T) {
 				Name: "secretmanager",
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -161,8 +143,7 @@ func TestFill(t *testing.T) {
 				},
 			},
 			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
+				Name: "secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "custom-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -178,7 +159,6 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.0-SNAPSHOT",
-				Output:  "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID:      "google-cloud-secretmanager",
 					GroupID:         "com.google.cloud",
@@ -197,7 +177,6 @@ func TestFill(t *testing.T) {
 				Name:         "secretmanager",
 				Version:      "1.2.0-SNAPSHOT",
 				SkipGenerate: true,
-				Output:       "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID: "google-cloud-secretmanager",
 					GroupID:    "com.google.cloud",
@@ -216,7 +195,6 @@ func TestFill(t *testing.T) {
 			want: &config.Library{
 				Name:    "secretmanager",
 				Version: "1.2.0-SNAPSHOT",
-				Output:  "java-secretmanager",
 				Java: &config.JavaModule{
 					ArtifactID:      "google-cloud-secretmanager",
 					GroupID:         "com.google.cloud",
@@ -243,17 +221,6 @@ func TestTidy(t *testing.T) {
 		lib  *config.Library
 		want *config.Library
 	}{
-		{
-			name: "tidy default output",
-			lib: &config.Library{
-				Name:   "secretmanager",
-				Output: "java-secretmanager",
-			},
-			want: &config.Library{
-				Name:   "secretmanager",
-				Output: "",
-			},
-		},
 		{
 			name: "do not tidy custom output",
 			lib: &config.Library{
@@ -710,6 +677,246 @@ func TestDeriveLastReleasedVersion_Error(t *testing.T) {
 			_, err := deriveLastReleasedVersion(test.input)
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("error = %v, wantErr %v", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestDefaultOutput(t *testing.T) {
+	for _, test := range []struct {
+		name          string
+		libName       string
+		defaultOutput string
+		want          string
+	}{
+		{
+			name:          "standard",
+			libName:       "secretmanager",
+			defaultOutput: "packages",
+			want:          "packages/java-secretmanager",
+		},
+		{
+			name:          "empty default",
+			libName:       "secretmanager",
+			defaultOutput: "",
+			want:          "java-secretmanager",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := DefaultOutput(test.libName, test.defaultOutput)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestFillDefaultJava(t *testing.T) {
+	defaults := &config.Default{
+		Java: &config.JavaDefault{
+			CustomGroupIDs: map[string]string{
+				"google/shopping":  "com.google.shopping",
+				"google/exact/v1":  "com.google.exact",
+				"google/maps":      "com.google.maps",
+				"google/ads":       "com.google.api-ads",
+				"google/analytics": "com.google.analytics",
+			},
+		},
+	}
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.Default
+		want     *config.Library
+	}{
+		{
+			name: "shopping library",
+			lib: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "shopping-merchant-issue-resolution",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.shopping",
+				},
+			},
+		},
+		{
+			name: "do not override custom artifact id",
+			lib: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "custom-shopping",
+				APIs: []*config.API{
+					{Path: "google/shopping/merchant/issueresolution/v1"},
+					{Path: "google/shopping/merchant/issueresolution/v1beta"},
+				},
+				Java: &config.JavaModule{
+					ArtifactID: "custom-shopping-id",
+					GroupID:    "com.google.shopping",
+				},
+			},
+		},
+		{
+			name: "maps library",
+			lib: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "maps-routeoptimization",
+				APIs: []*config.API{{Path: "google/maps/routeoptimization/v1"}},
+				Java: &config.JavaModule{
+					GroupID: "com.google.maps",
+				},
+			},
+		},
+		{
+			name: "ads library",
+			lib: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "admanager",
+				APIs: []*config.API{{Path: "google/ads/admanager/v1"}},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api-ads",
+				},
+			},
+		},
+		{
+			name: "analytics library",
+			lib: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "analytics-admin",
+				APIs: []*config.API{
+					{Path: "google/analytics/admin/v1beta"},
+					{Path: "google/analytics/admin/v1alpha"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.analytics",
+				},
+			},
+		},
+		{
+			name: "do not fill if group id already set",
+			lib: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api.grpc",
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "common-protos",
+				APIs: []*config.API{
+					{Path: "google/shopping/type"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.api.grpc",
+				},
+			},
+		},
+		{
+			name: "prefix match respects path segment boundaries",
+			lib: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "shopping-foo",
+				APIs: []*config.API{
+					{Path: "google/shopping-foo/v1"},
+				},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "no matching api prefix leaves group id empty",
+			lib: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "unknown",
+				APIs: []*config.API{{Path: "google/unknown/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "library does not change with nil map",
+			lib: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+			},
+			defaults: &config.Default{
+				Java: &config.JavaDefault{},
+			},
+			want: &config.Library{
+				Name: "lib",
+				APIs: []*config.API{{Path: "google/example/v1"}},
+				Java: &config.JavaModule{},
+			},
+		},
+		{
+			name: "api path exact match",
+			lib: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+			},
+			defaults: defaults,
+			want: &config.Library{
+				Name: "exact",
+				APIs: []*config.API{
+					{Path: "google/exact/v1"},
+				},
+				Java: &config.JavaModule{
+					GroupID: "com.google.exact",
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := FillDefaultJava(test.lib, test.defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}

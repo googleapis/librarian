@@ -17,6 +17,7 @@ package java
 import (
 	"errors"
 	"fmt"
+	"path"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -36,16 +37,14 @@ func deriveArtifactID(name string) string {
 	return defaultArtifactIDPrefix + name
 }
 
-// deriveOutput computes the default output directory name for a given library name.
-func deriveOutput(name string) string {
-	return javaPrefix + name
+// DefaultOutput derives the default output directory name for a Java library.
+func DefaultOutput(name, defaultOutput string) string {
+	return path.Join(defaultOutput, javaPrefix+name)
 }
 
-// Fill populates Java-specific default values for the library.
+// Fill populates Java-specific default values for the library from derived or
+// documented defaults.
 func Fill(library *config.Library) (*config.Library, error) {
-	if library.Output == "" {
-		library.Output = deriveOutput(library.Name)
-	}
 	if library.Java == nil {
 		library.Java = &config.JavaModule{}
 	}
@@ -86,13 +85,39 @@ func Fill(library *config.Library) (*config.Library, error) {
 	return library, nil
 }
 
+// FillDefaultJava populates empty Java-specific fields in lib from the
+// [config.Default], specifically from [config.JavaDefault].
+// This is typically called in sequence with [Fill], which populates the
+// derived default values.
+func FillDefaultJava(lib *config.Library, d *config.Default) *config.Library {
+	if lib.Java == nil {
+		lib.Java = &config.JavaModule{}
+	}
+	fillGroupIDIfEmpty(lib, d)
+	return lib
+}
+
+// fillGroupIDIfEmpty sets the Java group ID on lib if one is not already configured.
+// It matches the library's API paths against the custom group ID prefixes in default
+// and assigns the first matching group ID.
+func fillGroupIDIfEmpty(lib *config.Library, d *config.Default) {
+	if lib.Java.GroupID != "" || d.Java == nil || d.Java.CustomGroupIDs == nil {
+		return
+	}
+	for _, api := range lib.APIs {
+		for apiPrefix, groupID := range d.Java.CustomGroupIDs {
+			if api.Path == apiPrefix || strings.HasPrefix(api.Path, apiPrefix+"/") {
+				lib.Java.GroupID = groupID
+				return
+			}
+		}
+	}
+}
+
 // Tidy tidies the Java-specific configuration for a library by removing default
 // values.
 func Tidy(library *config.Library) (*config.Library, error) {
 	library.Keep = tidyKeep(library.Keep)
-	if library.Output == deriveOutput(library.Name) {
-		library.Output = ""
-	}
 	if library.Java != nil {
 		if library.Java.ArtifactID == deriveArtifactID(library.Name) {
 			library.Java.ArtifactID = ""

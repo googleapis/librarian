@@ -271,6 +271,10 @@ func TestGenerateAPI(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
+	// Force routing to the legacy owlbot.py postprocessor.
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -337,6 +341,10 @@ func TestGenerateAPI_ProtoOnly(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
+	// Force routing to the legacy owlbot.py postprocessor.
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -474,6 +482,10 @@ func TestGenerateAPI_WithAdditionalProtosToGenerateAndCopy(t *testing.T) {
 	testhelper.RequireCommand(t, "protoc-gen-java_gapic")
 	testhelper.RequireCommand(t, "protoc-gen-java_grpc")
 	outdir := t.TempDir()
+	// Force routing to the legacy owlbot.py postprocessor.
+	if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+		t.Fatal(err)
+	}
 	cfg := &config.Config{
 		Repo: "googleapis/google-cloud-java",
 		Default: &config.Default{
@@ -1044,6 +1056,10 @@ func TestGenerateAPI_Gating(t *testing.T) {
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outdir := t.TempDir()
+			// Force routing to the legacy owlbot.py postprocessor.
+			if err := os.WriteFile(filepath.Join(outdir, "owlbot.py"), []byte("#!/usr/bin/env python3\npass"), 0755); err != nil {
+				t.Fatal(err)
+			}
 			api := &config.API{Path: "google/cloud/secretmanager/v1"}
 			cfg := &config.Config{
 				Repo: "googleapis/google-cloud-java",

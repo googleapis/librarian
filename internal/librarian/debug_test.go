@@ -38,6 +38,7 @@ func TestRunEnv(t *testing.T) {
 		fmt.Sprintf("golang: %s", filepath.Join(binDir, "go_tools")),
 		fmt.Sprintf("java: %s", filepath.Join(binDir, "java_tools")),
 		fmt.Sprintf("nodejs: %s", filepath.Join(binDir, "nodejs_tools")),
+		fmt.Sprintf("ruby: %s", filepath.Join(binDir, "ruby_tools")),
 	}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {
@@ -63,6 +64,7 @@ func TestRunEnv_Error(t *testing.T) {
 		"golang: <error:",
 		"java: <error:",
 		"nodejs: <error:",
+		"ruby: <error:",
 	}
 	for _, want := range wants {
 		if !strings.Contains(got, want) {

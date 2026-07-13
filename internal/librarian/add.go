@@ -243,7 +243,11 @@ func addNewLibrary(cfg *config.Config, api *config.API) (string, *config.Config,
 	case config.LanguageGo:
 		lib = golang.Add(lib)
 	case config.LanguageJava:
-		lib = java.Add(lib)
+		var err error
+		lib, err = java.Add(lib, nil)
+		if err != nil {
+			return "", nil, err
+		}
 	case config.LanguagePython:
 		var err error
 		lib, err = python.Add(cfg, lib)
@@ -275,8 +279,15 @@ func updateExistingLibrary(cfg *config.Config, existingLib *config.Library, api 
 	case config.LanguageGo:
 		existingLib.APIs = append(existingLib.APIs, api)
 		existingLib = golang.Add(existingLib)
-	case config.LanguageJava, config.LanguageNodejs:
+	case config.LanguageNodejs:
 		existingLib.APIs = append(existingLib.APIs, api)
+	case config.LanguageJava:
+		existingLib.APIs = append(existingLib.APIs, api)
+		var err error
+		existingLib, err = java.Add(existingLib, api)
+		if err != nil {
+			return "", nil, err
+		}
 	default:
 		return "", nil, fmt.Errorf("%w: %s", errLibraryAlreadyExists, existingLib.Name)
 	}
