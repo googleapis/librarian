@@ -208,10 +208,17 @@ func makeGatedTestModel() *api.API {
 }
 
 func makeRequiredServicesTestModel() *api.API {
+	placeholder := &api.Message{
+		Name:               "zoneOperations",
+		ID:                 ".test.zoneOperations",
+		Package:            "test",
+		ServicePlaceholder: true,
+	}
 	inputType := &api.Message{
 		Name:    "GetOperationRequest",
-		ID:      ".test.GetOperationRequest",
+		ID:      ".test.zoneOperations.GetOperationRequest",
 		Package: "test",
+		Parent:  placeholder,
 	}
 	outputType := &api.Message{
 		Name:    "Operation",
@@ -257,8 +264,7 @@ func makeRequiredServicesTestModel() *api.API {
 	}
 	method.Service = targetService
 
-	model := api.NewTestAPI([]*api.Message{inputType, outputType}, nil, []*api.Service{sourceService, targetService})
-	model.PackageName = "test"
+	model := api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})
 	api.CrossReference(model)
 	return model
 }

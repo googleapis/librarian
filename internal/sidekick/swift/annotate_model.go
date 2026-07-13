@@ -143,8 +143,15 @@ func (c *codec) annotateModel() error {
 		if len(annotation.GatedBy) > 0 {
 			continue
 		}
-		annotation.GatedOp = " && "
-		annotation.GatedBy = allTraitNames
+		if msg.ServicePlaceholder {
+			// Messages that are placeholders for services just get the same
+			// gating traits as the service.
+			annotation.GatedOp = " || "
+			annotation.GatedBy = []string{pascalCase(msg.Name)}
+		} else {
+			annotation.GatedOp = " && "
+			annotation.GatedBy = allTraitNames
+		}
 	}
 	for enum := range c.Model.AllEnums() {
 		if enum.Codec == nil {

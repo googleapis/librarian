@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -517,7 +518,7 @@ func TestAnnotateMessage_Gating(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	tests := []struct {
+	for _, test := range []struct {
 		name           string
 		msgName        string
 		wantExpression string
@@ -526,17 +527,9 @@ func TestAnnotateMessage_Gating(t *testing.T) {
 		{"Message used by Service1 only", "Service1Message", "Service1"},
 		{"Message used by Service2 only", "Service2Message", "Service2"},
 		{"Message used by neither service", "UnusedMessage", "Service1 && Service2"},
-	}
-
-	for _, test := range tests {
+	} {
 		t.Run(test.name, func(t *testing.T) {
-			var msg *api.Message
-			for m := range model.AllMessages() {
-				if m.Name == test.msgName {
-					msg = m
-					break
-				}
-			}
+			msg := model.Message(fmt.Sprintf(".google.cloud.test.v1.%s", test.msgName))
 			if msg == nil {
 				t.Fatalf("message %s not found", test.msgName)
 			}
@@ -546,6 +539,44 @@ func TestAnnotateMessage_Gating(t *testing.T) {
 			}
 
 			if diff := cmp.Diff(test.wantExpression, ann.GateExpression()); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+
+			if !ann.IsGated() {
+				t.Error("expected IsGated() to be true")
+			}
+		})
+	}
+}
+
+func TestAnnotateMessage_PlaceholderGating(t *testing.T) {
+	model := makeRequiredServicesTestModel()
+	codec := newTestCodec(t, model, nil)
+	codec.PerServiceTraits = true
+
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	for _, test := range []struct {
+		name  string
+		msgID string
+		want  string
+	}{
+		{"placeholder", ".test.zoneOperations", "ZoneOperations"},
+		{"operation", ".test.Operation", "TestService || ZoneOperations"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			msg := model.Message(test.msgID)
+			if msg == nil {
+				t.Fatalf("message %s not found", test.msgID)
+			}
+			ann, ok := msg.Codec.(*messageAnnotations)
+			if !ok {
+				t.Fatalf("expected msg.Codec for %s to be *messageAnnotations, got %T", msg.ID, msg.Codec)
+			}
+
+			if diff := cmp.Diff(test.want, ann.GateExpression()); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 
