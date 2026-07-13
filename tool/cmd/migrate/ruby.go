@@ -44,6 +44,10 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 					Version: "1.78.1",
 				},
 			},
+			Protoc: &config.Protoc{
+				Version: "33.2",
+				SHA256: "b24b53f87c151bfd48b112fe4c3a6e6574e5198874f38036aff41df3456b8caf",
+			},
 		},
 	}
 	// The directory name in Googleapis is present for migration code to look
