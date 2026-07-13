@@ -49,28 +49,6 @@ func TestBinDir(t *testing.T) {
 }
 
 func TestRepoFromPackageURL_Success(t *testing.T) {
-<<<<<<< HEAD
-	for _, test := range []struct {
-		name       string
-		packageURL string
-		want       string
-	}{
-		{
-			name:       "success",
-			packageURL: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
-			want:       "github.com/googleapis/gapic-generator-php",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := repoFromPackageURL(test.packageURL)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if got != test.want {
-				t.Errorf("repoFromPackageURL() = %q, want %q", got, test.want)
-			}
-		})
-=======
 	packageURL := "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz"
 	want := "github.com/googleapis/gapic-generator-php"
 	got, err := repoFromPackageURL(packageURL)
@@ -79,30 +57,12 @@ func TestRepoFromPackageURL_Success(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
->>>>>>> e14a92a9 (feat(php): support dynamic composer installation)
 	}
 }
 
 func TestRepoFromPackageURL_Error(t *testing.T) {
-<<<<<<< HEAD
-	for _, test := range []struct {
-		name       string
-		packageURL string
-	}{
-		{
-			name:       "invalid URL",
-			packageURL: "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2",
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			if _, err := repoFromPackageURL(test.packageURL); err == nil {
-				t.Fatal("repoFromPackageURL() expected error, got nil")
-			}
-		})
-=======
 	packageURL := "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2"
 	if _, err := repoFromPackageURL(packageURL); !errors.Is(err, errCannotExtractRepo) {
 		t.Fatalf("repoFromPackageURL() error = %v, want %v", err, errCannotExtractRepo)
->>>>>>> e14a92a9 (feat(php): support dynamic composer installation)
 	}
 }

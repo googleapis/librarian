@@ -45,11 +45,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if tools != nil && len(tools.Composer) > 0 {
 		for _, tool := range tools.Composer {
 			if tool.Package == "" {
-<<<<<<< HEAD
-				return fmt.Errorf("composer tool %s %w", tool.Name, errMissingPackageURL)
-=======
 				return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
->>>>>>> e14a92a9 (feat(php): support dynamic composer installation)
 			}
 			repo, err := repoFromPackageURL(tool.Package)
 			if err != nil {
