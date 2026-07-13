@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 	"github.com/googleapis/librarian/internal/yaml"
@@ -88,6 +89,7 @@ func installComposerToolFromSource(ctx context.Context, tool *config.ComposerToo
 	return nil
 }
 
+// TODO(https://github.com/googleapis/librarian/issues/6630): Remove this function when generate.go is refactored.
 func createLegacyWrapper(generatorDir string) error {
 	phpPath, err := exec.LookPath("php")
 	if err != nil {
@@ -115,11 +117,7 @@ exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir
 }
 
 func runPHPBuildCmd(ctx context.Context, dir string, cmdStr string) error {
-	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
-	cmd.Dir = dir
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	return cmd.Run()
+	return command.RunInDir(ctx, dir, "sh", "-c", cmdStr)
 }
 
 // repoFromPackageURL extracts the repository path (e.g.,

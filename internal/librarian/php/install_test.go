@@ -71,33 +71,43 @@ func TestInstallDir(t *testing.T) {
 	}
 }
 
-func TestRepoFromPackageURL(t *testing.T) {
+func TestRepoFromPackageURL_Success(t *testing.T) {
 	for _, test := range []struct {
 		name       string
 		packageURL string
 		want       string
-		wantErr    bool
 	}{
 		{
 			name:       "success",
 			packageURL: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
 			want:       "github.com/googleapis/gapic-generator-php",
-			wantErr:    false,
-		},
-		{
-			name:       "invalid URL",
-			packageURL: "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2",
-			want:       "",
-			wantErr:    true,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			got, err := repoFromPackageURL(test.packageURL)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("repoFromPackageURL() error = %v, wantErr %v", err, test.wantErr)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if got != test.want {
 				t.Errorf("repoFromPackageURL() = %q, want %q", got, test.want)
+			}
+		})
+	}
+}
+
+func TestRepoFromPackageURL_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		packageURL string
+	}{
+		{
+			name:       "invalid URL",
+			packageURL: "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if _, err := repoFromPackageURL(test.packageURL); err == nil {
+				t.Fatal("repoFromPackageURL() expected error, got nil")
 			}
 		})
 	}
