@@ -138,6 +138,15 @@ func TestInstall_Error(t *testing.T) {
 	}
 }
 
+func TestVerify(t *testing.T) {
+	tools := []*config.GemTool{
+		{Name: "rubocop", Version: "1.50.0"},
+	}
+	if err := verify(tools, "/tmp/ruby_tools/bin", "/tmp/ruby_tools"); err != nil {
+		t.Errorf("verify() error = %v, want nil", err)
+	}
+}
+
 func TestVerify_Error(t *testing.T) {
 	for _, test := range []struct {
 		name       string
