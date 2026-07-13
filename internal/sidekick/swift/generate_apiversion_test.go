@@ -27,22 +27,45 @@ import (
 
 func TestGenerateService_APIVersion(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		apiVersion string
-		want       string
+		name           string
+		apiVersion     string
+		hasQueryParams bool
+		wantStart      string
+		want           string
 	}{
 		{
-			name:       "WithAPIVersion",
+			name:       "WithAPIVersion_NoQueryParams",
 			apiVersion: "v1_20260713",
+			wantStart:  "      let query = [",
 			want: `      let query = [
         URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
         URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
       ]`,
 		},
 		{
-			name:       "WithoutAPIVersion",
-			apiVersion: "", // same as not-set
+			name:       "WithoutAPIVersion_NoQueryParams",
+			apiVersion: "",
+			wantStart:  "      let query = [",
 			want: `      let query = [
+        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+      ]`,
+		},
+		{
+			name:           "WithAPIVersion_WithQueryParams",
+			apiVersion:     "v1_20260713",
+			hasQueryParams: true,
+			wantStart:      "      var query = [",
+			want: `      var query = [
+        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+        URLQueryItem(name: "$apiVersion", value: "v1_20260713"),
+      ]`,
+		},
+		{
+			name:           "WithoutAPIVersion_WithQueryParams",
+			apiVersion:     "",
+			hasQueryParams: true,
+			wantStart:      "      var query = [",
+			want: `      var query = [
         URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
       ]`,
 		},
@@ -59,17 +82,16 @@ func TestGenerateService_APIVersion(t *testing.T) {
 				WithVerb("POST").
 				WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("method"))
 			method.APIVersion = test.apiVersion
+			if test.hasQueryParams {
+				method.PathInfo.Bindings[0].QueryParameters = map[string]bool{
+					"name": true,
+				}
+			}
 			service := api.NewTestService("TestService").WithMethods(method)
 
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
 			model.PackageName = "test"
-
-			cfg := &parser.ModelConfig{
-				Codec: map[string]string{
-					"copyright-year": "2026",
-				},
-			}
-
+			cfg := &parser.ModelConfig{}
 			swiftCfg := swiftConfig(t, []config.SwiftDependency{
 				{Name: "GoogleCloudGax", RequiredByServices: true},
 			})
@@ -85,7 +107,7 @@ func TestGenerateService_APIVersion(t *testing.T) {
 			}
 			contentStr := string(content)
 
-			got := extractBlock(t, contentStr, "      let query = [", "\n      ]")
+			got := extractBlock(t, contentStr, test.wantStart, "\n      ]")
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
