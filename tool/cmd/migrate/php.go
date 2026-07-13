@@ -66,7 +66,7 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 }
 
 var (
-	owlbotSourceWithVersionRegexp    = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/\((v[0-9a-zA-Z]+)\)/.*-php/.*$`)
+	owlbotSourceWithVersionRegexp    = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/\((v[0-9a-zA-Z|]+)\)/.*-php/.*$`)
 	owlbotSourceWithoutVersionRegexp = regexp.MustCompile(`^/([a-zA-Z0-9_/]+)/.*-php/.*$`)
 )
 
@@ -80,14 +80,20 @@ type deepCopyRegexSpec struct {
 	Dest   string `yaml:"dest"`
 }
 
-func extractAPIPath(source string) (string, bool) {
+func extractAPIPaths(source string) []string {
 	if matches := owlbotSourceWithVersionRegexp.FindStringSubmatch(source); len(matches) == 3 {
-		return matches[1] + "/" + matches[2], true
+		base := matches[1]
+		versions := strings.Split(matches[2], "|")
+		var paths []string
+		for _, v := range versions {
+			paths = append(paths, base+"/"+v)
+		}
+		return paths
 	}
 	if matches := owlbotSourceWithoutVersionRegexp.FindStringSubmatch(source); len(matches) == 2 {
-		return matches[1], true
+		return []string{matches[1]}
 	}
-	return "", false
+	return nil
 }
 
 func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
@@ -101,7 +107,7 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 	var apis []*config.API
 	seenAPIs := make(map[string]bool)
 	for _, spec := range owlbot.DeepCopyRegex {
-		if path, ok := extractAPIPath(spec.Source); ok {
+		for _, path := range extractAPIPaths(spec.Source) {
 			if !seenAPIs[path] {
 				seenAPIs[path] = true
 				apis = append(apis, &config.API{Path: path})
