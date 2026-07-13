@@ -1,0 +1,25 @@
+extension {{Codec.Name}} {
+  internal init(proto: {{Codec.ProtoTypeName}}) {
+    switch proto {
+    {{#UniqueNumberValues}}
+    case .{{Codec.CaseName}}:
+      self = .{{Codec.CaseName}}
+    {{/UniqueNumberValues}}
+    case .UNRECOGNIZED(let val): self = .{{Codec.UnknownIntName}}(val)
+    }
+  }
+
+  internal func toProto() throws -> {{Codec.ProtoTypeName}} {
+    switch self {
+    {{#UniqueNumberValues}}
+    case .{{Codec.CaseName}}:
+      return .{{Codec.CaseName}}
+    {{/UniqueNumberValues}}
+    case .{{Codec.UnknownIntName}}(let val):
+      return {{Codec.ProtoTypeName}}(rawValue: val)
+        ?? .UNRECOGNIZED(val)
+    case .{{Codec.UnknownStringName}}(let str):
+      throw ProtobufConversionError.noIntegerValue(enumType: "{{Codec.Name}}", stringValue: str)
+    }
+  }
+}

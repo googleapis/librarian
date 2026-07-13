@@ -41,6 +41,12 @@ type enumAnnotations struct {
 	// that needs them is enabled. Messages that do not map to any service use
 	// " && ".
 	GatedOp string
+
+	// The target import module containing raw stubs.
+	ModulePath string
+
+	// The full name of the raw proto enum under the private module target.
+	ProtoTypeName string
 }
 
 // IsGated returns true if this message is gated by some package traits.
@@ -127,6 +133,10 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 		DefaultCaseName:   defaultCaseName,
 		UnknownIntName:    uniqueCaseName("unknownIntValue"),
 		UnknownStringName: uniqueCaseName("unknownStringValue"),
+		ModulePath:        c.ModulePath,
+	}
+	if c.ModulePath != "" {
+		annotations.ProtoTypeName = fmt.Sprintf("%s.%s%s", c.ModulePath, ProtoPackagePrefix(enum.Package), pascalCase(enum.Name))
 	}
 
 	enum.Codec = annotations

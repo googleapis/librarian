@@ -214,3 +214,51 @@ func (c *codec) generateClients(outdir string, model *api.API, provider language
 	}
 	return language.GenerateFromModel(outdir, model, provider, []language.GeneratedFile{generated})
 }
+
+// GenerateConversions generates the user-facing clean types and conversion mappings.
+func GenerateConversions(ctx context.Context, model *api.API, outdir string, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage) error {
+	codec, err := newCodec(model, cfg, swiftCfg, outdir)
+	if err != nil {
+		return err
+	}
+	if codec.ModulePath == "" {
+		return fmt.Errorf("module-path must be configured for generating conversions")
+	}
+	if err := codec.annotateModel(); err != nil {
+		return err
+	}
+	provider := func(name string) (string, error) {
+		contents, err := templates.ReadFile(name)
+		if err != nil {
+			return "", err
+		}
+		return string(contents), nil
+	}
+	if err := codec.generateMessages(outdir, model, provider); err != nil {
+		return err
+	}
+	if err := codec.generateEnums(outdir, model, provider); err != nil {
+		return err
+	}
+	if err := codec.generateEnumConversions(outdir, model, provider); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *codec) generateEnumConversions(outdir string, model *api.API, provider language.TemplateProvider) error {
+	for _, e := range model.Enums {
+		output := filepath.Join("Convert", e.Name+"+Convert.swift")
+		if !c.Module {
+			output = filepath.Join("Sources", c.PackageName, "Convert", e.Name+"+Convert.swift")
+		}
+		generated := language.GeneratedFile{
+			TemplatePath: "templates/common/convert_enum_file.swift.mustache",
+			OutputPath:   output,
+		}
+		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
+			return err
+		}
+	}
+	return nil
+}

@@ -203,3 +203,17 @@ func enumValueCaseName(e *api.EnumValue) string {
 	}
 	return camelCase(e.Name)
 }
+
+// ProtoPackagePrefix returns the SwiftProtobuf prefix for a given protobuf package name.
+// E.g., google.storage.control.v2 -> Google_Storage_Control_V2_
+func ProtoPackagePrefix(packageName string) string {
+	if packageName == "" {
+		return ""
+	}
+	parts := strings.Split(packageName, ".")
+	var camelParts []string
+	for _, p := range parts {
+		camelParts = append(camelParts, pascalCaseNoMangling(p))
+	}
+	return strings.Join(camelParts, "_") + "_"
+}
