@@ -130,7 +130,7 @@ func TestInstall_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t)
 			}
-			err := Install(t.Context(), test.tools, "", "")
+			err := Install(t.Context(), test.tools, "/tmp/tools/bin", "/tmp/tools")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Install() error = %v, wantErr = %v", err, test.wantErr)
 			}
