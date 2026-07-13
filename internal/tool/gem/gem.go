@@ -32,9 +32,9 @@ var (
 )
 
 // Install installs a list of gem tools into the environment.
-// TODO(https://github.com/googleapis/librarian/issues/6762): Verify gem, bin, and lib
+// TODO(https://github.com/googleapis/librarian/issues/6762): Verify gem, bin, and installDir
 // are valid before installation.
-func Install(ctx context.Context, tools []*config.GemTool, binDir, libDir string) error {
+func Install(ctx context.Context, tools []*config.GemTool, binDir, installDir string) error {
 	for _, tool := range tools {
 		if tool.Name == "" || tool.Version == "" {
 			return fmt.Errorf("%w: name and version must be specified: %+v", errInvalidGem, tool)
@@ -44,7 +44,7 @@ func Install(ctx context.Context, tools []*config.GemTool, binDir, libDir string
 			tool.Name,
 			"-v", tool.Version,
 			"--bindir", binDir,
-			"--install-dir", libDir,
+			"--install-dir", installDir,
 			// Skip the generation of the local documentation to make installation faster
 			// and use less disk space.
 			"--no-document",

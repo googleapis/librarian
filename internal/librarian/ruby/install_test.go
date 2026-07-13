@@ -51,8 +51,8 @@ func TestInstall(t *testing.T) {
 		t.Fatalf("failed to read call records: %v", err)
 	}
 	expectedBinDir := filepath.Join(libBinDir, "ruby_tools", "bin")
-	expectedLibDir := filepath.Join(libBinDir, "ruby_tools", "lib")
-	want := fmt.Sprintf("install gapic-generator -v 1.2.3 --bindir %s --install-dir %s --no-document\n", expectedBinDir, expectedLibDir)
+	expectedInstallDir := filepath.Join(libBinDir, "ruby_tools")
+	want := fmt.Sprintf("install gapic-generator -v 1.2.3 --bindir %s --install-dir %s --no-document\n", expectedBinDir, expectedInstallDir)
 	if got := string(data); got != want {
 		t.Errorf("gem called with = %q, want %q", got, want)
 	}
@@ -68,23 +68,6 @@ func TestInstallDir(t *testing.T) {
 	want := filepath.Join(binDir, "ruby_tools")
 	if got != want {
 		t.Errorf("InstallDir() = %q, want %q", got, want)
-	}
-}
-
-func TestBinAndLibDir(t *testing.T) {
-	dir := t.TempDir()
-	t.Setenv("LIBRARIAN_BIN", dir)
-	gotBin, gotLib, err := binAndLibDir()
-	if err != nil {
-		t.Fatal(err)
-	}
-	wantBin := filepath.Join(dir, "ruby_tools", "bin")
-	if gotBin != wantBin {
-		t.Errorf("binAndLibDir() bin = %q, want %q", gotBin, wantBin)
-	}
-	wantLib := filepath.Join(dir, "ruby_tools", "lib")
-	if gotLib != wantLib {
-		t.Errorf("binAndLibDir() lib = %q, want %q", gotLib, wantLib)
 	}
 }
 
