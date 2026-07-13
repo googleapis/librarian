@@ -25,6 +25,12 @@ import (
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 )
 
+type expectedBlock struct {
+	start string
+	end   string
+	want  string
+}
+
 func TestGenerateService_DeprecatedMethods(t *testing.T) {
 	// Common messages
 	requestType := api.NewTestMessage("Request").
@@ -53,11 +59,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 	for _, test := range []struct {
 		name  string
 		setup func() *api.Method
-		want  []struct {
-			start string
-			end   string
-			want  string
-		}
+		want  []expectedBlock
 	}{
 		{
 			name: "Simple_Deprecated",
@@ -71,11 +73,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				m.Documentation = "-- simple marker --"
 				return m
 			},
-			want: []struct {
-				start string
-				end   string
-				want  string
-			}{
+			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.simpleMethod`.",
 					end:   "-> GoogleTest.Response",
@@ -101,11 +99,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				m.Documentation = "-- pagination marker --"
 				return m
 			},
-			want: []struct {
-				start string
-				end   string
-				want  string
-			}{
+			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.paginationMethod`.",
 					end:   "-> any AsyncSequence<Item, Swift.Error>",
@@ -135,11 +129,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				m.Documentation = "-- lro marker --"
 				return m
 			},
-			want: []struct {
-				start string
-				end   string
-				want  string
-			}{
+			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.lromethod`.",
 					end:   "-> any GoogleCloudGax.PollableOperation<LROResult>",
@@ -163,11 +153,7 @@ func TestGenerateService_DeprecatedMethods(t *testing.T) {
 				m.Documentation = "-- not deprecated marker --"
 				return m
 			},
-			want: []struct {
-				start string
-				end   string
-				want  string
-			}{
+			want: []expectedBlock{
 				{
 					start: "    /// See `TestServiceClient.notDeprecatedMethod`.",
 					end:   "-> GoogleTest.Response",

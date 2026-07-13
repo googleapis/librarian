@@ -35,12 +35,14 @@ func TestGenerateField_Deprecated(t *testing.T) {
 		{
 			name:       "deprecated",
 			deprecated: true,
+			repeated:   false,
 			want:       "  /// -- field marker --\n  @available(*, deprecated)\n  public var normalField: Swift.String",
 			endStr:     "public var normalField: Swift.String",
 		},
 		{
 			name:       "not-deprecated",
 			deprecated: false,
+			repeated:   false,
 			want:       "  /// -- field marker --\n  public var normalField: Swift.String",
 			endStr:     "public var normalField: Swift.String",
 		},
