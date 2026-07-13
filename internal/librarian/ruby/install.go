@@ -39,11 +39,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err := verify(tools); err != nil {
 		return err
 	}
-	binDir, libDir, err := binAndLibDir()
+	installDir, err := InstallDir()
 	if err != nil {
 		return err
 	}
-	return gem.Install(ctx, tools.Gem, binDir, libDir)
+	binDir := filepath.Join(installDir, "bin")
+	return gem.Install(ctx, tools.Gem, binDir, installDir)
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -57,15 +58,6 @@ func InstallDir() (string, error) {
 		return "", fmt.Errorf("failed to get install directory: %w", err)
 	}
 	return absDir, nil
-}
-
-// binAndLibDir returns the directory where Gem wrapper and asset are stored.
-func binAndLibDir() (string, string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", "", err
-	}
-	return filepath.Join(installDir, "bin"), filepath.Join(installDir, "lib"), nil
 }
 
 func verify(tools *config.Tools) error {
