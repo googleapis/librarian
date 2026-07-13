@@ -17,6 +17,7 @@ package librarian
 import (
 	"encoding/json"
 	"errors"
+	"io/fs"
 	"maps"
 	"os"
 	"path/filepath"
@@ -39,7 +40,7 @@ func loadReleasePleaseManifest(pattern string) (map[string]string, error) {
 	if len(matches) == 0 {
 		data, err := os.ReadFile(pattern)
 		if err != nil {
-			if errors.Is(err, os.ErrNotExist) {
+			if errors.Is(err, fs.ErrNotExist) {
 				return map[string]string{}, nil
 			}
 			return nil, err

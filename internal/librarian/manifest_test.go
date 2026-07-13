@@ -27,7 +27,7 @@ func TestLoadReleasePleaseManifest(t *testing.T) {
 	t.Run("missing file returns empty map", func(t *testing.T) {
 		got, err := loadReleasePleaseManifest(filepath.Join(t.TempDir(), "nonexistent.json"))
 		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+			t.Fatal(err)
 		}
 		if len(got) != 0 {
 			t.Errorf("got %v, want empty map", got)
@@ -43,7 +43,7 @@ func TestLoadReleasePleaseManifest(t *testing.T) {
 		}
 		got, err := loadReleasePleaseManifest(path)
 		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+			t.Fatal(err)
 		}
 		want := map[string]string{
 			"packages/google-cloud-memorystore": "0.7.0",
@@ -71,7 +71,7 @@ func TestLoadReleasePleaseManifest(t *testing.T) {
 		pattern := filepath.Join(dir, config.ReleasePleaseManifestPattern)
 		got, err := loadReleasePleaseManifest(pattern)
 		if err != nil {
-			t.Fatalf("unexpected error: %v", err)
+			t.Fatal(err)
 		}
 		want := map[string]string{
 			"accessapproval":       "1.13.0",
@@ -106,7 +106,7 @@ func TestResolveVersion(t *testing.T) {
 		".":                                 "1.0.0",
 	}
 
-	tests := []struct {
+	for _, tt := range []struct {
 		name     string
 		lib      *config.Library
 		manifest map[string]string
@@ -183,9 +183,7 @@ func TestResolveVersion(t *testing.T) {
 			manifest: map[string]string{},
 			want:     "3.1.4",
 		},
-	}
-
-	for _, tt := range tests {
+	} {
 		t.Run(tt.name, func(t *testing.T) {
 			got := resolveVersion(tt.lib, tt.manifest)
 			if got != tt.want {
