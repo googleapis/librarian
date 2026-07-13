@@ -137,3 +137,57 @@ func TestInstall_Error(t *testing.T) {
 		})
 	}
 }
+
+func TestVerify_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		tools      []*config.GemTool
+		binDir     string
+		installDir string
+		wantErr    error
+	}{
+		{
+			name: "relative binDir",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: "1.50.0"},
+			},
+			binDir:     "relative/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidBinDir,
+		},
+		{
+			name: "relative installDir",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: "1.50.0"},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "relative/install",
+			wantErr:    errInvalidInstallDir,
+		},
+		{
+			name: "missing name",
+			tools: []*config.GemTool{
+				{Name: "", Version: "1.50.0"},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidGem,
+		},
+		{
+			name: "missing version",
+			tools: []*config.GemTool{
+				{Name: "rubocop", Version: ""},
+			},
+			binDir:     "/tmp/ruby_tools/bin",
+			installDir: "/tmp/ruby_tools",
+			wantErr:    errInvalidGem,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := verify(test.tools, test.binDir, test.installDir)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("verify() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
+	}
+}
