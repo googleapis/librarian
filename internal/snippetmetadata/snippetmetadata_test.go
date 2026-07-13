@@ -412,7 +412,7 @@ func copyInputFileToTemp(t *testing.T, inputFile string) string {
 }
 
 func TestHTMLCharsNoEscape(t *testing.T) {
-	for _, tc := range []struct {
+	for _, test := range []struct {
 		name  string
 		input string
 		run   func(string) error
