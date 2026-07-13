@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
@@ -34,13 +35,47 @@ const (
 	toolsDir         = "php_tools"
 )
 
+var (
+	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+	errMissingPackageURL = errors.New("has build steps but no package URL")
+)
+
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil {
+	if tools != nil && len(tools.Composer) > 0 {
+		for _, tool := range tools.Composer {
+			if tool.Package == "" {
+				return fmt.Errorf("composer tool %s %w", tool.Name, errMissingPackageURL)
+			}
+			repo, err := repoFromPackageURL(tool.Package)
+			if err != nil {
+				return err
+			}
+			dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+			if err != nil {
+				return fmt.Errorf("fetching %s: %w", tool.Name, err)
+			}
+
+			for _, cmdStr := range tool.Build {
+				if err := command.RunInDir(ctx, dir, "sh", "-c", cmdStr); err != nil {
+					return err
+				}
+			}
+		}
 		return nil
 	}
 	_, err := installGenerator(ctx)
 	return err
+}
+
+// repoFromPackageURL extracts the repository path (e.g.,
+// "github.com/googleapis/gapic-generator-php") from a GitHub archive URL.
+func repoFromPackageURL(packageURL string) (string, error) {
+	parts := strings.SplitN(packageURL, "/archive/", 2)
+	if len(parts) != 2 {
+		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
+	}
+	return strings.TrimPrefix(parts[0], "https://"), nil
 }
 
 // InstallDir gets the directory where tools should be installed.
