@@ -15,9 +15,9 @@
   languages:
     - java
     - nodejs
+    - php
     - python
     - rust
-    - php
   transports:
     all: rest
 - path: google/ads/datamanager/v1
@@ -52,32 +52,32 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
 - path: google/analytics/admin/v1beta
   documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
 - path: google/analytics/data/v1alpha
   documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
 - path: google/analytics/data/v1beta
   documentation_uri: https://developers.google.com/analytics/
   languages:
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/issues?q=componentid:187400
 - path: google/api/apikeys/v2
   documentation_uri: https://cloud.google.com/api-keys/docs
@@ -95,8 +95,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/api/servicecontrol/v1
   documentation_uri: https://cloud.google.com/service-infrastructure/docs/overview/
   languages:
@@ -137,9 +137,9 @@
   documentation_uri: https://developers.google.com/chat
   languages:
     - java
+    - php
     - python
     - rust
-    - php
   skip_rest_numeric_enums:
     - python
   title: Google Apps Card
@@ -149,16 +149,16 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/apps/meet/v2
 - path: google/apps/meet/v2beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/apps/script/type
   documentation_uri: https://developers.google.com/apps-script/
   languages:
@@ -243,8 +243,8 @@
   languages:
     - go
     - java
-    - python
     - php
+    - python
   transports:
     java: grpc
 - path: google/chat/v1
@@ -406,8 +406,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   transports:
     go: ""
 - path: google/cloud/apihub/v1
@@ -428,8 +428,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/apphub/v1
   description: App Hub acts as the foundational data model and central registry for your applications on Google Cloud.
   languages:
@@ -439,8 +439,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/asset/v1
   documentation_uri: https://cloud.google.com/resource-manager/docs/cloud-asset-inventory/overview
   languages:
@@ -490,14 +490,14 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/audit
   documentation_uri: https://cloud.google.com/logging/docs/audit
   languages:
     - java
-    - python
     - php
+    - python
 - path: google/cloud/auditmanager/v1
   languages:
     - all
@@ -507,8 +507,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559744
 - path: google/cloud/automl/v1beta1
   documentation_uri: https://cloud.google.com/automl/docs/
@@ -539,8 +539,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/batch/v1alpha
   documentation_uri: https://cloud.google.com/batch/docs
   languages:
@@ -637,8 +637,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   skip_rest_numeric_enums:
     - all
   transports:
@@ -714,9 +714,9 @@
   languages:
     - go
     - java
+    - php
     - python
     - rust
-    - php
   skip_rest_numeric_enums:
     - all
   transports:
@@ -778,8 +778,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559770
 - path: google/cloud/billing/budgets/v1beta1
   documentation_uri: https://cloud.google.com/billing/docs/how-to/budget-api-overview
@@ -817,8 +817,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/certificatemanager/v1
   description: Certificate Manager simplifies the acquisition, deployment, and management of Transport Layer Security (TLS) certificates.
   documentation_uri: https://docs.cloud.google.com/certificate-manager/docs/overview
@@ -840,8 +840,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   transports:
     python: grpc
 - path: google/cloud/chronicle/v1
@@ -857,8 +857,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/clouddms/v1
   documentation_uri: https://cloud.google.com/database-migration/
   languages:
@@ -946,8 +946,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/connectors/v1
   languages:
     - all
@@ -966,8 +966,8 @@
   languages:
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/datacatalog/lineage/v1
   description: Data lineage is a visual map that tracks the entire lifecycle of your data. It shows you where your data comes from (the origin), where it travels (the destinations), and all the changes or transformations that happen along the way.
   documentation_uri: https://cloud.google.com/data-catalog/docs/concepts/about-data-lineage
@@ -1002,8 +1002,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/datafusion/v1
   documentation_uri: https://cloud.google.com/data-fusion
   languages:
@@ -1021,8 +1021,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   transports:
     csharp: grpc
     java: grpc
@@ -1245,8 +1245,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/gkebackup/logging/v1
   languages:
     - all
@@ -1265,8 +1265,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   skip_rest_numeric_enums:
     - all
   release_level:
@@ -1446,8 +1446,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/iamconnectorcredentials/v1alpha
   languages:
     - python
@@ -1490,8 +1490,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559753
 - path: google/cloud/language/v1beta2
   documentation_uri: https://cloud.google.com/natural-language/docs/
@@ -1514,8 +1514,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/location
   languages:
     - all
@@ -1535,8 +1535,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/managedidentities/v1
   documentation_uri: https://cloud.google.com/managed-microsoft-ad/
   languages:
@@ -1570,8 +1570,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   transports:
     csharp: grpc
     go: grpc
@@ -1602,8 +1602,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/metastore/v1
   documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
@@ -1614,16 +1614,16 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/metastore/v1beta
   documentation_uri: https://cloud.google.com/dataproc-metastore/
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/migrationcenter/v1
   languages:
     - all
@@ -1635,8 +1635,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/netapp/v1
   languages:
     - all
@@ -1727,8 +1727,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   transports:
     go: grpc
     java: grpc
@@ -1829,8 +1829,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/parametermanager/v1
   languages:
     - all
@@ -1872,8 +1872,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/privilegedaccessmanager/v1
   languages:
     - all
@@ -1917,8 +1917,8 @@
   languages:
     - go
     - java
-    - python
     - php
+    - python
 - path: google/cloud/recommender/logging/v1
   languages:
     - all
@@ -2011,8 +2011,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/secrets/v1beta1
   languages:
     - python
@@ -2066,8 +2066,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/securitycenter/v1beta1
   documentation_uri: https://cloud.google.com/security-command-center
   languages:
@@ -2165,8 +2165,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/cloud/talent/v4
   documentation_uri: https://cloud.google.com/solutions/talent-solution/
   languages:
@@ -2512,8 +2512,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/datastore/admin/v1
   documentation_uri: https://cloud.google.com/datastore
   languages:
@@ -2524,8 +2524,8 @@
   languages:
     - go
     - java
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559768
 - path: google/devtools/artifactregistry/v1
   documentation_uri: https://cloud.google.com/artifact-registry
@@ -2555,8 +2555,8 @@
   languages:
     - go
     - java
-    - python
     - php
+    - python
   new_issue_uri: https://issuetracker.google.com/savedsearches/559780
 - path: google/devtools/cloudtrace/v1
   documentation_uri: https://cloud.google.com/trace/docs
@@ -2585,8 +2585,8 @@
 - path: google/devtools/source/v1
   documentation_uri: https://cloud.google.com
   languages:
-    - python
     - php
+    - python
   skip_rest_numeric_enums:
     - python
   title: Source Context
@@ -2616,9 +2616,9 @@
   documentation_uri: https://mapsplatform.google.com/maps-products
   languages:
     - java
+    - php
     - python
     - rust
-    - php
   skip_rest_numeric_enums:
     - python
   transports:
@@ -2649,8 +2649,8 @@
 - path: google/iam/v1/logging
   documentation_uri: https://cloud.google.com/iam/docs/audit-logging
   languages:
-    - python
     - php
+    - python
   skip_rest_numeric_enums:
     - python
   title: IAM Audit Logging
@@ -2773,8 +2773,8 @@
   languages:
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/monitoring/dashboard/v1
   documentation_uri: https://cloud.google.com/monitoring/dashboards/
   languages:
@@ -2823,8 +2823,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
   release_level:
     go: preview
 - path: google/shopping/merchant/accounts/v1beta
@@ -2832,29 +2832,29 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/conversions/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/datasources/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/inventories/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/issueresolution/v1beta
   languages:
     - go
@@ -2866,29 +2866,29 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/notifications/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/ordertracking/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/products/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/productstudio/v1alpha
   languages:
     - go
@@ -2899,15 +2899,15 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/quota/v1beta
   languages:
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/reports/v1alpha
   languages:
     - java
@@ -2918,8 +2918,8 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/merchant/reviews/v1
   languages:
     - python
@@ -2928,16 +2928,16 @@
     - go
     - java
     - nodejs
-    - python
     - php
+    - python
 - path: google/shopping/type
   documentation_uri: https://developers.google.com/merchant/api
   languages:
     - go
     - java
+    - php
     - python
     - rust
-    - php
   skip_rest_numeric_enums:
     - python
   title: Shopping Common Types
