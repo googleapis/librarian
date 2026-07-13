@@ -36,42 +36,18 @@ func TestCrateExists(t *testing.T) {
 		name       string
 		cargoText  string
 		makeDir    string
-		wantErr    bool
 		wantResult bool
 	}{
 		{
 			name:       "exists",
 			cargoText:  fmt.Sprintf(`  "%s",`, testDir),
 			makeDir:    testDir,
-			wantErr:    false,
 			wantResult: true,
 		},
 		{
 			name:       "not exists",
 			cargoText:  `  "src/generated/test/service/v2",`,
 			makeDir:    "src/generated/test/service/v2",
-			wantErr:    false,
-			wantResult: false,
-		},
-		{
-			name:       "only directory",
-			cargoText:  `  "bad-bad-bad",`,
-			makeDir:    testDir,
-			wantErr:    true,
-			wantResult: false,
-		},
-		{
-			name:       "only entry",
-			cargoText:  fmt.Sprintf(`  "%s",`, testDir),
-			makeDir:    "src/generated",
-			wantErr:    true,
-			wantResult: false,
-		},
-		{
-			name:       "entry is substring",
-			cargoText:  `  "src/generated/test/service/v1/weird/but/should/test",`,
-			makeDir:    testDir,
-			wantErr:    true,
 			wantResult: false,
 		},
 	} {
@@ -85,14 +61,51 @@ func TestCrateExists(t *testing.T) {
 				t.Fatal(err)
 			}
 			got, err := crateExists(testDir)
-			if test.wantErr && err == nil {
-				t.Fatalf("crateExists() succeed when an error was expected: %v", got)
-			}
-			if !test.wantErr && err != nil {
-				t.Fatalf("crateExists() failed unexpectedly: %v", err)
+			if err != nil {
+				t.Fatal(err)
 			}
 			if test.wantResult != got {
 				t.Errorf("crateExists() mismatch, want=%v, got=%v", test.wantResult, got)
+			}
+		})
+	}
+}
+
+func TestCrateExists_Errors(t *testing.T) {
+	const testDir = "src/generated/test/service/v1"
+	for _, test := range []struct {
+		name      string
+		cargoText string
+		makeDir   string
+	}{
+		{
+			name:      "only directory",
+			cargoText: `  "bad-bad-bad",`,
+			makeDir:   testDir,
+		},
+		{
+			name:      "only entry",
+			cargoText: fmt.Sprintf(`  "%s",`, testDir),
+			makeDir:   "src/generated",
+		},
+		{
+			name:      "entry is substring",
+			cargoText: `  "src/generated/test/service/v1/weird/but/should/test",`,
+			makeDir:   testDir,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			d := t.TempDir()
+			t.Chdir(d)
+			if err := os.MkdirAll(test.makeDir, 0775); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile("Cargo.toml", fmt.Appendf(nil, formatTestCargoToml, test.cargoText), 0644); err != nil {
+				t.Fatal(err)
+			}
+			got, err := crateExists(testDir)
+			if err == nil {
+				t.Fatalf("crateExists() succeed when an error was expected: %v", got)
 			}
 		})
 	}
