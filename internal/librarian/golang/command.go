@@ -27,6 +27,7 @@ import (
 
 const envPath = "PATH"
 
+// runProtoc runs the protoc command with the given environment variable and arguments.
 func runProtoc(ctx context.Context, pc *config.Protoc, env map[string]string, args ...string) error {
 	if pc == nil {
 		// Fallback to global protoc if no tool configured.
