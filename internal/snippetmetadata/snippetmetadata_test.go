@@ -410,3 +410,62 @@ func copyInputFileToTemp(t *testing.T, inputFile string) string {
 	}
 	return path
 }
+
+func TestHTMLCharsNoEscape(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		input string
+		run   func(string) error
+		want  string
+	}{
+		{
+			name: "updateLibraryVersion",
+			input: `{
+  "clientLibrary": {
+    "someFieldWithHTML": "a > b & c < d",
+    "version": "1.0.0"
+  }
+}`,
+			run: func(path string) error {
+				return updateLibraryVersion(path, "1.2.0")
+			},
+			want: `{
+  "clientLibrary": {
+    "someFieldWithHTML": "a > b & c < d",
+    "version": "1.2.0"
+  }
+}`,
+		},
+		{
+			name: "reformat",
+			input: `{
+  "someFieldWithHTML": "a > b & c < d"
+}`,
+			run: func(path string) error {
+				return reformat(path)
+			},
+			want: `{
+  "someFieldWithHTML": "a > b & c < d"
+}`,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+			dir := t.TempDir()
+			path := filepath.Join(dir, "snippet_metadata.json")
+			if err := os.WriteFile(path, []byte(test.input), 0644); err != nil {
+				t.Fatal(err)
+			}
+			if err := test.run(path); err != nil {
+				t.Fatal(err)
+			}
+			got, err := os.ReadFile(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, string(got)); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
