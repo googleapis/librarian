@@ -17,33 +17,60 @@ package librarian
 import (
 	"encoding/json"
 	"errors"
+	"maps"
 	"os"
+	"path/filepath"
 
 	"github.com/googleapis/librarian/internal/config"
 )
 
-// loadReleasePleaseManifest reads and parses .release-please-manifest.json
-// if it exists at path. Returns an empty map if the file does not exist.
-func loadReleasePleaseManifest(path string) (map[string]string, error) {
-	data, err := os.ReadFile(path)
+// loadReleasePleaseManifest reads and parses release-please manifest files matching pattern.
+// If pattern is empty, it defaults to config.ReleasePleaseManifestPattern.
+// It merges entries from all matching manifest files (such as bulk and individual manifests).
+// Returns an empty map if no matching manifest files are found.
+func loadReleasePleaseManifest(pattern string) (map[string]string, error) {
+	if pattern == "" {
+		pattern = config.ReleasePleaseManifestPattern
+	}
+	matches, err := filepath.Glob(pattern)
 	if err != nil {
-		if errors.Is(err, os.ErrNotExist) {
-			return map[string]string{}, nil
+		return nil, err
+	}
+	if len(matches) == 0 {
+		data, err := os.ReadFile(pattern)
+		if err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				return map[string]string{}, nil
+			}
+			return nil, err
 		}
-		return nil, err
+		var manifest map[string]string
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			return nil, err
+		}
+		return manifest, nil
 	}
-	var manifest map[string]string
-	if err := json.Unmarshal(data, &manifest); err != nil {
-		return nil, err
+
+	merged := make(map[string]string)
+	for _, file := range matches {
+		data, err := os.ReadFile(file)
+		if err != nil {
+			return nil, err
+		}
+		var manifest map[string]string
+		if err := json.Unmarshal(data, &manifest); err != nil {
+			return nil, err
+		}
+		maps.Copy(merged, manifest)
 	}
-	return manifest, nil
+	return merged, nil
 }
 
 // resolveVersion resolves the version for lib using the provided release-please manifest map.
 // Resolution order:
-// 1. Manifest key matching lib.Output (e.g., "packages/google-cloud-memorystore")
-// 2. Manifest key matching lib.Name (e.g., "google-cloud-memorystore")
-// 3. Manifest key matching "." (for single-component repos)
+// 1. Manifest key matching lib.Output (e.g., "packages/google-cloud-memorystore").
+// 2. Manifest key matching lib.Name (e.g., "google-cloud-memorystore" or "accessapproval").
+// 3. Manifest key matching "." (for single-component repos).
 // 4. Existing lib.Version set in librarian.yaml.
 func resolveVersion(lib *config.Library, manifest map[string]string) string {
 	if len(manifest) > 0 {

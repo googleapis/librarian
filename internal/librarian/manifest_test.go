@@ -34,9 +34,9 @@ func TestLoadReleasePleaseManifest(t *testing.T) {
 		}
 	})
 
-	t.Run("valid manifest file", func(t *testing.T) {
+	t.Run("single manifest file", func(t *testing.T) {
 		dir := t.TempDir()
-		path := filepath.Join(dir, config.ReleasePleaseManifest)
+		path := filepath.Join(dir, ".release-please-manifest.json")
 		content := `{"packages/google-cloud-memorystore": "0.7.0", ".": "1.2.3"}`
 		if err := os.WriteFile(path, []byte(content), 0644); err != nil {
 			t.Fatal(err)
@@ -54,9 +54,39 @@ func TestLoadReleasePleaseManifest(t *testing.T) {
 		}
 	})
 
+	t.Run("multiple manifest files (bulk and individual)", func(t *testing.T) {
+		dir := t.TempDir()
+		bulkPath := filepath.Join(dir, ".release-please-bulk-manifest.json")
+		bulkContent := `{"accessapproval": "1.13.0", "accesscontextmanager": "1.14.0"}`
+		if err := os.WriteFile(bulkPath, []byte(bulkContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		indivPath := filepath.Join(dir, ".release-please-individual-manifest.json")
+		indivContent := `{"agentplatform": "0.21.0", "bigquery": "1.77.0"}`
+		if err := os.WriteFile(indivPath, []byte(indivContent), 0644); err != nil {
+			t.Fatal(err)
+		}
+
+		pattern := filepath.Join(dir, config.ReleasePleaseManifestPattern)
+		got, err := loadReleasePleaseManifest(pattern)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		want := map[string]string{
+			"accessapproval":       "1.13.0",
+			"accesscontextmanager": "1.14.0",
+			"agentplatform":        "0.21.0",
+			"bigquery":             "1.77.0",
+		}
+		if diff := cmp.Diff(want, got); diff != "" {
+			t.Errorf("merged manifest mismatch (-want +got):\n%s", diff)
+		}
+	})
+
 	t.Run("invalid json returns error", func(t *testing.T) {
 		dir := t.TempDir()
-		path := filepath.Join(dir, config.ReleasePleaseManifest)
+		path := filepath.Join(dir, ".release-please-manifest.json")
 		if err := os.WriteFile(path, []byte("{invalid json}"), 0644); err != nil {
 			t.Fatal(err)
 		}
@@ -71,6 +101,8 @@ func TestResolveVersion(t *testing.T) {
 	manifest := map[string]string{
 		"packages/google-cloud-memorystore": "0.7.0",
 		"google-cloud-redis-cluster":        "0.12.0",
+		"accessapproval":                    "1.13.0",
+		"agentplatform":                     "0.21.0",
 		".":                                 "1.0.0",
 	}
 
@@ -99,6 +131,25 @@ func TestResolveVersion(t *testing.T) {
 			},
 			manifest: manifest,
 			want:     "0.12.0",
+		},
+		{
+			name: "matches Go library name from bulk manifest",
+			lib: &config.Library{
+				Name:    "accessapproval",
+				Output:  "accessapproval/apiv1",
+				Version: "1.12.0",
+			},
+			manifest: manifest,
+			want:     "1.13.0",
+		},
+		{
+			name: "matches Go library name from individual manifest",
+			lib: &config.Library{
+				Name:    "agentplatform",
+				Version: "0.20.0",
+			},
+			manifest: manifest,
+			want:     "0.21.0",
 		},
 		{
 			name: "matches single component root dot",

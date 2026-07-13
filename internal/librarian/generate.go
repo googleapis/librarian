@@ -100,7 +100,7 @@ func runGenerate(ctx context.Context, cfg *config.Config, all bool, libraryName 
 		return err
 	}
 
-	manifest, err := loadReleasePleaseManifest(config.ReleasePleaseManifest)
+	manifest, err := loadReleasePleaseManifest(config.ReleasePleaseManifestPattern)
 	if err != nil {
 		return fmt.Errorf("loading release-please manifest: %w", err)
 	}
