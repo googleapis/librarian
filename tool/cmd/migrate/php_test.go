@@ -103,45 +103,42 @@ func TestRunPHPMigration(t *testing.T) {
 	}
 }
 
-func TestExtractAPIPath(t *testing.T) {
+func TestExtractAPIPaths(t *testing.T) {
 	for _, test := range []struct {
-		name     string
-		source   string
-		wantPath string
-		wantOk   bool
+		name      string
+		source    string
+		wantPaths []string
 	}{
 		{
-			name:     "versioned api",
-			source:   "/google/cloud/ces/(v1)/.*-php/(.*)",
-			wantPath: "google/cloud/ces/v1",
-			wantOk:   true,
+			name:      "versioned api",
+			source:    "/google/cloud/ces/(v1)/.*-php/(.*)",
+			wantPaths: []string{"google/cloud/ces/v1"},
 		},
 		{
-			name:     "unversioned api",
-			source:   "/google/identity/accesscontextmanager/type/.*-php/(.*)",
-			wantPath: "google/identity/accesscontextmanager/type",
-			wantOk:   true,
+			name:      "unversioned api",
+			source:    "/google/identity/accesscontextmanager/type/.*-php/(.*)",
+			wantPaths: []string{"google/identity/accesscontextmanager/type"},
 		},
 		{
-			name:     "non-matching path",
-			source:   "/some/other/path",
-			wantPath: "",
-			wantOk:   false,
+			name:      "non-matching path",
+			source:    "/some/other/path",
+			wantPaths: nil,
 		},
 		{
-			name:     "grafeas versioned",
-			source:   "/grafeas/(v1)/.*-php/(.*)",
-			wantPath: "grafeas/v1",
-			wantOk:   true,
+			name:      "grafeas versioned",
+			source:    "/grafeas/(v1)/.*-php/(.*)",
+			wantPaths: []string{"grafeas/v1"},
+		},
+		{
+			name:      "union versioned api",
+			source:    "/google/cloud/secretmanager/(v1|v1beta2)/.*-php/(.*)",
+			wantPaths: []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v1beta2"},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			gotPath, gotOk := extractAPIPath(test.source)
-			if gotOk != test.wantOk {
-				t.Fatal("extractAPIPath ok =", gotOk, ", want", test.wantOk)
-			}
-			if gotPath != test.wantPath {
-				t.Error("extractAPIPath path =", gotPath, ", want", test.wantPath)
+			gotPaths := extractAPIPaths(test.source)
+			if diff := cmp.Diff(test.wantPaths, gotPaths); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
