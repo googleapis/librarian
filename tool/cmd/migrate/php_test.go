@@ -98,7 +98,6 @@ func TestRunPHPMigration(t *testing.T) {
 			},
 			Protoc: &config.Protoc{
 				Version: "31.0",
-				SHA256:  "24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42",
 			},
 		},
 	}
