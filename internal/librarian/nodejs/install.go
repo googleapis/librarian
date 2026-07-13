@@ -164,7 +164,11 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	if err != nil {
 		return err
 	}
-	dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+	sha := tool.SHA256
+	if sha == "" {
+		sha = tool.Checksum
+	}
+	dir, err := fetch.Repo(ctx, repo, tool.Version, sha)
 	if err != nil {
 		return fmt.Errorf("fetching %s: %w", tool.Name, err)
 	}
