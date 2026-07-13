@@ -248,8 +248,12 @@ func (c *codec) addFeatureAnnotations(
 		if !ok {
 			return fmt.Errorf("bad annotation type for %s", id)
 		}
-		annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
-		annotation.GatedOp = " || "
+		if !msg.ServicePlaceholder {
+			// Messages that are placeholders for services just get the same
+			// gating traits as the service.
+			annotation.GatedBy = insertGatingTrait(annotation.GatedBy, traitName)
+			annotation.GatedOp = " || "
+		}
 	}
 	return nil
 }
