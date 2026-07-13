@@ -80,8 +80,14 @@ type deepCopyRegexSpec struct {
 	Dest   string `yaml:"dest"`
 }
 
+// extractAPIPaths extracts target API paths from an OwlBot source matcher pattern.
+// It supports both unversioned paths and versioned paths, including union matchers
+// (e.g. "(v1|v1beta2)") which are expanded into separate versioned paths.
+// Returns nil if the pattern is invalid.
 func extractAPIPaths(source string) []string {
 	if matches := owlbotSourceWithVersionRegexp.FindStringSubmatch(source); len(matches) == 3 {
+		// matches[1] is the base path (e.g. "google/cloud/secretmanager")
+		// matches[2] is the version or version union (e.g. "v1" or "v1|v1beta2")
 		base := matches[1]
 		versions := strings.Split(matches[2], "|")
 		var paths []string
@@ -91,6 +97,7 @@ func extractAPIPaths(source string) []string {
 		return paths
 	}
 	if matches := owlbotSourceWithoutVersionRegexp.FindStringSubmatch(source); len(matches) == 2 {
+		// matches[1] is the full path without a version suffix (e.g. "google/identity/accesscontextmanager/type")
 		return []string{matches[1]}
 	}
 	return nil
