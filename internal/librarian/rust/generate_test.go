@@ -17,6 +17,7 @@ package rust
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -418,15 +419,6 @@ func TestGenerateLibrary(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	workspaceDir, err := filepath.Abs("testdata")
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	t.Cleanup(func() {
-		os.RemoveAll(filepath.Join(workspaceDir, "target"))
-		os.Remove(filepath.Join(workspaceDir, "Cargo.lock"))
-	})
 
 	// Mock validate to speed up the test.
 	oldValidate := validate
@@ -447,17 +439,24 @@ func TestGenerateLibrary(t *testing.T) {
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
-			// Change to testdata directory so cargo fmt can find Cargo.toml
-			t.Chdir(workspaceDir)
+			// Do all the work in a temporary directory, to keep the source
+			// directory unchanged.
+			temp := t.TempDir()
+			t.Chdir(temp)
 
 			libName := "google-cloud-secretmanager-v1"
-			outDir := filepath.Join(workspaceDir, libName)
-
-			if err := os.RemoveAll(outDir); err != nil {
-				t.Fatal(err)
-			}
+			outDir := "src/generated/cloud/secretmanager/v1"
 			if test.preExists {
 				if err := os.MkdirAll(outDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				contents := fmt.Appendf(nil, formatTestCargoToml, fmt.Sprintf(`  "%s",`, outDir))
+				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
+					t.Fatal(err)
+				}
+			} else {
+				contents := fmt.Appendf(nil, formatTestCargoToml, "")
+				if err := os.WriteFile("Cargo.toml", contents, 0644); err != nil {
 					t.Fatal(err)
 				}
 			}
