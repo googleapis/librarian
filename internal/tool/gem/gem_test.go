@@ -41,6 +41,8 @@ echo "gem $@" >> %q
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", stubDir)
+	binDir := "/tmp/bin"
+	libDir := "/tmp/lib"
 	for _, test := range []struct {
 		name    string
 		tools   []*config.GemTool
@@ -51,7 +53,7 @@ echo "gem $@" >> %q
 			tools: []*config.GemTool{
 				{Name: "rubocop", Version: "1.50.0"},
 			},
-			wantLog: "gem install rubocop -v 1.50.0 --no-document",
+			wantLog: "gem install rubocop -v 1.50.0 --bindir /tmp/bin --install-dir /tmp/lib --no-document",
 		},
 		{
 			name: "install multiple gems",
@@ -59,7 +61,8 @@ echo "gem $@" >> %q
 				{Name: "rubocop", Version: "1.50.0"},
 				{Name: "rake", Version: "13.0.6"},
 			},
-			wantLog: "gem install rubocop -v 1.50.0 --no-document\ngem install rake -v 13.0.6 --no-document",
+			wantLog: `gem install rubocop -v 1.50.0 --bindir /tmp/bin --install-dir /tmp/lib --no-document
+gem install rake -v 13.0.6 --bindir /tmp/bin --install-dir /tmp/lib --no-document`,
 		},
 		{
 			name:    "empty or nil tools",
@@ -69,7 +72,7 @@ echo "gem $@" >> %q
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			_ = os.Remove(stubLogPath)
-			if err := Install(t.Context(), test.tools); err != nil {
+			if err := Install(t.Context(), test.tools, binDir, libDir); err != nil {
 				t.Fatal(err)
 			}
 			data, _ := os.ReadFile(stubLogPath)
@@ -127,7 +130,7 @@ func TestInstall_Error(t *testing.T) {
 			if test.setup != nil {
 				test.setup(t)
 			}
-			err := Install(t.Context(), test.tools)
+			err := Install(t.Context(), test.tools, "", "")
 			if !errors.Is(err, test.wantErr) {
 				t.Errorf("Install() error = %v, wantErr = %v", err, test.wantErr)
 			}
