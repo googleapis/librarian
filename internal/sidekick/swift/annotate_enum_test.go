@@ -166,3 +166,40 @@ func TestAnnotateEnum_Gating(t *testing.T) {
 		})
 	}
 }
+
+func TestAnnotateEnum_ModulePath(t *testing.T) {
+	enum := &api.Enum{
+		Name:    "Color",
+		ID:      ".test.Color",
+		Package: "test",
+		Values: []*api.EnumValue{
+			{Name: "COLOR_UNSPECIFIED", Number: 0},
+			{Name: "COLOR_RED", Number: 1},
+		},
+	}
+	enum.UniqueNumberValues = enum.Values
+	for _, ev := range enum.Values {
+		ev.Parent = enum
+	}
+	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{
+		"module-path": "TestProtos",
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := enum.Codec.(*enumAnnotations)
+	if !ok {
+		t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+	}
+
+	if ann.ModulePath != "TestProtos" {
+		t.Errorf("ann.ModulePath = %q, want %q", ann.ModulePath, "TestProtos")
+	}
+
+	wantProtoTypeName := "TestProtos.Test_Color"
+	if ann.ProtoTypeName != wantProtoTypeName {
+		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
+	}
+}
