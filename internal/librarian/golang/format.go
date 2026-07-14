@@ -32,7 +32,7 @@ func Format(ctx context.Context, library *config.Library) error {
 	if err != nil {
 		return err
 	}
-	return runWithEnv(ctx, nil, "goimports", args...)
+	return runWithEnv(ctx, map[string]string{}, "goimports", args...)
 }
 
 func buildFormatArgs(library *config.Library) ([]string, error) {
