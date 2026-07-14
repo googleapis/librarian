@@ -76,7 +76,7 @@ func TestRunProtoc(t *testing.T) {
 	}
 }
 
-func TestInstallEnv(t *testing.T) {
+func TestToolsEnv(t *testing.T) {
 	for _, test := range []struct {
 		name   string
 		binDir func(t *testing.T) string
@@ -108,7 +108,7 @@ func TestInstallEnv(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			binDir := test.binDir(t)
 			t.Setenv(cache.EnvLibrarianBin, binDir)
-			got, err := installEnv()
+			got, err := toolsEnv()
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -124,15 +124,15 @@ func TestInstallEnv(t *testing.T) {
 	}
 }
 
-func TestInstallEnv_Error(t *testing.T) {
+func TestToolsEnv_Error(t *testing.T) {
 	t.Setenv(cache.EnvLibrarianBin, "")
 	t.Setenv(cache.EnvLibrarianCache, "")
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_CACHE_HOME", "")
 	// This error is not easy to check, we only make sure
 	// it doesn't return nil.
-	if _, err := installEnv(); err == nil {
-		t.Error("installEnv() error = nil, want error")
+	if _, err := toolsEnv(); err == nil {
+		t.Error("toolsEnv() error = nil, want error")
 	}
 }
 

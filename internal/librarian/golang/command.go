@@ -28,7 +28,7 @@ const envPath = "PATH"
 // runProtoc runs the protoc command with the given environment variable and arguments.
 func runProtoc(ctx context.Context, pc *config.Protoc, args ...string) error {
 	// Ensure that the toolchain environment variables are set before calling protoc.
-	env, err := installEnv()
+	env, err := toolsEnv()
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func runWithEnv(ctx context.Context, env map[string]string, cmd string, args ...
 
 // runInDirWithEnv runs a command in the given directory with the given environment.
 func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd string, args ...string) error {
-	additionalEnv, err := installEnv()
+	additionalEnv, err := toolsEnv()
 	if err != nil {
 		return err
 	}
@@ -50,8 +50,8 @@ func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd
 	return command.RunInDirWithEnv(ctx, dir, env, cmd, args...)
 }
 
-// installEnv returns the environment variables required to run the Go tools.
-func installEnv() (map[string]string, error) {
+// toolsEnv returns the environment variables required to run the Go tools.
+func toolsEnv() (map[string]string, error) {
 	toolsBinDir, err := InstallDir()
 	if err != nil {
 		return nil, err
