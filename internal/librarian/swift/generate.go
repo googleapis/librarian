@@ -90,7 +90,7 @@ func libraryToModelConfig(library *config.Library, apiCfg *config.API, src *sour
 		specFormat = library.SpecificationFormat
 	}
 
-	releaseLevel := svcConfig.ReleaseLevel(config.LanguageRust, library.Version)
+	releaseLevel := svcConfig.ReleaseLevel(config.LanguageSwift, library.Version)
 	modelCfg := &parser.ModelConfig{
 		Language:            config.LanguageSwift,
 		SpecificationFormat: specFormat,
