@@ -806,6 +806,13 @@ type NodejsAPI struct {
 	Path string `yaml:"path,omitempty"`
 }
 
+// PHPDefault contains PHP-specific global default configuration.
+type PHPDefault struct {
+	// CommonResources indicates whether to include common resources in generation.
+	// Defaults to true if nil.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
+}
+
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
 }

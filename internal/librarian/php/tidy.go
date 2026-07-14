@@ -15,24 +15,13 @@
 package php
 
 import (
+	"errors"
+	"fmt"
 	"slices"
 
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/yaml"
 )
-
-// Fill populates PHP-specific default values for a library.
-func Fill(lib *config.Library) (*config.Library, error) {
-	for _, api := range lib.APIs {
-		if api.PHP == nil {
-			api.PHP = &config.PHPAPI{}
-		}
-		if api.PHP.CommonResources == nil {
-			api.PHP.CommonResources = new(true)
-		}
-	}
-	return lib, nil
-}
 
 // Tidy tidies PHP-specific configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
@@ -67,4 +56,29 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 	}
 
 	return lib, nil
+}
+
+// Validate checks that the PHP-specific configuration is complete and valid.
+func Validate(cfg *config.Config) error {
+	if cfg.Language != config.LanguagePhp {
+		return nil
+	}
+	var errs []error
+	// Check if a global default is set.
+	var hasGlobalDefault bool
+	if cfg.Default != nil && cfg.Default.PHP != nil && cfg.Default.PHP.CommonResources != nil {
+		hasGlobalDefault = true
+	}
+	for _, library := range cfg.Libraries {
+		for _, api := range library.APIs {
+			// If neither API override nor global default is configured, return an error.
+			if !hasGlobalDefault && (api.PHP == nil || api.PHP.CommonResources == nil) {
+				errs = append(errs, fmt.Errorf("library %q, API %q: common_resources is required for PHP configurations but was not configured (either set it on the API level or globally under default.php.common_resources)", library.Name, api.Path))
+			}
+		}
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
+	}
+	return nil
 }

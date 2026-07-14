@@ -190,6 +190,7 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageValidators = map[string]func(*config.Config) error{
 	config.LanguageJava: java.Validate,
+	config.LanguagePhp:  php.Validate,
 }
 
 // validateLanguageConfig finds and executes the language-specific validator for a library.
@@ -251,7 +252,8 @@ func isDefaultEmpty(defaults *config.Default) bool {
 		defaults.Nodejs == nil &&
 		defaults.Rust == nil &&
 		defaults.Python == nil &&
-		defaults.Swift == nil
+		defaults.Swift == nil &&
+		defaults.PHP == nil
 }
 
 // tidyConfig removes unused sections from the configuration.

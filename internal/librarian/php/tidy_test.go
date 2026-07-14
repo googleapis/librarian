@@ -21,91 +21,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestFill(t *testing.T) {
-	trueVal := true
-
-	for _, test := range []struct {
-		name string
-		lib  *config.Library
-		want *config.Library
-	}{
-		{
-			name: "fills empty PHP config with defaults",
-			lib: &config.Library{
-				APIs: []*config.API{
-					{Path: "google/cloud/secretmanager/v1"},
-				},
-			},
-			want: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							CommonResources: &trueVal,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "preserves existing PHP config",
-			lib: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							CommonResources: &trueVal,
-						},
-					},
-				},
-			},
-			want: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							CommonResources: &trueVal,
-						},
-					},
-				},
-			},
-		},
-		{
-			name: "preserves explicitly disabled CommonResources",
-			lib: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							CommonResources: func() *bool { b := false; return &b }(),
-						},
-					},
-				},
-			},
-			want: &config.Library{
-				APIs: []*config.API{
-					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP: &config.PHPAPI{
-							CommonResources: func() *bool { b := false; return &b }(),
-						},
-					},
-				},
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			got, err := Fill(test.lib)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestTidy(t *testing.T) {
 	trueVal := true
 	falseVal := false
@@ -208,6 +123,98 @@ func TestTidy(t *testing.T) {
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestValidate(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr bool
+	}{
+		{
+			name: "valid when configured per-API",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+								PHP: &config.PHPAPI{
+									CommonResources: new(true),
+								},
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "valid when configured globally",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Default: &config.Default{
+					PHP: &config.PHPDefault{
+						CommonResources: new(true),
+					},
+				},
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+		{
+			name: "invalid when not configured anywhere",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: true,
+		},
+		{
+			name: "skips other languages",
+			cfg: &config.Config{
+				Language: config.LanguageGo,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := Validate(test.cfg)
+			if (err != nil) != test.wantErr {
+				t.Errorf("Validate() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
 	}

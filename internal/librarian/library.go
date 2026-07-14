@@ -24,7 +24,6 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
-	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -58,9 +57,27 @@ func fillDefaults(lib *config.Library, d *config.Default) *config.Library {
 		return fillPython(lib, d)
 	case d.Swift != nil:
 		return fillSwift(lib, d)
+	case d.PHP != nil:
+		return fillPHP(lib, d)
 	default:
 		return lib
 	}
+}
+
+// fillPHP populates empty PHP-specific fields in lib from the provided default.
+func fillPHP(lib *config.Library, d *config.Default) *config.Library {
+	if d == nil || d.PHP == nil {
+		return lib
+	}
+	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		if api.PHP.CommonResources == nil && d.PHP.CommonResources != nil {
+			api.PHP.CommonResources = d.PHP.CommonResources
+		}
+	}
+	return lib
 }
 
 // fillGo populates empty Go-specific fields in lib from the provided default.
@@ -341,8 +358,6 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return java.Fill(lib)
 	case config.LanguagePython:
 		return python.Fill(lib)
-	case config.LanguagePhp:
-		return php.Fill(lib)
 	default:
 		return lib, nil
 	}
