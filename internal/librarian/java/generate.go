@@ -115,6 +115,7 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 		outDir:     outdir,
 		metadata:   metadata,
 		transports: transports,
+		primaryDir: primaryDir,
 	}); err != nil {
 		return err
 	}

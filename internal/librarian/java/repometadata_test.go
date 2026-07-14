@@ -41,7 +41,6 @@ func TestRepoMetadata_write(t *testing.T) {
 		DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 		APIID:                s.APIID,
 		LibraryType:          s.LibraryType,
-		RequiresBilling:      true,
 		APIReference:         "https://cloud.google.com/secret-manager/docs/reference/rest",
 		CodeownerTeam:        "cloud-java-team",
 		IssueTracker:         s.IssueTracker,
@@ -119,7 +118,6 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.custom:custom-artifact",
 				APIID:                "custom.googleapis.com",
 				LibraryType:          "OTHER",
-				RequiresBilling:      false,
 				APIReference:         "https://custom.api.reference",
 			},
 		},
@@ -143,9 +141,8 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				RepoShort:            "java-secretmanager",
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				// API ID is also override.
-				APIID:           "custom-shortname.googleapis.com",
-				LibraryType:     "GAPIC_AUTO",
-				RequiresBilling: true,
+				APIID:       "custom-shortname.googleapis.com",
+				LibraryType: "GAPIC_AUTO",
 			},
 		},
 		{
@@ -169,7 +166,6 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
-				RequiresBilling:      true,
 			},
 		},
 		{
@@ -193,7 +189,6 @@ func TestDeriveRepoMetadata_Overrides(t *testing.T) {
 				DistributionName:     "com.google.cloud:google-cloud-secretmanager",
 				APIID:                "secretmanager.googleapis.com",
 				LibraryType:          "GAPIC_AUTO",
-				RequiresBilling:      true,
 				RecommendedPackage:   "com.google.cloud.secretmanager.v1",
 			},
 		},

@@ -53,7 +53,7 @@ jobs:
           path: |
             ${{ steps.tool-paths.outputs.npm }}
             ~/.cache/librarian
-          key: nodejs-tools-v3-${{ hashFiles('google-cloud-node/librarian.yaml') }}
+          key: nodejs-tools-v4-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-node/librarian.yaml') }}
       - name: "Install Node.js dependencies (run librarian install)"
         if: steps.tools-cache.outputs.cache-hit != 'true'
         run: librarian -v install nodejs

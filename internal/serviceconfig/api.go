@@ -90,6 +90,10 @@ type API struct {
 	// Optional. If omitted, the generator default is used.
 	ReleaseLevels map[string]string `yaml:"release_level,omitempty"`
 
+	// RequiresBilling indicates whether the API requires billing.
+	// Defaults to true.
+	RequiresBilling *bool `yaml:"requires_billing,omitempty"`
+
 	// SampleURIs is the documentation URI for code samples per language.
 	// Map key is the language name (e.g., "go", "python").
 	// Optional. If omitted, a default URI for the language is used.

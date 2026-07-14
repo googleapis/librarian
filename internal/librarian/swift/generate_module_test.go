@@ -239,7 +239,7 @@ func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 		{
 			APIPath:    "google/type",
 			Output:     filepath.Join(library.Output, "ProtoJSON"),
-			ModuleType: "convert-swift",
+			ModuleType: "unsupported",
 		},
 	}
 	src := &sources.Sources{}
@@ -247,9 +247,9 @@ func TestGenerateModule_UnsupportedModuleType(t *testing.T) {
 
 	err := Generate(t.Context(), cfg, library, src)
 	if err == nil {
-		t.Fatal("Generate did not return an error for unsupported module type 'convert-swift'")
+		t.Fatal("Generate did not return an error for unsupported module type 'unsupported'")
 	}
-	expectedErr := `module type "convert-swift" is not yet supported`
+	expectedErr := `unknown module type "unsupported"`
 	if err.Error() != expectedErr {
 		t.Errorf("got error %q, want %q", err.Error(), expectedErr)
 	}

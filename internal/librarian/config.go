@@ -40,9 +40,21 @@ func configCommand() *cli.Command {
 			{
 				Name:      "get",
 				Usage:     "get a configuration value",
-				UsageText: "librarian config get [path]",
+				UsageText: "librarian config get [path] [value]",
+				Description: `get retrieves configuration values from librarian.yaml.
+
+Supported cases:
+
+  - Librarian version:
+    librarian config get version
+
+  - Library name for a given API path:
+    librarian config get libraries [api-path]
+
+  - Source repository field (e.g., commit, sha256, dir, subpath):
+    librarian config get sources.[source-name].[field-name]`,
 				Action: func(ctx context.Context, cmd *cli.Command) error {
-					return runConfigGet(cmd.Root().Writer, cmd.Args().First())
+					return runConfigGet(cmd.Root().Writer, cmd.Args().Get(0), cmd.Args().Get(1))
 				},
 			},
 			{
@@ -57,12 +69,23 @@ func configCommand() *cli.Command {
 	}
 }
 
-func runConfigGet(w io.Writer, path string) error {
+func runConfigGet(w io.Writer, path, value string) error {
 	if path == "" {
 		return errPathRequired
 	}
 	cfg, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
+		return err
+	}
+	if path == "libraries" {
+		if value == "" {
+			return errValueRequired
+		}
+		name, err := libraryName(cfg, value)
+		if err != nil {
+			return err
+		}
+		_, err = fmt.Fprintln(w, name)
 		return err
 	}
 	val, err := getConfigValue(cfg, path)
@@ -89,4 +112,11 @@ func runConfigSet(path, value string) error {
 		return err
 	}
 	return yaml.Write(config.LibrarianYAML, updated)
+}
+
+func libraryName(cfg *config.Config, apiPath string) (string, error) {
+	if library := findExistingLibraryForAPI(cfg, apiPath); library != nil {
+		return library.Name, nil
+	}
+	return "", fmt.Errorf("%w for API: %s", ErrLibraryNotFound, apiPath)
 }
