@@ -88,12 +88,8 @@ func TestInstall(t *testing.T) {
 					t.Fatal(err)
 				}
 				bin := t.TempDir()
-				if err := os.WriteFile(filepath.Join(bin, "php"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(bin, "composer"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
+				writeExecutable(t, filepath.Join(bin, "php"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 		},
@@ -126,12 +122,8 @@ func TestInstall(t *testing.T) {
 				}
 
 				bin := t.TempDir()
-				if err := os.WriteFile(filepath.Join(bin, "sh"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
-				if err := os.WriteFile(filepath.Join(bin, "pip"), []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
-					t.Fatal(err)
-				}
+				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 		},
@@ -190,5 +182,18 @@ func TestInstall_Error(t *testing.T) {
 				t.Fatalf("Install() error = %v, wantErr = %v", err, test.wantErr)
 			}
 		})
+	}
+}
+
+//nolint:unparam // content is the same for all calls but keeping parameter for flexibility
+func writeExecutable(t *testing.T, path string, content string) {
+	t.Helper()
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	if _, err := f.WriteString(content); err != nil {
+		t.Fatal(err)
 	}
 }

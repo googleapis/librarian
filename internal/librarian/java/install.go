@@ -218,7 +218,14 @@ func createBinWrapper(wrapperName, destPath, binDir string, isExecutable bool, m
 	default:
 		content = fmt.Sprintf("#!/bin/sh\nexec java -jar %q \"$@\"\n", destPath)
 	}
-	return os.WriteFile(wrapperPath, []byte(content), 0755)
+	_ = os.Remove(wrapperPath)
+	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
 }
 
 // buildLocalMavenProject builds the local Maven project at the target relative path under the monorepo root.

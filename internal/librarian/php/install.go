@@ -69,10 +69,8 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
 
-		for _, cmdStr := range tool.Build {
-			if err := command.RunInDir(ctx, dir, "sh", "-c", cmdStr); err != nil {
-				return err
-			}
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-dev", "--no-interaction", "--prefer-dist"); err != nil {
+			return err
 		}
 
 		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
@@ -176,5 +174,12 @@ func generatorDir(ctx context.Context) (string, error) {
 func createBinWrapper(wrapperName, destPath, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-	return os.WriteFile(wrapperPath, []byte(content), 0755)
+	_ = os.Remove(wrapperPath)
+	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
 }
