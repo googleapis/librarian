@@ -76,14 +76,8 @@ func TestGenerateConversions_MissingModulePath(t *testing.T) {
 	outDir := t.TempDir()
 	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
 	model.PackageName = "google.cloud.test.v1"
-
 	// Configure without module-path
-	cfg := &parser.ModelConfig{
-		Codec: map[string]string{
-			"copyright-year": "2038",
-		},
-	}
-
+	cfg := &parser.ModelConfig{}
 	err := GenerateConversions(t.Context(), model, outDir, cfg, nil)
 	if err == nil {
 		t.Fatal("GenerateConversions expected error due to missing module-path, got nil")
