@@ -292,6 +292,12 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 		newVersions[lib] = newVersion
 		libraryByName[lib].Version = newVersion
 
+		if cfg.Default != nil && cfg.Default.Dart != nil && cfg.Default.Dart.Packages != nil {
+			if _, ok := cfg.Default.Dart.Packages["package:"+lib]; ok {
+				cfg.Default.Dart.Packages["package:"+lib] = "^" + newVersion
+			}
+		}
+
 		for _, other := range sorted {
 			if slices.Contains(deps[other], lib) {
 				newDeps := map[string]string{"package:" + lib: "^" + newVersion}
