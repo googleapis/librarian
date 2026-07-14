@@ -63,7 +63,7 @@ func (c *codec) generateEnumConversions(outdir string, model *api.API, provider 
 			output = filepath.Join("Sources", c.PackageName, "Convert", e.Name+"+Convert.swift")
 		}
 		generated := language.GeneratedFile{
-			TemplatePath: "templates/common/convert_enum_file.swift.mustache",
+			TemplatePath: "templates/convert/convert_enum_file.swift.mustache",
 			OutputPath:   output,
 		}
 		if err := language.GenerateEnum(outdir, e, provider, generated); err != nil {
