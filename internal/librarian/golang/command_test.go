@@ -129,6 +129,8 @@ func TestInstallEnv_Error(t *testing.T) {
 	t.Setenv(cache.EnvLibrarianCache, "")
 	t.Setenv("HOME", "")
 	t.Setenv("XDG_CACHE_HOME", "")
+	// This error is not easy to check, we only make sure
+	// it doesn't return nil.
 	if _, err := installEnv(); err == nil {
 		t.Error("installEnv() error = nil, want error")
 	}
