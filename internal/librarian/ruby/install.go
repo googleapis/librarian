@@ -15,13 +15,37 @@
 package ruby
 
 import (
+	"errors"
 	"fmt"
+	"os/exec"
 	"path/filepath"
 
+	"context"
+
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/config"
+	"github.com/googleapis/librarian/internal/tool/gem"
 )
 
 const toolsDir = "ruby_tools"
+
+var (
+	errNoGems            = errors.New("no gem tools specified")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Ruby tool installation")
+)
+
+// Install installs Ruby gem dependencies.
+func Install(ctx context.Context, tools *config.Tools) error {
+	if err := verify(tools); err != nil {
+		return err
+	}
+	installDir, err := InstallDir()
+	if err != nil {
+		return err
+	}
+	binDir := filepath.Join(installDir, "bin")
+	return gem.Install(ctx, tools.Gem, binDir, installDir)
+}
 
 // InstallDir gets the directory where tools should be installed.
 func InstallDir() (string, error) {
@@ -36,11 +60,15 @@ func InstallDir() (string, error) {
 	return absDir, nil
 }
 
-// binDir returns the directory where Ruby tool executables are stored.
-func binDir() (string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", err
+func verify(tools *config.Tools) error {
+	if tools == nil || len(tools.Gem) == 0 {
+		return errNoGems
 	}
-	return filepath.Join(installDir, "bin"), nil
+
+	for _, cmd := range []string{"gem"} {
+		if _, err := exec.LookPath(cmd); err != nil {
+			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
+		}
+	}
+	return nil
 }

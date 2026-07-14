@@ -97,8 +97,14 @@ type Tools struct {
 	// Cargo defines tools to install via cargo.
 	Cargo []*CargoTool `yaml:"cargo,omitempty"`
 
+	// Composer defines tools to install via Composer.
+	Composer []*ComposerTool `yaml:"composer,omitempty"`
+
 	// Go defines tools to install via go.
 	Go []*GoTool `yaml:"go,omitempty"`
+
+	// Gem defines tools to install via gem.
+	Gem []*GemTool `yaml:"gem,omitempty"`
 
 	// Maven defines tools to install via Maven.
 	Maven []*MavenTool `yaml:"maven,omitempty"`
@@ -116,6 +122,33 @@ type Tools struct {
 // CargoTool defines a tool to install via cargo.
 type CargoTool struct {
 	// Name is the cargo package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+}
+
+// ComposerTool defines a tool to install via Composer.
+type ComposerTool struct {
+	// Name is the composer package name.
+	Name string `yaml:"name"`
+
+	// Version is the version to install.
+	Version string `yaml:"version"`
+
+	// Package is the URL or path of the package to install.
+	Package string `yaml:"package,omitempty"`
+
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
+
+	// Build defines the commands to run to build the tool after installation.
+	Build []string `yaml:"build,omitempty"`
+}
+
+// GemTool defines a tool to install via gem.
+type GemTool struct {
+	// Name is the gem name.
 	Name string `yaml:"name"`
 
 	// Version is the version to install.
@@ -187,7 +220,10 @@ type PNPMTool struct {
 	// Package is the URL or path of the package to install.
 	Package string `yaml:"package,omitempty"`
 
-	// Checksum is the SHA256 checksum of the package.
+	// SHA256 is the SHA256 checksum of the package.
+	SHA256 string `yaml:"sha256,omitempty"`
+
+	// Checksum is a deprecated alias for SHA256.
 	Checksum string `yaml:"checksum,omitempty"`
 
 	// Build defines the commands to run to build the tool after installation.

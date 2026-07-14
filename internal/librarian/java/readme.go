@@ -91,7 +91,7 @@ type readmeData struct {
 	Repo              *repoMetadata
 	Samples           []codeSample
 	MinJavaVersion    int
-	Partials          map[string]interface{}
+	Partials          map[string]any
 	Snippets          map[string]string
 	GroupID           string
 	ArtifactID        string
@@ -116,10 +116,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	if err != nil {
 		return err
 	}
-	bomVersion, err := findBOMVersion(params.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to find BOM version: %w", err)
-	}
+	bomVersion := params.cfg.Default.Java.LibrariesBOMVersion
 	partials, err := loadReadmePartials(params.outDir)
 	if err != nil {
 		return err
@@ -352,7 +349,7 @@ func parseRepoShortName(repo string) string {
 }
 
 // loadReadmePartials loads and camel-cases README partials from .readme-partials.yaml.
-func loadReadmePartials(dir string) (map[string]interface{}, error) {
+func loadReadmePartials(dir string) (map[string]any, error) {
 	if dir == "" {
 		return nil, errEmptyDir
 	}
@@ -366,14 +363,14 @@ func loadReadmePartials(dir string) (map[string]interface{}, error) {
 	if len(partialsBytes) == 0 {
 		return nil, nil
 	}
-	rawPartials, err := yaml.Unmarshal[map[string]interface{}](partialsBytes)
+	rawPartials, err := yaml.Unmarshal[map[string]any](partialsBytes)
 	if err != nil {
 		return nil, fmt.Errorf("%w: failed to unmarshal partials: %w", errInvalidYAML, err)
 	}
 	if rawPartials == nil || len(*rawPartials) == 0 {
 		return nil, nil
 	}
-	result := make(map[string]interface{}, len(*rawPartials))
+	result := make(map[string]any, len(*rawPartials))
 	for k, v := range *rawPartials {
 		result[toCamelCase(k)] = v
 	}

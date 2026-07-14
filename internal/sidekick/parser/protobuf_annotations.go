@@ -17,6 +17,7 @@ package parser
 import (
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 
 	"cloud.google.com/go/longrunning/autogen/longrunningpb"
@@ -192,11 +193,5 @@ func protobufIsAutoPopulated(field *descriptorpb.FieldDescriptorProto) bool {
 		return true
 	}
 	fieldBehavior := proto.GetExtension(field.GetOptions(), extensionId).([]fieldBehavior)
-	for _, b := range fieldBehavior {
-		if b == fieldBehaviorRequired {
-			return false
-		}
-	}
-
-	return true
+	return !slices.Contains(fieldBehavior, fieldBehaviorRequired)
 }

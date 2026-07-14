@@ -1,0 +1,41 @@
+{{!
+Copyright 2026 Google LLC
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    https://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+}}
+let extractStatus = { (op: {{Codec.ReturnType}}) throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+  guard op._done() else {
+    return .init(done: false, result: nil)
+  }
+
+  do {
+    try op._detectErrors()
+  } catch let e as GoogleCloudGax.RequestError {
+    return .init(done: true, result: .failure(e))
+  }
+  return .init(done: true, result: .success(op))
+}
+let rawOp = try await self.{{Codec.Name}}(request: withPolling, options: options)
+let initialState = try extractStatus(rawOp)
+let poll = { () async throws -> GoogleCloudGax._PollableOperationImpl<{{Codec.DiscoveryLRO.ReturnType}}>.State in
+{{! The polling function is always called `getOperation`, sidekick picks the name. }}
+let op = try await self.getOperation(request: .init().with {
+    $0.operation = rawOp._name()
+    {{! The path pameters, if any, are captured from the request, which is called `withPolling` }}
+    {{#Codec.DiscoveryLRO.PollingPathParameters}}
+    $0.{{{.}}} = withPolling.{{{.}}}
+    {{/Codec.DiscoveryLRO.PollingPathParameters}}
+  }, options: options)
+  return try extractStatus(op)
+}
+return GoogleCloudGax._PollableOperationImpl(initialState: initialState, poll: poll)

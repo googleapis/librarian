@@ -104,6 +104,10 @@ type codec struct {
 	// each (lowercased) name are tracked in this hash, and if necessary, the
 	// output file is disambiguated by appending `+${Counter}` to the basename.
 	GeneratedFiles map[string]int
+
+	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
+	// Used by convert-swift to generate @_implementationOnly imports and prefix raw types.
+	ModulePath string
 }
 
 func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPackage, outdir string) (*codec, error) {
@@ -159,6 +163,8 @@ func newCodec(model *api.API, cfg *parser.ModelConfig, swiftCfg *config.SwiftPac
 				return nil, fmt.Errorf("cannot convert `module` value %q to boolean: %w", definition, err)
 			}
 			result.Module = value
+		case "module-path":
+			result.ModulePath = definition
 		default:
 			// Ignore other options.
 		}

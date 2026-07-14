@@ -44,11 +44,6 @@ func absPath(t *testing.T, p string) string {
 	return abs
 }
 
-// ptr() makes it easier to define test data where the values are literals but the required type is a pointer.
-func ptr[T any](v T) *T {
-	return &v
-}
-
 func TestLibraryToModelConfig(t *testing.T) {
 	for _, test := range []struct {
 		name             string
@@ -85,7 +80,7 @@ func TestLibraryToModelConfig(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						ResourceNameHeuristic: ptr(true),
+						ResourceNameHeuristic: new(true),
 					},
 				},
 			},
@@ -166,8 +161,8 @@ func TestLibraryToModelConfig(t *testing.T) {
 						DisabledRustdocWarnings:   []string{"broken_intra_doc_links"},
 						GenerateSetterSamples:     "true",
 						GenerateRpcSamples:        "true",
-						DetailedTracingAttributes: ptr(true),
-						ResourceNameHeuristic:     ptr(true),
+						DetailedTracingAttributes: new(true),
+						ResourceNameHeuristic:     new(true),
 					},
 					ModulePath:              "gcs",
 					PerServiceFeatures:      true,
@@ -619,7 +614,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						ResourceNameHeuristic: ptr(false),
+						ResourceNameHeuristic: new(false),
 					},
 				},
 			},
@@ -638,7 +633,7 @@ func TestModuleToModelConfig(t *testing.T) {
 				Name: "google-cloud-secretmanager",
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						ResourceNameHeuristic: ptr(true),
+						ResourceNameHeuristic: new(true),
 					},
 				},
 			},
@@ -1097,7 +1092,7 @@ func TestBuildModuleCodec(t *testing.T) {
 			name:    "with DetailedTracingAttributes set at module level",
 			library: &config.Library{},
 			module: &config.RustModule{
-				DetailedTracingAttributes: ptr(true),
+				DetailedTracingAttributes: new(true),
 			},
 			want: map[string]string{
 				"detailed-tracing-attributes": "true",
@@ -1108,7 +1103,7 @@ func TestBuildModuleCodec(t *testing.T) {
 			library: &config.Library{
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						DetailedTracingAttributes: ptr(true),
+						DetailedTracingAttributes: new(true),
 					},
 				},
 			},
@@ -1122,12 +1117,12 @@ func TestBuildModuleCodec(t *testing.T) {
 			library: &config.Library{
 				Rust: &config.RustCrate{
 					RustDefault: config.RustDefault{
-						DetailedTracingAttributes: ptr(true),
+						DetailedTracingAttributes: new(true),
 					},
 				},
 			},
 			module: &config.RustModule{
-				DetailedTracingAttributes: ptr(false),
+				DetailedTracingAttributes: new(false),
 			},
 			want: map[string]string{},
 		},
@@ -1242,7 +1237,7 @@ func TestBuildModuleCodec(t *testing.T) {
 								Package: "pkg1",
 							},
 						},
-						DetailedTracingAttributes: ptr(false),
+						DetailedTracingAttributes: new(false),
 					},
 				},
 			},
@@ -1252,7 +1247,7 @@ func TestBuildModuleCodec(t *testing.T) {
 				HasVeneer:                 true,
 				IncludeGrpcOnlyMethods:    true,
 				IncludeStreamingMethods:   true,
-				DetailedTracingAttributes: ptr(true),
+				DetailedTracingAttributes: new(true),
 				ModulePath:                "crate::model",
 				NameOverrides:             "a=b",
 				PostProcessProtos:         "post",
@@ -1351,8 +1346,8 @@ func TestBuildCodec(t *testing.T) {
 					RustDefault: config.RustDefault{
 						GenerateSetterSamples:     "true",
 						GenerateRpcSamples:        "true",
-						DetailedTracingAttributes: ptr(true),
-						ResourceNameHeuristic:     ptr(true),
+						DetailedTracingAttributes: new(true),
+						ResourceNameHeuristic:     new(true),
 						DisabledRustdocWarnings:   []string{"warning1", "warning2"},
 						PackageDependencies: []*config.RustPackageDependency{
 							{

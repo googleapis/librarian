@@ -87,6 +87,13 @@ func TestValidateLibraries(t *testing.T) {
 				Language:  test.language,
 				Libraries: test.libraries,
 			}
+			if test.language == config.LanguageJava {
+				cfg.Default = &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.2.3",
+					},
+				}
+			}
 			err := validateLibraries(cfg)
 			if test.wantErr == nil {
 				if err != nil {
@@ -598,7 +605,7 @@ func TestTidy_DerivableOutput(t *testing.T) {
 			name:     "java derivable output",
 			language: config.LanguageJava,
 			libName:  "secretmanager",
-			output:   "java-secretmanager",
+			output:   "generated/java-secretmanager",
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
@@ -620,6 +627,9 @@ func TestTidy_DerivableOutput(t *testing.T) {
 				Language: test.language,
 				Default: &config.Default{
 					Output: "generated/",
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.0.0",
+					},
 				},
 				Sources:   googleapisSource,
 				Libraries: []*config.Library{lib},
@@ -761,11 +771,19 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Sources: &config.Sources{
 					Googleapis: &config.Source{Commit: "commit"},
 				},
-				Tools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
-				Default: &config.Default{},
+				Tools: &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+				Default: &config.Default{
+					Java: &config.JavaDefault{
+						LibrariesBOMVersion: "1.0",
+					},
+				},
 			},
-			wantTools:   &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
-			wantDefault: nil,
+			wantTools: &config.Tools{Maven: []*config.MavenTool{{Name: "artifact", Version: "1.2.3"}}},
+			wantDefault: &config.Default{
+				Java: &config.JavaDefault{
+					LibrariesBOMVersion: "1.0",
+				},
+			},
 		},
 		{
 			name: "protoc preserved",
@@ -778,6 +796,41 @@ func TestTidy_UnusedSections(t *testing.T) {
 				Default: &config.Default{},
 			},
 			wantTools:   &config.Tools{Protoc: &config.Protoc{Version: "33.2", SHA256: "123abc"}},
+			wantDefault: nil,
+		},
+		{
+			name: "gems preserved",
+			cfg: &config.Config{
+				Language: config.LanguageRuby,
+				Sources: &config.Sources{
+					Googleapis: &config.Source{Commit: "commit"},
+				},
+				Tools: &config.Tools{
+					Gem: []*config.GemTool{
+						{
+							Name:    "gapic-generator",
+							Version: "0.49.0",
+						},
+						{
+							Name:    "grpc",
+							Version: "1.78.1",
+						},
+					},
+				},
+				Default: &config.Default{},
+			},
+			wantTools: &config.Tools{
+				Gem: []*config.GemTool{
+					{
+						Name:    "gapic-generator",
+						Version: "0.49.0",
+					},
+					{
+						Name:    "grpc",
+						Version: "1.78.1",
+					},
+				},
+			},
 			wantDefault: nil,
 		},
 	} {

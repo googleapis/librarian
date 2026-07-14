@@ -237,16 +237,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 		}
 		return g.Wait()
 	case config.LanguageJava:
-		var allMissingArtifacts []java.MissingArtifact
 		for _, library := range libraries {
-			missingArtifactIDs, err := java.IdentifyMissingModules(library, library.Output)
-			if err != nil {
-				return fmt.Errorf("failed to identify missing modules for %q: %w", library.Name, err)
-			}
-			for _, id := range missingArtifactIDs {
-				allMissingArtifacts = append(allMissingArtifacts, java.MissingArtifact{ID: id, Library: library})
-			}
-
 			if err := java.Generate(ctx, cfg, library, src); err != nil {
 				return fmt.Errorf("generate library %q (%s): %w", library.Name, cfg.Language, err)
 			}
@@ -254,7 +245,7 @@ func generateLibraries(ctx context.Context, cfg *config.Config, libraries []*con
 				return fmt.Errorf("format library %q (%s): %w", library.Name, cfg.Language, err)
 			}
 		}
-		return java.PostGenerate(ctx, ".", cfg, allMissingArtifacts)
+		return java.PostGenerate(ctx, ".", cfg)
 	case config.LanguageNodejs:
 		g, gctx := errgroup.WithContext(ctx)
 		for _, library := range libraries {
@@ -353,8 +344,12 @@ func defaultOutput(language string, name, api, defaultOut string) string {
 		return dart.DefaultOutput(name, defaultOut)
 	case config.LanguageGo:
 		return golang.DefaultOutput(name, defaultOut)
+	case config.LanguageJava:
+		return java.DefaultOutput(name, defaultOut)
 	case config.LanguageNodejs:
 		return nodejs.DefaultOutput(name, defaultOut)
+	case config.LanguagePhp:
+		return php.DefaultOutput(name, defaultOut)
 	case config.LanguagePython:
 		return python.DefaultOutput(name, defaultOut)
 	case config.LanguageRust:

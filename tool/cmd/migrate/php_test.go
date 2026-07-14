@@ -86,8 +86,144 @@ func TestRunPHPMigration(t *testing.T) {
 				Version: "2.3.0",
 			},
 		},
+		Tools: &config.Tools{
+			Composer: []*config.ComposerTool{
+				{
+					Name:    "google/gapic-generator-php",
+					Version: "v1.21.2",
+					Package: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
+					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					Build:   []string{"composer install"},
+				},
+			},
+			Protoc: &config.Protoc{
+				Version: "31.0",
+				SHA256:  "24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42",
+			},
+		},
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestExtractAPIPaths(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		source    string
+		wantPaths []string
+	}{
+		{
+			name:      "versioned api",
+			source:    "/google/cloud/ces/(v1)/.*-php/(.*)",
+			wantPaths: []string{"google/cloud/ces/v1"},
+		},
+		{
+			name:      "unversioned api",
+			source:    "/google/identity/accesscontextmanager/type/.*-php/(.*)",
+			wantPaths: []string{"google/identity/accesscontextmanager/type"},
+		},
+		{
+			name:      "non-matching path",
+			source:    "/some/other/path",
+			wantPaths: nil,
+		},
+		{
+			name:      "grafeas versioned",
+			source:    "/grafeas/(v1)/.*-php/(.*)",
+			wantPaths: []string{"grafeas/v1"},
+		},
+		{
+			name:      "union versioned api",
+			source:    "/google/cloud/secretmanager/(v1|v1beta2)/.*-php/(.*)",
+			wantPaths: []string{"google/cloud/secretmanager/v1", "google/cloud/secretmanager/v1beta2"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			gotPaths := extractAPIPaths(test.source)
+			if diff := cmp.Diff(test.wantPaths, gotPaths); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractAPIsFromOwlBot(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setupFile func(dir string) string
+		want      []*config.API
+	}{
+		{
+			name: "missing owlbot.yaml",
+			setupFile: func(dir string) string {
+				return filepath.Join(dir, "missing.yaml")
+			},
+			want: nil,
+		},
+		{
+			name: "valid file",
+			setupFile: func(dir string) string {
+				content := `
+deep-copy-regex:
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/Ces/$1/$2
+  - source: /google/identity/accesscontextmanager/type/.*-php/(.*)
+    dest: /owl-bot-staging/AccessContextManager/type-protos/$1
+  - source: /google/cloud/ces/(v1)/.*-php/(.*)
+    dest: /owl-bot-staging/Ces/$1/$2
+api-name: Ces
+`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+			want: []*config.API{
+				{Path: "google/cloud/ces/v1"},
+				{Path: "google/identity/accesscontextmanager/type"},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := test.setupFile(dir)
+			got, err := extractAPIsFromOwlBot(path)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
+	for _, test := range []struct {
+		name      string
+		setupFile func(dir string) string
+	}{
+		{
+			name: "invalid file",
+			setupFile: func(dir string) string {
+				content := `{invalid`
+				path := filepath.Join(dir, ".OwlBot.yaml")
+				if err := os.WriteFile(path, []byte(content), 0644); err != nil {
+					t.Fatal(err)
+				}
+				return path
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := test.setupFile(dir)
+			_, err := extractAPIsFromOwlBot(path)
+			if err == nil {
+				t.Fatal("expected error, got nil")
+			}
+		})
 	}
 }
