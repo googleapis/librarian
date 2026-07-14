@@ -181,11 +181,12 @@ func TestGapicOpts(t *testing.T) {
 
 func TestGatherTargetProtos(t *testing.T) {
 	for _, test := range []struct {
-		name       string
-		setupFiles []string
-		apiPath    string
-		wantProtos []string
-		wantErr    bool
+		name             string
+		setupFiles       []string
+		apiPath          string
+		additionalProtos []string
+		wantProtos       []string
+		wantErr          bool
 	}{
 		{
 			name:       "no protos found",
@@ -213,6 +214,23 @@ func TestGatherTargetProtos(t *testing.T) {
 				"google/cloud/common_resources.proto",
 			},
 		},
+		{
+			name: "protos found, common resources and additional protos present",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/common_resources.proto",
+				"google/cloud/location/location.proto",
+			},
+			apiPath: "google/cloud/secretmanager/v1",
+			additionalProtos: []string{
+				"google/cloud/location/location.proto",
+			},
+			wantProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+				"google/cloud/common_resources.proto",
+				"google/cloud/location/location.proto",
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			tempDir := t.TempDir()
@@ -225,7 +243,7 @@ func TestGatherTargetProtos(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := gatherTargetProtos(tempDir, test.apiPath)
+			got, err := gatherTargetProtos(tempDir, test.apiPath, test.additionalProtos)
 			if (err != nil) != test.wantErr {
 				t.Fatalf("gatherTargetProtos() error = %v, wantErr = %v", err, test.wantErr)
 			}
@@ -298,3 +316,61 @@ func TestDefaultOutput(t *testing.T) {
 		})
 	}
 }
+
+func TestResolveAdditionalProtos(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		library *config.Library
+		api     *config.API
+		want    []string
+	}{
+		{
+			name:    "empty configs returns nil",
+			library: &config.Library{},
+			api:     &config.API{},
+			want:    nil,
+		},
+		{
+			name: "only library additional protos",
+			library: &config.Library{
+				PHP: &config.PHPPackage{
+					AdditionalProtos: []string{"a.proto", "b.proto"},
+				},
+			},
+			api:  &config.API{},
+			want: []string{"a.proto", "b.proto"},
+		},
+		{
+			name:    "only api additional protos",
+			library: &config.Library{},
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					AdditionalProtos: []string{"c.proto", "d.proto"},
+				},
+			},
+			want: []string{"c.proto", "d.proto"},
+		},
+		{
+			name: "merges and deduplicates with sorted output",
+			library: &config.Library{
+				PHP: &config.PHPPackage{
+					AdditionalProtos: []string{"b.proto", "a.proto"},
+				},
+			},
+			api: &config.API{
+				PHP: &config.PHPAPI{
+					AdditionalProtos: []string{"c.proto", "b.proto", "d.proto"},
+				},
+			},
+			want: []string{"a.proto", "b.proto", "c.proto", "d.proto"},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := resolveAdditionalProtos(test.library, test.api)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
