@@ -40,7 +40,7 @@ func (v *versionView) BoilerPlate() []string {
 	return license.HeaderBulk()
 }
 
-// GenerateVersion() generates a version file for core and veneers.
+// GenerateVersion generates a version file for core and veneers.
 //
 // Swift does not provide programmatic access to the version of a package. The
 // version information is in `git`, not in any manifest file. In GAPICs and

@@ -34,7 +34,7 @@ func TestGenerateVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	filename := filepath.Join(outDir, expectedFile)
-	contents, err := os.ReadFile(filepath.Join(outDir, expectedFile))
+	contents, err := os.ReadFile(filename)
 	if err != nil {
 		t.Fatal(err)
 	}
