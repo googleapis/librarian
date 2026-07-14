@@ -45,13 +45,25 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	// Locate PHP generator
-	generatorDir, err := generatorDir(ctx)
-	if err != nil {
-		return fmt.Errorf("failed to locate PHP generator: %w", err)
+	// TODO: remove this wrapper path once `generate` is done
+	var wrapperPath string
+	bin, err := binDir()
+	if err == nil {
+		dynamicWrapper := filepath.Join(bin, "gapic-generator-php")
+		if _, err := os.Stat(dynamicWrapper); err == nil {
+			wrapperPath = dynamicWrapper
+		}
 	}
-	wrapperPath := filepath.Join(generatorDir, "wrapper.sh")
-	if _, err := os.Stat(wrapperPath); err != nil {
-		return fmt.Errorf("PHP generator wrapper not found (did you run 'librarian install'?): %w", err)
+
+	if wrapperPath == "" {
+		generatorDir, err := generatorDir(ctx)
+		if err != nil {
+			return fmt.Errorf("failed to locate PHP generator: %w", err)
+		}
+		wrapperPath = filepath.Join(generatorDir, "wrapper.sh")
+		if _, err := os.Stat(wrapperPath); err != nil {
+			return fmt.Errorf("PHP generator wrapper not found (did you run 'librarian install'?): %w", err)
+		}
 	}
 
 	// Setup sandbox staging dir
