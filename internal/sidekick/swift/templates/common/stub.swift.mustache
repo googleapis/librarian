@@ -58,11 +58,21 @@ extension Clients {
         return "{{Codec.PathExpression}}"
       }()
       {{#Codec.HasQueryParams}}
-      var query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
+      var query = [
+        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+        {{#APIVersion}}
+        URLQueryItem(name: "$apiVersion", value: "{{.}}"),
+        {{/APIVersion}}
+      ]
       let encoder = GoogleCloudGax.QueryParameterEncoder()
       {{/Codec.HasQueryParams}}
       {{^Codec.HasQueryParams}}
-      let query = [URLQueryItem(name: "$alt", value: "json;enum-encoding=int")]
+      let query = [
+        URLQueryItem(name: "$alt", value: "json;enum-encoding=int"),
+        {{#APIVersion}}
+        URLQueryItem(name: "$apiVersion", value: "{{.}}"),
+        {{/APIVersion}}
+      ]
       {{/Codec.HasQueryParams}}
       {{#Codec.QueryParams}}
       {{!
