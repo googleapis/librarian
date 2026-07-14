@@ -47,7 +47,7 @@ func TestGenerateVersion(t *testing.T) {
 		t.Run(test.start, func(t *testing.T) {
 			got := extractBlock(t, contentStr, test.start, "\n")
 			if diff := cmp.Diff(test.want, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s\n", diff)
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
