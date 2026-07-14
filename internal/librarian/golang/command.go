@@ -46,8 +46,10 @@ func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd
 	if err != nil {
 		return err
 	}
-	maps.Copy(env, additionalEnv)
-	return command.RunInDirWithEnv(ctx, dir, env, cmd, args...)
+	mergedEnv := make(map[string]string)
+	maps.Copy(mergedEnv, additionalEnv)
+	maps.Copy(mergedEnv, env)
+	return command.RunInDirWithEnv(ctx, dir, mergedEnv, cmd, args...)
 }
 
 // toolsEnv returns the environment variables required to run the Go tools.
