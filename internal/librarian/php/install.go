@@ -38,40 +38,56 @@ const (
 
 var (
 	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
-	errMissingPackageURL = errors.New("has build steps but no package URL")
+	errMissingPackageURL = errors.New("package URL missing")
 )
 
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil && (len(tools.Composer) > 0 || len(tools.Pip) > 0) {
-		for _, tool := range tools.Composer {
-			if tool.Package == "" {
-				return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
-			}
-			repo, err := repoFromPackageURL(tool.Package)
-			if err != nil {
-				return err
-			}
-			dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
-			if err != nil {
-				return fmt.Errorf("fetching %s: %w", tool.Name, err)
-			}
-
-			for _, cmdStr := range tool.Build {
-				if err := command.RunInDir(ctx, dir, "sh", "-c", cmdStr); err != nil {
-					return err
-				}
-			}
-		}
-		if len(tools.Pip) > 0 {
-			if err := pip.Install(ctx, tools.Pip); err != nil {
-				return err
-			}
-		}
-		return nil
+	if tools == nil || (len(tools.Composer) == 0 && len(tools.Pip) == 0) {
+		_, err := installGenerator(ctx)
+		return err
 	}
-	_, err := installGenerator(ctx)
-	return err
+
+	bin, err := binDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(bin, 0755); err != nil {
+		return fmt.Errorf("failed to create bin directory: %w", err)
+	}
+
+	for _, tool := range tools.Composer {
+		if tool.Package == "" {
+			return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
+		}
+		repo, err := repoFromPackageURL(tool.Package)
+		if err != nil {
+			return err
+		}
+		dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+		if err != nil {
+			return fmt.Errorf("fetching %s: %w", tool.Name, err)
+		}
+
+		for _, cmdStr := range tool.Build {
+			if err := command.RunInDir(ctx, dir, "sh", "-c", cmdStr); err != nil {
+				return err
+			}
+		}
+
+		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
+		if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
+			return err
+		}
+	}
+	// The PHP client library generation process relies on Python-based
+	// tools (such as synthtool or owlbot) for post-processing and generation.
+	if len(tools.Pip) > 0 {
+		if err := pip.Install(ctx, tools.Pip); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // repoFromPackageURL extracts the repository path (e.g.,
@@ -79,7 +95,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 func repoFromPackageURL(packageURL string) (string, error) {
 	parts := strings.SplitN(packageURL, "/archive/", 2)
 	if len(parts) != 2 {
-		return "", fmt.Errorf("%w %q", errCannotExtractRepo, packageURL)
+		return "", fmt.Errorf("%w: %q", errCannotExtractRepo, packageURL)
 	}
 	return strings.TrimPrefix(parts[0], "https://"), nil
 }
@@ -154,4 +170,11 @@ exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir
 
 func generatorDir(ctx context.Context) (string, error) {
 	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+}
+
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
+func createBinWrapper(wrapperName, destPath, binDir string) error {
+	wrapperPath := filepath.Join(binDir, wrapperName)
+	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+	return os.WriteFile(wrapperPath, []byte(content), 0755)
 }
