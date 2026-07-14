@@ -186,14 +186,7 @@ func TestGatherTargetProtos(t *testing.T) {
 		apiPath          string
 		additionalProtos []string
 		wantProtos       []string
-		wantErr          bool
 	}{
-		{
-			name:       "no protos found",
-			setupFiles: nil,
-			apiPath:    "google/cloud/secretmanager/v1",
-			wantErr:    true,
-		},
 		{
 			name: "protos found, no common resources",
 			setupFiles: []string{
@@ -244,11 +237,8 @@ func TestGatherTargetProtos(t *testing.T) {
 				}
 			}
 			got, err := gatherTargetProtos(tempDir, test.apiPath, test.additionalProtos)
-			if (err != nil) != test.wantErr {
-				t.Fatalf("gatherTargetProtos() error = %v, wantErr = %v", err, test.wantErr)
-			}
-			if test.wantErr {
-				return
+			if err != nil {
+				t.Fatal(err)
 			}
 			var want []string
 			for _, file := range test.wantProtos {
@@ -256,6 +246,37 @@ func TestGatherTargetProtos(t *testing.T) {
 			}
 			if diff := cmp.Diff(want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestGatherTargetProtos_Error(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		setupFiles []string
+		apiPath    string
+	}{
+		{
+			name:       "no protos found",
+			setupFiles: nil,
+			apiPath:    "google/cloud/secretmanager/v1",
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			for _, file := range test.setupFiles {
+				p := filepath.Join(tempDir, file)
+				if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(p, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			_, err := gatherTargetProtos(tempDir, test.apiPath, nil)
+			if err == nil {
+				t.Fatal("gatherTargetProtos() expected error, got nil")
 			}
 		})
 	}
