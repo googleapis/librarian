@@ -109,7 +109,7 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 		return err
 	}
 	opts := gapicOpts(params.api, apiMetadata, grpcConfigPath)
-	additionalProtos := resolveAdditionalProtos(params.library, params.api)
+	additionalProtos := resolveAdditionalProtos(params.api)
 	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos)
 	if err != nil {
 		return err
@@ -229,14 +229,11 @@ func DefaultOutput(name, defaultOutput string) string {
 	return filepath.Join(defaultOutput, name)
 }
 
-func resolveAdditionalProtos(library *config.Library, api *config.API) []string {
-	var additionalProtos []string
-	if library.PHP != nil {
-		additionalProtos = append(additionalProtos, library.PHP.AdditionalProtos...)
+func resolveAdditionalProtos(api *config.API) []string {
+	if api.PHP == nil {
+		return nil
 	}
-	if api.PHP != nil {
-		additionalProtos = append(additionalProtos, api.PHP.AdditionalProtos...)
-	}
+	additionalProtos := slices.Clone(api.PHP.AdditionalProtos)
 	slices.Sort(additionalProtos)
 	return slices.Compact(additionalProtos)
 }
