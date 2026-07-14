@@ -451,7 +451,6 @@ This document describes the schema for the librarian.yaml.
 
 | Field | Type | Description |
 | :--- | :--- | :--- |
-| `additional_protos` | list of string | Is a list of additional proto files to include in generation. This can be overridden at the API level. |
 
 ## PythonDefault Configuration
 

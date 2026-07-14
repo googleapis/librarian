@@ -1576,21 +1576,21 @@ func TestMergePHP(t *testing.T) {
 	}{
 		{
 			name: "nil src returns dst",
-			dst:  &config.PHPPackage{AdditionalProtos: []string{"a.proto"}},
+			dst:  &config.PHPPackage{},
 			src:  nil,
-			want: &config.PHPPackage{AdditionalProtos: []string{"a.proto"}},
+			want: &config.PHPPackage{},
 		},
 		{
 			name: "nil dst returns src",
 			dst:  nil,
-			src:  &config.PHPPackage{AdditionalProtos: []string{"b.proto"}},
-			want: &config.PHPPackage{AdditionalProtos: []string{"b.proto"}},
+			src:  &config.PHPPackage{},
+			want: &config.PHPPackage{},
 		},
 		{
-			name: "merges all fields",
-			dst:  &config.PHPPackage{AdditionalProtos: []string{"a.proto"}},
-			src:  &config.PHPPackage{AdditionalProtos: []string{"b.proto"}},
-			want: &config.PHPPackage{AdditionalProtos: []string{"b.proto"}},
+			name: "both non-nil",
+			dst:  &config.PHPPackage{},
+			src:  &config.PHPPackage{},
+			want: &config.PHPPackage{},
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

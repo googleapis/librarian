@@ -832,8 +832,5 @@ func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
 		return src
 	}
 	res := *dst
-	if src.AdditionalProtos != nil {
-		res.AdditionalProtos = src.AdditionalProtos
-	}
 	return &res
 }
