@@ -27,69 +27,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func TestMergeEnv(t *testing.T) {
-	for _, test := range []struct {
-		name string
-		env  map[string]string
-		path string
-		want func(base string) map[string]string
-	}{
-		{
-			name: "nil env",
-			env:  nil,
-			path: "/original/path",
-			want: func(base string) map[string]string {
-				return map[string]string{
-					envPath: filepath.Join(base, toolsDir) + ":/original/path",
-				}
-			},
-		},
-		{
-			name: "custom env keys merged",
-			env: map[string]string{
-				"FOO": "bar",
-			},
-			path: "/original/path",
-			want: func(base string) map[string]string {
-				return map[string]string{
-					envPath: filepath.Join(base, toolsDir) + ":/original/path",
-					"FOO":   "bar",
-				}
-			},
-		},
-		{
-			name: "env overrides PATH",
-			env: map[string]string{
-				envPath: "/env/custom/path",
-			},
-			path: "/original/path",
-			want: func(base string) map[string]string {
-				return map[string]string{
-					envPath: "/env/custom/path",
-				}
-			},
-		},
-	} {
-		t.Run(test.name, func(t *testing.T) {
-			baseDir := t.TempDir()
-			t.Setenv(cache.EnvLibrarianBin, baseDir)
-			t.Setenv(envPath, test.path)
-			got, err := mergeEnv(test.env)
-			if err != nil {
-				t.Fatal(err)
-			}
-			wantAbsBase, err := filepath.Abs(baseDir)
-			if err != nil {
-				t.Fatal(err)
-			}
-			wantMap := test.want(wantAbsBase)
-			if diff := cmp.Diff(wantMap, got); diff != "" {
-				t.Errorf("mismatch (-want +got):\n%s", diff)
-			}
-		})
-	}
-}
-
 func TestRunProtoc(t *testing.T) {
 	stubName := "protoc"
 	if runtime.GOOS == "windows" {
@@ -124,7 +61,7 @@ func TestRunProtoc(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			recordFile := filepath.Join(t.TempDir(), "calls.txt")
 			pc, want := test.setup(t, recordFile)
-			if err := runProtoc(t.Context(), pc, nil, "--version"); err != nil {
+			if err := runProtoc(t.Context(), pc, "--version"); err != nil {
 				t.Fatal(err)
 			}
 			data, err := os.ReadFile(recordFile)
