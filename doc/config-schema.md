@@ -107,6 +107,7 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the version to install. |
 | `package` | string | Is the URL or path of the package to install. |
 | `sha256` | string | Is the SHA256 checksum of the package. |
+| `checksum` | string | Is a deprecated alias for SHA256. |
 | `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## Protoc Configuration
@@ -373,7 +374,7 @@ This document describes the schema for the librarian.yaml.
 | Field | Type | Description |
 | :--- | :--- | :--- |
 | `custom_group_ids` | map[string]string | Maps API path prefixes (e.g., "google/shopping") to their corresponding Maven Group IDs (e.g., "com.google.shopping"). Use this to override the default "com.google.cloud" Group ID for specific API paths (e.g., maps, ads, shopping). |
-| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. |
+| `libraries_bom_version` | string | Is the version of the libraries-bom to use for Java. This must be set in the default configuration. |
 
 ## JavaFileCopy Configuration
 
