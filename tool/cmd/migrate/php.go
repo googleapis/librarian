@@ -16,24 +16,32 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
 
+	"github.com/bazelbuild/buildtools/build"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/librarian"
 	"github.com/googleapis/librarian/internal/yaml"
 )
+
+var protoMappings = map[string]string{
+	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
+	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
+}
 
 func runPHPMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
 	if err != nil {
 		return errFetchSource
 	}
-	libs, err := findPHPLibraries(repoPath)
+	libs, err := findPHPLibraries(repoPath, src.Dir)
 	if err != nil {
 		return err
 	}
@@ -65,7 +73,7 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
-	log.Printf("Successfully migrated %d PHP libraries configuration skeleton", len(cfg.Libraries))
+	log.Printf("Successfully migrated %d PHP libraries configuration to librarian.yaml", len(cfg.Libraries))
 	return nil
 }
 
@@ -133,7 +141,7 @@ func extractAPIsFromOwlBot(owlbotPath string) ([]*config.API, error) {
 // represents a PHP library, where the library name is the subdirectory's name and
 // the version is extracted from the VERSION file.
 // It also attempts to parse .OwlBot.yaml to extract API paths.
-func findPHPLibraries(repoPath string) ([]*config.Library, error) {
+func findPHPLibraries(repoPath string, googleapisDir string) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
 		return nil, err
@@ -161,6 +169,19 @@ func findPHPLibraries(repoPath string) ([]*config.Library, error) {
 			return nil, fmt.Errorf("extracting APIs from OwlBot config for %s: %w", name, err)
 		}
 
+		for _, api := range apis {
+			additionalProtos, err := parsePHPBazel(googleapisDir, api.Path)
+			if err != nil {
+				log.Printf("Warning: failed to parse BUILD.bazel for %s: %v", api.Path, err)
+				continue
+			}
+			if len(additionalProtos) > 0 {
+				api.PHP = &config.PHPAPI{
+					AdditionalProtos: additionalProtos,
+				}
+			}
+		}
+
 		libs = append(libs, &config.Library{
 			Name:    name,
 			Version: version,
@@ -168,6 +189,75 @@ func findPHPLibraries(repoPath string) ([]*config.Library, error) {
 		})
 	}
 	return libs, nil
+}
+
+func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
+	file, err := parseBazel(googleapisDir, apiPath)
+	if err != nil {
+		return nil, err
+	}
+	if file == nil {
+		return nil, nil
+	}
+	var additionalProtos []string
+	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
+		rule := rules[0]
+		if attr := rule.Attr("deps"); attr != nil {
+			for _, dep := range extractStrings(attr) {
+				// Ignore local targets within the same package.
+				if strings.HasPrefix(dep, ":") {
+					continue
+				}
+				// Ignore common resources which are handled natively.
+				// TODO(https://github.com/googleapis/librarian/issues/6813):
+				// load this to dedicated config
+				if strings.Contains(dep, "common_resources_proto") {
+					continue
+				}
+				// Ignore LROs since PHP does not compile LRO methods as mixins.
+				if strings.HasPrefix(dep, "//google/longrunning:") {
+					continue
+				}
+				// Ignore policy_proto as it only defines structs; the IAMPolicy service is in iam_policy_proto.
+				if dep == "//google/iam/v1:policy_proto" {
+					continue
+				}
+				if protoPath, ok := protoMappings[dep]; ok {
+					additionalProtos = append(additionalProtos, protoPath)
+				} else {
+					log.Printf("Warning: unmapped dependency %q found in %s/BUILD.bazel", dep, apiPath)
+				}
+			}
+		}
+	}
+	return additionalProtos, nil
+}
+
+func parseBazel(googleapisDir, dir string) (*build.File, error) {
+	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	file, err := build.ParseBuild(path, data)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
+
+// extractStrings returns all string literals found within a Bazel expression.
+func extractStrings(expr build.Expr) []string {
+	var res []string
+	build.Walk(expr, func(e build.Expr, _ []build.Expr) {
+		if s, ok := e.(*build.StringExpr); ok {
+			res = append(res, s.Value)
+		}
+	})
+	return res
 }
 
 func fileExists(path string) bool {

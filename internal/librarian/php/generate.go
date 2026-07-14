@@ -139,6 +139,7 @@ func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string
 	}
 	targetProtos = append(targetProtos, protos...)
 	// Always include common resources if present
+	// TODO(https://github.com/googleapis/librarian/issues/6813): make this configurable
 	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
 	if _, err := os.Stat(commonResources); err == nil {
 		targetProtos = append(targetProtos, commonResources)
