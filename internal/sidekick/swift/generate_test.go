@@ -89,7 +89,7 @@ func TestGenerateConversions_MissingModulePath(t *testing.T) {
 		t.Fatal("GenerateConversions expected error due to missing module-path, got nil")
 	}
 
-	wantError := "module-path must be specified in the model config codec map for swift conversions"
+	wantError := "module-path must be configured for generating conversions"
 	if err.Error() != wantError {
 		t.Errorf("GenerateConversions returned error %q, want %q", err.Error(), wantError)
 	}
