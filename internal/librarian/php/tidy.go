@@ -28,8 +28,7 @@ func Fill(lib *config.Library) (*config.Library, error) {
 			api.PHP = &config.PHPAPI{}
 		}
 		if api.PHP.CommonResources == nil {
-			trueVal := true
-			api.PHP.CommonResources = &trueVal
+			api.PHP.CommonResources = new(true)
 		}
 	}
 	return lib, nil
