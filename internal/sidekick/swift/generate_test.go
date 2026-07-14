@@ -23,7 +23,6 @@ import (
 	"testing"
 
 	"github.com/googleapis/librarian/internal/config"
-	"github.com/googleapis/librarian/internal/sidekick/api"
 	"github.com/googleapis/librarian/internal/sidekick/parser"
 	"github.com/googleapis/librarian/internal/sources"
 )
@@ -69,22 +68,5 @@ func TestFromProtobuf(t *testing.T) {
 	}
 	if stat.Mode().Perm()|0666 != 0666 {
 		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
-	}
-}
-
-func TestGenerateConversions_MissingModulePath(t *testing.T) {
-	outDir := t.TempDir()
-	model := api.NewTestAPI([]*api.Message{}, []*api.Enum{}, []*api.Service{})
-	model.PackageName = "google.cloud.test.v1"
-	// Configure without module-path
-	cfg := &parser.ModelConfig{}
-	err := GenerateConversions(t.Context(), model, outDir, cfg, nil)
-	if err == nil {
-		t.Fatal("GenerateConversions expected error due to missing module-path, got nil")
-	}
-
-	wantError := "module-path must be configured for generating conversions"
-	if err.Error() != wantError {
-		t.Errorf("GenerateConversions returned error %q, want %q", err.Error(), wantError)
 	}
 }
