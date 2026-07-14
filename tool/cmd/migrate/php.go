@@ -208,6 +208,8 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
 					continue
 				}
 				// Ignore common resources which are handled natively.
+				// TODO(https://github.com/googleapis/librarian/issues/6813):
+				// load this to dedicated config
 				if strings.Contains(dep, "common_resources_proto") {
 					continue
 				}
