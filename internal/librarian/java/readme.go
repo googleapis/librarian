@@ -141,7 +141,7 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 		if api.RequiresBilling != nil {
 			apiRequiresBilling = *api.RequiresBilling
 		} else {
-			// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+			// TODO(// https://github.com/googleapis/librarian/issues/6285): Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
 			// https://github.com/googleapis/librarian/issues/6285
 			apiRequiresBilling = !params.library.Java.BillingNotRequired
 		}
