@@ -66,11 +66,19 @@ type libraryPostProcessParams struct {
 	outDir     string
 	metadata   *repoMetadata
 	transports map[string]serviceconfig.Transport
+	primaryDir string
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
 // postprocessing execution once native Go postprocessing is enabled.
 func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) error {
+	var bomVersion string
+	if params.cfg != nil && params.cfg.Default != nil && params.cfg.Default.Java != nil {
+		bomVersion = params.cfg.Default.Java.LibrariesBOMVersion
+	}
+	if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {
+		return fmt.Errorf("failed to remove kept files from staging: %w", err)
+	}
 	owlbotPath := filepath.Join(params.outDir, "owlbot.py")
 	_, err := os.Stat(owlbotPath)
 	if err != nil && !errors.Is(err, fs.ErrNotExist) {
@@ -80,10 +88,6 @@ func postProcessLibrary(ctx context.Context, params libraryPostProcessParams) er
 
 	if owlbotExists {
 		if err := createOrVerifyOwlbotPy(params.outDir); err != nil {
-			return err
-		}
-		bomVersion, err := findBOMVersion(params.cfg)
-		if err != nil {
 			return err
 		}
 		if err := removeKeptFilesFromStaging(params.library, params.outDir); err != nil {

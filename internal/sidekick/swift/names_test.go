@@ -216,3 +216,24 @@ func TestEnumValueCaseName(t *testing.T) {
 		})
 	}
 }
+
+func TestProtoPackagePrefix(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		pkgName string
+		want    string
+	}{
+		{"empty", "", ""},
+		{"single", "backstory", "Backstory_"},
+		{"simple", "google.storage", "Google_Storage_"},
+		{"versioned", "google.storage.control.v2", "Google_Storage_Control_V2_"},
+		{"cased", "Google.Cloud.Location", "Google_Cloud_Location_"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			got := ProtoPackagePrefix(test.pkgName)
+			if got != test.want {
+				t.Errorf("ProtoPackagePrefix(%q) = %q, want %q", test.pkgName, got, test.want)
+			}
+		})
+	}
+}

@@ -43,8 +43,6 @@ type repoMetadata struct {
 	DistributionName string `json:"distribution_name"`
 	APIID            string `json:"api_id,omitempty"`
 	LibraryType      string `json:"library_type"`
-	// Java-specific field.
-	RequiresBilling bool `json:"requires_billing"`
 
 	// Optional fields (appended in this order in Python)
 	// Java-specific field.
@@ -104,7 +102,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		DistributionName:     sharedMetadata.DistributionName,
 		APIID:                sharedMetadata.APIID,
 		LibraryType:          repometadata.GAPICAutoLibraryType,
-		RequiresBilling:      true,
 		RecommendedPackage:   sharedMetadata.RecommendedPackage,
 	}
 
@@ -139,7 +136,6 @@ func deriveRepoMetadata(cfg *config.Config, library *config.Library, sourceDir s
 		if library.Java.ClientDocumentationOverride != "" {
 			metadata.ClientDocumentation = library.Java.ClientDocumentationOverride
 		}
-		metadata.RequiresBilling = !library.Java.BillingNotRequired
 		// Java only fields
 		metadata.APIReference = library.Java.APIReference
 		metadata.CodeownerTeam = library.Java.CodeownerTeam

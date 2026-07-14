@@ -412,6 +412,8 @@ func ResolvePreview(lib *config.Library, language string) *config.Library {
 		res.Python = mergePython(res.Python, p.Python)
 	case config.LanguageRust:
 		res.Rust = mergeRust(res.Rust, p.Rust)
+	case config.LanguagePhp:
+		res.PHP = mergePHP(res.PHP, p.PHP)
 	}
 	res.Preview = nil
 	return &res
@@ -818,6 +820,20 @@ func mergeRustDiscovery(dst, src *config.RustDiscovery) *config.RustDiscovery {
 	}
 	if src.Pollers != nil {
 		res.Pollers = src.Pollers
+	}
+	return &res
+}
+
+func mergePHP(dst, src *config.PHPPackage) *config.PHPPackage {
+	if src == nil {
+		return dst
+	}
+	if dst == nil {
+		return src
+	}
+	res := *dst
+	if src.AdditionalProtos != nil {
+		res.AdditionalProtos = src.AdditionalProtos
 	}
 	return &res
 }

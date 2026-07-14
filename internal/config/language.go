@@ -464,6 +464,7 @@ type JavaDefault struct {
 	// paths (e.g., maps, ads, shopping).
 	CustomGroupIDs map[string]string `yaml:"custom_group_ids,omitempty"`
 	// LibrariesBOMVersion is the version of the libraries-bom to use for Java.
+	// This must be set in the default configuration.
 	LibrariesBOMVersion string `yaml:"libraries_bom_version,omitempty"`
 }
 
@@ -807,10 +808,16 @@ type NodejsAPI struct {
 
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	// This can be overridden at the API level.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
 type PHPAPI struct {
+	// AdditionalProtos is a list of additional proto files to include in generation.
+	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
+
 	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
 	MigrationMode string `yaml:"migration_mode,omitempty"`
 }
