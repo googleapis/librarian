@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -204,6 +205,7 @@ func validateLanguageConfig(cfg *config.Config) error {
 var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
 	config.LanguageNodejs: nodejs.Tidy,
+	config.LanguagePhp:    php.Tidy,
 	config.LanguagePython: python.Tidy,
 	config.LanguageRust:   rust.Tidy,
 }
