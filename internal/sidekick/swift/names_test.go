@@ -224,6 +224,7 @@ func TestProtoPackagePrefix(t *testing.T) {
 		want    string
 	}{
 		{"empty", "", ""},
+		{"single", "backstory", "Backstory_"},
 		{"simple", "google.storage", "Google_Storage_"},
 		{"versioned", "google.storage.control.v2", "Google_Storage_Control_V2_"},
 		{"cased", "Google.Cloud.Location", "Google_Cloud_Location_"},
