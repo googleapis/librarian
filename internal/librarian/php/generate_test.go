@@ -373,4 +373,3 @@ func TestResolveAdditionalProtos(t *testing.T) {
 		})
 	}
 }
-
