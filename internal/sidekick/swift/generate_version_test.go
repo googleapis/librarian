@@ -39,6 +39,9 @@ func TestGenerateVersion(t *testing.T) {
 		t.Fatal(err)
 	}
 	stat, err := os.Stat(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
 	if stat.Mode().Perm()|0666 != 0666 {
 		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
 	}
