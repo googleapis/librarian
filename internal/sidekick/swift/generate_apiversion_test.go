@@ -88,7 +88,6 @@ func TestGenerateService_APIVersion(t *testing.T) {
 				}
 			}
 			service := api.NewTestService("TestService").WithMethods(method)
-
 			model := api.NewTestAPI([]*api.Message{requestType, responseType}, nil, []*api.Service{service})
 			model.PackageName = "test"
 			cfg := &parser.ModelConfig{}
