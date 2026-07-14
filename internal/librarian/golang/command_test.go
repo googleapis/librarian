@@ -76,6 +76,64 @@ func TestRunProtoc(t *testing.T) {
 	}
 }
 
+func TestInstallEnv(t *testing.T) {
+	for _, test := range []struct {
+		name   string
+		binDir func(t *testing.T) string
+		want   func(absBin string) map[string]string
+	}{
+		{
+			name: "returns PATH pointing to go_tools directory",
+			binDir: func(t *testing.T) string {
+				return t.TempDir()
+			},
+			want: func(absBin string) map[string]string {
+				return map[string]string{
+					envPath: filepath.Join(absBin, toolsDir),
+				}
+			},
+		},
+		{
+			name: "handles nested bin directory path",
+			binDir: func(t *testing.T) string {
+				return filepath.Join(t.TempDir(), "nested", "bin")
+			},
+			want: func(absBin string) map[string]string {
+				return map[string]string{
+					envPath: filepath.Join(absBin, toolsDir),
+				}
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			binDir := test.binDir(t)
+			t.Setenv(cache.EnvLibrarianBin, binDir)
+			got, err := installEnv()
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantAbsBin, err := filepath.Abs(binDir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantMap := test.want(wantAbsBin)
+			if diff := cmp.Diff(wantMap, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestInstallEnv_Error(t *testing.T) {
+	t.Setenv(cache.EnvLibrarianBin, "")
+	t.Setenv(cache.EnvLibrarianCache, "")
+	t.Setenv("HOME", "")
+	t.Setenv("XDG_CACHE_HOME", "")
+	if _, err := installEnv(); err == nil {
+		t.Error("installEnv() error = nil, want error")
+	}
+}
+
 func createStubExecutable(t *testing.T, path, recordFile string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
