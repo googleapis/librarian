@@ -84,6 +84,15 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	return nil
 }
 
+// InstallDir returns the absolute path of the installation directory for Java tools.
+func InstallDir() (string, error) {
+	dir, err := cache.BinDirectory()
+	if err != nil {
+		return "", err
+	}
+	return filepath.Abs(filepath.Join(dir, toolsDir))
+}
+
 // installExternalMavenTool downloads a Maven-based external tool, copies its compiled artifact
 // (.jar or .exe) to the sibling lib folder, and creates an executable wrapper script
 // in the bin folder pointing directly to that library file.
@@ -231,15 +240,6 @@ func buildLocalMavenProject(ctx context.Context, localPath string) error {
 		return fmt.Errorf("failed to build local Maven project %q: %w", localPath, err)
 	}
 	return nil
-}
-
-// InstallDir returns the absolute path of the installation directory for Java tools.
-func InstallDir() (string, error) {
-	dir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
 }
 
 // getBinDir returns the absolute path of the directory where Java tool wrapper scripts are stored.
