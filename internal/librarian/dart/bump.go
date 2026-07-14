@@ -121,6 +121,7 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 	}
 
 	depsChanged := false
+	libraryChanged := true
 	newDeps := make(map[string]string)
 	for _, dep := range cloudDeps {
 		if v, ok := newVersions[dep]; ok && v != "" {
@@ -132,15 +133,17 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 	packageDir := libraryOutput(lib, defaults)
 	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s.json", lib.Name))
 	defer os.Remove(reportPath)
+	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
 
 	var neededVersion string
+	var publishedVersion string
 	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", packageDir,
 		"--report-format", "json", "--report-file-path", reportPath, "--version-check-mode", "fully",
 		"--no-set-exit-on-version-check-failure")
 	if err != nil {
 		if strings.Contains(err.Error(), "Package not available") {
 			// First release: no breaking changes to compare against, keep old version.
-			neededVersion = oldVersion
+			return oldVersion, nil
 		} else {
 			return "", fmt.Errorf("dart-apitool failed: %w (output: %s)", err, output)
 		}
@@ -153,6 +156,7 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		var report struct {
 			Version struct {
 				Needed string `json:"needed"`
+				Old    string `json:"old"` // The published version of the package.
 			} `json:"version"`
 		}
 		if err := json.Unmarshal(reportContent, &report); err != nil {
@@ -162,11 +166,18 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		if neededVersion == "" {
 			return "", fmt.Errorf("API report did not contain recommended version")
 		}
+		publishedVersion = report.Version.Old
+	}
+
+	if semver.MaxVersion(oldVersion, neededVersion) == oldVersion {
+		// The version has already been incremented to/past what is required.
+		return oldVersion, nil
 	}
 
 	newVersion := neededVersion
-	if depsChanged && newVersion == oldVersion {
-		// Only dependencies changed, perform a patch bump
+	// If there are no changes to the package then `neededVersion` will be the published
+	// version of the package.
+	if (depsChanged || libraryChanged) && neededVersion == publishedVersion {
 		bumped, err := semver.DeriveNext(semver.Patch, oldVersion, semver.DeriveNextOptions{
 			DowngradePreGAChanges: true,
 		})
@@ -176,8 +187,7 @@ func bumpLibrary(ctx context.Context, cloudDeps []string, newVersions map[string
 		newVersion = bumped
 	}
 
-	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
-	if err := updatePubspecFile(pubspecPath, newVersion, newDeps); err != nil {
+	if err := updatePubspecVersion(pubspecPath, newVersion); err != nil {
 		return "", err
 	}
 
@@ -195,8 +205,10 @@ func libraryOutput(lib *config.Library, defaults *config.Default) string {
 	return filepath.Join(defaultOut, lib.Name)
 }
 
-func updatePubspecFile(path string, newVersion string, newDeps map[string]string) error {
-	content, err := os.ReadFile(path)
+func updatePubspecDependencyVersions(lib *config.Library, defaults *config.Default, newDeps map[string]string) error {
+	packageDir := libraryOutput(lib, defaults)
+	pubspecPath := filepath.Join(packageDir, "pubspec.yaml")
+	content, err := os.ReadFile(pubspecPath)
 	if err != nil {
 		return err
 	}
@@ -205,10 +217,6 @@ func updatePubspecFile(path string, newVersion string, newDeps map[string]string
 	inDeps := false
 	for _, line := range lines {
 		trimmed := strings.TrimSpace(line)
-		if strings.HasPrefix(trimmed, "version:") {
-			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
-			continue
-		}
 		if strings.HasPrefix(line, "dependencies:") {
 			inDeps = true
 			newLines = append(newLines, line)
@@ -226,6 +234,24 @@ func updatePubspecFile(path string, newVersion string, newDeps map[string]string
 					continue
 				}
 			}
+		}
+		newLines = append(newLines, line)
+	}
+	return os.WriteFile(pubspecPath, []byte(strings.Join(newLines, "\n")), 0644)
+}
+
+func updatePubspecVersion(path string, newVersion string) error {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		return err
+	}
+	lines := strings.Split(string(content), "\n")
+	var newLines []string
+	for _, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if strings.HasPrefix(trimmed, "version:") {
+			newLines = append(newLines, fmt.Sprintf("version: %s", newVersion))
+			continue
 		}
 		newLines = append(newLines, line)
 	}
@@ -265,6 +291,15 @@ func Bump(ctx context.Context, cfg *config.Config, all bool, libraryName, versio
 		}
 		newVersions[lib] = newVersion
 		libraryByName[lib].Version = newVersion
+
+		for _, other := range sorted {
+			if slices.Contains(deps[other], lib) {
+				newDeps := map[string]string{"package:" + lib: "^" + newVersion}
+				if err := updatePubspecDependencyVersions(libraryByName[other], cfg.Default, newDeps); err != nil {
+					return err
+				}
+			}
+		}
 	}
 
 	return nil
