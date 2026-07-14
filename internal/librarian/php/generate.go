@@ -110,7 +110,6 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 	}
 	opts := gapicOpts(params.api, apiMetadata, grpcConfigPath)
 	additionalProtos := resolveAdditionalProtos(params.library, params.api)
-
 	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos)
 	if err != nil {
 		return err
