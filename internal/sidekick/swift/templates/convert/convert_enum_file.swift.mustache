@@ -25,8 +25,8 @@ limitations under the License.
 {{/Codec.IsGated}}
 import Foundation
 import GoogleCloudGax
-@_implementationOnly import SwiftProtobuf
-@_implementationOnly import {{Codec.ModulePath}}
+internal import SwiftProtobuf
+internal import {{Codec.ModulePath}}
 
 {{> /templates/convert/convert_enum}}
 {{#Codec.IsGated}}
