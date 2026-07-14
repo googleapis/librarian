@@ -173,7 +173,7 @@ func deriveLibraryName(language string, api string) string {
 func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, error) {
 	stablePath, isPreview := strings.CutPrefix(apiPath, "preview/")
 	api := &config.API{Path: stablePath}
-	existingLib := findExistingLibraryForNewAPI(cfg, stablePath)
+	existingLib := findExistingLibraryForAPI(cfg, stablePath)
 	if isPreview {
 		if existingLib == nil {
 			return "", nil, fmt.Errorf("%w: API path %s", errPreviewRequiresLibrary, apiPath)
@@ -186,13 +186,13 @@ func addLibrary(cfg *config.Config, apiPath string) (string, *config.Config, err
 	return addNewLibrary(cfg, api)
 }
 
-// findExistingLibraryForNewAPI determines if an existing library in cfg is
+// findExistingLibraryForAPI determines if an existing library in cfg is
 // the natural library to contain apiPath, and returns it if so. If no existing
 // library is found, nil is returned. In most languages this check is performed
 // by deriving the library name from the API path and seeing if that library
 // already exists. In Python the mapping from API path to library name isn't
 // always as simple for historical reasons.
-func findExistingLibraryForNewAPI(cfg *config.Config, apiPath string) *config.Library {
+func findExistingLibraryForAPI(cfg *config.Config, apiPath string) *config.Library {
 	switch cfg.Language {
 	case config.LanguageNodejs:
 		return nodejs.FindExistingLibraryForNewAPI(cfg.Libraries, apiPath)
