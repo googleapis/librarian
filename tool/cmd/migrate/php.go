@@ -31,6 +31,11 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+var protoMappings = map[string]string{
+	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
+	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
+}
+
 func runPHPMigration(ctx context.Context, repoPath string) error {
 	src, err := fetchSource(ctx)
 	if err != nil {
@@ -68,7 +73,7 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 	if err := librarian.RunTidyOnConfig(ctx, repoPath, cfg); err != nil {
 		return fmt.Errorf("%w: %w", errTidyFailed, err)
 	}
-	log.Printf("Successfully migrated %d PHP libraries configuration skeleton", len(cfg.Libraries))
+	log.Printf("Successfully migrated %d PHP libraries configuration to librarian.yaml", len(cfg.Libraries))
 	return nil
 }
 
@@ -198,10 +203,6 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
 	if rules := file.Rules("proto_library_with_info"); len(rules) > 0 {
 		rule := rules[0]
 		if attr := rule.Attr("deps"); attr != nil {
-			protoMappings := map[string]string{
-				"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
-				"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
-			}
 			for _, dep := range extractStrings(attr) {
 				// Ignore local targets within the same package.
 				if strings.HasPrefix(dep, ":") {
@@ -234,10 +235,10 @@ func parsePHPBazel(googleapisDir, apiPath string) ([]string, error) {
 
 func parseBazel(googleapisDir, dir string) (*build.File, error) {
 	path := filepath.Join(googleapisDir, dir, "BUILD.bazel")
-	if _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {
+	data, err := os.ReadFile(path)
+	if errors.Is(err, fs.ErrNotExist) {
 		return nil, nil
 	}
-	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

@@ -70,7 +70,7 @@ func TestRunPHPMigration(t *testing.T) {
 	// Verify librarian.yaml is written and contains the expected content.
 	got, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
-		t.Fatalf("reading generated librarian.yaml: %v", err)
+		t.Fatal(err)
 	}
 	want := &config.Config{
 		Language: config.LanguagePhp,
@@ -285,7 +285,7 @@ proto_library_with_info(
 			}
 			got, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
 			if err != nil {
-				t.Fatalf("parsePHPBazel failed: %v", err)
+				t.Fatal(err)
 			}
 			if diff := cmp.Diff(test.want, got); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
