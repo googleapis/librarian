@@ -24,6 +24,7 @@ import (
 )
 
 func TestGenerateVersion(t *testing.T) {
+	const expectedFile = "Package+Version.swift"
 	library := &config.Library{
 		CopyrightYear: "2038",
 		Version:       "1.2.3-test",
@@ -32,10 +33,16 @@ func TestGenerateVersion(t *testing.T) {
 	if err := GenerateVersion(t.Context(), outDir, library); err != nil {
 		t.Fatal(err)
 	}
-	contents, err := os.ReadFile(filepath.Join(outDir, "Package+Version.swift"))
+	filename := filepath.Join(outDir, expectedFile)
+	contents, err := os.ReadFile(filepath.Join(outDir, expectedFile))
 	if err != nil {
 		t.Fatal(err)
 	}
+	stat, err := os.Stat(filename)
+	if stat.Mode().Perm()|0666 != 0666 {
+		t.Errorf("generated files should just be read-write %s: %o", filename, stat.Mode())
+	}
+
 	contentStr := string(contents)
 	for _, test := range []struct {
 		start string
