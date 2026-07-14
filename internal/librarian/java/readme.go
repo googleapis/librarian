@@ -135,10 +135,14 @@ func renderREADME(params libraryPostProcessParams, keepSet map[string]bool) erro
 	apiRequiresBilling := false
 	if len(params.library.APIs) > 0 {
 		api, err := serviceconfig.Find(params.primaryDir, params.library.APIs[0].Path, params.cfg.Language)
-		if err == nil && api.RequiresBilling != nil {
+		if err != nil {
+			return fmt.Errorf("failed to find api config for %s: %w", params.library.APIs[0].Path, err)
+		}
+		if api.RequiresBilling != nil {
 			apiRequiresBilling = *api.RequiresBilling
 		} else {
 			// TODO: Remove this logic once backward compatibility for google-cloud-java/librarian.yaml is no longer needed.
+			// https://github.com/googleapis/librarian/issues/6285
 			apiRequiresBilling = !params.library.Java.BillingNotRequired
 		}
 	}
