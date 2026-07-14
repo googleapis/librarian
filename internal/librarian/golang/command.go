@@ -16,9 +16,7 @@ package golang
 
 import (
 	"context"
-	"fmt"
 	"maps"
-	"os"
 
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
@@ -28,9 +26,9 @@ import (
 const envPath = "PATH"
 
 // runProtoc runs the protoc command with the given environment variable and arguments.
-func runProtoc(ctx context.Context, pc *config.Protoc, env map[string]string, args ...string) error {
+func runProtoc(ctx context.Context, pc *config.Protoc, args ...string) error {
 	// Ensure that the toolchain environment variables are set before calling protoc.
-	env, err := mergeEnv(env)
+	env, err := toolsEnv()
 	if err != nil {
 		return err
 	}
@@ -44,20 +42,21 @@ func runWithEnv(ctx context.Context, env map[string]string, cmd string, args ...
 
 // runInDirWithEnv runs a command in the given directory with the given environment.
 func runInDirWithEnv(ctx context.Context, dir string, env map[string]string, cmd string, args ...string) error {
-	env, err := mergeEnv(env)
+	additionalEnv, err := toolsEnv()
 	if err != nil {
 		return err
 	}
-	return command.RunInDirWithEnv(ctx, dir, env, cmd, args...)
+	mergedEnv := make(map[string]string)
+	maps.Copy(mergedEnv, additionalEnv)
+	maps.Copy(mergedEnv, env)
+	return command.RunInDirWithEnv(ctx, dir, mergedEnv, cmd, args...)
 }
 
-// mergeEnv merges the given environment with the installation directory.
-func mergeEnv(env map[string]string) (map[string]string, error) {
+// toolsEnv returns the environment variables required to run the Go tools.
+func toolsEnv() (map[string]string, error) {
 	toolsBinDir, err := InstallDir()
 	if err != nil {
 		return nil, err
 	}
-	res := map[string]string{envPath: fmt.Sprintf("%s:%s", toolsBinDir, os.Getenv(envPath))}
-	maps.Copy(res, env)
-	return res, nil
+	return map[string]string{envPath: toolsBinDir}, nil
 }

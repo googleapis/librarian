@@ -48,7 +48,7 @@ jobs:
           path: |
             ~/.cache/librarian
             venv
-          key: librarian-java-tools-v1-${{ runner.os }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
+          key: librarian-java-tools-v2-${{ runner.os }}-${{ hashFiles('internal/config/**/*.go') }}-${{ hashFiles('google-cloud-java/librarian.yaml', 'google-cloud-java/sdk-platform-java/gapic-generator-java/**', 'google-cloud-java/sdk-platform-java/hermetic_build/library_generation/**') }}
       - name: Create Python virtual environment
         if: steps.cache-tools.outputs.cache-hit != 'true'
         run: python3 -m venv venv
