@@ -817,4 +817,8 @@ type PHPAPI struct {
 
 	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
 	MigrationMode string `yaml:"migration_mode,omitempty"`
+
+	// CommonResources indicates whether to include common resources in generation.
+	// Defaults to true if nil.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
 }

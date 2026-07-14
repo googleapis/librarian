@@ -112,7 +112,8 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 	if params.api.PHP != nil {
 		additionalProtos = params.api.PHP.AdditionalProtos
 	}
-	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos)
+	includeCommonResources := *params.api.PHP.CommonResources
+	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
 	if err != nil {
 		return err
 	}
@@ -130,25 +131,22 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 
 // gatherTargetProtos collects all proto files inside the target API directory,
 // appends common resources, and appends any configured additional protos.
-func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
-	var targetProtos []string
-	apiDir := filepath.Join(googleapisDir, apiPath)
-	protos, err := gatherProtos(apiDir)
+func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string, includeCommonResources bool) ([]string, error) {
+	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
+	targetProtos, err := gatherProtos(apiDir)
 	if err != nil {
 		return nil, err
 	}
-	targetProtos = append(targetProtos, protos...)
-	// Always include common resources if present
-	// TODO(https://github.com/googleapis/librarian/issues/6813): make this configurable
-	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
-	if _, err := os.Stat(commonResources); err == nil {
+	if len(targetProtos) == 0 {
+		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
+	}
+
+	if includeCommonResources {
+		commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
 		targetProtos = append(targetProtos, commonResources)
 	}
 	for _, p := range additionalProtos {
 		targetProtos = append(targetProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-	}
-	if len(targetProtos) == 0 {
-		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
 	}
 	return targetProtos, nil
 }

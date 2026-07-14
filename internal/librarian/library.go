@@ -24,6 +24,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/librarian/swift"
@@ -340,6 +341,8 @@ func fillLibraryDefaults(language string, lib *config.Library) (*config.Library,
 		return java.Fill(lib)
 	case config.LanguagePython:
 		return python.Fill(lib)
+	case config.LanguagePhp:
+		return php.Fill(lib)
 	default:
 		return lib, nil
 	}

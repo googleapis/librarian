@@ -181,43 +181,47 @@ func TestGapicOpts(t *testing.T) {
 
 func TestGatherTargetProtos(t *testing.T) {
 	for _, test := range []struct {
-		name             string
-		setupFiles       []string
-		apiPath          string
-		additionalProtos []string
-		wantProtos       []string
+		name                   string
+		setupFiles             []string
+		apiPath                string
+		additionalProtos       []string
+		includeCommonResources bool
+		wantProtos             []string
 	}{
 		{
-			name: "protos found, no common resources",
+			name: "protos found, common resources enabled",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
 			},
-			apiPath:    "google/cloud/secretmanager/v1",
-			wantProtos: []string{"google/cloud/secretmanager/v1/service.proto"},
-		},
-		{
-			name: "protos found, common resources present",
-			setupFiles: []string{
-				"google/cloud/secretmanager/v1/service.proto",
-				"google/cloud/common_resources.proto",
-			},
-			apiPath: "google/cloud/secretmanager/v1",
+			apiPath:                "google/cloud/secretmanager/v1",
+			includeCommonResources: true,
 			wantProtos: []string{
 				"google/cloud/secretmanager/v1/service.proto",
 				"google/cloud/common_resources.proto",
 			},
 		},
 		{
+			name: "protos found, common resources disabled",
+			setupFiles: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+			apiPath:                "google/cloud/secretmanager/v1",
+			includeCommonResources: false,
+			wantProtos: []string{
+				"google/cloud/secretmanager/v1/service.proto",
+			},
+		},
+		{
 			name: "protos found, common resources and additional protos present",
 			setupFiles: []string{
 				"google/cloud/secretmanager/v1/service.proto",
-				"google/cloud/common_resources.proto",
 				"google/cloud/location/location.proto",
 			},
 			apiPath: "google/cloud/secretmanager/v1",
 			additionalProtos: []string{
 				"google/cloud/location/location.proto",
 			},
+			includeCommonResources: true,
 			wantProtos: []string{
 				"google/cloud/secretmanager/v1/service.proto",
 				"google/cloud/common_resources.proto",
@@ -236,7 +240,7 @@ func TestGatherTargetProtos(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			got, err := gatherTargetProtos(tempDir, test.apiPath, test.additionalProtos)
+			got, err := gatherTargetProtos(tempDir, test.apiPath, test.additionalProtos, test.includeCommonResources)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -274,7 +278,7 @@ func TestGatherTargetProtos_Error(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			_, err := gatherTargetProtos(tempDir, test.apiPath, nil)
+			_, err := gatherTargetProtos(tempDir, test.apiPath, nil, true)
 			if err == nil {
 				t.Fatal("gatherTargetProtos() expected error, got nil")
 			}

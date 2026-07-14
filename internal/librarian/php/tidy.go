@@ -21,7 +21,21 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
-// Tidy tidies configuration for a library.
+// Fill populates PHP-specific default values for a library.
+func Fill(lib *config.Library) (*config.Library, error) {
+	for _, api := range lib.APIs {
+		if api.PHP == nil {
+			api.PHP = &config.PHPAPI{}
+		}
+		if api.PHP.CommonResources == nil {
+			trueVal := true
+			api.PHP.CommonResources = &trueVal
+		}
+	}
+	return lib, nil
+}
+
+// Tidy tidies PHP-specific configuration for a library.
 func Tidy(lib *config.Library) (*config.Library, error) {
 	for _, api := range lib.APIs {
 		if api.PHP == nil {
@@ -31,7 +45,18 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			slices.Sort(api.PHP.AdditionalProtos)
 			api.PHP.AdditionalProtos = slices.Compact(api.PHP.AdditionalProtos)
 		}
+		if api.PHP.CommonResources != nil && *api.PHP.CommonResources {
+			api.PHP.CommonResources = nil
+		}
+		empty, err := yaml.Empty(api.PHP)
+		if err != nil {
+			return nil, err
+		}
+		if empty {
+			api.PHP = nil
+		}
 	}
+
 	if lib.PHP != nil {
 		empty, err := yaml.Empty(lib.PHP)
 		if err != nil {
@@ -41,5 +66,6 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			lib.PHP = nil
 		}
 	}
+
 	return lib, nil
 }
