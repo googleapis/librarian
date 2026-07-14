@@ -66,6 +66,7 @@ type libraryPostProcessParams struct {
 	outDir     string
 	metadata   *repoMetadata
 	transports map[string]serviceconfig.Transport
+	primaryDir string
 }
 
 // TODO(https://github.com/googleapis/librarian/issues/6627): Remove legacy owlbot.py
