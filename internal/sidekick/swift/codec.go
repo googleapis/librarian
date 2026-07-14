@@ -106,7 +106,7 @@ type codec struct {
 	GeneratedFiles map[string]int
 
 	// The name of the private module containing raw stubs (e.g. "StorageControlProtos").
-	// Used by convert-swift to generate @_implementationOnly imports and prefix raw types.
+	// Used by convert-swift to generate internal imports and prefix raw types.
 	ModulePath string
 }
 
