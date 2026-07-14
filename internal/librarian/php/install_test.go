@@ -50,7 +50,7 @@ func TestBinDir(t *testing.T) {
 	}
 }
 
-func TestRepoFromPackageURL_Success(t *testing.T) {
+func TestRepoFromPackageURL(t *testing.T) {
 	packageURL := "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz"
 	want := "github.com/googleapis/gapic-generator-php"
 	got, err := repoFromPackageURL(packageURL)
