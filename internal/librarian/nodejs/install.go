@@ -92,7 +92,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			continue
 		}
 		if len(tool.Build) > 0 {
-			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
+			if err := installToolFromSource(ctx, env, tool); err != nil {
 				return err
 			}
 			continue
@@ -189,7 +189,7 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 	return cmd.Run()
 }
 
-func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
+func installToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
 	if tool.Package == "" {
 		return fmt.Errorf("pnpm tool %s %w", tool.Name, errMissingPackageURL)
 	}
