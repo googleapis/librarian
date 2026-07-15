@@ -41,7 +41,6 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			api.PHP = nil
 		}
 	}
-
 	if lib.PHP != nil {
 		empty, err := yaml.Empty(lib.PHP)
 		if err != nil {
@@ -51,7 +50,6 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 			lib.PHP = nil
 		}
 	}
-
 	return lib, nil
 }
 
