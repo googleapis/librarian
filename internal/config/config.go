@@ -136,14 +136,11 @@ type ComposerTool struct {
 	// Version is the version to install.
 	Version string `yaml:"version"`
 
-	// Package is the URL or path of the package to install.
-	Package string `yaml:"package,omitempty"`
+	// Repo is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php).
+	Repo string `yaml:"repo,omitempty"`
 
 	// SHA256 is the SHA256 checksum of the package.
 	SHA256 string `yaml:"sha256,omitempty"`
-
-	// Build defines the commands to run to build the tool after installation.
-	Build []string `yaml:"build,omitempty"`
 }
 
 // GemTool defines a tool to install via gem.

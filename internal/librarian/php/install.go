@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
+	"github.com/googleapis/librarian/internal/tool/pip"
 )
 
 const (
@@ -34,13 +35,51 @@ const (
 	toolsDir         = "php_tools"
 )
 
+var (
+	errMissingRepo = errors.New("repo URL missing")
+)
+
 // Install installs the PHP generator tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools != nil {
-		return nil
+	if tools == nil || (len(tools.Composer) == 0 && len(tools.Pip) == 0) {
+		_, err := installGenerator(ctx)
+		return err
 	}
-	_, err := installGenerator(ctx)
-	return err
+
+	bin, err := binDir()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(bin, 0755); err != nil {
+		return fmt.Errorf("failed to create bin directory: %w", err)
+	}
+
+	for _, tool := range tools.Composer {
+		if tool.Repo == "" {
+			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
+		}
+		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
+		if err != nil {
+			return fmt.Errorf("fetching %s: %w", tool.Name, err)
+		}
+
+		if err := command.RunInDir(ctx, dir, "composer", "install", "--no-dev", "--no-interaction", "--prefer-dist"); err != nil {
+			return err
+		}
+
+		destPath := filepath.Join(dir, "vendor", "bin", tool.Name)
+		if err := createBinWrapper(tool.Name, destPath, bin); err != nil {
+			return err
+		}
+	}
+	// The PHP client library generation process relies on Python-based
+	// tools (such as synthtool or owlbot) for post-processing and generation.
+	if len(tools.Pip) > 0 {
+		if err := pip.Install(ctx, tools.Pip); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // InstallDir gets the directory where tools should be installed.
@@ -113,4 +152,18 @@ exec %q -d display_errors=stderr -d memory_limit=1024M %q --side_loaded_root_dir
 
 func generatorDir(ctx context.Context) (string, error) {
 	return fetch.Repo(ctx, "github.com/googleapis/gapic-generator-php", generatorVersion, generatorSHA256)
+}
+
+// createBinWrapper creates a shell wrapper script in the bin directory that forwards executions to the tool.
+func createBinWrapper(wrapperName, destPath, binDir string) error {
+	wrapperPath := filepath.Join(binDir, wrapperName)
+	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
+	_ = os.Remove(wrapperPath)
+	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	_, err = f.WriteString(content)
+	return err
 }
