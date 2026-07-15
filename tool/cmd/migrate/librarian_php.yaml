@@ -22,6 +22,9 @@
 # This file is embedded in tool/cmd/migrate/php.go.
 # If you need to update the default tool versions for future migrations, update them here.
 language: php
+default:
+  php:
+    common_resources: true
 tools:
   composer:
     - name: google/gapic-generator-php
