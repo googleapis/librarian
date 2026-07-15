@@ -59,9 +59,8 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `name` | string | Is the composer package name. |
 | `version` | string | Is the version to install. |
-| `package` | string | Is the URL or path of the package to install. |
+| `repo` | string | Is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php). |
 | `sha256` | string | Is the SHA256 checksum of the package. |
-| `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## GemTool Configuration
 
@@ -129,6 +128,7 @@ This document describes the schema for the librarian.yaml.
 | `go` | [GoDefault](#godefault-configuration) (optional) | Contains Go-specific default configuration. |
 | `java` | [JavaDefault](#javadefault-configuration) (optional) | Contains Java-specific default configuration. |
 | `nodejs` | [NodejsPackage](#nodejspackage-configuration) (optional) | Contains Node.js-specific default configuration. |
+| `php` | [PHPDefault](#phpdefault-configuration) (optional) | Contains PHP-specific default configuration. |
 | `rust` | [RustDefault](#rustdefault-configuration) (optional) | Contains Rust-specific default configuration. |
 | `python` | [PythonDefault](#pythondefault-configuration) (optional) | Contains Python-specific default configuration. |
 | `swift` | [SwiftDefault](#swiftdefault-configuration) (optional) | Contains Swift-specific default configuration. |
@@ -446,6 +446,13 @@ This document describes the schema for the librarian.yaml.
 | :--- | :--- | :--- |
 | `additional_protos` | list of string | Is a list of additional proto files to include in generation. |
 | `migration_mode` | string | Controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY"). |
+| `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
+
+## PHPDefault Configuration
+
+| Field | Type | Description |
+| :--- | :--- | :--- |
+| `common_resources` | bool (optional) | Indicates whether to include common resources in generation. Must be configured either globally or per-API. |
 
 ## PHPPackage Configuration
 

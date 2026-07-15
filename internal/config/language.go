@@ -806,6 +806,13 @@ type NodejsAPI struct {
 	Path string `yaml:"path,omitempty"`
 }
 
+// PHPDefault contains PHP-specific global default configuration.
+type PHPDefault struct {
+	// CommonResources indicates whether to include common resources in generation.
+	// Must be configured either globally or per-API.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
+}
+
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
 }
@@ -817,4 +824,8 @@ type PHPAPI struct {
 
 	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
 	MigrationMode string `yaml:"migration_mode,omitempty"`
+
+	// CommonResources indicates whether to include common resources in generation.
+	// Must be configured either globally or per-API.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
 }
