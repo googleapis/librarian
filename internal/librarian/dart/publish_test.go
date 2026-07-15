@@ -64,11 +64,14 @@ func TestPublish(t *testing.T) {
 		name              string
 		publishedVersions map[string]string
 		repoVersions      map[string]string
+		mockNeededVersion map[string]string
+		mockApitoolError  map[string]string
+		skipSemverChecks  bool
 		wantInvocations   []string
 		wantErr           string
 	}{
 		{
-			name: "needs publish (not published yet)",
+			name: "needs publish (not published yet, skips apitool)",
 			publishedVersions: map[string]string{
 				"a": "",
 				"b": "",
@@ -77,18 +80,26 @@ func TestPublish(t *testing.T) {
 				"a": "1.0.0",
 				"b": "1.0.0",
 			},
+			mockApitoolError: map[string]string{
+				"a": "Package not available on pub.dev",
+				"b": "Package not available on pub.dev",
+			},
 			wantInvocations: []string{
 				"generated/a|pub publish --dry-run",
 				"generated/b|pub publish --dry-run",
 			},
 		},
 		{
-			name: "needs publish (repo version is greater than published version)",
+			name: "needs publish (repo version is greater than published version, apitool check passes)",
 			publishedVersions: map[string]string{
 				"a": "0.9.0",
 				"b": "0.9.0",
 			},
 			repoVersions: map[string]string{
+				"a": "1.0.0",
+				"b": "1.0.0",
+			},
+			mockNeededVersion: map[string]string{
 				"a": "1.0.0",
 				"b": "1.0.0",
 			},
@@ -120,6 +131,63 @@ func TestPublish(t *testing.T) {
 				"b": "1.0.0",
 			},
 			wantErr: `published version "2.0.0" is greater than repo version "1.0.0" for package a`,
+		},
+		{
+			name: "semver failure (repo version < apitool needed version)",
+			publishedVersions: map[string]string{
+				"a": "0.9.0",
+				"b": "0.9.0",
+			},
+			repoVersions: map[string]string{
+				"a": "1.0.0",
+				"b": "1.0.0",
+			},
+			mockNeededVersion: map[string]string{
+				"a": "2.0.0", // requires major bump but repo is only minor
+				"b": "1.0.0",
+			},
+			wantErr: `package a version 1.0.0 is less than required version 2.0.0 recommended by dart-apitool`,
+		},
+		{
+			name: "semver check skipped by flag",
+			publishedVersions: map[string]string{
+				"a": "0.9.0",
+				"b": "0.9.0",
+			},
+			repoVersions: map[string]string{
+				"a": "1.0.0",
+				"b": "1.0.0",
+			},
+			mockNeededVersion: map[string]string{
+				"a": "2.0.0", // normally fails, but flag skips
+				"b": "1.0.0",
+			},
+			skipSemverChecks: true,
+			wantInvocations: []string{
+				"generated/a|pub publish --dry-run",
+				"generated/b|pub publish --dry-run",
+			},
+		},
+		{
+			name: "apitool package not available (handled as first release)",
+			publishedVersions: map[string]string{
+				"a": "0.9.0",
+				"b": "0.9.0",
+			},
+			repoVersions: map[string]string{
+				"a": "1.0.0",
+				"b": "1.0.0",
+			},
+			mockApitoolError: map[string]string{
+				"a": "Package not available on pub.dev",
+			},
+			mockNeededVersion: map[string]string{
+				"b": "1.0.0",
+			},
+			wantInvocations: []string{
+				"generated/a|pub publish --dry-run",
+				"generated/b|pub publish --dry-run",
+			},
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -159,16 +227,65 @@ func TestPublish(t *testing.T) {
 			testhelper.RunGit(t, "commit", "-m", "feat: added pubspec files", ".")
 			testhelper.RunGit(t, "push", config.RemoteUpstream, config.BranchMain)
 
-			// Set up fake dart script to log invocations and deps
-			logFile := filepath.Join(t.TempDir(), "invocations.log")
-			setupFakeDartScript(t, `#!/bin/bash
+			// Propagate mock expectations to environment for scripts to read
+			if tc.mockNeededVersion != nil {
+				marshaled, _ := json.Marshal(tc.mockNeededVersion)
+				t.Setenv("MOCK_NEEDED_VERSIONS", string(marshaled))
+			} else {
+				t.Setenv("MOCK_NEEDED_VERSIONS", "")
+			}
+			if tc.mockApitoolError != nil {
+				marshaled, _ := json.Marshal(tc.mockApitoolError)
+				t.Setenv("MOCK_APITOOL_ERRORS", string(marshaled))
+			} else {
+				t.Setenv("MOCK_APITOOL_ERRORS", "")
+			}
+
+			// Set up fake dart script
+			setupFakeScript(t, "dart", `#!/bin/bash
 if [ "$1" == "pub" ] && [ "$2" == "deps" ] && [ "$3" == "--json" ]; then
-	# Return JSON deps outputting the specified repoVersions
 	echo '{"packages":[{"name":"a","version":"`+tc.repoVersions["a"]+`","dependencies":[]},{"name":"b","version":"`+tc.repoVersions["b"]+`","dependencies":["a"]}]}'
 else
-	echo "$(pwd)|$*" >> "`+logFile+`"
+	# We also need to log the pub publish command, but we shouldn't log other commands
+	echo "$(pwd)|$*" >> "$TEST_LOG_FILE"
 fi
 `)
+
+			// Set up fake apitool script
+			setupFakeScript(t, "dart-apitool", `#!/bin/bash
+# Find package name from pub:// argument
+pkg_name=""
+report_file=""
+while [ $# -gt 0 ]; do
+  if [[ "$1" == pub://* ]]; then
+    pkg_name="${1#pub://}"
+  elif [ "$1" == "--report-file-path" ]; then
+    report_file="$2"
+  fi
+  shift
+done
+
+# Check if there is a mocked error for this package
+if [ -n "$MOCK_APITOOL_ERRORS" ]; then
+  err_msg=$(echo "$MOCK_APITOOL_ERRORS" | jq -r ".${pkg_name} // \"\"")
+  if [ -n "$err_msg" ] && [ "$err_msg" != "null" ]; then
+    echo "$err_msg" >&2
+    exit 1
+  fi
+fi
+
+# Write report with needed version
+if [ -n "$report_file" ] && [ -n "$MOCK_NEEDED_VERSIONS" ]; then
+  needed_version=$(echo "$MOCK_NEEDED_VERSIONS" | jq -r ".${pkg_name} // \"\"")
+  if [ -n "$needed_version" ] && [ "$needed_version" != "null" ]; then
+    echo "{\"version\":{\"needed\":\"$needed_version\"}}" > "$report_file"
+  fi
+fi
+`)
+
+			// Set up common log file path in environment for fake dart script to write to
+			logFile := filepath.Join(t.TempDir(), "invocations.log")
+			t.Setenv("TEST_LOG_FILE", logFile)
 
 			cfg := &config.Config{
 				Default: &config.Default{
@@ -181,8 +298,9 @@ fi
 			}
 
 			err := Publish(t.Context(), PublishParams{
-				Config: cfg,
-				DryRun: true,
+				Config:           cfg,
+				DryRun:           true,
+				SkipSemverChecks: tc.skipSemverChecks,
 			})
 
 			if tc.wantErr != "" {
@@ -227,14 +345,14 @@ fi
 	}
 }
 
-func setupFakeDartScript(t *testing.T, script string) {
+func setupFakeScript(t *testing.T, name, script string) {
 	t.Helper()
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping on windows, bash script set up does not work")
 	}
 	tmpDir := t.TempDir()
-	dartScript := filepath.Join(tmpDir, "dart")
-	if err := os.WriteFile(dartScript, []byte(script), 0755); err != nil {
+	scriptPath := filepath.Join(tmpDir, name)
+	if err := os.WriteFile(scriptPath, []byte(script), 0755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", tmpDir+string(os.PathListSeparator)+os.Getenv("PATH"))

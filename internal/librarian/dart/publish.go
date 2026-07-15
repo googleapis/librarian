@@ -18,6 +18,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
@@ -49,7 +50,11 @@ type PublishParams struct {
 // Publish finds all the libraries that should be published and publishes them in topological order.
 func Publish(ctx context.Context, params PublishParams) error {
 	if err := git.MatchesBranchPoint(ctx, command.Git, config.RemoteUpstream, config.BranchMain); err != nil {
-		return err
+		if params.DryRunKeepGoing {
+			slog.Warn("Branch point check failed, but continuing due to --keep-going", "error", err)
+		} else {
+			return err
+		}
 	}
 
 	libraryByName := make(map[string]*config.Library)
@@ -67,23 +72,17 @@ func Publish(ctx context.Context, params PublishParams) error {
 		return err
 	}
 
+	publishedVersions := make(map[string]string, len(libraryByName))
 	var librariesToPublish []*config.Library
 	for _, libName := range sorted {
 		lib := libraryByName[libName]
 		if lib.SkipRelease || lib.Version == "" {
 			continue
 		}
-		/*
-			libDir := libraryOutput(lib, params.Config.Default)
-
-				pubspecPath := filepath.Join(libDir, "pubspec.yaml")
-				if _, err := os.Stat(pubspecPath); err != nil {
-					continue
-				}*/
 
 		repoVersion, ok := repoVersions[libName]
 		if !ok {
-			return fmt.Errorf("`dart pub get` did not return a version for %s", libName)
+			return fmt.Errorf("no local version for %s", libName)
 		}
 
 		publishedVersion, err := getPublishedVersion(ctx, libName)
@@ -91,7 +90,6 @@ func Publish(ctx context.Context, params PublishParams) error {
 			return fmt.Errorf("failed to get published version of %s: %w", libName, err)
 		}
 
-		// The package hasn't been published yet.
 		if publishedVersion == "" {
 			librariesToPublish = append(librariesToPublish, lib)
 			continue
@@ -99,9 +97,15 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		comp := golangsemver.Compare("v"+publishedVersion, "v"+repoVersion)
 		if comp > 0 {
-			return fmt.Errorf("published version %q is greater than repo version %q for package %s", publishedVersion, repoVersion, libName)
+			if params.DryRunKeepGoing {
+				slog.Warn("published version greater than repo version, but continuing due to --keep-going",
+					"package", libName, "published", publishedVersion, "repo", repoVersion)
+			} else {
+				return fmt.Errorf("published version %q is greater than repo version %q for package %s", publishedVersion, repoVersion, libName)
+			}
 		} else if comp < 0 {
 			librariesToPublish = append(librariesToPublish, lib)
+			publishedVersions[libName] = repoVersion
 		}
 	}
 
@@ -109,13 +113,28 @@ func Publish(ctx context.Context, params PublishParams) error {
 		return nil
 	}
 
+	if !params.SkipSemverChecks {
+		for _, lib := range librariesToPublish {
+			if _, ok := publishedVersions[lib.Name]; ok {
+				if err := runSemverCheck(ctx, lib, params.Config.Default); err != nil {
+					if params.DryRunKeepGoing {
+						slog.Warn("semver check failed but continuing due to --keep-going",
+							"package", lib.Name, "error", err)
+					} else {
+						return err
+					}
+				}
+			}
+		}
+	}
+
 	for _, lib := range librariesToPublish {
 		libDir := libraryOutput(lib, params.Config.Default)
 		var args []string
 		if params.DryRun || params.DryRunKeepGoing {
-			args = []string{"pub", "publish", "--dry-run"}
+			args = []string{"pub", "publish", "--skip-validation", "--dry-run"}
 		} else {
-			args = []string{"pub", "publish", "--force"}
+			args = []string{"pub", "publish", "--skip-validation", "--force"}
 		}
 
 		var runErr error
@@ -127,13 +146,25 @@ func Publish(ctx context.Context, params PublishParams) error {
 
 		if runErr != nil {
 			if params.DryRunKeepGoing {
-				fmt.Fprintf(os.Stderr, "Error publishing %s: %v\n", lib.Name, runErr)
+				slog.Warn("publishing failed but continuing due to --keep-going",
+					"package", lib.Name, "error", runErr)
 				continue
 			}
 			return fmt.Errorf("failed to publish %s: %w", lib.Name, runErr)
 		}
 	}
 
+	return nil
+}
+
+func runSemverCheck(ctx context.Context, lib *config.Library, defaultCfg *config.Default) error {
+	libDir := libraryOutput(lib, defaultCfg)
+	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s-publish.json", lib.Name))
+	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", libDir,
+		"--report-format", "json", "--report-file-path", reportPath)
+	if err != nil {
+		return fmt.Errorf("dart-apitool failed for %s: %w (output: %s, see %s)", lib.Name, err, output, reportPath)
+	}
 	return nil
 }
 
