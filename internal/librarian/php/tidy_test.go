@@ -15,6 +15,7 @@
 package php
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -137,9 +138,8 @@ func TestTidy(t *testing.T) {
 
 func TestValidate(t *testing.T) {
 	for _, test := range []struct {
-		name    string
-		cfg     *config.Config
-		wantErr bool
+		name string
+		cfg  *config.Config
 	}{
 		{
 			name: "valid when configured per-API",
@@ -159,7 +159,6 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
 		},
 		{
 			name: "valid when configured globally",
@@ -181,24 +180,6 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
-		},
-		{
-			name: "invalid when not configured anywhere",
-			cfg: &config.Config{
-				Language: config.LanguagePhp,
-				Libraries: []*config.Library{
-					{
-						Name: "secretmanager",
-						APIs: []*config.API{
-							{
-								Path: "google/cloud/secretmanager/v1",
-							},
-						},
-					},
-				},
-			},
-			wantErr: true,
 		},
 		{
 			name: "skips other languages",
@@ -215,13 +196,44 @@ func TestValidate(t *testing.T) {
 					},
 				},
 			},
-			wantErr: false,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			if err := Validate(test.cfg); err != nil {
+				t.Fatal(err)
+			}
+		})
+	}
+}
+
+func TestValidate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		cfg     *config.Config
+		wantErr error
+	}{
+		{
+			name: "invalid when not configured anywhere",
+			cfg: &config.Config{
+				Language: config.LanguagePhp,
+				Libraries: []*config.Library{
+					{
+						Name: "secretmanager",
+						APIs: []*config.API{
+							{
+								Path: "google/cloud/secretmanager/v1",
+							},
+						},
+					},
+				},
+			},
+			wantErr: ErrMissingCommonResources,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			err := Validate(test.cfg)
-			if (err != nil) != test.wantErr {
-				t.Errorf("Validate() error = %v, wantErr = %v", err, test.wantErr)
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Validate() error = %v, wantErr %v", err, test.wantErr)
 			}
 		})
 	}

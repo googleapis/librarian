@@ -53,6 +53,9 @@ func Tidy(lib *config.Library) (*config.Library, error) {
 	return lib, nil
 }
 
+// ErrMissingCommonResources is returned when common_resources is not configured.
+var ErrMissingCommonResources = errors.New("common_resources is required for PHP configurations but was not configured (either set it on the API level or globally under default.php.common_resources)")
+
 // Validate checks that the PHP-specific configuration is complete and valid.
 func Validate(cfg *config.Config) error {
 	if cfg.Language != config.LanguagePhp {
@@ -68,7 +71,7 @@ func Validate(cfg *config.Config) error {
 		for _, api := range library.APIs {
 			// If neither API override nor global default is configured, return an error.
 			if !hasGlobalDefault && (api.PHP == nil || api.PHP.CommonResources == nil) {
-				errs = append(errs, fmt.Errorf("library %q, API %q: common_resources is required for PHP configurations but was not configured (either set it on the API level or globally under default.php.common_resources)", library.Name, api.Path))
+				errs = append(errs, fmt.Errorf("library %q, API %q: %w", library.Name, api.Path, ErrMissingCommonResources))
 			}
 		}
 	}
