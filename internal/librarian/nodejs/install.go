@@ -69,6 +69,14 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 	pnpmVersion := tools.PNPMVersion
 	if pnpmVersion == "" {
+		for _, tool := range tools.PNPM {
+			if tool.Name == "pnpm" {
+				pnpmVersion = tool.Version
+				break
+			}
+		}
+	}
+	if pnpmVersion == "" {
 		return errMissingPNPMVersion
 	}
 	npmCacheDir := filepath.Join(cacheDir, "npm-cache")
@@ -82,6 +90,9 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 
 	for _, tool := range tools.PNPM {
+		if tool.Name == "pnpm" {
+			continue
+		}
 		if len(tool.Build) > 0 {
 			if err := installToolFromSource(ctx, env, tool); err != nil {
 				return err
