@@ -91,11 +91,7 @@ func InstallDir() (string, error) {
 
 // getBinDir returns the directory where Node.js tool executables are stored.
 func getBinDir() (string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(installDir, "bin"), nil
+	return InstallDir()
 }
 
 // getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.

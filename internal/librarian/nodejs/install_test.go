@@ -274,7 +274,7 @@ func TestGetToolsEnv(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			want := filepath.Join(binDir, "nodejs_tools", "bin")
+			want := filepath.Join(binDir, "nodejs_tools")
 			if got := env["PATH"]; got != want {
 				t.Errorf("getToolsEnv()[PATH] = %q, want %q", got, want)
 			}
