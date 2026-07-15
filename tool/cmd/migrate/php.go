@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	_ "embed"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -31,6 +32,9 @@ import (
 	"github.com/googleapis/librarian/internal/yaml"
 )
 
+//go:embed librarian_php.yaml
+var librarianPHPYAML []byte
+
 var protoMappings = map[string]string{
 	"//google/cloud/location:location_proto": "google/cloud/location/locations.proto",
 	"//google/iam/v1:iam_policy_proto":       "google/iam/v1/iam_policy.proto",
@@ -45,28 +49,15 @@ func runPHPMigration(ctx context.Context, repoPath string) error {
 	if err != nil {
 		return err
 	}
-	cfg := &config.Config{
-		Language: config.LanguagePhp,
-		Sources: &config.Sources{
-			Googleapis: src,
-		},
-		Libraries: libs,
-		Tools: &config.Tools{
-			Composer: []*config.ComposerTool{
-				{
-					Name:    "google/gapic-generator-php",
-					Version: "v1.21.2",
-					Package: "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz",
-					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
-					Build:   []string{"composer install"},
-				},
-			},
-			Protoc: &config.Protoc{
-				Version: "31.0",
-				SHA256:  "24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42",
-			},
-		},
+	cfg, err := yaml.Unmarshal[config.Config](librarianPHPYAML)
+	if err != nil {
+		return fmt.Errorf("unmarshaling librarian_php.yaml: %w", err)
 	}
+	cfg.Sources = &config.Sources{
+		Googleapis: src,
+	}
+	cfg.Libraries = libs
+
 	// The directory name in Googleapis is present for migration code to look
 	// up API details. It shouldn't be persisted.
 	cfg.Sources.Googleapis.Dir = ""
