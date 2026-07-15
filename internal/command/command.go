@@ -32,7 +32,8 @@ const (
 	// Git is the command name for the git executable.
 	Git = "git"
 	// Go is the command name for the go executable.
-	Go = "go"
+	Go   = "go"
+	Dart = "dart"
 	// envPath is the environment variable for the executable path.
 	envPath = "PATH"
 )
