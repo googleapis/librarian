@@ -32,6 +32,7 @@ if [ -n "$PNPM_HOME" ] && \
    { [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -n "$NPM_CONFIG_GLOBAL_BIN_DIR" ]; } && \
    { [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -n "$NPM_CONFIG_GLOBAL_DIR" ]; } && \
    { [ -n "$PNPM_CONFIG_STORE_DIR" ] || [ -n "$NPM_CONFIG_STORE_DIR" ]; } && \
+   [ -n "$NPM_CONFIG_CACHE" ] && \
    [ -n "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" ]; then
     :
 else
@@ -79,6 +80,10 @@ func TestInstall(t *testing.T) {
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
 					{
+						Name:    "pnpm",
+						Version: "7.32.2",
+					},
+					{
 						Name:    "gapic-generator-typescript",
 						Version: "4.12.1",
 						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
@@ -110,6 +115,10 @@ func TestInstall(t *testing.T) {
 			name: "non-build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
+					{
+						Name:    "pnpm",
+						Version: "7.32.2",
+					},
 					{
 						Name:    "gapic-node-processing",
 						Version: "0.1.8",
@@ -187,6 +196,7 @@ func TestInstall_Error(t *testing.T) {
 			name: "missing package url for build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
+					{Name: "pnpm", Version: "7.32.2"},
 					{Name: "tool", Build: []string{"echo 1"}},
 				},
 			},
@@ -199,6 +209,7 @@ func TestInstall_Error(t *testing.T) {
 			name: "invalid package url for build tool",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
+					{Name: "pnpm", Version: "7.32.2"},
 					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
 				},
 			},
@@ -206,6 +217,24 @@ func TestInstall_Error(t *testing.T) {
 				stubExecutables(t)
 			},
 			wantErr: errCannotExtractRepo,
+		},
+		{
+			name: "missing pnpm in tools configuration",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "tool", Version: "1.0"},
+				},
+			},
+			wantErr: errMissingPNPMVersion,
+		},
+		{
+			name: "empty pnpm version in tools configuration",
+			tools: &config.Tools{
+				PNPM: []*config.PNPMTool{
+					{Name: "pnpm", Version: ""},
+				},
+			},
+			wantErr: errMissingPNPMVersion,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

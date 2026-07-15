@@ -43,6 +43,7 @@ var (
 	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
 	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
 	errMissingPackageURL = errors.New("has build steps but no package URL")
+	errMissingPNPMVersion = errors.New("pnpm version must be specified in tools.pnpm")
 )
 
 // Install installs Node.js tool dependencies.
@@ -57,18 +58,27 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 
+	cacheDir, err := cache.Directory()
+	if err != nil {
+		return err
+	}
+
 	installDir, err := InstallDir()
 	if err != nil {
 		return err
 	}
-	pnpmVersion := "7.32.2"
+	var pnpmVersion string
 	for _, tool := range tools.PNPM {
 		if tool.Name == "pnpm" {
 			pnpmVersion = tool.Version
 			break
 		}
 	}
-	if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "-g", "pnpm@"+pnpmVersion); err != nil {
+	if pnpmVersion == "" {
+		return errMissingPNPMVersion
+	}
+	npmCacheDir := filepath.Join(cacheDir, "npm-cache")
+	if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "--cache", npmCacheDir, "-g", "pnpm@"+pnpmVersion); err != nil {
 		return fmt.Errorf("failed to bootstrap pnpm: %w", err)
 	}
 
@@ -155,6 +165,7 @@ func getPNPMEnv() ([]string, error) {
 	env = append(env, "NPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
 	env = append(env, "NPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
+	env = append(env, "NPM_CONFIG_CACHE="+filepath.Join(cacheDir, "npm-cache"))
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
