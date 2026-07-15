@@ -78,16 +78,18 @@ func TestInstall(t *testing.T) {
 		{
 			name: "source build tool",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
-				PNPM: []*config.PNPMTool{
-					{
-						Name:    "gapic-generator-typescript",
-						Version: "4.12.1",
-						Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
-						Build: []string{
-							"pnpm install",
-							"./node_modules/.bin/tsc",
-							"cp -a templates protos build/",
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{
+							Name:    "gapic-generator-typescript",
+							Version: "4.12.1",
+							Package: "https://github.com/googleapis/google-cloud-node/archive/gapic-generator-v4.12.1.tar.gz",
+							Build: []string{
+								"pnpm install",
+								"./node_modules/.bin/tsc",
+								"cp -a templates protos build/",
+							},
 						},
 					},
 				},
@@ -111,15 +113,17 @@ func TestInstall(t *testing.T) {
 		{
 			name: "non-build tool",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
-				PNPM: []*config.PNPMTool{
-					{
-						Name:    "gapic-node-processing",
-						Version: "0.1.8",
-					},
-					{
-						Name:    "custom-pkg",
-						Package: "custom-pkg@1.0.0",
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{
+							Name:    "gapic-node-processing",
+							Version: "0.1.8",
+						},
+						{
+							Name:    "custom-pkg",
+							Package: "custom-pkg@1.0.0",
+						},
 					},
 				},
 			},
@@ -132,11 +136,13 @@ func TestInstall(t *testing.T) {
 		{
 			name: "tool configuration contains pnpm_version",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
-				PNPM: []*config.PNPMTool{
-					{
-						Name:    "gapic-node-processing",
-						Version: "0.1.8",
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{
+							Name:    "gapic-node-processing",
+							Version: "0.1.8",
+						},
 					},
 				},
 			},
@@ -177,7 +183,7 @@ func TestInstall_Error(t *testing.T) {
 		},
 		{
 			name:  "missing node or npm in path",
-			tools: &config.Tools{PNPMVersion: "7.32.2", PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
+			tools: &config.Tools{PNPM: &config.PNPMConfig{Version: "7.32.2", Tools: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}}},
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
@@ -186,9 +192,11 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "missing package url for build tool",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
-				PNPM: []*config.PNPMTool{
-					{Name: "tool", Build: []string{"echo 1"}},
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{Name: "tool", Build: []string{"echo 1"}},
+					},
 				},
 			},
 			setup: func(t *testing.T) {
@@ -199,9 +207,11 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "invalid package url for build tool",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
-				PNPM: []*config.PNPMTool{
-					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
+					},
 				},
 			},
 			setup: func(t *testing.T) {
@@ -212,8 +222,10 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "missing pnpm_version in tools configuration",
 			tools: &config.Tools{
-				PNPM: []*config.PNPMTool{
-					{Name: "tool", Version: "1.0"},
+				PNPM: &config.PNPMConfig{
+					Tools: []*config.PNPMTool{
+						{Name: "tool", Version: "1.0"},
+					},
 				},
 			},
 			wantErr: errMissingPNPMVersion,
@@ -221,9 +233,11 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "empty pnpm_version in tools configuration",
 			tools: &config.Tools{
-				PNPMVersion: "",
-				PNPM: []*config.PNPMTool{
-					{Name: "tool", Version: "1.0"},
+				PNPM: &config.PNPMConfig{
+					Version: "",
+					Tools: []*config.PNPMTool{
+						{Name: "tool", Version: "1.0"},
+					},
 				},
 			},
 			wantErr: errMissingPNPMVersion,

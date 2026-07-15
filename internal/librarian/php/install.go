@@ -81,7 +81,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	// Install PNPM tools
-	if len(tools.PNPM) > 0 {
+	if tools.PNPM != nil && len(tools.PNPM.Tools) > 0 {
 		if err := nodejs.Install(ctx, tools); err != nil {
 			return fmt.Errorf("failed to install pnpm tools: %w", err)
 		}

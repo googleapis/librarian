@@ -234,7 +234,7 @@ func isToolsEmpty(tools *config.Tools) bool {
 		len(tools.Go) == 0 &&
 		len(tools.Maven) == 0 &&
 		len(tools.Pip) == 0 &&
-		len(tools.PNPM) == 0 &&
+		(tools.PNPM == nil || (tools.PNPM.Version == "" && len(tools.PNPM.Tools) == 0)) &&
 		len(tools.Gem) == 0 &&
 		tools.Protoc == nil
 }
@@ -275,9 +275,11 @@ func formatConfig(cfg *config.Config) *config.Config {
 		slices.SortFunc(cfg.Tools.Composer, func(a, b *config.ComposerTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})
-		slices.SortFunc(cfg.Tools.PNPM, func(a, b *config.PNPMTool) int {
-			return strings.Compare(a.Name, b.Name)
-		})
+		if cfg.Tools.PNPM != nil {
+			slices.SortFunc(cfg.Tools.PNPM.Tools, func(a, b *config.PNPMTool) int {
+				return strings.Compare(a.Name, b.Name)
+			})
+		}
 		slices.SortFunc(cfg.Tools.Pip, func(a, b *config.PipTool) int {
 			return strings.Compare(a.Name, b.Name)
 		})

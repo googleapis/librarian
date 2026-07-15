@@ -48,7 +48,7 @@ var (
 
 // Install installs Node.js tool dependencies.
 func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil || len(tools.PNPM) == 0 {
+	if tools == nil || tools.PNPM == nil || len(tools.PNPM.Tools) == 0 {
 		return errNoToolsSpecified
 	}
 
@@ -67,7 +67,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	pnpmVersion := tools.PNPMVersion
+	pnpmVersion := tools.PNPM.Version
 	if pnpmVersion == "" {
 		return errMissingPNPMVersion
 	}
@@ -81,7 +81,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 
-	for _, tool := range tools.PNPM {
+	for _, tool := range tools.PNPM.Tools {
 		if len(tool.Build) > 0 {
 			if err := installToolFromSource(ctx, env, tool); err != nil {
 				return err

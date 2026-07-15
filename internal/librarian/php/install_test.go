@@ -109,7 +109,6 @@ func TestInstall(t *testing.T) {
 		{
 			name: "with composer, pip, and pnpm tools",
 			tools: &config.Tools{
-				PNPMVersion: "7.32.2",
 				Composer: []*config.ComposerTool{
 					{
 						Name:    "fake-composer-tool",
@@ -124,10 +123,13 @@ func TestInstall(t *testing.T) {
 						Version: "2.0.0",
 					},
 				},
-				PNPM: []*config.PNPMTool{
-					{
-						Name:    "fake-pnpm-tool",
-						Version: "3.0.0",
+				PNPM: &config.PNPMConfig{
+					Version: "7.32.2",
+					Tools: []*config.PNPMTool{
+						{
+							Name:    "fake-pnpm-tool",
+							Version: "3.0.0",
+						},
 					},
 				},
 			},

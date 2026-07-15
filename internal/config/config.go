@@ -112,14 +112,20 @@ type Tools struct {
 	// Pip defines tools to install via pip.
 	Pip []*PipTool `yaml:"pip,omitempty"`
 
-	// PNPM defines tools to install via pnpm.
-	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
-
-	// PNPMVersion specifies the version of pnpm to bootstrap.
-	PNPMVersion string `yaml:"pnpm_version,omitempty"`
+	// PNPM defines the pnpm configuration.
+	PNPM *PNPMConfig `yaml:"pnpm,omitempty"`
 
 	// Protoc defines the protoc installation.
 	Protoc *Protoc `yaml:"protoc,omitempty"`
+}
+
+// PNPMConfig defines the configuration for pnpm tool installation.
+type PNPMConfig struct {
+	// Version specifies the version of pnpm to bootstrap.
+	Version string `yaml:"version,omitempty"`
+
+	// Tools defines tools to install via pnpm.
+	Tools []*PNPMTool `yaml:"tools,omitempty"`
 }
 
 // CargoTool defines a tool to install via cargo.
