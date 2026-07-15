@@ -62,6 +62,12 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return err
 	}
 	pnpmVersion := "7.32.2"
+	for _, tool := range tools.PNPM {
+		if tool.Name == "pnpm" {
+			pnpmVersion = tool.Version
+			break
+		}
+	}
 	if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "-g", "pnpm@"+pnpmVersion); err != nil {
 		return fmt.Errorf("failed to bootstrap pnpm: %w", err)
 	}
@@ -72,6 +78,9 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 
 	for _, tool := range tools.PNPM {
+		if tool.Name == "pnpm" {
+			continue
+		}
 		if len(tool.Build) > 0 {
 			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
 				return err
