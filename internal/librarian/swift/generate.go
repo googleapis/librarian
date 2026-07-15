@@ -53,14 +53,14 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 func Format(ctx context.Context, library *config.Library) error {
 	// Collect unique output directories to format to avoid running the formatter
 	// multiple times on the same directory (e.g. library.Output and module.Output mapping to same path).
-	dirs := map[string]bool{}
+	dirs := map[string]struct{}{}
 	if library.Output != "" {
-		dirs[library.Output] = true
+		dirs[library.Output] = struct{}{}
 	}
 	if library.Swift != nil {
 		for _, module := range library.Swift.Modules {
 			if module.Output != "" {
-				dirs[module.Output] = true
+				dirs[module.Output] = struct{}{}
 			}
 		}
 	}
