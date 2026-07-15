@@ -208,6 +208,17 @@ func makeGatedTestModel() *api.API {
 }
 
 func makeRequiredServicesTestModel() *api.API {
+	externalRequest := api.NewTestMessage("Request").WithPackage("external")
+	externalResponse := api.NewTestMessage("Response").WithPackage("external")
+	externalMethod := api.NewTestMethod("GetThing").
+		WithVerb("GET").
+		WithPathTemplate((&api.PathTemplate{}).WithLiteral("v1").WithLiteral("things")).
+		WithInput(externalRequest).
+		WithOutput(externalResponse)
+	externalService := api.NewTestService("ExternalService").
+		WithPackage("external").
+		WithMethods(externalMethod)
+
 	placeholder := &api.Message{
 		Name:               "zoneOperations",
 		ID:                 ".test.zoneOperations",
@@ -225,46 +236,29 @@ func makeRequiredServicesTestModel() *api.API {
 		ID:      ".test.Operation",
 		Package: "test",
 	}
-	sourceMethod := &api.Method{
-		Name:         "GetOperation",
-		ID:           ".test.zoneOperations.GetOperation",
-		IsLroPoller:  false,
-		InputTypeID:  inputType.ID,
-		InputType:    inputType,
-		OutputTypeID: outputType.ID,
-		OutputType:   outputType,
-		PathInfo: &api.PathInfo{
-			Bindings: []*api.PathBinding{{Verb: "GET", PathTemplate: &api.PathTemplate{}}},
-		},
-	}
-	sourceService := &api.Service{
-		Name:    "zoneOperations",
-		ID:      ".test.zoneOperations",
-		Package: "test",
-		Methods: []*api.Method{sourceMethod},
-	}
+	sourceMethod := api.NewTestMethod("GetOperation").
+		WithInput(inputType).
+		WithOutput(outputType).
+		WithVerb("GET").
+		WithPathTemplate(&api.PathTemplate{})
+	sourceService := api.NewTestService("zoneOperations").
+		WithPackage("test").
+		WithMethods(sourceMethod)
 	sourceMethod.Service = sourceService
-	method := &api.Method{
-		Name:            sourceMethod.Name,
-		ID:              ".test.TestService.GetOperation",
-		IsLroPoller:     true,
-		SourceService:   sourceService,
-		SourceServiceID: sourceService.ID,
-		PathInfo:        sourceMethod.PathInfo,
-		InputTypeID:     sourceMethod.InputTypeID,
-		InputType:       sourceMethod.InputType,
-		OutputTypeID:    sourceMethod.OutputTypeID,
-		OutputType:      sourceMethod.OutputType,
-	}
-	targetService := &api.Service{
-		Name:    "TestService",
-		ID:      ".test.TestService",
-		Package: "test",
-		Methods: []*api.Method{method},
-	}
-	method.Service = targetService
+	internalMixin := api.NewTestMethod(sourceMethod.Name).
+		WithSourceMethod(sourceMethod)
+	internalMixin.IsLroPoller = true
+	externalMixin := api.NewTestMethod(externalMethod.Name).
+		WithSourceMethod(externalMethod)
+	externalMixin.IsLroPoller = true
+	targetService := api.NewTestService("TestService").
+		WithPackage("test").
+		WithMethods(internalMixin, externalMixin)
 
 	model := api.NewTestAPI([]*api.Message{placeholder, inputType, outputType}, nil, []*api.Service{sourceService, targetService})
+	model.AddMessage(externalRequest)
+	model.AddMessage(externalResponse)
+	model.AddService(externalService)
 	api.CrossReference(model)
 	return model
 }
