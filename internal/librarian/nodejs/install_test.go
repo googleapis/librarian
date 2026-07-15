@@ -78,11 +78,8 @@ func TestInstall(t *testing.T) {
 		{
 			name: "source build tool",
 			tools: &config.Tools{
+				PNPMVersion: "7.32.2",
 				PNPM: []*config.PNPMTool{
-					{
-						Name:    "pnpm",
-						Version: "7.32.2",
-					},
 					{
 						Name:    "gapic-generator-typescript",
 						Version: "4.12.1",
@@ -114,11 +111,8 @@ func TestInstall(t *testing.T) {
 		{
 			name: "non-build tool",
 			tools: &config.Tools{
+				PNPMVersion: "7.32.2",
 				PNPM: []*config.PNPMTool{
-					{
-						Name:    "pnpm",
-						Version: "7.32.2",
-					},
 					{
 						Name:    "gapic-node-processing",
 						Version: "0.1.8",
@@ -136,13 +130,10 @@ func TestInstall(t *testing.T) {
 			},
 		},
 		{
-			name: "tool configuration contains pnpm version",
+			name: "tool configuration contains pnpm_version",
 			tools: &config.Tools{
+				PNPMVersion: "7.32.2",
 				PNPM: []*config.PNPMTool{
-					{
-						Name:    "pnpm",
-						Version: "7.32.2",
-					},
 					{
 						Name:    "gapic-node-processing",
 						Version: "0.1.8",
@@ -186,7 +177,7 @@ func TestInstall_Error(t *testing.T) {
 		},
 		{
 			name:  "missing node or npm in path",
-			tools: &config.Tools{PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
+			tools: &config.Tools{PNPMVersion: "7.32.2", PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())
 			},
@@ -195,8 +186,8 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "missing package url for build tool",
 			tools: &config.Tools{
+				PNPMVersion: "7.32.2",
 				PNPM: []*config.PNPMTool{
-					{Name: "pnpm", Version: "7.32.2"},
 					{Name: "tool", Build: []string{"echo 1"}},
 				},
 			},
@@ -208,8 +199,8 @@ func TestInstall_Error(t *testing.T) {
 		{
 			name: "invalid package url for build tool",
 			tools: &config.Tools{
+				PNPMVersion: "7.32.2",
 				PNPM: []*config.PNPMTool{
-					{Name: "pnpm", Version: "7.32.2"},
 					{Name: "tool", Package: "invalid-url", Build: []string{"echo 1"}},
 				},
 			},
@@ -219,7 +210,7 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errCannotExtractRepo,
 		},
 		{
-			name: "missing pnpm in tools configuration",
+			name: "missing pnpm_version in tools configuration",
 			tools: &config.Tools{
 				PNPM: []*config.PNPMTool{
 					{Name: "tool", Version: "1.0"},
@@ -228,10 +219,11 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errMissingPNPMVersion,
 		},
 		{
-			name: "empty pnpm version in tools configuration",
+			name: "empty pnpm_version in tools configuration",
 			tools: &config.Tools{
+				PNPMVersion: "",
 				PNPM: []*config.PNPMTool{
-					{Name: "pnpm", Version: ""},
+					{Name: "tool", Version: "1.0"},
 				},
 			},
 			wantErr: errMissingPNPMVersion,

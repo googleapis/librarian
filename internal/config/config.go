@@ -115,6 +115,9 @@ type Tools struct {
 	// PNPM defines tools to install via pnpm.
 	PNPM []*PNPMTool `yaml:"pnpm,omitempty"`
 
+	// PNPMVersion specifies the version of pnpm to bootstrap.
+	PNPMVersion string `yaml:"pnpm_version,omitempty"`
+
 	// Protoc defines the protoc installation.
 	Protoc *Protoc `yaml:"protoc,omitempty"`
 }

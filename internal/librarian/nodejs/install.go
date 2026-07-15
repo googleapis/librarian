@@ -67,13 +67,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	if err != nil {
 		return err
 	}
-	var pnpmVersion string
-	for _, tool := range tools.PNPM {
-		if tool.Name == "pnpm" {
-			pnpmVersion = tool.Version
-			break
-		}
-	}
+	pnpmVersion := tools.PNPMVersion
 	if pnpmVersion == "" {
 		return errMissingPNPMVersion
 	}
@@ -88,9 +82,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 
 	for _, tool := range tools.PNPM {
-		if tool.Name == "pnpm" {
-			continue
-		}
 		if len(tool.Build) > 0 {
 			if err := installToolFromSource(ctx, env, tool); err != nil {
 				return err
