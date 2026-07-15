@@ -32,6 +32,10 @@ import (
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
+var (
+	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
+)
+
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
@@ -97,6 +101,9 @@ type generateAPIParams struct {
 // all target proto files, and executing the PHP generator plugin via protoc.
 // It extracts the resulting ZIP archive directly to the library output directory.
 func generateAPI(ctx context.Context, params *generateAPIParams) error {
+	if params.api.PHP == nil || params.api.PHP.CommonResources == nil {
+		return errCommonResourcesUnconfigured
+	}
 	googleapisDir := params.srcCfg.Root("googleapis")
 	// Resolve service config files
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)

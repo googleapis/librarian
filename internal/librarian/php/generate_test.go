@@ -15,6 +15,7 @@
 package php
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -46,6 +47,9 @@ func TestGenerate(t *testing.T) {
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
+				PHP: &config.PHPAPI{
+					CommonResources: new(true),
+				},
 			},
 		},
 	}
@@ -76,6 +80,50 @@ func requirePHPGenerator(t *testing.T) {
 	wrapperPath := filepath.Join(genDir, "wrapper.sh")
 	if _, err := os.Stat(wrapperPath); err != nil {
 		t.Skip("skipping test: PHP generator is not installed (run 'librarian install php' first)")
+	}
+}
+
+func TestGenerate_Error(t *testing.T) {
+	for _, test := range []struct {
+		name    string
+		lib     *config.Library
+		wantErr error
+	}{
+		{
+			name: "missing PHP config",
+			lib: &config.Library{
+				Name: "SecretManager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			wantErr: errCommonResourcesUnconfigured,
+		},
+		{
+			name: "missing common_resources config",
+			lib: &config.Library{
+				Name: "SecretManager",
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP:  &config.PHPAPI{},
+					},
+				},
+			},
+			wantErr: errCommonResourcesUnconfigured,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			cfg := &config.Config{
+				Language: config.LanguagePhp,
+			}
+			err := Generate(t.Context(), cfg, test.lib, &sources.Sources{Googleapis: t.TempDir()})
+			if !errors.Is(err, test.wantErr) {
+				t.Errorf("Generate() error = %v, wantErr = %v", err, test.wantErr)
+			}
+		})
 	}
 }
 
