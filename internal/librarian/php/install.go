@@ -159,7 +159,7 @@ func createBinWrapper(wrapperName, destPath, binDir string) error {
 	wrapperPath := filepath.Join(binDir, wrapperName)
 	content := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
 	if err := os.MkdirAll(filepath.Dir(wrapperPath), 0755); err != nil {
-		return err
+		return fmt.Errorf("failed to create directory for wrapper: %w", err)
 	}
 	_ = os.Remove(wrapperPath)
 	f, err := os.OpenFile(wrapperPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0755)
