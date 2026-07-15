@@ -61,7 +61,6 @@ This document describes the schema for the librarian.yaml.
 | `version` | string | Is the version to install. |
 | `repo` | string | Is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php). |
 | `sha256` | string | Is the SHA256 checksum of the package. |
-| `build` | list of string | Defines the commands to run to build the tool after installation. |
 
 ## GemTool Configuration
 

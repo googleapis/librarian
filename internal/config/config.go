@@ -141,9 +141,6 @@ type ComposerTool struct {
 
 	// SHA256 is the SHA256 checksum of the package.
 	SHA256 string `yaml:"sha256,omitempty"`
-
-	// Build defines the commands to run to build the tool after installation.
-	Build []string `yaml:"build,omitempty"`
 }
 
 // GemTool defines a tool to install via gem.
