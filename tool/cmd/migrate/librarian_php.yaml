@@ -11,7 +11,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-
+#
 # This file serves as the starter configuration template for PHP library migrations.
 # It defines the default tools and versions (like composer packages and protoc)
 # that will be populated in the generated librarian.yaml during migration.
