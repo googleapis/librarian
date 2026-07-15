@@ -32,6 +32,10 @@ import (
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
+const (
+	commonResourcesProto = "google/cloud/common_resources.proto"
+)
+
 var (
 	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
 )
@@ -149,7 +153,7 @@ func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string
 	}
 
 	if includeCommonResources {
-		commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
+		commonResources := filepath.Join(googleapisDir, commonResourcesProto)
 		targetProtos = append(targetProtos, commonResources)
 	}
 	for _, p := range additionalProtos {
