@@ -28,11 +28,14 @@ func stubExecutables(t *testing.T) {
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
 # Assert that transient environmental variables are set dynamically for process lifetime
-if [ -n "$PNPM_HOME" ] && [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] && [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] && [ -n "$PNPM_CONFIG_STORE_DIR" ] && \
+if [ -n "$PNPM_HOME" ] && \
+   { [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -n "$NPM_CONFIG_GLOBAL_BIN_DIR" ]; } && \
+   { [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] || [ -n "$NPM_CONFIG_GLOBAL_DIR" ]; } && \
+   { [ -n "$PNPM_CONFIG_STORE_DIR" ] || [ -n "$NPM_CONFIG_STORE_DIR" ]; } && \
    [ -n "$PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS" ]; then
     :
 else
-    echo "Error: Required transient PNPM environment variables are missing!" >&2
+    echo "Error: Required transient PNPM/NPM environment variables are missing!" >&2
     exit 1
 fi
 
@@ -50,10 +53,16 @@ exit 0
 	nodeStub := `#!/bin/sh
 exit 0
 `
+	npmStub := `#!/bin/sh
+exit 0
+`
 	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -147,7 +156,7 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errNoToolsSpecified,
 		},
 		{
-			name:  "missing node or pnpm in path",
+			name:  "missing node or npm in path",
 			tools: &config.Tools{PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())

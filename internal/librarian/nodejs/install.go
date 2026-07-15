@@ -24,6 +24,7 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
+	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 )
@@ -50,10 +51,19 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return errNoToolsSpecified
 	}
 
-	for _, cmd := range []string{"node", "pnpm"} {
+	for _, cmd := range []string{"node", "npm"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
 		}
+	}
+
+	installDir, err := InstallDir()
+	if err != nil {
+		return err
+	}
+	pnpmVersion := "7.32.2"
+	if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "-g", "pnpm@"+pnpmVersion); err != nil {
+		return fmt.Errorf("failed to bootstrap pnpm: %w", err)
 	}
 
 	env, err := getPNPMEnv()
@@ -131,8 +141,11 @@ func getPNPMEnv() ([]string, error) {
 	env := os.Environ()
 	env = append(env, "PNPM_HOME="+installDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
+	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
+	env = append(env, "NPM_CONFIG_GLOBAL_DIR="+filepath.Join(cacheDir, "pnpm-global"))
 	env = append(env, "PNPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
+	env = append(env, "NPM_CONFIG_STORE_DIR="+filepath.Join(cacheDir, "pnpm-store"))
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
