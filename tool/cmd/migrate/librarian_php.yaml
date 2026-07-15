@@ -16,6 +16,9 @@
 # It defines the default tools and versions (like composer packages and protoc)
 # that will be populated in the generated librarian.yaml during migration.
 #
+# Note: Any "sources" or "libraries" defined in this template will be overwritten
+# entirely by the migration tool at runtime.
+#
 # This file is embedded in tool/cmd/migrate/php.go.
 # If you need to update the default tool versions for future migrations, update them here.
 language: php
