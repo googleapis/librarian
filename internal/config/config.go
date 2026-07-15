@@ -271,6 +271,9 @@ type Default struct {
 	// Nodejs contains Node.js-specific default configuration.
 	Nodejs *NodejsPackage `yaml:"nodejs,omitempty"`
 
+	// PHP contains PHP-specific default configuration.
+	PHP *PHPDefault `yaml:"php,omitempty"`
+
 	// Rust contains Rust-specific default configuration.
 	Rust *RustDefault `yaml:"rust,omitempty"`
 

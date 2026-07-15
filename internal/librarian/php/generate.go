@@ -32,6 +32,14 @@ import (
 	"github.com/googleapis/librarian/internal/tool/protoc"
 )
 
+const (
+	commonResourcesProto = "google/cloud/common_resources.proto"
+)
+
+var (
+	errCommonResourcesUnconfigured = errors.New("common_resources must be set (either per-API or globally under default.php)")
+)
+
 // Generate generates a PHP client library.
 func Generate(ctx context.Context, cfg *config.Config, library *config.Library, src *sources.Sources) (err error) {
 	if len(library.APIs) == 0 {
@@ -97,6 +105,9 @@ type generateAPIParams struct {
 // all target proto files, and executing the PHP generator plugin via protoc.
 // It extracts the resulting ZIP archive directly to the library output directory.
 func generateAPI(ctx context.Context, params *generateAPIParams) error {
+	if params.api.PHP == nil || params.api.PHP.CommonResources == nil {
+		return errCommonResourcesUnconfigured
+	}
 	googleapisDir := params.srcCfg.Root("googleapis")
 	// Resolve service config files
 	grpcConfigPath, err := serviceconfig.FindGRPCServiceConfig(googleapisDir, params.api.Path)
@@ -112,7 +123,8 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 	if params.api.PHP != nil {
 		additionalProtos = params.api.PHP.AdditionalProtos
 	}
-	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos)
+	includeCommonResources := *params.api.PHP.CommonResources
+	targetProtos, err := gatherTargetProtos(googleapisDir, params.api.Path, additionalProtos, includeCommonResources)
 	if err != nil {
 		return err
 	}
@@ -130,25 +142,22 @@ func generateAPI(ctx context.Context, params *generateAPIParams) error {
 
 // gatherTargetProtos collects all proto files inside the target API directory,
 // appends common resources, and appends any configured additional protos.
-func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string) ([]string, error) {
-	var targetProtos []string
-	apiDir := filepath.Join(googleapisDir, apiPath)
-	protos, err := gatherProtos(apiDir)
+func gatherTargetProtos(googleapisDir, apiPath string, additionalProtos []string, includeCommonResources bool) ([]string, error) {
+	apiDir := filepath.Join(googleapisDir, filepath.FromSlash(apiPath))
+	targetProtos, err := gatherProtos(apiDir)
 	if err != nil {
 		return nil, err
 	}
-	targetProtos = append(targetProtos, protos...)
-	// Always include common resources if present
-	// TODO(https://github.com/googleapis/librarian/issues/6813): make this configurable
-	commonResources := filepath.Join(googleapisDir, "google/cloud/common_resources.proto")
-	if _, err := os.Stat(commonResources); err == nil {
+	if len(targetProtos) == 0 {
+		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
+	}
+
+	if includeCommonResources {
+		commonResources := filepath.Join(googleapisDir, commonResourcesProto)
 		targetProtos = append(targetProtos, commonResources)
 	}
 	for _, p := range additionalProtos {
 		targetProtos = append(targetProtos, filepath.Join(googleapisDir, filepath.FromSlash(p)))
-	}
-	if len(targetProtos) == 0 {
-		return nil, fmt.Errorf("no target protos found for API %s", apiPath)
 	}
 	return targetProtos, nil
 }

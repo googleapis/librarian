@@ -627,6 +627,75 @@ func TestFillDefaults_Go(t *testing.T) {
 	}
 }
 
+func TestFillDefaults_PHP(t *testing.T) {
+	for _, test := range []struct {
+		name     string
+		lib      *config.Library
+		defaults *config.PHPDefault
+		want     *config.Library
+	}{
+		{
+			name: "fills common_resources default when nil",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+			defaults: &config.PHPDefault{
+				CommonResources: new(true),
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(true),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "does not override API level common_resources",
+			lib: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
+						},
+					},
+				},
+			},
+			defaults: &config.PHPDefault{
+				CommonResources: new(true),
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						Path: "google/cloud/secretmanager/v1",
+						PHP: &config.PHPAPI{
+							CommonResources: new(false),
+						},
+					},
+				},
+			},
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			defaults := &config.Default{
+				PHP: test.defaults,
+			}
+			got := fillDefaults(test.lib, defaults)
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
 func TestApplyDefaults(t *testing.T) {
 	for _, test := range []struct {
 		name        string
