@@ -21,7 +21,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
 	"github.com/googleapis/librarian/internal/command"
@@ -37,7 +36,6 @@ const (
 )
 
 var (
-	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
 	errMissingPackageURL = errors.New("package URL missing")
 )
 
@@ -60,11 +58,7 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		if tool.Package == "" {
 			return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
 		}
-		repo, err := repoFromPackageURL(tool.Package)
-		if err != nil {
-			return err
-		}
-		dir, err := fetch.Repo(ctx, repo, tool.Version, tool.SHA256)
+		dir, err := fetch.Repo(ctx, tool.Package, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
@@ -86,16 +80,6 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		}
 	}
 	return nil
-}
-
-// repoFromPackageURL extracts the repository path (e.g.,
-// "github.com/googleapis/gapic-generator-php") from a GitHub archive URL.
-func repoFromPackageURL(packageURL string) (string, error) {
-	parts := strings.SplitN(packageURL, "/archive/", 2)
-	if len(parts) != 2 {
-		return "", fmt.Errorf("%w: %q", errCannotExtractRepo, packageURL)
-	}
-	return strings.TrimPrefix(parts[0], "https://"), nil
 }
 
 // InstallDir gets the directory where tools should be installed.

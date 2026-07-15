@@ -20,7 +20,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -47,25 +46,6 @@ func TestBinDir(t *testing.T) {
 	want := filepath.Join(dir, "php_tools", "bin")
 	if got != want {
 		t.Errorf("binDir() = %q, want %q", got, want)
-	}
-}
-
-func TestRepoFromPackageURL(t *testing.T) {
-	packageURL := "https://github.com/googleapis/gapic-generator-php/archive/refs/tags/v1.21.2.tar.gz"
-	want := "github.com/googleapis/gapic-generator-php"
-	got, err := repoFromPackageURL(packageURL)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if diff := cmp.Diff(want, got); diff != "" {
-		t.Errorf("mismatch (-want +got):\n%s", diff)
-	}
-}
-
-func TestRepoFromPackageURL_Error(t *testing.T) {
-	packageURL := "https://github.com/googleapis/gapic-generator-php/tarball/v1.21.2"
-	if _, err := repoFromPackageURL(packageURL); !errors.Is(err, errCannotExtractRepo) {
-		t.Fatalf("repoFromPackageURL() error = %v, want %v", err, errCannotExtractRepo)
 	}
 }
 
@@ -100,7 +80,7 @@ func TestInstall(t *testing.T) {
 					{
 						Name:    "fake-composer-tool",
 						Version: "1.0.0",
-						Package: "https://github.com/fake/fake-tool/archive/refs/tags/1.0.0.tar.gz",
+						Package: "github.com/fake/fake-tool",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 						Build:   []string{"echo built"},
 					},
@@ -158,19 +138,6 @@ func TestInstall_Error(t *testing.T) {
 				},
 			},
 			wantErr: errMissingPackageURL,
-		},
-		{
-			name: "invalid package URL",
-			tools: &config.Tools{
-				Composer: []*config.ComposerTool{
-					{
-						Name:    "fake-composer-tool",
-						Version: "1.0.0",
-						Package: "invalid-url",
-					},
-				},
-			},
-			wantErr: errCannotExtractRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

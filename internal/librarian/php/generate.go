@@ -45,7 +45,9 @@ func Generate(ctx context.Context, cfg *config.Config, library *config.Library, 
 	}
 
 	// Locate PHP generator
-	// TODO: remove this wrapper path once `generate` is done
+	// TODO(https://github.com/googleapis/librarian/issues/6629 & 6630): remove this wrapper path once `generate` is done
+	// and we're ready to migrate onto `install`
+	//
 	var wrapperPath string
 	bin, err := binDir()
 	if err == nil {
