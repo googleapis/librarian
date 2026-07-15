@@ -72,12 +72,18 @@ func TestRunPHPMigration(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	commonResources := true
 	want := &config.Config{
 		Language: config.LanguagePhp,
 		Sources: &config.Sources{
 			Googleapis: &config.Source{
 				Commit: "abcd123",
 				SHA256: "sha123",
+			},
+		},
+		Default: &config.Default{
+			PHP: &config.PHPDefault{
+				CommonResources: &commonResources,
 			},
 		},
 		Libraries: []*config.Library{
