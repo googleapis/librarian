@@ -46,6 +46,7 @@ type methodAnnotation struct {
 	GrpcResourceNameArgs      []string
 	IsLroPoller               bool
 	IsDiscoveryLro            bool
+	IsBigQueryInsertJob       bool
 }
 
 // HasGrpcResourceNameArgs returns true if the method has gRPC resource name arguments.
@@ -316,6 +317,7 @@ func (c *codec) annotateMethod(m *api.Method) (*methodAnnotation, error) {
 		InternalBuilders:          c.internalBuilders,
 		IsLroPoller:               m.IsLroPoller,
 		IsDiscoveryLro:            isDiscoveryLro(m),
+		IsBigQueryInsertJob:       m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob",
 	}
 
 	if err := c.annotateResourceNameGeneration(m, annotation); err != nil {

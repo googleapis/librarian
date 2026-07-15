@@ -385,7 +385,7 @@ func resolveUsedPackages(model *api.API, extraPackages []*packagez) {
 		// not save us any computations.
 
 		for _, m := range s.Methods {
-			if m.OperationInfo != nil || m.IsLroPoller {
+			if m.OperationInfo != nil || m.IsLroPoller || m.ID == ".google.cloud.bigquery.v2.JobService.InsertJob" {
 				hasLROs = true
 			}
 			if len(m.AutoPopulated) != 0 {
