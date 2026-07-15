@@ -136,8 +136,8 @@ type ComposerTool struct {
 	// Version is the version to install.
 	Version string `yaml:"version"`
 
-	// Package is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php).
-	Package string `yaml:"package,omitempty"`
+	// Repo is the GitHub repository to fetch the tool from (e.g. github.com/googleapis/gapic-generator-php).
+	Repo string `yaml:"repo,omitempty"`
 
 	// SHA256 is the SHA256 checksum of the package.
 	SHA256 string `yaml:"sha256,omitempty"`

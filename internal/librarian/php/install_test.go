@@ -80,7 +80,7 @@ func TestInstall(t *testing.T) {
 					{
 						Name:    "fake-composer-tool",
 						Version: "1.0.0",
-						Package: "github.com/fake/fake-tool",
+						Repo:    "github.com/fake/fake-tool",
 						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
 						Build:   []string{"echo built"},
 					},
@@ -128,7 +128,7 @@ func TestInstall_Error(t *testing.T) {
 		wantErr error
 	}{
 		{
-			name: "missing package URL",
+			name: "missing repo URL",
 			tools: &config.Tools{
 				Composer: []*config.ComposerTool{
 					{
@@ -137,7 +137,7 @@ func TestInstall_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errMissingPackageURL,
+			wantErr: errMissingRepo,
 		},
 	} {
 		t.Run(test.name, func(t *testing.T) {

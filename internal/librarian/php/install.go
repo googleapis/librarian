@@ -36,7 +36,7 @@ const (
 )
 
 var (
-	errMissingPackageURL = errors.New("package URL missing")
+	errMissingRepo = errors.New("repo URL missing")
 )
 
 // Install installs the PHP generator tool dependencies.
@@ -55,10 +55,10 @@ func Install(ctx context.Context, tools *config.Tools) error {
 	}
 
 	for _, tool := range tools.Composer {
-		if tool.Package == "" {
-			return fmt.Errorf("%w: composer tool %s", errMissingPackageURL, tool.Name)
+		if tool.Repo == "" {
+			return fmt.Errorf("%w: composer tool %s", errMissingRepo, tool.Name)
 		}
-		dir, err := fetch.Repo(ctx, tool.Package, tool.Version, tool.SHA256)
+		dir, err := fetch.Repo(ctx, tool.Repo, tool.Version, tool.SHA256)
 		if err != nil {
 			return fmt.Errorf("fetching %s: %w", tool.Name, err)
 		}
