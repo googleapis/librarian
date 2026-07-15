@@ -22,97 +22,104 @@ import (
 )
 
 func TestTidy(t *testing.T) {
-	trueVal := true
-	falseVal := false
-
 	for _, test := range []struct {
 		name string
 		in   *config.Library
 		want *config.Library
 	}{
 		{
-			name: "nil configurations",
-			in:   &config.Library{},
-			want: &config.Library{},
-		},
-		{
-			name: "nilifies empty package config",
-			in: &config.Library{
-				PHP: &config.PHPPackage{},
-			},
-			want: &config.Library{
-				PHP: nil,
-			},
-		},
-		{
-			name: "sorts and deduplicates API additional protos",
+			name: "nil_configurations",
 			in: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/ces/v1",
-						PHP: &config.PHPAPI{
-							AdditionalProtos: []string{"d.proto", "b.proto", "d.proto", "a.proto", "b.proto"},
-						},
+						Path: "google/cloud/secretmanager/v1",
 					},
 				},
 			},
 			want: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/ces/v1",
+						Path: "google/cloud/secretmanager/v1",
+					},
+				},
+			},
+		},
+		{
+			name: "nilifies_empty_package_config",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{},
+				},
+			},
+		},
+		{
+			name: "sorts_and_deduplicates_API_additional_protos",
+			in: &config.Library{
+				APIs: []*config.API{
+					{
 						PHP: &config.PHPAPI{
-							AdditionalProtos: []string{"a.proto", "b.proto", "d.proto"},
+							AdditionalProtos: []string{"b.proto", "a.proto", "a.proto"},
+						},
+					},
+				},
+			},
+			want: &config.Library{
+				APIs: []*config.API{
+					{
+						PHP: &config.PHPAPI{
+							AdditionalProtos: []string{"a.proto", "b.proto"},
 						},
 					},
 				},
 			},
 		},
 		{
-			name: "removes default true CommonResources and empty PHP structs",
+			name: "keeps_true_CommonResources",
 			in: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							CommonResources: &trueVal,
+							CommonResources: new(true),
 						},
 					},
 				},
-				PHP: &config.PHPPackage{},
 			},
 			want: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/secretmanager/v1",
-						PHP:  nil,
+						PHP: &config.PHPAPI{
+							CommonResources: new(true),
+						},
 					},
 				},
-				PHP: nil,
 			},
 		},
 		{
-			name: "keeps false CommonResources",
+			name: "keeps_false_CommonResources",
 			in: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							CommonResources: &falseVal,
+							CommonResources: new(false),
 						},
 					},
 				},
-				PHP: &config.PHPPackage{},
 			},
 			want: &config.Library{
 				APIs: []*config.API{
 					{
-						Path: "google/cloud/secretmanager/v1",
 						PHP: &config.PHPAPI{
-							CommonResources: &falseVal,
+							CommonResources: new(false),
 						},
 					},
 				},
-				PHP: nil,
 			},
 		},
 	} {
