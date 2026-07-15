@@ -116,22 +116,47 @@ func TestFormat(t *testing.T) {
 	testhelper.RequireCommand(t, "swift-format")
 
 	outDir := t.TempDir()
-	sourcesDir := filepath.Join(outDir, "Sources")
-	if err := os.MkdirAll(sourcesDir, 0755); err != nil {
-		t.Fatal(err)
-	}
-	filePath := filepath.Join(sourcesDir, "test.swift")
-	// Write a file that needs formatting.
-	if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0644); err != nil {
-		t.Fatal(err)
+	libraryDir := filepath.Join(outDir, "LibraryOutput")
+	moduleDir := filepath.Join(outDir, "ModuleOutput")
+
+	for _, dir := range []string{libraryDir, moduleDir} {
+		sourcesDir := filepath.Join(dir, "Sources")
+		if err := os.MkdirAll(sourcesDir, 0755); err != nil {
+			t.Fatal(err)
+		}
+		filePath := filepath.Join(sourcesDir, "test.swift")
+		// Write a file that needs formatting.
+		if err := os.WriteFile(filePath, []byte("func foo(){\n  print(\"hello\")\n}\n"), 0644); err != nil {
+			t.Fatal(err)
+		}
 	}
 
 	library := &config.Library{
-		Output: outDir,
+		Output: libraryDir,
+		Swift: &config.SwiftPackage{
+			Modules: []*config.SwiftModule{
+				{
+					Output: moduleDir,
+				},
+			},
+		},
 	}
 
 	if err := Format(t.Context(), library); err != nil {
 		t.Fatal(err)
+	}
+
+	// Verify that files in both directories were actually formatted.
+	wantContent := "func foo() {\n  print(\"hello\")\n}\n"
+	for _, dir := range []string{libraryDir, moduleDir} {
+		filePath := filepath.Join(dir, "Sources", "test.swift")
+		gotContent, err := os.ReadFile(filePath)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if string(gotContent) != wantContent {
+			t.Errorf("ReadFile(%s) = %q, want %q", filePath, string(gotContent), wantContent)
+		}
 	}
 }
 
