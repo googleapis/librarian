@@ -96,6 +96,13 @@ func TestRunPHPMigration(t *testing.T) {
 					Build:   []string{"composer install"},
 				},
 			},
+			Pip: []*config.PipTool{
+				{
+					Name:    "synthtool",
+					Version: "e643ce8e20f8fe237a31a1754524ba987de72875",
+					Package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@e643ce8e20f8fe237a31a1754524ba987de72875",
+				},
+			},
 			Protoc: &config.Protoc{
 				Version: "31.0",
 				SHA256:  "24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42",

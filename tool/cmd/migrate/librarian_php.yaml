@@ -30,6 +30,10 @@ tools:
       sha256: 29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518
       build:
         - composer install
+  pip:
+    - name: synthtool
+      version: "e643ce8e20f8fe237a31a1754524ba987de72875"
+      package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@e643ce8e20f8fe237a31a1754524ba987de72875"
   protoc:
     version: "31.0"
     sha256: 24e2ed32060b7c990d5eb00d642fde04869d7f77c6d443f609353f097799dd42
