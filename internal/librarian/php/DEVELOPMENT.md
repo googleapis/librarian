@@ -11,6 +11,8 @@ system `PATH`:
 *   **PHP** and **Composer** (required to install and run the PHP generator
     plugin)
     *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli composer`
+*   **Node.js** and **npm** (required for `prettier` formatting during post-processing)
+    *   On Debian/Ubuntu (gLinux): `sudo apt-get install nodejs npm`
 *   **protoc** (Protocol Buffers compiler, version 33.2 is recommended). If
     `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian
     falls back to using the system-installed `protoc`.
