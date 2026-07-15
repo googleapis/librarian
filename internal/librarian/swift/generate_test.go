@@ -15,6 +15,7 @@
 package swift
 
 import (
+	"bytes"
 	"os"
 	"path/filepath"
 	"testing"
@@ -147,15 +148,15 @@ func TestFormat(t *testing.T) {
 	}
 
 	// Verify that files in both directories were actually formatted.
-	wantContent := "func foo() {\n  print(\"hello\")\n}\n"
+	wantContent := []byte("func foo() {\n  print(\"hello\")\n}\n")
 	for _, dir := range []string{libraryDir, moduleDir} {
 		filePath := filepath.Join(dir, "Sources", "test.swift")
 		gotContent, err := os.ReadFile(filePath)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if string(gotContent) != wantContent {
-			t.Errorf("ReadFile(%s) = %q, want %q", filePath, string(gotContent), wantContent)
+		if !bytes.Equal(gotContent, wantContent) {
+			t.Errorf("ReadFile(%s) = %q, want %q", filePath, gotContent, wantContent)
 		}
 	}
 }
