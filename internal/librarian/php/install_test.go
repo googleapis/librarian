@@ -106,6 +106,47 @@ func TestInstall(t *testing.T) {
 				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 			},
 		},
+		{
+			name: "with composer, pip, and pnpm tools",
+			tools: &config.Tools{
+				Composer: []*config.ComposerTool{
+					{
+						Name:    "fake-composer-tool",
+						Version: "1.0.0",
+						Repo:    "github.com/fake/fake-tool",
+						SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+					},
+				},
+				Pip: []*config.PipTool{
+					{
+						Name:    "fake-pip-tool",
+						Version: "2.0.0",
+					},
+				},
+				PNPM: []*config.PNPMTool{
+					{
+						Name:    "fake-pnpm-tool",
+						Version: "3.0.0",
+					},
+				},
+			},
+			setup: func(t *testing.T) {
+				cache := t.TempDir()
+				t.Setenv("LIBRARIAN_CACHE", cache)
+				t.Setenv("LIBRARIAN_BIN", filepath.Join(cache, "bin"))
+				repoDir := filepath.Join(cache, "github.com/fake/fake-tool@1.0.0")
+				if err := os.MkdirAll(filepath.Join(repoDir, "dummy"), 0o755); err != nil {
+					t.Fatal(err)
+				}
+
+				bin := t.TempDir()
+				writeExecutable(t, filepath.Join(bin, "composer"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "pip"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "node"), "#!/bin/sh\nexit 0\n")
+				writeExecutable(t, filepath.Join(bin, "pnpm"), "#!/bin/sh\nexit 0\n")
+				t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			if test.setup != nil {
