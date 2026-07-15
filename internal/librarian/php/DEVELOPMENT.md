@@ -10,7 +10,7 @@ system `PATH`:
 *   **Go** (to build the Librarian CLI)
 *   **PHP** and **Composer** (required to install and run the PHP generator
     plugin)
-    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli composer`
+    *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli php-bcmath composer`
 *   **protoc** (Protocol Buffers compiler, version 33.2 is recommended). If
     `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian
     falls back to using the system-installed `protoc`.
