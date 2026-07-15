@@ -26,6 +26,7 @@ import (
 	"github.com/googleapis/librarian/internal/librarian/golang"
 	"github.com/googleapis/librarian/internal/librarian/java"
 	"github.com/googleapis/librarian/internal/librarian/nodejs"
+	"github.com/googleapis/librarian/internal/librarian/php"
 	"github.com/googleapis/librarian/internal/librarian/python"
 	"github.com/googleapis/librarian/internal/librarian/rust"
 	"github.com/googleapis/librarian/internal/serviceconfig"
@@ -189,6 +190,7 @@ func validateLibraries(cfg *config.Config) error {
 // configuration.
 var languageValidators = map[string]func(*config.Config) error{
 	config.LanguageJava: java.Validate,
+	config.LanguagePhp:  php.Validate,
 }
 
 // validateLanguageConfig finds and executes the language-specific validator for a library.
@@ -204,6 +206,7 @@ func validateLanguageConfig(cfg *config.Config) error {
 var languageTidiers = map[string]func(*config.Library) (*config.Library, error){
 	config.LanguageJava:   java.Tidy,
 	config.LanguageNodejs: nodejs.Tidy,
+	config.LanguagePhp:    php.Tidy,
 	config.LanguagePython: python.Tidy,
 	config.LanguageRust:   rust.Tidy,
 }
@@ -249,7 +252,8 @@ func isDefaultEmpty(defaults *config.Default) bool {
 		defaults.Nodejs == nil &&
 		defaults.Rust == nil &&
 		defaults.Python == nil &&
-		defaults.Swift == nil
+		defaults.Swift == nil &&
+		defaults.PHP == nil
 }
 
 // tidyConfig removes unused sections from the configuration.

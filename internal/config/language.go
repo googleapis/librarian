@@ -806,11 +806,15 @@ type NodejsAPI struct {
 	Path string `yaml:"path,omitempty"`
 }
 
+// PHPDefault contains PHP-specific global default configuration.
+type PHPDefault struct {
+	// CommonResources indicates whether to include common resources in generation.
+	// Must be configured either globally or per-API.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
+}
+
 // PHPPackage contains PHP-specific library configuration.
 type PHPPackage struct {
-	// AdditionalProtos is a list of additional proto files to include in generation.
-	// This can be overridden at the API level.
-	AdditionalProtos []string `yaml:"additional_protos,omitempty"`
 }
 
 // PHPAPI represents configuration for a single API within a PHP package.
@@ -820,4 +824,8 @@ type PHPAPI struct {
 
 	// MigrationMode controls migration mode setting for the PHP generator (e.g. "NEW_SURFACE_ONLY").
 	MigrationMode string `yaml:"migration_mode,omitempty"`
+
+	// CommonResources indicates whether to include common resources in generation.
+	// Must be configured either globally or per-API.
+	CommonResources *bool `yaml:"common_resources,omitempty"`
 }

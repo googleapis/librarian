@@ -70,7 +70,7 @@ func TestRunPHPMigration(t *testing.T) {
 	// Verify librarian.yaml is written and contains the expected content.
 	got, err := yaml.Read[config.Config](config.LibrarianYAML)
 	if err != nil {
-		t.Fatalf("reading generated librarian.yaml: %v", err)
+		t.Fatal(err)
 	}
 	want := &config.Config{
 		Language: config.LanguagePhp,
@@ -93,6 +93,23 @@ func TestRunPHPMigration(t *testing.T) {
 					Version: "v1.21.2",
 					Repo:    "github.com/googleapis/gapic-generator-php",
 					SHA256:  "29635b02c6e505fe31cba2f88ae999f00d2710fe1d65cb7cad521a82e7c5a518",
+				},
+			},
+			Pip: []*config.PipTool{
+				{
+					Name:    "synthtool",
+					Version: "e643ce8e20f8fe237a31a1754524ba987de72875",
+					Package: "gcp-synthtool@git+https://github.com/googleapis/synthtool@e643ce8e20f8fe237a31a1754524ba987de72875",
+				},
+			},
+			PNPM: []*config.PNPMTool{
+				{
+					Name:    "@prettier/plugin-php",
+					Version: "0.19.2",
+				},
+				{
+					Name:    "prettier",
+					Version: "2.8.8",
 				},
 			},
 			Protoc: &config.Protoc{
@@ -222,6 +239,72 @@ func TestExtractAPIsFromOwlBot_Error(t *testing.T) {
 			_, err := extractAPIsFromOwlBot(path)
 			if err == nil {
 				t.Fatal("expected error, got nil")
+			}
+		})
+	}
+}
+
+func TestParsePHPBazel(t *testing.T) {
+	for _, test := range []struct {
+		name       string
+		bazelRules string
+		want       []string
+	}{
+		{
+			name:       "no BUILD.bazel",
+			bazelRules: "",
+			want:       nil,
+		},
+		{
+			name: "valid BUILD.bazel with location and iam mixins",
+			bazelRules: `
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+        "//google/cloud:common_resources_proto",
+        "//google/cloud/location:location_proto",
+        "//google/iam/v1:iam_policy_proto",
+        "//google/cloud/unrelated:unrelated_proto",
+    ],
+)
+`,
+			want: []string{
+				"google/cloud/location/locations.proto",
+				"google/iam/v1/iam_policy.proto",
+			},
+		},
+		{
+			name: "valid BUILD.bazel with no mixins",
+			bazelRules: `
+proto_library_with_info(
+    name = "ces_proto_with_info",
+    deps = [
+        ":ces_proto",
+        "//google/cloud:common_resources_proto",
+    ],
+)
+`,
+			want: nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			tempDir := t.TempDir()
+			if test.bazelRules != "" {
+				apiDir := filepath.Join(tempDir, "google/cloud/ces/v1")
+				if err := os.MkdirAll(apiDir, 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(filepath.Join(apiDir, "BUILD.bazel"), []byte(test.bazelRules), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := parsePHPBazel(tempDir, "google/cloud/ces/v1")
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
