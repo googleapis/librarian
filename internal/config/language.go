@@ -809,7 +809,7 @@ type NodejsAPI struct {
 // PHPDefault contains PHP-specific global default configuration.
 type PHPDefault struct {
 	// CommonResources indicates whether to include common resources in generation.
-	// Defaults to true if nil.
+	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 }
 
@@ -826,6 +826,6 @@ type PHPAPI struct {
 	MigrationMode string `yaml:"migration_mode,omitempty"`
 
 	// CommonResources indicates whether to include common resources in generation.
-	// Defaults to true if nil.
+	// Must be configured either globally or per-API.
 	CommonResources *bool `yaml:"common_resources,omitempty"`
 }
