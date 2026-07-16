@@ -199,7 +199,7 @@ func getPublishedVersion(ctx context.Context, libName string) (string, error) {
 	return data.Latest.Version, nil
 }
 
-// getDeps returns the dependencies and repo version for the given libraries.
+// getDeps returns the dependencies and versions for the given libraries as found in the GitHub repository.
 //
 // For example:
 //
