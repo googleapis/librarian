@@ -24,7 +24,7 @@ import (
 )
 
 func TestGenerateVersion(t *testing.T) {
-	const expectedFile = "Package+Version.swift"
+	const expectedFile = "PackageVersion.swift"
 	library := &config.Library{
 		CopyrightYear: "2038",
 		Version:       "1.2.3-test",
