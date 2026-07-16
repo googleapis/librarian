@@ -16,6 +16,7 @@ package swift
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -141,4 +142,18 @@ func (c *codec) annotateEnum(enum *api.Enum, model *modelAnnotations) error {
 
 	enum.Codec = annotations
 	return nil
+}
+
+// ConvertImports returns the sorted list of import statements for enum conversions.
+func (ann *enumAnnotations) ConvertImports() []string {
+	imports := []string{
+		"import Foundation",
+		"import GoogleCloudGax",
+		"internal import SwiftProtobuf",
+	}
+	if ann.ModulePath != "" {
+		imports = append(imports, "internal import "+ann.ModulePath)
+	}
+	slices.Sort(imports)
+	return imports
 }

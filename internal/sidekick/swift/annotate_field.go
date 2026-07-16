@@ -69,6 +69,12 @@ type fieldAnnotations struct {
 
 	// Model points to the annotations for the model.
 	Model *modelAnnotations
+
+	// ToVeneerStatement converts the field from a proto representation to a veneer.
+	ToVeneerStatement string
+
+	// ToProtoStatement converts the field from a veneer representation to a proto.
+	ToProtoStatement string
 }
 
 // DecodingStyle defines an enumeration for decoding fields.
@@ -196,6 +202,7 @@ func (c *codec) annotateField(field *api.Field, model *modelAnnotations) (*field
 			annotations.UrlSafeValue = true
 		}
 	}
+	c.computeFieldConversionStatements(field, annotations)
 	field.Codec = annotations
 	return annotations, nil
 }
@@ -237,4 +244,31 @@ func (c *codec) fieldPackage(field *api.Field) (string, error) {
 		return e.Package, nil
 	}
 	return "", nil
+}
+
+func (c *codec) computeFieldConversionStatements(field *api.Field, ann *fieldAnnotations) {
+	fieldName := ann.Name
+	pFieldName := protoFieldName(field.Name)
+	protoFieldNamePascal := protoFieldNamePascal(field.Name)
+
+	if field.IsOneOf {
+		return
+	}
+
+	if field.Map || field.Repeated {
+		return
+	}
+
+	switch field.Typez {
+	case api.TypezMessage, api.TypezEnum:
+		return
+	default:
+		if field.Optional {
+			ann.ToVeneerStatement = fmt.Sprintf("self.%s = proto.has%s ? proto.%s : nil", fieldName, protoFieldNamePascal, pFieldName)
+			ann.ToProtoStatement = fmt.Sprintf("if let %s = self.%s { proto.%s = %s }", fieldName, fieldName, pFieldName, fieldName)
+		} else {
+			ann.ToVeneerStatement = fmt.Sprintf("self.%s = proto.%s", fieldName, pFieldName)
+			ann.ToProtoStatement = fmt.Sprintf("proto.%s = self.%s", pFieldName, fieldName)
+		}
+	}
 }

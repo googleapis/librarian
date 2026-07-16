@@ -17,7 +17,9 @@ package swift
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/googleapis/librarian/internal/config"
@@ -214,4 +216,22 @@ func (c *codec) addDependency(dep *Dependency) (*Dependency, error) {
 		ann.DependsOn[dep.Name] = dep
 	}
 	return dep, nil
+}
+
+func (c *codec) protoMessageTypeName(m *api.Message) string {
+	var path []string
+	curr := m
+	for curr != nil {
+		path = append(path, pascalCase(curr.Name))
+		curr = curr.Parent
+	}
+	slices.Reverse(path)
+	return fmt.Sprintf("%s.%s%s", c.ModulePath, ProtoPackagePrefix(m.Package), strings.Join(path, "."))
+}
+
+func (c *codec) protoEnumTypeName(e *api.Enum) string {
+	if e.Parent == nil {
+		return fmt.Sprintf("%s.%s%s", c.ModulePath, ProtoPackagePrefix(e.Package), pascalCase(e.Name))
+	}
+	return fmt.Sprintf("%s.%s", c.protoMessageTypeName(e.Parent), pascalCase(e.Name))
 }

@@ -160,7 +160,7 @@ func TestAnnotateMessage(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 			if diff := cmp.Diff(test.wantImports, test.message.Codec.(*messageAnnotations).MessageImports()); diff != "" {
@@ -295,7 +295,7 @@ func TestAnnotateMessage_Discovery(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.message.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -350,7 +350,7 @@ func TestAnnotateMessage_DiscoveryRequests(t *testing.T) {
 			if err := codec.annotateModel(); err != nil {
 				t.Fatal(err)
 			}
-			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+			if diff := cmp.Diff(test.want, test.request.Codec, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 				t.Errorf("mismatch (-want +got):\n%s", diff)
 			}
 		})
@@ -428,7 +428,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		SampleField:       "pageSize",
 		ParameterTypeName: "ListSecretsRequest",
 	}
-	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantRequest, gotRequest, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantRequestImports := []string{"GoogleCloudWkt"}
@@ -447,7 +447,7 @@ func TestAnnotateMessage_Pagination(t *testing.T) {
 		SampleField:         "secrets",
 		ParameterTypeName:   "ListSecretsResponse",
 	}
-	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantResponse, gotResponse, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 	wantResponseImports := []string{"GoogleCloudGax", "GoogleCloudWkt"}
@@ -500,7 +500,7 @@ func TestAnnotateMessage_RecursiveNested(t *testing.T) {
 		SampleField:       "<placeholder>",
 		ParameterTypeName: "OuterMessage",
 	}
-	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn")); diff != "" {
+	if diff := cmp.Diff(wantOuter, gotOuter, cmpopts.IgnoreFields(messageAnnotations{}, "Model", "DependsOn", "NativeTypeName", "ProtoTypeName", "ModulePath", "CopyrightYear")); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
 

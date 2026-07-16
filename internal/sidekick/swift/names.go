@@ -166,6 +166,50 @@ func camelCase(s string) string {
 	return escapeKeyword(strcase.ToLowerCamel(s))
 }
 
+// protoFieldName converts a protobuf field name to its corresponding SwiftProtobuf property name.
+func protoFieldName(s string) string {
+	if s == "description" {
+		return "description_p"
+	}
+	parts := strings.Split(s, "_")
+	var result strings.Builder
+	for i, part := range parts {
+		if part == "" {
+			continue
+		}
+		if i == 0 {
+			result.WriteString(strcase.ToLowerCamel(part))
+		} else {
+			if strings.ToLower(part) == "id" {
+				result.WriteString("ID")
+			} else {
+				result.WriteString(strcase.ToCamel(part))
+			}
+		}
+	}
+	return escapeKeyword(result.String())
+}
+
+// protoFieldNamePascal converts a protobuf field name to its corresponding SwiftProtobuf PascalCase name (used for hasField helpers).
+func protoFieldNamePascal(s string) string {
+	if s == "description" {
+		return "DescriptionP"
+	}
+	parts := strings.Split(s, "_")
+	var result strings.Builder
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if strings.ToLower(part) == "id" {
+			result.WriteString("ID")
+		} else {
+			result.WriteString(strcase.ToCamel(part))
+		}
+	}
+	return escapeKeyword(result.String())
+}
+
 // pascalCase converts an identifier to PascalCase (note the leading uppercase) and, if needed, escapes it.
 //
 // This function is used for services, messages, and enums, where the Swift style is `PascalCase`.

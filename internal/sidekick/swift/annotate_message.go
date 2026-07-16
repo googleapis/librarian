@@ -32,6 +32,7 @@ type messageAnnotations struct {
 	Model               *modelAnnotations
 	TypeURL             string
 	CustomSerialization bool
+	CopyrightYear       string
 
 	IsPaginatedResponse bool
 	PageableItemField   string
@@ -69,6 +70,36 @@ type messageAnnotations struct {
 	// For discovery-based APIs, the request are synthetic and generated within
 	// a scope. They need to be fully qualified.
 	ParameterTypeName string
+	NativeTypeName    string
+	ProtoTypeName     string
+	ModulePath        string
+}
+
+// ConvertImports returns the sorted list of import statements for message conversions.
+func (ann *messageAnnotations) ConvertImports() []string {
+	importMap := map[string]bool{
+		"import Foundation":             true,
+		"import GoogleCloudGax":         true,
+		"internal import SwiftProtobuf": true,
+	}
+	if ann.ModulePath != "" {
+		importMap["internal import "+ann.ModulePath] = true
+	}
+	for _, dep := range ann.DependsOn {
+		if dep.Name == "GoogleCloudGax" {
+			continue
+		}
+		importMap["import "+dep.Name] = true
+		if dep.Name == "GoogleCloudWkt" {
+			importMap["internal import GoogleCloudWktConvert"] = true
+		}
+	}
+	var result []string
+	for imp := range importMap {
+		result = append(result, imp)
+	}
+	slices.Sort(result)
+	return result
 }
 
 // MessageImports returns the list of dependencies for this message.
@@ -128,6 +159,10 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 		DependsOn:           map[string]*Dependency{},
 		SampleField:         sampleField,
 		ParameterTypeName:   parameterTypeName,
+		NativeTypeName:      parameterTypeName,
+		ProtoTypeName:       c.protoMessageTypeName(message),
+		ModulePath:          c.ModulePath,
+		CopyrightYear:       model.CopyrightYear,
 	}
 	if message.ServicePlaceholder {
 		annotations.PlaceholderName = pascalCase(message.Name + "Client")
@@ -174,7 +209,9 @@ func (c *codec) annotateMessage(message *api.Message, model *modelAnnotations) e
 			if err != nil {
 				return err
 			}
-			annotations.DependsOn[dep.Name] = dep
+			if dep != nil {
+				annotations.DependsOn[dep.Name] = dep
+			}
 		}
 	}
 
