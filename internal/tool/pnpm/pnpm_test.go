@@ -23,41 +23,6 @@ import (
 	"github.com/googleapis/librarian/internal/config"
 )
 
-func stubExecutables(t *testing.T) {
-	t.Helper()
-	bin := t.TempDir()
-	pnpmStub := `#!/bin/sh
-# Assert that transient environmental variables are set dynamically for process lifetime
-if [ -n "$PNPM_HOME" ] && [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] && [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] && [ -n "$PNPM_CONFIG_STORE_DIR" ]; then
-    :
-else
-    echo "Error: Required transient PNPM environment variables are missing!" >&2
-    exit 1
-fi
-
-case "$*" in
-    *install*)
-        mkdir -p node_modules/.bin
-        printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
-        chmod +x node_modules/.bin/tsc
-        ;;
-    *add\ -g*)
-        ;;
-esac
-exit 0
-`
-	nodeStub := `#!/bin/sh
-exit 0
-`
-	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
-}
-
 func TestInstall(t *testing.T) {
 	for _, test := range []struct {
 		name      string
@@ -198,4 +163,39 @@ func TestRepoFromPackageURL_Error(t *testing.T) {
 			}
 		})
 	}
+}
+
+func stubExecutables(t *testing.T) {
+	t.Helper()
+	bin := t.TempDir()
+	pnpmStub := `#!/bin/sh
+# Assert that transient environmental variables are set dynamically for process lifetime
+if [ -n "$PNPM_HOME" ] && [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] && [ -n "$PNPM_CONFIG_GLOBAL_DIR" ] && [ -n "$PNPM_CONFIG_STORE_DIR" ]; then
+    :
+else
+    echo "Error: Required transient PNPM environment variables are missing!" >&2
+    exit 1
+fi
+
+case "$*" in
+    *install*)
+        mkdir -p node_modules/.bin
+        printf '#!/bin/sh\nmkdir -p build\n' > node_modules/.bin/tsc
+        chmod +x node_modules/.bin/tsc
+        ;;
+    *add\ -g*)
+        ;;
+esac
+exit 0
+`
+	nodeStub := `#!/bin/sh
+exit 0
+`
+	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 }
