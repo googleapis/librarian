@@ -29,11 +29,14 @@ import (
 const (
 	// Cargo is the command name for the cargo executable.
 	Cargo = "cargo"
+	// Dart is the command name for the dart executable.
+	Dart = "dart"
+	// DartAPITool is the command name for the dart-apitool executable.
+	DartAPITool = "dart-apitool"
 	// Git is the command name for the git executable.
 	Git = "git"
 	// Go is the command name for the go executable.
-	Go   = "go"
-	Dart = "dart"
+	Go = "go"
 	// envPath is the environment variable for the executable path.
 	envPath = "PATH"
 )

@@ -60,7 +60,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 		libraryByName[lib.Name] = lib
 	}
 
-	deps, repoVersions, err := getCloudDeps(ctx, params.Config.Libraries)
+	deps, repoVersions, err := getDeps(ctx, params.Config.Libraries)
 	if err != nil {
 		return err
 	}
@@ -159,7 +159,7 @@ func Publish(ctx context.Context, params PublishParams) error {
 func runSemverCheck(ctx context.Context, lib *config.Library, defaultCfg *config.Default) error {
 	libDir := libraryOutput(lib, defaultCfg)
 	reportPath := filepath.Join(os.TempDir(), fmt.Sprintf("report-%s-publish.json", lib.Name))
-	output, err := command.Output(ctx, "dart-apitool", "diff", "--old", "pub://"+lib.Name, "--new", libDir,
+	output, err := command.Output(ctx, command.DartAPITool, "diff", "--old", "pub://"+lib.Name, "--new", libDir,
 		"--report-format", "json", "--report-file-path", reportPath)
 	if err != nil {
 		return fmt.Errorf("dart-apitool failed for %s: %w (output: %s, see %s)", lib.Name, err, output, reportPath)
@@ -199,7 +199,14 @@ func getPublishedVersion(ctx context.Context, libName string) (string, error) {
 	return data.Latest.Version, nil
 }
 
-func getCloudDeps(ctx context.Context, libraries []*config.Library) (map[string][]string, map[string]string, error) {
+// getDeps returns the dependencies and repo version for the given libraries.
+//
+// For example:
+//
+// getDeps(..., [<google_cloud_protobuf, google_cloud_logging_type, google_cloud_logging>]) =>
+// {"google_cloud_protobuf": [], "google_cloud_logging_type": ["google_cloud_protobuf"], "google_cloud_logging": ["google_cloud_logging_type"]}
+// {"google_cloud_protobuf": "1.2.3", "<google_cloud_logging_type": "4.5.6", "<google_cloud_logging": "5.6.7"}
+func getDeps(ctx context.Context, libraries []*config.Library) (map[string][]string, map[string]string, error) {
 	output, err := command.Output(ctx, command.Dart, "pub", "deps", "--json")
 	if err != nil {
 		return nil, nil, err
@@ -240,6 +247,8 @@ func getCloudDeps(ctx context.Context, libraries []*config.Library) (map[string]
 	return depsMap, versionsMap, nil
 }
 
+// sortByDeps performs a topological sort of the libraries by their dependencies such that dependencies
+// always appear before the libraries that depend on them.
 func sortByDeps(libraryByName map[string]*config.Library, deps map[string][]string) ([]string, error) {
 	inDegree := make(map[string]int)
 	dependents := make(map[string][]string)
