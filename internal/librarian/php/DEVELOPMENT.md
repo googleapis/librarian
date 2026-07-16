@@ -9,7 +9,7 @@ Before starting, ensure you have the following installed and available on your
 system `PATH`:
 *   **Go** (to build the Librarian CLI)
 *   **PHP** and **Composer** (required to install and run the PHP generator
-    plugin)
+    plugin) and **bcmath** to run mathematical operations on any size number in the generator
     *   On Debian/Ubuntu (gLinux): `sudo apt-get install php-cli php-bcmath composer`
 *   **protoc** (Protocol Buffers compiler, version 33.2 is recommended). If
     `protoc` is not configured in `librarian.yaml` under `tools.protoc`, Librarian
