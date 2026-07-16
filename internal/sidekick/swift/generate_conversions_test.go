@@ -15,6 +15,9 @@
 package swift
 
 import (
+	"os"
+	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/googleapis/librarian/internal/sidekick/api"
@@ -36,5 +39,73 @@ func TestGenerateConversions_MissingModulePath(t *testing.T) {
 	wantError := "module-path must be configured for generating conversions"
 	if err.Error() != wantError {
 		t.Errorf("GenerateConversions returned error %q, want %q", err.Error(), wantError)
+	}
+}
+
+func TestGenerateConversions_Message(t *testing.T) {
+	outDir := t.TempDir()
+
+	field1 := &api.Field{
+		Name:     "name",
+		JSONName: "name",
+		Typez:    api.TypezString,
+	}
+	field2 := &api.Field{
+		Name:     "metageneration",
+		JSONName: "metageneration",
+		Typez:    api.TypezInt64,
+	}
+	field3 := &api.Field{
+		Name:     "self",
+		JSONName: "self",
+		Typez:    api.TypezString,
+		Optional: true,
+	}
+	folder := &api.Message{
+		Name:    "Folder",
+		Package: "google.storage.control.v2",
+		ID:      ".google.storage.control.v2.Folder",
+		Fields:  []*api.Field{field1, field2, field3},
+	}
+	field1.Parent = folder
+	field2.Parent = folder
+	field3.Parent = folder
+
+	model := api.NewTestAPI([]*api.Message{folder}, []*api.Enum{}, []*api.Service{})
+	model.PackageName = "google.storage.control.v2"
+
+	cfg := &parser.ModelConfig{
+		Codec: map[string]string{
+			"copyright-year": "2038",
+			"module-path":    "StorageControlProtos",
+			"module":         "true",
+		},
+	}
+
+	if err := GenerateConversions(t.Context(), model, outDir, cfg, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	filename := filepath.Join(outDir, "Convert", "Folder+Convert.swift")
+	content, err := os.ReadFile(filename)
+	if err != nil {
+		t.Fatal(err)
+	}
+	contentStr := string(content)
+
+	// Check output imports
+	if !strings.Contains(contentStr, "internal import StorageControlProtos") {
+		t.Errorf("expected generated file to import StorageControlProtos")
+	}
+
+	// Check conversion logic
+	wantInit := "  internal init(proto: ProtoType) throws {\n    self.name = proto.name\n    self.metageneration = proto.metageneration\n    self.self_ = proto.hasSelf_p ? proto.self_p : nil\n  }"
+	if !strings.Contains(contentStr, wantInit) {
+		t.Errorf("expected generated file to contain init(proto:) implementation:\n%s\nGot:\n%s", wantInit, contentStr)
+	}
+
+	wantToProto := "  internal func toProto() throws -> ProtoType {\n    var proto = ProtoType()\n    proto.name = self.name\n    proto.metageneration = self.metageneration\n    if let self_ = self.self_ { proto.self_p = self_ }\n    return proto\n  }"
+	if !strings.Contains(contentStr, wantToProto) {
+		t.Errorf("expected generated file to contain toProto() implementation:\n%s\nGot:\n%s", wantToProto, contentStr)
 	}
 }

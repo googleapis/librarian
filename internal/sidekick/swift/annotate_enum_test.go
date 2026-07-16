@@ -203,3 +203,46 @@ func TestAnnotateEnum_ModulePath(t *testing.T) {
 		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
 	}
 }
+
+func TestAnnotateEnum_NestedModulePath(t *testing.T) {
+	parent := &api.Message{
+		Name:    "OuterMessage",
+		ID:      ".test.OuterMessage",
+		Package: "test",
+	}
+	enum := &api.Enum{
+		Name:    "InnerEnum",
+		ID:      ".test.OuterMessage.InnerEnum",
+		Package: "test",
+		Values: []*api.EnumValue{
+			{Name: "INNER_ENUM_UNSPECIFIED", Number: 0},
+			{Name: "INNER_ENUM_VALUE_A", Number: 1},
+		},
+		Parent: parent,
+	}
+	enum.UniqueNumberValues = enum.Values
+	for _, ev := range enum.Values {
+		ev.Parent = enum
+	}
+	model := api.NewTestAPI([]*api.Message{parent}, []*api.Enum{enum}, []*api.Service{})
+	codec := newTestCodec(t, model, map[string]string{
+		"module-path": "TestProtos",
+	})
+	if err := codec.annotateModel(); err != nil {
+		t.Fatal(err)
+	}
+
+	ann, ok := enum.Codec.(*enumAnnotations)
+	if !ok {
+		t.Fatalf("expected enum.Codec to be *enumAnnotations, got %T", enum.Codec)
+	}
+
+	if ann.ModulePath != "TestProtos" {
+		t.Errorf("ann.ModulePath = %q, want %q", ann.ModulePath, "TestProtos")
+	}
+
+	wantProtoTypeName := "TestProtos.Test_OuterMessage.InnerEnum"
+	if ann.ProtoTypeName != wantProtoTypeName {
+		t.Errorf("ann.ProtoTypeName = %q, want %q", ann.ProtoTypeName, wantProtoTypeName)
+	}
+}

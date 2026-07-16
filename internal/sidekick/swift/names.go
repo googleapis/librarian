@@ -166,6 +166,85 @@ func camelCase(s string) string {
 	return escapeKeyword(strcase.ToLowerCamel(s))
 }
 
+// protoFieldName converts a protobuf field name to its corresponding SwiftProtobuf property name.
+func protoFieldName(s string) string {
+	// SwiftProtobuf appends a "_p" suffix to fields that conflict with standard Swift library
+	// protocols (e.g. CustomStringConvertible, CustomDebugStringConvertible, Hashable)
+	// or the SwiftProtobuf.Message protocol properties to avoid compiler errors.
+	switch s {
+	case "self":
+		return "self_p"
+	case "description":
+		return "description_p"
+	case "debug_description", "debugDescription":
+		return "debugDescription_p"
+	case "hash_value", "hashValue":
+		return "hashValue_p"
+	case "is_initialized", "isInitialized":
+		return "isInitialized_p"
+	case "serialized_size", "serializedSize":
+		return "serializedSize_p"
+	case "unknown_fields", "unknownFields":
+		return "unknownFields_p"
+	}
+	parts := strings.Split(s, "_")
+	var result strings.Builder
+	first := true
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if first {
+			result.WriteString(strcase.ToLowerCamel(part))
+			first = false
+		} else {
+			if strings.ToLower(part) == "id" {
+				result.WriteString("ID")
+			} else {
+				result.WriteString(strcase.ToCamel(part))
+			}
+		}
+	}
+	return escapeKeyword(result.String())
+}
+
+// protoFieldNamePascal converts a protobuf field name to its corresponding SwiftProtobuf PascalCase name (used for hasField helpers).
+func protoFieldNamePascal(s string) string {
+	// SwiftProtobuf appends a "_p" suffix to fields that conflict with standard Swift library
+	// protocols (e.g. CustomStringConvertible, CustomDebugStringConvertible, Hashable)
+	// or the SwiftProtobuf.Message protocol properties to avoid compiler errors.
+	// We retain the "_p" casing for the PascalCase property representations (e.g., hasDescription_p).
+	switch s {
+	case "self":
+		return "Self_p"
+	case "description":
+		return "Description_p"
+	case "debug_description", "debugDescription":
+		return "DebugDescription_p"
+	case "hash_value", "hashValue":
+		return "HashValue_p"
+	case "is_initialized", "isInitialized":
+		return "IsInitialized_p"
+	case "serialized_size", "serializedSize":
+		return "SerializedSize_p"
+	case "unknown_fields", "unknownFields":
+		return "UnknownFields_p"
+	}
+	parts := strings.Split(s, "_")
+	var result strings.Builder
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		if strings.ToLower(part) == "id" {
+			result.WriteString("ID")
+		} else {
+			result.WriteString(strcase.ToCamel(part))
+		}
+	}
+	return result.String()
+}
+
 // pascalCase converts an identifier to PascalCase (note the leading uppercase) and, if needed, escapes it.
 //
 // This function is used for services, messages, and enums, where the Swift style is `PascalCase`.
