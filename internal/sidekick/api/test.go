@@ -199,6 +199,17 @@ func (m *Method) WithPathTemplate(pt *PathTemplate) *Method {
 	return m
 }
 
+// WithSourceMethod defines mixin methods.
+func (m *Method) WithSourceMethod(source *Method) *Method {
+	m.WithOutput(source.OutputType).WithInput(source.InputType)
+	m.SourceService = source.Service
+	if m.SourceService != nil {
+		m.SourceServiceID = m.SourceService.ID
+	}
+	m.PathInfo = source.PathInfo
+	return m
+}
+
 // NewTestField creates a field with defaults for testing.
 // JSONName is automatically camelCased.
 func NewTestField(name string) *Field {
