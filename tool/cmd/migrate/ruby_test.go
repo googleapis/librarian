@@ -16,6 +16,7 @@ package main
 
 import (
 	"context"
+	"os"
 	"path/filepath"
 	"testing"
 
@@ -63,7 +64,7 @@ func TestRunRubyMigration(t *testing.T) {
 		Tools: &config.Tools{
 			Gem: []*config.GemTool{
 				{
-					Name:    "gapic-generator",
+					Name:    "gapic-generator-cloud",
 					Version: "0.49.0",
 				},
 				{
@@ -79,5 +80,62 @@ func TestRunRubyMigration(t *testing.T) {
 	}
 	if diff := cmp.Diff(want, got); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
+	}
+}
+
+func TestFindRubyLibraries(t *testing.T) {
+	for _, test := range []struct {
+		name  string
+		files []string
+		want  []*config.Library
+	}{
+		{
+			name: "single library with .OwlBot.yaml",
+			files: []string{
+				"google-cloud-secret_manager/.OwlBot.yaml",
+			},
+			want: []*config.Library{
+				{Name: "google-cloud-secret_manager"},
+			},
+		},
+		{
+			name: "multiple libraries with non-library files and directories",
+			files: []string{
+				"google-cloud-secret_manager/.OwlBot.yaml",
+				"google-cloud-storage/.OwlBot.yaml",
+				"README.md",
+				".OwlBot.yaml",
+				"script/helper.rb",
+			},
+			want: []*config.Library{
+				{Name: "google-cloud-secret_manager"},
+				{Name: "google-cloud-storage"},
+			},
+		},
+		{
+			name:  "no libraries found",
+			files: []string{"README.md", "script/helper.rb"},
+			want:  nil,
+		},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			dir := t.TempDir()
+			for _, f := range test.files {
+				path := filepath.Join(dir, f)
+				if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+					t.Fatal(err)
+				}
+				if err := os.WriteFile(path, []byte(""), 0644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			got, err := findRubyLibraries(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if diff := cmp.Diff(test.want, got); diff != "" {
+				t.Errorf("mismatch (-want +got):\n%s", diff)
+			}
+		})
 	}
 }

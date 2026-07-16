@@ -20,5 +20,15 @@ limitations under the License.
 //{{{.}}}
 {{/Codec.BoilerPlate}}
 
+import Foundation
+{{! On Linux we need this additional import for `URLSession`. }}
+#if canImport(FoundationNetworking)
+  import FoundationNetworking
+#endif
+import GoogleCloudGax
+
 // Defines concrete implementations of the client protocols.
-public enum Clients {}
+public enum Clients {
+  static let clientHeader: String =
+    GoogleCloudGax._gapicApiClientHeader(packageVersion: "{{Codec.PackageVersion}}")
+}

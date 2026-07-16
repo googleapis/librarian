@@ -12,7 +12,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-package nodejs
+// Package pnpm provides utilities to install pnpm packages.
+package pnpm
 
 import (
 	"context"
@@ -28,50 +29,21 @@ import (
 	"github.com/googleapis/librarian/internal/fetch"
 )
 
-const (
-	// gapicGeneratorSubdir is the sub-directory within the
-	// google-cloud-node repo that contains the gapic-generator-typescript
-	// source.
-	gapicGeneratorSubdir = "core/generator/gapic-generator-typescript"
-
-	toolsDir = "nodejs_tools"
-)
-
 var (
-	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
 	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
-	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
 	errMissingPackageURL = errors.New("has build steps but no package URL")
 )
 
-// Install installs Node.js tool dependencies.
-func Install(ctx context.Context, tools *config.Tools) error {
-	if tools == nil {
-		return errNoToolsSpecified
-	}
-	return InstallPNPM(ctx, tools.PNPM)
-}
-
-// InstallPNPM installs PNPM tools.
-func InstallPNPM(ctx context.Context, pnpmTools []*config.PNPMTool) error {
-	if len(pnpmTools) == 0 {
-		return errNoToolsSpecified
-	}
-
-	for _, cmd := range []string{"node", "pnpm"} {
-		if _, err := exec.LookPath(cmd); err != nil {
-			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
-		}
-	}
-
-	env, err := getPNPMEnv()
+// Install installs PNPM tools.
+func Install(ctx context.Context, pnpmTools []*config.PNPMTool, binDir string) error {
+	env, err := envs(binDir)
 	if err != nil {
 		return err
 	}
 
 	for _, tool := range pnpmTools {
 		if len(tool.Build) > 0 {
-			if err := installPNPMToolFromSource(ctx, env, tool); err != nil {
+			if err := installFromSource(ctx, env, tool, tool.SrcDir); err != nil {
 				return err
 			}
 			continue
@@ -81,38 +53,11 @@ func InstallPNPM(ctx context.Context, pnpmTools []*config.PNPMTool) error {
 		if pkg == "" {
 			pkg = fmt.Sprintf("%s@%s", tool.Name, tool.Version)
 		}
-		if err := runPNPM(ctx, "", env, "add", "-g", pkg); err != nil {
+		if err := run(ctx, "", env, "add", "-g", pkg); err != nil {
 			return err
 		}
 	}
 	return nil
-}
-
-// InstallDir gets the directory where tools should be installed.
-func InstallDir() (string, error) {
-	dir, err := cache.BinDirectory()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Abs(filepath.Join(dir, toolsDir))
-}
-
-// getBinDir returns the directory where Node.js tool executables are stored.
-func getBinDir() (string, error) {
-	installDir, err := InstallDir()
-	if err != nil {
-		return "", err
-	}
-	return filepath.Join(installDir, "bin"), nil
-}
-
-// getToolsEnv returns an environment map with the Node.js tools bin directory prepended to PATH.
-func getToolsEnv() (map[string]string, error) {
-	binDir, err := getBinDir()
-	if err != nil {
-		return nil, err
-	}
-	return map[string]string{"PATH": binDir}, nil
 }
 
 // getPNPMEnv constructs a transient environment variable block to configure pnpm.
@@ -122,16 +67,11 @@ func getToolsEnv() (map[string]string, error) {
 // This enables complete environment caching and restore on CI runners,
 // while permanently avoiding persistent side-effects on the host machine
 // (it does not modify the user's personal ~/.config/pnpm/rc files).
-func getPNPMEnv() ([]string, error) {
+func envs(binDir string) ([]string, error) {
 	cacheDir, err := cache.Directory()
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve librarian cache directory: %w", err)
 	}
-	binDir, err := getBinDir()
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve librarian bin directory: %w", err)
-	}
-
 	env := os.Environ()
 	env = append(env, "PNPM_HOME="+binDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
@@ -141,7 +81,7 @@ func getPNPMEnv() ([]string, error) {
 	return env, nil
 }
 
-func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
+func run(ctx context.Context, dir string, env []string, args ...string) error {
 	cmd := exec.CommandContext(ctx, "pnpm", args...)
 	cmd.Dir = dir
 	cmd.Env = env
@@ -150,7 +90,7 @@ func runPNPM(ctx context.Context, dir string, env []string, args ...string) erro
 	return cmd.Run()
 }
 
-func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr string) error {
+func build(ctx context.Context, dir string, env []string, cmdStr string) error {
 	cmd := exec.CommandContext(ctx, "sh", "-c", cmdStr)
 	cmd.Dir = dir
 	cmd.Env = env
@@ -159,7 +99,7 @@ func runPNPMBuildCmd(ctx context.Context, dir string, env []string, cmdStr strin
 	return cmd.Run()
 }
 
-func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.PNPMTool) error {
+func installFromSource(ctx context.Context, env []string, tool *config.PNPMTool, srcDir string) error {
 	if tool.Package == "" {
 		return fmt.Errorf("pnpm tool %s %w", tool.Name, errMissingPackageURL)
 	}
@@ -177,9 +117,9 @@ func installPNPMToolFromSource(ctx context.Context, env []string, tool *config.P
 	}
 
 	// Run build steps.
-	genDir := filepath.Join(dir, gapicGeneratorSubdir)
+	buildDir := filepath.Join(dir, srcDir)
 	for _, cmd := range tool.Build {
-		if err := runPNPMBuildCmd(ctx, genDir, env, cmd); err != nil {
+		if err := build(ctx, buildDir, env, cmd); err != nil {
 			return err
 		}
 	}

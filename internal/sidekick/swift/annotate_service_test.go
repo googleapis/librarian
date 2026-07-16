@@ -250,6 +250,9 @@ func TestAnnotateService_Gating(t *testing.T) {
 func TestAnnotateService_RequiredServices(t *testing.T) {
 	model := makeRequiredServicesTestModel()
 	codec := newTestCodec(t, model, nil)
+	codec.withExtraDependencies(t, []config.SwiftDependency{
+		{ApiPackage: "external", Name: "GoogleCloudExternal"},
+	})
 	codec.PerServiceTraits = true
 
 	if err := codec.annotateModel(); err != nil {

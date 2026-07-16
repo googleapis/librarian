@@ -69,7 +69,7 @@ type SwiftDependency struct {
 	// .package(url: "https://github.com/apple/swift-protobuf")
 	// ```
 	URL string `yaml:"url,omitempty"`
-	// Version configures the minimum version for exaternal package definitions.
+	// Version configures the minimum version for external package definitions.
 	//
 	// For example, if the `swift-protobuf` package used `1.36.1`, then the codec would generate the
 	// following snippet in the `Package.swift` files:

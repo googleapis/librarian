@@ -27,6 +27,8 @@ type modelAnnotations struct {
 	CopyrightYear    string
 	BoilerPlate      []string
 	PackageName      string
+	PackageVersion   string
+	ReleaseLevel     string
 	MonorepoRoot     string
 	DependsOn        map[string]*Dependency
 	WktPackage       string
@@ -75,13 +77,15 @@ func (ann *modelAnnotations) HasTraits() bool {
 
 func (c *codec) annotateModel() error {
 	annotations := &modelAnnotations{
-		CopyrightYear: c.GenerationYear,
-		BoilerPlate:   license.HeaderBulk(),
-		PackageName:   c.PackageName,
-		MonorepoRoot:  c.MonorepoRoot,
-		DependsOn:     map[string]*Dependency{},
-		WktPackage:    wellKnownSwiftPackage,
-		DefaultTraits: c.DefaultTraits,
+		CopyrightYear:  c.GenerationYear,
+		BoilerPlate:    license.HeaderBulk(),
+		PackageName:    c.PackageName,
+		PackageVersion: c.PackageVersion,
+		ReleaseLevel:   c.ReleaseLevel,
+		MonorepoRoot:   c.MonorepoRoot,
+		DependsOn:      map[string]*Dependency{},
+		WktPackage:     wellKnownSwiftPackage,
+		DefaultTraits:  c.DefaultTraits,
 	}
 	if dep, ok := c.ApiPackages[wellKnownProtobufPackage]; ok {
 		annotations.WktPackage = dep.Name

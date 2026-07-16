@@ -54,7 +54,7 @@ func GenerateVersion(ctx context.Context, outDir string, library *config.Library
 	if err != nil {
 		return err
 	}
-	destination := filepath.Join(outDir, "Package+Version.swift")
+	destination := filepath.Join(outDir, "PackageVersion.swift")
 	if err := os.MkdirAll(filepath.Dir(destination), 0755); err != nil {
 		return err
 	}

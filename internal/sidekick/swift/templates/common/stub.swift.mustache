@@ -92,6 +92,7 @@ extension Clients {
       {{/Codec.QueryParams}}
       var req = try await self.inner.Request(path: path, query: query)
       req.httpMethod = "{{Codec.HTTPMethod}}"
+      req.setValue(Clients.clientHeader, forHTTPHeaderField: "X-Goog-Api-Client")
       {{#Codec.HasBody}}
       {{#Codec.IsBodyWildcard}}
       req.setValue("application/json", forHTTPHeaderField: "Content-Type")
