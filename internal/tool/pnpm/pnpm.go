@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package pnpm provides utilities to install pnpm packages.
 package pnpm
 
 import (
@@ -33,7 +34,7 @@ var (
 	errMissingPackageURL = errors.New("has build steps but no package URL")
 )
 
-// InstallPNPM installs PNPM tools.
+// Install installs PNPM tools.
 func Install(ctx context.Context, pnpmTools []*config.PNPMTool, binDir string) error {
 	env, err := envs(binDir)
 	if err != nil {
