@@ -27,6 +27,11 @@ func stubExecutables(t *testing.T) {
 	t.Helper()
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
+if [ "$1" = "--version" ]; then
+    echo "7.32.2"
+    exit 0
+fi
+
 # Assert that transient environmental variables are set dynamically for process lifetime
 if [ -n "$PNPM_HOME" ] && \
    { [ -n "$PNPM_CONFIG_GLOBAL_BIN_DIR" ] || [ -n "$NPM_CONFIG_GLOBAL_BIN_DIR" ]; } && \
@@ -54,7 +59,29 @@ exit 0
 	nodeStub := `#!/bin/sh
 exit 0
 `
-	npmStub := `#!/bin/sh
+	corepackStub := `#!/bin/sh
+if [ -z "$COREPACK_HOME" ] || [ -z "$COREPACK_ENABLE_DOWNLOAD_PROMPT" ]; then
+    echo "Error: Required Corepack environment variables missing!" >&2
+    exit 1
+fi
+case "$*" in
+    *enable*--install-directory*)
+        dir=""
+        prev=""
+        for arg in "$@"; do
+            if [ "$prev" = "--install-directory" ]; then
+                dir="$arg"
+                break
+            fi
+            prev="$arg"
+        done
+        if [ -n "$dir" ]; then
+            mkdir -p "$dir"
+            printf '#!/bin/sh\nif [ "$1" = "--version" ]; then\n  echo "7.32.2"\n  exit 0\nfi\ncase "$*" in\n  *install*)\n    mkdir -p node_modules/.bin\n    printf "#!/bin/sh\\nmkdir -p build\\n" > node_modules/.bin/tsc\n    chmod +x node_modules/.bin/tsc\n    ;;\nesac\nexit 0\n' > "$dir/pnpm"
+            chmod +x "$dir/pnpm"
+        fi
+        ;;
+esac
 exit 0
 `
 	if err := os.WriteFile(filepath.Join(bin, "pnpm"), []byte(pnpmStub), 0o755); err != nil {
@@ -63,7 +90,7 @@ exit 0
 	if err := os.WriteFile(filepath.Join(bin, "node"), []byte(nodeStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(bin, "npm"), []byte(npmStub), 0o755); err != nil {
+	if err := os.WriteFile(filepath.Join(bin, "corepack"), []byte(corepackStub), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
@@ -196,7 +223,7 @@ func TestInstall_Error(t *testing.T) {
 			wantErr: errNoToolsSpecified,
 		},
 		{
-			name:  "missing node or npm in path",
+			name:  "missing node or corepack in path",
 			tools: &config.Tools{PNPMVersion: "7.32.2", PNPM: []*config.PNPMTool{{Name: "foo", Version: "1.0"}}},
 			setup: func(t *testing.T) {
 				t.Setenv("PATH", t.TempDir())

@@ -24,7 +24,6 @@ import (
 	"strings"
 
 	"github.com/googleapis/librarian/internal/cache"
-	"github.com/googleapis/librarian/internal/command"
 	"github.com/googleapis/librarian/internal/config"
 	"github.com/googleapis/librarian/internal/fetch"
 )
@@ -51,16 +50,17 @@ func Install(ctx context.Context, tools *config.Tools) error {
 		return errNoToolsSpecified
 	}
 
-	for _, cmd := range []string{"node", "npm"} {
+	for _, cmd := range []string{"node", "corepack"} {
 		if _, err := exec.LookPath(cmd); err != nil {
 			return fmt.Errorf("%s %w: %w", cmd, errMissingExecutable, err)
 		}
 	}
 
-	cacheDir, err := cache.Directory()
+	env, err := getPNPMEnv()
 	if err != nil {
 		return err
 	}
+
 	pnpmVersion := tools.PNPMVersion
 	if pnpmVersion == "" {
 		for _, tool := range tools.PNPM {
@@ -70,24 +70,23 @@ func Install(ctx context.Context, tools *config.Tools) error {
 			}
 		}
 	}
-	if pnpmVersion == "" {
-		if _, err := exec.LookPath("pnpm"); err != nil {
-			return fmt.Errorf("pnpm %w: %w", errMissingExecutable, err)
-		}
-	} else {
-		installDir, err := InstallDir()
+
+	if !isPNPMInstalled(ctx, env, pnpmVersion) {
+		binDir, err := getBinDir()
 		if err != nil {
 			return err
 		}
-		npmCacheDir := filepath.Join(cacheDir, "npm-cache")
-		if err := command.RunStreaming(ctx, "npm", "install", "--prefix", installDir, "--cache", npmCacheDir, "-g", "pnpm@"+pnpmVersion); err != nil {
-			return fmt.Errorf("failed to bootstrap pnpm: %w", err)
+		if err := os.MkdirAll(binDir, 0o755); err != nil {
+			return err
 		}
-	}
-
-	env, err := getPNPMEnv()
-	if err != nil {
-		return err
+		if err := runCorepack(ctx, env, "enable", "--install-directory", binDir, "pnpm"); err != nil {
+			return fmt.Errorf("failed to enable pnpm via corepack: %w", err)
+		}
+		if pnpmVersion != "" {
+			if err := runCorepack(ctx, env, "install", "-g", "pnpm@"+pnpmVersion); err != nil {
+				return fmt.Errorf("failed to install pnpm via corepack: %w", err)
+			}
+		}
 	}
 
 	for _, tool := range tools.PNPM {
@@ -161,6 +160,8 @@ func getPNPMEnv() ([]string, error) {
 	}
 
 	env := os.Environ()
+	env = append(env, "COREPACK_HOME="+filepath.Join(cacheDir, "corepack"))
+	env = append(env, "COREPACK_ENABLE_DOWNLOAD_PROMPT=0")
 	env = append(env, "PNPM_HOME="+installDir)
 	env = append(env, "PNPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
 	env = append(env, "NPM_CONFIG_GLOBAL_BIN_DIR="+binDir)
@@ -172,6 +173,27 @@ func getPNPMEnv() ([]string, error) {
 	env = append(env, "PNPM_CONFIG_DANGEROUSLY_ALLOW_ALL_BUILDS=true")
 	env = append(env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
 	return env, nil
+}
+
+func isPNPMInstalled(ctx context.Context, env []string, pnpmVersion string) bool {
+	cmd := exec.CommandContext(ctx, "pnpm", "--version")
+	cmd.Env = env
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	if pnpmVersion == "" {
+		return true
+	}
+	return strings.TrimSpace(string(out)) == pnpmVersion
+}
+
+func runCorepack(ctx context.Context, env []string, args ...string) error {
+	cmd := exec.CommandContext(ctx, "corepack", args...)
+	cmd.Env = env
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	return cmd.Run()
 }
 
 func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
