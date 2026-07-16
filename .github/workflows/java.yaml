@@ -82,7 +82,11 @@ jobs:
         working-directory: google-cloud-java
         env:
           PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
-        run: librarian generate secretmanager
+        run: |
+          pwd
+          ls -la
+          ls -la java-dns || true
+          librarian generate secretmanager
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main')
