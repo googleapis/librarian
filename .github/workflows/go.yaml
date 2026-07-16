@@ -27,7 +27,7 @@ jobs:
       - uses: ./.github/actions/setup-librarian
       - name: Run tests
         run: go run ./tool/cmd/coverage ./internal/librarian/golang
-      - name: Run single library generation
+      - name: Generate a single library (integration test)
         working-directory: google-cloud-go
         run: librarian generate secretmanager
   integration:
@@ -47,7 +47,7 @@ jobs:
       - name: Run librarian install
         working-directory: google-cloud-go
         run: librarian install
-      - name: Generate a single library (integration test)
+      - name: Run librarian generate
         working-directory: google-cloud-go
         run: librarian generate --all
   create-issue-on-failure:
