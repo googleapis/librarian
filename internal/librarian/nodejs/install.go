@@ -164,7 +164,14 @@ func getPNPMEnv() ([]string, error) {
 }
 
 func isPNPMInstalled(ctx context.Context, env []string, pnpmVersion string) bool {
-	cmd := exec.CommandContext(ctx, "pnpm", "--version")
+	pnpmPath := "pnpm"
+	if binDir, err := getBinDir(); err == nil {
+		candidate := filepath.Join(binDir, "pnpm")
+		if _, err := os.Stat(candidate); err == nil {
+			pnpmPath = candidate
+		}
+	}
+	cmd := exec.CommandContext(ctx, pnpmPath, "--version")
 	cmd.Env = env
 	out, err := cmd.Output()
 	if err != nil {
@@ -185,7 +192,14 @@ func runCorepack(ctx context.Context, env []string, args ...string) error {
 }
 
 func runPNPM(ctx context.Context, dir string, env []string, args ...string) error {
-	cmd := exec.CommandContext(ctx, "pnpm", args...)
+	pnpmPath := "pnpm"
+	if binDir, err := getBinDir(); err == nil {
+		candidate := filepath.Join(binDir, "pnpm")
+		if _, err := os.Stat(candidate); err == nil {
+			pnpmPath = candidate
+		}
+	}
+	cmd := exec.CommandContext(ctx, pnpmPath, args...)
 	cmd.Dir = dir
 	cmd.Env = env
 	cmd.Stdout = os.Stdout

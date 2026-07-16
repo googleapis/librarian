@@ -93,6 +93,9 @@ func TestClean(t *testing.T) {
 				"protos/protos.js",
 				"samples/package.json",
 			}},
+		{
+			name: "non-existent library output directory returns nil",
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			repoRoot := t.TempDir()
