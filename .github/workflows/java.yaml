@@ -78,6 +78,11 @@ jobs:
           test -x "$(which protoc-gen-java_gapic)"
       - name: Run internal/librarian/java tests and check coverage
         run: go run ./tool/cmd/coverage ./internal/librarian/java
+      - name: Generate a single library (integration test)
+        working-directory: google-cloud-java
+        env:
+          PYTHONPATH: ${{ github.workspace }}/google-cloud-java/sdk-platform-java/hermetic_build/library_generation/owlbot
+        run: librarian generate secretmanager
   integration:
     runs-on: ubuntu-24.04
     if: github.event_name == 'push' && (github.ref == 'refs/heads/main')
