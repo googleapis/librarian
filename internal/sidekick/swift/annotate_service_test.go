@@ -352,7 +352,7 @@ func TestAnnotateService_LRO(t *testing.T) {
 	}
 
 	annotations := service.Codec.(*serviceAnnotations)
-	wantImports := []string{"GoogleCloudExternal", "GoogleCloudGax", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
+	wantImports := []string{"GoogleCloudExternal", "GoogleCloudWkt", "GoogleLongrunning", "GoogleRpc"}
 	if diff := cmp.Diff(wantImports, annotations.ServiceImports()); diff != "" {
 		t.Errorf("mismatch (-want +got):\n%s", diff)
 	}
