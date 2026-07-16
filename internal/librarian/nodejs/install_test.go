@@ -25,6 +25,12 @@ import (
 
 func stubExecutables(t *testing.T) {
 	t.Helper()
+	if os.Getenv("LIBRARIAN_CACHE") == "" {
+		t.Setenv("LIBRARIAN_CACHE", t.TempDir())
+	}
+	if os.Getenv("LIBRARIAN_BIN") == "" {
+		t.Setenv("LIBRARIAN_BIN", t.TempDir())
+	}
 	bin := t.TempDir()
 	pnpmStub := `#!/bin/sh
 if [ "$1" = "--version" ]; then
@@ -111,6 +117,12 @@ exit 0
 
 func stubExecutablesWithoutPNPM(t *testing.T) {
 	t.Helper()
+	if os.Getenv("LIBRARIAN_CACHE") == "" {
+		t.Setenv("LIBRARIAN_CACHE", t.TempDir())
+	}
+	if os.Getenv("LIBRARIAN_BIN") == "" {
+		t.Setenv("LIBRARIAN_BIN", t.TempDir())
+	}
 	bin := t.TempDir()
 	nodeStub := `#!/bin/sh
 exit 0
