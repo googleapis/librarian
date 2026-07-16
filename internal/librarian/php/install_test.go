@@ -21,6 +21,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/google/go-cmp/cmp"
 	"github.com/googleapis/librarian/internal/config"
 )
 
@@ -219,15 +220,15 @@ func TestCreateBinWrapper(t *testing.T) {
 				t.Fatal(err)
 			}
 			want := fmt.Sprintf("#!/bin/sh\nexec %q \"$@\"\n", destPath)
-			if string(b) != want {
-				t.Errorf("wrapper content = %q, want %q", string(b), want)
+			if diff := cmp.Diff(want, string(b)); diff != "" {
+				t.Errorf("wrapper content mismatch (-want +got):\n%s", diff)
 			}
 			info, err := os.Stat(wrapperPath)
 			if err != nil {
 				t.Fatal(err)
 			}
 			if info.Mode().Perm() != 0755 {
-				t.Errorf("wrapper permissions = %v, want 0755", info.Mode().Perm())
+				t.Errorf("wrapper permissions = %04o, want 0755", info.Mode().Perm())
 			}
 		})
 	}
