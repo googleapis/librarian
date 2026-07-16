@@ -31,8 +31,9 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
 	}
+	testhelper.RequireCommand(t, "protoc")
+	testhelper.RequireCommand(t, "python3")
 	requirePHPGenerator(t)
-
 	// Use mock googleapis checked in as test data
 	googleapisDir := "../../testdata/googleapis"
 	absGoogleapis, err := filepath.Abs(googleapisDir)
@@ -40,14 +41,44 @@ func TestGenerate(t *testing.T) {
 		t.Fatal(err)
 	}
 	repoRoot := t.TempDir()
+	t.Chdir(repoRoot)
+
+	destDir := filepath.Join(repoRoot, "output")
+	if err := os.MkdirAll(destDir, 0755); err != nil {
+		t.Fatal(err)
+	}
+	// Create a mock owlbot.py. In production, owlbot.py also runs prettier formatting
+	// (which requires Node.js/pnpm). In this integration test, we use a simplified stub
+	// that only handles file copying to keep the test hermetic and avoid Node.js dependencies.
+	owlbotContent := `import os
+import shutil
+import sys
+
+staging = "../owl-bot-staging/secretmanager/v1"
+if not os.path.exists(staging):
+    sys.exit(0)
+for item in os.listdir(staging):
+    s = os.path.join(staging, item)
+    d = os.path.join(".", item)
+    if os.path.isdir(s):
+        if os.path.exists(d):
+            shutil.rmtree(d)
+        shutil.copytree(s, d)
+    else:
+        shutil.copy2(s, d)
+`
+	if err := os.WriteFile(filepath.Join(destDir, "owlbot.py"), []byte(owlbotContent), 0755); err != nil {
+		t.Fatal(err)
+	}
 	library := &config.Library{
 		Name:   "secretmanager",
-		Output: filepath.Join(repoRoot, "output"),
+		Output: destDir,
 		APIs: []*config.API{
 			{
 				Path: "google/cloud/secretmanager/v1",
 				PHP: &config.PHPAPI{
 					CommonResources: new(true),
+					StagingSubdir:   "v1",
 				},
 			},
 		},
@@ -71,7 +102,6 @@ func TestGenerate(t *testing.T) {
 
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
-	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "php")
 	genDir, err := generatorDir(t.Context())
 	if err != nil {
@@ -84,14 +114,13 @@ func requirePHPGenerator(t *testing.T) {
 }
 
 func TestGenerate_Error(t *testing.T) {
-	requirePHPGenerator(t)
 	for _, test := range []struct {
 		name    string
 		lib     *config.Library
 		wantErr error
 	}{
 		{
-			name: "missing PHP config",
+			name: "missing PHP config (requires staging_subdir)",
 			lib: &config.Library{
 				Name: "SecretManager",
 				APIs: []*config.API{
@@ -100,7 +129,7 @@ func TestGenerate_Error(t *testing.T) {
 					},
 				},
 			},
-			wantErr: errCommonResourcesUnconfigured,
+			wantErr: errMissingStagingSubdir,
 		},
 		{
 			name: "missing common_resources config",
@@ -109,7 +138,9 @@ func TestGenerate_Error(t *testing.T) {
 				APIs: []*config.API{
 					{
 						Path: "google/cloud/secretmanager/v1",
-						PHP:  &config.PHPAPI{},
+						PHP: &config.PHPAPI{
+							StagingSubdir: "v1",
+						},
 					},
 				},
 			},
