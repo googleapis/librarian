@@ -31,7 +31,6 @@ func TestGenerate(t *testing.T) {
 	if testing.Short() {
 		t.Skip("skipping slow integration test")
 	}
-	testhelper.RequireCommand(t, "protoc")
 	requirePHPGenerator(t)
 
 	// Use mock googleapis checked in as test data
@@ -72,6 +71,7 @@ func TestGenerate(t *testing.T) {
 
 func requirePHPGenerator(t *testing.T) {
 	t.Helper()
+	testhelper.RequireCommand(t, "protoc")
 	testhelper.RequireCommand(t, "php")
 	genDir, err := generatorDir(t.Context())
 	if err != nil {
