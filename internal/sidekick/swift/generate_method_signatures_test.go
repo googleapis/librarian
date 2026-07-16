@@ -130,6 +130,39 @@ func TestGenerateService_MethodSignatures(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Discovery LROs",
+			want: []expectedBlock{
+				{
+					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  optionalField: Swift.String?,",
+					end:   "    }\n",
+					want: `public func lroDiscoveryMethod(
+  name: Swift.String,
+  optionalField: Swift.String?,
+) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+ {
+    let request = Request().with {
+      $0.name = name
+      $0.group = optionalField.map { .optionalField($0) }
+    }
+`,
+				},
+				{
+					start: "public func lroDiscoveryMethod(\n  name: Swift.String,\n  normalField: Swift.String,",
+					end:   "    }\n",
+					want: `public func lroDiscoveryMethod(
+  name: Swift.String,
+  normalField: Swift.String,
+) async throws -> any GoogleCloudGax.PollableOperation<GoogleCloudLongrunningV1.GetOperationRequest>
+ {
+    let request = Request().with {
+      $0.name = name
+      $0.group = .normalField(normalField)
+    }
+`,
+				},
+			},
+		},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			outDir := t.TempDir()
