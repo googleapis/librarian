@@ -84,6 +84,7 @@ func requirePHPGenerator(t *testing.T) {
 }
 
 func TestGenerate_Error(t *testing.T) {
+	requirePHPGenerator(t)
 	for _, test := range []struct {
 		name    string
 		lib     *config.Library
