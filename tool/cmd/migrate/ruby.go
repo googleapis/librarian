@@ -36,7 +36,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 		Tools: &config.Tools{
 			Gem: []*config.GemTool{
 				{
-					Name:    "gapic-generator",
+					Name:    "gapic-generator-cloud",
 					Version: "0.49.0",
 				},
 				{
