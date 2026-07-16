@@ -44,6 +44,7 @@ This document describes the schema for the librarian.yaml.
 | `maven` | list of [MavenTool](#maventool-configuration) (optional) | Defines tools to install via Maven. |
 | `pip` | list of [PipTool](#piptool-configuration) (optional) | Defines tools to install via pip. |
 | `pnpm` | list of [PNPMTool](#pnpmtool-configuration) (optional) | Defines tools to install via pnpm. |
+| `pnpm_version` | string | Specifies the version of pnpm to bootstrap. |
 | `protoc` | [Protoc](#protoc-configuration) (optional) | Defines the protoc installation. |
 
 ## CargoTool Configuration
