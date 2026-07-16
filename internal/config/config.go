@@ -225,6 +225,10 @@ type PNPMTool struct {
 
 	// Build defines the commands to run to build the tool after installation.
 	Build []string `yaml:"build,omitempty"`
+
+	// SrcDir is the path to the directory inside the fetched archive that should
+	// be treated as the root for operations.
+	SrcDir string `yaml:"src_dir,omitempty"`
 }
 
 // Protoc defines the configuration for installing the protoc compiler.
