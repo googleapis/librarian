@@ -72,7 +72,7 @@ func runRubyMigration(ctx context.Context, repoPath string) error {
 func findRubyLibraries(repoPath string) ([]*config.Library, error) {
 	entries, err := os.ReadDir(repoPath)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("reading repository directory: %w", err)
 	}
 	var libraries []*config.Library
 	for _, entry := range entries {
