@@ -43,8 +43,6 @@ type PublishParams struct {
 	SkipSemverChecks bool
 	// Verbose indicates whether to stream the output of executed commands.
 	Verbose bool
-	// IgnoredChanges is a list of file paths/patterns to ignore when detecting changed libraries.
-	IgnoredChanges []string
 }
 
 // Publish finds all the libraries that should be published and publishes them in topological order.
@@ -67,14 +65,14 @@ func Publish(ctx context.Context, params PublishParams) error {
 		return err
 	}
 
-	sorted, err := sortLibraries(libraryByName, deps)
+	sortedLibraryNames, err := sortByDeps(libraryByName, deps)
 	if err != nil {
 		return err
 	}
 
 	publishedVersions := make(map[string]string, len(libraryByName))
 	var librariesToPublish []*config.Library
-	for _, libName := range sorted {
+	for _, libName := range sortedLibraryNames {
 		lib := libraryByName[libName]
 		if lib.SkipRelease || lib.Version == "" {
 			continue
@@ -101,7 +99,8 @@ func Publish(ctx context.Context, params PublishParams) error {
 				slog.Warn("published version greater than repo version, but continuing due to --keep-going",
 					"package", libName, "published", publishedVersion, "repo", repoVersion)
 			} else {
-				return fmt.Errorf("published version %q is greater than repo version %q for package %s", publishedVersion, repoVersion, libName)
+				return fmt.Errorf("published version %q is greater than repo version %q for package %s",
+					publishedVersion, repoVersion, libName)
 			}
 		} else if comp < 0 {
 			librariesToPublish = append(librariesToPublish, lib)
@@ -241,7 +240,7 @@ func getCloudDeps(ctx context.Context, libraries []*config.Library) (map[string]
 	return depsMap, versionsMap, nil
 }
 
-func sortLibraries(libraryByName map[string]*config.Library, deps map[string][]string) ([]string, error) {
+func sortByDeps(libraryByName map[string]*config.Library, deps map[string][]string) ([]string, error) {
 	inDegree := make(map[string]int)
 	dependents := make(map[string][]string)
 

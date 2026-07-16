@@ -83,7 +83,6 @@ func dartPublish(ctx context.Context, cfg *config.Config, cmd *cli.Command) erro
 		DryRunKeepGoing:  dryRunKeepGoing,
 		SkipSemverChecks: skipSemverChecks,
 		Verbose:          verbose,
-		IgnoredChanges:   IgnoredChanges,
 	})
 }
 
