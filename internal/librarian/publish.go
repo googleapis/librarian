@@ -35,7 +35,7 @@ func publishCommand() *cli.Command {
 		Description: `publish releases the libraries that were updated in a release commit
 prepared by librarian bump.
 
-Only Rust is supported.`,
+Only Dart and Rust are supported.`,
 		Flags: []cli.Flag{
 			&cli.BoolFlag{
 				Name:  "dry-run",
