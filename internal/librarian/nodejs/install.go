@@ -39,11 +39,10 @@ const (
 )
 
 var (
-	errNoToolsSpecified   = errors.New("no tools.pnpm field specified in configuration")
-	errCannotExtractRepo  = errors.New("cannot extract repo from package URL")
-	errMissingExecutable  = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
-	errMissingPackageURL  = errors.New("has build steps but no package URL")
-	errMissingPNPMVersion = errors.New("pnpm version must be specified in tools.pnpm")
+	errNoToolsSpecified  = errors.New("no tools.pnpm field specified in configuration")
+	errCannotExtractRepo = errors.New("cannot extract repo from package URL")
+	errMissingExecutable = errors.New("is not installed or not in PATH, which is required for Node.js tool installation")
+	errMissingPackageURL = errors.New("has build steps but no package URL")
 )
 
 // Install installs Node.js tool dependencies.
